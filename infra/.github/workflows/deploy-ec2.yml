@@ -57,13 +57,118 @@ jobs:
         with:
           fetch-depth: 0
 
+      # - id: discover
+      #   shell: bash
+      #   run: |
+      #     set -Eeuo pipefail
+
+      #     CONFIG="${{ inputs.app_config_path }}"
+      #     test -f "$CONFIG"
+
+      #     APP_NAME="$(jq -r '.appName' "$CONFIG")"
+      #     API_WORKSPACE_PATH="$(jq -r '.docker.api.workspacePath // empty' "$CONFIG")"
+
+      #     if [[ -z "$APP_NAME" ]]; then
+      #       echo "appName missing from $CONFIG" >&2
+      #       exit 1
+      #     fi
+
+      #     if [[ -z "$API_WORKSPACE_PATH" ]]; then
+      #       echo "docker.api.workspacePath missing from $CONFIG" >&2
+      #       exit 1
+      #     fi
+
+      #     ALL_SERVICES="$(
+      #       jq -c '[
+      #         {
+      #           "name": "api",
+      #           "workspacePath": .docker.api.workspacePath
+      #         }
+      #       ] + (
+      #         (.docker.workers // [])
+      #         | map({
+      #             "name": .name,
+      #             "workspacePath": .workspacePath
+      #           })
+      #       )' "$CONFIG"
+      #     )"
+
+      #     BEFORE="${{ github.event.before }}"
+      #     AFTER="${{ github.sha }}"
+
+      #     if [[ -z "${BEFORE:-}" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+      #       if git rev-parse HEAD~1 >/dev/null 2>&1; then
+      #         BEFORE="$(git rev-parse HEAD~1)"
+      #       else
+      #         BEFORE="$(git rev-parse HEAD)"
+      #       fi
+      #     fi
+
+      #     CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER" || true)"
+
+      #     echo "Changed files:"
+      #     printf '%s\n' "$CHANGED_FILES"
+
+      #     BUILD_MATRIX='[]'
+      #     NEEDS_BACKEND_APPLY=false
+      #     FULL_REBUILD=false
+
+      #     if grep -Eq '^(package\.json|package-lock\.json|nx\.json|tsconfig(\..*)?\.json|packages/|infra/docker/api/)' <<<"$CHANGED_FILES"; then
+      #       FULL_REBUILD=true
+      #     fi
+
+      #     if grep -Eq '^${{ inputs.app_config_path }}$' <<<"$CHANGED_FILES"; then
+      #       FULL_REBUILD=true
+      #     fi
+
+      #     if grep -Eq '^(infra/config/docker-compose/base\.yml|infra/config/docker-compose/prod\.yml|ops/deploy/)' <<<"$CHANGED_FILES"; then
+      #       NEEDS_BACKEND_APPLY=true
+      #     fi
+
+      #     if [[ "$FULL_REBUILD" == "true" ]]; then
+      #       BUILD_MATRIX="$ALL_SERVICES"
+      #       NEEDS_BACKEND_APPLY=true
+      #     else
+      #       while IFS= read -r service; do
+      #         NAME="$(jq -r '.name' <<<"$service")"
+      #         WORKSPACE_PATH="$(jq -r '.workspacePath' <<<"$service")"
+
+      #         if [[ -n "$WORKSPACE_PATH" ]] && grep -qE "^${WORKSPACE_PATH}/" <<<"$CHANGED_FILES"; then
+      #           BUILD_MATRIX="$(
+      #             jq -c --argjson svc "$service" '. + [$svc]' <<<"$BUILD_MATRIX"
+      #           )"
+      #         fi
+      #       done < <(jq -c '.[]' <<<"$ALL_SERVICES")
+      #     fi
+
+      #     if [[ "$BUILD_MATRIX" != "[]" ]]; then
+      #       NEEDS_BACKEND_APPLY=true
+      #       HAS_BUILDS=true
+      #       CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
+      #     else
+      #       HAS_BUILDS=false
+      #       CHANGED_SERVICE_NAMES=""
+      #     fi
+
+      #     {
+      #       echo "app_name=$APP_NAME"
+      #       echo "build_matrix=$BUILD_MATRIX"
+      #       echo "has_builds=$HAS_BUILDS"
+      #       echo "needs_backend_apply=$NEEDS_BACKEND_APPLY"
+      #       echo "changed_service_names=$CHANGED_SERVICE_NAMES"
+      #     } >> "$GITHUB_OUTPUT"
+
+      #     echo "App name: $APP_NAME"
+      #     echo "Build matrix: $BUILD_MATRIX"
+      #     echo "Needs backend apply: $NEEDS_BACKEND_APPLY"
+      #     echo "Changed service names: $CHANGED_SERVICE_NAMES"
       - id: discover
         shell: bash
         run: |
           set -Eeuo pipefail
 
           CONFIG="${{ inputs.app_config_path }}"
-          test -f "$CONFIG"
+          test -f "$CONFIG" || { echo "Missing config file: $CONFIG" >&2; exit 1; }
 
           APP_NAME="$(jq -r '.appName' "$CONFIG")"
           API_WORKSPACE_PATH="$(jq -r '.docker.api.workspacePath // empty' "$CONFIG")"
@@ -78,7 +183,7 @@ jobs:
             exit 1
           fi
 
-          ALL_SERVICES="$(
+          BUILD_MATRIX="$(
             jq -c '[
               {
                 "name": "api",
@@ -93,75 +198,20 @@ jobs:
             )' "$CONFIG"
           )"
 
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.sha }}"
-
-          if [[ -z "${BEFORE:-}" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-            if git rev-parse HEAD~1 >/dev/null 2>&1; then
-              BEFORE="$(git rev-parse HEAD~1)"
-            else
-              BEFORE="$(git rev-parse HEAD)"
-            fi
-          fi
-
-          CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER" || true)"
-
-          echo "Changed files:"
-          printf '%s\n' "$CHANGED_FILES"
-
-          BUILD_MATRIX='[]'
-          NEEDS_BACKEND_APPLY=false
-          FULL_REBUILD=false
-
-          if grep -Eq '^(package\.json|package-lock\.json|nx\.json|tsconfig(\..*)?\.json|packages/|infra/docker/api/)' <<<"$CHANGED_FILES"; then
-            FULL_REBUILD=true
-          fi
-
-          if grep -Eq '^${{ inputs.app_config_path }}$' <<<"$CHANGED_FILES"; then
-            FULL_REBUILD=true
-          fi
-
-          if grep -Eq '^(infra/config/docker-compose/base\.yml|infra/config/docker-compose/prod\.yml|ops/deploy/)' <<<"$CHANGED_FILES"; then
-            NEEDS_BACKEND_APPLY=true
-          fi
-
-          if [[ "$FULL_REBUILD" == "true" ]]; then
-            BUILD_MATRIX="$ALL_SERVICES"
-            NEEDS_BACKEND_APPLY=true
-          else
-            while IFS= read -r service; do
-              NAME="$(jq -r '.name' <<<"$service")"
-              WORKSPACE_PATH="$(jq -r '.workspacePath' <<<"$service")"
-
-              if [[ -n "$WORKSPACE_PATH" ]] && grep -qE "^${WORKSPACE_PATH}/" <<<"$CHANGED_FILES"; then
-                BUILD_MATRIX="$(
-                  jq -c --argjson svc "$service" '. + [$svc]' <<<"$BUILD_MATRIX"
-                )"
-              fi
-            done < <(jq -c '.[]' <<<"$ALL_SERVICES")
-          fi
-
-          if [[ "$BUILD_MATRIX" != "[]" ]]; then
-            NEEDS_BACKEND_APPLY=true
-            HAS_BUILDS=true
-            CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
-          else
-            HAS_BUILDS=false
-            CHANGED_SERVICE_NAMES=""
-          fi
+          CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
 
           {
             echo "app_name=$APP_NAME"
             echo "build_matrix=$BUILD_MATRIX"
-            echo "has_builds=$HAS_BUILDS"
-            echo "needs_backend_apply=$NEEDS_BACKEND_APPLY"
+            echo "has_builds=true"
+            echo "needs_backend_apply=true"
             echo "changed_service_names=$CHANGED_SERVICE_NAMES"
           } >> "$GITHUB_OUTPUT"
 
           echo "App name: $APP_NAME"
           echo "Build matrix: $BUILD_MATRIX"
-          echo "Needs backend apply: $NEEDS_BACKEND_APPLY"
           echo "Changed service names: $CHANGED_SERVICE_NAMES"
+
       - name: Generate worker compose overlay
         shell: bash
         run: |
