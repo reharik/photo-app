@@ -3,17 +3,14 @@ name: Deploy
 on:
   push:
     branches: [main]
-    workflow_call:
-      inputs:
-        deploy_backend:
-          type: boolean
-          required: false
-          default: true
-        deploy_frontend:
-          type: boolean
-          required: false
-          default: true
-      secrets: inherit
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        type: boolean
+        default: true
+      deploy_frontend:
+        type: boolean
+        default: true
 permissions:
   contents: read
   id-token: write
@@ -25,5 +22,3 @@ jobs:
       deploy_backend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_backend }}
       deploy_frontend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_frontend }}
     secrets: inherit
-
-  # bump
