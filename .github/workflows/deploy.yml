@@ -24,4 +24,6 @@ jobs:
       remote_app_dir: /opt/photo-app
       ssh_user: ubuntu
       env_name: prod
-    secrets: inherit
+    secrets: 
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
