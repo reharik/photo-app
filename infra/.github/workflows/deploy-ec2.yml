@@ -3,14 +3,17 @@ name: Deploy
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      deploy_backend:
-        type: boolean
-        default: true
-      deploy_frontend:
-        type: boolean
-        default: true
+    workflow_call:
+      inputs:
+        deploy_backend:
+          type: boolean
+          required: false
+          default: true
+        deploy_frontend:
+          type: boolean
+          required: false
+          default: true
+      secrets: inherit
 permissions:
   contents: read
   id-token: write
