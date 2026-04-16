@@ -3,6 +3,14 @@ name: Deploy
 on:
   push:
     branches: [main]
+  workflow_call:
+    inputs:
+      deploy_backend:
+        type: boolean
+        default: true
+      deploy_frontend:
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       deploy_backend:
