@@ -60,12 +60,23 @@ jobs:
       - id: discover
         shell: bash
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
 
           CONFIG="${{ inputs.app_config_path }}"
           test -f "$CONFIG"
 
           APP_NAME="$(jq -r '.appName' "$CONFIG")"
+          API_WORKSPACE_PATH="$(jq -r '.docker.api.workspacePath // empty' "$CONFIG")"
+
+          if [[ -z "$APP_NAME" ]]; then
+            echo "appName missing from $CONFIG" >&2
+            exit 1
+          fi
+
+          if [[ -z "$API_WORKSPACE_PATH" ]]; then
+            echo "docker.api.workspacePath missing from $CONFIG" >&2
+            exit 1
+          fi
 
           ALL_SERVICES="$(
             jq -c '[
@@ -86,30 +97,31 @@ jobs:
           AFTER="${{ github.sha }}"
 
           if [[ -z "${BEFORE:-}" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-            BEFORE="$(git rev-parse HEAD~1)"
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              BEFORE="$(git rev-parse HEAD~1)"
+            else
+              BEFORE="$(git rev-parse HEAD)"
+            fi
           fi
 
           CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER" || true)"
 
           echo "Changed files:"
-          echo "$CHANGED_FILES"
+          printf '%s\n' "$CHANGED_FILES"
 
           BUILD_MATRIX='[]'
           NEEDS_BACKEND_APPLY=false
           FULL_REBUILD=false
 
-          # Any of these means every backend image is potentially stale.
-          if echo "$CHANGED_FILES" | grep -Eq '^(package\.json|package-lock\.json|nx\.json|tsconfig(\..*)?\.json|packages/|infra/docker/api/)'; then
+          if grep -Eq '^(package\.json|package-lock\.json|nx\.json|tsconfig(\..*)?\.json|packages/|infra/docker/api/)' <<<"$CHANGED_FILES"; then
             FULL_REBUILD=true
           fi
 
-          # App config changing can add/remove workers, so rebuild all.
-          if echo "$CHANGED_FILES" | grep -Eq '^${{ inputs.app_config_path }}$'; then
+          if grep -Eq '^${{ inputs.app_config_path }}$' <<<"$CHANGED_FILES"; then
             FULL_REBUILD=true
           fi
 
-          # Compose or deploy script changes require an apply even if no image rebuild is needed.
-          if echo "$CHANGED_FILES" | grep -Eq '^(infra/config/docker-compose/base\.yml|infra/config/docker-compose/prod\.yml|ops/deploy/)'; then
+          if grep -Eq '^(infra/config/docker-compose/base\.yml|infra/config/docker-compose/prod\.yml|ops/deploy/)' <<<"$CHANGED_FILES"; then
             NEEDS_BACKEND_APPLY=true
           fi
 
@@ -121,7 +133,7 @@ jobs:
               NAME="$(jq -r '.name' <<<"$service")"
               WORKSPACE_PATH="$(jq -r '.workspacePath' <<<"$service")"
 
-              if echo "$CHANGED_FILES" | grep -qE "^${WORKSPACE_PATH}/"; then
+              if [[ -n "$WORKSPACE_PATH" ]] && grep -qE "^${WORKSPACE_PATH}/" <<<"$CHANGED_FILES"; then
                 BUILD_MATRIX="$(
                   jq -c --argjson svc "$service" '. + [$svc]' <<<"$BUILD_MATRIX"
                 )"
@@ -132,23 +144,24 @@ jobs:
           if [[ "$BUILD_MATRIX" != "[]" ]]; then
             NEEDS_BACKEND_APPLY=true
             HAS_BUILDS=true
-            CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | xargs)"
+            CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
           else
             HAS_BUILDS=false
             CHANGED_SERVICE_NAMES=""
           fi
 
-          echo "app_name=$APP_NAME" >> "$GITHUB_OUTPUT"
-          echo "build_matrix=$BUILD_MATRIX" >> "$GITHUB_OUTPUT"
-          echo "has_builds=$HAS_BUILDS" >> "$GITHUB_OUTPUT"
-          echo "needs_backend_apply=$NEEDS_BACKEND_APPLY" >> "$GITHUB_OUTPUT"
-          echo "changed_service_names=$CHANGED_SERVICE_NAMES" >> "$GITHUB_OUTPUT"
+          {
+            echo "app_name=$APP_NAME"
+            echo "build_matrix=$BUILD_MATRIX"
+            echo "has_builds=$HAS_BUILDS"
+            echo "needs_backend_apply=$NEEDS_BACKEND_APPLY"
+            echo "changed_service_names=$CHANGED_SERVICE_NAMES"
+          } >> "$GITHUB_OUTPUT"
 
           echo "App name: $APP_NAME"
           echo "Build matrix: $BUILD_MATRIX"
           echo "Needs backend apply: $NEEDS_BACKEND_APPLY"
           echo "Changed service names: $CHANGED_SERVICE_NAMES"
-
       - name: Generate worker compose overlay
         shell: bash
         run: |
