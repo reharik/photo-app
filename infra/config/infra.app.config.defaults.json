@@ -1,0 +1,26 @@
+{
+  "$comment": "Infra-owned defaults. Consumer overrides via repo-root infra.app.config.json. Merged with load-infra-app-config.sh.",
+  "appName": "myapp",
+  "env": "prod",
+  "awsRegion": "us-east-1",
+  "s3Bucket": "",
+  "ssm": { "tagHost": "prod-shared", "tagEnv": "prod" },
+  "ssmPoll": { "delaySeconds": 2, "maxAttempts": 120 },
+
+  "docker": {
+    "nodeVersion": 22,
+    "appWorkspacePath": "apps/api",
+    "nodeEntrypoint": "apps/api/dist/index.js",
+    "workers": []
+  },
+
+  "paths": {
+    "prodEnvFile": "/opt/${APP_NAME}/env/prod.env"
+  },
+
+  "requiredSecrets": {
+    "$comment": "Names only; never put values here.",
+    "backendDeploy": ["AWS_ROLE_ARN", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"],
+    "frontendBuild": ["VITE_DEFAULT_INTERVAL_DAYS", "VITE_DEFAULT_CONTACT_MESSAGE"]
+  }
+}

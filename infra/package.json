@@ -1,0 +1,16 @@
+{
+  "name": "cannibal-infra",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint:shell": "shellcheck $(git ls-files '*.sh')",
+    "lint:yaml": "yamllint .",
+    "lint": "npm run lint:shell && npm run lint:yaml"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "yaml": "^2.3.4"
+  }
+}
