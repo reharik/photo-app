@@ -1,0 +1,24 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        type: boolean
+        default: true
+      deploy_frontend:
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  deploy:
+    uses: reharik/cannibal-infra/.github/workflows/deploy-ec2.yml@main
+    with:
+      # Push: deploy both. Dispatch: honor checkboxes (avoid `&& x || true` which forces true when x is false).
+      deploy_backend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_backend }}
+      deploy_frontend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_frontend }}
+    secrets: inherit

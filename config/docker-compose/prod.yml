@@ -1,0 +1,28 @@
+services:
+  db:
+    platform: linux/arm64
+    restart: unless-stopped
+    env_file:
+      - /opt/${APP_NAME}/env/prod.env
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+
+  api:
+    platform: linux/arm64
+    restart: unless-stopped
+    env_file:
+      - /opt/${APP_NAME}/env/prod.env
+    environment:
+      NODE_ENV: production
+      POSTGRES_PORT: "5432"
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-3000}:${API_PORT:-3000}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  pgdata_prod:

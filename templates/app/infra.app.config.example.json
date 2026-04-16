@@ -1,0 +1,20 @@
+{
+  "$comment": "Copy to repo root as infra.app.config.json. Only override what you need; infra defaults apply for the rest. See config/infra.app.config.defaults.json and scripts/deploy/load-infra-app-config.sh.",
+  "appName": "myapp",
+  "env": "prod",
+  "awsRegion": "us-east-1",
+  "s3Bucket": "myapp-deploy-123456789012-us-east-1",
+  "ssm": { "tagHost": "prod-shared", "tagEnv": "prod" },
+  "ssmPoll": { "delaySeconds": 2, "maxAttempts": 120 },
+  "docker": {
+    "nodeVersion": 22,
+    "apiWorkspacePath": "apps/api",
+    "nxProject": "api",
+    "devWorkspaceName": "@app/api",
+    "nodeEntrypoint": "apps/api/dist/index.js"
+  },
+  "requiredSecrets": {
+    "backendDeploy": ["AWS_ROLE_ARN", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"],
+    "frontendBuild": ["VITE_DEFAULT_INTERVAL_DAYS", "VITE_DEFAULT_CONTACT_MESSAGE"]
+  }
+}

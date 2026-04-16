@@ -1,0 +1,56 @@
+{
+  "copied": [
+    { "from": "scripts/ssm-run.sh", "to": "scripts/deploy/ssm-run.sh", "reason": "Reusable SSM runner for S3-staged remote scripts" },
+    { "from": "scripts/remote/deploy-shared-caddyfile.sh", "to": "scripts/remote/deploy-shared-caddyfile.sh", "reason": "Deploy shared Caddyfile from S3" },
+    { "from": "scripts/remote/cleanup-docker.sh", "to": "scripts/remote/cleanup-docker.sh", "reason": "Generic Docker prune on EC2" },
+    { "from": ".github/workflows/ci.yml", "to": "github/workflows/ci.yml", "reason": "CI template (lint, test, build); app uses npm scripts and Nx" },
+    { "from": "tsconfig.json (compilerOptions only)", "to": "config/tsconfig/tsconfig.base.json", "reason": "Shared TypeScript compiler options; app adds references and paths" },
+    { "from": "eslint-shared.js", "to": "config/eslint/eslint-shared.js", "reason": "Shared ESLint base (TypeScript + Prettier + Jest); app projects extend it" },
+    { "from": ".prettierrc.json", "to": "config/prettier/.prettierrc.json", "reason": "Shared Prettier config" },
+    { "from": ".prettierignore", "to": "config/prettier/.prettierignore", "reason": "Shared Prettier ignore" },
+    { "from": "nx.json", "to": "config/nx/nx.json", "reason": "Nx base (extends npm preset); project graph and $schema path are app-owned" },
+    { "from": "Caddyfile.shared (as example)", "to": "templates/app/Caddyfile.shared.example", "reason": "Template for multi-app shared Caddy; app provides actual Caddyfile.shared" },
+    { "from": "jest.preset.cjs", "to": "config/jest/jest.preset.cjs", "reason": "Shared Nx/Jest preset; app projects extend it via preset path" },
+    { "from": "apps/api/Dockerfile (as template)", "to": "templates/app/Dockerfile.example", "reason": "Generic multi-stage Node/Nx API Dockerfile pattern; app copies and customizes" },
+    { "from": ".dockerignore (as template)", "to": "templates/app/.dockerignore.example", "reason": "Pattern for monorepo API build; app copies and adjusts paths" },
+    { "from": "docker-compose.yml (as template)", "to": "templates/app/docker-compose.example.yml", "reason": "Minimal postgres + api compose pattern; app copies and sets APP_NAME, image, paths" }
+  ],
+  "left_in_app": [
+    { "path": "_app-owned-candidates/scripts/deploy/deploy-ec2.sh", "reason": "Hardcoded /opt/network, network-api image name, network-prod, compose -p network, apps/api paths; app-owned" },
+    { "path": "_app-owned-candidates/scripts/remote/download-backend.sh", "reason": "Hardcoded /opt/network, network-api-latest.tar.gz; app-owned" },
+    { "path": "_app-owned-candidates/scripts/remote/deploy-backend.sh", "reason": "Hardcoded /opt/network, network-api.tar.gz; app-owned" },
+    { "path": "_app-owned-candidates/scripts/remote/verify-backend.sh", "reason": "Hardcoded /opt/network, network-prod; app-owned" },
+    { "path": "_app-owned-candidates/scripts/remote/deploy-frontend.sh", "reason": "Hardcoded /opt/network; app-owned" },
+    { "path": "_app-owned-candidates/scripts/remote/setup-shared-proxy.sh", "reason": "Container names/paths: network, chore-tracker, /srv/network, /srv/chore-tracker; app-owned" },
+    { "path": "_app-owned-candidates/scripts/local/verify-dns-and-frontend.sh", "reason": "Hardcoded domains backintouch.net, chores.backintouch.net and /opt/network/frontend; app-owned" },
+    { "path": "_app-owned-candidates/github/workflows/deploy-ec2.yml", "reason": "Hardcoded APP_NAME: network, S3_BUCKET, network-api image, apps/api, apps/web path filters; app-owned" },
+    { "path": "Caddyfile", "reason": "App-specific single-app Caddy config (backintouch.net, api service)" },
+    { "path": "docker-compose.prod.yml", "reason": "App-specific compose (services, env paths, image names)" },
+    { "path": "docker-compose.yml, docker-compose-dev.yml, docker-compose-local-prod.yml", "reason": "App-specific compose files (service names, images, localstack, volumes)" },
+    { "path": "apps/api/Dockerfile", "reason": "App-specific Dockerfile (apps/api, packages/contracts, gen:container, awilix, serverStartUpProd)" },
+    { "path": ".dockerignore", "reason": "App-specific (lists apps/api, packages/contracts, excludes apps/web)" },
+    { "path": "apps/*/jest.config.js, packages/*/jest.config.js", "reason": "Per-project Jest config (displayName, setupFiles, mocks); they extend shared preset" },
+    { "path": "apps/", "reason": "Application and API code" },
+    { "path": "packages/", "reason": "App-specific packages (e.g. contracts)" },
+    { "path": ".env*, env/", "reason": "Secrets and env files" },
+    { "path": ".github/workflows/README.md", "reason": "App-specific workflow docs and secret names" },
+    { "path": "docs/deployment-ec2.md, EC2_DEPLOYMENT_*.md", "reason": "App-specific deployment docs; generic flow in infra docs/deploy.md" }
+  ],
+  "todo": [
+    "Parameterize deploy scripts by APP_NAME and app root path (e.g. /opt/{app})",
+    "Parameterize setup-shared-proxy.sh: app list and host dirs (not hardcode /opt/network, /opt/chore-tracker)",
+    "Namespace S3 keys by app (already uses APP_NAME; ensure all scripts use it consistently)",
+    "Convert deploy-ec2.yml to reusable workflow (workflow_call) with inputs: app_name, s3_bucket, backend_paths, frontend_paths, dockerfile_path, etc.",
+    "When app uses subtree: wire workflow to infra paths (e.g. source infra/scripts/deploy/ssm-run.sh, upload from infra/scripts/remote/)",
+    "Parameterize verify-dns-and-frontend.sh with domain list or skip; or keep as app-owned script",
+    "Consider app-owned infra.app.config.json (APP_NAME, S3_BUCKET, SSM tags, path filters) consumed by workflows/scripts"
+  ],
+  "risks": [
+    "Jest preset path: when consumed from infra, app jest.config.js must reference correct preset path (e.g. infra/config/jest/jest.preset.cjs)",
+    "Nx config: nx.json extends npm preset and has no app paths, but $schema and project graph are resolved in app repo; copying into infra/config/nx is for reference — app may extend or copy",
+    "Path assumptions: deploy-ec2.sh and remote scripts assume /opt/network, apps/api; multi-app repos need parameterized app root and service names",
+    "ESLint shared: eslint-shared.js uses import.meta.dirname for tsconfigRootDir; when consumed from infra/ the root dir may need to be app repo root",
+    "Workflows reference scripts/deploy-ec2.sh and scripts/remote/* — in subtree layout scripts live under infra/scripts/deploy/ and infra/scripts/remote/; app workflow must reference correct paths or copy workflows to .github/workflows and adjust paths",
+    "Version coupling: Node 22, npm, Nx 21, action versions are fixed in workflows; infra and app should align on versions"
+  ]
+}

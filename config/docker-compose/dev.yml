@@ -1,0 +1,37 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=ses,sns
+      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    ports:
+      - "5432:5432"
+
+  api:
+    image: ${API_IMAGE:-${APP_NAME}-api:dev}
+    environment:
+      NODE_ENV: development
+      AWS_ENDPOINT: http://localstack:4566
+      CHOKIDAR_USEPOLLING: "1"
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+volumes:
+  localstack_data:

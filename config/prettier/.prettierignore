@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+package-lock.json
+.history
+
+/.nx/cache
+/.nx/workspace-data
+
+/.github
+# Auto-generated files
+**/awilix.autoload.d.ts

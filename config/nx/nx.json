@@ -1,0 +1,35 @@
+{
+  "pluginsConfig": { "@nx/js": { "analyzeSourceFiles": false } },
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/**/*.spec.*",
+      "!{projectRoot}/**/*.test.*"
+    ],
+    "prod": [
+      "default",
+      "!{projectRoot}/**/*.spec.*",
+      "!{projectRoot}/**/*.test.*",
+      "!{projectRoot}/**/*.md"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "inputs": ["prod", "^prod"],
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "lint": {
+      "cache": false,
+      "inputs": ["default", "^default"]
+    },
+    "serve": { "cache": false }
+  },
+  "nxCloudAccessToken": "",
+  "tui": { "autoExit": true }
+}
