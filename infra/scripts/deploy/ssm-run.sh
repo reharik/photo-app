@@ -99,7 +99,7 @@ _ssm_send_command() {
   _ssm_upload_script_to_s3 "$remote_script_path" "$script_key"
 
   local env_text=""
-  for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE; do
+  for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE CHANGED_SERVICE_NAMES; do
     if [[ -n "${!v:-}" ]]; then
       env_text+="${v}=${!v}"$'\n'
     fi

@@ -89,8 +89,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x ops/deploy/generate-prod-workers-compose.sh
-          ops/deploy/generate-prod-workers-compose.sh "${{ inputs.app_config_path }}" "${{ github.sha }}" > workers.generated.yml
+          chmod +x infra/scripts/deploy/generate-prod-workers-compose.sh
+          infra/scripts/deploy/generate-prod-workers-compose.sh "${{ inputs.app_config_path }}" "${{ github.sha }}" > workers.generated.yml
 
       - uses: actions/upload-artifact@v4
         with:
