@@ -199,7 +199,8 @@ jobs:
 
       - uses: actions/download-artifact@v5
         with:
-          path: artifacts
+          name: generated-worker-compose
+          path: artifacts/generated-worker-compose
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
