@@ -21,9 +21,4 @@ jobs:
     with:
       deploy_backend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_backend }}
       app_config_path: infra.app.config.json
-      remote_app_dir: /opt/photo-app
-      ssh_user: ubuntu
-      env_name: prod
-    secrets:
-      EC2_HOST: ${{ secrets.EC2_HOST }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+    secrets: inherit

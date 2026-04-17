@@ -7,31 +7,10 @@ on:
         required: false
         type: boolean
         default: true
-
       app_config_path:
         required: false
         type: string
         default: infra.app.config.json
-
-      remote_app_dir:
-        required: true
-        type: string
-
-      ssh_user:
-        required: false
-        type: string
-        default: ubuntu
-
-      env_name:
-        required: false
-        type: string
-        default: prod
-
-    secrets:
-      EC2_HOST:
-        required: true
-      SSH_PRIVATE_KEY:
-        required: true
 
 permissions:
   contents: read
@@ -43,184 +22,72 @@ concurrency:
 
 jobs:
   discover:
-    name: Discover backend changes
     if: ${{ inputs.deploy_backend }}
     runs-on: ubuntu-latest
     outputs:
       app_name: ${{ steps.discover.outputs.app_name }}
+      aws_region: ${{ steps.discover.outputs.aws_region }}
+      s3_bucket: ${{ steps.discover.outputs.s3_bucket }}
+      env_name: ${{ steps.discover.outputs.env_name }}
       build_matrix: ${{ steps.discover.outputs.build_matrix }}
-      has_builds: ${{ steps.discover.outputs.has_builds }}
-      needs_backend_apply: ${{ steps.discover.outputs.needs_backend_apply }}
       changed_service_names: ${{ steps.discover.outputs.changed_service_names }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # - id: discover
-      #   shell: bash
-      #   run: |
-      #     set -Eeuo pipefail
+      - id: load_config
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/load-infra-app-config.sh
+          infra/scripts/load-infra-app-config.sh "${{ inputs.app_config_path }}" > /tmp/infra.env
+          cat /tmp/infra.env
+          set -a
+          source /tmp/infra.env
+          set +a
 
-      #     CONFIG="${{ inputs.app_config_path }}"
-      #     test -f "$CONFIG"
+          {
+            echo "APP_NAME=$APP_NAME"
+            echo "ENV_NAME=$ENV_NAME"
+            echo "AWS_REGION=$AWS_REGION"
+            echo "S3_BUCKET=$S3_BUCKET"
+            echo "DOCKER_APP_WORKSPACE_PATH=$DOCKER_APP_WORKSPACE_PATH"
+            echo "DOCKER_WORKERS_JSON=$DOCKER_WORKERS_JSON"
+            echo "DOCKER_NODE_VERSION=$DOCKER_NODE_VERSION"
+          } >> "$GITHUB_ENV"
 
-      #     APP_NAME="$(jq -r '.appName' "$CONFIG")"
-      #     API_WORKSPACE_PATH="$(jq -r '.docker.api.workspacePath // empty' "$CONFIG")"
-
-      #     if [[ -z "$APP_NAME" ]]; then
-      #       echo "appName missing from $CONFIG" >&2
-      #       exit 1
-      #     fi
-
-      #     if [[ -z "$API_WORKSPACE_PATH" ]]; then
-      #       echo "docker.api.workspacePath missing from $CONFIG" >&2
-      #       exit 1
-      #     fi
-
-      #     ALL_SERVICES="$(
-      #       jq -c '[
-      #         {
-      #           "name": "api",
-      #           "workspacePath": .docker.api.workspacePath
-      #         }
-      #       ] + (
-      #         (.docker.workers // [])
-      #         | map({
-      #             "name": .name,
-      #             "workspacePath": .workspacePath
-      #           })
-      #       )' "$CONFIG"
-      #     )"
-
-      #     BEFORE="${{ github.event.before }}"
-      #     AFTER="${{ github.sha }}"
-
-      #     if [[ -z "${BEFORE:-}" || "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
-      #       if git rev-parse HEAD~1 >/dev/null 2>&1; then
-      #         BEFORE="$(git rev-parse HEAD~1)"
-      #       else
-      #         BEFORE="$(git rev-parse HEAD)"
-      #       fi
-      #     fi
-
-      #     CHANGED_FILES="$(git diff --name-only "$BEFORE" "$AFTER" || true)"
-
-      #     echo "Changed files:"
-      #     printf '%s\n' "$CHANGED_FILES"
-
-      #     BUILD_MATRIX='[]'
-      #     NEEDS_BACKEND_APPLY=false
-      #     FULL_REBUILD=false
-
-      #     if grep -Eq '^(package\.json|package-lock\.json|nx\.json|tsconfig(\..*)?\.json|packages/|infra/docker/api/)' <<<"$CHANGED_FILES"; then
-      #       FULL_REBUILD=true
-      #     fi
-
-      #     if grep -Eq '^${{ inputs.app_config_path }}$' <<<"$CHANGED_FILES"; then
-      #       FULL_REBUILD=true
-      #     fi
-
-      #     if grep -Eq '^(infra/config/docker-compose/base\.yml|infra/config/docker-compose/prod\.yml|ops/deploy/)' <<<"$CHANGED_FILES"; then
-      #       NEEDS_BACKEND_APPLY=true
-      #     fi
-
-      #     if [[ "$FULL_REBUILD" == "true" ]]; then
-      #       BUILD_MATRIX="$ALL_SERVICES"
-      #       NEEDS_BACKEND_APPLY=true
-      #     else
-      #       while IFS= read -r service; do
-      #         NAME="$(jq -r '.name' <<<"$service")"
-      #         WORKSPACE_PATH="$(jq -r '.workspacePath' <<<"$service")"
-
-      #         if [[ -n "$WORKSPACE_PATH" ]] && grep -qE "^${WORKSPACE_PATH}/" <<<"$CHANGED_FILES"; then
-      #           BUILD_MATRIX="$(
-      #             jq -c --argjson svc "$service" '. + [$svc]' <<<"$BUILD_MATRIX"
-      #           )"
-      #         fi
-      #       done < <(jq -c '.[]' <<<"$ALL_SERVICES")
-      #     fi
-
-      #     if [[ "$BUILD_MATRIX" != "[]" ]]; then
-      #       NEEDS_BACKEND_APPLY=true
-      #       HAS_BUILDS=true
-      #       CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
-      #     else
-      #       HAS_BUILDS=false
-      #       CHANGED_SERVICE_NAMES=""
-      #     fi
-
-      #     {
-      #       echo "app_name=$APP_NAME"
-      #       echo "build_matrix=$BUILD_MATRIX"
-      #       echo "has_builds=$HAS_BUILDS"
-      #       echo "needs_backend_apply=$NEEDS_BACKEND_APPLY"
-      #       echo "changed_service_names=$CHANGED_SERVICE_NAMES"
-      #     } >> "$GITHUB_OUTPUT"
-
-      #     echo "App name: $APP_NAME"
-      #     echo "Build matrix: $BUILD_MATRIX"
-      #     echo "Needs backend apply: $NEEDS_BACKEND_APPLY"
-      #     echo "Changed service names: $CHANGED_SERVICE_NAMES"
       - id: discover
         shell: bash
         run: |
-          set -Eeuo pipefail
-
-          CONFIG="${{ inputs.app_config_path }}"
-          test -f "$CONFIG" || { echo "Missing config file: $CONFIG" >&2; exit 1; }
-
-          APP_NAME="$(jq -r '.appName' "$CONFIG")"
-          API_WORKSPACE_PATH="$(jq -r '.docker.api.workspacePath // empty' "$CONFIG")"
-
-          if [[ -z "$APP_NAME" ]]; then
-            echo "appName missing from $CONFIG" >&2
-            exit 1
-          fi
-
-          if [[ -z "$API_WORKSPACE_PATH" ]]; then
-            echo "docker.api.workspacePath missing from $CONFIG" >&2
-            exit 1
-          fi
+          set -euo pipefail
 
           BUILD_MATRIX="$(
-            jq -c '[
-              {
-                "name": "api",
-                "workspacePath": .docker.api.workspacePath
-              }
-            ] + (
-              (.docker.workers // [])
-              | map({
+            jq -cn \
+              --arg apiPath "${DOCKER_APP_WORKSPACE_PATH}" \
+              --arg workersJson "${DOCKER_WORKERS_JSON}" '
+                [
+                  { "name": "api", "workspacePath": $apiPath }
+                ] + ($workersJson | fromjson | map({
                   "name": .name,
                   "workspacePath": .workspacePath
-                })
-            )' "$CONFIG"
+                }))
+              '
           )"
 
           CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
 
-          {
-            echo "app_name=$APP_NAME"
-            echo "build_matrix=$BUILD_MATRIX"
-            echo "has_builds=true"
-            echo "needs_backend_apply=true"
-            echo "changed_service_names=$CHANGED_SERVICE_NAMES"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "App name: $APP_NAME"
-          echo "Build matrix: $BUILD_MATRIX"
-          echo "Changed service names: $CHANGED_SERVICE_NAMES"
+          echo "app_name=${APP_NAME}" >> "$GITHUB_OUTPUT"
+          echo "aws_region=${AWS_REGION}" >> "$GITHUB_OUTPUT"
+          echo "s3_bucket=${S3_BUCKET}" >> "$GITHUB_OUTPUT"
+          echo "env_name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
+          echo "build_matrix=${BUILD_MATRIX}" >> "$GITHUB_OUTPUT"
+          echo "changed_service_names=${CHANGED_SERVICE_NAMES}" >> "$GITHUB_OUTPUT"
 
       - name: Generate worker compose overlay
         shell: bash
         run: |
           set -euo pipefail
           chmod +x ops/deploy/generate-prod-workers-compose.sh
-          ops/deploy/generate-prod-workers-compose.sh \
-            "${{ inputs.app_config_path }}" \
-            "${{ github.sha }}" \
-            > workers.generated.yml
+          ops/deploy/generate-prod-workers-compose.sh "${{ inputs.app_config_path }}" "${{ github.sha }}" > workers.generated.yml
 
       - uses: actions/upload-artifact@v4
         with:
@@ -228,8 +95,7 @@ jobs:
           path: workers.generated.yml
 
   build:
-    name: Build image - ${{ matrix.service.name }}
-    if: ${{ inputs.deploy_backend && needs.discover.outputs.has_builds == 'true' }}
+    if: ${{ inputs.deploy_backend }}
     needs: discover
     runs-on: ubuntu-latest
     strategy:
@@ -239,35 +105,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - id: load_config
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/load-infra-app-config.sh
+          infra/scripts/load-infra-app-config.sh "${{ inputs.app_config_path }}" > /tmp/infra.env
+          set -a
+          source /tmp/infra.env
+          set +a
+
+          {
+            echo "APP_NAME=$APP_NAME"
+            echo "DOCKER_NODE_VERSION=$DOCKER_NODE_VERSION"
+          } >> "$GITHUB_ENV"
+
       - name: Build image
         shell: bash
         run: |
           set -euo pipefail
-
-          APP_NAME="${{ needs.discover.outputs.app_name }}"
-          SERVICE_NAME="${{ matrix.service.name }}"
-          APP_WORKSPACE_PATH="${{ matrix.service.workspacePath }}"
-          SHA="${{ github.sha }}"
-
           docker build \
             -f infra/docker/api/Dockerfile \
             --target production \
-            --build-arg NODE_VERSION=22 \
-            --build-arg APP_WORKSPACE_PATH="${APP_WORKSPACE_PATH}" \
-            -t "${APP_NAME}-${SERVICE_NAME}:${SHA}" \
+            --build-arg NODE_VERSION="${DOCKER_NODE_VERSION}" \
+            --build-arg APP_WORKSPACE_PATH="${{ matrix.service.workspacePath }}" \
+            -t "${APP_NAME}-${{ matrix.service.name }}:${{ github.sha }}" \
             .
 
       - name: Save image tarball
         shell: bash
         run: |
           set -euo pipefail
-
-          APP_NAME="${{ needs.discover.outputs.app_name }}"
-          SERVICE_NAME="${{ matrix.service.name }}"
-          SHA="${{ github.sha }}"
-
           mkdir -p out
-          docker save "${APP_NAME}-${SERVICE_NAME}:${SHA}" | gzip > "out/${SERVICE_NAME}.tar.gz"
+          docker save "${APP_NAME}-${{ matrix.service.name }}:${{ github.sha }}" | gzip > "out/${{ matrix.service.name }}.tar.gz"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -275,8 +145,7 @@ jobs:
           path: out/${{ matrix.service.name }}.tar.gz
 
   deploy:
-    name: Deploy to EC2
-    if: ${{ inputs.deploy_backend && needs.discover.outputs.needs_backend_apply == 'true' }}
+    if: ${{ inputs.deploy_backend }}
     needs:
       - discover
       - build
@@ -288,61 +157,52 @@ jobs:
         with:
           path: artifacts
 
-      - name: Prepare deploy bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mkdir -p deploy-bundle/compose
-
-          cp infra/config/docker-compose/base.yml deploy-bundle/compose/base.yml
-          cp infra/config/docker-compose/prod.yml deploy-bundle/compose/prod.yml
-          cp artifacts/generated-worker-compose/workers.generated.yml deploy-bundle/compose/workers.generated.yml
-          cp ops/deploy/deploy-ec2.sh deploy-bundle/deploy-ec2.sh
-          chmod +x deploy-bundle/deploy-ec2.sh
-
-          find artifacts -name '*.tar.gz' -exec cp {} deploy-bundle/ \;
-
-          echo "Deploy bundle contents:"
-          find deploy-bundle -maxdepth 2 -type f | sort
-
-      - name: Start ssh-agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ needs.discover.outputs.aws_region }}
 
-      - name: Trust remote host
-        shell: bash
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Upload deploy bundle
+      - name: Prepare deploy payload
         shell: bash
         run: |
           set -euo pipefail
 
-          REMOTE_TMP="${{ inputs.remote_app_dir }}/tmp/${{ github.sha }}"
+          mkdir -p deploy-payload/compose
+          cp infra/config/docker-compose/base.yml deploy-payload/compose/base.yml
+          cp infra/config/docker-compose/prod.yml deploy-payload/compose/prod.yml
+          cp artifacts/generated-worker-compose/workers.generated.yml deploy-payload/compose/workers.generated.yml
+          find artifacts -name '*.tar.gz' -exec cp {} deploy-payload/ \;
 
-          ssh "${{ inputs.ssh_user }}@${{ secrets.EC2_HOST }}" "mkdir -p '${REMOTE_TMP}'"
-          scp -r deploy-bundle/* "${{ inputs.ssh_user }}@${{ secrets.EC2_HOST }}:${REMOTE_TMP}/"
-
-      - name: Run remote deploy
+      - name: Upload deploy payload to S3
         shell: bash
         run: |
           set -euo pipefail
 
-          REMOTE_TMP="${{ inputs.remote_app_dir }}/tmp/${{ github.sha }}"
-          APP_NAME="${{ needs.discover.outputs.app_name }}"
-          CHANGED_SERVICE_NAMES="${{ needs.discover.outputs.changed_service_names }}"
+          aws s3 cp deploy-payload/ \
+            "s3://${{ needs.discover.outputs.s3_bucket }}/deployments/${{ needs.discover.outputs.app_name }}/${{ github.sha }}/" \
+            --recursive \
+            --region "${{ needs.discover.outputs.aws_region }}"
 
-          ssh "${{ inputs.ssh_user }}@${{ secrets.EC2_HOST }}" "
-            cd '${REMOTE_TMP}' && \
-            chmod +x ./deploy-ec2.sh && \
-            APP_NAME='${APP_NAME}' \
-            ENV='${{ inputs.env_name }}' \
-            SHA='${{ github.sha }}' \
-            APP_ROOT='${{ inputs.remote_app_dir }}' \
-            CHANGED_SERVICE_NAMES='${CHANGED_SERVICE_NAMES}' \
-            ./deploy-ec2.sh
-          "
+      - name: Run remote backend deploy via SSM
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/ssm-run.sh
+
+          export AWS_REGION="${{ needs.discover.outputs.aws_region }}"
+          export S3_BUCKET="${{ needs.discover.outputs.s3_bucket }}"
+          export APP_NAME="${{ needs.discover.outputs.app_name }}"
+          export ENV="${{ needs.discover.outputs.env_name }}"
+          export SHA="${{ github.sha }}"
+          export DEPLOY_BACKEND=true
+          export DEPLOY_FRONTEND=false
+          export CHANGED_SERVICE_NAMES="${{ needs.discover.outputs.changed_service_names }}"
+
+          # optional if your ssm-run.sh / remote script expects these:
+          export GITHUB_SHA="${{ github.sha }}"
+          export GITHUB_RUN_ID="${{ github.run_id }}"
+          export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
+
+          source infra/scripts/ssm-run.sh
+          ssm_run "Deploy backend ${APP_NAME} ${SHA}" "ops/deploy/deploy-ec2.sh"
