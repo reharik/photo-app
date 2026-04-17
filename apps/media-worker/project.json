@@ -12,7 +12,6 @@
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["contracts:build", "infrastructure:build", "media-core:build"],
       "options": {
         "command": "tsx src/di/gen-ioc-manifest.ts",
         "cwd": "{projectRoot}"

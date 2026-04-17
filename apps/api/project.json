@@ -31,6 +31,9 @@
       "dependsOn": [
         "ts-patch:install",
         "clean",
+        "contracts:build",
+        "infrastructure:build",
+        "media-core:build",
         "gen:container"
       ],
       "options": {
@@ -109,18 +112,28 @@
     "gen:graphql": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "graphql-codegen",
-        "cwd": "{projectRoot}"
+        "commands": [
+          {
+            "command": "graphql-codegen",
+            "cwd": "{projectRoot}"
+          },
+          {
+            "command": "nx run contracts:gen:graphql:enums",
+            "cwd": "{workspaceRoot}"
+          }
+        ],
+        "parallel": false
       }
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["contracts:build", "infrastructure:build", "media-core:build"],
+      "dependsOn": ["gen:graphql"],
       "options": {
         "command": "tsx src/di/gen-ioc-manifest.ts",
         "cwd": "{projectRoot}"
       }
     }
   },
+
   "tags": ["type:app"]
 }

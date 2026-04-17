@@ -13,7 +13,6 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["gen:graphql:enums"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
