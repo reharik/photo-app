@@ -11,23 +11,19 @@ DEPLOY_BACKEND="${DEPLOY_BACKEND:-true}"
 DEPLOY_FRONTEND="${DEPLOY_FRONTEND:-true}"
 CHANGED_SERVICE_NAMES="${CHANGED_SERVICE_NAMES:-}"
 
-# Conventions (override via env if you want)
 APP_ROOT="${APP_ROOT:-/opt/${APP_NAME}}"
 FRONTEND_DIR="${FRONTEND_DIR:-${APP_ROOT}/frontend}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-${APP_NAME}-${ENV}}"
 COMPOSE_DIR="${APP_ROOT}/compose"
 
-# Where CI uploaded artifacts
 S3_PREFIX="${S3_PREFIX:-deployments/${APP_NAME}/${SHA}}"
 S3_URI="s3://${S3_BUCKET}/${S3_PREFIX}"
 
-# Artifact names
 FRONTEND_TAR="${FRONTEND_TAR:-frontend.tar.gz}"
 REMOTE_COMPOSE_NAME="${REMOTE_COMPOSE_NAME:-docker-compose.yml}"
 REMOTE_ENV_NAME="${REMOTE_ENV_NAME:-env.env}"
 WORKERS_GENERATED_NAME="${WORKERS_GENERATED_NAME:-workers.generated.yml}"
 
-# Local paths
 WORK_DIR="${WORK_DIR:-${APP_ROOT}/tmp/${SHA}}"
 sudo mkdir -p "${WORK_DIR}"
 trap 'sudo rm -rf "$WORK_DIR"' EXIT
@@ -82,7 +78,6 @@ if download_if_exists "${REMOTE_ENV_NAME}" "${WORK_DIR}/${REMOTE_ENV_NAME}"; the
   sudo install -m 0600 "${WORK_DIR}/${REMOTE_ENV_NAME}" "${ENV_FILE}"
 fi
 
-# Install compose directory from S3 if present.
 if download_prefix_if_exists "compose" "${WORK_DIR}/compose"; then
   echo "Installing compose directory to ${COMPOSE_DIR}"
   sudo mkdir -p "${COMPOSE_DIR}"
@@ -136,7 +131,6 @@ else
   echo "Using legacy compose file: ${COMPOSE_FILE}"
 fi
 
-# Load one tarball per changed backend service.
 if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   for service in ${CHANGED_SERVICE_NAMES}; do
     TARBALL_NAME="${service}.tar.gz"
@@ -184,7 +178,7 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   echo "docker compose up"
   echo "  project=${COMPOSE_PROJECT_NAME}"
   echo "  files=${COMPOSE_FILES[*]}"
-  if [[ ${#ENV_ARGS[@]} -gt 0 ]]; then
+  if [[ ${#ENV_ARGS[@]} > 0 ]]; then
     echo "  env_args=${ENV_ARGS[*]}"
   fi
 

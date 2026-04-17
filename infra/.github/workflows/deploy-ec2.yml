@@ -11,6 +11,9 @@ on:
         required: false
         type: string
         default: infra.app.config.json
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
 
 permissions:
   contents: read
@@ -157,11 +160,15 @@ jobs:
         with:
           path: artifacts
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Deploy-Backend
           aws-region: ${{ needs.discover.outputs.aws_region }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Prepare deploy payload
         shell: bash
@@ -188,7 +195,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/ssm-run.sh
+          chmod +x infra/scripts/deploy/ssm-run.sh
 
           export AWS_REGION="${{ needs.discover.outputs.aws_region }}"
           export S3_BUCKET="${{ needs.discover.outputs.s3_bucket }}"
@@ -198,11 +205,9 @@ jobs:
           export DEPLOY_BACKEND=true
           export DEPLOY_FRONTEND=false
           export CHANGED_SERVICE_NAMES="${{ needs.discover.outputs.changed_service_names }}"
-
-          # optional if your ssm-run.sh / remote script expects these:
           export GITHUB_SHA="${{ github.sha }}"
           export GITHUB_RUN_ID="${{ github.run_id }}"
           export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
 
-          source infra/scripts/ssm-run.sh
-          ssm_run "Deploy backend ${APP_NAME} ${SHA}" "ops/deploy/deploy-ec2.sh"
+          source infra/scripts/deploy/ssm-run.sh
+          ssm_run "Deploy backend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"

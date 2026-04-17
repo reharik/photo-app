@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-log() { echo "$@" >&2; }  # stderr logger
+log() { echo "$@" >&2; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -30,8 +30,7 @@ else
   MERGED=$(jq . "$DEFAULTS")
 fi
 
-# Validate required keys exist after merge (fail fast; no silent fallbacks)
-# docker.appWorkspacePath preferred; docker.apiWorkspacePath supported for older consumer configs
+# Validate required keys exist after merge
 echo "$MERGED" | jq -e '
   .appName and .env and .awsRegion and
   .ssm.tagHost and .ssm.tagEnv and
@@ -40,7 +39,7 @@ echo "$MERGED" | jq -e '
   .docker.nodeEntrypoint
 ' >/dev/null
 
-# Emit env vars (no defaults here; defaults live only in defaults.json)
+# Emit env vars
 echo "$MERGED" | jq -r '
   "APP_NAME=\(.appName)",
   "ENV_NAME=\(.env)",
@@ -54,5 +53,5 @@ echo "$MERGED" | jq -r '
   "DOCKER_APP_WORKSPACE_PATH=\(.docker.appWorkspacePath // .docker.apiWorkspacePath)",
   "DOCKER_NODE_ENTRYPOINT=\(.docker.nodeEntrypoint)",
   "DOCKER_WORKERS_JSON=\((.docker.workers // []) | @json | @sh)",
-  "DOCKER_EXTRA_BACKEND_PATHS=\(.docker.workers // [] | map(.workspacePath) | join(" "))"
+  "DOCKER_EXTRA_BACKEND_PATHS=\((.docker.workers // []) | map(.workspacePath) | join(\" \") | @sh)"
 '
