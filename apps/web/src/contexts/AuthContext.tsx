@@ -13,7 +13,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthActionResult>;
   signup: (email: string, password: string, name: string) => Promise<AuthActionResult>;
 
-  logout: () => void;
+  /** Clears session and Apollo cache so routed UI returns to the logged-out experience. */
+  logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
@@ -110,10 +111,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async (): Promise<void> => {
     setUser(undefined);
     setHasToken(false);
     localStorage.removeItem('authToken');
+    try {
+      await apolloClient.clearStore();
+    } catch (e) {
+      console.error('Apollo clearStore on logout failed:', e);
+    }
   };
 
   const value: AuthContextType = {

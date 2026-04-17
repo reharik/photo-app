@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
 
 export type UseMediaViewerKeyboardOptions = {
@@ -6,6 +6,10 @@ export type UseMediaViewerKeyboardOptions = {
   enabled?: boolean;
   onEscape?: () => void;
   onNavigate?: (direction: NavigateDirection) => void;
+  /**
+   * If set, Escape runs this first. Return true if handled (e.g. reset zoom) so {@link onEscape} is skipped.
+   */
+  escapeConsumedRef?: MutableRefObject<(() => boolean) | null>;
 };
 
 const isTypingTarget = (target: EventTarget | null): boolean => {
@@ -27,6 +31,7 @@ export const useMediaViewerKeyboard = ({
   enabled = true,
   onEscape,
   onNavigate,
+  escapeConsumedRef,
 }: UseMediaViewerKeyboardOptions): void => {
   const onEscapeRef = useRef(onEscape);
   const onNavigateRef = useRef(onNavigate);
@@ -41,6 +46,11 @@ export const useMediaViewerKeyboard = ({
 
     const onKeyDown = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
+        const consumed = escapeConsumedRef?.current?.() ?? false;
+        if (consumed) {
+          e.preventDefault();
+          return;
+        }
         onEscapeRef.current?.();
         return;
       }
@@ -59,5 +69,5 @@ export const useMediaViewerKeyboard = ({
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [enabled]);
+  }, [enabled, escapeConsumedRef]);
 };

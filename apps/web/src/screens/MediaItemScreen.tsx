@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client/react';
 import { DateTime } from 'luxon';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import type { MediaItemLocationState } from '../app/mediaItemNavigationState';
@@ -10,7 +10,7 @@ import {
   ViewerMediaItemDetailDocument,
 } from '../graphql/generated/types';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
-import { MediaViewer, ViewerCloseButton } from '../shared/components/media/MediaViewer';
+import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
 
 const kindLabel = (kind: string): string => {
@@ -93,6 +93,9 @@ export const MediaItemScreen = () => {
   const [draftTakenLocal, setDraftTakenLocal] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  /** Escape resets image zoom first (when {@link MediaViewer} reports zoom active), then closes. */
+  const mediaViewerEscapeConsumedRef = useRef<(() => boolean) | null>(null);
+
   const handleMediaNavigate = useCallback(
     (direction: NavigateDirection) => {
       if (isEditingDetails || mediaId == null || mediaId === '' || galleryIds == null) {
@@ -142,14 +145,6 @@ export const MediaItemScreen = () => {
     displayUrlRaw != null && isNonEmptyDisplayUrl(displayUrlRaw) ? displayUrlRaw.trim() : null;
 
   const mimeForViewer = (mediaItem?.mimeType ?? '').trim();
-
-  const canShowMediaViewer =
-    mediaId != null &&
-    mediaId !== '' &&
-    !loading &&
-    error == null &&
-    mediaItem != null &&
-    displayUrl != null;
 
   const cancelEditDetails = useCallback((): void => {
     setIsEditingDetails(false);
@@ -219,12 +214,14 @@ export const MediaItemScreen = () => {
         onNavigate={handleMediaNavigate}
         canNavigatePrevious={canNavigatePrevious}
         canNavigateNext={canNavigateNext}
+        escapeConsumedRef={mediaViewerEscapeConsumedRef}
       />
     );
   })();
 
   useMediaViewerKeyboard({
     enabled: Boolean(mediaId),
+    escapeConsumedRef: mediaViewerEscapeConsumedRef,
     onEscape: handleClose,
     onNavigate: handleMediaNavigate,
   });
@@ -276,18 +273,17 @@ export const MediaItemScreen = () => {
 
   return (
     <Container>
-      {!canShowMediaViewer ? (
-        <ViewerCloseButton type="button" onClick={handleClose} aria-label="Close">
-          ✕
-        </ViewerCloseButton>
-      ) : null}
-
       <LayoutInner>
         <ViewerColumn>{viewerPane}</ViewerColumn>
 
         <MetadataPanel>
           <MetadataSection>
-            <SectionTitle>Details</SectionTitle>
+            <DetailsPanelHeader>
+              <DetailsSectionTitle>Details</DetailsSectionTitle>
+              <DetailsPanelCloseButton type="button" onClick={handleClose} aria-label="Close">
+                ✕
+              </DetailsPanelCloseButton>
+            </DetailsPanelHeader>
             <MetadataItem>
               <MetadataLabel>File name</MetadataLabel>
               <MetadataValue>
@@ -413,6 +409,10 @@ const ViewerShell = styled.div`
   justify-content: center;
   padding: ${({ theme }) => theme.spacing(4)};
   overflow: auto;
+
+  @media (max-width: 968px) {
+    padding: ${({ theme }) => theme.spacing(2)};
+  }
 `;
 
 const ViewerCard = styled.div`
@@ -425,9 +425,14 @@ const ViewerCard = styled.div`
   background: ${({ theme }) => theme.colors.panel};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.xl};
-  max-width: min(600px, 100%);
+  max-width: min(960px, 100%);
   width: 100%;
   min-height: 200px;
+
+  @media (max-width: 968px) {
+    padding: ${({ theme }) => theme.spacing(2)};
+    gap: ${({ theme }) => theme.spacing(2)};
+  }
 `;
 
 const PlaceholderIcon = styled.div`
@@ -492,9 +497,10 @@ const ViewerColumn = styled.div`
   flex-direction: column;
 
   @media (max-width: 968px) {
-    flex: 0 0 auto;
-    min-height: min(320px, 45svh);
-    max-height: min(480px, 55svh);
+    /* Let the image use most of the viewport; details sit below and scroll with the page */
+    flex: 1 1 auto;
+    min-height: min(52svh, 520px);
+    max-height: min(88svh, 920px);
     overflow: hidden;
     width: 100%;
   }
@@ -512,9 +518,9 @@ const MetadataPanel = styled.aside`
   gap: ${({ theme }) => theme.spacing(4)};
 
   @media (max-width: 968px) {
-    /* Match {@link MediaViewer} ViewerCard: max 600px, inset by ViewerShell padding (spacing 4 × 2). */
-    width: min(600px, calc(100% - ${({ theme }) => theme.spacing(8)}));
-    max-width: 600px;
+    /* Match {@link MediaViewer} ViewerCard width; inset by horizontal padding */
+    width: min(960px, calc(100% - ${({ theme }) => theme.spacing(8)}));
+    max-width: 960px;
     margin-inline: auto;
     border-left: none;
     border: 1px solid ${({ theme }) => theme.colors.border};
@@ -531,13 +537,60 @@ const MetadataSection = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
-const SectionTitle = styled.h3`
+const DetailsPanelHeader = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const DetailsSectionTitle = styled.h3`
   font-size: 14px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text};
   margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
+  flex: 1;
+  min-width: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+`;
+
+const DetailsPanelCloseButton = styled.button`
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.bg};
+  color: ${({ theme }) => theme.colors.subtext};
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.text};
+    background: ${({ theme }) => theme.colors.panel};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.accent};
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 968px) {
+    display: none;
+  }
 `;
 
 const MetadataItem = styled.div`

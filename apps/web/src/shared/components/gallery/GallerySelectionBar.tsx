@@ -57,6 +57,10 @@ const CountText = styled.span`
   font-size: 16px;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text};
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
 `;
 
 const IconButton = styled.button`
@@ -88,6 +92,12 @@ const IconButton = styled.button`
     outline: 2px solid ${({ theme }) => theme.colors.accent};
     outline-offset: 2px;
   }
+
+  @media (max-width: 768px) {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
 `;
 
 const ActionGroup = styled.div`
@@ -111,5 +121,9 @@ const ToolbarAction = styled.button`
 
   &:disabled {
     pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;

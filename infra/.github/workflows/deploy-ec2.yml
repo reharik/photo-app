@@ -7,6 +7,10 @@ on:
         required: false
         type: boolean
         default: true
+      deploy_frontend:
+        required: false
+        type: boolean
+        default: true
       app_config_path:
         required: false
         type: string
@@ -35,6 +39,7 @@ jobs:
       build_matrix: ${{ steps.discover.outputs.build_matrix }}
       changed_service_names: ${{ steps.discover.outputs.changed_service_names }}
       short_sha: ${{ steps.short_sha.outputs.short_sha }}
+      frontend_changed: ${{ steps.discover.outputs.frontend_changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +97,7 @@ jobs:
           echo "env_name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
           echo "build_matrix=${BUILD_MATRIX}" >> "$GITHUB_OUTPUT"
           echo "changed_service_names=${CHANGED_SERVICE_NAMES}" >> "$GITHUB_OUTPUT"
-
+          echo "frontend_changed=${{ inputs.deploy_frontend }}" >> "$GITHUB_OUTPUT"
       - name: Generate worker compose overlay
         shell: bash
         run: |
@@ -252,3 +257,126 @@ jobs:
 
           source infra/scripts/deploy/ssm-run.sh
           ssm_run "Deploy backend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"
+
+  deploy_frontend:
+    if: ${{ inputs.deploy_frontend }}
+    runs-on: ubuntu-latest
+    needs: discover
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        shell: bash
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+
+      - id: load_config
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/deploy/load-infra-app-config.sh
+          infra/scripts/deploy/load-infra-app-config.sh "${{ inputs.app_config_path }}" > /tmp/infra.env
+          set -a
+          source /tmp/infra.env
+          set +a
+
+          {
+            echo "APP_NAME=$APP_NAME"
+            echo "ENV_NAME=$ENV_NAME"
+            echo "AWS_REGION=$AWS_REGION"
+            echo "S3_BUCKET=$S3_BUCKET"
+          } >> "$GITHUB_ENV"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build:web:production
+        env:
+          VITE_API: /api
+
+      - name: Package frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          tar -czf out/frontend.tar.gz -C apps/web/dist .
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Deploy-Frontend
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload frontend tarball to S3
+        shell: bash
+        run: |
+          set -euo pipefail
+          aws s3 cp \
+            out/frontend.tar.gz \
+            "s3://${S3_BUCKET}/deployments/${APP_NAME}/${SHORT_SHA}/frontend.tar.gz" \
+            --region "${AWS_REGION}"
+
+      - name: Upload shared Caddyfile to S3
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f infra/config/caddy/Caddyfile.shared ]; then
+            aws s3 cp infra/config/caddy/Caddyfile.shared \
+              "s3://${S3_BUCKET}/deployments/shared/Caddyfile" \
+              --region "${AWS_REGION}"
+          fi
+
+          if [ -f Caddyfile ]; then
+            aws s3 cp Caddyfile \
+              "s3://${S3_BUCKET}/deployments/${APP_NAME}/${SHORT_SHA}/Caddyfile" \
+              --region "${AWS_REGION}"
+          fi
+
+      - name: Deploy shared Caddyfile to EC2 (SSM)
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/deploy/ssm-run.sh
+
+          export AWS_REGION="${AWS_REGION}"
+          export S3_BUCKET="${S3_BUCKET}"
+          export APP_NAME="${APP_NAME}"
+          export ENV="${ENV_NAME}"
+          export SHA="${SHORT_SHA}"
+          export DEPLOY_BACKEND=false
+          export DEPLOY_FRONTEND=false
+          export GITHUB_SHA="${{ github.sha }}"
+          export GITHUB_RUN_ID="${{ github.run_id }}"
+          export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
+
+          source infra/scripts/deploy/ssm-run.sh
+          ssm_run "Deploy shared Caddyfile" "infra/scripts/remote/deploy-shared-caddyfile.sh"
+
+      - name: Run remote frontend deploy via SSM
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x infra/scripts/deploy/ssm-run.sh
+
+          export AWS_REGION="${AWS_REGION}"
+          export S3_BUCKET="${S3_BUCKET}"
+          export APP_NAME="${APP_NAME}"
+          export ENV="${ENV_NAME}"
+          export SHA="${SHORT_SHA}"
+          export DEPLOY_BACKEND=false
+          export DEPLOY_FRONTEND=true
+          export GITHUB_SHA="${{ github.sha }}"
+          export GITHUB_RUN_ID="${{ github.run_id }}"
+          export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
+
+          source infra/scripts/deploy/ssm-run.sh
+          ssm_run "Deploy frontend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"

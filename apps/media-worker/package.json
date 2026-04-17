@@ -19,11 +19,6 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1028.0",
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
-    "@graphql-codegen/typescript": "^5.0.9",
-    "@graphql-codegen/typescript-resolvers": "^5.0.1",
-    "@graphql-tools/load-files": "^7.0.1",
-    "@graphql-tools/merge": "^9.1.7",
-    "@graphql-tools/schema": "^10.0.31",
     "@packages/contracts": "*",
     "@packages/infrastructure": "*",
     "@packages/media-core": "*",

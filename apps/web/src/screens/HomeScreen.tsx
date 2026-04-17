@@ -100,7 +100,14 @@ export const HomeScreen = () => {
             <Title>Recent Media</Title>
             <HeaderActions>
               <UploadButton type="button" onClick={startUploadPick} disabled={isUploading}>
-                {isUploading ? 'Uploading…' : 'Upload Media'}
+                {isUploading ? (
+                  'Uploading…'
+                ) : (
+                  <>
+                    <UploadButtonLabelWide>Upload Media</UploadButtonLabelWide>
+                    <UploadButtonLabelNarrow>Upload</UploadButtonLabelNarrow>
+                  </>
+                )}
               </UploadButton>
             </HeaderActions>
           </>
@@ -198,12 +205,12 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: ${({ theme }) => theme.spacing(3)};
+  min-width: 0;
 
   @media (max-width: 768px) {
-    padding: ${({ theme }) => theme.spacing(3)};
-    flex-direction: column;
-    gap: ${({ theme }) => theme.spacing(2)};
-    align-items: flex-start;
+    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+    align-items: center;
   }
 `;
 
@@ -213,15 +220,34 @@ const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.text};
   letter-spacing: -0.5px;
+  min-width: 0;
 
   @media (max-width: 768px) {
-    font-size: 24px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    flex: 1;
   }
 `;
 
 const HeaderActions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
+  flex-shrink: 0;
+`;
+
+const UploadButtonLabelWide = styled.span`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const UploadButtonLabelNarrow = styled.span`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: inline;
+  }
 `;
 
 const UploadButton = styled.button`
@@ -233,6 +259,7 @@ const UploadButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s ease;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.accentHover};
@@ -242,6 +269,12 @@ const UploadButton = styled.button`
     opacity: 0.7;
     cursor: not-allowed;
   }
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+    font-size: 13px;
+    font-weight: 600;
+  }
 `;
 
 const InlineNotice = styled.div`
@@ -249,6 +282,11 @@ const InlineNotice = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.danger};
   font-size: 14px;
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+    font-size: 13px;
+  }
 `;
 
 const Content = styled.div`
