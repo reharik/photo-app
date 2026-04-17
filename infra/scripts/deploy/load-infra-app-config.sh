@@ -53,6 +53,6 @@ echo "$MERGED" | jq -r '
   "DOCKER_NODE_VERSION=\(.docker.nodeVersion)",
   "DOCKER_APP_WORKSPACE_PATH=\(.docker.appWorkspacePath // .docker.apiWorkspacePath)",
   "DOCKER_NODE_ENTRYPOINT=\(.docker.nodeEntrypoint)",
-  "DOCKER_WORKERS_JSON=\(.docker.workers // [] | @json)",
+  "DOCKER_WORKERS_JSON='\(.docker.workers // [] | @json)'",
   "DOCKER_EXTRA_BACKEND_PATHS=\(.docker.workers // [] | map(.workspacePath) | join(" "))"
 '
