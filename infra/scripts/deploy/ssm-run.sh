@@ -98,12 +98,13 @@ _ssm_send_command() {
   local script_key="deployments/ssm-scripts/${sha}/${run_id}-${attempt}/${base}"
   _ssm_upload_script_to_s3 "$remote_script_path" "$script_key"
 
-  local env_text=""
-  for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE CHANGED_SERVICE_NAMES; do
-    if [[ -n "${!v:-}" ]]; then
-      env_text+="${v}=${!v}"$'\n'
-    fi
-  done
+local env_text=""
+for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE CHANGED_SERVICE_NAMES; do
+  if [[ -n "${!v:-}" ]]; then
+    printf -v quoted '%q' "${!v}"
+    env_text+="${v}=${quoted}"$'\n'
+  fi
+done
 
   local env_key="deployments/ssm-scripts/${sha}/${run_id}-${attempt}/remote.env"
   printf "%s" "$env_text" > /tmp/remote.env
