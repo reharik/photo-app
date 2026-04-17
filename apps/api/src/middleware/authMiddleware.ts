@@ -52,6 +52,7 @@ export const buildOptionalAuthMiddleware =
         ctx.state.user = user;
         ctx.state.isLoggedIn = true;
       }
+      logger.log(`User returned from authService: ${JSON.stringify(user)}`);
     }
     await next();
   };
