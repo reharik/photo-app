@@ -28,14 +28,7 @@
     "build": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": [
-        "ts-patch:install",
-        "clean",
-        "contracts:build",
-        "infrastructure:build",
-        "media-core:build",
-        "gen:container"
-      ],
+      "dependsOn": ["prepare"],
       "options": {
         "command": "vite build --config vite.config.mjs && mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/ && mkdir -p dist/db && npx tsc -p tsconfig.db.json",
         "cwd": "{projectRoot}"
@@ -132,6 +125,19 @@
         "command": "tsx src/di/gen-ioc-manifest.ts",
         "cwd": "{projectRoot}"
       }
+    }
+  },
+  "prepare": {
+    "executor": "nx:run-commands",
+    "options": {
+      "commands": [
+        "nx run api:ts-patch:install",
+        "nx run api:clean",
+        "nx run-many -t build -p contracts infrastructure media-core --parallel=3",
+        "nx run api:gen:container"
+      ],
+      "parallel": false,
+      "cwd": "{workspaceRoot}"
     }
   },
 
