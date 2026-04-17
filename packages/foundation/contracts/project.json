@@ -3,14 +3,6 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
-    "gen:graphql:enums": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["api:gen:graphql"],
-      "options": {
-        "command": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts",
-        "cwd": "{projectRoot}"
-      }
-    },
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{projectRoot}/dist"],
