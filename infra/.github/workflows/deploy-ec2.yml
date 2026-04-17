@@ -145,7 +145,15 @@ jobs:
           set -euo pipefail
           mkdir -p out
           docker save "${APP_NAME}-${{ matrix.service.name }}:${{ github.sha }}" | gzip > "out/${{ matrix.service.name }}.tar.gz"
-
+          gzip -t "out/${{ matrix.service.name }}.tar.gz"
+          ls -lh "out/${{ matrix.service.name }}.tar.gz"
+      - name: Debug artifact file
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lh out
+          file out/${{ matrix.service.name }}.tar.gz
+          gzip -t out/${{ matrix.service.name }}.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: image-${{ matrix.service.name }}
@@ -160,9 +168,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # - uses: actions/download-artifact@v5
+      #   with:
+      #     path: artifacts
       - uses: actions/download-artifact@v5
         with:
-          path: artifacts
+          name: generated-worker-compose
+          path: artifacts/generated-worker-compose
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: image-api
+          path: artifacts/image-api
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: image-media-worker
+          path: artifacts/image-media-worker
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
