@@ -40,7 +40,7 @@ export const buildAuthMiddleware =
   };
 
 export const buildOptionalAuthMiddleware =
-  ({ authService, logger }: IocGeneratedCradle): OptionalAuthMiddleware =>
+  ({ authService }: IocGeneratedCradle): OptionalAuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const authHeader = ctx.get('Authorization');
     ctx.isLoggedIn = false;
@@ -52,7 +52,6 @@ export const buildOptionalAuthMiddleware =
         ctx.state.user = user;
         ctx.state.isLoggedIn = true;
       }
-      logger.info(`User returned from authService: ${JSON.stringify(user)}`);
     }
     await next();
   };

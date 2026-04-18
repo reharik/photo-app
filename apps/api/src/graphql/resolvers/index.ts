@@ -1,34 +1,31 @@
 import { mergeResolvers } from '@graphql-tools/merge';
-import fg from 'fast-glob';
-import { dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { Resolvers } from '../generated/types.generated.js';
 
 /**
  * Jest (ESM / experimental VM modules): modules reached only via dynamic `import()` are not
  * “linked,” so bare specifiers in their dependency tree (e.g. `@packages/contracts` inside
  * shared helpers) may fail to resolve. Statically import shared resolver dependencies here so
- * they participate in the normal graph before we merge dynamically discovered *Resolver modules.
+ * they participate in the normal graph before we merge resolver modules.
  */
 import './standardizeInput.js';
 
-export const resolvers = await loadResolvers();
+import albumMutationResolvers from './album/albumMutationResolver.js';
+import albumResolvers from './album/albumResolver.js';
+import mediaItemResolvers from './media/mediaItemResolver.js';
+import mediaUploadResolvers from './media/mediaMutationsResolver.js';
+import viewerMutationResolvers from './root/ViewerMutationResolver.js';
+import viewerResolvers from './root/viewerResolver.js';
 
-async function loadResolvers() {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const resolverPattern = join(currentDir, '**', '*Resolver.{ts,js}');
-
-  const resolverFiles = await fg(resolverPattern);
-
-  const resolversArray = await Promise.all(
-    resolverFiles.map(async (file) => {
-      const rel = relative(currentDir, file).replace(/\\/g, '/');
-      const module = (await import(`./${rel}`)) as {
-        default: Partial<Resolvers>;
-      };
-      return module.default;
-    }),
-  );
-
-  return mergeResolvers(resolversArray);
-}
+/**
+ * Resolvers must be registered with static imports so the Vite production bundle includes them.
+ * The previous fast-glob + dynamic import approach looked under `dist/` at runtime, where no
+ * `*Resolver.js` files exist (everything is bundled into `index.js`), so the glob matched nothing
+ * and Query fields fell through to default resolvers → nullable fields returned null.
+ */
+export const resolvers = mergeResolvers([
+  albumMutationResolvers,
+  albumResolvers,
+  mediaItemResolvers,
+  mediaUploadResolvers,
+  viewerMutationResolvers,
+  viewerResolvers,
+]);
