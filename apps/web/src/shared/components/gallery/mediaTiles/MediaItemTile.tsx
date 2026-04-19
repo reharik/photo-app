@@ -1,20 +1,21 @@
+import { MediaKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { MediaItem } from '../../../../graphql/generated/types';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
+import { MediaItemSummaryVM } from '../../../../viewModels/media/MediaItemSummaryVM';
 
-export const MediaItemTile = ({ item, thumbUrl }: { item: MediaItem; thumbUrl: string }) => {
+export const MediaItemTile = ({ item }: { item: MediaItemSummaryVM }) => {
   return (
     <>
       <Link to={`/media/${item.id}`}>
-        {thumbUrl ? (
-          <ThumbImage src={thumbUrl} alt={item.title?.trim() || item.originalFileName?.trim()} />
+        {item.thumbnailUrl ? (
+          <ThumbImage src={item.thumbnailUrl} alt={item.title.trim()} />
         ) : (
-          <ThumbIcon aria-hidden>{item.kind === 'VIDEO' ? '🎬' : '🖼️'}</ThumbIcon>
+          <ThumbIcon aria-hidden>{item.kind === MediaKind.video ? '🎬' : '🖼️'}</ThumbIcon>
         )}
       </Link>
       <MediaInfo>
-        <MediaTitle>{item.title?.trim() || item.originalFileName?.trim()}</MediaTitle>
+        <MediaTitle>{item.title.trim()}</MediaTitle>
         <MediaMeta>{localizeDate(item.createdAt)}</MediaMeta>
       </MediaInfo>
     </>

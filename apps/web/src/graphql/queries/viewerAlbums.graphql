@@ -12,13 +12,7 @@ query ViewerAlbums {
         createdAt
         updatedAt
         coverMedia {
-          id
-          kind
-          status
-          derivedUrls {
-            thumbnail
-            display
-          }
+          ...MediaItemSummary
         }
       }
       pageInfo {

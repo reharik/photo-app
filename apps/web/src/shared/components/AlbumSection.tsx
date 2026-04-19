@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { MediaKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { Album } from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
+import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
+import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
 import { EmptyState } from './gallery/EmptyState';
 import { AlbumMediaTile } from './gallery/mediaTiles/AlbumMediaTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
@@ -11,13 +12,13 @@ import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
 import { UploadMediaButton } from './UploadMediaButton';
 
 type AlbumSectionProps = {
-  album: Album;
+  album: AlbumSummaryVM;
+  albumItems: AlbumItemSummaryVM[];
   refetch: () => void;
 };
 
-export const AlbumSection = ({ album, refetch }: AlbumSectionProps) => {
-  const nodes = album.items.nodes;
-  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
+export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) => {
+  const orderedMediaIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
   const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
     useMultiSelectIds(orderedMediaIds);
 
@@ -41,11 +42,13 @@ export const AlbumSection = ({ album, refetch }: AlbumSectionProps) => {
         <AlbumCover>
           {album.coverMedia ? (
             (() => {
-              const coverThumb = album.coverMedia.derivedUrls.thumbnail;
-              return coverThumb != null && coverThumb !== '' ? (
+              const coverThumb = album.coverMedia.thumbnailUrl;
+              return coverThumb ? (
                 <CoverImage src={coverThumb} alt={album.title} />
               ) : (
-                <CoverIcon aria-hidden>{album.coverMedia.kind === 'VIDEO' ? '🎬' : '🖼️'}</CoverIcon>
+                <CoverIcon aria-hidden>
+                  {album.coverMedia.kind === MediaKind.video ? '🎬' : '🖼️'}
+                </CoverIcon>
               );
             })()
           ) : (
@@ -55,7 +58,7 @@ export const AlbumSection = ({ album, refetch }: AlbumSectionProps) => {
         <AlbumInfo>
           <AlbumTitle>{album.title}</AlbumTitle>
           <AlbumStats>
-            <Stat>{nodes.length} media items</Stat>
+            <Stat>{albumItems.length} media items</Stat>
           </AlbumStats>
           <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
         </AlbumInfo>
@@ -74,7 +77,7 @@ export const AlbumSection = ({ album, refetch }: AlbumSectionProps) => {
       {renderMetadata()}
       {/* break this into SelectableGallery and EmptyState, and decide based on nodes.length */}
       <SelectableGallery
-        nodes={nodes}
+        nodes={albumItems}
         multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
         emptyState={
           <EmptyState

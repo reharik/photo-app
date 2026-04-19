@@ -2,48 +2,7 @@ query ViewerAlbumDetail($albumId: ID!) {
   viewer {
     id
     album(id: $albumId) {
-      id
-      title
-      createdAt
-      updatedAt
-      coverMedia {
-        id
-        kind
-        status
-        title
-        derivedUrls {
-          thumbnail
-          display
-        }
-      }
-      items(
-        input: {
-          collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
-        }
-      ) {
-        nodes {
-          id
-          mediaItem {
-            id
-            kind
-            status
-            mimeType
-            derivedUrls {
-              thumbnail
-              display
-            }
-            title
-            description
-            originalFileName
-            takenAt
-            createdAt
-          }
-        }
-        pageInfo {
-          limit
-          offset
-        }
-      }
+      ...AlbumSummary
     }
   }
 }

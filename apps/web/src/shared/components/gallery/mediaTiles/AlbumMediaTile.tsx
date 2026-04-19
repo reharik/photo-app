@@ -1,25 +1,22 @@
+import { MediaKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { AlbumItem } from '../../../../graphql/generated/types';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
+import { AlbumItemSummaryVM } from '../../../../viewModels/album/AlbumItemSummaryVM';
 
-export const AlbumMediaTile = ({ item }: { item: AlbumItem }) => {
+export const AlbumMediaTile = ({ item }: { item: AlbumItemSummaryVM }) => {
   const mediaItem = item.mediaItem;
-  const thumbUrl = mediaItem.derivedUrls.thumbnail;
   return (
     <>
       <Link to={`/media/${mediaItem.id}`}>
-        {thumbUrl ? (
-          <ThumbImage
-            src={thumbUrl}
-            alt={mediaItem.title?.trim() || mediaItem.originalFileName?.trim()}
-          />
+        {mediaItem.thumbnailUrl ? (
+          <ThumbImage src={mediaItem.thumbnailUrl} alt={mediaItem.title.trim()} />
         ) : (
-          <ThumbIcon aria-hidden>{mediaItem.kind === 'VIDEO' ? '🎬' : '🖼️'}</ThumbIcon>
+          <ThumbIcon aria-hidden>{mediaItem.kind === MediaKind.video ? '🎬' : '🖼️'}</ThumbIcon>
         )}
       </Link>
       <MediaInfo>
-        <MediaTitle>{mediaItem.title?.trim() || mediaItem.originalFileName?.trim()}</MediaTitle>
+        <MediaTitle>{mediaItem.title.trim()}</MediaTitle>
         <MediaMeta>{localizeDate(mediaItem.createdAt)}</MediaMeta>
       </MediaInfo>
     </>

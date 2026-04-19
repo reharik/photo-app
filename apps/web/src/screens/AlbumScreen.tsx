@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ViewerAlbumDetailDocument } from '../graphql/generated/types';
 import { AlbumSection } from '../shared/components/AlbumSection';
+import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
+import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
@@ -14,9 +16,9 @@ export const AlbumScreen = () => {
     nextFetchPolicy: 'cache-first',
   });
 
-  const album = data?.viewer?.album;
-
-  if (!albumId) {
+  const album = data?.viewer?.album ? mapAlbumToAlbumSummaryVM(data.viewer.album) : undefined;
+  const albumItems = data?.viewer?.album?.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM);
+  if (!albumId || !album) {
     return (
       <Container>
         <StatusMessage role="alert">Missing album id.</StatusMessage>
@@ -24,7 +26,11 @@ export const AlbumScreen = () => {
     );
   }
 
-  return <Container>{album && <AlbumSection album={album} refetch={refetch} />}</Container>;
+  return (
+    <Container>
+      {album && <AlbumSection album={album} albumItems={albumItems} refetch={refetch} />}
+    </Container>
+  );
 };
 
 const Container = styled.div`

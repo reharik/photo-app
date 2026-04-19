@@ -1,0 +1,9 @@
+fragment AlbumItemSummary on AlbumItem {
+  id
+  orderIndex
+  createdAt
+  updatedAt
+  mediaItem {
+    ...MediaItemSummary
+  }
+}

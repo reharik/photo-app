@@ -14,7 +14,9 @@ generates:
       maybeValue: 'T | undefined'
       inputMaybeValue: 'T | undefined'
       scalars:
-        DateTime: string
+        DateTime:
+          input: string
+          output: string
         Date: string
       namingConvention:
         typeNames: pascal-case#pascalCase

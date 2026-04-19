@@ -1,0 +1,22 @@
+fragment AlbumSummary on Album {
+  id
+  title
+  createdAt
+  updatedAt
+  coverMedia {
+    ...MediaItemSummary
+  }
+  items(
+    input: {
+      collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
+    }
+  ) {
+    nodes {
+      ...AlbumItemSummary
+    }
+    pageInfo {
+      limit
+      offset
+    }
+  }
+}
