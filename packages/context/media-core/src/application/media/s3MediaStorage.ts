@@ -85,15 +85,29 @@ export const s3MediaStorage = ({
   const client = new S3Client({ region: region });
 
   const getUploadTarget = async (input: UploadTargetRequest): Promise<UploadTarget> => {
+    console.log(`************input************`);
+    console.log(JSON.stringify(input, null, 4));
+    console.log(`********END input************`);
+    console.log(`************bucket************`);
+    console.log(bucket);
+    console.log(`********END bucket************`);
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: input.storageKey,
       ContentType: input.mimeType,
     });
 
+    console.log(`************command************`);
+    console.log(JSON.stringify(command, null, 4));
+    console.log(`********END command************`);
+
     const url = await getSignedUrl(client, command, {
       expiresIn: uploadUrlTtlSeconds,
     });
+
+    console.log(`************url************`);
+    console.log(url);
+    console.log(`********END url************`);
 
     return {
       method: 'PUT',

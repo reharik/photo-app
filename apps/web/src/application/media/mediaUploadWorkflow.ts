@@ -1,5 +1,6 @@
 import type { ApolloClient } from '@apollo/client';
 
+import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
 import {
   CreateMediaUploadDocument,
   FinalizeMediaUploadDocument,
@@ -7,6 +8,7 @@ import {
 } from '../../graphql/generated/types';
 import { fail, ok, type AppResult } from '../errors/types';
 import { executeMutation } from '../graphql/executeMutation';
+import { UploadWorkflowEvent } from './types';
 
 const resolveMediaKind = (
   file: File,
@@ -40,15 +42,7 @@ const createMediaUpload = async (
   const kind = resolveMediaKind(file);
   if (!kind) {
     // TODO: add these to FrontendErrorEnum
-    return fail([
-      {
-        code: 'UNSUPPORTED_MEDIA_TYPE',
-        message: 'Only image and video uploads are supported.',
-        category: 'VALIDATION',
-        retryable: false,
-        source: 'frontend',
-      },
-    ]);
+    return fail([FrontendError.unsupportedMediaType]);
   }
 
   const mimeType = file.type || 'application/octet-stream';
@@ -74,15 +68,7 @@ const createMediaUpload = async (
 
   const payload = result.data;
   if (!payload?.mediaItemId || !payload.uploadInstructions?.url) {
-    return fail([
-      {
-        code: 'INVALID_RESPONSE',
-        message: 'Create media upload returned an invalid payload.',
-        category: 'VALIDATION',
-        retryable: false,
-        source: 'frontend',
-      },
-    ]);
+    return fail([FrontendError.invalidCreateMediaUploadPayload]);
   }
 
   return ok({
@@ -118,16 +104,7 @@ const uploadBinary = async (
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    return fail([
-      {
-        code: 'UPLOAD_FAILED',
-        message: text || `Upload failed with status ${response.status}.`,
-        category: 'VALIDATION',
-        retryable: false,
-        source: 'frontend',
-      },
-    ]);
+    return fail([FrontendError.uploadFailed]);
   }
 
   return ok(undefined);
@@ -152,15 +129,7 @@ const finalizeMediaUpload = async (
 
   const payload = result.data;
   if (!payload?.mediaItemId) {
-    return fail([
-      {
-        code: 'FINALIZE_FAILED',
-        message: 'Finalize media upload returned an invalid payload.',
-        category: 'VALIDATION',
-        retryable: false,
-        source: 'frontend',
-      },
-    ]);
+    return fail([FrontendError.finalizeFailed]);
   }
 
   return ok({ mediaItemId: payload.mediaItemId });
@@ -169,23 +138,56 @@ const finalizeMediaUpload = async (
 export const mediaUploadWorkflow = async (
   client: ApolloClient,
   file: File,
+  onEvent: (event: UploadWorkflowEvent) => void,
 ): Promise<AppResult<{ mediaItemId: string }>> => {
   try {
+    onEvent({ type: FUS.creating });
     const created = await createMediaUpload(client, file);
-    if (!created.success) return created;
-    const uploaded = await uploadBinary(file, created.data.uploadInstructions);
-    if (!uploaded.success) return uploaded;
+    if (!created.success) {
+      onEvent({
+        type: FUS.failed,
+        stage: FUS.creating,
+        errors: created.errors,
+      });
+      return created;
+    }
 
-    return await finalizeMediaUpload(client, created.data.mediaItemId);
+    const mediaItemId = created.data.mediaItemId;
+    onEvent({ type: FUS.uploading, mediaItemId });
+    const uploaded = await uploadBinary(file, created.data.uploadInstructions);
+
+    if (!uploaded.success) {
+      onEvent({
+        type: FUS.failed,
+        mediaItemId,
+        stage: FUS.uploading,
+        errors: uploaded.errors,
+      });
+      return uploaded;
+    }
+    onEvent({ type: FUS.finalizing, mediaItemId });
+    const finalized = await finalizeMediaUpload(client, mediaItemId);
+    if (!finalized.success) {
+      onEvent({
+        type: FUS.failed,
+        mediaItemId,
+        stage: FUS.finalizing,
+        errors: finalized.errors,
+      });
+      return finalized;
+    }
+    onEvent({ type: FUS.complete, mediaItemId });
+    return ok({ mediaItemId });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    return fail([
-      {
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        category: 'SYSTEM',
-        retryable: false,
-        source: 'frontend',
-      },
-    ]);
+    const result = fail([FrontendError.networkError]);
+
+    onEvent?.({
+      type: FUS.failed,
+      stage: FUS.uploading,
+      errors: [FrontendError.networkError],
+    });
+
+    return result;
   }
 };

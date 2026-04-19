@@ -9,7 +9,7 @@ describe('buildMediaStorage', () => {
       const storage = buildMediaStorage({
         config: {
           s3Bucket: 'test-bucket',
-          awsRegion: 'us-east-2',
+          awsRegion: 'us-east-1',
           s3UploadUrlTtlSeconds: 900,
           s3DownloadUrlTtlSeconds: 900,
         } as IocGeneratedCradle['config'],

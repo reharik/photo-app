@@ -71,10 +71,10 @@ const createConfigFromEnv = (): Config => {
       (isProduction ? 'info' : 'debug'),
     ...(warnings.length > 0 ? { warnings } : {}),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
-    awsRegion: process.env.AWS_REGION || 'us-east-2',
+    awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
     awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,
-    s3Bucket: process.env.S3_BUCKET || 'photoshare-dev',
+    s3Bucket: process.env.S3_BUCKET || 'photoshare-dev-media',
     s3UploadUrlTtlSeconds: process.env.S3_UPLOAD_URL_TTL_SECONDS
       ? Number(process.env.S3_UPLOAD_URL_TTL_SECONDS)
       : DEFAULT_UPLOAD_URL_TTL_SECONDS,

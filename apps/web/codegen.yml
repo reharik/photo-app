@@ -13,6 +13,9 @@ generates:
       constEnums: false
       maybeValue: 'T | undefined'
       inputMaybeValue: 'T | undefined'
+      scalars:
+        DateTime: string
+        Date: string
       namingConvention:
         typeNames: pascal-case#pascalCase
         enumValues: keep

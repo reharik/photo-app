@@ -1,5 +1,5 @@
 {
-  "watch": ["src"],
+  "watch": ["src", "../../packages/context/media-core/src", "../../packages/contracts/src"],
   "ext": "ts,js,json",
   "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist", "node_modules"],
   "exec": "tsx src/main.ts",
