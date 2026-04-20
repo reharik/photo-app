@@ -1,0 +1,14 @@
+import { MediaKind } from '@packages/contracts';
+
+export type MediaItemDetailVM = {
+  id: string;
+  kind: MediaKind;
+  mimeType: string;
+  title: string;
+  description?: string;
+  originalFileName: string;
+  createdAt: string;
+  takenAt: string;
+  thumbnailUrl: string;
+  displayUrl: string;
+};

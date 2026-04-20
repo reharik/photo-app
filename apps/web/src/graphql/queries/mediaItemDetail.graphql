@@ -1,0 +1,14 @@
+fragment MediaItemDetail on MediaItem {
+  id
+  kind
+  mimeType
+  title
+  description
+  originalFileName
+  createdAt
+  takenAt
+  derivedUrls {
+    thumbnail
+    display
+  }
+}

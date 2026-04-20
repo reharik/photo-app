@@ -12,63 +12,6 @@ import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
 import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
 
-const kindLabel = (kind: string): string => {
-  if (kind === 'VIDEO') {
-    return 'Video';
-  }
-  if (kind === 'PHOTO') {
-    return 'Photo';
-  }
-  return 'Media';
-};
-
-const formatDateOnly = (value: unknown): string => {
-  if (typeof value === 'string') {
-    const dt = DateTime.fromISO(value);
-    if (dt.isValid) {
-      return dt.toLocaleString(DateTime.DATE_MED);
-    }
-  }
-  return '—';
-};
-
-const formatTakenDisplay = (value: unknown): string => {
-  if (typeof value === 'string') {
-    const dt = DateTime.fromISO(value);
-    if (dt.isValid) {
-      return dt.toLocaleString(DateTime.DATETIME_MED);
-    }
-  }
-  return '—';
-};
-
-const toDatetimeLocalValue = (value: unknown): string => {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    return '';
-  }
-  const dt = DateTime.fromISO(value);
-  if (!dt.isValid) {
-    return '';
-  }
-  return dt.toLocal().toFormat("yyyy-MM-dd'T'HH:mm");
-};
-
-const fromDatetimeLocalToIso = (value: string): string | null => {
-  const t = value.trim();
-  if (t.length === 0) {
-    return null;
-  }
-  const dt = DateTime.fromFormat(t, "yyyy-MM-dd'T'HH:mm");
-  if (!dt.isValid) {
-    return null;
-  }
-  return dt.toISO();
-};
-
-const isNonEmptyDisplayUrl = (url: string | undefined): url is string => {
-  return typeof url === 'string' && url.trim().length > 0;
-};
-
 export const MediaItemScreen = () => {
   const { mediaId } = useParams<{ mediaId: string }>();
   const location = useLocation();

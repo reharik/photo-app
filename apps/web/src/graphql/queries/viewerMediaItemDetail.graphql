@@ -2,18 +2,7 @@ query ViewerMediaItemDetail($mediaItemId: ID!) {
   viewer {
     id
     mediaItem(id: $mediaItemId) {
-      id
-      kind
-      mimeType
-      title
-      description
-      originalFileName
-      createdAt
-      takenAt
-      derivedUrls {
-        thumbnail
-        display
-      }
+      ...MediaItemDetail
     }
   }
 }

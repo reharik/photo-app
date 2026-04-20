@@ -747,6 +747,19 @@ export type AlbumSummaryFragment = {
   };
 };
 
+export type MediaItemDetailFragment = {
+  __typename?: 'MediaItem';
+  id: string;
+  kind: MediaKind;
+  mimeType: string;
+  title?: string | undefined;
+  description?: string | undefined;
+  originalFileName?: string | undefined;
+  createdAt: string;
+  takenAt?: string | undefined;
+  derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string; display: string };
+};
+
 export type MediaItemSummaryFragment = {
   __typename?: 'MediaItem';
   id: string;
@@ -1184,6 +1197,40 @@ export const AlbumSummaryFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<AlbumSummaryFragment, unknown>;
+export const MediaItemDetailFragmentDoc = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'MediaItemDetail' },
+      typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MediaItem' } },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'mimeType' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'takenAt' } },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'derivedUrls' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'display' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MediaItemDetailFragment, unknown>;
 export const CreateAlbumDocument = {
   kind: 'Document',
   definitions: [
@@ -1956,28 +2003,39 @@ export const ViewerMediaItemDetailDocument = {
                   selectionSet: {
                     kind: 'SelectionSet',
                     selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'mimeType' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'description' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'takenAt' } },
-                      {
-                        kind: 'Field',
-                        name: { kind: 'Name', value: 'derivedUrls' },
-                        selectionSet: {
-                          kind: 'SelectionSet',
-                          selections: [
-                            { kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } },
-                            { kind: 'Field', name: { kind: 'Name', value: 'display' } },
-                          ],
-                        },
-                      },
+                      { kind: 'FragmentSpread', name: { kind: 'Name', value: 'MediaItemDetail' } },
                     ],
                   },
                 },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'MediaItemDetail' },
+      typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'MediaItem' } },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'kind' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'mimeType' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'description' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'takenAt' } },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'derivedUrls' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'display' } },
               ],
             },
           },
