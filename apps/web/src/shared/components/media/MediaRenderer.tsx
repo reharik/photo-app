@@ -1,5 +1,5 @@
+import { MediaKind } from '@packages/contracts';
 import styled from 'styled-components';
-import type { MediaKind } from '../../../graphql/generated/types';
 import { ImageRenderer } from './ImageRenderer';
 
 export type MediaRendererProps = {
@@ -10,14 +10,14 @@ export type MediaRendererProps = {
 };
 
 const isPhotoLike = (kind: MediaKind, mimeType: string): boolean => {
-  if (kind === 'PHOTO') {
+  if (kind === MediaKind.photo) {
     return true;
   }
   return mimeType.startsWith('image/');
 };
 
 const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
-  if (kind === 'VIDEO') {
+  if (kind === MediaKind.video) {
     return true;
   }
   return mimeType.startsWith('video/');

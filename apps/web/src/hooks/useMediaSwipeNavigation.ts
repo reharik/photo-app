@@ -7,8 +7,7 @@ const HORIZONTAL_BIAS = 1.15;
 
 export type UseMediaSwipeNavigationOptions = {
   enabled: boolean;
-  canNavigatePrevious: boolean;
-  canNavigateNext: boolean;
+  canNavigate: boolean;
   onNavigate: (direction: NavigateDirection) => void;
 };
 
@@ -24,8 +23,7 @@ export type MediaSwipeHandlers = {
  */
 export const useMediaSwipeNavigation = ({
   enabled,
-  canNavigatePrevious,
-  canNavigateNext,
+  canNavigate,
   onNavigate,
 }: UseMediaSwipeNavigationOptions): { swipeHandlers: MediaSwipeHandlers } => {
   const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
@@ -74,13 +72,13 @@ export const useMediaSwipeNavigation = ({
         return;
       }
 
-      if (dx < 0 && canNavigateNext) {
+      if (dx < 0 && canNavigate) {
         onNavigate('next');
-      } else if (dx > 0 && canNavigatePrevious) {
+      } else if (dx > 0 && canNavigate) {
         onNavigate('previous');
       }
     },
-    [enabled, canNavigatePrevious, canNavigateNext, onNavigate],
+    [enabled, canNavigate, onNavigate],
   );
 
   const onPointerCancel = useCallback(
