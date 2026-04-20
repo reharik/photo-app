@@ -9,7 +9,7 @@ import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSum
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
 
-  const { data, loading, error, refetch } = useQuery(ViewerAlbumDetailDocument, {
+  const { data, refetch } = useQuery(ViewerAlbumDetailDocument, {
     variables: { albumId: albumId ?? '' },
     skip: !albumId,
     fetchPolicy: 'cache-first',
@@ -17,7 +17,7 @@ export const AlbumScreen = () => {
   });
 
   const album = data?.viewer?.album ? mapAlbumToAlbumSummaryVM(data.viewer.album) : undefined;
-  const albumItems = data?.viewer?.album?.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM);
+  const albumItems = data?.viewer?.album?.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
   if (!albumId || !album) {
     return (
       <Container>

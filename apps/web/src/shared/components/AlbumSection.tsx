@@ -1,4 +1,5 @@
 import { MediaKind } from '@packages/contracts';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
@@ -75,7 +76,6 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
         Header={renderHeader}
       />
       {renderMetadata()}
-      {/* break this into SelectableGallery and EmptyState, and decide based on nodes.length */}
       <SelectableGallery
         nodes={albumItems}
         multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}

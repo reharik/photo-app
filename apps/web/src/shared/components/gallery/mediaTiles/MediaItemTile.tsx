@@ -15,7 +15,7 @@ export const MediaItemTile = ({ item }: { item: MediaItemSummaryVM }) => {
         )}
       </Link>
       <MediaInfo>
-        <MediaTitle>{item.title.trim()}</MediaTitle>
+        <MediaTitle>{item.title?.trim()}</MediaTitle>
         <MediaMeta>{localizeDate(item.createdAt)}</MediaMeta>
       </MediaInfo>
     </>

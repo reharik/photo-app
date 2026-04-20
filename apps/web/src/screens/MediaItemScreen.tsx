@@ -4,7 +4,6 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import type { MediaItemLocationState } from '../app/mediaItemNavigationState';
-import { mediaItemDetailPath } from '../app/paths';
 import {
   UpdateMediaItemDetailsDocument,
   ViewerMediaItemDetailDocument,
@@ -116,7 +115,7 @@ export const MediaItemScreen = () => {
       if (nextId === undefined) {
         return;
       }
-      void navigate(mediaItemDetailPath(nextId), {
+      void navigate(`/media/${nextId}`, {
         replace: true,
         state: { mediaGalleryIds: galleryIds },
       });
