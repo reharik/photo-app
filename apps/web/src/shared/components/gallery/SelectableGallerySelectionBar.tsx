@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-type GallerySelectionBarProps = {
+type SelectableGallerySelectionBarProps = {
   count: number;
   onClear: () => void;
   SelectionActions: React.ComponentType;
@@ -10,11 +10,11 @@ type GallerySelectionBarProps = {
  * Top bar when one or more grid items are selected (similar to Google Photos).
  * Actions are placeholders until wired to real behavior.
  */
-export const GallerySelectionBar = ({
+export const SelectableGallerySelectionBar = ({
   count,
   onClear,
   SelectionActions,
-}: GallerySelectionBarProps) => {
+}: SelectableGallerySelectionBarProps) => {
   const label = count === 1 ? '1 selected' : `${count} selected`;
 
   return (
@@ -31,18 +31,6 @@ export const GallerySelectionBar = ({
     </Bar>
   );
 };
-
-{
-  /* <ToolbarAction type="button" disabled title="Coming soon">
-Share
-</ToolbarAction>
-<ToolbarAction type="button" disabled title="Coming soon">
-Add to album
-</ToolbarAction>
-<ToolbarAction type="button" disabled title="Coming soon">
-Delete
-</ToolbarAction> */
-}
 
 const Bar = styled.div`
   display: flex;
@@ -116,23 +104,3 @@ const ActionGroup = styled.div`
   flex-wrap: wrap;
   justify-content: flex-end;
 `;
-
-// const ToolbarAction = styled.button`
-//   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-//   font-size: 14px;
-//   font-weight: 500;
-//   color: ${({ theme }) => theme.colors.subtext};
-//   background: transparent;
-//   border: 1px solid ${({ theme }) => theme.colors.border};
-//   border-radius: ${({ theme }) => theme.radius.md};
-//   cursor: not-allowed;
-//   opacity: 0.75;
-
-//   &:disabled {
-//     pointer-events: none;
-//   }
-
-//   @media (max-width: 768px) {
-//     display: none;
-//   }
-// `;

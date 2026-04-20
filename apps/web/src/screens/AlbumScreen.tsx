@@ -35,6 +35,8 @@ export const AlbumScreen = () => {
 
 const Container = styled.div`
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 `;

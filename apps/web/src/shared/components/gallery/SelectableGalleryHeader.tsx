@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { GallerySelectionBar } from './GallerySelectionBar';
+import { SelectableGallerySelectionBar } from './SelectableGallerySelectionBar';
 interface SelectableGalleryHeaderProps {
   selectionCount: number;
   clearSelection: () => void;
@@ -16,7 +16,7 @@ export const SelectableGalleryHeader = ({
   return (
     <HeaderContainer>
       {selectionCount > 0 ? (
-        <GallerySelectionBar
+        <SelectableGallerySelectionBar
           count={selectionCount}
           onClear={clearSelection}
           SelectionActions={SelectionActions}

@@ -47,6 +47,7 @@ export const SelectableGallery = <T extends { id: string }>({
 
 const GalleryContainer = styled.div`
   display: grid;
+  width: 100%;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: ${({ theme }) => theme.spacing(3)};
   max-width: 1400px;
@@ -60,6 +61,8 @@ const GalleryContainer = styled.div`
 
 const Content = styled.div`
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   padding: ${({ theme }) => theme.spacing(6)};
 

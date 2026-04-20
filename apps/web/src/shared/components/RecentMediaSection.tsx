@@ -6,6 +6,7 @@ import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
+import { RecentMediaSelectionActions } from './gallery/selectionActions/RecentMediaSelectionActions';
 import { UploadMediaButton } from './UploadMediaButton';
 
 type RecentMediaSectionProps = {
@@ -23,7 +24,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={() => <div>Hi mom</div>}
+        SelectionActions={RecentMediaSelectionActions}
         Header={() => (
           <>
             <Title>Recent Media</Title>
@@ -52,6 +53,8 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
 
 const Container = styled.div`
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 `;
