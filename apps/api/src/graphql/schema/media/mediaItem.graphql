@@ -8,7 +8,7 @@ type MediaItem implements Node {
   derivedUrls: MediaItemDerivedUrls!
   mimeType: String!
   sizeBytes: Int!
-  originalFileName: String
+  originalFileName: String!
   width: Int
   height: Int
   durationSeconds: Int

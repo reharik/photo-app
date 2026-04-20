@@ -9,9 +9,15 @@ export type MultiSelectProps = {
 
 type SelectableGalleryProps<T extends { id: string }> = {
   nodes: T[];
+  orderedMediaIds: string[];
   multiSelectProps: MultiSelectProps;
   emptyState: React.ReactNode;
-  renderItem: (args: { item: T; isSelected: boolean; index: number }) => React.ReactNode;
+  renderItem: (args: {
+    item: T;
+    orderedMediaIds: string[];
+    isSelected: boolean;
+    index: number;
+  }) => React.ReactNode;
 };
 
 export const SelectableGallery = <T extends { id: string }>({
@@ -19,6 +25,7 @@ export const SelectableGallery = <T extends { id: string }>({
   multiSelectProps,
   emptyState,
   renderItem,
+  orderedMediaIds,
 }: SelectableGalleryProps<T>) => {
   if (nodes.length === 0) {
     return emptyState;
@@ -36,7 +43,12 @@ export const SelectableGallery = <T extends { id: string }>({
                 multiSelectProps.handleModifierClick(event, item.id, index)
               }
             >
-              {renderItem({ item, index, isSelected: multiSelectProps.isSelected(item.id) })}
+              {renderItem({
+                item,
+                index,
+                orderedMediaIds,
+                isSelected: multiSelectProps.isSelected(item.id),
+              })}
             </SelectableGalleryItem>
           );
         })}

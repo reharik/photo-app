@@ -9,6 +9,5 @@ export type MediaItemDetailVM = {
   originalFileName: string;
   createdAt: string;
   takenAt: string;
-  thumbnailUrl: string;
   displayUrl: string;
 };

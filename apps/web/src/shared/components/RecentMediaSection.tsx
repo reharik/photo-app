@@ -45,7 +45,10 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
             action={<UploadMediaButton onComplete={reloadData} />}
           />
         }
-        renderItem={({ item }) => <MediaItemTile item={item} />}
+        renderItem={({ item, orderedMediaIds }) => (
+          <MediaItemTile item={item} mediaGalleryIds={orderedMediaIds} />
+        )}
+        orderedMediaIds={orderedMediaIds}
       />
     </Container>
   );

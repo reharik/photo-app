@@ -23,7 +23,6 @@ export const MediaItemDetailPanel = forwardRef<
   MediaItemDetailPanelProps
 >(({ mediaItem, onDismissScreen, onSaved, onEditingSessionChange }, ref) => {
   const [isEditingDetails, setIsEditingDetails] = useState(false);
-
   const onEditingSessionChangeRef = useRef(onEditingSessionChange);
   onEditingSessionChangeRef.current = onEditingSessionChange;
 

@@ -10,7 +10,6 @@ import type { NavigateDirection } from '../shared/components/media/mediaViewerTy
 import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToMediaItemDetailVM';
 import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
 import { getGalleryNavigation } from './MediaItemGalleryNavigation';
-import { kindLabel } from './mediaItemMetaFormat';
 
 export const MediaItemScreen = () => {
   const { mediaId } = useParams<{ mediaId: string }>();
@@ -92,7 +91,7 @@ export const MediaItemScreen = () => {
         mimeType={mediaItem.mimeType}
         displayUrl={mediaItem.displayUrl}
         imageAlt={
-          mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || kindLabel(mediaItem.kind)
+          mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display
         }
         onClose={handleClose}
         onNavigate={handleMediaNavigate}

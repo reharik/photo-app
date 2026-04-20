@@ -4,10 +4,16 @@ import styled from 'styled-components';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
 import { MediaItemSummaryVM } from '../../../../viewModels/media/MediaItemSummaryVM';
 
-export const MediaItemTile = ({ item }: { item: MediaItemSummaryVM }) => {
+export const MediaItemTile = ({
+  item,
+  mediaGalleryIds,
+}: {
+  item: MediaItemSummaryVM;
+  mediaGalleryIds: string[];
+}) => {
   return (
     <>
-      <ThumbLink to={`/media/${item.id}`}>
+      <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
         {item.thumbnailUrl ? (
           <ThumbImage src={item.thumbnailUrl} alt={item.title.trim()} />
         ) : (
@@ -15,7 +21,6 @@ export const MediaItemTile = ({ item }: { item: MediaItemSummaryVM }) => {
         )}
       </ThumbLink>
       <CaptionLink to={`/media/${item.id}`}>
-        {' '}
         <MediaInfo>
           <MediaTitle>{item.title?.trim()}</MediaTitle>
           <MediaMeta>{localizeDate(item.createdAt)}</MediaMeta>

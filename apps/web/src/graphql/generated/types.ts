@@ -236,7 +236,7 @@ export type MediaItem = Node & {
   id: Scalars['ID']['output'];
   kind: MediaKind;
   mimeType: Scalars['String']['output'];
-  originalFileName?: Maybe<Scalars['String']['output']>;
+  originalFileName: Scalars['String']['output'];
   sizeBytes: Scalars['Int']['output'];
   status: MediaItemStatus;
   tags: Array<Scalars['String']['output']>;
@@ -702,7 +702,7 @@ export type AlbumItemSummaryFragment = {
     id: string;
     kind: MediaKind;
     title?: string | undefined;
-    originalFileName?: string | undefined;
+    originalFileName: string;
     createdAt: string;
     derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
   };
@@ -720,7 +720,7 @@ export type AlbumSummaryFragment = {
         id: string;
         kind: MediaKind;
         title?: string | undefined;
-        originalFileName?: string | undefined;
+        originalFileName: string;
         createdAt: string;
         derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
       }
@@ -738,7 +738,7 @@ export type AlbumSummaryFragment = {
         id: string;
         kind: MediaKind;
         title?: string | undefined;
-        originalFileName?: string | undefined;
+        originalFileName: string;
         createdAt: string;
         derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
       };
@@ -754,7 +754,7 @@ export type MediaItemDetailFragment = {
   mimeType: string;
   title?: string | undefined;
   description?: string | undefined;
-  originalFileName?: string | undefined;
+  originalFileName: string;
   createdAt: string;
   takenAt?: string | undefined;
   derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string; display: string };
@@ -765,7 +765,7 @@ export type MediaItemSummaryFragment = {
   id: string;
   kind: MediaKind;
   title?: string | undefined;
-  originalFileName?: string | undefined;
+  originalFileName: string;
   createdAt: string;
   derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
 };
@@ -808,7 +808,7 @@ export type ViewerAlbumDetailQuery = {
                     id: string;
                     kind: MediaKind;
                     title?: string | undefined;
-                    originalFileName?: string | undefined;
+                    originalFileName: string;
                     createdAt: string;
                     derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                   }
@@ -826,7 +826,7 @@ export type ViewerAlbumDetailQuery = {
                     id: string;
                     kind: MediaKind;
                     title?: string | undefined;
-                    originalFileName?: string | undefined;
+                    originalFileName: string;
                     createdAt: string;
                     derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                   };
@@ -861,7 +861,7 @@ export type ViewerAlbumsQuery = {
                   id: string;
                   kind: MediaKind;
                   title?: string | undefined;
-                  originalFileName?: string | undefined;
+                  originalFileName: string;
                   createdAt: string;
                   derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                 }
@@ -891,7 +891,7 @@ export type ViewerMediaItemDetailQuery = {
               mimeType: string;
               title?: string | undefined;
               description?: string | undefined;
-              originalFileName?: string | undefined;
+              originalFileName: string;
               createdAt: string;
               takenAt?: string | undefined;
               derivedUrls: {
@@ -945,7 +945,7 @@ export type ViewerRecentMediaQuery = {
             mimeType: string;
             title?: string | undefined;
             description?: string | undefined;
-            originalFileName?: string | undefined;
+            originalFileName: string;
             takenAt?: string | undefined;
             width?: number | undefined;
             height?: number | undefined;
