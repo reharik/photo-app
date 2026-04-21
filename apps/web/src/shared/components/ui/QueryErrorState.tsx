@@ -11,19 +11,19 @@ export const QueryErrorState = ({
   title = DEFAULT_TITLE,
   message = DEFAULT_MESSAGE,
 }: QueryErrorStateProps): JSX.Element => {
-  const detailsId = useId();
+  const titleId = useId();
 
   return (
     <QueryPanel role="alert">
-      <PanelTitle id={detailsId}>{title}</PanelTitle>
-      <PanelBody aria-labelledby={detailsId}>{message}</PanelBody>
-      <Actions>
+      <MainBlock>
+        <PanelTitle id={titleId}>{title}</PanelTitle>
+        <PanelBody aria-labelledby={titleId}>{message}</PanelBody>
         {onRetry != null ? (
-          <TextButton type="button" onClick={onRetry}>
+          <RetryButton type="button" onClick={onRetry}>
             Try again
-          </TextButton>
+          </RetryButton>
         ) : null}
-      </Actions>
+      </MainBlock>
       {isDevBuild() ? (
         <DevDetails>
           <summary>Technical details (development)</summary>
@@ -46,20 +46,22 @@ const DEFAULT_MESSAGE = "We couldn't load this content. Please try again.";
 
 export const SoftPanel = styled.div`
   width: 100%;
-  max-width: 36rem;
+  max-width: min(36rem, 100%);
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
   border-radius: ${({ theme }) => theme.radius.md};
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(2.5)};
   font-family: ${({ theme }) => theme.font.body};
 `;
 
 export const PanelTitle = styled.h2`
-  margin: 0 0 ${({ theme }) => theme.spacing(1)};
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const QueryPanel = styled(SoftPanel)`
@@ -69,17 +71,26 @@ const QueryPanel = styled(SoftPanel)`
   color: ${({ theme }) => theme.colors.text};
 `;
 
-const Actions = styled.div`
+const MainBlock = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.spacing(2)};
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(1.25)};
 `;
 
 const DevDetails = styled.details`
   margin-top: ${({ theme }) => theme.spacing(2)};
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.subtext};
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
 
   &[open] summary {
     margin-bottom: ${({ theme }) => theme.spacing(1)};
@@ -101,23 +112,17 @@ const DevPre = styled.pre`
 `;
 
 export const PanelBody = styled.p`
-  margin: 0 0 ${({ theme }) => theme.spacing(2)};
+  margin: 0;
   font-size: 0.875rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: ${({ theme }) => theme.colors.subtext};
 `;
 
-export const SubtleFieldLabel = styled.span`
-  font-size: 0.75rem;
-  color: ${({ theme }) => theme.colors.subtext};
-  opacity: 0.85;
-`;
-
-export const TextButton = styled.button`
+const RetryButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(2)}`};
+  padding: ${({ theme }) => `${theme.spacing(0.75)} ${theme.spacing(1.5)}`};
   font-size: 0.8125rem;
   font-family: inherit;
   font-weight: 500;

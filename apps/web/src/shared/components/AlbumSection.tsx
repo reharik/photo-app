@@ -1,4 +1,3 @@
-import { MediaKind } from '@packages/contracts';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
@@ -38,23 +37,19 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
   };
 
   const renderMetadata = () => {
+    const uploadCoverMedia = () => {
+      alert('uploadCoverMedia');
+    };
     return (
       <AlbumMeta>
         <AlbumCover>
-          {album.coverMedia ? (
-            (() => {
-              const coverThumb = album.coverMedia.thumbnailUrl;
-              return coverThumb ? (
-                <CoverImage src={coverThumb} alt={album.title} />
-              ) : (
-                <CoverIcon aria-hidden>
-                  {album.coverMedia.kind === MediaKind.video ? '🎬' : '🖼️'}
-                </CoverIcon>
-              );
-            })()
-          ) : (
-            <CoverPlaceholder aria-hidden>📷</CoverPlaceholder>
-          )}
+          <CoverUploadButton onClick={uploadCoverMedia}>
+            {album.coverMedia ? (
+              <CoverImage src={album.coverMedia.thumbnailUrl} alt={album.coverMedia.title ?? ''} />
+            ) : (
+              <CoverPlaceholder aria-hidden>📷</CoverPlaceholder>
+            )}
+          </CoverUploadButton>
         </AlbumCover>
         <AlbumInfo>
           <AlbumTitle>{album.title}</AlbumTitle>
@@ -79,6 +74,7 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
       <SelectableGallery
         nodes={albumItems}
         multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
+        orderedMediaIds={orderedMediaIds}
         emptyState={
           <EmptyState
             title="No media yet"
@@ -185,6 +181,19 @@ const CoverPlaceholder = styled.div`
 const CoverIcon = styled.div`
   font-size: 64px;
   opacity: 0.35;
+`;
+
+const CoverUploadButton = styled.button`
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const CoverImage = styled.img`

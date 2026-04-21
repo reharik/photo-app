@@ -1,13 +1,16 @@
-import { JSX } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 type PageSpinnerProps = {
   label?: string;
+  display?: boolean;
 };
 
 const DEFAULT_LABEL = 'Loading…';
 
-export const PageSpinner = ({ label = DEFAULT_LABEL }: PageSpinnerProps): JSX.Element => {
+export const PageSpinner = ({ display, label = DEFAULT_LABEL }: PageSpinnerProps) => {
+  if (!display) {
+    return null;
+  }
   return (
     <Wrap role="status" aria-live="polite" aria-busy="true">
       <Ring aria-hidden />

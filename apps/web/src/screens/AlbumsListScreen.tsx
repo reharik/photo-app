@@ -1,23 +1,20 @@
-import { useApolloClient, useQuery } from '@apollo/client/react';
-import { useState } from 'react';
+import { useQuery } from '@apollo/client/react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { AppError } from '../application/errors/types';
-import { executeMutation } from '../application/graphql/executeMutation';
 import {
   CreateAlbumDocument,
   ViewerAlbumsDocument,
   type CreateAlbumMutation,
 } from '../graphql/generated/types';
 import { AlbumListSection } from '../shared/components/AlbumListSection';
-import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
+import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
+import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
 import { AppErrorPanel } from '../shared/components/ui/AppErrorPanel';
 import { mapMultipleAlbumsToAlbumSummaryVMs } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
 
 export const AlbumsListScreen = () => {
   const navigate = useNavigate();
-  const client = useApolloClient();
-  const [appErrors, setAppErrors] = useState<AppError[]>([]);
+  const { isLoading, errors, execute } = useAppMutationState();
 
   const query = useQuery(ViewerAlbumsDocument, {
     fetchPolicy: 'cache-first',
@@ -35,10 +32,7 @@ export const AlbumsListScreen = () => {
   }
 
   const submitCreateAlbum = async (title: string) => {
-    setAppErrors([]);
-
-    const result = await executeMutation(
-      client,
+    const result = await execute(
       {
         mutation: CreateAlbumDocument,
         variables: { input: { title } },
@@ -46,20 +40,20 @@ export const AlbumsListScreen = () => {
       (mutationData: CreateAlbumMutation) => mutationData.createAlbum,
     );
 
-    if (!result.success) {
-      setAppErrors(result.errors);
-      return false;
+    if (result.success) {
+      await query.refetch();
+      await navigate(`/albums/${result.data.albumId}`);
     }
-
-    await query.refetch();
-    await navigate(`/albums/${result.data.albumId}`);
-    return true;
   };
 
   return (
     <Container>
-      <AppErrorPanel errors={appErrors} />
-      <AlbumListSection nodes={albums} submitCreateAlbum={submitCreateAlbum} />
+      <AppErrorPanel errors={errors} />
+      <AlbumListSection
+        nodes={albums}
+        isCreatingAlbum={isLoading}
+        submitCreateAlbum={submitCreateAlbum}
+      />
     </Container>
   );
 };

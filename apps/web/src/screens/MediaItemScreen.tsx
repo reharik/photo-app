@@ -7,7 +7,7 @@ import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
 import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
-import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
+import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToMediaItemDetailVM';
 import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
 import { getGalleryNavigation } from './MediaItemGalleryNavigation';

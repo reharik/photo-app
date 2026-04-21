@@ -39,31 +39,33 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
     };
   }
 
-  return {
-    data: undefined,
-    content: (
-      <QueryErrorState
-        error={{
-          name: 'ApolloError',
-          message: 'Response not successful: Received status code 500',
-          graphQLErrors: [
-            {
-              message: 'Internal server error',
-              path: ['viewer', 'albums'],
-              extensions: {
-                code: 'INTERNAL_SERVER_ERROR',
-              },
-            },
-          ],
-          networkError: {
-            name: 'ServerError',
+  if (query.error) {
+    return {
+      data: undefined,
+      content: (
+        <QueryErrorState
+          error={{
+            name: 'ApolloError',
             message: 'Response not successful: Received status code 500',
-            statusCode: 500,
-          },
-        }}
-      />
-    ),
-  };
+            graphQLErrors: [
+              {
+                message: 'Internal server error',
+                path: ['viewer', 'albums'],
+                extensions: {
+                  code: 'INTERNAL_SERVER_ERROR',
+                },
+              },
+            ],
+            networkError: {
+              name: 'ServerError',
+              message: 'Response not successful: Received status code 500',
+              statusCode: 500,
+            },
+          }}
+        />
+      ),
+    };
+  }
 
   if (!query.data) {
     return {

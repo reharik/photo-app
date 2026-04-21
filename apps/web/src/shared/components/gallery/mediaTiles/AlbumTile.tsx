@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
 import { AlbumSummaryVM } from '../../../../viewModels/album/AlbumSummaryVM';
@@ -6,31 +7,39 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
   const mediaItem = item.coverMedia;
   return (
     <>
-      <AlbumThumb>
+      <ThumbLink to={`/albums/${item.id}`}>
         {mediaItem ? (
           <ThumbImage src={mediaItem.thumbnailUrl} alt={item.title.trim()} />
         ) : (
           <ThumbIcon aria-hidden>{'🖼️'}</ThumbIcon>
         )}
-      </AlbumThumb>
-      <MediaInfo>
-        <MediaTitle>{item.title.trim()}</MediaTitle>
-        <MediaMeta>Updated {localizeDate(item.updatedAt)}</MediaMeta>
-      </MediaInfo>
+      </ThumbLink>
+      <CaptionLink to={`/albums/${item.id}`}>
+        <MediaInfo>
+          <MediaTitle>{item.title.trim()}</MediaTitle>
+          <MediaMeta>Updated {localizeDate(item.updatedAt)}</MediaMeta>
+        </MediaInfo>
+      </CaptionLink>
     </>
   );
 };
-const AlbumThumb = styled.div`
-  align-items: center;
-  aspect-ratio: 4 / 3;
-  color: inherit;
+const ThumbLink = styled(Link)`
   display: flex;
-  flex-shrink: 0;
+  align-items: center;
   justify-content: center;
-  min-width: 0;
-  overflow: hidden;
-  text-decoration: none;
   width: 100%;
+  min-width: 0;
+  aspect-ratio: 4 / 3;
+  flex-shrink: 0;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+`;
+
+const CaptionLink = styled(Link)`
+  display: block;
+  color: inherit;
+  text-decoration: none;
 `;
 
 const ThumbImage = styled.img`

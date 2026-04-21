@@ -7,10 +7,19 @@ import { useUploadQueue } from '../hooks/useUploadQueue';
 
 type UploadMediaButtonProps = {
   setAppErrors?: (errors: AppError[]) => void;
+  text?: string;
+  shortText?: string;
   onComplete: () => void;
+  multiple?: boolean;
 };
 
-export const UploadMediaButton = ({ setAppErrors, onComplete }: UploadMediaButtonProps) => {
+export const UploadMediaButton = ({
+  setAppErrors,
+  text,
+  shortText,
+  multiple = true,
+  onComplete,
+}: UploadMediaButtonProps) => {
   const client = useApolloClient();
   const { items, enqueueFiles, clearCompleted, isUploading } = useUploadQueue(client);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +51,7 @@ export const UploadMediaButton = ({ setAppErrors, onComplete }: UploadMediaButto
       <input
         ref={fileInputRef}
         type="file"
-        multiple
+        multiple={multiple}
         accept="image/*,video/*"
         style={{ display: 'none' }}
         onChange={handleFileChange}
@@ -53,8 +62,8 @@ export const UploadMediaButton = ({ setAppErrors, onComplete }: UploadMediaButto
           'Uploading…'
         ) : (
           <>
-            <UploadButtonLabelWide>Upload Media</UploadButtonLabelWide>
-            <UploadButtonLabelNarrow>Upload</UploadButtonLabelNarrow>
+            <UploadButtonLabelWide>{text || 'Upload Media'}</UploadButtonLabelWide>
+            <UploadButtonLabelNarrow>{shortText || 'Upload'}</UploadButtonLabelNarrow>
           </>
         )}
       </UploadButton>

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ViewerAlbumDetailDocument } from '../graphql/generated/types';
 import { AlbumSection } from '../shared/components/AlbumSection';
-import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
+import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
 import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
 

@@ -11,29 +11,22 @@ import { RecentMediaSelectionActions } from './gallery/selectionActions/RecentMe
 
 type AlbumListSectionProps = {
   nodes: AlbumSummaryVM[];
-  submitCreateAlbum: (title: string) => Promise<boolean>;
+  isCreatingAlbum: boolean;
+  submitCreateAlbum: (title: string) => Promise<void>;
 };
 
-export const AlbumListSection = ({ nodes, submitCreateAlbum }: AlbumListSectionProps) => {
+export const AlbumListSection = ({
+  nodes,
+  isCreatingAlbum,
+  submitCreateAlbum,
+}: AlbumListSectionProps) => {
   const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
   const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
     useMultiSelectIds(orderedMediaIds);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
 
   const closeCreate = () => {
     setCreateModalOpen(false);
-  };
-
-  const onSubmitCreate = async (newTitle: string) => {
-    setIsCreating(true);
-    const result = await submitCreateAlbum(newTitle);
-    setIsCreating(false);
-
-    if (!result) {
-      return;
-    }
-    closeCreate();
   };
 
   return (
@@ -73,9 +66,9 @@ export const AlbumListSection = ({ nodes, submitCreateAlbum }: AlbumListSectionP
       />
       {createModalOpen ? (
         <CreateAlbumModal
-          isCreating={isCreating}
+          isCreating={isCreatingAlbum}
           closeCreate={closeCreate}
-          submitCreate={onSubmitCreate}
+          submitCreate={submitCreateAlbum}
         />
       ) : null}
     </Container>
