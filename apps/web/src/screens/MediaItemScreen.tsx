@@ -26,7 +26,7 @@ export const MediaItemScreen = () => {
   });
 
   const { data: mediaItem, content } = getQueryRenderState({
-    ...query,
+    query,
     select: (data) => data.viewer?.mediaItem,
     map: mapMediaItemToMediaItemDetailVM,
   });

@@ -3,21 +3,30 @@ import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { ViewerAlbumDetailDocument } from '../graphql/generated/types';
 import { AlbumSection } from '../shared/components/AlbumSection';
+import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
 import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
 import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
 
-  const { data, refetch } = useQuery(ViewerAlbumDetailDocument, {
+  const query = useQuery(ViewerAlbumDetailDocument, {
     variables: { albumId: albumId ?? '' },
     skip: !albumId,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const album = data?.viewer?.album ? mapAlbumToAlbumSummaryVM(data.viewer.album) : undefined;
-  const albumItems = data?.viewer?.album?.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
+  const { data, content } = getQueryRenderState({
+    query,
+    select: (data) => data.viewer?.album,
+  });
+
+  if (!data) {
+    return content;
+  }
+  const album = mapAlbumToAlbumSummaryVM(data);
+  const albumItems = data.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
   if (!albumId || !album) {
     return (
       <Container>
@@ -28,7 +37,9 @@ export const AlbumScreen = () => {
 
   return (
     <Container>
-      {album && <AlbumSection album={album} albumItems={albumItems} refetch={refetch} />}
+      {album && (
+        <AlbumSection album={album} albumItems={albumItems} refetch={() => void query.refetch()} />
+      )}
     </Container>
   );
 };

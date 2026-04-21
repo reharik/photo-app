@@ -1,20 +1,24 @@
 import { useQuery } from '@apollo/client/react';
-import { useMemo } from 'react';
 import { ViewerRecentMediaDocument } from '../graphql/generated/types';
+import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
 import { RecentMediaSection } from '../shared/components/RecentMediaSection';
 import { mapMultipleMediaItemsToMediaItemSummaryVMs } from '../viewModels/media/mapMediaItemToMediaItemSummaryVM';
 
 export const HomeScreen = () => {
-  const { data, loading, error, refetch } = useQuery(ViewerRecentMediaDocument, {
+  const query = useQuery(ViewerRecentMediaDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const nodes = useMemo(
-    () => mapMultipleMediaItemsToMediaItemSummaryVMs(data?.viewer?.mediaItems.nodes ?? []),
-    [data],
-  );
+  const { data: nodes, content } = getQueryRenderState({
+    query,
+    select: (data) => data.viewer?.mediaItems.nodes,
+    map: mapMultipleMediaItemsToMediaItemSummaryVMs,
+  });
 
-  // TODO: handle loading and error states
-  return <RecentMediaSection nodes={nodes} reloadData={refetch} />;
+  if (!nodes) {
+    return content;
+  }
+
+  return <RecentMediaSection nodes={nodes} reloadData={() => void query.refetch()} />;
 };

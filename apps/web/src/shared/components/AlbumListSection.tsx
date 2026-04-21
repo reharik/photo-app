@@ -1,0 +1,184 @@
+import { useMemo, useState } from 'react';
+import styled from 'styled-components';
+import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { CreateAlbumModal } from '../../screens/CreateAlbumModal';
+import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { EmptyState } from './gallery/EmptyState';
+import { AlbumTile } from './gallery/mediaTiles/AlbumTile';
+import { SelectableGallery } from './gallery/SelectableGallery';
+import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
+import { RecentMediaSelectionActions } from './gallery/selectionActions/RecentMediaSelectionActions';
+
+type AlbumListSectionProps = {
+  nodes: AlbumSummaryVM[];
+  submitCreateAlbum: (title: string) => Promise<boolean>;
+};
+
+export const AlbumListSection = ({ nodes, submitCreateAlbum }: AlbumListSectionProps) => {
+  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
+  const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
+    useMultiSelectIds(orderedMediaIds);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const closeCreate = () => {
+    setCreateModalOpen(false);
+  };
+
+  const onSubmitCreate = async (newTitle: string) => {
+    setIsCreating(true);
+    const result = await submitCreateAlbum(newTitle);
+    setIsCreating(false);
+
+    if (!result) {
+      return;
+    }
+    closeCreate();
+  };
+
+  return (
+    <Container>
+      <SelectableGalleryHeader
+        selectionCount={selectionCount}
+        clearSelection={clearSelection}
+        SelectionActions={RecentMediaSelectionActions}
+        Header={() => (
+          <Header>
+            <Title>Albums</Title>
+            <HeaderActions>
+              <PrimaryButton type="button" onClick={() => setCreateModalOpen(true)}>
+                <PrimaryButtonLabelWide>Add album</PrimaryButtonLabelWide>
+                <PrimaryButtonLabelNarrow>Add</PrimaryButtonLabelNarrow>
+              </PrimaryButton>
+            </HeaderActions>
+          </Header>
+        )}
+      />
+      <SelectableGallery
+        nodes={nodes}
+        multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
+        emptyState={
+          <EmptyState
+            title="No albums yet"
+            text="Create an album to organize your media."
+            action={
+              <EmptyButton type="button" onClick={() => setCreateModalOpen(true)}>
+                Add album
+              </EmptyButton>
+            }
+          />
+        }
+        renderItem={({ item }) => <AlbumTile item={item} />}
+        orderedMediaIds={orderedMediaIds}
+      />
+      {createModalOpen ? (
+        <CreateAlbumModal
+          isCreating={isCreating}
+          closeCreate={closeCreate}
+          submitCreate={onSubmitCreate}
+        />
+      ) : null}
+    </Container>
+  );
+};
+
+const Container = styled.div`
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+const Title = styled.h1`
+  font-size: 32px;
+  font-weight: 500;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.text};
+  letter-spacing: -0.5px;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    flex: 1;
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing(2)};
+  flex-shrink: 0;
+`;
+const Header = styled.div`
+  padding: ${({ theme }) => theme.spacing(4)} ${({ theme }) => theme.spacing(6)};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(3)};
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+    align-items: center;
+  }
+`;
+
+const PrimaryButtonLabelWide = styled.span`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const PrimaryButtonLabelNarrow = styled.span`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: inline;
+  }
+`;
+
+const PrimaryButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.bg};
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.accentHover};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+    font-size: 13px;
+    font-weight: 600;
+  }
+`;
+
+const EmptyButton = styled.button`
+  margin-top: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(4)};
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.bg};
+  border: none;
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.accentHover};
+  }
+`;

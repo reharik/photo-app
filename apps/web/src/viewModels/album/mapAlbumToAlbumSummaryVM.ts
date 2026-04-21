@@ -11,3 +11,9 @@ export function mapAlbumToAlbumSummaryVM(album: AlbumSummaryFragment): AlbumSumm
     updatedAt: album.updatedAt,
   };
 }
+
+export function mapMultipleAlbumsToAlbumSummaryVMs(
+  albums: AlbumSummaryFragment[],
+): AlbumSummaryVM[] {
+  return albums.map(mapAlbumToAlbumSummaryVM);
+}

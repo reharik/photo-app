@@ -8,7 +8,6 @@ fragment MediaItemDetail on MediaItem {
   createdAt
   takenAt
   derivedUrls {
-    thumbnail
     display
   }
 }

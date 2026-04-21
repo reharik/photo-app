@@ -7,13 +7,7 @@ query ViewerAlbums {
       }
     ) {
       nodes {
-        id
-        title
-        createdAt
-        updatedAt
-        coverMedia {
-          ...MediaItemSummary
-        }
+        ...AlbumSummary
       }
       pageInfo {
         limit

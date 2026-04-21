@@ -7,21 +7,7 @@ query ViewerRecentMedia {
       }
     ) {
       nodes {
-        id
-        kind
-        status
-        derivedUrls {
-          thumbnail
-          display
-        }
-        mimeType
-        title
-        description
-        originalFileName
-        takenAt
-        width
-        height
-        createdAt
+        ...MediaItemSummary
       }
       pageInfo {
         limit

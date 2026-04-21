@@ -27,7 +27,7 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
     return (
       <>
         <BackLink to="/albums">← Albums</BackLink>
-        <Title>(album?.title ?? 'Album')</Title>
+        <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
           <PrimaryButton type="button" disabled={!album}>
             Add album item
