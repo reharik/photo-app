@@ -1,9 +1,4 @@
-import { AlbumAction } from '@packages/contracts';
-import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
-import {
-  ensureMediaItemInReadyState,
-  ensureMediaItemOwnedByViewer,
-} from '../../../application/support/mediaItemGuard';
+import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
   loadRequiredReadOnlyMediaItem,
@@ -41,25 +36,11 @@ export const buildAddAlbumItem = ({
     const album = r1.value;
     const mediaItem = r2.value;
 
-    const r3 = ensureMediaItemOwnedByViewer(mediaItem.ownerId, viewerId);
+    const r3 = tryAppendOneMediaToAlbum(album, mediaItem, mediaItemId, viewerId);
     if (!r3.success) {
       return r3;
     }
-
-    const r4 = ensureMemberCanEditAlbum(album, AlbumAction.addItem, viewerId);
-    if (!r4.success) {
-      return r4;
-    }
-    const r5 = ensureMediaItemInReadyState(mediaItem);
-    if (!r5.success) {
-      return r5;
-    }
-
-    const r6 = album.addItem(mediaItemId, viewerId);
-    if (!r6.success) {
-      return r6;
-    }
-    const albumItem = r6.value;
+    const albumItem = r3.value;
     await albumRepository.save(album);
 
     return ok({

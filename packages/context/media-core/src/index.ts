@@ -23,6 +23,7 @@ export * from './services/readServices/viewerReadServices/viewerMediaItemReadSer
 export * from './services/readServices/viewerReadServices/viewerMediaItemReadService.types';
 
 export * from './services/writeServices/album/addAlbumItem';
+export * from './services/writeServices/album/addMediaItemsToAlbum';
 export * from './services/writeServices/album/createAlbum';
 export * from './services/writeServices/album/deleteAlbum';
 export * from './services/writeServices/album/deleteAlbumItem';

@@ -1,6 +1,10 @@
-import type { ReorderAlbumItemsCommand } from '@packages/media-core';
+import type { AddMediaItemsToAlbumCommand, ReorderAlbumItemsCommand } from '@packages/media-core';
 import { authenticatedResolver } from '../../context/authenticatedContext';
-import type { MutationReorderAlbumItemsArgs, Resolvers } from '../../generated/types.generated';
+import type {
+  MutationAddMediaItemsToAlbumArgs,
+  MutationReorderAlbumItemsArgs,
+  Resolvers,
+} from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
 const albumResolvers: Pick<Resolvers, 'Mutation'> = {
@@ -34,6 +38,27 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         errors: result.success ? [] : [toContractErrorPayload(result.error)],
       };
     }),
+    AddMediaItemsToAlbum: authenticatedResolver(
+      async (_parent, args: MutationAddMediaItemsToAlbumArgs, ctx) => {
+        const command: AddMediaItemsToAlbumCommand = {
+          viewerId: ctx.viewer.id,
+          mediaItemIds: args.input.mediaItemIds,
+          albumId: args.input.albumId ?? undefined,
+          newAlbum: args.input.newAlbum ?? undefined,
+        };
+        const result = await ctx.writeServices.addMediaItemsToAlbum(command);
+
+        return {
+          data: result.success
+            ? {
+                albumId: result.value.albumId,
+                albumItemIds: result.value.albumItemIds,
+              }
+            : undefined,
+          errors: result.success ? [] : [toContractErrorPayload(result.error)],
+        };
+      },
+    ),
     ReorderAlbumItems: authenticatedResolver(
       async (_parent, args: MutationReorderAlbumItemsArgs, ctx) => {
         const command: ReorderAlbumItemsCommand = {

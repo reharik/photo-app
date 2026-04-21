@@ -13,6 +13,13 @@ export type MediaItemReadRepository = {
     mediaItemId: EntityId;
     viewerId: EntityId;
   }) => Promise<MediaItemRow | undefined>;
+  getManyForViewer: ({
+    mediaItemIds,
+    viewerId,
+  }: {
+    mediaItemIds: EntityId[];
+    viewerId: EntityId;
+  }) => Promise<MediaItemRow[]>;
   listForViewer(args: {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
@@ -61,6 +68,20 @@ export const buildMediaItemReadRepository = ({
       .first<MediaItemRow>(...mediaItemRowFields);
 
     return row;
+  },
+  getManyForViewer: async ({
+    mediaItemIds,
+    viewerId,
+  }: {
+    mediaItemIds: EntityId[];
+    viewerId: EntityId;
+  }): Promise<MediaItemRow[]> => {
+    const rows = await database<MediaItemRow>('mediaItem')
+      .whereIn('id', mediaItemIds)
+      .andWhere('ownerId', viewerId)
+      .select<MediaItemRow[]>(...mediaItemRowFields);
+
+    return rows;
   },
   listForViewer: async ({
     viewerId,

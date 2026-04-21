@@ -5,6 +5,7 @@ import type Router from '@koa/router';
 import type { Logger } from '@packages/infrastructure';
 import type {
   AddAlbumItem,
+  AddMediaItemsToAlbum,
   AlbumReadRepository,
   AlbumRepository,
   CommentRepository,
@@ -47,6 +48,7 @@ import type { AuthService } from '../../services/authService.js';
 
 export interface IocGeneratedTypes {
   addAlbumItem: AddAlbumItem;
+  addMediaItemsToAlbum: AddMediaItemsToAlbum;
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   authController: AuthController;
@@ -95,6 +97,7 @@ export interface IocGeneratedTypes {
   };
   writeServices: {
     addAlbumItem: AddAlbumItem;
+    addMediaItemsToAlbum: AddMediaItemsToAlbum;
     createAlbum: CreateAlbum;
     createMediaUpload: CreateMediaUpload;
     deleteAlbum: DeleteAlbum;

@@ -9,6 +9,20 @@ export const ErrorArea = enumeration<typeof errorAreaInput>('ErrorArea', {
 });
 // @blocksort asc
 const contractErrorInput = {
+  AddMediaToAlbumEmptyMediaList: {
+    code: 'ALBUM_ADD_MEDIA_EMPTY_MEDIA_LIST',
+    display: 'At least one media item is required',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  AddMediaToAlbumInvalidTarget: {
+    code: 'ALBUM_ADD_MEDIA_INVALID_TARGET',
+    display: 'Provide either an existing album or a new album, not both and not neither',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
   AlbumNotFound: {
     code: 'ALBUM_NOT_FOUND',
     display: 'Album not found',
@@ -111,6 +125,13 @@ const contractErrorInput = {
   MediaItemNotFound: {
     code: 'MEDIA_ITEM_NOT_FOUND',
     display: 'Media item not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  MediaItemsNotFound: {
+    code: 'MEDIA_ITEMS_NOT_FOUND',
+    display: 'Media items not found',
     category: ErrorCategory.domain,
     area: ErrorArea.mediaItem,
     retryable: false,

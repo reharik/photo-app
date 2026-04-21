@@ -71,3 +71,20 @@ export type UnsetCoverMediaCommand = {
 export type UnsetCoverMediaResult = {
   albumId: EntityId;
 };
+
+export type NewAlbumInAddMediaItems = {
+  title: string;
+  description?: string;
+};
+
+export type AddMediaItemsToAlbumCommand = {
+  viewerId: EntityId;
+  mediaItemIds: EntityId[];
+  albumId?: EntityId;
+  newAlbum?: NewAlbumInAddMediaItems;
+};
+
+export type AddMediaItemsToAlbumResult = {
+  albumId: EntityId;
+  albumItemIds: EntityId[];
+};

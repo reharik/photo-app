@@ -17,6 +17,7 @@ import type { AlbumRepository } from '../repositories/domainRepositories/albumRe
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
 import type { MediaItemRow } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
 import { buildAddAlbumItem } from '../services/writeServices/album/addAlbumItem';
+import { buildAddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
 import { buildCreateAlbum } from '../services/writeServices/album/createAlbum';
 import { buildCreateMediaItemUpload } from '../services/writeServices/mediaItem/createMediaItemUpload';
 import { buildFinalizeMediaItemUpload } from '../services/writeServices/mediaItem/finalizeMediaItemUpload';
@@ -732,6 +733,231 @@ describe('Album integration (application services)', () => {
         code = second.error.code;
       }
       expect(code).toBe(AppErrorCollection.album.MediaAlreadyInAlbum.code);
+    });
+  });
+
+  describe('When addMediaItemsToAlbum is called', () => {
+    it('should reject when both albumId and newAlbum are provided', async () => {
+      const albumRepository = createInMemoryAlbumRepository();
+      const addMany = buildAddMediaItemsToAlbum({
+        albumRepository,
+        mediaItemReadRepository: { getForViewer: async () => undefined },
+      } as never);
+
+      const result = await addMany({
+        viewerId,
+        mediaItemIds: ['a'],
+        albumId: 'x',
+        newAlbum: { title: 'N' },
+      });
+      expect(result.success).toBe(false);
+      if (result.success) {
+        return;
+      }
+      expect(result.error.code).toBe(AppErrorCollection.album.AddMediaToAlbumInvalidTarget.code);
+    });
+
+    it('should reject when neither albumId nor newAlbum is provided', async () => {
+      const albumRepository = createInMemoryAlbumRepository();
+      const addMany = buildAddMediaItemsToAlbum({
+        albumRepository,
+        mediaItemReadRepository: { getForViewer: async () => undefined },
+      } as never);
+
+      const result = await addMany({
+        viewerId,
+        mediaItemIds: ['a'],
+      });
+      expect(result.success).toBe(false);
+      if (result.success) {
+        return;
+      }
+      expect(result.error.code).toBe(AppErrorCollection.album.AddMediaToAlbumInvalidTarget.code);
+    });
+
+    it('should reject an empty list after deduplication', async () => {
+      const albumRepository = createInMemoryAlbumRepository();
+      const addMany = buildAddMediaItemsToAlbum({
+        albumRepository,
+        mediaItemReadRepository: { getForViewer: async () => undefined },
+      } as never);
+
+      const result = await addMany({
+        viewerId,
+        mediaItemIds: [],
+        newAlbum: { title: 'No items' },
+      });
+      expect(result.success).toBe(false);
+      if (result.success) {
+        return;
+      }
+      expect(result.error.code).toBe(AppErrorCollection.album.AddMediaToAlbumEmptyMediaList.code);
+    });
+
+    it('should create a new album and add two items in a single save', async () => {
+      const albumRepository = createInMemoryAlbumRepository();
+      const mediaItemRepository = createInMemoryMediaItemRepository();
+      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const mediaStorage = createTrackingMediaStorage('http://localhost:0');
+
+      const createUpload = buildCreateMediaItemUpload({
+        mediaItemRepository,
+        mediaStorage,
+      } as never);
+      const finalize = buildFinalizeMediaItemUpload({
+        mediaItemRepository,
+        mediaStorage,
+        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
+      } as never);
+
+      const addMany = buildAddMediaItemsToAlbum({
+        albumRepository,
+        mediaItemReadRepository: {
+          // eslint-disable-next-line @typescript-eslint/require-await
+          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+            projectionFromReadRepo.get(mediaItemId),
+        },
+      } as never);
+
+      const ids: string[] = [];
+      for (let i = 0; i < 2; i += 1) {
+        const mediaResult = await createUpload({
+          viewerId,
+          kind: MediaKind.photo,
+          mimeType: 'image/jpeg',
+        });
+        expect(mediaResult.success).toBe(true);
+        if (!mediaResult.success) {
+          return;
+        }
+        const item = await mediaItemRepository.getById(mediaResult.value.mediaItemId);
+        if (!item) {
+          return;
+        }
+        const originalAsset = findAssetRecord(item, MediaAssetKind.original);
+        if (!originalAsset) {
+          return;
+        }
+        mediaStorage.objects.set(
+          buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+          {
+            size: MINIMAL_PNG_1X1.length,
+            mimeType: 'image/png',
+            body: MINIMAL_PNG_1X1,
+          },
+        );
+        const fin = await finalize({ viewerId, mediaItemId: item.id() });
+        expect(fin.success).toBe(true);
+        if (!fin.success) {
+          return;
+        }
+        const readyItem = await mediaItemRepository.getById(item.id());
+        if (!readyItem) {
+          return;
+        }
+        projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+        ids.push(readyItem.id());
+      }
+
+      const batch = await addMany({
+        viewerId,
+        mediaItemIds: ids,
+        newAlbum: { title: 'Batch new' },
+      });
+      expect(batch.success).toBe(true);
+      if (!batch.success) {
+        return;
+      }
+      expect(batch.value.albumItemIds).toHaveLength(2);
+
+      const reloaded = await albumRepository.getById(batch.value.albumId);
+      expect(reloaded).toBeDefined();
+      if (!reloaded) {
+        return;
+      }
+      expect(reloaded.toPersistence().items).toHaveLength(2);
+    });
+
+    it('should add a single item when the same id appears twice in the input', async () => {
+      const albumRepository = createInMemoryAlbumRepository();
+      const mediaItemRepository = createInMemoryMediaItemRepository();
+      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const mediaStorage = createTrackingMediaStorage('http://localhost:0');
+
+      const createAlbum = buildCreateAlbum({ albumRepository } as never);
+      const albumResult = await createAlbum({ viewerId, title: 'Summer' });
+      expect(albumResult.success).toBe(true);
+      if (!albumResult.success) {
+        return;
+      }
+
+      const createUpload = buildCreateMediaItemUpload({
+        mediaItemRepository,
+        mediaStorage,
+      } as never);
+      const finalize = buildFinalizeMediaItemUpload({
+        mediaItemRepository,
+        mediaStorage,
+        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
+      } as never);
+
+      const mediaResult = await createUpload({
+        viewerId,
+        kind: MediaKind.photo,
+        mimeType: 'image/jpeg',
+      });
+      expect(mediaResult.success).toBe(true);
+      if (!mediaResult.success) {
+        return;
+      }
+      const item = await mediaItemRepository.getById(mediaResult.value.mediaItemId);
+      if (!item) {
+        return;
+      }
+      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
+      if (!originalAsset) {
+        return;
+      }
+      mediaStorage.objects.set(
+        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        {
+          size: MINIMAL_PNG_1X1.length,
+          mimeType: 'image/png',
+          body: MINIMAL_PNG_1X1,
+        },
+      );
+      const fin = await finalize({ viewerId, mediaItemId: item.id() });
+      expect(fin.success).toBe(true);
+      if (!fin.success) {
+        return;
+      }
+      const readyItem = await mediaItemRepository.getById(item.id());
+      if (!readyItem) {
+        return;
+      }
+      projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+
+      const addMany = buildAddMediaItemsToAlbum({
+        albumRepository,
+        mediaItemReadRepository: {
+          // eslint-disable-next-line @typescript-eslint/require-await
+          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+            projectionFromReadRepo.get(mediaItemId),
+        },
+      } as never);
+
+      const result = await addMany({
+        viewerId,
+        mediaItemIds: [readyItem.id(), readyItem.id()],
+        albumId: albumResult.value.albumId,
+      });
+      expect(result.success).toBe(true);
+      if (!result.success) {
+        return;
+      }
+      expect(result.value.albumItemIds).toHaveLength(1);
+      const album = await albumRepository.getById(albumResult.value.albumId);
+      expect(album?.toPersistence().items).toHaveLength(1);
     });
   });
 });

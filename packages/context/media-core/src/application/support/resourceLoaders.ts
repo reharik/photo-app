@@ -27,6 +27,16 @@ export const loadRequiredReadOnlyMediaItem = async (
   const mediaItem = await mediaItemReadRepository.getForViewer({ mediaItemId, viewerId });
   return mediaItem ? ok(mediaItem) : fail(AppErrorCollection.mediaItem.MediaItemNotFound);
 };
+export const loadRequiredReadOnlyMediaItems = async (
+  mediaItemIds: EntityId[],
+  viewerId: EntityId,
+  mediaItemReadRepository: MediaItemReadRepository,
+): Promise<WriteResult<MediaItemRow[], ContractError>> => {
+  const mediaItems = await mediaItemReadRepository.getManyForViewer({ mediaItemIds, viewerId });
+  return mediaItems.length > 0
+    ? ok(mediaItems)
+    : fail(AppErrorCollection.mediaItem.MediaItemsNotFound);
+};
 
 export const loadRequiredMediaItem = async (
   mediaItemId: EntityId,

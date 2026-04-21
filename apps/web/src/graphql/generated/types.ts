@@ -38,6 +38,24 @@ export type AddMediaItemToAlbumResponse = {
   errors?: Maybe<Array<ContractError>>;
 };
 
+export type AddMediaItemsToAlbumInput = {
+  albumId?: InputMaybe<Scalars['ID']['input']>;
+  mediaItemIds: Array<Scalars['ID']['input']>;
+  newAlbum?: InputMaybe<NewAlbumInAddMediaItemsInput>;
+};
+
+export type AddMediaItemsToAlbumPayload = {
+  __typename?: 'AddMediaItemsToAlbumPayload';
+  albumId: Scalars['ID']['output'];
+  albumItemIds: Array<Scalars['ID']['output']>;
+};
+
+export type AddMediaItemsToAlbumResponse = {
+  __typename?: 'AddMediaItemsToAlbumResponse';
+  data?: Maybe<AddMediaItemsToAlbumPayload>;
+  errors?: Maybe<Array<ContractError>>;
+};
+
 export type Album = Node & {
   __typename?: 'Album';
   coverMedia?: Maybe<MediaItem>;
@@ -273,6 +291,7 @@ export type MediaKind = 'PHOTO' | 'VIDEO';
 export type Mutation = {
   __typename?: 'Mutation';
   AddMediaItemToAlbum: AddMediaItemToAlbumResponse;
+  AddMediaItemsToAlbum: AddMediaItemsToAlbumResponse;
   DeleteAlbumItemFromAlbum: DeleteAlbumItemFromAlbumResponse;
   ReorderAlbumItems: ReorderAlbumItemsResponse;
   SetCoverMedia: SetCoverMediaResponse;
@@ -288,6 +307,10 @@ export type Mutation = {
 
 export type MutationAddMediaItemToAlbumArgs = {
   input: AddMediaItemToAlbumInput;
+};
+
+export type MutationAddMediaItemsToAlbumArgs = {
+  input: AddMediaItemsToAlbumInput;
 };
 
 export type MutationDeleteAlbumItemFromAlbumArgs = {
@@ -332,6 +355,11 @@ export type MutationUpdateMediaItemDetailsArgs = {
 
 export type MutationUpdateMediaItemTagsArgs = {
   input: UpdateMediaItemTagsInput;
+};
+
+export type NewAlbumInAddMediaItemsInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
 };
 
 /** Implemented by all entities that have an id. */
