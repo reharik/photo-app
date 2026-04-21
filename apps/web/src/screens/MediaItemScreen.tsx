@@ -7,6 +7,7 @@ import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
 import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
+import { getQueryRenderState } from '../shared/components/query/getQueryRenderState';
 import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToMediaItemDetailVM';
 import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
 import { getGalleryNavigation } from './MediaItemGalleryNavigation';
@@ -17,13 +18,18 @@ export const MediaItemScreen = () => {
   const navigate = useNavigate();
   const galleryIds = (location.state as MediaItemLocationState | undefined)?.mediaGalleryIds;
 
-  const { data, loading, error, refetch } = useQuery(ViewerMediaItemDetailDocument, {
+  const query = useQuery(ViewerMediaItemDetailDocument, {
     variables: { mediaItemId: mediaId ?? '' },
     skip: !mediaId,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
+  const { data: mediaItem, content } = getQueryRenderState({
+    ...query,
+    select: (data) => data.viewer?.mediaItem,
+    map: mapMediaItemToMediaItemDetailVM,
+  });
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const detailPanelRef = useRef<MediaItemDetailPanelHandle>(null);
@@ -41,9 +47,9 @@ export const MediaItemScreen = () => {
 
   const handleAfterSave = useCallback(async (): Promise<void> => {
     if (mediaId != null && mediaId !== '') {
-      await refetch({ mediaItemId: mediaId });
+      await query.refetch({ mediaItemId: mediaId });
     }
-  }, [mediaId, refetch]);
+  }, [mediaId, query]);
 
   const galleryNavigation = getGalleryNavigation({
     galleryIds,
@@ -70,10 +76,6 @@ export const MediaItemScreen = () => {
     },
     [galleryIds, navigate, galleryNavigation],
   );
-
-  const mediaItem = data?.viewer?.mediaItem
-    ? mapMediaItemToMediaItemDetailVM(data.viewer.mediaItem)
-    : undefined;
 
   // const viewerChrome = (children: ReactNode) => (
   //   <ViewerShell>
@@ -107,6 +109,10 @@ export const MediaItemScreen = () => {
     onEscape: handleClose,
     onNavigate: handleMediaNavigate,
   });
+
+  if (!mediaItem) {
+    return content;
+  }
 
   return (
     <Container>

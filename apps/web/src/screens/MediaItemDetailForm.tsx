@@ -1,9 +1,22 @@
 import { useMutation } from '@apollo/client/react';
+import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import styled, { css } from 'styled-components';
 import { UpdateMediaItemDetailsDocument } from '../graphql/generated/types';
 import type { MediaItemDetailVM } from '../viewModels/media/MediaItemDetailVM';
 import { fromDatetimeLocalToIso, toDatetimeLocalValue } from './mediaItemMetaFormat';
+
+const takenLocalFormat = "yyyy-LL-dd'T'HH:mm";
+
+const parseDraftTaken = (local: string): Date | undefined => {
+  if (local.trim() === '') {
+    return undefined;
+  }
+  const dt = DateTime.fromFormat(local.trim(), takenLocalFormat);
+  return dt.isValid ? dt.toJSDate() : undefined;
+};
 
 export type MediaItemDetailFormProps = {
   mediaItem: MediaItemDetailVM;
@@ -115,14 +128,23 @@ export const MediaItemDetailForm = ({
       </FormField>
       <FormField>
         <DetailMetaLabel htmlFor="media-detail-taken">Taken</DetailMetaLabel>
-        <FormDatetime
+        <TakenDatePicker
           id="media-detail-taken"
-          type="datetime-local"
-          step={60}
-          value={draftTakenLocal}
-          onChange={(e) => {
-            setDraftTakenLocal(e.target.value);
+          selected={parseDraftTaken(draftTakenLocal)}
+          onChange={(date: Date | null) => {
+            if (date == null) {
+              setDraftTakenLocal('');
+              return;
+            }
+            setDraftTakenLocal(DateTime.fromJSDate(date).toFormat(takenLocalFormat));
           }}
+          showTimeSelect
+          timeIntervals={60}
+          timeFormat="HH:mm"
+          dateFormat="MMM d, yyyy HH:mm"
+          isClearable
+          placeholderText="Date and time"
+          autoComplete="off"
         />
         <FormHint>Optional. Uses your local timezone.</FormHint>
       </FormField>
@@ -193,7 +215,7 @@ const FormTextarea = styled.textarea`
   min-height: 88px;
 `;
 
-const FormDatetime = styled.input`
+const TakenDatePicker = styled(DatePicker)`
   ${formFieldControlCss}
 `;
 
