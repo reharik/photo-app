@@ -178,11 +178,6 @@ const CoverPlaceholder = styled.div`
   opacity: 0.3;
 `;
 
-const CoverIcon = styled.div`
-  font-size: 64px;
-  opacity: 0.35;
-`;
-
 const CoverUploadButton = styled.button`
   width: 100%;
   height: 100%;
