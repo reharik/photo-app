@@ -9,8 +9,6 @@ import { knexConfig } from '../knexfile';
 
 const DEV_ADMIN_EMAIL = 'harik.raif@gmail.com';
 const DEV_ADMIN_PASSWORD = '123123123';
-const DEV_ADMIN_NAME = 'Admin';
-const DEV_ADMIN_ROLE = 'adult';
 
 const seedDevAdmin = async (): Promise<void> => {
   const db = knex(knexConfig);
@@ -23,13 +21,18 @@ const seedDevAdmin = async (): Promise<void> => {
       return;
     }
     const passwordHash = await bcrypt.hash(DEV_ADMIN_PASSWORD, 12);
+    const userId = crypto.randomUUID();
     await db('user').insert({
+      id: userId,
       email: DEV_ADMIN_EMAIL,
       passwordHash,
-      name: DEV_ADMIN_NAME,
-      role: DEV_ADMIN_ROLE,
-      isActive: true,
+      firstName: 'Raif',
+      lastName: 'Harik',
+      emailVerified: true,
+      createdBy: userId,
+      updatedBy: userId,
     });
+
     console.log('Dev admin user created: %s / %s', DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD);
     await db.destroy();
     process.exit(0);

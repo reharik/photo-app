@@ -4,19 +4,24 @@ import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { DeleteAlbumItemCommand, DeleteAlbumItemResult } from './writeAlbum.types';
+import { DeleteAlbumItemsCommand, DeleteAlbumItemsResult } from './writeAlbum.types';
 
-export interface DeleteAlbumItem extends WriteServiceBase {
-  (input: DeleteAlbumItemCommand): Promise<WriteResult<DeleteAlbumItemResult>>;
+export interface DeleteAlbumItems extends WriteServiceBase {
+  (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>>;
 }
 
-type DeleteAlbumItemDeps = {
+type DeleteAlbumItemsDeps = {
   albumRepository: AlbumRepository;
 };
 
-export const buildDeleteAlbumItem = ({ albumRepository }: DeleteAlbumItemDeps): DeleteAlbumItem => {
-  return async (input: DeleteAlbumItemCommand): Promise<WriteResult<DeleteAlbumItemResult>> => {
-    const { viewerId, albumId, mediaItemId } = input;
+export const buildDeleteAlbumItems = ({
+  albumRepository,
+}: DeleteAlbumItemsDeps): DeleteAlbumItems => {
+  return async (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>> => {
+    const { viewerId, albumId, albumItemIds } = input;
+    if (albumItemIds.length === 0) {
+      return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);
+    }
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
       return getResult;
@@ -34,11 +39,11 @@ export const buildDeleteAlbumItem = ({ albumRepository }: DeleteAlbumItemDeps): 
       return fail(AppErrorCollection.album.MemberNotAllowedToDeleteItem);
     }
 
-    const deleteResult = album.deleteItem(mediaItemId, viewerId);
+    const deleteResult = album.deleteItems(albumItemIds, viewerId);
     if (!deleteResult.success) {
       return deleteResult;
     }
     await albumRepository.save(album);
-    return ok({ albumId: album.id(), mediaItemId: mediaItemId });
+    return ok({ albumId: album.id(), albumItemIds });
   };
 };

@@ -21,15 +21,15 @@ export type AddAlbumItemResult = {
   albumItemId: EntityId;
 };
 
-export type DeleteAlbumItemCommand = {
+export type DeleteAlbumItemsCommand = {
   viewerId: EntityId;
   albumId: EntityId;
-  mediaItemId: EntityId;
+  albumItemIds: EntityId[];
 };
 
-export type DeleteAlbumItemResult = {
+export type DeleteAlbumItemsResult = {
   albumId: EntityId;
-  mediaItemId: EntityId;
+  albumItemIds: EntityId[];
 };
 
 export type ReorderAlbumItemsCommand = {

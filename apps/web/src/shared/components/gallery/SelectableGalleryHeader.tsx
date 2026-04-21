@@ -3,7 +3,8 @@ import { SelectableGallerySelectionBar } from './SelectableGallerySelectionBar';
 interface SelectableGalleryHeaderProps {
   selectionCount: number;
   clearSelection: () => void;
-  SelectionActions: React.ComponentType;
+  /** Toolbar content when items are selected (e.g. action buttons). */
+  SelectionActions: React.ReactNode;
   Header: React.ComponentType;
 }
 
@@ -19,7 +20,7 @@ export const SelectableGalleryHeader = ({
         <SelectableGallerySelectionBar
           count={selectionCount}
           onClear={clearSelection}
-          SelectionActions={SelectionActions}
+          selectionActions={SelectionActions}
         />
       ) : (
         <Header />

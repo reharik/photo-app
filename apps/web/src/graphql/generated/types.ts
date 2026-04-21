@@ -155,20 +155,20 @@ export type DeleteAlbumInput = {
   albumId: Scalars['ID']['input'];
 };
 
-export type DeleteAlbumItemFromAlbumInput = {
+export type DeleteAlbumItemsFromAlbumInput = {
   albumId: Scalars['ID']['input'];
-  mediaItemId: Scalars['ID']['input'];
+  albumItemIds: Array<Scalars['ID']['input']>;
 };
 
-export type DeleteAlbumItemFromAlbumPayload = {
-  __typename?: 'DeleteAlbumItemFromAlbumPayload';
+export type DeleteAlbumItemsFromAlbumPayload = {
+  __typename?: 'DeleteAlbumItemsFromAlbumPayload';
   albumId: Scalars['ID']['output'];
-  mediaItemId: Scalars['ID']['output'];
+  albumItemIds: Array<Scalars['ID']['output']>;
 };
 
-export type DeleteAlbumItemFromAlbumResponse = {
-  __typename?: 'DeleteAlbumItemFromAlbumResponse';
-  data?: Maybe<DeleteAlbumItemFromAlbumPayload>;
+export type DeleteAlbumItemsFromAlbumResponse = {
+  __typename?: 'DeleteAlbumItemsFromAlbumResponse';
+  data?: Maybe<DeleteAlbumItemsFromAlbumPayload>;
   errors?: Maybe<Array<ContractError>>;
 };
 
@@ -292,7 +292,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   AddMediaItemToAlbum: AddMediaItemToAlbumResponse;
   AddMediaItemsToAlbum: AddMediaItemsToAlbumResponse;
-  DeleteAlbumItemFromAlbum: DeleteAlbumItemFromAlbumResponse;
+  DeleteAlbumItemsFromAlbum: DeleteAlbumItemsFromAlbumResponse;
   ReorderAlbumItems: ReorderAlbumItemsResponse;
   SetCoverMedia: SetCoverMediaResponse;
   UnsetCoverMedia: UnsetCoverMediaResponse;
@@ -313,8 +313,8 @@ export type MutationAddMediaItemsToAlbumArgs = {
   input: AddMediaItemsToAlbumInput;
 };
 
-export type MutationDeleteAlbumItemFromAlbumArgs = {
-  input: DeleteAlbumItemFromAlbumInput;
+export type MutationDeleteAlbumItemsFromAlbumArgs = {
+  input: DeleteAlbumItemsFromAlbumInput;
 };
 
 export type MutationReorderAlbumItemsArgs = {
@@ -625,6 +625,58 @@ export type AddMediaItemToAlbumMutation = {
   };
 };
 
+export type AddMediaItemsToAlbumMutationVariables = Exact<{
+  input: AddMediaItemsToAlbumInput;
+}>;
+
+export type AddMediaItemsToAlbumMutation = {
+  __typename?: 'Mutation';
+  AddMediaItemsToAlbum: {
+    __typename?: 'AddMediaItemsToAlbumResponse';
+    data?:
+      | { __typename?: 'AddMediaItemsToAlbumPayload'; albumId: string; albumItemIds: Array<string> }
+      | undefined;
+    errors?:
+      | Array<{
+          __typename?: 'ContractError';
+          code: string;
+          message: string;
+          field?: string | undefined;
+          category: ErrorCategory;
+          retryable: boolean;
+        }>
+      | undefined;
+  };
+};
+
+export type DeleteAlbumItemsFromAlbumMutationVariables = Exact<{
+  input: DeleteAlbumItemsFromAlbumInput;
+}>;
+
+export type DeleteAlbumItemsFromAlbumMutation = {
+  __typename?: 'Mutation';
+  DeleteAlbumItemsFromAlbum: {
+    __typename?: 'DeleteAlbumItemsFromAlbumResponse';
+    data?:
+      | {
+          __typename?: 'DeleteAlbumItemsFromAlbumPayload';
+          albumId: string;
+          albumItemIds: Array<string>;
+        }
+      | undefined;
+    errors?:
+      | Array<{
+          __typename?: 'ContractError';
+          code: string;
+          message: string;
+          field?: string | undefined;
+          category: ErrorCategory;
+          retryable: boolean;
+        }>
+      | undefined;
+  };
+};
+
 export type CreateMediaUploadMutationVariables = Exact<{
   input: CreateMediaUploadInput;
 }>;
@@ -894,26 +946,6 @@ export type ViewerAlbumsQuery = {
                   derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                 }
               | undefined;
-            items: {
-              __typename?: 'AlbumItemCollectionPayload';
-              nodes: Array<{
-                __typename?: 'AlbumItem';
-                id: string;
-                orderIndex: string;
-                createdAt: string;
-                updatedAt: string;
-                mediaItem: {
-                  __typename?: 'MediaItem';
-                  id: string;
-                  kind: MediaKind;
-                  title?: string | undefined;
-                  originalFileName: string;
-                  createdAt: string;
-                  derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
-                };
-              }>;
-              pageInfo: { __typename?: 'PageInfo'; limit: number; offset: number };
-            };
           }>;
           pageInfo: { __typename?: 'PageInfo'; limit: number; offset: number };
         };
@@ -1391,6 +1423,144 @@ export const AddMediaItemToAlbumDocument = {
     },
   ],
 } as unknown as DocumentNode<AddMediaItemToAlbumMutation, AddMediaItemToAlbumMutationVariables>;
+export const AddMediaItemsToAlbumDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'AddMediaItemsToAlbum' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'AddMediaItemsToAlbumInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'AddMediaItemsToAlbum' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'albumId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'albumItemIds' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'errors' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'field' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'retryable' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AddMediaItemsToAlbumMutation, AddMediaItemsToAlbumMutationVariables>;
+export const DeleteAlbumItemsFromAlbumDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'DeleteAlbumItemsFromAlbum' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: {
+              kind: 'NamedType',
+              name: { kind: 'Name', value: 'DeleteAlbumItemsFromAlbumInput' },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'DeleteAlbumItemsFromAlbum' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'albumId' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'albumItemIds' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'errors' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'field' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'retryable' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DeleteAlbumItemsFromAlbumMutation,
+  DeleteAlbumItemsFromAlbumMutationVariables
+>;
 export const CreateMediaUploadDocument = {
   kind: 'Document',
   definitions: [
@@ -1929,9 +2099,22 @@ export const ViewerAlbumsDocument = {
                         selectionSet: {
                           kind: 'SelectionSet',
                           selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'title' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
                             {
-                              kind: 'FragmentSpread',
-                              name: { kind: 'Name', value: 'AlbumSummary' },
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'coverMedia' },
+                              selectionSet: {
+                                kind: 'SelectionSet',
+                                selections: [
+                                  {
+                                    kind: 'FragmentSpread',
+                                    name: { kind: 'Name', value: 'MediaItemSummary' },
+                                  },
+                                ],
+                              },
                             },
                           ],
                         },
@@ -1974,133 +2157,6 @@ export const ViewerAlbumsDocument = {
             selectionSet: {
               kind: 'SelectionSet',
               selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'AlbumItemSummary' },
-      typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'AlbumItem' } },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'orderIndex' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'mediaItem' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'FragmentSpread', name: { kind: 'Name', value: 'MediaItemSummary' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'AlbumSummary' },
-      typeCondition: { kind: 'NamedType', name: { kind: 'Name', value: 'Album' } },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'title' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'updatedAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'coverMedia' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'FragmentSpread', name: { kind: 'Name', value: 'MediaItemSummary' } },
-              ],
-            },
-          },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'items' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'input' },
-                value: {
-                  kind: 'ObjectValue',
-                  fields: [
-                    {
-                      kind: 'ObjectField',
-                      name: { kind: 'Name', value: 'collectionInfo' },
-                      value: {
-                        kind: 'ObjectValue',
-                        fields: [
-                          {
-                            kind: 'ObjectField',
-                            name: { kind: 'Name', value: 'pageInfo' },
-                            value: {
-                              kind: 'ObjectValue',
-                              fields: [
-                                {
-                                  kind: 'ObjectField',
-                                  name: { kind: 'Name', value: 'limit' },
-                                  value: { kind: 'IntValue', value: '100' },
-                                },
-                                {
-                                  kind: 'ObjectField',
-                                  name: { kind: 'Name', value: 'offset' },
-                                  value: { kind: 'IntValue', value: '0' },
-                                },
-                              ],
-                            },
-                          },
-                          {
-                            kind: 'ObjectField',
-                            name: { kind: 'Name', value: 'sortBy' },
-                            value: { kind: 'EnumValue', value: 'CREATED_AT' },
-                          },
-                          {
-                            kind: 'ObjectField',
-                            name: { kind: 'Name', value: 'sortDir' },
-                            value: { kind: 'EnumValue', value: 'DESC' },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'nodes' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'FragmentSpread', name: { kind: 'Name', value: 'AlbumItemSummary' } },
-                    ],
-                  },
-                },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'pageInfo' },
-                  selectionSet: {
-                    kind: 'SelectionSet',
-                    selections: [
-                      { kind: 'Field', name: { kind: 'Name', value: 'limit' } },
-                      { kind: 'Field', name: { kind: 'Name', value: 'offset' } },
-                    ],
-                  },
-                },
-              ],
             },
           },
         ],

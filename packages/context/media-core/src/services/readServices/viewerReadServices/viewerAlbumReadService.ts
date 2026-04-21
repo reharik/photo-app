@@ -129,6 +129,9 @@ export const buildViewerAlbumReadServiceFactory = ({
           viewerId,
           collectionInfo,
         });
+        console.log(`************albumItems************`);
+        console.log(albumItems);
+        console.log(`********END albumItems************`);
         const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToParent(albumItem));
         const mediaEnriched = await enrichWithTags(mediaBases);
         const nodes = albumItems.map((albumItem, index) => ({

@@ -17,9 +17,10 @@ import * as ioc_______packages_context_media_core_src_repositories_readRepositor
 import * as ioc_______packages_context_media_core_src_services_readServices_viewerReadServices_viewerAlbumReadService from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_readServices_viewerReadServices_viewerMediaItemReadService from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_addAlbumItem from '@packages/media-core';
+import * as ioc_______packages_context_media_core_src_services_writeServices_album_addMediaItemsToAlbum from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_createAlbum from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbum from '@packages/media-core';
-import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItem from '@packages/media-core';
+import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItems from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_reorderAlbumItems from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_setCoverMedia from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_unsetCoverMedia from '@packages/media-core';
@@ -53,6 +54,10 @@ type IocManifestGroupRoots = {
       readonly contractName: 'AddAlbumItem';
       readonly registrationKey: 'addAlbumItem';
     };
+    readonly addMediaItemsToAlbum: {
+      readonly contractName: 'AddMediaItemsToAlbum';
+      readonly registrationKey: 'addMediaItemsToAlbum';
+    };
     readonly createAlbum: {
       readonly contractName: 'CreateAlbum';
       readonly registrationKey: 'createAlbum';
@@ -65,9 +70,9 @@ type IocManifestGroupRoots = {
       readonly contractName: 'DeleteAlbum';
       readonly registrationKey: 'deleteAlbum';
     };
-    readonly deleteAlbumItem: {
-      readonly contractName: 'DeleteAlbumItem';
-      readonly registrationKey: 'deleteAlbumItem';
+    readonly deleteAlbumItems: {
+      readonly contractName: 'DeleteAlbumItems';
+      readonly registrationKey: 'deleteAlbumItems';
     };
     readonly deleteMediaItem: {
       readonly contractName: 'DeleteMediaItem';
@@ -115,9 +120,10 @@ export const iocManifest = {
     ioc_______packages_context_media_core_src_services_readServices_viewerReadServices_viewerAlbumReadService,
     ioc_______packages_context_media_core_src_services_readServices_viewerReadServices_viewerMediaItemReadService,
     ioc_______packages_context_media_core_src_services_writeServices_album_addAlbumItem,
+    ioc_______packages_context_media_core_src_services_writeServices_album_addMediaItemsToAlbum,
     ioc_______packages_context_media_core_src_services_writeServices_album_createAlbum,
     ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbum,
-    ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItem,
+    ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItems,
     ioc_______packages_context_media_core_src_services_writeServices_album_reorderAlbumItems,
     ioc_______packages_context_media_core_src_services_writeServices_album_setCoverMedia,
     ioc_______packages_context_media_core_src_services_writeServices_album_unsetCoverMedia,
@@ -148,6 +154,22 @@ export const iocManifest = {
         implementationName: 'addAlbumItem',
         lifetime: 'singleton',
         moduleIndex: 12,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository'],
+      },
+    },
+    AddMediaItemsToAlbum: {
+      addMediaItemsToAlbum: {
+        exportName: 'buildAddMediaItemsToAlbum',
+        registrationKey: 'addMediaItemsToAlbum',
+        modulePath:
+          '../../packages/context/media-core/src/services/writeServices/album/addMediaItemsToAlbum.ts',
+        relImport: '@packages/media-core',
+        contractName: 'AddMediaItemsToAlbum',
+        implementationName: 'addMediaItemsToAlbum',
+        lifetime: 'singleton',
+        moduleIndex: 13,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository'],
@@ -211,7 +233,7 @@ export const iocManifest = {
         contractName: 'Config',
         implementationName: 'config',
         lifetime: 'singleton',
-        moduleIndex: 25,
+        moduleIndex: 26,
         default: true,
         discoveredBy: 'naming',
       },
@@ -226,7 +248,7 @@ export const iocManifest = {
         contractName: 'CreateAlbum',
         implementationName: 'createAlbum',
         lifetime: 'singleton',
-        moduleIndex: 13,
+        moduleIndex: 14,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
@@ -242,7 +264,7 @@ export const iocManifest = {
         contractName: 'CreateMediaUpload',
         implementationName: 'createMediaItemUpload',
         lifetime: 'singleton',
-        moduleIndex: 19,
+        moduleIndex: 20,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository', 'MediaStorage'],
@@ -258,23 +280,23 @@ export const iocManifest = {
         contractName: 'DeleteAlbum',
         implementationName: 'deleteAlbum',
         lifetime: 'singleton',
-        moduleIndex: 14,
+        moduleIndex: 15,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
       },
     },
-    DeleteAlbumItem: {
-      deleteAlbumItem: {
-        exportName: 'buildDeleteAlbumItem',
-        registrationKey: 'deleteAlbumItem',
+    DeleteAlbumItems: {
+      deleteAlbumItems: {
+        exportName: 'buildDeleteAlbumItems',
+        registrationKey: 'deleteAlbumItems',
         modulePath:
-          '../../packages/context/media-core/src/services/writeServices/album/deleteAlbumItem.ts',
+          '../../packages/context/media-core/src/services/writeServices/album/deleteAlbumItems.ts',
         relImport: '@packages/media-core',
-        contractName: 'DeleteAlbumItem',
-        implementationName: 'deleteAlbumItem',
+        contractName: 'DeleteAlbumItems',
+        implementationName: 'deleteAlbumItems',
         lifetime: 'singleton',
-        moduleIndex: 15,
+        moduleIndex: 16,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
@@ -290,7 +312,7 @@ export const iocManifest = {
         contractName: 'DeleteMediaItem',
         implementationName: 'deleteMediaItem',
         lifetime: 'singleton',
-        moduleIndex: 20,
+        moduleIndex: 21,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -311,7 +333,7 @@ export const iocManifest = {
         contractName: 'FinalizeMediaItemUpload',
         implementationName: 'finalizeMediaItemUpload',
         lifetime: 'singleton',
-        moduleIndex: 21,
+        moduleIndex: 22,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -330,7 +352,7 @@ export const iocManifest = {
         contractName: 'Knex',
         implementationName: 'database',
         lifetime: 'singleton',
-        moduleIndex: 28,
+        moduleIndex: 29,
         default: true,
         discoveredBy: 'naming',
         configOverridesApplied: ['accessKey'],
@@ -347,7 +369,7 @@ export const iocManifest = {
         contractName: 'KnexConfig',
         implementationName: 'knexConfig',
         lifetime: 'singleton',
-        moduleIndex: 29,
+        moduleIndex: 30,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -362,7 +384,7 @@ export const iocManifest = {
         contractName: 'Logger',
         implementationName: 'logger',
         lifetime: 'singleton',
-        moduleIndex: 26,
+        moduleIndex: 27,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -442,7 +464,7 @@ export const iocManifest = {
         contractName: 'MediaProcessingJobRepository',
         implementationName: 'mediaProcessingJobRepository',
         lifetime: 'scoped',
-        moduleIndex: 30,
+        moduleIndex: 31,
         default: true,
         discoveredBy: 'naming',
         configOverridesApplied: ['lifetime'],
@@ -458,7 +480,7 @@ export const iocManifest = {
         contractName: 'MediaStorage',
         implementationName: 'mediaStorage',
         lifetime: 'singleton',
-        moduleIndex: 27,
+        moduleIndex: 28,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -489,7 +511,7 @@ export const iocManifest = {
         contractName: 'ProcessNextMediaImageJob',
         implementationName: 'processNextMediaImageJob',
         lifetime: 'singleton',
-        moduleIndex: 24,
+        moduleIndex: 25,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -511,7 +533,7 @@ export const iocManifest = {
         contractName: 'ReorderAlbumItems',
         implementationName: 'reorderAlbumItems',
         lifetime: 'singleton',
-        moduleIndex: 16,
+        moduleIndex: 17,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
@@ -526,7 +548,7 @@ export const iocManifest = {
         contractName: 'RunMediaWorkerLoop',
         implementationName: 'runMediaWorkerLoop',
         lifetime: 'singleton',
-        moduleIndex: 31,
+        moduleIndex: 32,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config', 'Logger', 'ProcessNextMediaImageJob'],
@@ -542,7 +564,7 @@ export const iocManifest = {
         contractName: 'SetCoverMedia',
         implementationName: 'setCoverMedia',
         lifetime: 'singleton',
-        moduleIndex: 17,
+        moduleIndex: 18,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository'],
@@ -574,7 +596,7 @@ export const iocManifest = {
         contractName: 'UnsetCoverMedia',
         implementationName: 'unsetCoverMedia',
         lifetime: 'singleton',
-        moduleIndex: 18,
+        moduleIndex: 19,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
@@ -590,7 +612,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItem',
         implementationName: 'updateMediaItem',
         lifetime: 'singleton',
-        moduleIndex: 22,
+        moduleIndex: 23,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository'],
@@ -606,7 +628,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItemTags',
         implementationName: 'updateMediaItemTags',
         lifetime: 'singleton',
-        moduleIndex: 23,
+        moduleIndex: 24,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository'],
@@ -681,6 +703,10 @@ export const iocManifest = {
       contractName: 'AddAlbumItem',
       registrationKey: 'addAlbumItem',
     },
+    addMediaItemsToAlbum: {
+      contractName: 'AddMediaItemsToAlbum',
+      registrationKey: 'addMediaItemsToAlbum',
+    },
     createAlbum: {
       contractName: 'CreateAlbum',
       registrationKey: 'createAlbum',
@@ -693,9 +719,9 @@ export const iocManifest = {
       contractName: 'DeleteAlbum',
       registrationKey: 'deleteAlbum',
     },
-    deleteAlbumItem: {
-      contractName: 'DeleteAlbumItem',
-      registrationKey: 'deleteAlbumItem',
+    deleteAlbumItems: {
+      contractName: 'DeleteAlbumItems',
+      registrationKey: 'deleteAlbumItems',
     },
     deleteMediaItem: {
       contractName: 'DeleteMediaItem',

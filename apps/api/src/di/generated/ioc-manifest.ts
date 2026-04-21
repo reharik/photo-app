@@ -20,7 +20,7 @@ import * as ioc_______packages_context_media_core_src_services_writeServices_alb
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_addMediaItemsToAlbum from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_createAlbum from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbum from '@packages/media-core';
-import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItem from '@packages/media-core';
+import * as ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItems from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_reorderAlbumItems from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_setCoverMedia from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_album_unsetCoverMedia from '@packages/media-core';
@@ -79,9 +79,9 @@ type IocManifestGroupRoots = {
       readonly contractName: 'DeleteAlbum';
       readonly registrationKey: 'deleteAlbum';
     };
-    readonly deleteAlbumItem: {
-      readonly contractName: 'DeleteAlbumItem';
-      readonly registrationKey: 'deleteAlbumItem';
+    readonly deleteAlbumItems: {
+      readonly contractName: 'DeleteAlbumItems';
+      readonly registrationKey: 'deleteAlbumItems';
     };
     readonly deleteMediaItem: {
       readonly contractName: 'DeleteMediaItem';
@@ -132,7 +132,7 @@ export const iocManifest = {
     ioc_______packages_context_media_core_src_services_writeServices_album_addMediaItemsToAlbum,
     ioc_______packages_context_media_core_src_services_writeServices_album_createAlbum,
     ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbum,
-    ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItem,
+    ioc_______packages_context_media_core_src_services_writeServices_album_deleteAlbumItems,
     ioc_______packages_context_media_core_src_services_writeServices_album_reorderAlbumItems,
     ioc_______packages_context_media_core_src_services_writeServices_album_setCoverMedia,
     ioc_______packages_context_media_core_src_services_writeServices_album_unsetCoverMedia,
@@ -363,15 +363,15 @@ export const iocManifest = {
         dependencyContractNames: ['AlbumRepository'],
       },
     },
-    DeleteAlbumItem: {
-      deleteAlbumItem: {
-        exportName: 'buildDeleteAlbumItem',
-        registrationKey: 'deleteAlbumItem',
+    DeleteAlbumItems: {
+      deleteAlbumItems: {
+        exportName: 'buildDeleteAlbumItems',
+        registrationKey: 'deleteAlbumItems',
         modulePath:
-          '../../packages/context/media-core/src/services/writeServices/album/deleteAlbumItem.ts',
+          '../../packages/context/media-core/src/services/writeServices/album/deleteAlbumItems.ts',
         relImport: '@packages/media-core',
-        contractName: 'DeleteAlbumItem',
-        implementationName: 'deleteAlbumItem',
+        contractName: 'DeleteAlbumItems',
+        implementationName: 'deleteAlbumItems',
         lifetime: 'singleton',
         moduleIndex: 16,
         default: true,
@@ -903,9 +903,9 @@ export const iocManifest = {
       contractName: 'DeleteAlbum',
       registrationKey: 'deleteAlbum',
     },
-    deleteAlbumItem: {
-      contractName: 'DeleteAlbumItem',
-      registrationKey: 'deleteAlbumItem',
+    deleteAlbumItems: {
+      contractName: 'DeleteAlbumItems',
+      registrationKey: 'deleteAlbumItems',
     },
     deleteMediaItem: {
       contractName: 'DeleteMediaItem',

@@ -28,3 +28,35 @@ mutation AddMediaItemToAlbum($input: AddMediaItemToAlbumInput!) {
     }
   }
 }
+
+mutation AddMediaItemsToAlbum($input: AddMediaItemsToAlbumInput!) {
+  AddMediaItemsToAlbum(input: $input) {
+    data {
+      albumId
+      albumItemIds
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}
+
+mutation DeleteAlbumItemsFromAlbum($input: DeleteAlbumItemsFromAlbumInput!) {
+  DeleteAlbumItemsFromAlbum(input: $input) {
+    data {
+      albumId
+      albumItemIds
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}

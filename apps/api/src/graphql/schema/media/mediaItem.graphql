@@ -31,6 +31,8 @@ enum MediaItemStatus {
   PROCESSING
   READY
   FAILED
+  DELETE_PENDING
+  DELETE_FAILED
 }
 
 type MediaItemDerivedUrls {

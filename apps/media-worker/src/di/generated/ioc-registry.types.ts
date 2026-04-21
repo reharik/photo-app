@@ -4,13 +4,14 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 import type { Logger } from '@packages/infrastructure';
 import type {
   AddAlbumItem,
+  AddMediaItemsToAlbum,
   AlbumReadRepository,
   AlbumRepository,
   CommentRepository,
   CreateAlbum,
   CreateMediaUpload,
   DeleteAlbum,
-  DeleteAlbumItem,
+  DeleteAlbumItems,
   DeleteMediaItem,
   FinalizeMediaItemUpload,
   MediaAssetReadRepository,
@@ -38,6 +39,7 @@ import type { RunMediaWorkerLoop } from '../../runMediaWorkerLoop.js';
 
 export interface IocGeneratedTypes {
   addAlbumItem: AddAlbumItem;
+  addMediaItemsToAlbum: AddMediaItemsToAlbum;
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   commentRepository: CommentRepository;
@@ -45,7 +47,7 @@ export interface IocGeneratedTypes {
   createAlbum: CreateAlbum;
   createMediaUpload: CreateMediaUpload;
   deleteAlbum: DeleteAlbum;
-  deleteAlbumItem: DeleteAlbumItem;
+  deleteAlbumItems: DeleteAlbumItems;
   deleteMediaItem: DeleteMediaItem;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
   database: Knex;
@@ -75,10 +77,11 @@ export interface IocGeneratedTypes {
   };
   writeServices: {
     addAlbumItem: AddAlbumItem;
+    addMediaItemsToAlbum: AddMediaItemsToAlbum;
     createAlbum: CreateAlbum;
     createMediaUpload: CreateMediaUpload;
     deleteAlbum: DeleteAlbum;
-    deleteAlbumItem: DeleteAlbumItem;
+    deleteAlbumItems: DeleteAlbumItems;
     deleteMediaItem: DeleteMediaItem;
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     reorderAlbumItems: ReorderAlbumItems;

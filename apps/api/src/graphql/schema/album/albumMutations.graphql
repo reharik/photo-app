@@ -3,7 +3,9 @@ type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
-  DeleteAlbumItemFromAlbum(input: DeleteAlbumItemFromAlbumInput!): DeleteAlbumItemFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(
+    input: DeleteAlbumItemsFromAlbumInput!
+  ): DeleteAlbumItemsFromAlbumResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
 }
@@ -98,16 +100,16 @@ type ReorderAlbumItemsPayload {
   albumId: ID!
 }
 
-type DeleteAlbumItemFromAlbumResponse {
-  data: DeleteAlbumItemFromAlbumPayload
+type DeleteAlbumItemsFromAlbumResponse {
+  data: DeleteAlbumItemsFromAlbumPayload
   errors: [ContractError!]
 }
-type DeleteAlbumItemFromAlbumPayload {
+type DeleteAlbumItemsFromAlbumPayload {
   albumId: ID!
-  mediaItemId: ID!
+  albumItemIds: [ID!]!
 }
 
-input DeleteAlbumItemFromAlbumInput {
+input DeleteAlbumItemsFromAlbumInput {
   albumId: ID!
-  mediaItemId: ID!
+  albumItemIds: [ID!]!
 }

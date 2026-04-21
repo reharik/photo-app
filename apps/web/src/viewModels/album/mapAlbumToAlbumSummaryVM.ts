@@ -7,7 +7,7 @@ export function mapAlbumToAlbumSummaryVM(album: AlbumSummaryFragment): AlbumSumm
     id: album.id,
     title: album.title,
     coverMedia: album.coverMedia ? mapMediaItemToMediaItemSummaryVM(album.coverMedia) : undefined,
-    itemCount: album.items.nodes.length,
+    itemCount: album.items?.nodes?.length ?? 0,
     updatedAt: album.updatedAt,
   };
 }

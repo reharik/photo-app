@@ -79,6 +79,13 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  DeleteAlbumItemsNoItemIds: {
+    code: 'ALBUM_DELETE_ITEMS_NO_IDS',
+    display: 'At least one album item is required to remove',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
 
   InvalidMediaDimensions: {
     code: 'MEDIA_ITEM_INVALID_DIMENSIONS',

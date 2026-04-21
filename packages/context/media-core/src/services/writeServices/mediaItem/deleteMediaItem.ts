@@ -45,7 +45,7 @@ export const buildDeleteMediaItem = ({
           if (!album) {
             continue;
           }
-          album.deleteItem(mediaItemId, viewerId);
+          album.deleteItems([mediaItemId], viewerId);
           if (album.coverMediaId() === mediaItemId) {
             album.unsetCoverMedia(viewerId);
           }

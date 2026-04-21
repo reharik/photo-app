@@ -1,14 +1,26 @@
-import { useMemo } from 'react';
+import { useApolloClient, useQuery } from '@apollo/client/react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import {
+  AddMediaItemsToAlbumDocument,
+  type AddMediaItemsToAlbumMutation,
+  DeleteAlbumItemsFromAlbumDocument,
+  type DeleteAlbumItemsFromAlbumMutation,
+  ViewerAlbumsDocument,
+} from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { useAppMutationState } from './dataAccess/useAppMutation';
+import { AddToAlbumModal } from './gallery/AddToAlbumModal';
 import { EmptyState } from './gallery/EmptyState';
 import { AlbumMediaTile } from './gallery/mediaTiles/AlbumMediaTile';
+import { RemoveFromAlbumConfirmModal } from './gallery/RemoveFromAlbumConfirmModal';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
+import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 import { UploadMediaButton } from './UploadMediaButton';
 
 type AlbumSectionProps = {
@@ -18,9 +30,93 @@ type AlbumSectionProps = {
 };
 
 export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) => {
+  const client = useApolloClient();
   const orderedMediaIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
-  const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
-    useMultiSelectIds(orderedMediaIds);
+  const {
+    selectedIds,
+    selectionCount,
+    isSelected,
+    handleModifierClick,
+    toggleSelectAt,
+    clearSelection,
+  } = useMultiSelectIds(orderedMediaIds);
+  const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
+  const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
+  const { isLoading, errors, execute } = useAppMutationState();
+  const {
+    isLoading: isRemoveLoading,
+    errors: removeErrors,
+    execute: executeRemove,
+  } = useAppMutationState();
+
+  const albumsQuery = useQuery(ViewerAlbumsDocument, {
+    skip: !addToAlbumOpen,
+    fetchPolicy: 'cache-first',
+  });
+
+  const albumOptions = useMemo(
+    () =>
+      (albumsQuery.data?.viewer?.albums.nodes ?? [])
+        .filter((n) => n.id !== album.id)
+        .map((n) => ({ id: n.id, title: n.title })),
+    [albumsQuery.data, album.id],
+  );
+
+  const selectedAlbumItemIds = useMemo(() => Array.from(selectedIds), [selectedIds]);
+
+  const selectedMediaItemIds = useMemo(() => {
+    const list: string[] = [];
+    for (const albumItemId of selectedIds) {
+      const row = albumItems.find((i) => i.id === albumItemId);
+      if (row) {
+        list.push(row.mediaItem.id);
+      }
+    }
+    return list;
+  }, [albumItems, selectedIds]);
+
+  const submitAddToAlbum = async (input: { albumId?: string; newAlbum?: { title: string } }) => {
+    const result = await execute(
+      {
+        mutation: AddMediaItemsToAlbumDocument,
+        variables: {
+          input: {
+            mediaItemIds: selectedMediaItemIds,
+            ...input,
+          },
+        },
+      },
+      (data: AddMediaItemsToAlbumMutation) => data.AddMediaItemsToAlbum,
+    );
+
+    if (result.success) {
+      setAddToAlbumOpen(false);
+      clearSelection();
+      void refetch();
+      await client.refetchQueries({ include: [ViewerAlbumsDocument] });
+    }
+  };
+
+  const submitRemoveFromAlbum = async () => {
+    const result = await executeRemove(
+      {
+        mutation: DeleteAlbumItemsFromAlbumDocument,
+        variables: {
+          input: {
+            albumId: album.id,
+            albumItemIds: selectedAlbumItemIds,
+          },
+        },
+      },
+      (data: DeleteAlbumItemsFromAlbumMutation) => data.DeleteAlbumItemsFromAlbum,
+    );
+
+    if (result.success) {
+      setRemoveFromAlbumOpen(false);
+      clearSelection();
+      void refetch();
+    }
+  };
 
   const renderHeader = () => {
     return (
@@ -67,7 +163,12 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={() => <div>Hi mom</div>}
+        SelectionActions={
+          <MediaSelectionToolbar
+            onAddToAlbum={() => setAddToAlbumOpen(true)}
+            onRemoveFromAlbum={() => setRemoveFromAlbumOpen(true)}
+          />
+        }
         Header={renderHeader}
       />
       {renderMetadata()}
@@ -83,6 +184,32 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
           />
         }
         renderItem={({ item }) => <AlbumMediaTile item={item} />}
+      />
+
+      <AddToAlbumModal
+        open={addToAlbumOpen}
+        onClose={() => setAddToAlbumOpen(false)}
+        mediaItemCount={selectedMediaItemIds.length}
+        albumOptions={albumOptions}
+        albumsLoading={albumsQuery.loading}
+        isSubmitting={isLoading}
+        mutationErrors={errors}
+        onSubmit={async (target) => {
+          if (target.kind === 'existing') {
+            await submitAddToAlbum({ albumId: target.albumId });
+          } else {
+            await submitAddToAlbum({ newAlbum: { title: target.title } });
+          }
+        }}
+      />
+
+      <RemoveFromAlbumConfirmModal
+        open={removeFromAlbumOpen}
+        onClose={() => setRemoveFromAlbumOpen(false)}
+        itemCount={selectedAlbumItemIds.length}
+        isSubmitting={isRemoveLoading}
+        mutationErrors={removeErrors}
+        onConfirm={submitRemoveFromAlbum}
       />
     </Container>
   );

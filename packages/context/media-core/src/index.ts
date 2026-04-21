@@ -26,7 +26,7 @@ export * from './services/writeServices/album/addAlbumItem';
 export * from './services/writeServices/album/addMediaItemsToAlbum';
 export * from './services/writeServices/album/createAlbum';
 export * from './services/writeServices/album/deleteAlbum';
-export * from './services/writeServices/album/deleteAlbumItem';
+export * from './services/writeServices/album/deleteAlbumItems';
 export * from './services/writeServices/album/reorderAlbumItems';
 export * from './services/writeServices/album/writeAlbum.types';
 export * from './services/writeServices/mediaItem/createMediaItemUpload';

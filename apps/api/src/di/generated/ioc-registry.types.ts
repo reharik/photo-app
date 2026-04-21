@@ -12,7 +12,7 @@ import type {
   CreateAlbum,
   CreateMediaUpload,
   DeleteAlbum,
-  DeleteAlbumItem,
+  DeleteAlbumItems,
   DeleteMediaItem,
   FinalizeMediaItemUpload,
   MediaAssetReadRepository,
@@ -60,7 +60,7 @@ export interface IocGeneratedTypes {
   createAlbum: CreateAlbum;
   createMediaUpload: CreateMediaUpload;
   deleteAlbum: DeleteAlbum;
-  deleteAlbumItem: DeleteAlbumItem;
+  deleteAlbumItems: DeleteAlbumItems;
   deleteMediaItem: DeleteMediaItem;
   errorHandler: ErrorHandler;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
@@ -101,7 +101,7 @@ export interface IocGeneratedTypes {
     createAlbum: CreateAlbum;
     createMediaUpload: CreateMediaUpload;
     deleteAlbum: DeleteAlbum;
-    deleteAlbumItem: DeleteAlbumItem;
+    deleteAlbumItems: DeleteAlbumItems;
     deleteMediaItem: DeleteMediaItem;
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     reorderAlbumItems: ReorderAlbumItems;

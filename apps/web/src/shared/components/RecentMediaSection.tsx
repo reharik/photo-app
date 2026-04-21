@@ -1,12 +1,20 @@
-import { useMemo } from 'react';
+import { useApolloClient, useQuery } from '@apollo/client/react';
+import { useMemo, useState } from 'react';
 import styled from 'styled-components';
+import {
+  AddMediaItemsToAlbumDocument,
+  type AddMediaItemsToAlbumMutation,
+  ViewerAlbumsDocument,
+} from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
+import { useAppMutationState } from './dataAccess/useAppMutation';
+import { AddToAlbumModal } from './gallery/AddToAlbumModal';
 import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
-import { RecentMediaSelectionActions } from './gallery/selectionActions/RecentMediaSelectionActions';
+import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 import { UploadMediaButton } from './UploadMediaButton';
 
 type RecentMediaSectionProps = {
@@ -15,16 +23,63 @@ type RecentMediaSectionProps = {
 };
 
 export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProps) => {
+  const client = useApolloClient();
   const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
-  const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
-    useMultiSelectIds(orderedMediaIds);
+  const {
+    selectedIds,
+    selectionCount,
+    isSelected,
+    handleModifierClick,
+    toggleSelectAt,
+    clearSelection,
+  } = useMultiSelectIds(orderedMediaIds);
+  const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
+  const { isLoading, errors, execute } = useAppMutationState();
+
+  const albumsQuery = useQuery(ViewerAlbumsDocument, {
+    skip: !addToAlbumOpen,
+    fetchPolicy: 'cache-first',
+  });
+
+  const albumOptions = useMemo(
+    () =>
+      albumsQuery.data?.viewer?.albums.nodes.map((n) => ({
+        id: n.id,
+        title: n.title,
+      })) ?? [],
+    [albumsQuery.data],
+  );
+
+  const mediaItemIdsForModal = useMemo(() => Array.from(selectedIds), [selectedIds]);
+
+  const submitAddToAlbum = async (input: { albumId?: string; newAlbum?: { title: string } }) => {
+    const result = await execute(
+      {
+        mutation: AddMediaItemsToAlbumDocument,
+        variables: {
+          input: {
+            mediaItemIds: mediaItemIdsForModal,
+            ...input,
+          },
+        },
+      },
+      (data: AddMediaItemsToAlbumMutation) => data.AddMediaItemsToAlbum,
+    );
+
+    if (result.success) {
+      setAddToAlbumOpen(false);
+      clearSelection();
+      void reloadData();
+      await client.refetchQueries({ include: [ViewerAlbumsDocument] });
+    }
+  };
 
   return (
     <Container>
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={RecentMediaSelectionActions}
+        SelectionActions={<MediaSelectionToolbar onAddToAlbum={() => setAddToAlbumOpen(true)} />}
         Header={() => (
           <>
             <Title>Recent Media</Title>
@@ -49,6 +104,23 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
           <MediaItemTile item={item} mediaGalleryIds={orderedMediaIds} />
         )}
         orderedMediaIds={orderedMediaIds}
+      />
+
+      <AddToAlbumModal
+        open={addToAlbumOpen}
+        onClose={() => setAddToAlbumOpen(false)}
+        mediaItemCount={mediaItemIdsForModal.length}
+        albumOptions={albumOptions}
+        albumsLoading={albumsQuery.loading}
+        isSubmitting={isLoading}
+        mutationErrors={errors}
+        onSubmit={async (target) => {
+          if (target.kind === 'existing') {
+            await submitAddToAlbum({ albumId: target.albumId });
+          } else {
+            await submitAddToAlbum({ newAlbum: { title: target.title } });
+          }
+        }}
       />
     </Container>
   );

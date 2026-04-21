@@ -3,17 +3,16 @@ import styled from 'styled-components';
 type SelectableGallerySelectionBarProps = {
   count: number;
   onClear: () => void;
-  SelectionActions: React.ComponentType;
+  selectionActions: React.ReactNode;
 };
 
 /**
  * Top bar when one or more grid items are selected (similar to Google Photos).
- * Actions are placeholders until wired to real behavior.
  */
 export const SelectableGallerySelectionBar = ({
   count,
   onClear,
-  SelectionActions,
+  selectionActions,
 }: SelectableGallerySelectionBarProps) => {
   const label = count === 1 ? '1 selected' : `${count} selected`;
 
@@ -25,9 +24,7 @@ export const SelectableGallerySelectionBar = ({
         </IconButton>
         <CountText>{label}</CountText>
       </BarLeft>
-      <ActionGroup>
-        <SelectionActions />
-      </ActionGroup>
+      <ActionGroup>{selectionActions}</ActionGroup>
     </Bar>
   );
 };

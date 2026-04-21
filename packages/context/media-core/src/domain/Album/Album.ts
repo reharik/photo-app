@@ -134,13 +134,16 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  deleteItem(mediaItemId: EntityId, actorId: ActorId): WriteResult {
+  deleteItems(albumItemIds: EntityId[], actorId: ActorId): WriteResult {
     // TODO: check various invariants when they exist e.g. is album mutable
-    const albumItem = this.#items.find((i) => i.mediaItemId() === mediaItemId);
-    if (!albumItem) {
+    if (albumItemIds.length === 0) {
+      return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);
+    }
+    const found = this.#items.filter((i) => albumItemIds.includes(i.id()));
+    if (found.length !== albumItemIds.length) {
       return fail(AppErrorCollection.album.MediaItemNotInAlbum);
     }
-    this.#items = this.#items.filter((i) => i.mediaItemId() !== mediaItemId);
+    this.#items = this.#items.filter((i) => !albumItemIds.includes(i.id()));
     this.touch(actorId);
     return ok(undefined);
   }

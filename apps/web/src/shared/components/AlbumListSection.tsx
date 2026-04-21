@@ -7,7 +7,7 @@ import { EmptyState } from './gallery/EmptyState';
 import { AlbumTile } from './gallery/mediaTiles/AlbumTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
-import { RecentMediaSelectionActions } from './gallery/selectionActions/RecentMediaSelectionActions';
+import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 
 type AlbumListSectionProps = {
   nodes: AlbumSummaryVM[];
@@ -34,7 +34,7 @@ export const AlbumListSection = ({
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={RecentMediaSelectionActions}
+        SelectionActions={<MediaSelectionToolbar />}
         Header={() => (
           <Header>
             <Title>Albums</Title>

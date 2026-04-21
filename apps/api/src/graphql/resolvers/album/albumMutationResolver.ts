@@ -73,18 +73,18 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         };
       },
     ),
-    DeleteAlbumItemFromAlbum: authenticatedResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.deleteAlbumItem({
+    DeleteAlbumItemsFromAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.deleteAlbumItems({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
-        mediaItemId: args.input.mediaItemId,
+        albumItemIds: args.input.albumItemIds,
       });
 
       return {
         data: result.success
           ? {
               albumId: result.value.albumId,
-              mediaItemId: result.value.mediaItemId,
+              albumItemIds: result.value.albumItemIds,
             }
           : undefined,
         errors: result.success ? [] : [toContractErrorPayload(result.error)],

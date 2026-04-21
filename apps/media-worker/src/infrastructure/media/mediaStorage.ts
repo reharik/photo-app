@@ -2,10 +2,6 @@ import { s3MediaStorage, type MediaStorage } from '@packages/media-core';
 import { IocGeneratedCradle } from '../../di/generated/ioc-registry.types';
 
 export const buildMediaStorage = ({ config }: IocGeneratedCradle): MediaStorage => {
-  console.log(`************config************`);
-  console.log(JSON.stringify(config.awsRegion, null, 4));
-  console.log(`********END config************`);
-
   return s3MediaStorage({
     bucket: config.s3Bucket,
     region: config.awsRegion,
