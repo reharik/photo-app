@@ -47,6 +47,7 @@ export const resetDb = async (db: Knex): Promise<void> => {
       notification,
       album,
       media_processing_job,
+      media_deletion_job,
       media_asset,
       media_item,
       "user"

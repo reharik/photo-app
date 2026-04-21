@@ -4,12 +4,15 @@ import styled from 'styled-components';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
+  DeleteMediaItemsDocument,
+  type DeleteMediaItemsMutation,
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { useAppMutationState } from './dataAccess/useAppMutation';
 import { AddToAlbumModal } from './gallery/AddToAlbumModal';
+import { DeleteMediaConfirmModal } from './gallery/DeleteMediaConfirmModal';
 import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
@@ -34,7 +37,13 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
     clearSelection,
   } = useMultiSelectIds(orderedMediaIds);
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
+  const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const { isLoading, errors, execute } = useAppMutationState();
+  const {
+    isLoading: isDeleteLoading,
+    errors: deleteErrors,
+    execute: executeDelete,
+  } = useAppMutationState();
 
   const albumsQuery = useQuery(ViewerAlbumsDocument, {
     skip: !addToAlbumOpen,
@@ -51,6 +60,26 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
   );
 
   const mediaItemIdsForModal = useMemo(() => Array.from(selectedIds), [selectedIds]);
+
+  const submitDeleteMedia = async (): Promise<void> => {
+    const result = await executeDelete(
+      {
+        mutation: DeleteMediaItemsDocument,
+        variables: {
+          input: { mediaItemIds: mediaItemIdsForModal },
+        },
+      },
+      (data: DeleteMediaItemsMutation) => data.deleteMediaItems,
+    );
+
+    if (result.success) {
+      setDeleteMediaOpen(false);
+      clearSelection();
+      void reloadData();
+      // Album queries: item counts / cover can change when media is removed from albums (not redundant with recent-media reload).
+      await client.refetchQueries({ include: [ViewerAlbumsDocument] });
+    }
+  };
 
   const submitAddToAlbum = async (input: { albumId?: string; newAlbum?: { title: string } }) => {
     const result = await execute(
@@ -79,7 +108,12 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={<MediaSelectionToolbar onAddToAlbum={() => setAddToAlbumOpen(true)} />}
+        SelectionActions={
+          <MediaSelectionToolbar
+            onAddToAlbum={() => setAddToAlbumOpen(true)}
+            onDeleteFromLibrary={() => setDeleteMediaOpen(true)}
+          />
+        }
         Header={() => (
           <>
             <Title>Recent Media</Title>
@@ -121,6 +155,15 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
             await submitAddToAlbum({ newAlbum: { title: target.title } });
           }
         }}
+      />
+
+      <DeleteMediaConfirmModal
+        open={deleteMediaOpen}
+        onClose={() => setDeleteMediaOpen(false)}
+        itemCount={mediaItemIdsForModal.length}
+        isSubmitting={isDeleteLoading}
+        mutationErrors={deleteErrors}
+        onConfirm={submitDeleteMedia}
       />
     </Container>
   );

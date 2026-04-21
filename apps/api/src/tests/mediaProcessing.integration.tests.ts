@@ -60,6 +60,9 @@ const createTrackingMediaStorage = (): MediaStorage & { objects: Map<string, Obj
       }
       objects.set(storageKey, { size: buffer.length, mimeType, body: buffer });
     },
+    deleteObject: async (storageKey) => {
+      objects.delete(storageKey);
+    },
     getObjectMetadata: async (storageKey) => {
       const object = objects.get(storageKey);
       if (!object) {

@@ -41,6 +41,8 @@ export interface MediaStorage {
     body: Readable | Buffer;
     mimeType?: string;
   }): Promise<void>;
+  /** Removes the object if present; implementations must treat a missing key as success (idempotent). */
+  deleteObject(storageKey: string): Promise<void>;
   getObjectMetadata(storageKey: string): Promise<MediaStorageObjectMetadata | undefined>;
   verifyExistence(storageKey: string): Promise<boolean>;
   getObjectAccessUrl(input: { storageKey: string; expiresInSeconds?: number }): Promise<string>;

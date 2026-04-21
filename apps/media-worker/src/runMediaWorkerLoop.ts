@@ -13,6 +13,7 @@ export type RunMediaWorkerLoop = {
 export const buildRunMediaWorkerLoop = ({
   config,
   logger,
+  processNextMediaDeletionJob,
   processNextMediaImageJob,
 }: IocGeneratedCradle): RunMediaWorkerLoop => {
   let running = false;
@@ -30,8 +31,12 @@ export const buildRunMediaWorkerLoop = ({
 
     while (!stopRequested) {
       try {
-        const outcome = await processNextMediaImageJob();
-        if (outcome === 'idle') {
+        const deletionOutcome = await processNextMediaDeletionJob();
+        if (deletionOutcome === 'processed') {
+          continue;
+        }
+        const imageOutcome = await processNextMediaImageJob();
+        if (imageOutcome === 'idle') {
           await sleep(config.mediaWorkerPollIntervalMs);
         }
       } catch (e) {

@@ -37,6 +37,15 @@ export type DeleteMediaItemResult = {
   mediaItemId: EntityId;
 };
 
+export type DeleteMediaItemsCommand = {
+  viewerId: EntityId;
+  mediaItemIds: EntityId[];
+};
+
+export type DeleteMediaItemsResult = {
+  deletedMediaItemIds: EntityId[];
+};
+
 export type UpdateMediaItemDetailsCommand = {
   viewerId: EntityId;
   mediaItemId: EntityId;

@@ -15,4 +15,5 @@ export default {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs'],
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: [],
+  testMatch: ['**/src/tests/**/*.tests.ts', '**/src/tests/**/*.tests.tsx'],
 };

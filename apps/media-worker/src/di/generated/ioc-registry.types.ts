@@ -31,9 +31,11 @@ import type {
   ViewerMediaItemReadServiceFactory,
 } from '@packages/media-core';
 import type { Knex } from 'knex';
+import type { ProcessNextMediaDeletionJob } from '../../application/processNextMediaDeletionJob.js';
 import type { ProcessNextMediaImageJob } from '../../application/processNextMediaImageJob.js';
 import type { Config } from '../../config.js';
 import type { KnexConfig } from '../../knexfile.js';
+import type { MediaDeletionJobRepository } from '../../repositories/domainRepositories/mediaDeletionJobRepository.js';
 import type { MediaProcessingJobRepository } from '../../repositories/domainRepositories/mediaProcessingJobRepository.js';
 import type { RunMediaWorkerLoop } from '../../runMediaWorkerLoop.js';
 
@@ -54,12 +56,14 @@ export interface IocGeneratedTypes {
   knexConfig: KnexConfig;
   logger: Logger;
   mediaAssetReadRepository: MediaAssetReadRepository;
+  mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemDerivedUrlsProjection: MediaItemDerivedUrlsProjection;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaItemRepository: MediaItemRepository;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
   mediaStorage: MediaStorage;
   notificationRepository: NotificationRepository;
+  processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
   processNextMediaImageJob: ProcessNextMediaImageJob;
   reorderAlbumItems: ReorderAlbumItems;
   runMediaWorkerLoop: RunMediaWorkerLoop;

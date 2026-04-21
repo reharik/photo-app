@@ -106,6 +106,9 @@ const createTrackingMediaStorage = (
     writeObject: async () => {
       return;
     },
+    deleteObject: async (storageKey: string) => {
+      objects.delete(storageKey);
+    },
     getObjectMetadata: async (storageKey: string) => {
       const o = objects.get(storageKey);
       if (!o) {

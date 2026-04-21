@@ -1,0 +1,14 @@
+mutation DeleteMediaItems($input: DeleteMediaItemsInput!) {
+  deleteMediaItems(input: $input) {
+    data {
+      deletedMediaItemIds
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}

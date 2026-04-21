@@ -134,6 +134,24 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
+  /**
+   * Removes every album item that references this media (at most one per album under normal DB constraints).
+   * If the album cover pointed at this media, clears the cover so the aggregate stays consistent.
+   */
+  removeMediaItemFromAlbum(mediaItemId: EntityId, actorId: ActorId): WriteResult {
+    // TODO: check various invariants when they exist e.g. is album mutable
+    const removedAnyItem = this.#items.some((i) => i.mediaItemId() === mediaItemId);
+    this.#items = this.#items.filter((i) => i.mediaItemId() !== mediaItemId);
+    const coverWasThisMedia = this.props.coverMediaId === mediaItemId;
+    if (coverWasThisMedia) {
+      this.props.coverMediaId = undefined;
+    }
+    if (removedAnyItem || coverWasThisMedia) {
+      this.touch(actorId);
+    }
+    return ok(undefined);
+  }
+
   deleteItems(albumItemIds: EntityId[], actorId: ActorId): WriteResult {
     // TODO: check various invariants when they exist e.g. is album mutable
     if (albumItemIds.length === 0) {

@@ -17,6 +17,7 @@ describe('buildMediaStorage', () => {
 
       expect(typeof storage.getObjectStream).toBe('function');
       expect(typeof storage.writeObject).toBe('function');
+      expect(typeof storage.deleteObject).toBe('function');
       expect(typeof storage.getUploadTarget).toBe('function');
     });
   });

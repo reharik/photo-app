@@ -3,13 +3,13 @@ import { FrontendUploadStatus } from './frontendUploadStatus';
 const input = {
   create: {
     start: FrontendUploadStatus.creating,
-    end: FrontendUploadStatus.created,
+    end: FrontendUploadStatus.uploading,
     stage: FrontendUploadStatus.creating,
     fail: FrontendUploadStatus.failed,
   },
   upload: {
     start: FrontendUploadStatus.uploading,
-    end: FrontendUploadStatus.uploaded,
+    end: FrontendUploadStatus.finalizing,
     stage: FrontendUploadStatus.uploading,
     fail: FrontendUploadStatus.failed,
   },

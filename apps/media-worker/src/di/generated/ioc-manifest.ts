@@ -29,12 +29,14 @@ import * as ioc_______packages_context_media_core_src_services_writeServices_med
 import * as ioc_______packages_context_media_core_src_services_writeServices_mediaItem_finalizeMediaItemUpload from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_mediaItem_updateMediaItem from '@packages/media-core';
 import * as ioc_______packages_context_media_core_src_services_writeServices_mediaItem_updateMediaItemTags from '@packages/media-core';
+import * as ioc_src_application_processNextMediaDeletionJob from '../../application/processNextMediaDeletionJob.js';
 import * as ioc_src_application_processNextMediaImageJob from '../../application/processNextMediaImageJob.js';
 import * as ioc_src_config from '../../config.js';
 import * as ioc_src_infrastructure_logger_logger from '../../infrastructure/logger/logger.js';
 import * as ioc_src_infrastructure_media_mediaStorage from '../../infrastructure/media/mediaStorage.js';
 import * as ioc_src_knex from '../../knex.js';
 import * as ioc_src_knexfile from '../../knexfile.js';
+import * as ioc_src_repositories_domainRepositories_mediaDeletionJobRepository from '../../repositories/domainRepositories/mediaDeletionJobRepository.js';
 import * as ioc_src_repositories_domainRepositories_mediaProcessingJobRepository from '../../repositories/domainRepositories/mediaProcessingJobRepository.js';
 import * as ioc_src_runMediaWorkerLoop from '../../runMediaWorkerLoop.js';
 
@@ -132,12 +134,14 @@ export const iocManifest = {
     ioc_______packages_context_media_core_src_services_writeServices_mediaItem_finalizeMediaItemUpload,
     ioc_______packages_context_media_core_src_services_writeServices_mediaItem_updateMediaItem,
     ioc_______packages_context_media_core_src_services_writeServices_mediaItem_updateMediaItemTags,
+    ioc_src_application_processNextMediaDeletionJob,
     ioc_src_application_processNextMediaImageJob,
     ioc_src_config,
     ioc_src_infrastructure_logger_logger,
     ioc_src_infrastructure_media_mediaStorage,
     ioc_src_knex,
     ioc_src_knexfile,
+    ioc_src_repositories_domainRepositories_mediaDeletionJobRepository,
     ioc_src_repositories_domainRepositories_mediaProcessingJobRepository,
     ioc_src_runMediaWorkerLoop,
   ] as const satisfies readonly IocModuleNamespace[],
@@ -233,7 +237,7 @@ export const iocManifest = {
         contractName: 'Config',
         implementationName: 'config',
         lifetime: 'singleton',
-        moduleIndex: 26,
+        moduleIndex: 27,
         default: true,
         discoveredBy: 'naming',
       },
@@ -352,7 +356,7 @@ export const iocManifest = {
         contractName: 'Knex',
         implementationName: 'database',
         lifetime: 'singleton',
-        moduleIndex: 29,
+        moduleIndex: 30,
         default: true,
         discoveredBy: 'naming',
         configOverridesApplied: ['accessKey'],
@@ -369,7 +373,7 @@ export const iocManifest = {
         contractName: 'KnexConfig',
         implementationName: 'knexConfig',
         lifetime: 'singleton',
-        moduleIndex: 30,
+        moduleIndex: 31,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -384,7 +388,7 @@ export const iocManifest = {
         contractName: 'Logger',
         implementationName: 'logger',
         lifetime: 'singleton',
-        moduleIndex: 27,
+        moduleIndex: 28,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -401,6 +405,22 @@ export const iocManifest = {
         implementationName: 'mediaAssetReadRepository',
         lifetime: 'scoped',
         moduleIndex: 8,
+        default: true,
+        discoveredBy: 'naming',
+        configOverridesApplied: ['lifetime'],
+        dependencyContractNames: ['Knex'],
+      },
+    },
+    MediaDeletionJobRepository: {
+      mediaDeletionJobRepository: {
+        exportName: 'buildMediaDeletionJobRepository',
+        registrationKey: 'mediaDeletionJobRepository',
+        modulePath: 'src/repositories/domainRepositories/mediaDeletionJobRepository.ts',
+        relImport: '../../repositories/domainRepositories/mediaDeletionJobRepository.js',
+        contractName: 'MediaDeletionJobRepository',
+        implementationName: 'mediaDeletionJobRepository',
+        lifetime: 'scoped',
+        moduleIndex: 32,
         default: true,
         discoveredBy: 'naming',
         configOverridesApplied: ['lifetime'],
@@ -464,7 +484,7 @@ export const iocManifest = {
         contractName: 'MediaProcessingJobRepository',
         implementationName: 'mediaProcessingJobRepository',
         lifetime: 'scoped',
-        moduleIndex: 31,
+        moduleIndex: 33,
         default: true,
         discoveredBy: 'naming',
         configOverridesApplied: ['lifetime'],
@@ -480,7 +500,7 @@ export const iocManifest = {
         contractName: 'MediaStorage',
         implementationName: 'mediaStorage',
         lifetime: 'singleton',
-        moduleIndex: 28,
+        moduleIndex: 29,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
@@ -502,6 +522,26 @@ export const iocManifest = {
         dependencyContractNames: ['Knex'],
       },
     },
+    ProcessNextMediaDeletionJob: {
+      processNextMediaDeletionJob: {
+        exportName: 'buildProcessNextMediaDeletionJob',
+        registrationKey: 'processNextMediaDeletionJob',
+        modulePath: 'src/application/processNextMediaDeletionJob.ts',
+        relImport: '../../application/processNextMediaDeletionJob.js',
+        contractName: 'ProcessNextMediaDeletionJob',
+        implementationName: 'processNextMediaDeletionJob',
+        lifetime: 'singleton',
+        moduleIndex: 25,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: [
+          'Logger',
+          'MediaDeletionJobRepository',
+          'MediaItemRepository',
+          'MediaStorage',
+        ],
+      },
+    },
     ProcessNextMediaImageJob: {
       processNextMediaImageJob: {
         exportName: 'buildProcessNextMediaImageJob',
@@ -511,7 +551,7 @@ export const iocManifest = {
         contractName: 'ProcessNextMediaImageJob',
         implementationName: 'processNextMediaImageJob',
         lifetime: 'singleton',
-        moduleIndex: 25,
+        moduleIndex: 26,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -548,10 +588,15 @@ export const iocManifest = {
         contractName: 'RunMediaWorkerLoop',
         implementationName: 'runMediaWorkerLoop',
         lifetime: 'singleton',
-        moduleIndex: 32,
+        moduleIndex: 34,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['Config', 'Logger', 'ProcessNextMediaImageJob'],
+        dependencyContractNames: [
+          'Config',
+          'Logger',
+          'ProcessNextMediaDeletionJob',
+          'ProcessNextMediaImageJob',
+        ],
       },
     },
     SetCoverMedia: {

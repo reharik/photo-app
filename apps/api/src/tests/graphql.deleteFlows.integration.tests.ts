@@ -137,6 +137,20 @@ const deleteMediaItemMutation = `
   }
 `;
 
+const deleteMediaItemsMutation = `
+  mutation DeleteMediaItems($input: DeleteMediaItemsInput!) {
+    deleteMediaItems(input: $input) {
+      data {
+        deletedMediaItemIds
+      }
+      errors {
+        code
+        message
+      }
+    }
+  }
+`;
+
 const updateMediaItemDetailsMutation = `
   mutation UpdateMediaItemDetails($input: UpdateMediaItemDetailsInput!) {
     updateMediaItemDetails(input: $input) {
@@ -851,8 +865,7 @@ describe('deleteMediaItem', () => {
   });
 
   describe('When the media item appears in an album and is referenced as cover', () => {
-    // cover media is not implemented yet
-    it.skip('should remove album item linkage and clear cover reference', async () => {
+    it('should remove album item linkage and clear cover reference', async () => {
       const albumResult = await executeGraphQL<{
         createAlbum: WriteMutationResponse<{ albumId: string }>;
       }>({
@@ -895,6 +908,121 @@ describe('deleteMediaItem', () => {
 
       const albumItems = await database('albumItem').where({ mediaItemId });
       expect(albumItems).toHaveLength(0);
+    });
+  });
+});
+
+describe('deleteMediaItems', () => {
+  let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
+  let container: AwilixContainer<IocGeneratedCradle>;
+  let database: Knex;
+  let integrationTestMediaStorage: IntegrationTestMediaStorage;
+
+  beforeAll(async () => {
+    const setup = await setupGraphqlIntegrationTests();
+    container = setup.container;
+    executeGraphQL = setup.executeGraphQL;
+    database = container.resolve('database');
+    integrationTestMediaStorage = setup.integrationTestMediaStorage;
+  });
+
+  afterEach(async () => {
+    await resetIntegrationTestDb(database, undefined, () => integrationTestMediaStorage.clear());
+  });
+
+  describe('When the viewer deletes a single media item by id list', () => {
+    it('should remove the row and return the id', async () => {
+      const mediaItemId = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+      });
+
+      const del = await executeGraphQL<{
+        deleteMediaItems: WriteMutationResponse<{ deletedMediaItemIds: string[] }>;
+      }>({
+        query: deleteMediaItemsMutation,
+        variables: { input: { mediaItemIds: [mediaItemId] } },
+        context: loggedInViewer1,
+      });
+      expect(del.json.errors).toBeUndefined();
+      expect(del.json.data?.deleteMediaItems.errors).toEqual([]);
+      expect(del.json.data?.deleteMediaItems.data?.deletedMediaItemIds).toEqual([mediaItemId]);
+
+      const row = await database('mediaItem').where({ id: mediaItemId }).first();
+      expect(row).toBeUndefined();
+    });
+  });
+
+  describe('When the viewer deletes multiple media items', () => {
+    it('should remove all rows and preserve id order in the payload', async () => {
+      const m1 = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+      });
+      const m2 = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+      });
+
+      const del = await executeGraphQL<{
+        deleteMediaItems: WriteMutationResponse<{ deletedMediaItemIds: string[] }>;
+      }>({
+        query: deleteMediaItemsMutation,
+        variables: { input: { mediaItemIds: [m1, m2] } },
+        context: loggedInViewer1,
+      });
+      expect(del.json.errors).toBeUndefined();
+      expect(del.json.data?.deleteMediaItems.errors).toEqual([]);
+      expect(del.json.data?.deleteMediaItems.data?.deletedMediaItemIds).toEqual([m1, m2]);
+
+      const rows = await database('mediaItem').whereIn('id', [m1, m2]);
+      expect(rows).toHaveLength(0);
+    });
+  });
+
+  describe('When mediaItemIds is empty', () => {
+    it('should fail with empty list error', async () => {
+      const del = await executeGraphQL<{
+        deleteMediaItems: WriteMutationResponse<unknown>;
+      }>({
+        query: deleteMediaItemsMutation,
+        variables: { input: { mediaItemIds: [] } },
+        context: loggedInViewer1,
+      });
+      expect(del.json.errors).toBeUndefined();
+      expect(del.json.data?.deleteMediaItems.data).toBeFalsy();
+      expect(del.json.data?.deleteMediaItems.errors[0]?.code).toBe(
+        AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList.code,
+      );
+    });
+  });
+
+  describe('When the list references a missing id', () => {
+    it('should fail without deleting other items', async () => {
+      const m1 = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+      });
+
+      const del = await executeGraphQL<{
+        deleteMediaItems: WriteMutationResponse<unknown>;
+      }>({
+        query: deleteMediaItemsMutation,
+        variables: { input: { mediaItemIds: [m1, missingMediaItemId] } },
+        context: loggedInViewer1,
+      });
+      expect(del.json.errors).toBeUndefined();
+      expect(del.json.data?.deleteMediaItems.data).toBeFalsy();
+      expect(del.json.data?.deleteMediaItems.errors[0]?.code).toBe(
+        AppErrorCollection.mediaItem.MediaItemNotFound.code,
+      );
+
+      const row = await database('mediaItem').where({ id: m1 }).first();
+      expect(row?.id).toBe(m1);
     });
   });
 });

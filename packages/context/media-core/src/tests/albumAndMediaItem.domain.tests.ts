@@ -171,4 +171,52 @@ describe('Album (domain)', () => {
       expect(byId.get(id1)! < byId.get(id2)!).toBe(true);
     });
   });
+
+  describe('When removeMediaItemFromAlbum targets media that is the cover', () => {
+    it('should remove the album item and clear the cover', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const mediaId = 'media-a';
+      const add = album.addItem(mediaId, ownerId);
+      expect(add.success).toBe(true);
+      const cover = album.setCoverMedia(mediaId, ownerId);
+      expect(cover.success).toBe(true);
+
+      const removed = album.removeMediaItemFromAlbum(mediaId, ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.toPersistence().items).toHaveLength(0);
+      expect(album.coverMediaId()).toBeUndefined();
+    });
+  });
+
+  describe('When removeMediaItemFromAlbum targets media that is not the cover', () => {
+    it('should remove only that album item and leave the cover unchanged', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const a = album.addItem('keep-cover', ownerId);
+      const b = album.addItem('remove-me', ownerId);
+      expect(a.success && b.success).toBe(true);
+      if (!a.success || !b.success) {
+        throw new Error('expected both addItem calls to succeed');
+      }
+      const cover = album.setCoverMedia('keep-cover', ownerId);
+      expect(cover.success).toBe(true);
+
+      const removed = album.removeMediaItemFromAlbum('remove-me', ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.toPersistence().items).toHaveLength(1);
+      expect(album.coverMediaId()).toBe('keep-cover');
+    });
+  });
+
+  describe('When removeMediaItemFromAlbum targets media that is not in the album', () => {
+    it('should leave items unchanged', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const add = album.addItem('only-one', ownerId);
+      expect(add.success).toBe(true);
+
+      const beforeItems = album.toPersistence().items.length;
+      const removed = album.removeMediaItemFromAlbum('not-present', ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.toPersistence().items).toHaveLength(beforeItems);
+    });
+  });
 });

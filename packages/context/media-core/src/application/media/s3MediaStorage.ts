@@ -1,5 +1,6 @@
 import type { PutObjectCommandInput } from '@aws-sdk/client-s3';
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -121,6 +122,22 @@ export const s3MediaStorage = ({
     await client.send(new PutObjectCommand(commandInput));
   };
 
+  const deleteObject = async (storageKey: string): Promise<void> => {
+    try {
+      await client.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: storageKey,
+        }),
+      );
+    } catch (error) {
+      if (isMissingObjectError(error)) {
+        return;
+      }
+      throw error;
+    }
+  };
+
   const getObjectMetadata = async (
     storageKey: string,
   ): Promise<MediaStorageObjectMetadata | undefined> => {
@@ -232,6 +249,7 @@ export const s3MediaStorage = ({
   return {
     getUploadTarget,
     writeObject,
+    deleteObject,
     getObjectMetadata,
     verifyExistence,
     getObjectAccessUrl,

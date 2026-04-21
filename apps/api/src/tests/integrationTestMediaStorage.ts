@@ -64,6 +64,10 @@ export const createIntegrationTestMediaStorage = (): IntegrationTestMediaStorage
     });
   };
 
+  const deleteObject = async (storageKey: string): Promise<void> => {
+    objects.delete(storageKey);
+  };
+
   const getObjectMetadata = async (
     storageKey: string,
   ): Promise<MediaStorageObjectMetadata | null> => {
@@ -108,6 +112,7 @@ export const createIntegrationTestMediaStorage = (): IntegrationTestMediaStorage
     clear,
     getUploadTarget,
     writeObject,
+    deleteObject,
     getObjectMetadata,
     verifyExistence,
     getObjectAccessUrl,

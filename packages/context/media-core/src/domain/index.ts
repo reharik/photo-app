@@ -10,6 +10,8 @@ export * from './Album/albumItemOrder';
 export * from './Album/AlbumMember';
 export * from './Comment/Comment';
 export * from './Entity';
+export * from './MediaDeletionJob/MediaDeletionJobRepository';
+export * from './MediaDeletionJob/mediaDeletionJobStatus';
 export * from './MediaItem/MediaAsset';
 export * from './MediaItem/MediaItem';
 export * from './MediaItem/MediaItemTag';

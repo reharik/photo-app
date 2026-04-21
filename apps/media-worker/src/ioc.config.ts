@@ -40,6 +40,9 @@ export default defineIocConfig({
     MediaProcessingJobRepository: {
       mediaProcessingJobRepository: { lifetime: 'scoped' },
     },
+    MediaDeletionJobRepository: {
+      mediaDeletionJobRepository: { lifetime: 'scoped' },
+    },
     ViewerMediaItemReadServiceFactory: {
       viewerMediaItemReadServiceFactory: { lifetime: 'scoped' },
     },

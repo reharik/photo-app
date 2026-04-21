@@ -198,6 +198,21 @@ export type DeleteMediaItemResponse = {
   errors?: Maybe<Array<ContractError>>;
 };
 
+export type DeleteMediaItemsInput = {
+  mediaItemIds: Array<Scalars['ID']['input']>;
+};
+
+export type DeleteMediaItemsPayload = {
+  __typename?: 'DeleteMediaItemsPayload';
+  deletedMediaItemIds: Array<Scalars['ID']['output']>;
+};
+
+export type DeleteMediaItemsResponse = {
+  __typename?: 'DeleteMediaItemsResponse';
+  data?: Maybe<DeleteMediaItemsPayload>;
+  errors?: Maybe<Array<ContractError>>;
+};
+
 /** Optional metadata on enum values for SmartEnum / codegen (e.g. DB column names). */
 export type EnumMetaPropInput = {
   name: Scalars['String']['input'];
@@ -284,7 +299,14 @@ export type MediaItemDerivedUrls = {
 
 export type MediaItemSortBy = 'CREATED_AT';
 
-export type MediaItemStatus = 'FAILED' | 'PENDING' | 'PROCESSING' | 'READY' | 'UPLOADED';
+export type MediaItemStatus =
+  | 'DELETE_FAILED'
+  | 'DELETE_PENDING'
+  | 'FAILED'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'READY'
+  | 'UPLOADED';
 
 export type MediaKind = 'PHOTO' | 'VIDEO';
 
@@ -300,6 +322,7 @@ export type Mutation = {
   createMediaUpload: CreateMediaUploadResponse;
   deleteAlbum: DeleteAlbumResponse;
   deleteMediaItem: DeleteMediaItemResponse;
+  deleteMediaItems: DeleteMediaItemsResponse;
   finalizeMediaUpload: FinalizeMediaUploadResponse;
   updateMediaItemDetails: UpdateMediaItemDetailsResponse;
   updateMediaItemTags: UpdateMediaItemTagsResponse;
@@ -343,6 +366,10 @@ export type MutationDeleteAlbumArgs = {
 
 export type MutationDeleteMediaItemArgs = {
   input: DeleteMediaItemInput;
+};
+
+export type MutationDeleteMediaItemsArgs = {
+  input: DeleteMediaItemsInput;
 };
 
 export type MutationFinalizeMediaUploadArgs = {
@@ -663,6 +690,30 @@ export type DeleteAlbumItemsFromAlbumMutation = {
           albumId: string;
           albumItemIds: Array<string>;
         }
+      | undefined;
+    errors?:
+      | Array<{
+          __typename?: 'ContractError';
+          code: string;
+          message: string;
+          field?: string | undefined;
+          category: ErrorCategory;
+          retryable: boolean;
+        }>
+      | undefined;
+  };
+};
+
+export type DeleteMediaItemsMutationVariables = Exact<{
+  input: DeleteMediaItemsInput;
+}>;
+
+export type DeleteMediaItemsMutation = {
+  __typename?: 'Mutation';
+  deleteMediaItems: {
+    __typename?: 'DeleteMediaItemsResponse';
+    data?:
+      | { __typename?: 'DeleteMediaItemsPayload'; deletedMediaItemIds: Array<string> }
       | undefined;
     errors?:
       | Array<{
@@ -1561,6 +1612,71 @@ export const DeleteAlbumItemsFromAlbumDocument = {
   DeleteAlbumItemsFromAlbumMutation,
   DeleteAlbumItemsFromAlbumMutationVariables
 >;
+export const DeleteMediaItemsDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'DeleteMediaItems' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'DeleteMediaItemsInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'deleteMediaItems' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'deletedMediaItemIds' } },
+                    ],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'errors' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'field' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'retryable' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<DeleteMediaItemsMutation, DeleteMediaItemsMutationVariables>;
 export const CreateMediaUploadDocument = {
   kind: 'Document',
   definitions: [

@@ -14,6 +14,7 @@ import type {
   DeleteAlbum,
   DeleteAlbumItems,
   DeleteMediaItem,
+  DeleteMediaItems,
   FinalizeMediaItemUpload,
   MediaAssetReadRepository,
   MediaItemDerivedUrlsProjection,
@@ -62,6 +63,7 @@ export interface IocGeneratedTypes {
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteMediaItem: DeleteMediaItem;
+  deleteMediaItems: DeleteMediaItems;
   errorHandler: ErrorHandler;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
   graphQLContextFactory: GraphQLContextFactory;
@@ -103,6 +105,7 @@ export interface IocGeneratedTypes {
     deleteAlbum: DeleteAlbum;
     deleteAlbumItems: DeleteAlbumItems;
     deleteMediaItem: DeleteMediaItem;
+    deleteMediaItems: DeleteMediaItems;
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     reorderAlbumItems: ReorderAlbumItems;
     setCoverMedia: SetCoverMedia;

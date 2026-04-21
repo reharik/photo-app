@@ -5,6 +5,8 @@ type MediaSelectionToolbarProps = {
   onAddToAlbum?: () => void;
   /** Album detail only: remove selected album items from the current album (does not delete media). */
   onRemoveFromAlbum?: () => void;
+  /** Media library grids: permanently delete selected media (by media item id). */
+  onDeleteFromLibrary?: () => void;
 };
 
 /**
@@ -13,6 +15,7 @@ type MediaSelectionToolbarProps = {
 export const MediaSelectionToolbar = ({
   onAddToAlbum,
   onRemoveFromAlbum,
+  onDeleteFromLibrary,
 }: MediaSelectionToolbarProps) => {
   return (
     <>
@@ -29,9 +32,15 @@ export const MediaSelectionToolbar = ({
           Remove from album
         </ToolbarAction>
       ) : null}
-      <ToolbarAction type="button" disabled title="Coming soon">
-        Delete
-      </ToolbarAction>
+      {onDeleteFromLibrary ? (
+        <ToolbarAction type="button" onClick={onDeleteFromLibrary}>
+          Delete
+        </ToolbarAction>
+      ) : (
+        <ToolbarAction type="button" disabled title="Coming soon">
+          Delete
+        </ToolbarAction>
+      )}
     </>
   );
 };

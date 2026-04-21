@@ -9,7 +9,7 @@ import { RepoOptions, runInTransaction } from '../../infrastructure/repositories
 import { EntityId } from '../../types/types';
 
 export type AlbumRepository = {
-  getById: (id: EntityId) => Promise<Album | undefined>;
+  getById: (id: EntityId, options?: RepoOptions) => Promise<Album | undefined>;
   save: (album: Album, options?: RepoOptions) => Promise<void>;
   delete: (album: Album, options?: RepoOptions) => Promise<void>;
 };
@@ -19,20 +19,21 @@ type AlbumRepositoryDeps = {
 };
 
 export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRepository => {
-  const getById = async (id: EntityId): Promise<Album | undefined> => {
-    const albumRow = await database<AlbumRecord>('album').where({ id }).first();
+  const getById = async (id: EntityId, options?: RepoOptions): Promise<Album | undefined> => {
+    const db = options?.trx ?? database;
+    const albumRow = await db<AlbumRecord>('album').where({ id }).first();
 
     if (!albumRow) {
       return;
     }
 
-    const itemRows = await database<AlbumItemRecord>('albumItem')
+    const itemRows = await db<AlbumItemRecord>('albumItem')
       .where({ albumId: id })
       .orderBy('orderIndex', 'asc')
       .orderBy('id', 'asc');
 
     const memberRows = await withEnumRevival(
-      database<AlbumMemberRecord>('albumMember').where({ albumId: id }).orderBy('createdAt', 'asc'),
+      db<AlbumMemberRecord>('albumMember').where({ albumId: id }).orderBy('createdAt', 'asc'),
       { role: AlbumMemberRoleEnum },
       { strict: true },
     );

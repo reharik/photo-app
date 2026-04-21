@@ -1,0 +1,185 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { buildMediaAssetStorageKey, MediaItem } from '@packages/media-core';
+
+import { buildProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob';
+import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+
+const ACTOR_ID = '11111111-1111-4111-8111-111111111111';
+const JOB_ID = '22222222-2222-4222-8222-222222222222';
+const MEDIA_ITEM_ID = '33333333-3333-4333-8333-333333333333';
+
+const createUploadedPhoto = (): MediaItem => {
+  const ownerId = ACTOR_ID;
+  const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+  item.completeUploadedWithMetadata({ sizeBytes: 10, mimeType: 'image/jpeg' }, ownerId);
+  return item;
+};
+
+describe('buildProcessNextMediaDeletionJob', () => {
+  const createCradle = (
+    overrides: Partial<{
+      claimNextAvailableJob: IocGeneratedCradle['mediaDeletionJobRepository']['claimNextAvailableJob'];
+      getById: IocGeneratedCradle['mediaItemRepository']['getById'];
+      deleteObject: IocGeneratedCradle['mediaStorage']['deleteObject'];
+      deleteItem: IocGeneratedCradle['mediaItemRepository']['delete'];
+      markSucceeded: IocGeneratedCradle['mediaDeletionJobRepository']['markSucceeded'];
+      markFailed: IocGeneratedCradle['mediaDeletionJobRepository']['markFailed'];
+      markPendingRetry: IocGeneratedCradle['mediaDeletionJobRepository']['markPendingRetry'];
+    }>,
+  ): IocGeneratedCradle => {
+    const markSucceeded = jest.fn().mockResolvedValue(undefined);
+    const markFailed = jest.fn().mockResolvedValue(undefined);
+    const markPendingRetry = jest.fn().mockResolvedValue(undefined);
+    const deleteObject = jest.fn().mockResolvedValue(undefined);
+    const deleteItem = jest.fn().mockResolvedValue(undefined);
+
+    return {
+      logger: {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        http: jest.fn(),
+        verbose: jest.fn(),
+      },
+      mediaDeletionJobRepository: {
+        enqueueIfNoneActive: jest.fn(),
+        claimNextAvailableJob:
+          overrides.claimNextAvailableJob ?? jest.fn().mockResolvedValue(undefined),
+        markSucceeded: overrides.markSucceeded ?? markSucceeded,
+        markFailed: overrides.markFailed ?? markFailed,
+        markPendingRetry: overrides.markPendingRetry ?? markPendingRetry,
+      },
+      mediaItemRepository: {
+        getById: overrides.getById ?? jest.fn(),
+        save: jest.fn(),
+        delete: overrides.deleteItem ?? deleteItem,
+      } as IocGeneratedCradle['mediaItemRepository'],
+      mediaStorage: {
+        deleteObject: overrides.deleteObject ?? deleteObject,
+      } as IocGeneratedCradle['mediaStorage'],
+    } as IocGeneratedCradle;
+  };
+
+  describe('When there is no available job', () => {
+    it('should return idle', async () => {
+      const cradle = createCradle({});
+      const run = buildProcessNextMediaDeletionJob(cradle);
+      await expect(run()).resolves.toBe('idle');
+      expect(cradle.mediaDeletionJobRepository.markSucceeded).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When storage deletes succeed and the media item still exists', () => {
+    it('should delete objects, remove the media row, and mark the job succeeded', async () => {
+      const item = createUploadedPhoto();
+      const baseKey = item.storageKey();
+      const cradle = createCradle({
+        claimNextAvailableJob: jest.fn().mockResolvedValue({
+          id: JOB_ID,
+          mediaItemId: item.id(),
+          storageKey: baseKey,
+          createdBy: ACTOR_ID,
+          attemptCount: 1,
+        }),
+        getById: jest.fn().mockResolvedValue(item),
+      });
+      const run = buildProcessNextMediaDeletionJob(cradle);
+      await expect(run()).resolves.toBe('processed');
+
+      expect(cradle.mediaStorage.deleteObject).toHaveBeenCalledTimes(3);
+      expect(cradle.mediaStorage.deleteObject).toHaveBeenCalledWith(
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.original),
+      );
+      expect(cradle.mediaStorage.deleteObject).toHaveBeenCalledWith(
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.display),
+      );
+      expect(cradle.mediaStorage.deleteObject).toHaveBeenCalledWith(
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail),
+      );
+      expect(cradle.mediaItemRepository.delete).toHaveBeenCalledWith(item);
+      expect(cradle.mediaDeletionJobRepository.markSucceeded).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+      );
+    });
+  });
+
+  describe('When storage deletes succeed but the media item row is already gone', () => {
+    it('should still mark the job succeeded without calling delete on the repository', async () => {
+      const baseKey = 'media/x/y';
+      const cradle = createCradle({
+        claimNextAvailableJob: jest.fn().mockResolvedValue({
+          id: JOB_ID,
+          mediaItemId: MEDIA_ITEM_ID,
+          storageKey: baseKey,
+          createdBy: ACTOR_ID,
+          attemptCount: 1,
+        }),
+        getById: jest.fn().mockResolvedValue(undefined),
+      });
+      const run = buildProcessNextMediaDeletionJob(cradle);
+      await expect(run()).resolves.toBe('processed');
+
+      expect(cradle.mediaItemRepository.delete).not.toHaveBeenCalled();
+      expect(cradle.mediaDeletionJobRepository.markSucceeded).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+      );
+    });
+  });
+
+  describe('When storage deletion throws and attempts remain', () => {
+    it('should schedule a pending retry', async () => {
+      const baseKey = 'media/x/y';
+      const markPendingRetry = jest.fn().mockResolvedValue(undefined);
+      const cradle = createCradle({
+        claimNextAvailableJob: jest.fn().mockResolvedValue({
+          id: JOB_ID,
+          mediaItemId: MEDIA_ITEM_ID,
+          storageKey: baseKey,
+          createdBy: ACTOR_ID,
+          attemptCount: 1,
+        }),
+        deleteObject: jest.fn().mockRejectedValue(new Error('s3 down')),
+        markPendingRetry,
+      });
+      const run = buildProcessNextMediaDeletionJob(cradle);
+      await expect(run()).resolves.toBe('processed');
+
+      expect(markPendingRetry).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+        'Error: s3 down',
+        expect.any(Date),
+      );
+      expect(cradle.mediaDeletionJobRepository.markFailed).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When storage deletion throws and max attempts are exhausted', () => {
+    it('should mark the job failed', async () => {
+      const baseKey = 'media/x/y';
+      const cradle = createCradle({
+        claimNextAvailableJob: jest.fn().mockResolvedValue({
+          id: JOB_ID,
+          mediaItemId: MEDIA_ITEM_ID,
+          storageKey: baseKey,
+          createdBy: ACTOR_ID,
+          attemptCount: 8,
+        }),
+        deleteObject: jest.fn().mockRejectedValue(new Error('s3 down')),
+      });
+      const run = buildProcessNextMediaDeletionJob(cradle);
+      await expect(run()).resolves.toBe('processed');
+
+      expect(cradle.mediaDeletionJobRepository.markFailed).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+        'Error: s3 down',
+      );
+      expect(cradle.mediaDeletionJobRepository.markPendingRetry).not.toHaveBeenCalled();
+    });
+  });
+});

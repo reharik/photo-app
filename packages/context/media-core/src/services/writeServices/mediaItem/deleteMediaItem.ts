@@ -6,8 +6,9 @@ import { AlbumRepository } from '../../../repositories/domainRepositories/albumR
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
 import { WriteResult } from '../../../types/types';
-import { DeleteMediaItemCommand, DeleteMediaItemResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
+import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
+import { DeleteMediaItemCommand, DeleteMediaItemResult } from './writeMediaItem.types';
 
 export interface DeleteMediaItem extends WriteServiceBase {
   (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>>;
@@ -37,23 +38,13 @@ export const buildDeleteMediaItem = ({
     if (!ensureResult.success) {
       return ensureResult;
     }
-    const albumIds = await albumReadRepository.findAlbumIdsReferencingMediaItem({ mediaItemId });
-    await database.transaction(async (trx) => {
-      if (albumIds.length <= 0) {
-        for (const albumId of albumIds) {
-          const album = await albumRepository.getById(albumId);
-          if (!album) {
-            continue;
-          }
-          album.deleteItems([mediaItemId], viewerId);
-          if (album.coverMediaId() === mediaItemId) {
-            album.unsetCoverMedia(viewerId);
-          }
-          await albumRepository.save(album, { trx });
-        }
-      }
-
-      await mediaItemRepository.delete(mediaItem, { trx });
+    await deleteViewerOwnedMediaItemsFromLibraryInTransaction({
+      viewerId,
+      mediaItems: [mediaItem],
+      albumReadRepository,
+      albumRepository,
+      mediaItemRepository,
+      database,
     });
     return ok({ mediaItemId: mediaItem.id() });
   };

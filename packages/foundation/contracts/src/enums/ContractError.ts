@@ -86,6 +86,13 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  DeleteMediaItemsEmptyList: {
+    code: 'MEDIA_ITEM_DELETE_ITEMS_EMPTY_LIST',
+    display: 'At least one media item is required to delete',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 
   InvalidMediaDimensions: {
     code: 'MEDIA_ITEM_INVALID_DIMENSIONS',
