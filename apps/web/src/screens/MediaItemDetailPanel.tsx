@@ -59,7 +59,7 @@ export const MediaItemDetailPanel = forwardRef<
       <RowFieldLabel>{label}</RowFieldLabel>
       <EditableRowValueRow>
         <EditableValueText $multiline $muted={muted != null ? muted : !value?.trim()}>
-          {mediaItem.description?.trim() ? value?.trim() : 'Not set'}
+          {value?.trim() ? value.trim() : 'Not set'}
         </EditableValueText>
         <EditCue aria-hidden>✎</EditCue>
       </EditableRowValueRow>
@@ -263,7 +263,9 @@ const EditableValueText = styled.div<{ $multiline?: boolean; $muted?: boolean }>
   font-size: 14px;
   color: ${({ theme, $muted }) => ($muted ? theme.colors.subtext : theme.colors.text)};
   flex: 1;
+  min-width: 0;
   text-align: left;
+  overflow-wrap: break-word;
   white-space: ${({ $multiline }) => ($multiline ? 'pre-wrap' : 'normal')};
   font-style: ${({ $muted }) => ($muted ? 'italic' : 'normal')};
 `;

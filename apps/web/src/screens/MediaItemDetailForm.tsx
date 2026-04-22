@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import styled, { css } from 'styled-components';
+import styled, { createGlobalStyle, css } from 'styled-components';
 import { UpdateMediaItemDetailsDocument } from '../graphql/generated/types';
 import type { MediaItemDetailVM } from '../viewModels/media/MediaItemDetailVM';
 import { fromDatetimeLocalToIso, toDatetimeLocalValue } from './mediaItemMetaFormat';
@@ -104,6 +104,7 @@ export const MediaItemDetailForm = ({
 
   return (
     <EditFormCard>
+      <MediaDetailDatepickerPopperZ />
       <FormField>
         <DetailMetaLabel htmlFor="media-detail-title">Title</DetailMetaLabel>
         <FormTextInput
@@ -128,23 +129,26 @@ export const MediaItemDetailForm = ({
       </FormField>
       <FormField>
         <DetailMetaLabel htmlFor="media-detail-taken">Taken</DetailMetaLabel>
-        <DatePicker
-          customInput={<FormTextInput id="media-detail-taken" autoComplete="off" />}
-          selected={parseDraftTaken(draftTakenLocal)}
-          onChange={(date: Date | null) => {
-            if (date == null) {
-              setDraftTakenLocal('');
-              return;
-            }
-            setDraftTakenLocal(DateTime.fromJSDate(date).toFormat(takenLocalFormat));
-          }}
-          showTimeSelect
-          timeIntervals={60}
-          timeFormat="HH:mm"
-          dateFormat="MMM d, yyyy HH:mm"
-          isClearable
-          placeholderText="Date and time"
-        />
+        <DatePickerFieldWrap>
+          <DatePicker
+            popperClassName="media-detail-form-datepicker-popper"
+            customInput={<FormTextInput id="media-detail-taken" autoComplete="off" />}
+            selected={parseDraftTaken(draftTakenLocal)}
+            onChange={(date: Date | null) => {
+              if (date == null) {
+                setDraftTakenLocal('');
+                return;
+              }
+              setDraftTakenLocal(DateTime.fromJSDate(date).toFormat(takenLocalFormat));
+            }}
+            showTimeSelect
+            timeIntervals={60}
+            timeFormat="HH:mm"
+            dateFormat="MMM d, yyyy HH:mm"
+            isClearable
+            placeholderText="Date and time"
+          />
+        </DatePickerFieldWrap>
         <FormHint>Optional. Uses your local timezone.</FormHint>
       </FormField>
       <FormActions>
@@ -185,6 +189,16 @@ const FormField = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+/** react-datepicker’s wrapper is inline-block by default, so the field would not match full-width inputs. */
+const DatePickerFieldWrap = styled.div`
+  width: 100%;
+
+  .react-datepicker-wrapper {
+    display: block;
+    width: 100%;
+  }
 `;
 
 const formFieldControlCss = css`
@@ -266,4 +280,11 @@ const FormError = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.sm};
   padding: ${({ theme }) => theme.spacing(1)};
+`;
+
+/** Ensures the floating calendar stacks above {@link MediaItemScreen} (z-index 100). */
+const MediaDetailDatepickerPopperZ = createGlobalStyle`
+  .media-detail-form-datepicker-popper.react-datepicker-popper {
+    z-index: 200;
+  }
 `;

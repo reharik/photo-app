@@ -30,6 +30,8 @@ export const SelectableGalleryHeader = ({
 };
 
 const HeaderContainer = styled.div`
+  box-sizing: border-box;
+  width: 100%;
   padding: ${({ theme }) => theme.spacing(4)} ${({ theme }) => theme.spacing(6)};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;

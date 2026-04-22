@@ -1,7 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
@@ -23,6 +23,8 @@ import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
 import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 import { UploadMediaButton } from './UploadMediaButton';
 
+const META_COMPACT_AFTER_SCROLL_PX = 32;
+
 type AlbumSectionProps = {
   album: AlbumSummaryVM;
   albumItems: AlbumItemSummaryVM[];
@@ -31,6 +33,8 @@ type AlbumSectionProps = {
 
 export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) => {
   const client = useApolloClient();
+  const albumScrollRef = useRef<HTMLDivElement>(null);
+  const [metaCompact, setMetaCompact] = useState(false);
   const orderedMediaIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
   const {
     selectedIds,
@@ -118,6 +122,14 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
     }
   };
 
+  const onAlbumScroll = useCallback((): void => {
+    const el = albumScrollRef.current;
+    if (el == null) {
+      return;
+    }
+    setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
+  }, []);
+
   const renderHeader = () => {
     return (
       <>
@@ -137,22 +149,32 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
       alert('uploadCoverMedia');
     };
     return (
-      <AlbumMeta>
-        <AlbumCover>
-          <CoverUploadButton onClick={uploadCoverMedia}>
+      <AlbumMeta $compact={metaCompact}>
+        <AlbumCover $compact={metaCompact}>
+          <CoverUploadButton type="button" onClick={uploadCoverMedia}>
             {album.coverMedia ? (
               <CoverImage src={album.coverMedia.thumbnailUrl} alt={album.coverMedia.title ?? ''} />
             ) : (
-              <CoverPlaceholder aria-hidden>📷</CoverPlaceholder>
+              <CoverPlaceholder aria-hidden $compact={metaCompact}>
+                📷
+              </CoverPlaceholder>
             )}
           </CoverUploadButton>
         </AlbumCover>
-        <AlbumInfo>
-          <AlbumTitle>{album.title}</AlbumTitle>
-          <AlbumStats>
-            <Stat>{albumItems.length} media items</Stat>
-          </AlbumStats>
-          <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
+        <AlbumInfo $compact={metaCompact}>
+          {metaCompact ? (
+            <AlbumCompactSummary>
+              {albumItems.length} media items · Updated {localizeDate(album.updatedAt)}
+            </AlbumCompactSummary>
+          ) : (
+            <>
+              <AlbumTitle>{album.title}</AlbumTitle>
+              <AlbumStats>
+                <Stat>{albumItems.length} media items</Stat>
+              </AlbumStats>
+              <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
+            </>
+          )}
         </AlbumInfo>
       </AlbumMeta>
     );
@@ -171,20 +193,23 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
         }
         Header={renderHeader}
       />
-      {renderMetadata()}
-      <SelectableGallery
-        nodes={albumItems}
-        multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
-        orderedMediaIds={orderedMediaIds}
-        emptyState={
-          <EmptyState
-            title="No media yet"
-            text="Upload your first media to start building your family gallery"
-            action={<UploadMediaButton onComplete={refetch} />}
-          />
-        }
-        renderItem={({ item }) => <AlbumMediaTile item={item} />}
-      />
+      <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
+        {renderMetadata()}
+        <SelectableGallery
+          nodes={albumItems}
+          multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
+          orderedMediaIds={orderedMediaIds}
+          embedInParentScroll
+          emptyState={
+            <EmptyState
+              title="No media yet"
+              text="Upload your first media to start building your family gallery"
+              action={<UploadMediaButton onComplete={refetch} />}
+            />
+          }
+          renderItem={({ item }) => <AlbumMediaTile item={item} />}
+        />
+      </AlbumBodyScroll>
 
       <AddToAlbumModal
         open={addToAlbumOpen}
@@ -244,6 +269,7 @@ const Title = styled.h1`
   font-weight: 500;
   margin: 0;
   flex: 1;
+  min-width: 0;
   color: ${({ theme }) => theme.colors.text};
 `;
 
@@ -271,38 +297,82 @@ const PrimaryButton = styled.button`
     cursor: not-allowed;
   }
 `;
-const AlbumMeta = styled.div`
+
+const AlbumBodyScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(6)};
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    padding: 0 ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(3)};
+  }
+`;
+
+const AlbumMeta = styled.div<{ $compact: boolean }>`
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  gap: ${({ theme }) => theme.spacing(4)};
-  margin-bottom: ${({ theme }) => theme.spacing(6)};
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme, $compact }) => theme.spacing($compact ? 2 : 3)};
+  margin-bottom: ${({ theme, $compact }) => theme.spacing($compact ? 3 : 4)};
+  padding: ${({ theme, $compact }) =>
+    $compact ? `${theme.spacing(2)} 0` : `${theme.spacing(3)} 0 ${theme.spacing(2)}`};
+  background: ${({ theme }) => theme.colors.bg};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
+  transition:
+    gap 180ms ease,
+    padding 180ms ease,
+    margin-bottom 180ms ease;
 
   @media (max-width: 768px) {
-    flex-direction: column;
+    flex-direction: ${({ $compact }) => ($compact ? 'row' : 'column')};
+    align-items: ${({ $compact }) => ($compact ? 'center' : 'stretch')};
   }
 `;
 
-const AlbumCover = styled.div`
+const AlbumCover = styled.div<{ $compact: boolean }>`
   flex-shrink: 0;
-  width: 240px;
-  aspect-ratio: 4 / 3;
   background: ${({ theme }) => theme.colors.panel};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
+  border-radius: ${({ theme, $compact }) => ($compact ? theme.radius.md : theme.radius.lg)};
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 
-  @media (max-width: 768px) {
-    width: 100%;
-  }
+  ${({ $compact }) =>
+    $compact
+      ? css`
+          width: 52px;
+          height: 52px;
+        `
+      : css`
+          width: 180px;
+          aspect-ratio: 4 / 3;
+
+          @media (max-width: 768px) {
+            width: 100%;
+            max-width: 220px;
+            margin-inline: auto;
+          }
+        `}
 `;
 
-const CoverPlaceholder = styled.div`
-  font-size: 64px;
-  opacity: 0.3;
+const CoverPlaceholder = styled.div<{ $compact: boolean }>`
+  font-size: ${({ $compact }) => ($compact ? '24px' : 'clamp(32px, min(10vw, 15vh), 56px)')};
+  line-height: 1;
+  opacity: 0.35;
 `;
 
 const CoverUploadButton = styled.button`
@@ -324,17 +394,30 @@ const CoverImage = styled.img`
   object-fit: cover;
 `;
 
-const AlbumInfo = styled.div`
+const AlbumInfo = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme, $compact }) => theme.spacing($compact ? 0.5 : 1.5)};
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
 `;
 
 const AlbumTitle = styled.h2`
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 500;
   margin: 0;
   color: ${({ theme }) => theme.colors.text};
+`;
+
+const AlbumCompactSummary = styled.p`
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.subtext};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const AlbumStats = styled.div`
