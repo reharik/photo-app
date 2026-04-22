@@ -1,4 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
+import type { MouseEvent } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -8,11 +9,14 @@ import {
   DeleteAlbumItemsFromAlbumDocument,
   type DeleteAlbumItemsFromAlbumMutation,
   ViewerAlbumsDocument,
+  ViewerRecentMediaDocument,
 } from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { mapMultipleMediaItemsToMediaItemSummaryVMs } from '../../viewModels/media/mapMediaItemToMediaItemSummaryVM';
+import { getQueryRenderState } from './dataAccess/getQueryRenderState';
 import { useAppMutationState } from './dataAccess/useAppMutation';
 import { AddToAlbumModal } from './gallery/AddToAlbumModal';
 import { EmptyState } from './gallery/EmptyState';
@@ -21,6 +25,7 @@ import { RemoveFromAlbumConfirmModal } from './gallery/RemoveFromAlbumConfirmMod
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
 import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
+import { MediaSelectorSection } from './MediaSelectorSection';
 import { UploadMediaButton } from './UploadMediaButton';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
@@ -45,6 +50,7 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
     clearSelection,
   } = useMultiSelectIds(orderedMediaIds);
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
+  const [addAlbumItemModalOpen, setAddAlbumItemModalOpen] = useState(false);
   const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
   const { isLoading, errors, execute } = useAppMutationState();
   const {
@@ -56,6 +62,18 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
   const albumsQuery = useQuery(ViewerAlbumsDocument, {
     skip: !addToAlbumOpen,
     fetchPolicy: 'cache-first',
+  });
+
+  const recentMediaForPickerQuery = useQuery(ViewerRecentMediaDocument, {
+    skip: !addAlbumItemModalOpen,
+    fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-first',
+  });
+
+  const { data: pickerMediaNodes, content: pickerMediaContent } = getQueryRenderState({
+    query: recentMediaForPickerQuery,
+    select: (d) => d.viewer?.mediaItems.nodes,
+    map: mapMultipleMediaItemsToMediaItemSummaryVMs,
   });
 
   const albumOptions = useMemo(
@@ -136,8 +154,14 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
         <BackLink to="/albums">← Albums</BackLink>
         <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
-          <PrimaryButton type="button" disabled={!album}>
-            Add album item
+          <PrimaryButton
+            type="button"
+            disabled={!album}
+            onClick={() => {
+              setAddAlbumItemModalOpen(true);
+            }}
+          >
+            Add items to Album
           </PrimaryButton>
         </HeaderActions>
       </>
@@ -236,6 +260,48 @@ export const AlbumSection = ({ album, albumItems, refetch }: AlbumSectionProps) 
         mutationErrors={removeErrors}
         onConfirm={submitRemoveFromAlbum}
       />
+
+      {addAlbumItemModalOpen ? (
+        <AddAlbumItemModalBackdrop
+          role="presentation"
+          onClick={() => {
+            setAddAlbumItemModalOpen(false);
+          }}
+        >
+          <AddAlbumItemModalPanel
+            role="dialog"
+            aria-labelledby="add-album-item-modal-title"
+            onClick={(e: MouseEvent<HTMLDivElement>) => {
+              e.stopPropagation();
+            }}
+          >
+            <AddAlbumItemModalBody>
+              {pickerMediaNodes ? (
+                <MediaSelectorSection
+                  header={
+                    <AddAlbumItemModalHeader>
+                      <AddAlbumItemModalTitle id="add-album-item-modal-title">
+                        Add album item
+                      </AddAlbumItemModalTitle>
+                      <AddAlbumItemModalClose
+                        type="button"
+                        onClick={() => {
+                          setAddAlbumItemModalOpen(false);
+                        }}
+                      >
+                        Close
+                      </AddAlbumItemModalClose>
+                    </AddAlbumItemModalHeader>
+                  }
+                  nodes={pickerMediaNodes}
+                />
+              ) : (
+                pickerMediaContent
+              )}
+            </AddAlbumItemModalBody>
+          </AddAlbumItemModalPanel>
+        </AddAlbumItemModalBackdrop>
+      ) : null}
     </Container>
   );
 };
@@ -434,4 +500,70 @@ const AlbumDescription = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.subtext};
   line-height: 1.6;
+`;
+
+const AddAlbumItemModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: ${({ theme }) => theme.spacing(3)};
+`;
+
+const AddAlbumItemModalPanel = styled.div`
+  width: 100%;
+  max-width: 960px;
+  max-height: 85vh;
+  background: ${({ theme }) => theme.colors.bg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.lg};
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const AddAlbumItemModalHeader = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(2)};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  width: 100%;
+`;
+
+const AddAlbumItemModalTitle = styled.h2`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const AddAlbumItemModalClose = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+  }
+`;
+
+const AddAlbumItemModalBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  /* padding: ${({ theme }) => `${theme.spacing(1)} ${theme.spacing(4)} ${theme.spacing(4)}`}; */
+  display: flex;
+  flex-direction: column;
 `;

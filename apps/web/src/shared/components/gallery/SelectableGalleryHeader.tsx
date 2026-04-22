@@ -6,6 +6,8 @@ interface SelectableGalleryHeaderProps {
   /** Toolbar content when items are selected (e.g. action buttons). */
   SelectionActions: React.ReactNode;
   Header: React.ComponentType;
+  vPaddingUnits?: number;
+  hPaddingUnits?: number;
 }
 
 export const SelectableGalleryHeader = ({
@@ -13,9 +15,11 @@ export const SelectableGalleryHeader = ({
   clearSelection,
   Header,
   SelectionActions,
+  vPaddingUnits = 4,
+  hPaddingUnits = 6,
 }: SelectableGalleryHeaderProps) => {
   return (
-    <HeaderContainer>
+    <HeaderContainer $vPaddingUnits={vPaddingUnits} $hPaddingUnits={hPaddingUnits}>
       {selectionCount > 0 ? (
         <SelectableGallerySelectionBar
           count={selectionCount}
@@ -29,10 +33,11 @@ export const SelectableGalleryHeader = ({
   );
 };
 
-const HeaderContainer = styled.div`
+const HeaderContainer = styled.div<{ $vPaddingUnits: number; $hPaddingUnits: number }>`
   box-sizing: border-box;
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(4)} ${({ theme }) => theme.spacing(6)};
+  padding: ${({ theme, $vPaddingUnits, $hPaddingUnits }) =>
+    `${theme.spacing($vPaddingUnits)} ${theme.spacing($hPaddingUnits)}`};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   justify-content: space-between;

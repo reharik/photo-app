@@ -7,6 +7,11 @@ export type MultiSelectProps = {
   toggleSelectAt: (id: string, index: number) => void;
 };
 
+const DEFAULT_GRID_MIN_COLUMN_PX = 280;
+const DEFAULT_GRID_MIN_COLUMN_MOBILE_PX = 160;
+const DEFAULT_GRID_GAP_SPACING_STEP = 1;
+const DEFAULT_GRID_GAP_SPACING_STEP_MOBILE = 2;
+
 type SelectableGalleryProps<T extends { id: string }> = {
   nodes: T[];
   orderedMediaIds: string[];
@@ -14,6 +19,15 @@ type SelectableGalleryProps<T extends { id: string }> = {
   emptyState?: React.ReactNode;
   /** When true, render only the grid (no inner scroll/padding); parent supplies overflow. */
   embedInParentScroll?: boolean;
+  /**
+   * Minimum column width for `grid-template-columns: repeat(auto-fill, minmax(...))`.
+   */
+  gridMinColumnWidthPx?: number;
+  gridMinColumnWidthPxMobile?: number;
+  /** Grid `gap`, via `theme.spacing(gridGapSpacingStep)` (default 1). */
+  gridGapSpacingStep?: number;
+  /** Grid `gap` below 768px, via `theme.spacing(...)` (default 2). */
+  gridGapSpacingStepMobile?: number;
   renderItem: (args: {
     item: T;
     orderedMediaIds: string[];
@@ -27,6 +41,10 @@ export const SelectableGallery = <T extends { id: string }>({
   multiSelectProps,
   emptyState,
   embedInParentScroll = false,
+  gridMinColumnWidthPx = DEFAULT_GRID_MIN_COLUMN_PX,
+  gridMinColumnWidthPxMobile = DEFAULT_GRID_MIN_COLUMN_MOBILE_PX,
+  gridGapSpacingStep = DEFAULT_GRID_GAP_SPACING_STEP,
+  gridGapSpacingStepMobile = DEFAULT_GRID_GAP_SPACING_STEP_MOBILE,
   renderItem,
   orderedMediaIds,
 }: SelectableGalleryProps<T>) => {
@@ -37,7 +55,12 @@ export const SelectableGallery = <T extends { id: string }>({
     return null;
   }
   const grid = (
-    <GalleryContainer>
+    <GalleryContainer
+      $minColumnPx={gridMinColumnWidthPx}
+      $minColumnPxMobile={gridMinColumnWidthPxMobile}
+      $gapStep={gridGapSpacingStep}
+      $gapStepMobile={gridGapSpacingStepMobile}
+    >
       {nodes.map((item, index) => {
         return (
           <SelectableGalleryItem
@@ -63,17 +86,25 @@ export const SelectableGallery = <T extends { id: string }>({
   return <Content>{grid}</Content>;
 };
 
-const GalleryContainer = styled.div`
+const GalleryContainer = styled.div<{
+  $minColumnPx: number;
+  $minColumnPxMobile: number;
+  $gapStep: number;
+  $gapStepMobile: number;
+}>`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: ${({ theme }) => theme.spacing(3)};
+  grid-template-columns: repeat(auto-fill, minmax(${({ $minColumnPx }) => $minColumnPx}px, 1fr));
+  gap: ${({ theme, $gapStep }) => theme.spacing($gapStep)};
   max-width: 1400px;
   margin: 0 auto;
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: ${({ theme }) => theme.spacing(2)};
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(${({ $minColumnPxMobile }) => $minColumnPxMobile}px, 1fr)
+    );
+    gap: ${({ theme, $gapStepMobile }) => theme.spacing($gapStepMobile)};
   }
 `;
 
@@ -82,7 +113,8 @@ const Content = styled.div`
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing(6)};
+  /* padding: ${({ theme }) => theme.spacing(6)}; */
+  padding: ${({ theme }) => theme.spacing(2)};
 
   @media (max-width: 768px) {
     padding: ${({ theme }) => theme.spacing(3)};
