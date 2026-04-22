@@ -12,7 +12,11 @@ const MEDIA_ITEM_ID = '33333333-3333-4333-8333-333333333333';
 const createUploadedPhoto = (): MediaItem => {
   const ownerId = ACTOR_ID;
   const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-  item.completeUploadedWithMetadata({ sizeBytes: 10, mimeType: 'image/jpeg' }, ownerId);
+  item.completeUploadedWithMetadata(
+    { sizeBytes: 10, mimeType: 'image/jpeg' },
+    MediaKind.photo,
+    ownerId,
+  );
   return item;
 };
 

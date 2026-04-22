@@ -1,5 +1,7 @@
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { ContractError, ErrorCategory, FrontendError } from '@packages/contracts';
+import { isSmartEnumItem } from '@reharik/smart-enum';
+import { mapFrontendError } from './mapToError';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const contractError = ContractError.values();
@@ -51,16 +53,20 @@ export type MutationPayload<T> = {
   errors?: ContractErrorPayload[] | null;
 };
 
-export type AppResult<T> = { success: true; data: T } | { success: false; errors: AppError[] };
+export type AppResultSuccess<T> = { success: true; data: T };
+export type AppResultFailure = { success: false; errors: AppError[] };
+export type AppResult<T> = AppResultSuccess<T> | AppResultFailure;
 
 export const ok = <T>(data: T): AppResult<T> => ({
   success: true,
   data,
 });
 
-export const fail = (errors: AppError[]): AppResult<never> => ({
+export const fail = (errors: (AppError | FrontendError)[]): AppResult<never> => ({
   success: false,
-  errors,
+  errors: errors.map((error) =>
+    isSmartEnumItem(error) ? mapFrontendError({ code: error }) : error,
+  ),
 });
 
 export type ExecuteMutationArgs<TPayload, TVariables> = {

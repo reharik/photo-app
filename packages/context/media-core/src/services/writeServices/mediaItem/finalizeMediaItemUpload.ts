@@ -60,6 +60,7 @@ export const buildFinalizeMediaItemUpload = ({
         sizeBytes: objectMetadata.size,
         mimeType: objectMetadata.mimeType,
       },
+      mediaItem.kind(),
       viewerId,
     );
     if (!finalized.success) {

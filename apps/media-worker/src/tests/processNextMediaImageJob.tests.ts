@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaKind } from '@packages/contracts';
+import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { MediaItem } from '@packages/media-core';
 import { Readable } from 'node:stream';
 
@@ -23,6 +23,7 @@ const createUploadedPhoto = (): MediaItem => {
   const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
   item.completeUploadedWithMetadata(
     { sizeBytes: MINIMAL_PNG_1X1.length, mimeType: 'image/png' },
+    MediaKind.photo,
     ownerId,
   );
   return item;
@@ -111,7 +112,11 @@ describe('buildProcessNextMediaImageJob', () => {
     it('should mark the job succeeded without reading storage', async () => {
       const ownerId = ACTOR_ID;
       const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      item.completeUploadedWithMetadata({ sizeBytes: 1, mimeType: 'image/jpeg' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 1, mimeType: 'image/jpeg' },
+        MediaKind.photo,
+        ownerId,
+      );
       const ready = item.markReadyAfterDerivatives(
         { displayWidth: 10, displayHeight: 10 },
         ownerId,
@@ -138,12 +143,18 @@ describe('buildProcessNextMediaImageJob', () => {
     });
   });
 
-  describe('When the media kind is not photo', () => {
-    it('should mark the job failed', async () => {
+  describe('When a stale job is claimed for a video that is already ready', () => {
+    it('should mark the job succeeded without image processing', async () => {
       const ownerId = ACTOR_ID;
       const item = MediaItem.create({ kind: MediaKind.video, mimeType: 'video/mp4' }, ownerId);
-      item.completeUploadedWithMetadata({ sizeBytes: 100, mimeType: 'video/mp4' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 100, mimeType: 'video/mp4' },
+        MediaKind.video,
+        ownerId,
+      );
+      expect(item.status()).toBe(MediaItemStatus.ready);
 
+      const getObjectStream = jest.fn();
       const cradle = createCradle({
         claimNextAvailableJob: jest.fn().mockResolvedValue({
           id: JOB_ID,
@@ -151,6 +162,35 @@ describe('buildProcessNextMediaImageJob', () => {
           createdBy: ACTOR_ID,
         }),
         getById: jest.fn().mockResolvedValue(item),
+        getObjectStream,
+      });
+      const run = buildProcessNextMediaImageJob(cradle);
+      await run();
+      expect(getObjectStream).not.toHaveBeenCalled();
+      expect(cradle.mediaProcessingJobRepository.markSucceeded).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+      );
+    });
+  });
+
+  describe('When a job targets a non-photo item that is not ready', () => {
+    it('should mark the job failed', async () => {
+      const cradle = createCradle({
+        claimNextAvailableJob: jest.fn().mockResolvedValue({
+          id: JOB_ID,
+          mediaItemId: MEDIA_ITEM_ID,
+          createdBy: ACTOR_ID,
+        }),
+        getById: jest.fn().mockImplementation(() => {
+          return {
+            id: () => MEDIA_ITEM_ID,
+            kind: () => MediaKind.video,
+            status: () => MediaItemStatus.processing,
+            ownerId: () => ACTOR_ID,
+            storageKey: () => 'media/m/1',
+          };
+        }),
       });
       const run = buildProcessNextMediaImageJob(cradle);
       await run();

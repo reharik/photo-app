@@ -110,23 +110,26 @@ export const ZoomableImageViewport = ({
     };
   }, [children, enabled, measureBase]);
 
-  const clampPan = useCallback((tx: number, ty: number, scale: number): { tx: number; ty: number } => {
-    const vp = viewportRef.current;
-    const { w, h } = baseSizeRef.current;
-    if (vp == null || w <= 0 || h <= 0) {
-      return { tx, ty };
-    }
-    const vw = vp.clientWidth;
-    const vh = vp.clientHeight;
-    const scaledW = w * scale;
-    const scaledH = h * scale;
-    const maxTx = Math.max(0, (scaledW - vw) / 2);
-    const maxTy = Math.max(0, (scaledH - vh) / 2);
-    return {
-      tx: clamp(tx, -maxTx, maxTx),
-      ty: clamp(ty, -maxTy, maxTy),
-    };
-  }, []);
+  const clampPan = useCallback(
+    (tx: number, ty: number, scale: number): { tx: number; ty: number } => {
+      const vp = viewportRef.current;
+      const { w, h } = baseSizeRef.current;
+      if (vp == null || w <= 0 || h <= 0) {
+        return { tx, ty };
+      }
+      const vw = vp.clientWidth;
+      const vh = vp.clientHeight;
+      const scaledW = w * scale;
+      const scaledH = h * scale;
+      const maxTx = Math.max(0, (scaledW - vw) / 2);
+      const maxTy = Math.max(0, (scaledH - vh) / 2);
+      return {
+        tx: clamp(tx, -maxTx, maxTx),
+        ty: clamp(ty, -maxTy, maxTy),
+      };
+    },
+    [],
+  );
 
   useEffect(() => {
     onZoomActiveChange?.(transform.scale > MIN_SCALE + ZOOM_ACTIVE_EPS);
@@ -397,7 +400,9 @@ export const ZoomableImageViewport = ({
       setTransform((prev) => {
         const nextScale = clamp(prev.scale * (1 + delta), MIN_SCALE, MAX_SCALE);
         const pan =
-          nextScale <= MIN_SCALE + ZOOM_ACTIVE_EPS ? { tx: 0, ty: 0 } : clampPan(prev.tx, prev.ty, nextScale);
+          nextScale <= MIN_SCALE + ZOOM_ACTIVE_EPS
+            ? { tx: 0, ty: 0 }
+            : clampPan(prev.tx, prev.ty, nextScale);
         return { scale: nextScale, ...pan };
       });
     };

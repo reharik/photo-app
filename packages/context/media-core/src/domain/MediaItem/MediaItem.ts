@@ -229,11 +229,13 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   }
 
   /**
-   * After object exists in storage: persist size (and optional mime), pending → uploaded.
-   * Used when bytes land via direct upload (e.g. S3) without derivative processing.
+   * After the original object exists in storage: persist size (and optional mime).
+   * - Photo: pending → PROCESSING (awaiting display/thumbnail derivatives in storage).
+   * - Video: pending → READY (no derivative pipeline; UI uses placeholders for thumbnails until a poster pipeline exists).
    */
   completeUploadedWithMetadata(
     input: { sizeBytes: number; mimeType?: string },
+    kind: MediaKind,
     actorId: ActorId,
   ): WriteResult {
     if (this.props.status !== MediaItemStatus.pending) {
@@ -243,21 +245,25 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     if (input.mimeType !== undefined && input.mimeType.length > 0) {
       this.props.mimeType = input.mimeType;
     }
-    this.props.status = MediaItemStatus.uploaded;
+    if (kind === MediaKind.photo) {
+      this.props.status = MediaItemStatus.processing;
+    } else {
+      this.props.status = MediaItemStatus.ready;
+    }
     this.touch(actorId);
     return ok(undefined);
   }
 
   /**
-   * After display (and thumbnail) derivatives exist in storage: uploaded → ready.
+   * After display (and thumbnail) derivatives exist in storage: processing (or legacy uploaded) → ready.
    * Item-level width/height reflect the display derivative dimensions.
    */
   markReadyAfterDerivatives(
     input: { displayWidth: number; displayHeight: number },
     actorId: ActorId,
   ): WriteResult {
-    if (this.props.status !== MediaItemStatus.uploaded) {
-      return fail(AppErrorCollection.mediaItem.StatusNotPending);
+    if (this.props.status !== MediaItemStatus.processing) {
+      return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
     }
     const w = Math.round(input.displayWidth);
     const h = Math.round(input.displayHeight);

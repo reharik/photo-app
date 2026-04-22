@@ -56,7 +56,7 @@ export const buildProcessNextMediaImageJob = ({
         return 'processed';
       }
 
-      if (mediaItem.status() !== MediaItemStatus.uploaded) {
+      if (mediaItem.status() !== MediaItemStatus.processing) {
         await finishFailed(`Media item not processable (status: ${mediaItem.status().value})`);
         return 'processed';
       }

@@ -201,7 +201,7 @@ describe('GraphQL media upload integration', () => {
       expect(json.errors).toBeUndefined();
       expect(json.data?.finalizeMediaUpload.errors).toEqual([]);
       expect(json.data?.finalizeMediaUpload.data?.mediaItemId).toBe(mediaItemId);
-      expect(json.data?.finalizeMediaUpload.data?.status).toBe(MediaItemStatus.uploaded.value);
+      expect(json.data?.finalizeMediaUpload.data?.status).toBe(MediaItemStatus.processing.value);
       expect(json.data?.finalizeMediaUpload.data?.size).toBeGreaterThan(0);
     });
   });

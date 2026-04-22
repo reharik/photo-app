@@ -17,16 +17,17 @@ describe('MediaItem (domain)', () => {
     });
   });
 
-  describe('When completeUploadedWithMetadata is called from pending', () => {
-    it('should transition to uploaded without dimensions', () => {
+  describe('When completeUploadedWithMetadata is called from pending for a photo', () => {
+    it('should transition to processing without dimensions', () => {
       const ownerId = TEST_USER_A_ID;
       const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
       const result = item.completeUploadedWithMetadata(
         { sizeBytes: 100, mimeType: 'image/png' },
+        MediaKind.photo,
         ownerId,
       );
       expect(result.success).toBe(true);
-      expect(item.status()).toBe(MediaItemStatus.uploaded);
+      expect(item.status()).toBe(MediaItemStatus.processing);
       expect(item.sizeBytes()).toBe(100);
       expect(item.mimeType()).toBe('image/png');
       expect(item.width()).toBeUndefined();
@@ -34,11 +35,29 @@ describe('MediaItem (domain)', () => {
     });
   });
 
-  describe('When markReadyAfterDerivatives is called from uploaded with display dimensions', () => {
+  describe('When completeUploadedWithMetadata is called from pending for a video', () => {
+    it('should transition to ready without dimensions', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.video, mimeType: 'video/mp4' }, ownerId);
+      const result = item.completeUploadedWithMetadata(
+        { sizeBytes: 200, mimeType: 'video/mp4' },
+        MediaKind.video,
+        ownerId,
+      );
+      expect(result.success).toBe(true);
+      expect(item.status()).toBe(MediaItemStatus.ready);
+    });
+  });
+
+  describe('When markReadyAfterDerivatives is called from processing with display dimensions', () => {
     it('should transition to ready and set width and height from the display derivative', () => {
       const ownerId = TEST_USER_A_ID;
       const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      item.completeUploadedWithMetadata({ sizeBytes: 5000, mimeType: 'image/jpeg' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 5000, mimeType: 'image/jpeg' },
+        MediaKind.photo,
+        ownerId,
+      );
       const result = item.markReadyAfterDerivatives(
         { displayWidth: 1200, displayHeight: 800 },
         ownerId,
@@ -50,25 +69,29 @@ describe('MediaItem (domain)', () => {
     });
   });
 
-  describe('When markReadyAfterDerivatives is called but the item is not uploaded', () => {
-    it('should fail with status not pending', () => {
+  describe('When markReadyAfterDerivatives is called but the item is not awaiting derivatives', () => {
+    it('should fail with status not suitable', () => {
       const ownerId = TEST_USER_A_ID;
       const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
       const result = item.markReadyAfterDerivatives({ displayWidth: 1, displayHeight: 1 }, ownerId);
       expect(result).toEqual({
         success: false,
         error: expect.objectContaining({
-          code: AppErrorCollection.mediaItem.StatusNotPending.code,
+          code: AppErrorCollection.mediaItem.StatusNotUploaded.code,
         }),
       });
     });
   });
 
   describe('When markReadyAfterDerivatives is called again after the item is already ready', () => {
-    it('should fail with status not pending', () => {
+    it('should fail with status not suitable', () => {
       const ownerId = TEST_USER_A_ID;
       const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      item.completeUploadedWithMetadata({ sizeBytes: 1, mimeType: 'image/jpeg' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 1, mimeType: 'image/jpeg' },
+        MediaKind.photo,
+        ownerId,
+      );
       const first = item.markReadyAfterDerivatives(
         { displayWidth: 10, displayHeight: 10 },
         ownerId,
@@ -81,7 +104,7 @@ describe('MediaItem (domain)', () => {
       expect(second).toEqual({
         success: false,
         error: expect.objectContaining({
-          code: AppErrorCollection.mediaItem.StatusNotPending.code,
+          code: AppErrorCollection.mediaItem.StatusNotUploaded.code,
         }),
       });
     });

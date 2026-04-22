@@ -15,7 +15,7 @@ import { MediaItemProjection } from './viewerMediaItemReadService.types';
 export interface ViewerAlbumReadService {
   listAlbums: (collectionInfo: AlbumCollectionInfo) => Promise<AlbumListProjection>;
   getAlbum: (albumId: string) => Promise<AlbumProjection | undefined>;
-  getAlbumItems: (args: {
+  getViewableAlbumItems: (args: {
     albumId: string;
     collectionInfo: AlbumItemCollectionInfo;
   }) => Promise<AlbumItemListProjection>;
@@ -117,21 +117,18 @@ export const buildViewerAlbumReadServiceFactory = ({
         };
       },
 
-      getAlbumItems: async ({
+      getViewableAlbumItems: async ({
         albumId,
         collectionInfo,
       }: {
         albumId: string;
         collectionInfo: AlbumItemCollectionInfo;
       }): Promise<AlbumItemListProjection> => {
-        const albumItems = await albumReadRepository.getAlbumItemsForViewer({
+        const albumItems = await albumReadRepository.getViewableAlbumItemsForViewer({
           albumId,
           viewerId,
           collectionInfo,
         });
-        console.log(`************albumItems************`);
-        console.log(albumItems);
-        console.log(`********END albumItems************`);
         const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToParent(albumItem));
         const mediaEnriched = await enrichWithTags(mediaBases);
         const nodes = albumItems.map((albumItem, index) => ({

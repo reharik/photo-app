@@ -21,7 +21,7 @@ export type AlbumReadRepository = {
     albumId: string;
     viewerId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
-  getAlbumItemsForViewer: ({
+  getViewableAlbumItemsForViewer: ({
     albumId,
     viewerId,
     collectionInfo,
@@ -107,7 +107,7 @@ export const buildAlbumReadRepository = ({
 
     return row;
   },
-  getAlbumItemsForViewer: async ({
+  getViewableAlbumItemsForViewer: async ({
     albumId,
     viewerId,
     collectionInfo,
@@ -122,6 +122,7 @@ export const buildAlbumReadRepository = ({
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
       .where('albumMember.userId', viewerId)
       .andWhere('album.id', albumId)
+      .andWhere('mediaItem.status', 'READY')
       .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
       .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
       .orderBy('albumItem.id', 'asc') // tie-breaker

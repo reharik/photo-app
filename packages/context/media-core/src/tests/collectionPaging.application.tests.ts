@@ -140,17 +140,17 @@ describe('ViewerAlbumReadService (collection paging)', () => {
     });
   });
 
-  describe('When getAlbumItems is called with no collectionInfo fields', () => {
+  describe('When getViewableAlbumItems is called with no collectionInfo fields', () => {
     it('should pass default paging and sort to the repository and echo pageInfo in the projection', async () => {
-      const getAlbumItemsForViewer = jest.fn(
+      const getViewableAlbumItemsForViewer = jest.fn(
         async (_params: {
           albumId: string;
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
         }): Promise<AlbumItemWithMediaRow[]> => [],
       );
-      const albumReadRepository: Pick<AlbumReadRepository, 'getAlbumItemsForViewer'> = {
-        getAlbumItemsForViewer,
+      const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
+        getViewableAlbumItemsForViewer,
       };
 
       const factory = buildViewerAlbumReadServiceFactory({
@@ -159,12 +159,12 @@ describe('ViewerAlbumReadService (collection paging)', () => {
       } as never);
       const service = factory({ viewerId });
 
-      const result = await service.getAlbumItems({
+      const result = await service.getViewableAlbumItems({
         albumId,
         collectionInfo: {} as AlbumItemCollectionInfo,
       });
 
-      expect(getAlbumItemsForViewer).toHaveBeenCalledWith(
+      expect(getViewableAlbumItemsForViewer).toHaveBeenCalledWith(
         expect.objectContaining({
           albumId,
           viewerId,
@@ -176,17 +176,17 @@ describe('ViewerAlbumReadService (collection paging)', () => {
     });
   });
 
-  describe('When getAlbumItems is called with explicit paging', () => {
+  describe('When getViewableAlbumItems is called with explicit paging', () => {
     it('should forward resolved pageInfo and sort options to the repository', async () => {
-      const getAlbumItemsForViewer = jest.fn(
+      const getViewableAlbumItemsForViewer = jest.fn(
         async (_params: {
           albumId: string;
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
         }): Promise<AlbumItemWithMediaRow[]> => [],
       );
-      const albumReadRepository: Pick<AlbumReadRepository, 'getAlbumItemsForViewer'> = {
-        getAlbumItemsForViewer,
+      const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
+        getViewableAlbumItemsForViewer,
       };
 
       const factory = buildViewerAlbumReadServiceFactory({
@@ -201,9 +201,12 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         sortDir: SortDir.asc,
       };
 
-      const result = await service.getAlbumItems({ albumId, collectionInfo: gqlCollection });
+      const result = await service.getViewableAlbumItems({
+        albumId,
+        collectionInfo: gqlCollection,
+      });
 
-      expect(getAlbumItemsForViewer).toHaveBeenCalledWith({
+      expect(getViewableAlbumItemsForViewer).toHaveBeenCalledWith({
         albumId,
         viewerId,
         collectionInfo: gqlCollection,

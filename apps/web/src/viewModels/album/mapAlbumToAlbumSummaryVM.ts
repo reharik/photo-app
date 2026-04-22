@@ -2,7 +2,9 @@ import { AlbumSummaryFragment } from '../../graphql/generated/types';
 import { mapMediaItemToMediaItemSummaryVM } from '../media/mapMediaItemToMediaItemSummaryVM';
 import { AlbumSummaryVM } from './AlbumSummaryVM';
 
-export function mapAlbumToAlbumSummaryVM(album: AlbumSummaryFragment): AlbumSummaryVM {
+export function mapAlbumToAlbumSummaryVM(
+  album: Omit<AlbumSummaryFragment, 'items'> & { items?: AlbumSummaryFragment['items'] },
+): AlbumSummaryVM {
   return {
     id: album.id,
     title: album.title,
@@ -13,7 +15,7 @@ export function mapAlbumToAlbumSummaryVM(album: AlbumSummaryFragment): AlbumSumm
 }
 
 export function mapMultipleAlbumsToAlbumSummaryVMs(
-  albums: AlbumSummaryFragment[],
+  albums: (Omit<AlbumSummaryFragment, 'items'> & { items?: AlbumSummaryFragment['items'] })[],
 ): AlbumSummaryVM[] {
   return albums.map(mapAlbumToAlbumSummaryVM);
 }

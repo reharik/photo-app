@@ -49,9 +49,6 @@ export const buildCreateMediaItemUpload = ({
       storageKey: buildMediaAssetStorageKey(mediaItem.storageKey(), MediaAssetKind.original),
       mimeType,
     });
-    console.log(`************uploadTarget************`);
-    console.log(JSON.stringify(uploadTarget, null, 4));
-    console.log(`********END uploadTarget************`);
     await mediaItemRepository.save(mediaItem);
 
     return ok({

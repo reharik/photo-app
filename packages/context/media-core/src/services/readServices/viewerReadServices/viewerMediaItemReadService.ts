@@ -1,5 +1,5 @@
 import {
-  buildDerivedMediaItemUrls,
+  createDerivedMediaItemUrls,
   type MediaItemDerivedUrlsProjection,
 } from '../../../application/media/buildDerivedMediaItemUrls';
 import { MediaStorage } from '../../../application/media/MediaStorage';
@@ -41,7 +41,7 @@ export const buildViewerMediaItemReadServiceFactory = ({
   }: {
     mediaItemStorageKey: string;
   }): Promise<MediaItemDerivedUrlsProjection> => {
-    return buildDerivedMediaItemUrls({
+    return createDerivedMediaItemUrls({
       mediaStorage,
       baseStorageKey: mediaItemStorageKey,
     });

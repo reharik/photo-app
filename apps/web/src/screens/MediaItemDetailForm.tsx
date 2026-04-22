@@ -128,8 +128,8 @@ export const MediaItemDetailForm = ({
       </FormField>
       <FormField>
         <DetailMetaLabel htmlFor="media-detail-taken">Taken</DetailMetaLabel>
-        <TakenDatePicker
-          id="media-detail-taken"
+        <DatePicker
+          customInput={<FormTextInput id="media-detail-taken" autoComplete="off" />}
           selected={parseDraftTaken(draftTakenLocal)}
           onChange={(date: Date | null) => {
             if (date == null) {
@@ -144,7 +144,6 @@ export const MediaItemDetailForm = ({
           dateFormat="MMM d, yyyy HH:mm"
           isClearable
           placeholderText="Date and time"
-          autoComplete="off"
         />
         <FormHint>Optional. Uses your local timezone.</FormHint>
       </FormField>
@@ -213,10 +212,6 @@ const FormTextarea = styled.textarea`
   ${formFieldControlCss}
   resize: vertical;
   min-height: 88px;
-`;
-
-const TakenDatePicker = styled(DatePicker)`
-  ${formFieldControlCss}
 `;
 
 const FormHint = styled.div`

@@ -13,9 +13,9 @@ import type {
   DeleteAlbum,
   DeleteAlbumItems,
   DeleteMediaItem,
+  DeleteMediaItems,
   FinalizeMediaItemUpload,
   MediaAssetReadRepository,
-  MediaItemDerivedUrlsProjection,
   MediaItemReadRepository,
   MediaItemRepository,
   MediaStorage,
@@ -51,13 +51,13 @@ export interface IocGeneratedTypes {
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteMediaItem: DeleteMediaItem;
+  deleteMediaItems: DeleteMediaItems;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
   database: Knex;
   knexConfig: KnexConfig;
   logger: Logger;
   mediaAssetReadRepository: MediaAssetReadRepository;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
-  mediaItemDerivedUrlsProjection: MediaItemDerivedUrlsProjection;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaItemRepository: MediaItemRepository;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
@@ -87,6 +87,7 @@ export interface IocGeneratedTypes {
     deleteAlbum: DeleteAlbum;
     deleteAlbumItems: DeleteAlbumItems;
     deleteMediaItem: DeleteMediaItem;
+    deleteMediaItems: DeleteMediaItems;
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     reorderAlbumItems: ReorderAlbumItems;
     setCoverMedia: SetCoverMedia;

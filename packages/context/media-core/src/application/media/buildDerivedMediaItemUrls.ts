@@ -11,7 +11,7 @@ export type MediaItemDerivedUrlsProjection = {
  * Presigned (or public) URLs for thumbnail and display objects under `baseStorageKey`,
  * derived from storage layout only — no media_asset table reads.
  */
-export const buildDerivedMediaItemUrls = async (input: {
+export const createDerivedMediaItemUrls = async (input: {
   mediaStorage: MediaStorage;
   baseStorageKey: string;
 }): Promise<MediaItemDerivedUrlsProjection> => {

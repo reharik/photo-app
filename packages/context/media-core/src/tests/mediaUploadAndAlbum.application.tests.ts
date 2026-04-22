@@ -206,7 +206,7 @@ describe('Media upload pipeline (application services)', () => {
   });
 
   describe('When bytes are recorded in storage then finalize runs', () => {
-    it('should transition the item to uploaded and return confirmed size and mime type', async () => {
+    it('should transition the item to processing and return confirmed size and mime type', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
       const createUpload = buildCreateMediaItemUpload({
@@ -255,12 +255,12 @@ describe('Media upload pipeline (application services)', () => {
       if (!finalized.success) {
         return;
       }
-      expect(finalized.value.status).toBe(MediaItemStatus.uploaded);
+      expect(finalized.value.status).toBe(MediaItemStatus.processing);
       expect(finalized.value.size).toBe(MINIMAL_PNG_1X1.length);
       expect(finalized.value.mimeType).toBe('image/png');
 
       const after = await mediaItemRepository.getById(created.value.mediaItemId);
-      expect(after?.status()).toBe(MediaItemStatus.uploaded);
+      expect(after?.status()).toBe(MediaItemStatus.processing);
       expect(after?.width()).toBeUndefined();
       expect(after?.height()).toBeUndefined();
       expect(findAssetRecord(after!, MediaAssetKind.original)?.status).toBe(
@@ -569,7 +569,7 @@ describe('Album integration (application services)', () => {
     });
   });
 
-  describe('When addAlbumItem is called for uploaded media', () => {
+  describe('When addAlbumItem is called for ready media', () => {
     it('should persist the album item', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
@@ -623,6 +623,16 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
+      const afterFinalize = await mediaItemRepository.getById(item.id());
+      if (!afterFinalize) {
+        return;
+      }
+      const readyMark = afterFinalize.markReadyAfterDerivatives(
+        { displayWidth: 1, displayHeight: 1 },
+        viewerId,
+      );
+      expect(readyMark.success).toBe(true);
+      await mediaItemRepository.save(afterFinalize);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
@@ -704,6 +714,16 @@ describe('Album integration (application services)', () => {
         },
       );
       await finalize({ viewerId, mediaItemId: item.id() });
+      const afterFinalize = await mediaItemRepository.getById(item.id());
+      if (!afterFinalize) {
+        return;
+      }
+      const readyMark = afterFinalize.markReadyAfterDerivatives(
+        { displayWidth: 1, displayHeight: 1 },
+        viewerId,
+      );
+      expect(readyMark.success).toBe(true);
+      await mediaItemRepository.save(afterFinalize);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
@@ -819,6 +839,15 @@ describe('Album integration (application services)', () => {
           // eslint-disable-next-line @typescript-eslint/require-await
           getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
             projectionFromReadRepo.get(mediaItemId),
+          getManyForViewer: async ({
+            mediaItemIds,
+          }: {
+            mediaItemIds: EntityId[];
+            viewerId: EntityId;
+          }) =>
+            mediaItemIds
+              .map((id) => projectionFromReadRepo.get(id))
+              .filter((r): r is MediaItemRow => r != null),
         },
       } as never);
 
@@ -854,6 +883,16 @@ describe('Album integration (application services)', () => {
         if (!fin.success) {
           return;
         }
+        const afterFin = await mediaItemRepository.getById(item.id());
+        if (!afterFin) {
+          return;
+        }
+        const rm = afterFin.markReadyAfterDerivatives(
+          { displayWidth: 1, displayHeight: 1 },
+          viewerId,
+        );
+        expect(rm.success).toBe(true);
+        await mediaItemRepository.save(afterFin);
         const readyItem = await mediaItemRepository.getById(item.id());
         if (!readyItem) {
           return;
@@ -934,6 +973,16 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
+      const afterFin = await mediaItemRepository.getById(item.id());
+      if (!afterFin) {
+        return;
+      }
+      const rm = afterFin.markReadyAfterDerivatives(
+        { displayWidth: 1, displayHeight: 1 },
+        viewerId,
+      );
+      expect(rm.success).toBe(true);
+      await mediaItemRepository.save(afterFin);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
@@ -946,6 +995,15 @@ describe('Album integration (application services)', () => {
           // eslint-disable-next-line @typescript-eslint/require-await
           getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
             projectionFromReadRepo.get(mediaItemId),
+          getManyForViewer: async ({
+            mediaItemIds,
+          }: {
+            mediaItemIds: EntityId[];
+            viewerId: EntityId;
+          }) =>
+            mediaItemIds
+              .map((id) => projectionFromReadRepo.get(id))
+              .filter((r): r is MediaItemRow => r != null),
         },
       } as never);
 

@@ -6,7 +6,7 @@ import {
   FinalizeMediaUploadDocument,
   type CreateMediaUploadMutationVariables,
 } from '../../graphql/generated/types';
-import { fail, ok, type AppResult } from '../errors/types';
+import { AppResultFailure, fail, ok, type AppResult } from '../errors/types';
 import { executeMutation } from '../graphql/executeMutation';
 import { UploadWorkflowEvent } from './types';
 
@@ -185,7 +185,7 @@ export const mediaUploadWorkflow = async (
     onEvent?.({
       type: FUS.failed,
       stage: FUS.uploading,
-      errors: [FrontendError.networkError],
+      errors: (result as AppResultFailure).errors,
     });
 
     return result;

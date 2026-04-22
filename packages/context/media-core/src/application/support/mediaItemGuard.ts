@@ -8,7 +8,6 @@ export const ensureMediaItemOwnedByViewer = (ownerId: EntityId, viewerId: Entity
     : fail(AppErrorCollection.mediaItem.MediaItemNotOwnedByViewer);
 
 export const ensureMediaItemInReadyState = (mediaItem: MediaItemRow) =>
-  mediaItem.status === MediaItemStatus.ready.value ||
-  mediaItem.status === MediaItemStatus.uploaded.value
+  mediaItem.status === MediaItemStatus.ready.value
     ? ok(undefined)
     : fail(AppErrorCollection.mediaItem.MediaItemNotReady);

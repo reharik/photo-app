@@ -309,7 +309,7 @@ describe('Media processing pipeline', () => {
       await processNextMediaImageJob();
 
       const after = await mediaItemRepository.getById(item.id());
-      expect(after?.status()).toBe(MediaItemStatus.uploaded);
+      expect(after?.status()).toBe(MediaItemStatus.processing);
       expect(mediaProcessingJobRepository.jobs[0]?.status).toBe(MediaProcessingJobStatus.failed);
       expect(mediaProcessingJobRepository.jobs[0]?.lastError).toBeTruthy();
       expect(mediaProcessingJobRepository.jobs[0]?.attemptCount).toBe(1);

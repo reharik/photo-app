@@ -8,7 +8,7 @@ const albumResolvers: Resolvers = {
     items: authenticatedResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput(input.collectionInfo, AlbumItemSortBy);
 
-      return ctx.readServices.viewerAlbumReadService.getAlbumItems({
+      return ctx.readServices.viewerAlbumReadService.getViewableAlbumItems({
         albumId: album.id,
         collectionInfo,
       });

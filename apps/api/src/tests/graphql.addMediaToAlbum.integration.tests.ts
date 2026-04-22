@@ -13,6 +13,7 @@ import {
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
+import { runOnePhotoDerivativesJob } from './runPhotoDerivativesJobOnce';
 import { TEST_VIEWER_1_ID, TEST_VIEWER_A_ID } from './testViewerIds';
 
 const missingAlbumId = '00000000-0000-4000-8000-000000000099';
@@ -154,12 +155,16 @@ const createUploadedMediaItemViaGraphQL = async (params: {
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   database: Knex;
   integrationTestMediaStorage: IntegrationTestMediaStorage;
+  container?: AwilixContainer<IocGeneratedCradle>;
+  processPhotoDerivatives?: boolean;
   context?: Record<string, unknown>;
 }): Promise<string> => {
   const {
     executeGraphQL,
     database,
     integrationTestMediaStorage,
+    container,
+    processPhotoDerivatives = false,
     context = loggedInViewer1,
   } = params;
 
@@ -194,8 +199,16 @@ const createUploadedMediaItemViaGraphQL = async (params: {
   expect(finalized.json.errors).toBeUndefined();
   expect(finalized.json.data?.finalizeMediaUpload.errors).toEqual([]);
   expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
-    MediaItemStatus.uploaded.value,
+    MediaItemStatus.processing.value,
   );
+
+  if (processPhotoDerivatives) {
+    expect(container).toBeDefined();
+    if (container) {
+      const r = await runOnePhotoDerivativesJob(container);
+      expect(r).toBe('processed');
+    }
+  }
 
   return mediaItemId;
 };
@@ -241,6 +254,8 @@ describe('addAlbumItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
 
@@ -263,7 +278,7 @@ describe('addAlbumItem', () => {
       expect(albumItems).toHaveLength(1);
 
       const mediaItemRow = await database('mediaItem').where({ id: mediaItemId }).first();
-      expect(String(mediaItemRow?.status ?? '').toUpperCase()).toBe('UPLOADED');
+      expect(String(mediaItemRow?.status ?? '').toUpperCase()).toBe('READY');
     });
   });
 
@@ -286,6 +301,8 @@ describe('addAlbumItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       const first = await executeGraphQL<AddMediaItemToAlbumMutationData>({
@@ -352,6 +369,41 @@ describe('addAlbumItem', () => {
 
       const row = await database('albumItem').where({ albumId }).count('* as c').first();
       expect(Number((row as { c?: string | number })?.c ?? 0)).toBe(0);
+    });
+  });
+
+  describe('When the media item is still processing (derivatives not ready)', () => {
+    it('should reject the add with a not-ready error', async () => {
+      const albumResult = await executeGraphQL<{
+        createAlbum: WriteMutationResponse<{ albumId: string }>;
+      }>({
+        query: createAlbumMutation,
+        variables: { title: `processing-album-${randomUUID()}` },
+        context: loggedInViewer1,
+      });
+      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
+      expect(albumId).toBeTruthy();
+      if (!albumId) {
+        return;
+      }
+
+      const mediaItemId = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+        context: loggedInViewer1,
+      });
+
+      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+        query: addMediaToAlbumMutation,
+        variables: { albumId, mediaItemId },
+        context: loggedInViewer1,
+      });
+      expect(add.json.errors).toBeUndefined();
+      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
+        AppErrorCollection.mediaItem.MediaItemNotReady.code,
+      );
     });
   });
 
@@ -514,12 +566,16 @@ describe('addAlbumItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
       const m2 = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
 
@@ -549,12 +605,16 @@ describe('addAlbumItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
       const m2 = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
 
@@ -679,6 +739,8 @@ describe('addAlbumItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewer1,
       });
 

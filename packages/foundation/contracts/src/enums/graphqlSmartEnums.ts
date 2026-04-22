@@ -15,11 +15,26 @@ const albumSortByInput = {
   createdAt: { column: 'created_at' },
   title: { column: 'title' },
 } as const;
-const errorCategoryInput = ['auth', 'conflict', 'domain', 'system', 'validation'] as const;
+const errorCategoryInput = [
+  'auth',
+  'conflict',
+  'domain',
+  'network',
+  'system',
+  'validation',
+] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = { createdAt: { column: 'created_at' } } as const;
-const mediaItemStatusInput = ['failed', 'pending', 'processing', 'ready', 'uploaded'] as const;
+const mediaItemStatusInput = [
+  'deleteFailed',
+  'deletePending',
+  'failed',
+  'pending',
+  'processing',
+  'ready',
+  'uploaded',
+] as const;
 const mediaKindInput = ['photo', 'video'] as const;
 const shareViewerRelationshipInput = ['anonymous', 'authenticated', 'member', 'owner'] as const;
 const sortDirInput = ['asc', 'desc'] as const;

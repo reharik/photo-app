@@ -13,6 +13,7 @@ import {
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
+import { runOnePhotoDerivativesJob } from './runPhotoDerivativesJobOnce';
 import { TEST_VIEWER_1_ID, TEST_VIEWER_A_ID } from './testViewerIds';
 
 const missingMediaItemId = '00000000-0000-4000-8000-000000000088';
@@ -238,12 +239,16 @@ const createUploadedMediaItemViaGraphQL = async (params: {
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   database: Knex;
   integrationTestMediaStorage: IntegrationTestMediaStorage;
+  container?: AwilixContainer<IocGeneratedCradle>;
+  processPhotoDerivatives?: boolean;
   context?: Record<string, unknown>;
 }): Promise<string> => {
   const {
     executeGraphQL,
     database,
     integrationTestMediaStorage,
+    container,
+    processPhotoDerivatives = false,
     context = loggedInViewer1,
   } = params;
 
@@ -278,8 +283,16 @@ const createUploadedMediaItemViaGraphQL = async (params: {
   expect(finalized.json.errors).toBeUndefined();
   expect(finalized.json.data?.finalizeMediaUpload.errors).toEqual([]);
   expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
-    MediaItemStatus.uploaded.value,
+    MediaItemStatus.processing.value,
   );
+
+  if (processPhotoDerivatives) {
+    expect(container).toBeDefined();
+    if (container) {
+      const r = await runOnePhotoDerivativesJob(container);
+      expect(r).toBe('processed');
+    }
+  }
 
   return mediaItemId;
 };
@@ -321,6 +334,8 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       const add = await executeGraphQL<{
@@ -352,7 +367,9 @@ describe('DeleteAlbumItemsFromAlbum', () => {
       expect(del.json.errors).toBeUndefined();
       expect(del.json.data?.DeleteAlbumItemsFromAlbum?.errors).toEqual([]);
       expect(del.json.data?.DeleteAlbumItemsFromAlbum?.data?.albumId).toBe(albumId);
-      expect(del.json.data?.DeleteAlbumItemsFromAlbum?.data?.albumItemIds).toEqual([albumItemIdFromAdd]);
+      expect(del.json.data?.DeleteAlbumItemsFromAlbum?.data?.albumItemIds).toEqual([
+        albumItemIdFromAdd,
+      ]);
 
       const rows = await database('albumItem').where({ albumId, mediaItemId });
       expect(rows).toHaveLength(0);
@@ -391,6 +408,8 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       /** addAlbumItem resolves media via getForViewer(mediaItemId, viewerId); only the media owner can add. */
@@ -491,6 +510,8 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
         context: loggedInViewerA,
       });
 
@@ -574,11 +595,15 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
       const m2 = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       const add1 = await executeGraphQL<{
@@ -764,6 +789,8 @@ describe('deleteAlbum', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       const addToAlbum = await executeGraphQL<{
@@ -883,6 +910,8 @@ describe('deleteMediaItem', () => {
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        container,
+        processPhotoDerivatives: true,
       });
 
       await executeGraphQL({

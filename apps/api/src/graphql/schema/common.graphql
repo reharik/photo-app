@@ -59,4 +59,5 @@ enum ErrorCategory {
   AUTH
   CONFLICT
   SYSTEM
+  NETWORK
 }

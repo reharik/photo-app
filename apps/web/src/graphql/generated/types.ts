@@ -219,7 +219,7 @@ export type EnumMetaPropInput = {
   value: Scalars['String']['input'];
 };
 
-export type ErrorCategory = 'AUTH' | 'CONFLICT' | 'DOMAIN' | 'SYSTEM' | 'VALIDATION';
+export type ErrorCategory = 'AUTH' | 'CONFLICT' | 'DOMAIN' | 'NETWORK' | 'SYSTEM' | 'VALIDATION';
 
 export type FinalizeMediaUploadInput = {
   mediaItemId: Scalars['ID']['input'];
