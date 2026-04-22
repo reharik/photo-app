@@ -11,7 +11,7 @@ type SelectableGalleryProps<T extends { id: string }> = {
   nodes: T[];
   orderedMediaIds: string[];
   multiSelectProps: MultiSelectProps;
-  emptyState: React.ReactNode;
+  emptyState?: React.ReactNode;
   /** When true, render only the grid (no inner scroll/padding); parent supplies overflow. */
   embedInParentScroll?: boolean;
   renderItem: (args: {
@@ -34,7 +34,7 @@ export const SelectableGallery = <T extends { id: string }>({
     if (embedInParentScroll) {
       return <EmbedEmptySlot>{emptyState}</EmbedEmptySlot>;
     }
-    return emptyState;
+    return null;
   }
   const grid = (
     <GalleryContainer>

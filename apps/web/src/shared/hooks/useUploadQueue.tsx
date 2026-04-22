@@ -1,24 +1,18 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 import { ApolloClient } from '@apollo/client';
 import { FrontendUploadStatus } from '@packages/contracts';
-import { useReducer, useRef } from 'react';
 import {
   initialUploadQueueState,
   uploadQueueReducer,
 } from '../../application/media/mediaUploadQueueReducer';
 import { mediaUploadWorkflow } from '../../application/media/mediaUploadWorkflow';
-import { UploadQueueState, UploadWorkflowEvent } from '../../application/media/types';
+import { UploadWorkflowEvent } from '../../application/media/types';
 import { workflowEventToQueueAction } from '../../application/media/workflowEventToQueueAction';
 
 export const useUploadQueue = (client: ApolloClient) => {
   const [state, dispatch] = useReducer(uploadQueueReducer, initialUploadQueueState);
-  const stateRef = useRef<UploadQueueState>(state);
   const isProcessingRef = useRef<boolean>(false);
-
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   const enqueueFiles = useCallback((files: File[]) => {
     dispatch({ type: 'enqueue', payload: { files } });
@@ -56,28 +50,30 @@ export const useUploadQueue = (client: ApolloClient) => {
     [],
   );
 
-  const processQueue = useCallback(async () => {
-    if (isProcessingRef.current) return;
+  /**
+   * Process at most one queued item per effect run. The previous implementation walked the queue
+   * using a ref that was only synced in an effect after commit, so after `await mediaUploadWorkflow`
+   * the snapshot could still show items as `queued` and the inner `while` loop would call
+   * `createMediaUpload` again for the same files (runaway duplicate rows).
+   */
+  useEffect(() => {
+    if (isProcessingRef.current) {
+      return;
+    }
+
+    const nextItem = state.items.find((item) => item.status === FrontendUploadStatus.queued);
+    if (!nextItem) {
+      return;
+    }
+
     isProcessingRef.current = true;
 
-    try {
-      while (true) {
-        const nextItem = stateRef.current.items.find(
-          (item) => item.status === FrontendUploadStatus.queued,
-        );
-
-        if (!nextItem) break;
-
-        await mediaUploadWorkflow(client, nextItem.file, handleWorkflowEvent(nextItem.localId));
-      }
-    } finally {
-      isProcessingRef.current = false;
-    }
-  }, [client, handleWorkflowEvent]);
-
-  useEffect(() => {
-    void processQueue();
-  }, [state.items, processQueue]);
+    void mediaUploadWorkflow(client, nextItem.file, handleWorkflowEvent(nextItem.localId)).finally(
+      () => {
+        isProcessingRef.current = false;
+      },
+    );
+  }, [state.items, client, handleWorkflowEvent]);
 
   return {
     items: state.items,
