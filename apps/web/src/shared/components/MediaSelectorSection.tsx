@@ -10,13 +10,36 @@ import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelection
 type MediaSelectorSectionProps = {
   nodes: MediaItemSummaryVM[];
   header: React.ReactNode;
+  onAddToAlbum: (selectedIds: string[]) => void;
+  onClose: () => void;
 };
 
-export const MediaSelectorSection = ({ nodes, header }: MediaSelectorSectionProps) => {
+export const MediaSelectorSection = ({
+  nodes,
+  header,
+  onAddToAlbum,
+  onClose,
+}: MediaSelectorSectionProps) => {
   const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
-  const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
-    useMultiSelectIds(orderedMediaIds);
-
+  const {
+    selectedIds,
+    selectionCount,
+    isSelected,
+    handleModifierClick,
+    toggleSelectAt,
+    clearSelection,
+  } = useMultiSelectIds(orderedMediaIds);
+  const handleAddToAlbum = useMemo(() => {
+    return () => {
+      onAddToAlbum(Array.from(selectedIds));
+    };
+  }, [onAddToAlbum, selectedIds]);
+  const handleClose = useMemo(() => {
+    return () => {
+      clearSelection();
+      onClose();
+    };
+  }, [onClose, clearSelection]);
   return (
     <Container>
       <SelectableGalleryHeader
@@ -24,7 +47,9 @@ export const MediaSelectorSection = ({ nodes, header }: MediaSelectorSectionProp
         clearSelection={clearSelection}
         vPaddingUnits={2}
         hPaddingUnits={3}
-        SelectionActions={<MediaSelectionToolbar onAddToAlbum />}
+        SelectionActions={
+          <MediaSelectionToolbar onCancel={handleClose} onAddToAlbum={handleAddToAlbum} />
+        }
         Header={() => <>{header}</>}
       />
 

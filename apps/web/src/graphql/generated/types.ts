@@ -435,13 +435,12 @@ export type ReorderAlbumItemsResponse = {
 
 export type SetCoverMediaInput = {
   albumId: Scalars['ID']['input'];
-  mediaItemId: Scalars['ID']['input'];
+  albumItemId: Scalars['ID']['input'];
 };
 
 export type SetCoverMediaPayload = {
   __typename?: 'SetCoverMediaPayload';
   albumId: Scalars['ID']['output'];
-  mediaCoverId: Scalars['ID']['output'];
 };
 
 export type SetCoverMediaResponse = {
@@ -691,6 +690,28 @@ export type DeleteAlbumItemsFromAlbumMutation = {
           albumItemIds: Array<string>;
         }
       | undefined;
+    errors?:
+      | Array<{
+          __typename?: 'ContractError';
+          code: string;
+          message: string;
+          field?: string | undefined;
+          category: ErrorCategory;
+          retryable: boolean;
+        }>
+      | undefined;
+  };
+};
+
+export type SetCoverMediaMutationVariables = Exact<{
+  input: SetCoverMediaInput;
+}>;
+
+export type SetCoverMediaMutation = {
+  __typename?: 'Mutation';
+  SetCoverMedia: {
+    __typename?: 'SetCoverMediaResponse';
+    data?: { __typename?: 'SetCoverMediaPayload'; albumId: string } | undefined;
     errors?:
       | Array<{
           __typename?: 'ContractError';
@@ -1612,6 +1633,69 @@ export const DeleteAlbumItemsFromAlbumDocument = {
   DeleteAlbumItemsFromAlbumMutation,
   DeleteAlbumItemsFromAlbumMutationVariables
 >;
+export const SetCoverMediaDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'mutation',
+      name: { kind: 'Name', value: 'SetCoverMedia' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'SetCoverMediaInput' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'SetCoverMedia' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'input' },
+                value: { kind: 'Variable', name: { kind: 'Name', value: 'input' } },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'data' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [{ kind: 'Field', name: { kind: 'Name', value: 'albumId' } }],
+                  },
+                },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'errors' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      { kind: 'Field', name: { kind: 'Name', value: 'code' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'message' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'field' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'category' } },
+                      { kind: 'Field', name: { kind: 'Name', value: 'retryable' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<SetCoverMediaMutation, SetCoverMediaMutationVariables>;
 export const DeleteMediaItemsDocument = {
   kind: 'Document',
   definitions: [

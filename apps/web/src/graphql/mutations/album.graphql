@@ -60,3 +60,18 @@ mutation DeleteAlbumItemsFromAlbum($input: DeleteAlbumItemsFromAlbumInput!) {
     }
   }
 }
+
+mutation SetCoverMedia($input: SetCoverMediaInput!) {
+  SetCoverMedia(input: $input) {
+    data {
+      albumId
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}

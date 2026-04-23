@@ -77,7 +77,7 @@ export const useMultiSelectIds = (orderedIds: string[]) => {
   const selectionCount = selectedIds.size;
 
   return {
-    selectedIds,
+    selectedIds: Array.from(selectedIds),
     selectionCount,
     isSelected,
     handleModifierClick,

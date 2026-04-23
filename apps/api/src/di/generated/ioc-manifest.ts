@@ -747,7 +747,7 @@ export const iocManifest = {
         moduleIndex: 17,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository'],
+        dependencyContractNames: ['AlbumRepository'],
       },
     },
     ShareLinkRepository: {

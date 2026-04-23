@@ -11,7 +11,7 @@ import {
 } from '../../../application/errors/types';
 import { executeMutation } from '../../../application/graphql/executeMutation';
 
-type UseAppMutationStateResult = {
+export type UseAppMutationStateResult = {
   isLoading: boolean;
   errors: AppError[];
   execute: <TPayload, TData, TVariables extends OperationVariables>(

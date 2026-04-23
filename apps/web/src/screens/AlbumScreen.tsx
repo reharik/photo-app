@@ -1,18 +1,38 @@
 import { useQuery } from '@apollo/client/react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { ViewerAlbumDetailDocument } from '../graphql/generated/types';
+import {
+  AddMediaItemsToAlbumDocument,
+  AddMediaItemsToAlbumMutation,
+  DeleteAlbumItemsFromAlbumDocument,
+  DeleteAlbumItemsFromAlbumMutation,
+  ViewerAlbumDetailDocument,
+  ViewerRecentMediaDocument,
+} from '../graphql/generated/types';
 import { AlbumSection } from '../shared/components/AlbumSection';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
+import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
 import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
 import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
+  const [addAlbumItemModalOpen, setAddAlbumItemModalOpen] = useState(false);
+  const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
+  const addToAlbumMutation = useAppMutationState();
+  const removeFromAlbumMutation = useAppMutationState();
+  const addAlbumCoverMutation = useAppMutationState();
 
   const query = useQuery(ViewerAlbumDetailDocument, {
     variables: { albumId: albumId ?? '' },
     skip: !albumId,
+    fetchPolicy: 'cache-first',
+    nextFetchPolicy: 'cache-first',
+  });
+
+  const mediaItemsForPickerQuery = useQuery(ViewerRecentMediaDocument, {
+    skip: !addAlbumItemModalOpen,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
@@ -27,6 +47,67 @@ export const AlbumScreen = () => {
   }
   const album = mapAlbumToAlbumSummaryVM(data);
   const albumItems = data.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
+
+  const submitAddToAlbum = async (newAlbumItemIds: string[]) => {
+    const result = await addToAlbumMutation.execute(
+      {
+        mutation: AddMediaItemsToAlbumDocument,
+        variables: {
+          input: {
+            mediaItemIds: newAlbumItemIds,
+            albumId: album.id,
+          },
+        },
+      },
+      (data: AddMediaItemsToAlbumMutation) => data.AddMediaItemsToAlbum,
+    );
+
+    if (result.success) {
+      setAddAlbumItemModalOpen(false);
+      void query.refetch();
+    }
+  };
+
+  const submitRemoveFromAlbum = async (selectedAlbumItemIds: string[]) => {
+    const result = await removeFromAlbumMutation.execute(
+      {
+        mutation: DeleteAlbumItemsFromAlbumDocument,
+        variables: {
+          input: {
+            albumId: album.id,
+            albumItemIds: selectedAlbumItemIds,
+          },
+        },
+      },
+      (data: DeleteAlbumItemsFromAlbumMutation) => data.DeleteAlbumItemsFromAlbum,
+    );
+
+    if (result.success) {
+      setRemoveFromAlbumOpen(false);
+      void query.refetch();
+    }
+  };
+
+  const submitAddAlbumCover = async (selectedAlbumItemId: string) => {
+    const result = await addAlbumCoverMutation.execute(
+      {
+        mutation: SetCoverMediaDocument,
+        variables: {
+          input: {
+            albumId: album.id,
+            albumItemId: selectedAlbumItemId,
+          },
+        },
+      },
+      (data: DeleteAlbumItemsFromAlbumMutation) => data.DeleteAlbumItemsFromAlbum,
+    );
+
+    if (result.success) {
+      setRemoveFromAlbumOpen(false);
+      void query.refetch();
+    }
+  };
+
   if (!albumId || !album) {
     return (
       <Container>
@@ -34,11 +115,31 @@ export const AlbumScreen = () => {
       </Container>
     );
   }
-
+  const addAlbumItemState = {
+    addItemOpen: addAlbumItemModalOpen,
+    setAddItemOpen: setAddAlbumItemModalOpen,
+    submitAddToAlbum: submitAddToAlbum,
+    addToAlbumMutation: addToAlbumMutation,
+    mediaItemsForPickerQuery: mediaItemsForPickerQuery,
+  };
+  const removeAlbumItemState = {
+    removeItemOpen: removeFromAlbumOpen,
+    setRemoveItemOpen: setRemoveFromAlbumOpen,
+    submitRemoveFromAlbum: submitRemoveFromAlbum,
+    removeFromAlbumMutation: removeFromAlbumMutation,
+  };
   return (
     <Container>
       {album && (
-        <AlbumSection album={album} albumItems={albumItems} refetch={() => void query.refetch()} />
+        <AlbumSection
+          album={album}
+          albumItems={albumItems}
+          addAlbumItemState={addAlbumItemState}
+          removeAlbumItemState={removeAlbumItemState}
+          retrieveAlbumItems={query.refetch}
+          addAlbumCoverMutation={addAlbumCoverMutation}
+          submitAddAlbumCover={submitAddAlbumCover}
+        />
       )}
     </Container>
   );

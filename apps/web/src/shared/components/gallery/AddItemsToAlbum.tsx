@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { mapSystemError } from '../../../application/errors/mapToError';
 import type { AppError } from '../../../application/errors/types';
@@ -10,10 +10,8 @@ export type AddToAlbumSubmitTarget =
   | { kind: 'existing'; albumId: string }
   | { kind: 'new'; title: string };
 
-type AddToAlbumModalProps = {
-  open: boolean;
+type AddItemsToAlbumProps = {
   onClose: () => void;
-  mediaItemCount: number;
   albumOptions: { id: string; title: string }[];
   albumsLoading: boolean;
   isSubmitting: boolean;
@@ -22,16 +20,14 @@ type AddToAlbumModalProps = {
   onSubmit: (target: AddToAlbumSubmitTarget) => Promise<void>;
 };
 
-export const AddToAlbumModal = ({
-  open,
+export const AddItemsToAlbum = ({
   onClose,
-  mediaItemCount,
   albumOptions,
   albumsLoading,
   isSubmitting,
   mutationErrors,
   onSubmit,
-}: AddToAlbumModalProps) => {
+}: AddItemsToAlbumProps) => {
   const [albumValue, setAlbumValue] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [localErrors, setLocalErrors] = useState<AppError[]>([]);
@@ -41,21 +37,9 @@ export const AddToAlbumModal = ({
     [albumOptions],
   );
 
-  useEffect(() => {
-    if (open) {
-      setAlbumValue('');
-      setNewTitle('');
-      setLocalErrors([]);
-    }
-  }, [open]);
-
-  if (!open) {
-    return null;
-  }
-
   const combinedErrors = [...mutationErrors, ...localErrors];
 
-  const handlePrimary = async () => {
+  const handleAddToAlbum = async () => {
     setLocalErrors([]);
     if (albumsLoading) {
       return;
@@ -77,99 +61,62 @@ export const AddToAlbumModal = ({
   };
 
   return (
-    <ModalBackdrop role="presentation" onClick={() => !isSubmitting && onClose()}>
-      <Modal
-        role="dialog"
-        aria-labelledby="add-to-album-title"
-        onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
-      >
-        <AppErrorPanel errors={combinedErrors} />
-        <ModalTitle id="add-to-album-title">
-          Add {mediaItemCount} {mediaItemCount === 1 ? 'item' : 'items'} to an album
-        </ModalTitle>
-        <ModalFieldLabel htmlFor="add-to-album-select">Album</ModalFieldLabel>
-        <SelectRow>
-          <ModalSelect
-            id="add-to-album-select"
-            value={albumValue}
-            onChange={(e) => {
-              setAlbumValue(e.target.value);
-              if (e.target.value !== NEW_ALBUM_VALUE) {
-                setNewTitle('');
-              }
-            }}
-            disabled={isSubmitting || albumsLoading}
-          >
-            <option value="">{albumsLoading ? 'Loading albums…' : 'Choose an album…'}</option>
-            {sortedOptions.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.title}
-              </option>
-            ))}
-            <option value={NEW_ALBUM_VALUE}>+ New album…</option>
-          </ModalSelect>
-        </SelectRow>
-        {albumValue === NEW_ALBUM_VALUE ? (
-          <>
-            <ModalFieldLabel htmlFor="add-to-album-new-title">New album title</ModalFieldLabel>
-            <ModalTextInput
-              id="add-to-album-new-title"
-              value={newTitle}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTitle(e.target.value)}
-              placeholder="Summer 2026"
-              autoFocus
-              disabled={isSubmitting}
-            />
-          </>
-        ) : null}
-        <ModalActions>
-          <SecondaryButton type="button" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </SecondaryButton>
-          <PrimaryButton
-            type="button"
-            onClick={() => {
-              void handlePrimary();
-            }}
-            disabled={isSubmitting || albumsLoading}
-          >
-            {isSubmitting ? 'Adding…' : 'Add to album'}
-          </PrimaryButton>
-        </ModalActions>
-      </Modal>
-    </ModalBackdrop>
+    <>
+      <AppErrorPanel errors={combinedErrors} />
+      <FieldLabel htmlFor="add-to-album-select">Album</FieldLabel>
+      <SelectRow>
+        <Select
+          id="add-to-album-select"
+          value={albumValue}
+          onChange={(e) => {
+            setAlbumValue(e.target.value);
+            if (e.target.value !== NEW_ALBUM_VALUE) {
+              setNewTitle('');
+            }
+          }}
+          disabled={isSubmitting || albumsLoading}
+        >
+          <option value="">{albumsLoading ? 'Loading albums…' : 'Choose an album…'}</option>
+          {sortedOptions.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.title}
+            </option>
+          ))}
+          <option value={NEW_ALBUM_VALUE}>+ New album…</option>
+        </Select>
+      </SelectRow>
+      {albumValue === NEW_ALBUM_VALUE ? (
+        <>
+          <FieldLabel htmlFor="add-to-album-new-title">New album title</FieldLabel>
+          <TextInput
+            id="add-to-album-new-title"
+            value={newTitle}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTitle(e.target.value)}
+            placeholder="Summer 2026"
+            autoFocus
+            disabled={isSubmitting}
+          />
+        </>
+      ) : null}
+      <Actions>
+        <CancelButton type="button" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </CancelButton>
+        <AddButton
+          type="button"
+          onClick={() => {
+            void handleAddToAlbum();
+          }}
+          disabled={isSubmitting || albumsLoading}
+        >
+          {isSubmitting ? 'Adding…' : 'Add to album'}
+        </AddButton>
+      </Actions>
+    </>
   );
 };
 
-const ModalBackdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: ${({ theme }) => theme.spacing(3)};
-`;
-
-const Modal = styled.div`
-  width: 100%;
-  max-width: 400px;
-  background: ${({ theme }) => theme.colors.bg};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  padding: ${({ theme }) => theme.spacing(4)};
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
-`;
-
-const ModalTitle = styled.h2`
-  margin: 0 0 ${({ theme }) => theme.spacing(3)};
-  font-size: 18px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const ModalFieldLabel = styled.label`
+const FieldLabel = styled.label`
   display: block;
   font-size: 12px;
   text-transform: uppercase;
@@ -182,7 +129,7 @@ const SelectRow = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(3)};
 `;
 
-const ModalSelect = styled.select`
+const Select = styled.select`
   width: 100%;
   box-sizing: border-box;
   padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
@@ -194,7 +141,7 @@ const ModalSelect = styled.select`
   cursor: pointer;
 `;
 
-const ModalTextInput = styled.input`
+const TextInput = styled.input`
   width: 100%;
   box-sizing: border-box;
   padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
@@ -211,14 +158,14 @@ const ModalTextInput = styled.input`
   }
 `;
 
-const ModalActions = styled.div`
+const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};
   margin-top: ${({ theme }) => theme.spacing(1)};
 `;
 
-const PrimaryButton = styled.button`
+const AddButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.bg};
@@ -240,7 +187,7 @@ const PrimaryButton = styled.button`
   }
 `;
 
-const SecondaryButton = styled.button`
+const CancelButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
   background: transparent;
   color: ${({ theme }) => theme.colors.text};

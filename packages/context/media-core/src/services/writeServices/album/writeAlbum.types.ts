@@ -55,12 +55,11 @@ export type DeleteAlbumResult = {
 export type SetCoverMediaCommand = {
   viewerId: EntityId;
   albumId: EntityId;
-  mediaItemId: EntityId;
+  albumItemId: EntityId;
 };
 
 export type SetCoverMediaResult = {
   albumId: EntityId;
-  mediaCoverId: EntityId;
 };
 
 export type UnsetCoverMediaCommand = {

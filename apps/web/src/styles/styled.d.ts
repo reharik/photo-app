@@ -7,6 +7,7 @@ declare module 'styled-components' {
       panel: string;
       border: string;
       text: string;
+      textMuted: string;
       subtext: string;
       accent: string;
       accentHover: string;

@@ -119,11 +119,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
   Another way would be to have the albumCoverMedia reference a media item directly with out
   requiring it to be part of the albumItems.  In the later case we must make sure to 
   check that the mediaItem has the status of ready as we wont have the previous albumItem check.*/
-  setCoverMedia(mediaItemId: EntityId, actorId: ActorId): WriteResult {
-    if (mediaItemId && !this.#items.some((i) => i.mediaItemId() === mediaItemId)) {
+  setCoverMedia(albumItemId: EntityId, actorId: ActorId): WriteResult {
+    const albumItem = this.#items.find((i) => i.id() === albumItemId);
+    if (!albumItem) {
       return fail(AppErrorCollection.album.CoverMediaNotPartOfAlbum);
     }
-    this.props.coverMediaId = mediaItemId;
+    this.props.coverMediaId = albumItem.mediaItemId();
     this.touch(actorId);
     return ok(undefined);
   }
@@ -168,6 +169,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
   getAlbumMember(userId: EntityId): AlbumMember | undefined {
     return this.#members.find((m) => m.userId() === userId) ?? undefined;
+  }
+  getAlbumItem(albumItemId: EntityId): AlbumItem | undefined {
+    return this.#items.find((i) => i.id() === albumItemId) ?? undefined;
   }
 
   protected childEntities(): ChildEntities {

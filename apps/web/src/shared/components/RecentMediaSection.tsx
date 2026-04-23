@@ -11,13 +11,14 @@ import {
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { useAppMutationState } from './dataAccess/useAppMutation';
-import { AddToAlbumModal } from './gallery/AddToAlbumModal';
-import { DeleteMediaConfirmModal } from './gallery/DeleteMediaConfirmModal';
+import { AddItemsToAlbum } from './gallery/AddItemsToAlbum';
 import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
 import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
+import { AppModal } from './ui/AppModal';
+import { ConfirmationModal } from './ui/ConfirmationModal';
 import { UploadMediaButton } from './UploadMediaButton';
 
 type RecentMediaSectionProps = {
@@ -139,32 +140,44 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
         )}
         orderedMediaIds={orderedMediaIds}
       />
-
-      <AddToAlbumModal
-        open={addToAlbumOpen}
-        onClose={() => setAddToAlbumOpen(false)}
-        mediaItemCount={mediaItemIdsForModal.length}
-        albumOptions={albumOptions}
-        albumsLoading={albumsQuery.loading}
-        isSubmitting={isLoading}
-        mutationErrors={errors}
-        onSubmit={async (target) => {
-          if (target.kind === 'existing') {
-            await submitAddToAlbum({ albumId: target.albumId });
-          } else {
-            await submitAddToAlbum({ newAlbum: { title: target.title } });
+      {addToAlbumOpen && (
+        <AppModal
+          onClose={() => setAddToAlbumOpen(false)}
+          maxWidth="960px"
+          title={`Add {mediaItemIdsForModal.length} {mediaItemIdsForModal.length === 1 ? 'item' : 'items'} to an album`}
+        >
+          <AddItemsToAlbum
+            onClose={() => setAddToAlbumOpen(false)}
+            albumOptions={albumOptions}
+            albumsLoading={albumsQuery.loading}
+            isSubmitting={isLoading}
+            mutationErrors={errors}
+            onSubmit={async (target) => {
+              if (target.kind === 'existing') {
+                await submitAddToAlbum({ albumId: target.albumId });
+              } else {
+                await submitAddToAlbum({ newAlbum: { title: target.title } });
+              }
+            }}
+          />
+        </AppModal>
+      )}
+      {deleteMediaOpen && (
+        <ConfirmationModal
+          onClose={() => setDeleteMediaOpen(false)}
+          onConfirm={submitDeleteMedia}
+          title="Delete from library?"
+          body={
+            mediaItemIdsForModal.length === 1
+              ? 'This item will be removed from your library and from any albums it appears in. This cannot be undone.'
+              : `These ${mediaItemIdsForModal.length} items will be removed from your library and from any albums they appear in. This cannot be undone.`
           }
-        }}
-      />
-
-      <DeleteMediaConfirmModal
-        open={deleteMediaOpen}
-        onClose={() => setDeleteMediaOpen(false)}
-        itemCount={mediaItemIdsForModal.length}
-        isSubmitting={isDeleteLoading}
-        mutationErrors={deleteErrors}
-        onConfirm={submitDeleteMedia}
-      />
+          confirmLabel="Delete"
+          confirmingLabel="Deleting..."
+          isSubmitting={isDeleteLoading}
+          mutationErrors={deleteErrors}
+        />
+      )}
     </Container>
   );
 };

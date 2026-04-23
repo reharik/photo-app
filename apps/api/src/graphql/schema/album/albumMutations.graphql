@@ -12,7 +12,7 @@ type Mutation {
 
 input SetCoverMediaInput {
   albumId: ID!
-  mediaItemId: ID!
+  albumItemId: ID!
 }
 
 input UnsetCoverMediaInput {
@@ -25,7 +25,6 @@ type SetCoverMediaResponse {
 
 type SetCoverMediaPayload {
   albumId: ID!
-  mediaCoverId: ID!
 }
 
 type UnsetCoverMediaResponse {

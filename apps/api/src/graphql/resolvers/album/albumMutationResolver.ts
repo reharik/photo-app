@@ -95,13 +95,12 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       const result = await ctx.writeServices.setCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
-        mediaItemId: args.input.mediaItemId,
+        albumItemId: args.input.albumItemId,
       });
       return {
         data: result.success
           ? {
               albumId: result.value.albumId,
-              mediaCoverId: result.value.mediaCoverId,
             }
           : undefined,
         errors: result.success ? [] : [toContractErrorPayload(result.error)],

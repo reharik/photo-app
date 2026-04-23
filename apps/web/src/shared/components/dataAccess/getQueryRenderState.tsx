@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 import { PageSpinner } from '../ui/PageSpinner';
 import { QueryErrorState } from '../ui/QueryErrorState';
-type QueryStateResult<TData> = {
+
+export type QueryStateResult<TData> = {
   data: TData | undefined;
   content: ReactNode | null;
 };
 
-type QueryLike = {
+export type QueryLike<TData = unknown> = {
   loading: boolean;
   error?: unknown;
-  data?: unknown;
+  data?: TData;
 };
 
 export function getQueryRenderState<TQuery extends QueryLike, TSelected>(args: {

@@ -11,6 +11,7 @@ export const theme: DefaultTheme = {
     accentHover: '#c4a882', // Lighter amber on hover
     danger: '#d98c7e', // Muted red for errors/destructive actions
     ok: '#8b9d88', // Muted sage for success
+    textMuted: '#b7b0a4', // Secondary beige text
   },
   radius: {
     sm: '4px',

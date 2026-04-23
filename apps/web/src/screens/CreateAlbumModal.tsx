@@ -56,7 +56,6 @@ export const CreateAlbumModal = ({
     </ModalBackdrop>
   );
 };
-
 const ModalBackdrop = styled.div`
   position: fixed;
   inset: 0;
