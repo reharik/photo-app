@@ -1,13 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { ViewerRecentMediaQuery } from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
-import { mapMultipleMediaItemsToMediaItemSummaryVMs } from '../../viewModels/media/mapMediaItemToMediaItemSummaryVM';
+import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { AlbumSectionMetadata } from './AlbumSectionMetadata';
-import { getQueryRenderState, QueryLike } from './dataAccess/getQueryRenderState';
 import { UseAppMutationStateResult } from './dataAccess/useAppMutation';
 import { EmptyState } from './gallery/EmptyState';
 import { AlbumMediaTile } from './gallery/mediaTiles/AlbumMediaTile';
@@ -28,8 +26,7 @@ type AlbumSectionProps = {
     addItemOpen: boolean;
     setAddItemOpen: (open: boolean) => void;
     submitAddToAlbum: (newAlbumItemIds: string[]) => void;
-    addToAlbumMutation: UseAppMutationStateResult;
-    mediaItemsForPickerQuery: QueryLike<ViewerRecentMediaQuery>;
+    pickerMediaItems: MediaItemSummaryVM[];
   };
   removeAlbumItemState: {
     removeItemOpen: boolean;
@@ -38,6 +35,7 @@ type AlbumSectionProps = {
     removeFromAlbumMutation: UseAppMutationStateResult;
   };
   retrieveAlbumItems: () => void;
+  submitAddAlbumCover: (selectedAlbumItemId: string) => void;
 };
 
 export const AlbumSection = ({
@@ -46,17 +44,12 @@ export const AlbumSection = ({
   addAlbumItemState,
   removeAlbumItemState,
   retrieveAlbumItems,
+  submitAddAlbumCover,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
   const orderedAlbumItemIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
   const albumItemMultiSelectProps = useMultiSelectIds(orderedAlbumItemIds);
-
-  const { data: pickerMediaNodes, content: pickerMediaContent } = getQueryRenderState({
-    query: addAlbumItemState.mediaItemsForPickerQuery,
-    select: (d) => d.viewer?.mediaItems.nodes,
-    map: mapMultipleMediaItemsToMediaItemSummaryVMs,
-  });
 
   const onAlbumScroll = useCallback((): void => {
     const el = albumScrollRef.current;
@@ -99,7 +92,13 @@ export const AlbumSection = ({
         Header={renderHeader}
       />
       <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
-        <AlbumSectionMetadata count={albumItems.length} album={album} metaCompact={metaCompact} />
+        <AlbumSectionMetadata
+          count={albumItems.length}
+          album={album}
+          metaCompact={metaCompact}
+          albumItems={albumItems}
+          onSelectCover={submitAddAlbumCover}
+        />
         <SelectableGallery
           nodes={albumItems}
           multiSelectProps={albumItemMultiSelectProps}
@@ -143,7 +142,7 @@ export const AlbumSection = ({
             addAlbumItemState.setAddItemOpen(false);
           }}
         >
-          {pickerMediaNodes ? (
+          {addAlbumItemState.pickerMediaItems ? (
             <MediaSelectorSection
               onAddToAlbum={addAlbumItemState.submitAddToAlbum}
               onClose={() => {
@@ -165,10 +164,13 @@ export const AlbumSection = ({
                   </AddAlbumItemModalClose>
                 </AddAlbumItemModalHeader>
               }
-              nodes={pickerMediaNodes}
+              nodes={addAlbumItemState.pickerMediaItems}
             />
           ) : (
-            pickerMediaContent
+            <EmptyState
+              title="No media yet"
+              text="Upload your first media to start building your album"
+            />
           )}
         </AppModal>
       )}

@@ -105,6 +105,7 @@ const Title = styled.div`
   min-width: 0;
   font-size: 18px;
   font-weight: 600;
+  width: 100%;
   color: ${({ theme }) => theme.colors.text};
 `;
 

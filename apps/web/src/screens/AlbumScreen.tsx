@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import {
@@ -7,6 +7,8 @@ import {
   AddMediaItemsToAlbumMutation,
   DeleteAlbumItemsFromAlbumDocument,
   DeleteAlbumItemsFromAlbumMutation,
+  SetCoverMediaDocument,
+  SetCoverMediaMutation,
   ViewerAlbumDetailDocument,
   ViewerRecentMediaDocument,
 } from '../graphql/generated/types';
@@ -15,6 +17,7 @@ import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRen
 import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
 import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
 import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
+import { mapMediaItemToMediaItemSummaryVM } from '../viewModels/media/mapMediaItemToMediaItemSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
@@ -42,9 +45,23 @@ export const AlbumScreen = () => {
     select: (data) => data.viewer?.album,
   });
 
+  const pickerMediaItems = useMemo(() => {
+    const mediaItems = mediaItemsForPickerQuery.data?.viewer?.mediaItems.nodes;
+    const existingAlbumItems = data?.items.nodes;
+
+    if (!mediaItems || !existingAlbumItems) {
+      return [];
+    }
+
+    return mediaItems
+      .filter((item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id))
+      .map(mapMediaItemToMediaItemSummaryVM);
+  }, [mediaItemsForPickerQuery.data, data]);
+
   if (!data) {
     return content;
   }
+
   const album = mapAlbumToAlbumSummaryVM(data);
   const albumItems = data.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
 
@@ -99,7 +116,7 @@ export const AlbumScreen = () => {
           },
         },
       },
-      (data: DeleteAlbumItemsFromAlbumMutation) => data.DeleteAlbumItemsFromAlbum,
+      (data: SetCoverMediaMutation) => data.SetCoverMedia,
     );
 
     if (result.success) {
@@ -119,8 +136,7 @@ export const AlbumScreen = () => {
     addItemOpen: addAlbumItemModalOpen,
     setAddItemOpen: setAddAlbumItemModalOpen,
     submitAddToAlbum: submitAddToAlbum,
-    addToAlbumMutation: addToAlbumMutation,
-    mediaItemsForPickerQuery: mediaItemsForPickerQuery,
+    pickerMediaItems,
   };
   const removeAlbumItemState = {
     removeItemOpen: removeFromAlbumOpen,
@@ -137,7 +153,6 @@ export const AlbumScreen = () => {
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
           retrieveAlbumItems={query.refetch}
-          addAlbumCoverMutation={addAlbumCoverMutation}
           submitAddAlbumCover={submitAddAlbumCover}
         />
       )}

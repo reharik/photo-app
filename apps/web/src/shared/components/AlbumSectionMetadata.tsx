@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
+import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
-import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
+import { SingleSelectionTile } from './gallery/mediaTiles/SingleSelectionTile';
 import { SingleSelectGallery } from './gallery/SingleSelectGallery';
 import { AppModal } from './ui/AppModal';
 
@@ -10,7 +11,7 @@ type AlbumSectionMetadataProps = {
   count: number;
   album: AlbumSummaryVM;
   metaCompact: boolean;
-  albumItems: MediaItemSummaryVM[];
+  albumItems: AlbumItemSummaryVM[];
   onSelectCover: (mediaId: string) => void;
 };
 
@@ -26,7 +27,7 @@ export const AlbumSectionMetadata = ({
     <>
       <AlbumMeta $compact={metaCompact}>
         <AlbumCover $compact={metaCompact}>
-          <CoverUploadButton type="button" onClick={() => alert('hi mom')}>
+          <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
             {album.coverMedia ? (
               <CoverImage src={album.coverMedia.thumbnailUrl} alt={album.coverMedia.title ?? ''} />
             ) : (
@@ -76,7 +77,9 @@ export const AlbumSectionMetadata = ({
         >
           <SingleSelectGallery
             nodes={albumItems}
-            renderItem={({ item }) => <SingleSelectionTile item={item} onSelect={onSelectCover} />}
+            renderItem={({ item }) => (
+              <SingleSelectionTile item={item.mediaItem} onSelect={() => onSelectCover(item.id)} />
+            )}
           />
         </AppModal>
       )}
