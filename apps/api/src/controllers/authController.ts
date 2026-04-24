@@ -42,10 +42,16 @@ export const buildAuthController = ({
       ip: ctx.ip,
     });
 
+    ctx.cookies.set('token', result.token, {
+      httpOnly: true,
+      secure: ctx.app.env === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
     ctx.status = 200;
     ctx.body = {
       user: result.user,
-      token: result.token,
     };
     return ctx;
   },
@@ -98,13 +104,12 @@ export const buildAuthController = ({
     ctx.status = 201;
     ctx.body = {
       user: result.user,
-      token: result.token,
     };
     return ctx;
   },
 
   logout: (ctx: Context): Context => {
-    // Since we're using JWT, logout is handled client-side by removing the token
+    ctx.cookies.set('token', null);
     ctx.status = 200;
     ctx.body = { message: 'Logged out successfully' };
     return ctx;

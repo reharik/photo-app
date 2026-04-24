@@ -74,9 +74,6 @@ export const useApiFetch = () => {
         : config.apiBaseUrl;
       const url = `${API}${path.startsWith('/') ? '' : '/'}${path}`;
 
-      // Get token from localStorage
-      const token = localStorage.getItem('authToken');
-
       // Build the headers
       const headers: Record<string, string> = {
         Accept: 'application/json',
@@ -84,15 +81,10 @@ export const useApiFetch = () => {
         ...(init.headers as Record<string, string> | undefined),
       };
 
-      // Add auth token if available
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
       // Make the API call
       const response = await fetch(url, {
-        credentials: 'include',
         ...init,
+        credentials: 'include',
         headers,
         body: init.body ? JSON.stringify(init.body) : undefined,
       });

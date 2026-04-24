@@ -8,15 +8,12 @@ export type MediaAuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 export const buildMediaAuthMiddleware =
   ({ mediaGrantService, config }: IocGeneratedCradle): MediaAuthMiddleware =>
   async (ctx: Context, next: Next): Promise<void> => {
-    console.log(`************"ehre"************`);
-    console.log('ehre');
-    console.log(`********END "ehre"************`);
     // Extract viewer identity from JWT — local verify, no DB hit
     let viewerId: string | undefined;
-    const authHeader = ctx.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
+    const token = ctx.cookies.get('token');
+
+    if (token) {
       try {
-        const token = authHeader.substring(7);
         const payload = jwt.verify(token, config.jwtSecret) as { userId: string };
         viewerId = payload.userId;
       } catch {
@@ -29,7 +26,7 @@ export const buildMediaAuthMiddleware =
     if (!viewerId && !shareToken) ctx.throw(401);
 
     const decision = await mediaGrantService.authorizeView({
-      mediaId: ctx.params.id,
+      mediaId: ctx.params.mediaId,
       variant: MediaAssetKind.fromKey(ctx.params.variant),
       viewerId,
       shareToken,

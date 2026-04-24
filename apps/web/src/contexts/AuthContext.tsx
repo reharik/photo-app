@@ -8,8 +8,6 @@ type AuthActionResult = { ok: true } | { ok: false; message: string };
 
 interface AuthContextType {
   user: User | undefined;
-  /** True when an auth token is stored (session may still be loading). */
-  hasToken: boolean;
   login: (email: string, password: string) => Promise<AuthActionResult>;
   signup: (email: string, password: string, name: string) => Promise<AuthActionResult>;
 
@@ -27,7 +25,6 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | undefined>(undefined);
-  const [hasToken, setHasToken] = useState(!!localStorage.getItem('authToken'));
   const { apiFetch } = useApiFetchBase();
   const apolloClient = useApolloClient();
 
@@ -54,23 +51,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (viewerError) {
       console.error('Viewer query failed:', viewerError);
-      localStorage.removeItem('authToken');
-      setHasToken(false);
       setUser(undefined);
     }
   }, [viewerError]);
 
   const login = async (email: string, password: string): Promise<AuthActionResult> => {
     try {
-      const data = await apiFetch<{ user: User; token: string }>(`/auth/login`, {
+      const data = await apiFetch<{ user: User }>('/auth/login', {
         method: 'POST',
         body: { email, password },
       });
 
       if (data.success) {
-        localStorage.setItem('authToken', data.data.token);
-        setHasToken(true);
-        // Bypass useQuery `skip` timing (refetch can run before re-render flips skip) and refresh cache.
         await apolloClient.query({
           query: ViewerDocument,
           fetchPolicy: 'network-only',
@@ -79,7 +71,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       return { ok: false, message: data.error };
     } catch (error) {
-      console.error('Login failed:', error);
       return { ok: false, message: error instanceof Error ? error.message : 'Login failed' };
     }
   };
@@ -90,14 +81,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     name: string,
   ): Promise<AuthActionResult> => {
     try {
-      const data = await apiFetch<{ user: User; token: string }>(`/auth/signup`, {
+      const data = await apiFetch<{ user: User }>(`/auth/signup`, {
         method: 'POST',
         body: { email, password, name },
       });
 
       if (data.success) {
-        localStorage.setItem('authToken', data.data.token);
-        setHasToken(true);
         await apolloClient.query({
           query: ViewerDocument,
           fetchPolicy: 'network-only',
@@ -112,19 +101,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async (): Promise<void> => {
+    await apiFetch('/auth/logout', { method: 'POST' });
     setUser(undefined);
-    setHasToken(false);
-    localStorage.removeItem('authToken');
-    try {
-      await apolloClient.clearStore();
-    } catch (e) {
-      console.error('Apollo clearStore on logout failed:', e);
-    }
+    await apolloClient.clearStore();
   };
 
   const value: AuthContextType = {
     user,
-    hasToken,
     login,
     signup,
     logout,

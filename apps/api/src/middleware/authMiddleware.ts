@@ -42,11 +42,10 @@ export const buildAuthMiddleware =
 export const buildOptionalAuthMiddleware =
   ({ authService }: IocGeneratedCradle): OptionalAuthMiddleware =>
   async (ctx: Context, next: Next) => {
-    const authHeader = ctx.get('Authorization');
+    const token = ctx.cookies.get('token');
     ctx.isLoggedIn = false;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    if (token) {
       const user = await authService.verifyToken(token);
       if (user) {
         ctx.state.user = user;

@@ -12,9 +12,6 @@ export const buildMediaServeController = (_deps: IocGeneratedCradle): MediaServe
     const url = await _deps.mediaStorage.getObjectAccessUrl({
       storageKey: ctx.state.authorizedMediaPath,
     });
-    console.log(`************url************`);
-    console.log(url);
-    console.log(`********END url************`);
     ctx.redirect(url);
   },
 });

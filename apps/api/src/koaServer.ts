@@ -39,7 +39,7 @@ export const buildKoaServer = ({
       },
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      allowHeaders: ['Content-Type', 'X-Requested-With'],
     }),
   );
 
