@@ -46,7 +46,12 @@ photos.backintouch.net {
 			health_interval 30s
 		}
 	}
-
+  handle /media/* {
+    reverse_proxy localhost:3002 {
+      health_uri /health
+      health_interval 30s
+    }
+  }
 	handle {
 		root * /srv/photo-app
 		try_files {path} /index.html
