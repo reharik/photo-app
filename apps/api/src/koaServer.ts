@@ -18,6 +18,7 @@ export const buildKoaServer = ({
   config,
 }: IocGeneratedCradle): KoaServer => {
   const app = new Koa();
+  app.proxy = config.trustProxy;
   app.context.db = database;
   // 1. Error handling (should be first)
   app.use(errorHandler);

@@ -36,6 +36,11 @@ export type Config = {
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
   mediaWorkerPollIntervalMs: number;
+  /**
+   * When true, Koa trusts `X-Forwarded-Proto` / `X-Forwarded-For` from a reverse proxy.
+   * Required for `Secure` session cookies when TLS terminates at the load balancer or nginx.
+   */
+  trustProxy: boolean;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -65,6 +70,10 @@ const createConfigFromEnv = (): Config => {
   if (isProduction && process.env.JWT_SECRET === 'your-secret-key-here') {
     warnings.push('Using default JWT secret in production. This is a security risk.');
   }
+
+  const trustProxyEnv = process.env.TRUST_PROXY;
+  const trustProxy =
+    trustProxyEnv === 'true' ? true : trustProxyEnv === 'false' ? false : isProduction;
 
   return {
     nodeEnv,
@@ -101,6 +110,7 @@ const createConfigFromEnv = (): Config => {
     mediaWorkerPollIntervalMs: process.env.MEDIA_WORKER_POLL_MS
       ? Number(process.env.MEDIA_WORKER_POLL_MS)
       : 2000,
+    trustProxy,
   };
 };
 
