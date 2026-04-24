@@ -10,7 +10,6 @@ export * from './repositories/domainRepositories/albumRepository';
 export * from './repositories/domainRepositories/commentRepository';
 export * from './repositories/domainRepositories/mediaItemRepository';
 export * from './repositories/domainRepositories/notificationRepository';
-export * from './repositories/domainRepositories/shareLinkRepository';
 export * from './repositories/domainRepositories/userRepository';
 
 export * from './repositories/readRepositories/albumReadRepository';

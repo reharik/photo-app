@@ -18,5 +18,4 @@ export * from './MediaItem/MediaItemTag';
 export * from './MediaProcessingJob/MediaProcessingJobRepository';
 export * from './MediaProcessingJob/mediaProcessingJobStatus';
 export * from './Notification/Notification';
-export * from './Share/ShareLink';
 export * from './User/User';

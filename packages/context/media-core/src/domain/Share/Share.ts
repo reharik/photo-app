@@ -1,11 +1,11 @@
-import { ShareLinkPermissionEnum } from 'packages/foundation/contracts/dist/src/enums/shareLinkPermission';
-import { EntityId } from '../../types/types';
+import { SharePermission } from 'packages/foundation/contracts/dist/src/enums/shareLinkPermission';
+import { ActorId, EntityId } from '../../types/types';
 import { Entity, EntityAuditRecord } from '../Entity';
 
 export type ShareProps = {
   grantedToUser?: EntityId;
   token?: string;
-  permission: ShareLinkPermissionEnum;
+  permission: SharePermission;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
@@ -15,13 +15,15 @@ export type ShareRecord = {
   id: string;
   grantedToUser?: string;
   token?: string;
-  permission: ShareLinkPermissionEnum;
+  permission: SharePermission;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
 } & EntityAuditRecord;
 
-export type CreateShareInput = {};
+export type CreateShareInput = {
+  permission: SharePermission;
+};
 
 export class Share extends Entity<ShareRecord> {
   protected props: ShareProps;
@@ -33,20 +35,18 @@ export class Share extends Entity<ShareRecord> {
 
   static create(input: CreateShareInput, actorId: ActorId): Share {
     return new Share(crypto.randomUUID(), actorId, {
-      kind: input.kind,
-      mimeType: input.mimeType,
-      status: ShareStatus.pending,
+      permission: SharePermission.view,
     });
   }
 
   static rehydrate(record: ShareRecord): Share {
     const asset = new Share(record.id, record.createdBy, {
-      kind: record.kind,
-      mimeType: record.mimeType,
-      width: record.width,
-      height: record.height,
-      fileSizeBytes: record.fileSizeBytes,
-      status: record.status,
+      permission: record.permission,
+      grantedToUser: record.grantedToUser,
+      token: record.token,
+      label: record.label,
+      expiresAt: record.expiresAt,
+      revokedAt: record.revokedAt,
     });
     asset.rehydrateAudit(record);
     return asset;

@@ -34,8 +34,11 @@ packages/**/**/dist/
 packages/**/**/node_modules/
 packages/**/**/eslint-config/
 
-# Optional: exclude apps not needed for this image (smaller context for API-only builds)
+# Optional: exclude apps not needed for this image (smaller context for API-only builds).
+# Keep apps/web/package.json so the deps-* stages can resolve the full workspace set
+# (npm ci --workspaces needs every workspace's package.json present).
 apps/web/
+!apps/web/package.json
 
 # Exclude development files
 .git/

@@ -1,10 +1,18 @@
 import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
-import { fail, hashToken, ok, WriteResult } from '@packages/media-core';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+  fail,
+  hashToken,
+  ok,
+  resolvePreferredAssetKind,
+  WriteResult,
+} from '@packages/media-core';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type MediaGrantServiceDeps = Pick<
   IocGeneratedCradle,
-  'mediaItemReadRepository' | 'grantReadRepository'
+  'mediaItemReadRepository' | 'mediaAssetReadRepository' | 'grantReadRepository'
 >;
 
 export type AuthorizeMediaViewInput = {
@@ -20,6 +28,7 @@ export type MediaGrantService = {
 
 export const buildMediaGrantService = ({
   mediaItemReadRepository,
+  mediaAssetReadRepository,
   grantReadRepository,
 }: MediaGrantServiceDeps): MediaGrantService => ({
   authorizeView: async (input: AuthorizeMediaViewInput): Promise<WriteResult<string>> => {
@@ -35,22 +44,31 @@ export const buildMediaGrantService = ({
       return fail(AppErrorCollection.mediaItem.MediaItemNotFound);
     }
 
-    // Fast path — owner, no grant lookup needed
-    if (viewerId && row.ownerId === viewerId) {
-      return ok(`media/${row.ownerId}/${row.id}/${variant.key}`);
+    const isOwner = viewerId !== undefined && row.ownerId === viewerId;
+
+    if (!isOwner) {
+      const granted = await grantReadRepository.hasActiveGrant({
+        mediaItemId: mediaId,
+        viewerId,
+        tokenHash: shareToken ? hashToken(shareToken) : undefined,
+      });
+
+      if (!granted) {
+        return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
+      }
     }
 
-    // Grant path — shared user or token
-    const granted = await grantReadRepository.hasActiveGrant({
-      mediaItemId: mediaId,
-      viewerId,
-      tokenHash: shareToken ? hashToken(shareToken) : undefined,
-    });
+    /**
+     * Derivatives (display, thumbnail) are produced asynchronously by the media worker after
+     * upload finalize. While the worker is still running, the requested variant may not yet
+     * exist in object storage. Fall back to the original so the route never hands out a signed
+     * URL for a missing key.
+     */
+    const assetsByMediaItem = await mediaAssetReadRepository.listByMediaItemIds([row.id]);
+    const assets = assetsByMediaItem.get(row.id) ?? [];
+    const resolvedKind = resolvePreferredAssetKind(assets, variant);
 
-    if (!granted) {
-      return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
-    }
-
-    return ok(`media/${row.ownerId}/${row.id}/${variant.key}`);
+    const baseStorageKey = buildMediaItemBaseStorageKey(row.ownerId, row.id);
+    return ok(buildMediaAssetStorageKey(baseStorageKey, resolvedKind));
   },
 });

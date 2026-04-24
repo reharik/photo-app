@@ -23,7 +23,6 @@ import type {
   NotificationRepository,
   ReorderAlbumItems,
   SetCoverMedia,
-  ShareLinkRepository,
   UnsetCoverMedia,
   UpdateMediaItem,
   UpdateMediaItemTags,
@@ -70,7 +69,6 @@ export interface IocGeneratedTypes {
   reorderAlbumItems: ReorderAlbumItems;
   runMediaWorkerLoop: RunMediaWorkerLoop;
   setCoverMedia: SetCoverMedia;
-  shareLinkRepository: ShareLinkRepository;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;
   updateMediaItemTags: UpdateMediaItemTags;
