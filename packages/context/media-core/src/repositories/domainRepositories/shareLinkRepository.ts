@@ -1,8 +1,8 @@
 import { ShareLinkPermissionEnum } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import type { ShareLinkRecord } from '../../domain/ShareLink/ShareLink';
-import { ShareLink } from '../../domain/ShareLink/ShareLink';
+import type { ShareLinkRecord } from '../../domain/Share/ShareLink';
+import { ShareLink } from '../../domain/Share/ShareLink';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import type { EntityId } from '../../types/types';
 

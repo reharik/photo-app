@@ -14,12 +14,13 @@ export const up = async (knex: Knex): Promise<void> => {
     table.uuid('granted_to_user').nullable().references('id').inTable('user').onDelete('CASCADE');
     table.text('token').nullable();
     table.text('permission').notNullable();
-    table.text('label').nullable();
-    table.timestamp('last_accessed_at', { useTz: true }).nullable();
-    table.integer('access_count').notNullable().defaultTo(0);
+    table.text('description').nullable();
     table.timestamp('expires_at', { useTz: true }).nullable();
     table.timestamp('revoked_at', { useTz: true }).nullable();
-    table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+    table.timestamp('created_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
+    table.timestamp('updated_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
+    table.uuid('created_by').notNullable();
+    table.uuid('updated_by').notNullable();
 
     table.index(['media_item_id', 'granted_to_user']);
     table.index(['media_item_id', 'token']);

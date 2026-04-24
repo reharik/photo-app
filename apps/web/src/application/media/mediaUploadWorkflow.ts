@@ -85,13 +85,7 @@ const uploadBinary = async (
     headers: Array<{ key: string; value: string }>;
   },
 ): Promise<AppResult<void>> => {
-  const token = localStorage.getItem('authToken');
-  const uploadUrl = new URL(uploadInstructions.url, window.location.origin);
-  const sameOrigin = uploadUrl.origin === window.location.origin;
-
-  const headers: Record<string, string> = {
-    ...(sameOrigin && token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  const headers: Record<string, string> = {};
 
   for (const h of uploadInstructions.headers) {
     headers[h.key] = h.value;

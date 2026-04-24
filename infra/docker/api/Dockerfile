@@ -14,22 +14,32 @@ RUN corepack enable || true
 
 # =============================================================================
 # DEPENDENCY PREPARATION STAGES
+#
+# Intentionally independent of APP_WORKSPACE_PATH: every service built from
+# this Dockerfile installs the same workspace set, so the resulting layer is
+# content-identical regardless of which service is being built. That means
+# the npm-install layer is reusable across services (e.g. registry cache),
+# and changes to one app's source never bust another app's deps layer.
+#
+# Only workspace package manifests are copied — the full source tree is COPYd
+# later in `build`. Any new workspace must be added to BOTH stages below.
 # =============================================================================
 
 FROM base AS deps-dev-staging
-ARG APP_WORKSPACE_PATH=apps/api
 COPY package.json package-lock.json ./
-COPY ${APP_WORKSPACE_PATH}/package.json ${APP_WORKSPACE_PATH}/package.json
-# Only workspace package manifests — copying full `packages/` busts the npm layer on any source edit.
+COPY apps/api/package.json apps/api/package.json
+COPY apps/media-worker/package.json apps/media-worker/package.json
+COPY apps/web/package.json apps/web/package.json
 COPY packages/context/media-core/package.json packages/context/media-core/
 COPY packages/foundation/infrastructure/package.json packages/foundation/infrastructure/
 COPY packages/foundation/contracts/package.json packages/foundation/contracts/
 RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 FROM base AS deps-prod
-ARG APP_WORKSPACE_PATH=apps/api
 COPY package.json package-lock.json ./
-COPY ${APP_WORKSPACE_PATH}/package.json ${APP_WORKSPACE_PATH}/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/media-worker/package.json apps/media-worker/package.json
+COPY apps/web/package.json apps/web/package.json
 COPY packages/context/media-core/package.json packages/context/media-core/
 COPY packages/foundation/infrastructure/package.json packages/foundation/infrastructure/
 COPY packages/foundation/contracts/package.json packages/foundation/contracts/
