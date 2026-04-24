@@ -1,7 +1,3 @@
-import {
-  createDerivedMediaItemUrls,
-  type MediaItemDerivedUrlsProjection,
-} from '../../../application/media/buildDerivedMediaItemUrls';
 import { MediaStorage } from '../../../application/media/MediaStorage';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { EntityId } from '../../../types/types';
@@ -18,9 +14,6 @@ export interface ViewerMediaItemReadService {
   getMediaItemForViewer: (args: {
     mediaItemId: EntityId;
   }) => Promise<MediaItemProjection | undefined>;
-  getDerivedUrlsForMediaItem: (args: {
-    mediaItemStorageKey: string;
-  }) => Promise<MediaItemDerivedUrlsProjection>;
 }
 
 export interface ViewerMediaItemReadServiceFactory extends ReadServiceFactoryBase {
@@ -34,19 +27,7 @@ type ViewerMediaItemReadServiceFactoryDeps = {
 
 export const buildViewerMediaItemReadServiceFactory = ({
   mediaItemReadRepository,
-  mediaStorage,
 }: ViewerMediaItemReadServiceFactoryDeps): ViewerMediaItemReadServiceFactory => {
-  const getDerivedUrlsForMediaItem = async ({
-    mediaItemStorageKey,
-  }: {
-    mediaItemStorageKey: string;
-  }): Promise<MediaItemDerivedUrlsProjection> => {
-    return createDerivedMediaItemUrls({
-      mediaStorage,
-      baseStorageKey: mediaItemStorageKey,
-    });
-  };
-
   return ({ viewerId }: { viewerId: string }) => {
     const withTags = async (rows: MediaItemRow[]): Promise<MediaItemProjection[]> => {
       const ids = rows.map((r) => r.id);
@@ -83,7 +64,6 @@ export const buildViewerMediaItemReadServiceFactory = ({
         const [projection] = await withTags([row]);
         return projection;
       },
-      getDerivedUrlsForMediaItem,
     };
   };
 };

@@ -10,7 +10,6 @@ import './standardizeInput.js';
 
 import albumMutationResolvers from './album/albumMutationResolver.js';
 import albumResolvers from './album/albumResolver.js';
-import mediaItemResolvers from './media/mediaItemResolver.js';
 import mediaUploadResolvers from './media/mediaMutationsResolver.js';
 import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
@@ -24,7 +23,6 @@ import viewerResolvers from './root/viewerResolver.js';
 export const resolvers = mergeResolvers([
   albumMutationResolvers,
   albumResolvers,
-  mediaItemResolvers,
   mediaUploadResolvers,
   viewerMutationResolvers,
   viewerResolvers,

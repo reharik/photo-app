@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, MediaItem } from '@packages/media-core';
+import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey, MediaItem } from '@packages/media-core';
 
 import { buildProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
@@ -78,7 +78,7 @@ describe('buildProcessNextMediaDeletionJob', () => {
   describe('When storage deletes succeed and the media item still exists', () => {
     it('should delete objects, remove the media row, and mark the job succeeded', async () => {
       const item = createUploadedPhoto();
-      const baseKey = item.storageKey();
+      const baseKey = buildMediaItemBaseStorageKey(item.ownerId(), item.id());
       const cradle = createCradle({
         claimNextAvailableJob: jest.fn().mockResolvedValue({
           id: JOB_ID,

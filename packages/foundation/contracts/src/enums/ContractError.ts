@@ -241,6 +241,20 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  MediaItemNotAuthorized: {
+    code: 'MEDIA_ITEM_NOT_AUTHORIZED',
+    display: 'Media item not authorized',
+    category: ErrorCategory.auth,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  InvalidMediaAssetKind: {
+    code: 'INVALID_MEDIA_ASSET_KIND',
+    display: 'Invalid media variant',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

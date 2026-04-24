@@ -10,7 +10,6 @@ export function mapMediaItemToMediaItemSummaryVM(
     kind: MediaKind.fromValue(mediaItem.kind),
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
-    thumbnailUrl: mediaItem.derivedUrls.thumbnail,
   };
 }
 

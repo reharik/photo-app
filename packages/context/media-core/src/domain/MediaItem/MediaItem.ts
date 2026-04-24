@@ -29,7 +29,6 @@ interface AssetMetadata {
 
 export type MediaItemProps = {
   ownerId: EntityId;
-  storageKey: string;
   kind: MediaKind;
   status: MediaItemStatus;
   mimeType: string;
@@ -46,7 +45,6 @@ export type MediaItemProps = {
 export type MediaItemRecord = {
   id: EntityId;
   ownerId: EntityId;
-  storageKey: string;
   kind: MediaKind;
   status: MediaItemStatus;
   mimeType: string;
@@ -94,13 +92,11 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
   static create(input: CreateMediaItemInput, actorId: ActorId): MediaItem {
     const mediaItemId = crypto.randomUUID();
-    const storageKey = `media/${actorId}/${mediaItemId}`;
     return new MediaItem(mediaItemId, actorId, {
       ...input,
       sizeBytes: input.sizeBytes ?? 0,
       status: MediaItemStatus.pending,
       ownerId: actorId,
-      storageKey,
     });
   }
 
@@ -202,10 +198,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
   status(): MediaItemStatus {
     return this.props.status;
-  }
-
-  storageKey(): string {
-    return this.props.storageKey;
   }
 
   kind(): MediaKind {

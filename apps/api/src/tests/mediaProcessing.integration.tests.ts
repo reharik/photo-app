@@ -10,6 +10,7 @@ import {
   buildCreateMediaItemUpload,
   buildFinalizeMediaItemUpload,
   buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
   MediaItem,
   MediaProcessingJobStatus,
   type MediaStorage,
@@ -211,7 +212,10 @@ describe('Media processing pipeline', () => {
       if (!item) return;
 
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -243,10 +247,16 @@ describe('Media processing pipeline', () => {
       expect(thumbnail?.status).toBe(MediaAssetStatus.ready.value);
 
       const displayObject = mediaStorage.objects.get(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.display),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.display,
+        ),
       );
       const thumbnailObject = mediaStorage.objects.get(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.thumbnail),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.thumbnail,
+        ),
       );
       expect(displayObject?.size).toBeGreaterThan(0);
       expect(thumbnailObject?.size).toBeGreaterThan(0);
@@ -292,7 +302,10 @@ describe('Media processing pipeline', () => {
       if (!item) return;
 
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: 15,
           mimeType: 'image/jpeg',

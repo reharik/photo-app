@@ -1,5 +1,9 @@
 import { MediaAssetKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, MediaStorage } from '../../../application/media/MediaStorage';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+  MediaStorage,
+} from '../../../application/media/MediaStorage';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { ok } from '../../../domain/utilities/writeResponse';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -46,7 +50,10 @@ export const buildCreateMediaItemUpload = ({
       return result;
     }
     const uploadTarget = await mediaStorage.getUploadTarget({
-      storageKey: buildMediaAssetStorageKey(mediaItem.storageKey(), MediaAssetKind.original),
+      storageKey: buildMediaAssetStorageKey(
+        buildMediaItemBaseStorageKey(mediaItem.ownerId(), mediaItem.id()),
+        MediaAssetKind.original,
+      ),
       mimeType,
     });
     await mediaItemRepository.save(mediaItem);

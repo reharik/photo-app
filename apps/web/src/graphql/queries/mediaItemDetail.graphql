@@ -7,7 +7,4 @@ fragment MediaItemDetail on MediaItem {
   originalFileName
   createdAt
   takenAt
-  derivedUrls {
-    display
-  }
 }

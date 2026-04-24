@@ -32,7 +32,6 @@ const mapMediaItemRowToParent = (
   return {
     id,
     ownerId: mediaItem.mediaItemOwnerId ?? '',
-    storageKey: mediaItem.mediaItemStorageKey ?? '',
     kind: mediaItem.mediaItemKind ?? '',
     status: mediaItem.mediaItemStatus ?? '',
     mimeType: mediaItem.mediaItemMimeType ?? '',

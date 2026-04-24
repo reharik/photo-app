@@ -4,11 +4,14 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  emailVerified?: boolean;
   firstName?: string;
   lastName?: string;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
   lastLoginAt?: string;
 }
 

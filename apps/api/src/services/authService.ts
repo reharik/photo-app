@@ -54,7 +54,7 @@ export const buildAuthService = ({
     const { email, password } = credentials;
 
     // Find user by email
-    const user = await database('user').where({ email }).first();
+    const user = await database<UserRow>('user').where({ email }).first();
     if (!user || !user.passwordHash) {
       logger.warn('Login attempt failed: user not found or no password hash', {
         email,
@@ -92,14 +92,14 @@ export const buildAuthService = ({
       email: user.email,
     });
 
-    return { user: sanitizeUser(user as UserRow), token };
+    return { user: sanitizeUser(user), token };
   },
 
   signup: async (credentials: SignupInput) => {
     const { email, password, name } = credentials;
 
     // Check if user already exists
-    const existingUser = await database('user').where({ email }).first();
+    const existingUser = await database<UserRow>('user').where({ email }).first();
     if (existingUser) {
       logger.warn('Signup attempt failed: user already exists', { email });
       return undefined;
@@ -112,7 +112,7 @@ export const buildAuthService = ({
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    const [user] = await database('user')
+    const [user] = await database<UserRow>('user')
       .insert({
         id,
         email,
@@ -140,7 +140,7 @@ export const buildAuthService = ({
       email: user.email,
     });
 
-    return { user: sanitizeUser(user as UserRow), token };
+    return { user: sanitizeUser(user), token };
   },
 
   verifyToken: async (token: string) => {
@@ -150,7 +150,7 @@ export const buildAuthService = ({
         email: string;
       };
 
-      const user = await database('user').where({ id: decoded.userId }).first();
+      const user = await database<UserRow>('user').where({ id: decoded.userId }).first();
 
       if (!user) {
         logger.warn('Token verification failed: user not found', {

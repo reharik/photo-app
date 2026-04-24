@@ -8,7 +8,7 @@ import {
 } from '@packages/contracts';
 import { Readable } from 'node:stream';
 import type { MediaStorage } from '../application/media/MediaStorage';
-import { buildMediaAssetStorageKey } from '../application/media/MediaStorage';
+import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '../application/media/MediaStorage';
 import { Album } from '../domain/Album/Album';
 import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
 import { MediaItem } from '../domain/MediaItem/MediaItem';
@@ -147,7 +147,6 @@ const projectionFromAggregate = (item: MediaItem): MediaItemRow => {
   return {
     id: item.id(),
     ownerId: item.ownerId(),
-    storageKey: item.storageKey(),
     kind: item.kind().value,
     status: item.status().value,
     mimeType: p.mimeType,
@@ -239,7 +238,10 @@ describe('Media upload pipeline (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -297,7 +299,10 @@ describe('Media upload pipeline (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -383,7 +388,10 @@ describe('Media upload pipeline (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -528,7 +536,10 @@ describe('Album integration (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -611,7 +622,10 @@ describe('Album integration (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -706,7 +720,10 @@ describe('Album integration (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',
@@ -871,7 +888,10 @@ describe('Album integration (application services)', () => {
           return;
         }
         mediaStorage.objects.set(
-          buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+          buildMediaAssetStorageKey(
+            buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+            MediaAssetKind.original,
+          ),
           {
             size: MINIMAL_PNG_1X1.length,
             mimeType: 'image/png',
@@ -961,7 +981,10 @@ describe('Album integration (application services)', () => {
         return;
       }
       mediaStorage.objects.set(
-        buildMediaAssetStorageKey(item.storageKey(), MediaAssetKind.original),
+        buildMediaAssetStorageKey(
+          buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
+          MediaAssetKind.original,
+        ),
         {
           size: MINIMAL_PNG_1X1.length,
           mimeType: 'image/png',

@@ -7,6 +7,14 @@ const assetKindToPathSegment = (kind: MediaAssetKind): string => {
 };
 
 /**
+ * Directory prefix for all assets of one media item (no trailing slash; asset keys append `/{kind}`).
+ * Kept in sync with `media_item.storage_key` on persist until that column is dropped.
+ */
+export const buildMediaItemBaseStorageKey = (ownerId: string, mediaItemId: string): string => {
+  return `media/${ownerId}/${mediaItemId}`;
+};
+
+/**
  * Object key under the bucket: `{baseStorageKey}/{kindSegment}` (e.g. media/{ownerId}/{id}/original).
  */
 export const buildMediaAssetStorageKey = (baseStorageKey: string, kind: MediaAssetKind): string => {

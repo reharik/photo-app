@@ -7,6 +7,7 @@ import {
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
+import { buildMediaItemBaseStorageKey } from '../../application/media/MediaStorage';
 import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
@@ -110,13 +111,17 @@ export const buildMediaItemRepository = ({
     await runInTransaction(database, options, async (trx) => {
       const record = mediaItem.toPersistence();
       const { comments, assets, tags: tagLabels, ...mediaItemRow } = record;
+      const rowForDb = {
+        ...mediaItemRow,
+        storageKey: buildMediaItemBaseStorageKey(record.ownerId, record.id),
+      };
 
       const existing = await trx<MediaItemRecord>('mediaItem').where({ id: record.id }).first();
 
       if (existing) {
-        await trx<MediaItemRecord>('mediaItem').where({ id: record.id }).update(mediaItemRow);
+        await trx<MediaItemRecord>('mediaItem').where({ id: record.id }).update(rowForDb);
       } else {
-        await trx('mediaItem').insert(mediaItemRow);
+        await trx('mediaItem').insert(rowForDb);
       }
 
       if (assets.length > 0) {

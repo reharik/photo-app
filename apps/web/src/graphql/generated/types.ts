@@ -261,8 +261,6 @@ export type MediaAssetStatus = 'FAILED' | 'PENDING' | 'PROCESSING' | 'READY';
 export type MediaItem = Node & {
   __typename?: 'MediaItem';
   createdAt: Scalars['DateTime']['output'];
-  /** Thumbnail and display object URLs derived from storage keys (no media_asset reads). */
-  derivedUrls: MediaItemDerivedUrls;
   description?: Maybe<Scalars['String']['output']>;
   durationSeconds?: Maybe<Scalars['Int']['output']>;
   height?: Maybe<Scalars['Int']['output']>;
@@ -289,12 +287,6 @@ export type MediaItemCollectionPayload = {
   __typename?: 'MediaItemCollectionPayload';
   nodes: Array<MediaItem>;
   pageInfo: PageInfo;
-};
-
-export type MediaItemDerivedUrls = {
-  __typename?: 'MediaItemDerivedUrls';
-  display: Scalars['String']['output'];
-  thumbnail: Scalars['String']['output'];
 };
 
 export type MediaItemSortBy = 'CREATED_AT';
@@ -856,7 +848,6 @@ export type AlbumItemSummaryFragment = {
     title?: string | undefined;
     originalFileName: string;
     createdAt: string;
-    derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
   };
 };
 
@@ -874,7 +865,6 @@ export type AlbumSummaryFragment = {
         title?: string | undefined;
         originalFileName: string;
         createdAt: string;
-        derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
       }
     | undefined;
   items: {
@@ -892,7 +882,6 @@ export type AlbumSummaryFragment = {
         title?: string | undefined;
         originalFileName: string;
         createdAt: string;
-        derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
       };
     }>;
     pageInfo: { __typename?: 'PageInfo'; limit: number; offset: number };
@@ -909,7 +898,6 @@ export type MediaItemDetailFragment = {
   originalFileName: string;
   createdAt: string;
   takenAt?: string | undefined;
-  derivedUrls: { __typename?: 'MediaItemDerivedUrls'; display: string };
 };
 
 export type MediaItemSummaryFragment = {
@@ -919,7 +907,6 @@ export type MediaItemSummaryFragment = {
   title?: string | undefined;
   originalFileName: string;
   createdAt: string;
-  derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
 };
 
 export type ViewerQueryVariables = Exact<{ [key: string]: never }>;
@@ -962,7 +949,6 @@ export type ViewerAlbumDetailQuery = {
                     title?: string | undefined;
                     originalFileName: string;
                     createdAt: string;
-                    derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                   }
                 | undefined;
               items: {
@@ -980,7 +966,6 @@ export type ViewerAlbumDetailQuery = {
                     title?: string | undefined;
                     originalFileName: string;
                     createdAt: string;
-                    derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                   };
                 }>;
                 pageInfo: { __typename?: 'PageInfo'; limit: number; offset: number };
@@ -1015,7 +1000,6 @@ export type ViewerAlbumsQuery = {
                   title?: string | undefined;
                   originalFileName: string;
                   createdAt: string;
-                  derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
                 }
               | undefined;
           }>;
@@ -1046,7 +1030,6 @@ export type ViewerMediaItemDetailQuery = {
               originalFileName: string;
               createdAt: string;
               takenAt?: string | undefined;
-              derivedUrls: { __typename?: 'MediaItemDerivedUrls'; display: string };
             }
           | undefined;
       }
@@ -1092,7 +1075,6 @@ export type ViewerRecentMediaQuery = {
             title?: string | undefined;
             originalFileName: string;
             createdAt: string;
-            derivedUrls: { __typename?: 'MediaItemDerivedUrls'; thumbnail: string };
           }>;
           pageInfo: { __typename?: 'PageInfo'; limit: number; offset: number };
         };
@@ -1115,14 +1097,6 @@ export const MediaItemSummaryFragmentDoc = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },
@@ -1167,14 +1141,6 @@ export const AlbumItemSummaryFragmentDoc = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },
@@ -1298,14 +1264,6 @@ export const AlbumSummaryFragmentDoc = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },
@@ -1353,14 +1311,6 @@ export const MediaItemDetailFragmentDoc = {
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
           { kind: 'Field', name: { kind: 'Name', value: 'takenAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'display' } }],
-            },
-          },
         ],
       },
     },
@@ -2081,14 +2031,6 @@ export const ViewerAlbumDetailDocument = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },
@@ -2351,14 +2293,6 @@ export const ViewerAlbumsDocument = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },
@@ -2429,14 +2363,6 @@ export const ViewerMediaItemDetailDocument = {
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
           { kind: 'Field', name: { kind: 'Name', value: 'takenAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'display' } }],
-            },
-          },
         ],
       },
     },
@@ -2655,14 +2581,6 @@ export const ViewerRecentMediaDocument = {
           { kind: 'Field', name: { kind: 'Name', value: 'title' } },
           { kind: 'Field', name: { kind: 'Name', value: 'originalFileName' } },
           { kind: 'Field', name: { kind: 'Name', value: 'createdAt' } },
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'derivedUrls' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'thumbnail' } }],
-            },
-          },
         ],
       },
     },

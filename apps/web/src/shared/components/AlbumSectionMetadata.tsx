@@ -1,6 +1,8 @@
+import { MediaAssetKind } from '@packages/contracts';
 import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
+import { buildMediaItemUrl } from '../../lib/urlBuilders/mediaItemUrlBuilder';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
 import { SingleSelectionTile } from './gallery/mediaTiles/SingleSelectionTile';
@@ -23,13 +25,16 @@ export const AlbumSectionMetadata = ({
   onSelectCover,
 }: AlbumSectionMetadataProps) => {
   const [addCoverItemOpen, setAddCoverItemOpen] = useState(false);
+  const coverMediaUrl = album.coverMedia
+    ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
+    : undefined;
   return (
     <>
       <AlbumMeta $compact={metaCompact}>
         <AlbumCover $compact={metaCompact}>
           <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
             {album.coverMedia ? (
-              <CoverImage src={album.coverMedia.thumbnailUrl} alt={album.coverMedia.title ?? ''} />
+              <CoverImage src={coverMediaUrl} alt={album.coverMedia.title ?? ''} />
             ) : (
               <CoverPlaceholder aria-hidden $compact={metaCompact}>
                 📷

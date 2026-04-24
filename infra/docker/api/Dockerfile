@@ -20,15 +20,19 @@ FROM base AS deps-dev-staging
 ARG APP_WORKSPACE_PATH=apps/api
 COPY package.json package-lock.json ./
 COPY ${APP_WORKSPACE_PATH}/package.json ${APP_WORKSPACE_PATH}/package.json
-# Copy other workspaces (e.g. packages/*) so npm sees them; otherwise "No workspaces found!"
-COPY packages/ packages/
+# Only workspace package manifests — copying full `packages/` busts the npm layer on any source edit.
+COPY packages/context/media-core/package.json packages/context/media-core/
+COPY packages/foundation/infrastructure/package.json packages/foundation/infrastructure/
+COPY packages/foundation/contracts/package.json packages/foundation/contracts/
 RUN npm ci --workspaces --include-workspace-root --ignore-scripts
 
 FROM base AS deps-prod
 ARG APP_WORKSPACE_PATH=apps/api
 COPY package.json package-lock.json ./
 COPY ${APP_WORKSPACE_PATH}/package.json ${APP_WORKSPACE_PATH}/package.json
-COPY packages/ packages/
+COPY packages/context/media-core/package.json packages/context/media-core/
+COPY packages/foundation/infrastructure/package.json packages/foundation/infrastructure/
+COPY packages/foundation/contracts/package.json packages/foundation/contracts/
 RUN npm ci --workspaces --include-workspace-root --omit=dev --ignore-scripts
 
 # =============================================================================
@@ -62,8 +66,8 @@ ENV NODE_ENV=development
 WORKDIR /app
 RUN apt-get update && apt-get install -y git vim && rm -rf /var/lib/apt/lists/*
 COPY --from=deps-dev-staging /repo/node_modules ./node_modules
-COPY . .
 RUN npm install -g nodemon
+COPY . .
 EXPOSE 3000
 CMD ["sh", "-c", "npm run dev --workspace=@app/$(basename \"$APP_WORKSPACE_PATH\")"]
 

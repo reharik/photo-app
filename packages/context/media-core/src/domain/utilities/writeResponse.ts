@@ -12,3 +12,5 @@ export const fail = <T = void, E extends ContractError = ContractError>(
   success: false,
   error,
 });
+
+// comment

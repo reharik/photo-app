@@ -1,9 +1,10 @@
 export * from './domain';
 export * from './types/types';
 
-export * from './application/media/buildDerivedMediaItemUrls';
+export * from './application/media/createDerivedMediaItemUrl';
 export * from './application/media/MediaStorage';
 export * from './application/media/resolveMediaAssetUrl';
+export * from './domain/utilities/writeResponse';
 
 export * from './repositories/domainRepositories/albumRepository';
 export * from './repositories/domainRepositories/commentRepository';
@@ -35,6 +36,8 @@ export * from './services/writeServices/mediaItem/writeMediaItem.types';
 export * from './services/writeServices/writeServiceBaseType';
 
 export * from './application/media/s3MediaStorage';
+export * from './application/support/tokenHash';
+export * from './repositories/readRepositories/grantReadRepository';
 export * from './services/writeServices/album/setCoverMedia';
 export * from './services/writeServices/album/unsetCoverMedia';
 export * from './services/writeServices/mediaItem/deleteMediaItem';

@@ -12,7 +12,6 @@ export function mapMediaItemToMediaItemDetailVM(
     originalFileName: mediaItem.originalFileName,
     takenAt: mediaItem.takenAt ?? '',
     description: mediaItem.description,
-    displayUrl: mediaItem.derivedUrls.display,
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
   };

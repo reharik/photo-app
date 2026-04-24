@@ -1,7 +1,7 @@
 import { MediaAssetKind } from '@packages/contracts';
 import type { Knex } from 'knex';
 
-import { buildMediaAssetStorageKey } from '@packages/media-core';
+import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packages/media-core';
 
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 
@@ -26,13 +26,14 @@ export const seedIntegrationTestUploadedObject = async (
 ): Promise<void> => {
   const row = await database('mediaItem')
     .where({ id: mediaItemId })
-    .first<{ storageKey: string; mimeType: string }>();
+    .first<{ id: string; ownerId: string; mimeType: string }>();
 
-  if (!row?.storageKey) {
-    throw new Error(`media item not found or missing storage key: ${mediaItemId}`);
+  if (!row) {
+    throw new Error(`media item not found: ${mediaItemId}`);
   }
 
-  const assetStorageKey = buildMediaAssetStorageKey(row.storageKey, MediaAssetKind.original);
+  const baseKey = buildMediaItemBaseStorageKey(row.ownerId, row.id);
+  const assetStorageKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.original);
   const mimeType =
     bytes.length >= 8 &&
     bytes[0] === 0x89 &&

@@ -1,7 +1,8 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
+import { buildMediaItemUrl } from '../../../../lib/urlBuilders/mediaItemUrlBuilder';
 import { MediaItemSummaryVM } from '../../../../viewModels/media/MediaItemSummaryVM';
 
 export const MediaItemTile = ({
@@ -11,13 +12,14 @@ export const MediaItemTile = ({
   item: MediaItemSummaryVM;
   mediaGalleryIds: string[];
 }) => {
+  const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   return (
     <>
       <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
-        {item.thumbnailUrl ? (
-          <ThumbImage src={item.thumbnailUrl} alt={item.title.trim()} />
+        {item.kind === MediaKind.photo ? (
+          <ThumbImage src={url} alt={item.title.trim()} />
         ) : (
-          <ThumbIcon aria-hidden>{item.kind === MediaKind.video ? '🎬' : '🖼️'}</ThumbIcon>
+          <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
       <CaptionLink to={`/media/${item.id}`}>

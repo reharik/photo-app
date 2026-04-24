@@ -47,6 +47,12 @@ export default defineConfig(({ mode }) => {
       hmr: {
         port: 5174,
       },
+      proxy: {
+        '/media': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
+      },
       watch: {
         usePolling: true,
         interval: 1000,

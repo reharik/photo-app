@@ -7,12 +7,14 @@ declare module 'koa' {
   interface DefaultState {
     user?: User;
     isLoggedIn?: boolean;
+    authorizedMediaPath?: string;
   }
 
   interface DefaultContext {
     db: Knex;
     user?: User;
     isLoggedIn: boolean;
+    authorizedMediaPath?: string;
   }
 }
 

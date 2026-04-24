@@ -1,5 +1,5 @@
 import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey } from '@packages/media-core';
+import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packages/media-core';
 
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 import { generateImageDerivatives } from './imageDerivativeGenerator';
@@ -62,10 +62,8 @@ export const buildProcessNextMediaImageJob = ({
       }
 
       const ownerId = mediaItem.ownerId();
-      const originalKey = buildMediaAssetStorageKey(
-        mediaItem.storageKey(),
-        MediaAssetKind.original,
-      );
+      const baseKey = buildMediaItemBaseStorageKey(ownerId, mediaItem.id());
+      const originalKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.original);
       const streamResult = await mediaStorage.getObjectStream(originalKey);
       if (!streamResult) {
         await finishFailed('Original object not found in storage');
@@ -75,11 +73,8 @@ export const buildProcessNextMediaImageJob = ({
       const originalBuffer = await readStreamToBuffer(streamResult.body);
       const derivatives = await generateImageDerivatives(originalBuffer);
 
-      const displayKey = buildMediaAssetStorageKey(mediaItem.storageKey(), MediaAssetKind.display);
-      const thumbnailKey = buildMediaAssetStorageKey(
-        mediaItem.storageKey(),
-        MediaAssetKind.thumbnail,
-      );
+      const displayKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.display);
+      const thumbnailKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail);
 
       const logDerivativeUpload = (storageKey: string, body: Buffer, mimeType: string): void => {
         logger.info('S3 PutObject (derivative)', {

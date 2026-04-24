@@ -2,10 +2,6 @@ type MediaItem implements Node {
   id: ID!
   kind: MediaKind!
   status: MediaItemStatus!
-  """
-  Thumbnail and display object URLs derived from storage keys (no media_asset reads).
-  """
-  derivedUrls: MediaItemDerivedUrls!
   mimeType: String!
   sizeBytes: Int!
   originalFileName: String!
@@ -33,9 +29,4 @@ enum MediaItemStatus {
   FAILED
   DELETE_PENDING
   DELETE_FAILED
-}
-
-type MediaItemDerivedUrls {
-  thumbnail: String!
-  display: String!
 }

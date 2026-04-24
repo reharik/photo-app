@@ -4,7 +4,7 @@ import type { MediaDeletionJobStatus } from './mediaDeletionJobStatus';
 export type MediaDeletionJobRow = {
   id: EntityId;
   mediaItemId: EntityId;
-  /** Base storage prefix (same as `media_item.storage_key`); used to delete objects if the row is already gone. */
+  /** Base prefix for object keys in storage (snapshot when the job was enqueued). */
   storageKey: string;
   status: MediaDeletionJobStatus;
   attemptCount: number;

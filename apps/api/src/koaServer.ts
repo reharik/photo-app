@@ -7,6 +7,7 @@ import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
 export type KoaServer = http.Server;
 
 export const buildKoaServer = ({
+  mediaPublicRouter,
   rootRouter,
   authMiddleware,
   logger,
@@ -45,14 +46,18 @@ export const buildKoaServer = ({
   // 4. Body parsing (must be before request processing)
   app.use(koaBody());
 
-  // 5. Auth middleware (before routes)
+  // 5. Public media fetch route (optional auth + resource authz; no global login requirement)
+  // Fires before auth middleware because this has a custom authz logic
+  app.use(mediaPublicRouter.routes()).use(mediaPublicRouter.allowedMethods());
+
+  // 6. Auth middleware (required for API routes below)
   app.use(authMiddleware);
 
-  // 6. Routes (the actual request handling)
+  // 7. Routes (the actual request handling)
 
   app.use(rootRouter.routes()).use(rootRouter.allowedMethods());
 
-  // 7. GraphQL endpoint
+  // 8. GraphQL endpoint
   app.use(graphQLServer);
 
   // Health check endpoint (no /api prefix, no auth required)

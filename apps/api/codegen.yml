@@ -25,5 +25,4 @@ generates:
         Album: '@packages/media-core#AlbumProjection'
         MediaItem: '@packages/media-core#MediaItemProjection'
         MediaAsset: '@packages/media-core#MediaAssetProjection'
-        MediaItemDerivedUrls: '@packages/media-core#MediaItemDerivedUrlsProjection'
         AlbumItem: '@packages/media-core#AlbumItemProjection'

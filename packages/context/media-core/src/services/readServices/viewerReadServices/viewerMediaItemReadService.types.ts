@@ -22,7 +22,6 @@ export type MediaAssetProjection = {
 export type MediaItemRow = {
   id: EntityId;
   ownerId: EntityId;
-  storageKey: string;
   kind: string;
   status: string;
   mimeType?: string;

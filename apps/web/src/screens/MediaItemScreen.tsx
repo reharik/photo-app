@@ -1,10 +1,12 @@
 import { useQuery } from '@apollo/client/react';
+import { MediaAssetKind } from '@packages/contracts';
 import { useCallback, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import type { MediaItemLocationState } from '../app/mediaItemNavigationState';
 import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
+import { buildMediaItemUrl } from '../lib/urlBuilders/mediaItemUrlBuilder';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
@@ -87,11 +89,12 @@ export const MediaItemScreen = () => {
     if (mediaItem == null) {
       return null;
     }
+    const displayUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.display);
     return (
       <MediaViewer
         kind={mediaItem.kind}
         mimeType={mediaItem.mimeType}
-        displayUrl={mediaItem.displayUrl}
+        displayUrl={displayUrl}
         imageAlt={
           mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display
         }

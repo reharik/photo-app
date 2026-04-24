@@ -188,7 +188,6 @@ describe('buildProcessNextMediaImageJob', () => {
             kind: () => MediaKind.video,
             status: () => MediaItemStatus.processing,
             ownerId: () => ACTOR_ID,
-            storageKey: () => 'media/m/1',
           };
         }),
       });

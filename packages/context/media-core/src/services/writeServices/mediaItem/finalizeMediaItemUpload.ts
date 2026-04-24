@@ -1,5 +1,9 @@
 import { AppErrorCollection, MediaAssetKind, MediaKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, MediaStorage } from '../../../application/media/MediaStorage';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+  MediaStorage,
+} from '../../../application/media/MediaStorage';
 import type { MediaProcessingJobRepository } from '../../../domain/MediaProcessingJob/MediaProcessingJobRepository';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -38,7 +42,7 @@ export const buildFinalizeMediaItemUpload = ({
     }
 
     const originalAssetStorageKey = buildMediaAssetStorageKey(
-      mediaItem.storageKey(),
+      buildMediaItemBaseStorageKey(mediaItem.ownerId(), mediaItem.id()),
       MediaAssetKind.original,
     );
     const objectMetadata = await mediaStorage.getObjectMetadata(originalAssetStorageKey);

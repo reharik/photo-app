@@ -6,6 +6,12 @@ import {
 import { EntityId } from '../../types/types';
 
 export type MediaItemReadRepository = {
+  /** Loads by id only (no ownership filter). Used for authz after access rules are applied. */
+  getByIdForAuthorization: ({
+    mediaItemId,
+  }: {
+    mediaItemId: EntityId;
+  }) => Promise<MediaItemRow | undefined>;
   getForViewer: ({
     mediaItemId,
     viewerId,
@@ -35,7 +41,6 @@ type MediaItemReadRepositoryDeps = { database: Knex };
 const mediaItemRowFields = [
   'media_item.id',
   'media_item.owner_id',
-  'media_item.storage_key',
   'media_item.kind',
   'media_item.status',
   'media_item.mime_type',
@@ -56,6 +61,17 @@ const mediaItemRowFields = [
 export const buildMediaItemReadRepository = ({
   database,
 }: MediaItemReadRepositoryDeps): MediaItemReadRepository => ({
+  getByIdForAuthorization: async ({
+    mediaItemId,
+  }: {
+    mediaItemId: EntityId;
+  }): Promise<MediaItemRow | undefined> => {
+    const row = await database<MediaItemRow>('mediaItem')
+      .where({ id: mediaItemId })
+      .first<MediaItemRow>(...mediaItemRowFields);
+
+    return row;
+  },
   getForViewer: async ({
     mediaItemId,
     viewerId,

@@ -15,6 +15,7 @@ import type {
   DeleteMediaItem,
   DeleteMediaItems,
   FinalizeMediaItemUpload,
+  GrantReadRepository,
   MediaAssetReadRepository,
   MediaItemReadRepository,
   MediaItemRepository,
@@ -53,6 +54,7 @@ export interface IocGeneratedTypes {
   deleteMediaItem: DeleteMediaItem;
   deleteMediaItems: DeleteMediaItems;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
+  grantReadRepository: GrantReadRepository;
   database: Knex;
   knexConfig: KnexConfig;
   logger: Logger;

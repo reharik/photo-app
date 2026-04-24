@@ -5,7 +5,7 @@ import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
 import type { AlbumReadRepository } from '@packages/media-core';
-import { CollectionInfo } from '@packages/media-core';
+import { buildMediaItemBaseStorageKey, CollectionInfo } from '@packages/media-core';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -54,7 +54,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
     await database('mediaItem').insert({
       id: params.id,
       ownerId: viewerId,
-      storageKey: `media/${viewerId}/${params.id}`,
+      storageKey: buildMediaItemBaseStorageKey(viewerId, params.id),
       kind: 'photo',
       mimeType: 'image/jpeg',
       sizeBytes: 1,

@@ -4,7 +4,4 @@ fragment MediaItemSummary on MediaItem {
   title
   originalFileName
   createdAt
-  derivedUrls {
-    thumbnail
-  }
 }

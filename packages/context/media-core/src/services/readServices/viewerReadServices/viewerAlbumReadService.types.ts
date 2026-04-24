@@ -34,7 +34,6 @@ export type AlbumItemProjection = {
 export type NamespacedMediaItemRow = {
   mediaItemId: EntityId;
   mediaItemOwnerId: EntityId;
-  mediaItemStorageKey: string;
   mediaItemKind: string;
   mediaItemStatus: string;
   mediaItemMimeType?: string;

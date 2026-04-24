@@ -1,18 +1,20 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
+import { buildMediaItemUrl } from '../../../../lib/urlBuilders/mediaItemUrlBuilder';
 import { AlbumItemSummaryVM } from '../../../../viewModels/album/AlbumItemSummaryVM';
 
 export const AlbumMediaTile = ({ item }: { item: AlbumItemSummaryVM }) => {
   const mediaItem = item.mediaItem;
+  const url = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
   return (
     <>
       <ThumbLink to={`/media/${mediaItem.id}`}>
-        {mediaItem.thumbnailUrl ? (
-          <ThumbImage src={mediaItem.thumbnailUrl} alt={mediaItem.title.trim()} />
+        {mediaItem.kind === MediaKind.photo ? (
+          <ThumbImage src={url} alt={mediaItem.title.trim()} />
         ) : (
-          <ThumbIcon aria-hidden>{mediaItem.kind === MediaKind.video ? '🎬' : '🖼️'}</ThumbIcon>
+          <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
       <CaptionLink to={`/media/${mediaItem.id}`}>

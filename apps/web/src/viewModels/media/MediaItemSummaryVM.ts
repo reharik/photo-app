@@ -5,5 +5,4 @@ export type MediaItemSummaryVM = {
   title: string;
   createdAt: string;
   kind: MediaKind;
-  thumbnailUrl: string;
 };

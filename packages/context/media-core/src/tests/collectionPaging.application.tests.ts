@@ -96,7 +96,6 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         updatedAt: new Date('2024-01-02'),
         mediaItemId: null,
         mediaItemOwnerId: null,
-        mediaItemStorageKey: null,
         mediaItemKind: null,
         mediaItemStatus: null,
         mediaItemMimeType: null,

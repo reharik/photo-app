@@ -1,5 +1,6 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import styled from 'styled-components';
+import { buildMediaItemUrl } from '../../../../lib/urlBuilders/mediaItemUrlBuilder';
 import { MediaItemSummaryVM } from '../../../../viewModels/media/MediaItemSummaryVM';
 
 const THUMB_SCALE = 0.65;
@@ -11,13 +12,14 @@ export const SingleSelectionTile = ({
   item: MediaItemSummaryVM;
   onSelect: (mediaId: string) => void;
 }) => {
+  const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   return (
     <ThumbFrame onClick={() => onSelect(item.id)}>
-      {item.thumbnailUrl ? (
-        <ThumbImage src={item.thumbnailUrl} alt={item.title.trim()} />
+      {item.kind === MediaKind.photo ? (
+        <ThumbImage src={url} alt={item.title.trim()} />
       ) : (
         <ThumbIcon aria-hidden $scale={THUMB_SCALE}>
-          {item.kind === MediaKind.video ? '🎬' : '🖼️'}
+          {'🎬'}
         </ThumbIcon>
       )}
     </ThumbFrame>
