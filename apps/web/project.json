@@ -9,6 +9,14 @@
         "command": "node -e \"try { require('child_process').execSync('ts-patch install', {stdio: 'ignore'}); } catch(e) {}\""
       }
     },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/src/graphql/generated/types.ts"],
+      "options": {
+        "command": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
+        "cwd": "{projectRoot}"
+      }
+    },
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
@@ -22,7 +30,7 @@
     "build:production": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "contracts:build"],
+      "dependsOn": ["ts-patch:install", "contracts:build", "codegen"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",

@@ -1,4 +1,5 @@
 import { SharePermission } from '@packages/contracts';
+import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import {
   ensureUserExists,
@@ -14,9 +15,11 @@ export const buildGrantMediaItemShare =
   ({
     mediaItemRepository,
     userRepository,
+    database,
   }: {
     mediaItemRepository: MediaItemRepository;
     userRepository: UserRepository;
+    database: Knex;
   }) =>
   async (
     mediaItemId: EntityId,
@@ -57,6 +60,11 @@ export const buildGrantMediaItemShare =
     if (!result.success) {
       return result;
     }
+    await database.transaction(async (trx) => {
+      await mediaItemRepository.save(mediaItem, { trx });
+      await grantRepository.createGrant(grant, { trx });
+      await userInteractionRepository.addUserHandleToUserInteraction(userHandle, { trx });
+    });
     // save mediaItem
     // create grant
     // add userHandle to user_interaction ( which needs to be made )
