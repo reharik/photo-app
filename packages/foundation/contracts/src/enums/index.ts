@@ -9,5 +9,5 @@ export * from './frontendUploadStep';
 export * from './graphqlSmartEnums';
 export * from './notificationKind';
 export * from './resourceType';
-export * from './shareLinkPermission';
+export * from './sharePermission';
 export * from './userRole';

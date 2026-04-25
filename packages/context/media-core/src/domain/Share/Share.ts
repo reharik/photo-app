@@ -1,4 +1,4 @@
-import { SharePermission } from 'packages/foundation/contracts/dist/src/enums/shareLinkPermission';
+import { SharePermission } from '@packages/contracts';
 import { ActorId, EntityId } from '../../types/types';
 import { Entity, EntityAuditRecord } from '../Entity';
 
