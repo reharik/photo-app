@@ -1,7 +1,15 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
 import { ErrorCategory } from './graphqlSmartEnums';
 
-const errorAreaInput = ['album', 'mediaItem', 'membership', 'viewer', 'auth'] as const;
+const errorAreaInput = [
+  'album',
+  'mediaItem',
+  'membership',
+  'viewer',
+  'auth',
+  'share',
+  'user',
+] as const;
 
 export type ErrorArea = Enumeration<typeof ErrorArea>;
 export const ErrorArea = enumeration<typeof errorAreaInput>('ErrorArea', {
@@ -253,6 +261,62 @@ const contractErrorInput = {
     display: 'Invalid media variant',
     category: ErrorCategory.domain,
     area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  CanNotGrantShareToOwner: {
+    code: 'CAN_NOT_GRANT_SHARE_TO_OWNER',
+    display: 'Cannot grant share to owner',
+    category: ErrorCategory.auth,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  ExpireDateCannotBeInPast: {
+    code: 'EXPIRE_DATE_CANNOT_BE_IN_PAST',
+    display: 'Expire date cannot be in past, revoke instead',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  CannotUpdateExpiredDateIfRevoked: {
+    code: 'CANNOT_UPDATE_EXPIRED_DATE_IF_REVOKED',
+    display: 'Cannot update expire date if revoked',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  CannotRevokeShareIfAlreadyExpired: {
+    code: 'CANNOT_REVOKE_SHARE_IF_ALREADY_EXPIRED',
+    display: 'Cannot revoke share if already expired',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  ShareNotFound: {
+    code: 'SHARE_NOT_FOUND',
+    display: 'Share not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  ShareMustHaveEitherGrantedToUserIdOrToken: {
+    code: 'SHARE_MUST_HAVE_EITHER_GRANTED_TO_USER_ID_OR_TOKEN',
+    display: 'Share must have either granted to user id or token',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  ShareMustNotHaveGrantedToUserIdAndToken: {
+    code: 'SHARE_MUST_NOT_HAVE_GRANTED_TO_USER_ID_AND_TOKEN',
+    display: 'Share must not have granted to user id and token',
+    category: ErrorCategory.domain,
+    area: ErrorArea.share,
+    retryable: false,
+  },
+  UserNotFound: {
+    code: 'USER_NOT_FOUND',
+    display: 'User not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.user,
     retryable: false,
   },
 } as const;

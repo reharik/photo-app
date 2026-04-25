@@ -4,6 +4,7 @@ import {
   MediaItemStatus,
   MediaKind,
   ResourceTypeEnum,
+  SharePermission,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
@@ -12,6 +13,7 @@ import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
 import { mediaItemTagLabelKey } from '../../domain/MediaItem/MediaItemTag';
+import { ShareRecord } from '../../domain/Share/Share';
 import {
   type DbExecutor,
   RepoOptions,
@@ -47,6 +49,14 @@ export const buildMediaItemRepository = ({
       return;
     }
 
+    const commentRows = await withEnumRevival(
+      database<CommentRecord>('comment')
+        .where({ resourceType: 'mediaItem', resourceId: id })
+        .orderBy('createdAt', 'asc'),
+      { resourceType: ResourceTypeEnum },
+      { strict: true },
+    );
+
     const assetRows = await withEnumRevival(
       database<MediaAssetRecord>('mediaAsset')
         .where({ mediaItemId: id })
@@ -55,11 +65,9 @@ export const buildMediaItemRepository = ({
       { strict: true },
     );
 
-    const commentRows = await withEnumRevival(
-      database<CommentRecord>('comment')
-        .where({ resourceType: 'mediaItem', resourceId: id })
-        .orderBy('createdAt', 'asc'),
-      { resourceType: ResourceTypeEnum },
+    const shareRows = await withEnumRevival(
+      database<ShareRecord>('access_grant').where({ mediaItemId: id }).orderBy('createdAt', 'asc'),
+      { permission: SharePermission },
       { strict: true },
     );
 
@@ -71,6 +79,7 @@ export const buildMediaItemRepository = ({
 
     mediaItemRow.comments = commentRows;
     mediaItemRow.assets = assetRows;
+    mediaItemRow.shares = shareRows;
     mediaItemRow.tags = tagLabelRows.map((r) => r.label);
     return MediaItem.rehydrate(mediaItemRow);
   };
@@ -110,7 +119,7 @@ export const buildMediaItemRepository = ({
   const save = async (mediaItem: MediaItem, options?: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       const record = mediaItem.toPersistence();
-      const { comments, assets, tags: tagLabels, ...mediaItemRow } = record;
+      const { comments, assets, shares, tags: tagLabels, ...mediaItemRow } = record;
       const rowForDb = {
         ...mediaItemRow,
         storageKey: buildMediaItemBaseStorageKey(record.ownerId, record.id),
@@ -124,14 +133,6 @@ export const buildMediaItemRepository = ({
         await trx('mediaItem').insert(rowForDb);
       }
 
-      if (assets.length > 0) {
-        const assetRows = assets.map((asset) => ({
-          ...asset,
-          mediaItemId: record.id,
-        }));
-        await trx('mediaAsset').insert(assetRows).onConflict(['media_item_id', 'kind']).merge();
-      }
-
       await trx('comment').where({ resourceType: 'mediaItem', resourceId: record.id }).delete();
 
       if (comments.length > 0) {
@@ -142,6 +143,22 @@ export const buildMediaItemRepository = ({
             resourceId: record.id,
           })),
         );
+      }
+
+      if (assets.length > 0) {
+        const assetRows = assets.map((asset) => ({
+          ...asset,
+          mediaItemId: record.id,
+        }));
+        await trx('mediaAsset').insert(assetRows).onConflict(['media_item_id', 'kind']).merge();
+      }
+
+      if (shares.length > 0) {
+        const shareRows = shares.map((share) => ({
+          ...share,
+          mediaItemId: record.id,
+        }));
+        await trx('access_grant').insert(shareRows).onConflict(['media_item_id']).merge();
       }
 
       await trx('mediaItemTag').where({ mediaItemId: record.id }).delete();

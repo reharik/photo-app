@@ -6,6 +6,7 @@ import type { EntityId } from '../../types/types';
 
 export type UserRepository = {
   getById: (id: EntityId) => Promise<User | undefined>;
+  getByHandle: (handle: string) => Promise<User | undefined>;
   save: (user: User, options?: RepoOptions) => Promise<void>;
 };
 
@@ -14,6 +15,17 @@ type UserRepositoryDeps = { database: Knex };
 export const buildUserRepository = ({ database }: UserRepositoryDeps): UserRepository => {
   const getById = async (id: EntityId): Promise<User | undefined> => {
     const userRow = await database<UserRecord>('user').where({ id }).first();
+
+    if (!userRow) {
+      return;
+    }
+
+    return User.rehydrate(userRow);
+  };
+
+  const getByHandle = async (handle: string): Promise<User | undefined> => {
+    // using email for handle for now.
+    const userRow = await database<UserRecord>('user').where({ email_address: handle }).first();
 
     if (!userRow) {
       return;
@@ -38,6 +50,7 @@ export const buildUserRepository = ({ database }: UserRepositoryDeps): UserRepos
 
   return {
     getById,
+    getByHandle,
     save,
   };
 };

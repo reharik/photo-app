@@ -7,6 +7,8 @@ import {
   MediaItemReadRepository,
   MediaItemRepository,
   MediaItemRow,
+  User,
+  UserRepository,
   WriteResult,
 } from '../..';
 import { fail, ok } from '../../domain/utilities/writeResponse';
@@ -44,4 +46,12 @@ export const loadRequiredMediaItem = async (
 ): Promise<WriteResult<MediaItem, ContractError>> => {
   const mediaItem = await mediaItemRepository.getById(mediaItemId);
   return mediaItem ? ok(mediaItem) : fail(AppErrorCollection.mediaItem.MediaItemNotFound);
+};
+
+export const ensureUserExists = async (
+  handle: string,
+  userRepository: UserRepository,
+): Promise<WriteResult<User, ContractError>> => {
+  const user = await userRepository.getByHandle(handle);
+  return user ? ok(user) : fail(AppErrorCollection.user.UserNotFound);
 };

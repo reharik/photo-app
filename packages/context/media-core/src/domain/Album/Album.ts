@@ -1,7 +1,9 @@
-import { AlbumMemberRoleEnum, AppErrorCollection } from '@packages/contracts';
+import { AlbumMemberRoleEnum, AppErrorCollection, SharePermission } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { ChildEntities, EntityAuditRecord } from '../Entity';
+import { grantShareUtility } from '../Share/grantShareUtility';
+import { Share, ShareRecord } from '../Share/Share';
 import { reorderAlbumItems } from '../utilities/reorderAlbumItems';
 import { fail, ok } from '../utilities/writeResponse';
 import type { AlbumItemRecord } from './AlbumItem';
@@ -24,6 +26,7 @@ export type AlbumRecord = {
   coverMediaId?: EntityId | null;
   items: AlbumItemRecord[];
   members: AlbumMemberRecord[];
+  shares: ShareRecord[];
 } & EntityAuditRecord;
 
 export class Album extends AggregateRoot<AlbumRecord> {
@@ -31,6 +34,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
   #items: AlbumItem[] = [];
   #members: AlbumMember[] = [];
+  #shares: Share[] = [];
 
   private constructor(id: EntityId, actorId: ActorId, props: AlbumProps) {
     super(id, actorId);
@@ -59,7 +63,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
     album.#items = record.items.map((r) => AlbumItem.rehydrate(r));
     album.#members = record.members.map((r) => AlbumMember.rehydrate(r));
-
+    album.#shares = record.shares.map((r) => Share.rehydrate(r));
     return album;
   }
 
@@ -173,11 +177,53 @@ export class Album extends AggregateRoot<AlbumRecord> {
   getAlbumItem(albumItemId: EntityId): AlbumItem | undefined {
     return this.#items.find((i) => i.id() === albumItemId) ?? undefined;
   }
-
+  getShares(): Share[] {
+    return this.#shares;
+  }
+  grantShare(
+    permission: SharePermission,
+    actorId: ActorId,
+    grantedToUserId?: EntityId,
+    token?: string,
+    label?: string,
+    expiresAt?: Date,
+  ): WriteResult<{
+    share: Share;
+    status: 'created' | 'updated' | 'noop';
+  }> {
+    const result = grantShareUtility(
+      this,
+      permission,
+      actorId,
+      grantedToUserId,
+      token,
+      label,
+      expiresAt,
+    );
+    if (!result.success) {
+      return result;
+    }
+    this.#shares.push(result.value.share);
+    this.touch(actorId);
+    return ok(result.value);
+  }
+  revokeShare(shareId: EntityId, actorId: ActorId): WriteResult {
+    const share = this.#shares.find((s) => s.id() === shareId);
+    if (!share) {
+      return fail(AppErrorCollection.share.ShareNotFound);
+    }
+    const result = share.revokeShare(actorId);
+    if (!result.success) {
+      return result;
+    }
+    this.touch(actorId);
+    return ok(undefined);
+  }
   protected childEntities(): ChildEntities {
     return {
       items: this.#items,
       members: this.#members,
+      shares: this.#shares,
     };
   }
 }

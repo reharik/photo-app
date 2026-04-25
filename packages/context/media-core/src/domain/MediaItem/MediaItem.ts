@@ -3,7 +3,7 @@
  * Encapsulates metadata; can appear in multiple albums via AlbumItem.
  */
 
-import type { MediaAssetKind, ResourceTypeEnum } from '@packages/contracts';
+import type { MediaAssetKind, ResourceTypeEnum, SharePermission } from '@packages/contracts';
 import {
   AppErrorCollection,
   ContractError,
@@ -15,6 +15,8 @@ import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Comment, CommentRecord } from '../Comment/Comment';
 import type { ChildEntities, EntityAuditRecord } from '../Entity';
+import { grantShareUtility } from '../Share/grantShareUtility';
+import { Share, ShareRecord } from '../Share/Share';
 import { fail, ok } from '../utilities/writeResponse';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 import { normalizeMediaItemTagLabels } from './MediaItemTag';
@@ -60,6 +62,7 @@ export type MediaItemRecord = {
   assets: MediaAssetRecord[];
   /** Normalized display labels (mapped to `user_tag` + `media_item_tag` in persistence). */
   tags: string[];
+  shares: ShareRecord[];
 } & EntityAuditRecord;
 
 export type CreateMediaItemInput = {
@@ -81,6 +84,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   #comments: Comment[] = [];
   #assets: MediaAsset[] = [];
   #tags: string[] = [];
+  #shares: Share[] = [];
 
   private constructor(id: EntityId, actorId: ActorId, props: MediaItemProps) {
     super(id, actorId);
@@ -106,7 +110,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     mediaItem.rehydrateAudit(record);
     mediaItem.#comments = record.comments.map((r) => Comment.rehydrate(r));
     mediaItem.#assets = record.assets.map((r) => MediaAsset.rehydrate(r));
+    mediaItem.#shares = record.shares.map((r) => Share.rehydrate(r));
     mediaItem.#tags = [...(record.tags ?? [])];
+
     return mediaItem;
   }
 
@@ -220,6 +226,48 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return this.props.height;
   }
 
+  getShares(): Share[] {
+    return this.#shares;
+  }
+  grantShare(
+    permission: SharePermission,
+    actorId: ActorId,
+    grantedToUserId?: EntityId,
+    token?: string,
+    label?: string,
+    expiresAt?: Date,
+  ): WriteResult<{
+    share: Share;
+    status: 'created' | 'updated' | 'noop';
+  }> {
+    const result = grantShareUtility(
+      this,
+      permission,
+      actorId,
+      grantedToUserId,
+      token,
+      label,
+      expiresAt,
+    );
+    if (!result.success) {
+      return result;
+    }
+    this.#shares.push(result.value.share);
+    this.touch(actorId);
+    return ok(result.value);
+  }
+  revokeShare(shareId: EntityId, actorId: ActorId): WriteResult {
+    const share = this.#shares.find((s) => s.id() === shareId);
+    if (!share) {
+      return fail(AppErrorCollection.share.ShareNotFound);
+    }
+    const result = share.revokeShare(actorId);
+    if (!result.success) {
+      return result;
+    }
+    this.touch(actorId);
+    return ok(undefined);
+  }
   /**
    * After the original object exists in storage: persist size (and optional mime).
    * - Photo: pending → PROCESSING (awaiting display/thumbnail derivatives in storage).
@@ -280,6 +328,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return {
       comments: this.#comments,
       assets: this.#assets,
+      shares: this.#shares,
     };
   }
 }
