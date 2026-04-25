@@ -105,17 +105,9 @@
     "gen:graphql": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          {
-            "command": "graphql-codegen",
-            "cwd": "{projectRoot}"
-          },
-          {
-            "command": "nx run contracts:gen:graphql:enums",
-            "cwd": "{workspaceRoot}"
-          }
-        ],
-        "parallel": false
+        "commands": ["graphql-codegen", "nx run contracts:gen:graphql:enums"],
+        "parallel": false,
+        "cwd": "{projectRoot}"
       }
     },
     "gen:container": {
@@ -125,19 +117,19 @@
         "command": "tsx src/di/gen-ioc-manifest.ts",
         "cwd": "{projectRoot}"
       }
-    }
-  },
-  "prepare": {
-    "executor": "nx:run-commands",
-    "options": {
-      "commands": [
-        "nx run api:ts-patch:install",
-        "nx run api:clean",
-        "nx run-many -t build -p contracts infrastructure media-core --parallel=3",
-        "nx run api:gen:container"
-      ],
-      "parallel": false,
-      "cwd": "{workspaceRoot}"
+    },
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run api:ts-patch:install",
+          "nx run api:clean",
+          "nx run-many -t build -p contracts infrastructure media-core --parallel=3",
+          "nx run api:gen:container"
+        ],
+        "parallel": false,
+        "cwd": "{workspaceRoot}"
+      }
     }
   },
 

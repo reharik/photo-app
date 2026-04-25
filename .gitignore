@@ -17,6 +17,10 @@ vitest.config.*.timestamp*
 # GraphQL codegen output
 *.generated.*
 
+# Generated artifacts (IoC manifests, GraphQL types, etc.)
+# graphqlSmartEnums.ts lives in packages/.../enums/ and is intentionally tracked.
+**/generated/
+
 # Private keys and certificates
 *.pem
 *.key
