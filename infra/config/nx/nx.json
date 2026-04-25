@@ -28,35 +28,7 @@
       "cache": false,
       "inputs": ["default", "^default"]
     },
-    "serve": { "cache": false },
-    "gen:graphql": {
-      "cache": false,
-      "inputs": ["default", "^default"],
-      "outputs": [
-        "{projectRoot}/src/graphql/generated/schema.graphql",
-        "{projectRoot}/src/graphql/generated/types.generated.ts"
-      ]
-    },
-    "gen:graphql:enums": {
-      "cache": false,
-      "inputs": [
-        "default",
-        "{workspaceRoot}/apps/api/src/graphql/schema/**/*.graphql"
-      ],
-      "outputs": ["{projectRoot}/src/enums/graphqlSmartEnums.ts"]
-    },
-    "gen:container": {
-      "cache": false,
-      "inputs": ["default", "^default"],
-      "outputs": [
-        "{projectRoot}/src/di/generated/ioc-manifest.ts",
-        "{projectRoot}/src/di/generated/ioc-registry.types.ts"
-      ]
-    },
-    "prepare": {
-      "cache": false,
-      "inputs": ["default", "^default"]
-    }
+    "serve": { "cache": false }
   },
   "nxCloudAccessToken": "",
   "tui": { "autoExit": true }

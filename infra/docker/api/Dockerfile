@@ -57,18 +57,7 @@ COPY . .
 ENV NX_DAEMON=false
 RUN npx nx reset || true
 
-# API GraphQL generated files live under src/graphql/generated/ (often gitignored). Run codegen
-# explicitly so Docker builds never bundle without schema/types; Nx prepare also runs this, but
-# this step makes the contract obvious and avoids any task-graph/cache edge cases in CI.
-RUN APP_LEAF="$(basename "${APP_WORKSPACE_PATH}")" && \
-    if [ "${APP_LEAF}" = "api" ]; then \
-      echo "Running api:gen:graphql..." && \
-      npx nx run api:gen:graphql; \
-    else \
-      echo "Skipping api:gen:graphql (workspace ${APP_LEAF})"; \
-    fi
-
-# Codegen (GraphQL, contracts enums, IoC) is driven by the Nx task graph (prepare → gen:container).
+# Codegen (GraphQL, contracts enums, IoC) is driven by the Nx task graph.
 RUN npx nx build "$(basename "${APP_WORKSPACE_PATH}")" --configuration=production
 
 RUN test -f "${APP_WORKSPACE_PATH}/src/di/generated/ioc-manifest.ts" || \

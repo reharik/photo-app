@@ -36,4 +36,6 @@ pgdata/
 caddy_data/
 caddy_config/
 
+# Ignore loose schema.graphql snapshots; allow the committed API schema used for codegen
 schema.graphql
+!apps/api/src/graphql/generated/schema.graphql
