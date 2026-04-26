@@ -11,8 +11,8 @@ import { GrantRepository } from '../../../repositories/domainRepositories/grantR
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
-import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { WriteResult } from '../../../types/types';
+import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantMediaItemShareCommand, GrantShareResult } from './writeMediaItem.types';
 
@@ -100,8 +100,6 @@ export const buildGrantMediaItemShare = ({
           grantedToUser: grantedToUserId,
           tokenHash: token ? hashToken(token) : undefined,
           //TODO should be an enum and probably should not be direct_share
-          source: 'direct_share',
-          sourceId: shareId,
           createdAt: new Date(),
         },
         { trx },

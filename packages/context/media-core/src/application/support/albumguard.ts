@@ -1,17 +1,16 @@
-import { AlbumAction, AppErrorCollection } from '@packages/contracts';
+import { AlbumOperation, AppErrorCollection } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
-import { fail } from '../../domain/utilities/writeResponse';
+import { fail, ok } from '../../domain/utilities/writeResponse';
 import { EntityId } from '../../types/types';
-import { ensureAlbumPermission } from '../authorization/albumAuthorization';
 
 export const ensureMemberCanEditAlbum = (
   album: Album,
-  albumAction: AlbumAction,
+  albumOperation: AlbumOperation,
   viewerId: EntityId,
 ) => {
   const member = album.getAlbumMember(viewerId);
   if (!member) {
     return fail(AppErrorCollection.album.UserIsNotMember);
   }
-  return ensureAlbumPermission(member.role(), albumAction);
+  return member.role().can(albumOperation) ? ok(undefined) : fail(albumOperation.deniedError);
 };

@@ -1,16 +1,16 @@
-import { AlbumMemberRoleEnum } from '@packages/contracts';
+import { AlbumMemberRole } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { Entity, type EntityAuditRecord } from '../Entity';
 
 export type AlbumMemberProps = {
   userId: EntityId;
-  role: AlbumMemberRoleEnum;
+  role: AlbumMemberRole;
 };
 
 export type AlbumMemberRecord = {
   id: EntityId;
   userId: EntityId;
-  role: AlbumMemberRoleEnum;
+  role: AlbumMemberRole;
 } & EntityAuditRecord;
 
 export class AlbumMember extends Entity<AlbumMemberRecord> {
@@ -40,11 +40,11 @@ export class AlbumMember extends Entity<AlbumMemberRecord> {
     return this.props.userId;
   }
 
-  public role(): AlbumMemberRoleEnum {
+  public role(): AlbumMemberRole {
     return this.props.role;
   }
 
-  public changeRole(role: AlbumMemberRoleEnum, actorId: ActorId): void {
+  public changeRole(role: AlbumMemberRole, actorId: ActorId): void {
     this.props.role = role;
     this.touch(actorId);
   }

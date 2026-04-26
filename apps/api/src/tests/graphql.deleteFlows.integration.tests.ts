@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumMemberRoleEnum, AppErrorCollection, MediaItemStatus } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, MediaItemStatus } from '@packages/contracts';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -201,7 +201,7 @@ const insertAlbumMember = async (
   database: Knex,
   albumId: string,
   userId: string,
-  role: (typeof AlbumMemberRoleEnum)[keyof typeof AlbumMemberRoleEnum],
+  role: (typeof AlbumMemberRole)[keyof typeof AlbumMemberRole],
 ): Promise<void> => {
   const now = new Date();
   await database('albumMember').insert({
@@ -402,7 +402,7 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         return;
       }
 
-      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRoleEnum.admin);
+      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.admin);
 
       const mediaItemId = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
@@ -458,7 +458,7 @@ describe('DeleteAlbumItemsFromAlbum', () => {
         return;
       }
 
-      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRoleEnum.viewer);
+      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.viewer);
 
       const mediaItemId = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
@@ -720,7 +720,7 @@ describe('deleteAlbum', () => {
         return;
       }
 
-      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRoleEnum.admin);
+      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.admin);
 
       const del = await executeGraphQL<{
         deleteAlbum: WriteMutationResponse<{ albumId: string }>;
@@ -750,7 +750,7 @@ describe('deleteAlbum', () => {
         return;
       }
 
-      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRoleEnum.viewer);
+      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.viewer);
 
       const del = await executeGraphQL<{
         deleteAlbum: WriteMutationResponse<unknown>;
@@ -804,7 +804,7 @@ describe('deleteAlbum', () => {
       expect(addToAlbum.json.data?.AddMediaItemToAlbum.errors).toEqual([]);
       expect(addToAlbum.json.data?.AddMediaItemToAlbum.data?.albumId).toBe(albumId);
 
-      await insertAlbumMember(database, albumId, TEST_VIEWER_A_ID, AlbumMemberRoleEnum.viewer);
+      await insertAlbumMember(database, albumId, TEST_VIEWER_A_ID, AlbumMemberRole.viewer);
 
       await executeGraphQL<{
         deleteAlbum: WriteMutationResponse<{ albumId: string }>;

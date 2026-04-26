@@ -1,1 +1,0 @@
-{"version":3,"file":"albumMemberRole.js","sourceRoot":"","sources":["albumMemberRole.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAoB,MAAM,qBAAqB,CAAC;AACpE,MAAM,KAAK,GAAG,CAAC,OAAO,EAAE,QAAQ,EAAE,aAAa,EAAE,OAAO,CAAU,CAAC;AAGnE,MAAM,CAAC,MAAM,mBAAmB,GAAG,WAAW,CAAe,iBAAiB,EAAE;IAC9E,KAAK;CACN,CAAC,CAAC"}

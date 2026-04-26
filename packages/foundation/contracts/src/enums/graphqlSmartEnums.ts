@@ -11,6 +11,15 @@ const albumItemSortByInput = {
   createdAt: { column: 'created_at' },
   orderIndex: { column: 'order_index' },
 } as const;
+const albumOperationInput = [
+  'addItems',
+  'deleteAlbum',
+  'download',
+  'editCover',
+  'editDetails',
+  'removeItems',
+  'share',
+] as const;
 const albumSortByInput = {
   createdAt: { column: 'created_at' },
   title: { column: 'title' },
@@ -41,6 +50,7 @@ const shareViewerRelationshipInput = ['anonymous', 'authenticated', 'member', 'o
 const sortDirInput = ['asc', 'desc'] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
+export type AlbumOperation = Enumeration<typeof AlbumOperation>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
 export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export type MediaAssetKind = Enumeration<typeof MediaAssetKind>;
@@ -54,6 +64,9 @@ export type SortDir = Enumeration<typeof SortDir>;
 
 export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumItemSortBy', {
   input: albumItemSortByInput,
+});
+export const AlbumOperation = enumeration<typeof albumOperationInput>('AlbumOperation', {
+  input: albumOperationInput,
 });
 export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
   input: albumSortByInput,

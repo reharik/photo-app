@@ -1,4 +1,4 @@
-import { AlbumMemberRoleEnum, AppErrorCollection, SharePermission } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, SharePermission } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { ChildEntities, EntityAuditRecord } from '../Entity';
@@ -45,10 +45,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     const album = new Album(crypto.randomUUID(), actorId, {
       title: input.title,
     });
-    const member = AlbumMember.create(
-      { userId: actorId, role: AlbumMemberRoleEnum.owner },
-      actorId,
-    );
+    const member = AlbumMember.create({ userId: actorId, role: AlbumMemberRole.owner }, actorId);
     album.#members.push(member);
     return album;
   }
@@ -104,7 +101,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  addMember(userId: EntityId, role: AlbumMemberRoleEnum, actorId: ActorId): WriteResult {
+  addMember(userId: EntityId, role: AlbumMemberRole, actorId: ActorId): WriteResult {
     if (this.#members.some((m) => m.userId() === userId)) {
       return fail(AppErrorCollection.album.UserAlreadyMember);
     }

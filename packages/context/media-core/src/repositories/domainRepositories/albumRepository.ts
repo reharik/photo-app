@@ -1,4 +1,4 @@
-import { AlbumMemberRoleEnum, SharePermission } from '@packages/contracts';
+import { AlbumMemberRole, SharePermission } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
@@ -35,7 +35,7 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
 
     const memberRows = await withEnumRevival(
       db<AlbumMemberRecord>('albumMember').where({ albumId: id }).orderBy('createdAt', 'asc'),
-      { role: AlbumMemberRoleEnum },
+      { role: AlbumMemberRole },
       { strict: true },
     );
 

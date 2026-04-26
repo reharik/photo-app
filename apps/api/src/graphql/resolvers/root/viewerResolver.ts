@@ -28,10 +28,21 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     }),
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput(input.collectionInfo, MediaItemSortBy);
-      return (
+      const mediaItems =
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
-        undefined
-      );
+        undefined;
+      const permissions =
+        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
+          mediaItems.nodes.map((n) => n.id),
+        );
+      return {
+        nodes: mediaItems.nodes.map((n) => ({
+          ...n,
+          permissions:
+            permissions.find((p) => p.mediaItemId === n.id)?.operations.map((o) => o.value) ?? [],
+        })),
+        pageInfo: mediaItems.pageInfo,
+      };
     }),
   },
 };

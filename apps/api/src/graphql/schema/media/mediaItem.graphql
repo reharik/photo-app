@@ -15,6 +15,17 @@ type MediaItem implements Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   shares: [ShareType]
+  permissions: [AlbumOperation]!
+}
+
+enum AlbumOperation {
+  SHARE
+  EDIT_DETAILS
+  ADD_ITEMS
+  REMOVE_ITEMS
+  EDIT_COVER
+  DELETE_ALBUM
+  DOWNLOAD
 }
 
 enum MediaKind {

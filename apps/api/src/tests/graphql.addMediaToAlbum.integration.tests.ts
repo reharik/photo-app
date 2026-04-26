@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumMemberRoleEnum, AppErrorCollection, MediaItemStatus } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, MediaItemStatus } from '@packages/contracts';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -143,7 +143,7 @@ const insertViewerRoleMember = async (
     id: randomUUID(),
     albumId,
     userId,
-    role: AlbumMemberRoleEnum.viewer.value,
+    role: AlbumMemberRole.viewer.value,
     createdAt: now,
     updatedAt: now,
     createdBy: TEST_VIEWER_A_ID,

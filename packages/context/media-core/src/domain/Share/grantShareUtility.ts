@@ -1,4 +1,4 @@
-import { AlbumMemberRoleEnum, AppErrorCollection, SharePermission } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, SharePermission } from '@packages/contracts';
 import { ActorId, EntityId, WriteResult } from '../../types/types';
 import { Album } from '../Album/Album';
 import { MediaItem } from '../MediaItem/MediaItem';
@@ -30,7 +30,7 @@ export const grantShareUtility = <T extends Album | MediaItem>(
   if (item instanceof Album) {
     const owner = item.getAlbumMember(grantedToUserId)!;
 
-    if (owner.role() === AlbumMemberRoleEnum.owner) {
+    if (owner.role() === AlbumMemberRole.owner) {
       return fail(AppErrorCollection.share.CanNotGrantShareToOwner);
     }
   } else if (item instanceof MediaItem && item.ownerId() === grantedToUserId) {

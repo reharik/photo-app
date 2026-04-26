@@ -186,9 +186,9 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
-  MemberNotAllowedToAddItem: {
-    code: 'MEMBER_NOT_ALLOWED_TO_ADD_ITEM',
-    display: 'Member not allowed to add item',
+  MemberNotAllowedToAddItems: {
+    code: 'MEMBER_NOT_ALLOWED_TO_ADD_ITEMS',
+    display: 'Member not allowed to add items',
     category: ErrorCategory.auth,
     area: ErrorArea.album,
     retryable: false,
@@ -200,9 +200,9 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
-  MemberNotAllowedToDeleteItem: {
-    code: 'MEMBER_NOT_ALLOWED_TO_DELETE_ITEM',
-    display: 'Member not allowed to delete item',
+  MemberNotAllowedToRemoveItems: {
+    code: 'MEMBER_NOT_ALLOWED_TO_REMOVE_ITEMS',
+    display: 'Member not allowed to remove items',
     category: ErrorCategory.auth,
     area: ErrorArea.album,
     retryable: false,
@@ -210,6 +210,20 @@ const contractErrorInput = {
   MemberNotAllowedToEditAlbum: {
     code: 'MEMBER_NOT_ALLOWED_TO_EDIT_ALBUM',
     display: 'Member not allowed to edit album',
+    category: ErrorCategory.auth,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  MemberNotAllowedToShareAlbum: {
+    code: 'MEMBER_NOT_ALLOWED_TO_SHARE_ALBUM',
+    display: 'Member not allowed to share album',
+    category: ErrorCategory.auth,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  MemberNotAllowedToDownloadItems: {
+    code: 'MEMBER_NOT_ALLOWED_TO_DOWNLOAD_ITEMS',
+    display: 'Member not allowed to download items',
     category: ErrorCategory.auth,
     area: ErrorArea.album,
     retryable: false,

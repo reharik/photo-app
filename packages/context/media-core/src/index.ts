@@ -50,3 +50,5 @@ export * from './services/writeServices/mediaItem/deleteMediaItem';
 export * from './services/writeServices/mediaItem/deleteMediaItems';
 export * from './services/writeServices/mediaItem/updateMediaItem';
 export * from './services/writeServices/mediaItem/updateMediaItemTags';
+
+export * from './services/readServices/viewerReadServices/viewerMediaItemPermissionService';

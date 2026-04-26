@@ -1,4 +1,4 @@
-import { AlbumMemberRoleEnum, AppErrorCollection } from '@packages/contracts';
+import { AlbumOperation } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { hashToken } from '../../../application/support/tokenHash';
@@ -8,8 +8,8 @@ import { AlbumRepository } from '../../../repositories/domainRepositories/albumR
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
-import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { WriteResult } from '../../../types/types';
+import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { GrantShareResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantAlbumShareCommand } from './writeAlbum.types';
@@ -54,9 +54,9 @@ export const buildGrantAlbumShare = ({
     }
     const album = getResult.value;
 
-    const ownerMember = album.getAlbumMember(viewerId);
-    if (!ownerMember || ownerMember.role() !== AlbumMemberRoleEnum.owner) {
-      return fail(AppErrorCollection.album.UserIsNotMember);
+    const member = album.getAlbumMember(viewerId);
+    if (!member || !member.role().can(AlbumOperation.share)) {
+      return fail(AlbumOperation.share.deniedError);
     }
 
     let grantedToHandleResolved: string | undefined;
@@ -94,9 +94,6 @@ export const buildGrantAlbumShare = ({
             accessGrantId: shareId,
             grantedToUser: grantedToUserId,
             tokenHash,
-            source: 'album_share',
-            sourceId: shareId,
-            sourceAlbumId: albumId,
             createdAt: now,
           },
           { trx },

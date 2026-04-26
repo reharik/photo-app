@@ -1,4 +1,4 @@
-import { AlbumMemberRoleEnum, AppErrorCollection } from '@packages/contracts';
+import { AlbumOperation, AppErrorCollection } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -26,12 +26,8 @@ export const buildDeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): DeleteAl
     if (!member) {
       return fail(AppErrorCollection.album.UserIsNotMember);
     }
-    const membersWhoCanDelete: AlbumMemberRoleEnum[] = [
-      AlbumMemberRoleEnum.owner,
-      AlbumMemberRoleEnum.admin,
-    ];
-    if (!membersWhoCanDelete.includes(member.role())) {
-      return fail(AppErrorCollection.album.MemberNotAllowedToDeleteAlbum);
+    if (!member.role().can(AlbumOperation.deleteAlbum)) {
+      return fail(AlbumOperation.deleteAlbum.deniedError);
     }
 
     await albumRepository.delete(album);

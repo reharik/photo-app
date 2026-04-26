@@ -1,5 +1,5 @@
 import type { ContractError } from '@packages/contracts';
-import { AlbumAction } from '@packages/contracts';
+import { AlbumOperation } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
 import type { MediaItemRow } from '../../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
@@ -20,7 +20,7 @@ export const tryAppendOneMediaToAlbum = (
   if (!r1.success) {
     return r1;
   }
-  const r2 = ensureMemberCanEditAlbum(album, AlbumAction.addItem, viewerId);
+  const r2 = ensureMemberCanEditAlbum(album, AlbumOperation.addItems, viewerId);
   if (!r2.success) {
     return r2;
   }

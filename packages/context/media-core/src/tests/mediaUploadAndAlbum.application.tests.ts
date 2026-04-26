@@ -1,5 +1,5 @@
 import {
-  AlbumMemberRoleEnum,
+  AlbumMemberRole,
   AppErrorCollection,
   MediaAssetKind,
   MediaAssetStatus,
@@ -507,7 +507,7 @@ describe('Album integration (application services)', () => {
       if (!album) {
         return;
       }
-      const memberResult = album.addMember(viewerOnlyId, AlbumMemberRoleEnum.viewer, ownerId);
+      const memberResult = album.addMember(viewerOnlyId, AlbumMemberRole.viewer, ownerId);
       expect(memberResult.success).toBe(true);
       await albumRepository.save(album);
 
