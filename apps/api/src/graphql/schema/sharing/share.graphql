@@ -1,5 +1,5 @@
 extend type Query {
-  shareContacts(userId: String!): [ShareContactType]
+  shareContacts: [ShareContactType!]!
 }
 
 enum SharePermission {
@@ -24,10 +24,15 @@ type ShareContactType {
 }
 
 type GrantShareResult {
-  data: GrantSharePayload
+  success: Boolean!
+  token: String
+  share: ShareType
   errors: [ContractError!]
 }
 
-type GrantSharePayload {
-  shareId: ID!
+type GrantManyMediaItemSharesResult {
+  success: Boolean!
+  token: String
+  shares: [ShareType!]
+  errors: [ContractError!]
 }

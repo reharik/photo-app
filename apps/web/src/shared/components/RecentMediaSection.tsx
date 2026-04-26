@@ -9,6 +9,7 @@ import {
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { GrantMediaItemShareModal } from '../../screens/GrantMediaItemShareModal';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { useAppMutationState } from './dataAccess/useAppMutation';
 import { AddItemsToAlbum } from './gallery/AddItemsToAlbum';
@@ -39,6 +40,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
   } = useMultiSelectIds(orderedMediaIds);
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
+  const [shareMediaOpen, setShareMediaOpen] = useState(false);
   const { isLoading, errors, execute } = useAppMutationState();
   const {
     isLoading: isDeleteLoading,
@@ -111,6 +113,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
         clearSelection={clearSelection}
         SelectionActions={
           <MediaSelectionToolbar
+            onShare={() => setShareMediaOpen(true)}
             onAddToAlbum={() => setAddToAlbumOpen(true)}
             onDeleteFromLibrary={() => setDeleteMediaOpen(true)}
           />
@@ -176,6 +179,15 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
           confirmingLabel="Deleting..."
           isSubmitting={isDeleteLoading}
           mutationErrors={deleteErrors}
+        />
+      )}
+      {shareMediaOpen && (
+        <GrantMediaItemShareModal
+          mediaItemIds={mediaItemIdsForModal}
+          onClose={() => {
+            setShareMediaOpen(false);
+            clearSelection();
+          }}
         />
       )}
     </Container>

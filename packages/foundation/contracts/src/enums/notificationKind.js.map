@@ -1,0 +1,1 @@
+{"version":3,"file":"notificationKind.js","sourceRoot":"","sources":["notificationKind.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAoB,MAAM,qBAAqB,CAAC;AACpE,MAAM,KAAK,GAAG,CAAC,aAAa,EAAE,aAAa,EAAE,YAAY,EAAE,SAAS,EAAE,cAAc,CAAU,CAAC;AAG/F,MAAM,CAAC,MAAM,oBAAoB,GAAG,WAAW,CAAe,kBAAkB,EAAE;IAChF,KAAK;CACN,CAAC,CAAC"}

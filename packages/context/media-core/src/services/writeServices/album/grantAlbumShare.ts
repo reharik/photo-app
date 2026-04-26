@@ -2,15 +2,28 @@ import { AlbumMemberRoleEnum, AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { hashToken } from '../../../application/support/tokenHash';
+import { Share } from '../../../domain/Share/Share';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
+import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { WriteResult } from '../../../types/types';
 import { GrantShareResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantAlbumShareCommand } from './writeAlbum.types';
+
+const toShareProjection = (share: Share): ShareProjection => ({
+  id: share.id(),
+  grantedToUserId: share.grantedToUser(),
+  permission: share.permission().value,
+  label: share.label(),
+  expiresAt: share.expiresAt(),
+  revokedAt: share.revokedAt(),
+  // Share was just created in this transaction; accurate within milliseconds.
+  createdAt: new Date(),
+});
 
 export interface GrantAlbumShare extends WriteServiceBase {
   (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>>;
@@ -64,7 +77,8 @@ export const buildGrantAlbumShare = ({
       return result;
     }
 
-    const shareId = result.value.share.id();
+    const share = result.value.share;
+    const shareId = share.id();
     const tokenHash = token ? hashToken(token) : undefined;
     const mediaItemIds = album.getMediaItemIds();
 
@@ -105,6 +119,6 @@ export const buildGrantAlbumShare = ({
       }
     });
 
-    return ok({ shareId });
+    return ok({ shareId, token, share: toShareProjection(share) });
   };
 };

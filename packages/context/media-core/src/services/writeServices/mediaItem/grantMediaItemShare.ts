@@ -5,14 +5,27 @@ import {
   loadRequiredMediaItem,
 } from '../../../application/support/resourceLoaders';
 import { hashToken } from '../../../application/support/tokenHash';
+import { Share } from '../../../domain/Share/Share';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
+import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantMediaItemShareCommand, GrantShareResult } from './writeMediaItem.types';
+
+const toShareProjection = (share: Share): ShareProjection => ({
+  id: share.id(),
+  grantedToUserId: share.grantedToUser(),
+  permission: share.permission().value,
+  label: share.label(),
+  expiresAt: share.expiresAt(),
+  revokedAt: share.revokedAt(),
+  // Share was just created in this transaction; accurate within milliseconds.
+  createdAt: new Date(),
+});
 
 export interface GrantMediaItemShare extends WriteServiceBase {
   (input: GrantMediaItemShareCommand): Promise<WriteResult<GrantShareResult>>;
@@ -73,7 +86,8 @@ export const buildGrantMediaItemShare = ({
       return result;
     }
 
-    const shareId = result.value.share.id();
+    const share = result.value.share;
+    const shareId = share.id();
 
     await database.transaction(async (trx) => {
       await mediaItemRepository.save(mediaItem, { trx });
@@ -109,6 +123,6 @@ export const buildGrantMediaItemShare = ({
       }
     });
 
-    return ok({ shareId });
+    return ok({ shareId, token, share: toShareProjection(share) });
   };
 };

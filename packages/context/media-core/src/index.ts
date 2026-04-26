@@ -36,6 +36,7 @@ export * from './services/writeServices/album/reorderAlbumItems';
 export * from './services/writeServices/album/writeAlbum.types';
 export * from './services/writeServices/mediaItem/createMediaItemUpload';
 export * from './services/writeServices/mediaItem/finalizeMediaItemUpload';
+export * from './services/writeServices/mediaItem/grantManyMediaItemShares';
 export * from './services/writeServices/mediaItem/grantMediaItemShare';
 export * from './services/writeServices/mediaItem/writeMediaItem.types';
 export * from './services/writeServices/writeServiceBaseType';

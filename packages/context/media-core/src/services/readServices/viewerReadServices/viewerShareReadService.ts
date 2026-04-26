@@ -19,7 +19,7 @@ export type ShareProjection = {
 export interface ViewerShareReadService {
   getMediaItemShares: (args: { mediaItemId: EntityId }) => Promise<ShareProjection[]>;
   getAlbumShares: (args: { albumId: EntityId }) => Promise<ShareProjection[]>;
-  getShareContacts: (args: { userId: EntityId }) => Promise<ShareContactSuggestion[]>;
+  getShareContacts: () => Promise<ShareContactSuggestion[]>;
 }
 
 export interface ViewerShareReadServiceFactory extends ReadServiceFactoryBase {
@@ -70,15 +70,8 @@ export const buildViewerShareReadServiceFactory = ({
         createdAt: row.createdAt,
       }));
     },
-    getShareContacts: async ({
-      userId,
-    }: {
-      userId: EntityId;
-    }): Promise<ShareContactSuggestion[]> => {
-      if (userId !== viewerId) {
-        return [];
-      }
-      return shareContactRepository.getShareSuggestions(userId);
+    getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
+      return shareContactRepository.getShareSuggestions(viewerId);
     },
   });
 };

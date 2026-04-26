@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 
 type MediaSelectionToolbarProps = {
+  /** When set, shows an enabled “Share” control for the current selection. */
+  onShare?: () => void;
   /** When set, shows an enabled “Add to album” control. */
   onAddToAlbum?: () => void;
   /** Album detail only: remove selected album items from the current album (does not delete media). */
@@ -15,6 +17,7 @@ type MediaSelectionToolbarProps = {
  * Actions for media-oriented grids (recent media, album detail). Omits “Add to album” when `onAddToAlbum` is omitted (e.g. album list).
  */
 export const MediaSelectionToolbar = ({
+  onShare,
   onAddToAlbum,
   onRemoveFromAlbum,
   onDeleteFromLibrary,
@@ -22,9 +25,15 @@ export const MediaSelectionToolbar = ({
 }: MediaSelectionToolbarProps) => {
   return (
     <>
-      <ToolbarAction type="button" disabled title="Coming soon">
-        Share
-      </ToolbarAction>
+      {onShare ? (
+        <ToolbarAction type="button" onClick={onShare}>
+          Share
+        </ToolbarAction>
+      ) : (
+        <ToolbarAction type="button" disabled title="Coming soon">
+          Share
+        </ToolbarAction>
+      )}
       {onAddToAlbum && (
         <ToolbarAction type="button" onClick={onAddToAlbum}>
           Add to album

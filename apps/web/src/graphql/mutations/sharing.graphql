@@ -1,0 +1,65 @@
+mutation GrantMediaItemShare($input: GrantMediaItemShareInput!) {
+  grantMediaItemShare(input: $input) {
+    success
+    token
+    share {
+      id
+      grantedToUserId
+      permission
+      label
+      expiresAt
+      createdAt
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}
+
+mutation GrantManyMediaItemShares($input: GrantManyMediaItemSharesInput!) {
+  grantManyMediaItemShares(input: $input) {
+    success
+    token
+    shares {
+      id
+      grantedToUserId
+      permission
+      label
+      expiresAt
+      createdAt
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}
+
+mutation GrantAlbumShare($input: GrantAlbumShareInput!) {
+  grantAlbumShare(input: $input) {
+    success
+    token
+    share {
+      id
+      grantedToUserId
+      permission
+      label
+      expiresAt
+      createdAt
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}

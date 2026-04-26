@@ -25,7 +25,7 @@ export const buildUserRepository = ({ database }: UserRepositoryDeps): UserRepos
 
   const getByHandle = async (handle: string): Promise<User | undefined> => {
     // using email for handle for now.
-    const userRow = await database<UserRecord>('user').where({ email_address: handle }).first();
+    const userRow = await database<UserRecord>('user').where({ email: handle }).first();
 
     if (!userRow) {
       return;

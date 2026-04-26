@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { GrantAlbumShareModal } from '../../screens/GrantAlbumShareModal';
+import { GrantMediaItemShareModal } from '../../screens/GrantMediaItemShareModal';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
@@ -33,6 +35,12 @@ type AlbumSectionProps = {
     submitRemoveFromAlbum: (selectedAlbumItemIds: string[]) => void;
     removeFromAlbumMutation: UseAppMutationStateResult;
   };
+  shareState: {
+    shareAlbumOpen: boolean;
+    setShareAlbumOpen: (open: boolean) => void;
+    shareItemsOpen: boolean;
+    setShareItemsOpen: (open: boolean) => void;
+  };
   retrieveAlbumItems: () => void;
   submitAddAlbumCover: (selectedAlbumItemId: string) => void;
 };
@@ -42,12 +50,18 @@ export const AlbumSection = ({
   albumItems,
   addAlbumItemState,
   removeAlbumItemState,
+  shareState,
   submitAddAlbumCover,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
   const orderedAlbumItemIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
   const albumItemMultiSelectProps = useMultiSelectIds(orderedAlbumItemIds);
+
+  const selectedMediaItemIds = useMemo(() => {
+    const selected = new Set(albumItemMultiSelectProps.selectedIds);
+    return albumItems.filter((item) => selected.has(item.id)).map((item) => item.mediaItem.id);
+  }, [albumItems, albumItemMultiSelectProps.selectedIds]);
 
   const onAlbumScroll = useCallback((): void => {
     const el = albumScrollRef.current;
@@ -63,6 +77,15 @@ export const AlbumSection = ({
         <BackLink to="/albums">← Albums</BackLink>
         <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
+          <SecondaryButton
+            type="button"
+            disabled={!album}
+            onClick={() => {
+              shareState.setShareAlbumOpen(true);
+            }}
+          >
+            Share album
+          </SecondaryButton>
           <PrimaryButton
             type="button"
             disabled={!album}
@@ -83,6 +106,7 @@ export const AlbumSection = ({
         clearSelection={albumItemMultiSelectProps.clearSelection}
         SelectionActions={
           <MediaSelectionToolbar
+            onShare={() => shareState.setShareItemsOpen(true)}
             onRemoveFromAlbum={() => removeAlbumItemState.setRemoveItemOpen(true)}
           />
         }
@@ -137,6 +161,21 @@ export const AlbumSection = ({
           }
           confirmLabel="Remove from album"
           confirmingLabel="Removing..."
+        />
+      )}
+      {shareState.shareAlbumOpen && (
+        <GrantAlbumShareModal
+          albumId={album.id}
+          onClose={() => shareState.setShareAlbumOpen(false)}
+        />
+      )}
+      {shareState.shareItemsOpen && (
+        <GrantMediaItemShareModal
+          mediaItemIds={selectedMediaItemIds}
+          onClose={() => {
+            shareState.setShareItemsOpen(false);
+            albumItemMultiSelectProps.clearSelection();
+          }}
         />
       )}
       {addAlbumItemState.addItemOpen && (
@@ -235,6 +274,28 @@ const PrimaryButton = styled.button`
 
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.accentHover};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const SecondaryButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.text};
   }
 
   &:disabled {

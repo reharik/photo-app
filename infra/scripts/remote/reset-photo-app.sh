@@ -16,6 +16,14 @@
 #   --bucket NAME          S3_BUCKET          (default: photoshare-dev-media-709865789463-use1)
 #   --region NAME          AWS_REGION         (default: us-east-1)
 #   --compose-dir PATH     COMPOSE_DIR        (default: /opt/${APP_NAME}/compose)
+#   --api-host-port PORT   API_HOST_PORT      (default: 3000; use e.g. 3001 if host :3000 is taken)
+#
+# Run with bash (e.g. ./script.sh after chmod +x, or: sudo bash ./reset-photo-app.sh).
+# `sh script.sh` uses dash on Ubuntu/Debian and will fail on pipefail unless re-exec'd.
+
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec /usr/bin/env bash "$0" "$@"
+fi
 
 set -euo pipefail
 
@@ -26,6 +34,7 @@ AWS_REGION="${AWS_REGION:-us-east-1}"
 COMPOSE_DIR="${COMPOSE_DIR:-}"
 RESTART="${RESTART:-true}"
 ASSUME_YES="${ASSUME_YES:-false}"
+API_HOST_PORT="${API_HOST_PORT:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -36,13 +45,15 @@ while [[ $# -gt 0 ]]; do
     --bucket) S3_BUCKET="$2"; shift 2;;
     --region) AWS_REGION="$2"; shift 2;;
     --compose-dir) COMPOSE_DIR="$2"; shift 2;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0;;
+    --api-host-port) API_HOST_PORT="$2"; shift 2;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0;;
     *) echo "Unknown arg: $1" >&2; exit 2;;
   esac
 done
 
 PROJECT_NAME="${PROJECT_NAME:-${APP_NAME}-prod}"
 COMPOSE_DIR="${COMPOSE_DIR:-/opt/${APP_NAME}/compose}"
+API_HOST_PORT="${API_HOST_PORT:-3000}"
 
 log() { printf '[reset-photo-app] %s\n' "$*"; }
 
@@ -51,6 +62,7 @@ log "PROJECT_NAME=${PROJECT_NAME}"
 log "S3_BUCKET=${S3_BUCKET}"
 log "AWS_REGION=${AWS_REGION}"
 log "COMPOSE_DIR=${COMPOSE_DIR}"
+log "API_HOST_PORT=${API_HOST_PORT}"
 log "RESTART=${RESTART}"
 
 if [[ "${ASSUME_YES}" != "true" ]]; then
@@ -119,7 +131,7 @@ if [[ -z "${IMG}" ]]; then
 fi
 log "Bringing stack back up using image ${IMG}"
 
-APP_NAME="${APP_NAME}" API_IMAGE="${IMG}" \
+APP_NAME="${APP_NAME}" API_IMAGE="${IMG}" API_HOST_PORT="${API_HOST_PORT}" \
   docker compose -p "${PROJECT_NAME}" "${COMPOSE_FILES[@]}" up -d
 
 log "Done."

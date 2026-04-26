@@ -10,9 +10,6 @@ export type GrantRecord = {
   accessGrantId?: EntityId;
   grantedToUser?: EntityId;
   tokenHash?: string;
-  source: GrantSource;
-  sourceId: EntityId;
-  sourceAlbumId?: EntityId;
   createdAt: Date;
 };
 

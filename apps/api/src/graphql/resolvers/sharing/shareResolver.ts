@@ -3,10 +3,8 @@ import type { Resolvers } from '../../generated/types.generated';
 
 const shareResolvers: Pick<Resolvers, 'Query'> = {
   Query: {
-    shareContacts: authenticatedResolver(async (_parent, args, ctx) => {
-      return ctx.readServices.viewerShareReadService.getShareContacts({
-        userId: args.userId,
-      });
+    shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
+      return ctx.readServices.viewerShareReadService.getShareContacts();
     }),
   },
 };

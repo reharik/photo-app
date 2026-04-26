@@ -3,13 +3,7 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(
-  description: String
-  display: String
-  props: [EnumMetaPropInput!]
-  shortDisplay: String
-  sortOrder: Int
-) on ENUM_VALUE
+directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
 
 input AddMediaItemToAlbumInput {
   albumId: ID!
@@ -83,13 +77,13 @@ type AlbumItemCollectionPayload {
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  TITLE @enumMeta(props: [{name: "column", value: "title"}])
 }
 
 type ContractError {
@@ -233,6 +227,23 @@ input GrantAlbumShareInput {
   token: String
 }
 
+input GrantManyMediaItemSharesInput {
+  expiresAt: DateTime
+  grantedToHandle: String
+  grantedToUserId: ID
+  label: String
+  mediaItemIds: [ID!]!
+  permission: SharePermission!
+  token: String
+}
+
+type GrantManyMediaItemSharesResult {
+  errors: [ContractError!]
+  shares: [ShareType!]
+  success: Boolean!
+  token: String
+}
+
 input GrantMediaItemShareInput {
   expiresAt: DateTime
   grantedToHandle: String
@@ -243,13 +254,11 @@ input GrantMediaItemShareInput {
   token: String
 }
 
-type GrantSharePayload {
-  shareId: ID!
-}
-
 type GrantShareResult {
-  data: GrantSharePayload
   errors: [ContractError!]
+  share: ShareType
+  success: Boolean!
+  token: String
 }
 
 type MediaAsset implements Node {
@@ -309,7 +318,7 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
 }
 
 enum MediaItemStatus {
@@ -330,9 +339,7 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(
-    input: DeleteAlbumItemsFromAlbumInput!
-  ): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
@@ -343,6 +350,7 @@ type Mutation {
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
   grantAlbumShare(input: GrantAlbumShareInput!): GrantShareResult!
+  grantManyMediaItemShares(input: GrantManyMediaItemSharesInput!): GrantManyMediaItemSharesResult!
   grantMediaItemShare(input: GrantMediaItemShareInput!): GrantShareResult!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
@@ -353,16 +361,12 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""
-Implemented by all entities that have an id.
-"""
+"""Implemented by all entities that have an id."""
 interface Node {
   id: ID!
 }
 
-"""
-Cursor-free paging window (offset-based). Used on output types.
-"""
+"""Cursor-free paging window (offset-based). Used on output types."""
 type PageInfo {
   limit: Int!
   offset: Int!
@@ -377,7 +381,7 @@ input PageInfoInput {
 }
 
 type Query {
-  shareContacts(userId: String!): [ShareContactType]
+  shareContacts: [ShareContactType!]!
   shareLink(token: String!): ShareLinkAccess
   viewer: Viewer
 }
