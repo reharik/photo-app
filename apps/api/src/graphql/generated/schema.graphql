@@ -1,0 +1,557 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+directive @enumMeta(
+  description: String
+  display: String
+  props: [EnumMetaPropInput!]
+  shortDisplay: String
+  sortOrder: Int
+) on ENUM_VALUE
+
+input AddMediaItemToAlbumInput {
+  albumId: ID!
+  mediaItemId: ID!
+}
+
+type AddMediaItemToAlbumPayload {
+  albumId: ID!
+  albumItemId: ID!
+}
+
+type AddMediaItemToAlbumResponse {
+  data: AddMediaItemToAlbumPayload
+  errors: [ContractError!]
+}
+
+input AddMediaItemsToAlbumInput {
+  albumId: ID
+  mediaItemIds: [ID!]!
+  newAlbum: NewAlbumInAddMediaItemsInput
+}
+
+type AddMediaItemsToAlbumPayload {
+  albumId: ID!
+  albumItemIds: [ID!]!
+}
+
+type AddMediaItemsToAlbumResponse {
+  data: AddMediaItemsToAlbumPayload
+  errors: [ContractError!]
+}
+
+type Album implements Node {
+  coverMedia: MediaItem
+  createdAt: DateTime!
+  id: ID!
+  items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
+  shares: [ShareType]
+  title: String!
+  updatedAt: DateTime!
+}
+
+input AlbumCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: AlbumSortBy!
+  sortDir: SortDir!
+}
+
+type AlbumCollectionPayload {
+  nodes: [Album!]!
+  pageInfo: PageInfo!
+}
+
+type AlbumItem implements Node {
+  createdAt: DateTime!
+  id: ID!
+  mediaItem: MediaItem!
+  orderIndex: String!
+  updatedAt: DateTime!
+}
+
+input AlbumItemCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: AlbumItemSortBy!
+  sortDir: SortDir!
+}
+
+type AlbumItemCollectionPayload {
+  nodes: [AlbumItem!]!
+  pageInfo: PageInfo!
+}
+
+enum AlbumItemSortBy {
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
+}
+
+enum AlbumSortBy {
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
+}
+
+type ContractError {
+  category: ErrorCategory!
+  code: String!
+  field: String
+  message: String!
+  retryable: Boolean!
+}
+
+input CreateAlbumInput {
+  description: String
+  title: String!
+}
+
+type CreateAlbumPayload {
+  albumId: ID!
+}
+
+type CreateAlbumResponse {
+  data: CreateAlbumPayload
+  errors: [ContractError!]
+}
+
+input CreateMediaUploadInput {
+  kind: MediaKind!
+  mimeType: String!
+  originalFileName: String
+}
+
+type CreateMediaUploadPayload {
+  mediaItemId: ID!
+  status: MediaItemStatus!
+  uploadInstructions: UploadInstructions!
+}
+
+type CreateMediaUploadResponse {
+  data: CreateMediaUploadPayload
+  errors: [ContractError!]
+}
+
+scalar Date
+
+scalar DateTime
+
+input DeleteAlbumInput {
+  albumId: ID!
+}
+
+input DeleteAlbumItemsFromAlbumInput {
+  albumId: ID!
+  albumItemIds: [ID!]!
+}
+
+type DeleteAlbumItemsFromAlbumPayload {
+  albumId: ID!
+  albumItemIds: [ID!]!
+}
+
+type DeleteAlbumItemsFromAlbumResponse {
+  data: DeleteAlbumItemsFromAlbumPayload
+  errors: [ContractError!]
+}
+
+type DeleteAlbumPayload {
+  albumId: ID!
+}
+
+type DeleteAlbumResponse {
+  data: DeleteAlbumPayload
+  errors: [ContractError!]
+}
+
+input DeleteMediaItemInput {
+  mediaItemId: ID!
+}
+
+type DeleteMediaItemPayload {
+  mediaItemId: ID!
+}
+
+type DeleteMediaItemResponse {
+  data: DeleteMediaItemPayload
+  errors: [ContractError!]
+}
+
+input DeleteMediaItemsInput {
+  mediaItemIds: [ID!]!
+}
+
+type DeleteMediaItemsPayload {
+  deletedMediaItemIds: [ID!]!
+}
+
+type DeleteMediaItemsResponse {
+  data: DeleteMediaItemsPayload
+  errors: [ContractError!]
+}
+
+"""
+Optional metadata on enum values for SmartEnum / codegen (e.g. DB column names).
+"""
+input EnumMetaPropInput {
+  name: String!
+  value: String!
+}
+
+enum ErrorCategory {
+  AUTH
+  CONFLICT
+  DOMAIN
+  NETWORK
+  SYSTEM
+  VALIDATION
+}
+
+input FinalizeMediaUploadInput {
+  mediaItemId: ID!
+}
+
+type FinalizeMediaUploadPayload {
+  kind: MediaKind!
+  mediaItemId: ID!
+  mimeType: String
+  size: Int!
+  status: MediaItemStatus!
+}
+
+type FinalizeMediaUploadResponse {
+  data: FinalizeMediaUploadPayload
+  errors: [ContractError!]
+}
+
+input GrantAlbumShareInput {
+  albumId: ID!
+  expiresAt: DateTime
+  grantedToHandle: String
+  grantedToUserId: ID
+  label: String
+  permission: SharePermission!
+  token: String
+}
+
+input GrantMediaItemShareInput {
+  expiresAt: DateTime
+  grantedToHandle: String
+  grantedToUserId: ID
+  label: String
+  mediaItemId: ID!
+  permission: SharePermission!
+  token: String
+}
+
+type GrantSharePayload {
+  shareId: ID!
+}
+
+type GrantShareResult {
+  data: GrantSharePayload
+  errors: [ContractError!]
+}
+
+type MediaAsset implements Node {
+  createdAt: DateTime!
+  fileSizeBytes: Int
+  height: Int
+  id: ID!
+  kind: MediaAssetKind!
+  mimeType: String!
+  status: MediaAssetStatus!
+  updatedAt: DateTime!
+  url: String!
+  width: Int
+}
+
+enum MediaAssetKind {
+  DISPLAY
+  ORIGINAL
+  THUMBNAIL
+}
+
+enum MediaAssetStatus {
+  FAILED
+  PENDING
+  PROCESSING
+  READY
+}
+
+type MediaItem implements Node {
+  createdAt: DateTime!
+  description: String
+  durationSeconds: Int
+  height: Int
+  id: ID!
+  kind: MediaKind!
+  mimeType: String!
+  originalFileName: String!
+  shares: [ShareType]
+  sizeBytes: Int!
+  status: MediaItemStatus!
+  tags: [String!]!
+  takenAt: DateTime
+  title: String
+  updatedAt: DateTime!
+  width: Int
+}
+
+input MediaItemCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: MediaItemSortBy!
+  sortDir: SortDir!
+}
+
+type MediaItemCollectionPayload {
+  nodes: [MediaItem!]!
+  pageInfo: PageInfo!
+}
+
+enum MediaItemSortBy {
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+}
+
+enum MediaItemStatus {
+  DELETE_FAILED
+  DELETE_PENDING
+  FAILED
+  PENDING
+  PROCESSING
+  READY
+  UPLOADED
+}
+
+enum MediaKind {
+  PHOTO
+  VIDEO
+}
+
+type Mutation {
+  AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
+  AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
+  DeleteAlbumItemsFromAlbum(
+    input: DeleteAlbumItemsFromAlbumInput!
+  ): DeleteAlbumItemsFromAlbumResponse!
+  ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
+  SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
+  UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
+  createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
+  createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
+  deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
+  deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
+  deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
+  finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
+  grantAlbumShare(input: GrantAlbumShareInput!): GrantShareResult!
+  grantMediaItemShare(input: GrantMediaItemShareInput!): GrantShareResult!
+  updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
+  updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
+}
+
+input NewAlbumInAddMediaItemsInput {
+  description: String
+  title: String!
+}
+
+"""
+Implemented by all entities that have an id.
+"""
+interface Node {
+  id: ID!
+}
+
+"""
+Cursor-free paging window (offset-based). Used on output types.
+"""
+type PageInfo {
+  limit: Int!
+  offset: Int!
+}
+
+"""
+Same shape as PageInfo; GraphQL requires a distinct input type for fields on input objects.
+"""
+input PageInfoInput {
+  limit: Int!
+  offset: Int!
+}
+
+type Query {
+  shareContacts(userId: String!): [ShareContactType]
+  shareLink(token: String!): ShareLinkAccess
+  viewer: Viewer
+}
+
+input ReorderAlbumItemsInput {
+  albumId: ID!
+  albumItemIds: [ID!]!
+}
+
+type ReorderAlbumItemsPayload {
+  albumId: ID!
+}
+
+type ReorderAlbumItemsResponse {
+  data: ReorderAlbumItemsPayload
+  errors: [ContractError!]
+}
+
+input SetCoverMediaInput {
+  albumId: ID!
+  albumItemId: ID!
+}
+
+type SetCoverMediaPayload {
+  albumId: ID!
+}
+
+type SetCoverMediaResponse {
+  data: SetCoverMediaPayload
+  errors: [ContractError!]
+}
+
+type ShareContactType {
+  handle: String!
+  userId: ID!
+}
+
+type ShareLinkAccess {
+  target: ShareLinkTarget!
+  token: ID!
+  viewerRelationship: ShareViewerRelationship!
+}
+
+union ShareLinkTarget = SharedAlbum | SharedMediaItem
+
+enum SharePermission {
+  COMMENT
+  DOWNLOAD
+  VIEW
+}
+
+type ShareType {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  grantedToUserId: ID
+  id: ID!
+  label: String
+  permission: SharePermission!
+  revokedAt: DateTime
+}
+
+enum ShareViewerRelationship {
+  ANONYMOUS
+  AUTHENTICATED
+  MEMBER
+  OWNER
+}
+
+type SharedAlbum implements Node {
+  id: ID!
+  items(after: String, first: Int = 50): SharedAlbumItemConnection!
+  title: String!
+}
+
+type SharedAlbumItem implements Node {
+  id: ID!
+  media: SharedMediaItem!
+}
+
+type SharedAlbumItemConnection {
+  nodes: [SharedAlbumItem!]!
+  pageInfo: PageInfo!
+}
+
+type SharedMediaItem implements Node {
+  displayUrl: String!
+  height: Int
+  id: ID!
+  width: Int
+}
+
+enum SortDir {
+  ASC
+  DESC
+}
+
+input UnsetCoverMediaInput {
+  albumId: ID!
+}
+
+type UnsetCoverMediaPayload {
+  albumId: ID!
+}
+
+type UnsetCoverMediaResponse {
+  data: UnsetCoverMediaPayload
+  errors: [ContractError!]
+}
+
+input UpdateMediaItemDetailsInput {
+  description: String
+  mediaItemId: ID!
+  takenAt: DateTime
+  title: String
+}
+
+type UpdateMediaItemDetailsPayload {
+  description: String
+  mediaItemId: ID!
+  takenAt: DateTime
+  title: String
+}
+
+type UpdateMediaItemDetailsResponse {
+  data: UpdateMediaItemDetailsPayload
+  errors: [ContractError!]
+}
+
+input UpdateMediaItemTagsInput {
+  mediaItemId: ID!
+  tags: [String!]!
+}
+
+type UpdateMediaItemTagsPayload {
+  mediaItemId: ID!
+  tags: [String!]!
+}
+
+type UpdateMediaItemTagsResponse {
+  data: UpdateMediaItemTagsPayload
+  errors: [ContractError!]
+}
+
+type UploadHeader {
+  key: String!
+  value: String!
+}
+
+type UploadInstructions {
+  headers: [UploadHeader!]!
+  method: String!
+  url: String!
+}
+
+type Viewer {
+  album(id: ID!): Album
+  albums(input: ViewerAlbumsInput!): AlbumCollectionPayload!
+  deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
+  displayName: String!
+  firstName: String
+  id: ID!
+  lastName: String
+  mediaItem(id: ID!): MediaItem
+  mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
+}
+
+input ViewerAlbumItemsInput {
+  collectionInfo: AlbumItemCollectionInput!
+}
+
+input ViewerAlbumsInput {
+  collectionInfo: AlbumCollectionInput!
+}
+
+input ViewerMediaItemsInput {
+  collectionInfo: MediaItemCollectionInput!
+}

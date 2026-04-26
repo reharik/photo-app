@@ -13,6 +13,11 @@ const albumResolvers: Resolvers = {
         collectionInfo,
       });
     }),
+    shares: authenticatedResolver(async (parent, _args, ctx) => {
+      return ctx.readServices.viewerShareReadService.getAlbumShares({
+        albumId: parent.id,
+      });
+    }),
   },
 };
 

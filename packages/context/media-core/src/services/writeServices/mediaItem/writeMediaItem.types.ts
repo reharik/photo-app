@@ -1,4 +1,4 @@
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaItemStatus, MediaKind, SharePermission } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 
@@ -71,4 +71,19 @@ export type UpdateMediaItemTagsCommand = {
 export type UpdateMediaItemTagsResult = {
   mediaItemId: EntityId;
   tags: string[];
+};
+
+export type GrantMediaItemShareCommand = {
+  viewerId: EntityId;
+  mediaItemId: EntityId;
+  permission: SharePermission;
+  grantedToUserId?: EntityId;
+  grantedToHandle?: string;
+  token?: string;
+  label?: string;
+  expiresAt?: Date;
+};
+
+export type GrantShareResult = {
+  shareId: EntityId;
 };

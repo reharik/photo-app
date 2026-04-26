@@ -14,6 +14,7 @@ type MediaItem implements Node {
   tags: [String!]!
   createdAt: DateTime!
   updatedAt: DateTime!
+  shares: [ShareType]
 }
 
 enum MediaKind {

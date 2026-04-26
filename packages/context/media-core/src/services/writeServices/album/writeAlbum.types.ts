@@ -1,3 +1,4 @@
+import { SharePermission } from '@packages/contracts';
 import { EntityId } from '../../../types/types';
 
 export type CreateAlbumCommand = {
@@ -86,4 +87,15 @@ export type AddMediaItemsToAlbumCommand = {
 export type AddMediaItemsToAlbumResult = {
   albumId: EntityId;
   albumItemIds: EntityId[];
+};
+
+export type GrantAlbumShareCommand = {
+  viewerId: EntityId;
+  albumId: EntityId;
+  permission: SharePermission;
+  grantedToUserId?: EntityId;
+  grantedToHandle?: string;
+  token?: string;
+  label?: string;
+  expiresAt?: Date;
 };

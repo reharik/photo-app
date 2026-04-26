@@ -49,6 +49,15 @@ export default defineIocConfig({
     ViewerAlbumReadServiceFactory: {
       viewerAlbumReadServiceFactory: { lifetime: 'scoped' },
     },
+    ShareReadRepository: {
+      shareReadRepository: { lifetime: 'scoped' },
+    },
+    ShareContactRepository: {
+      shareContactRepository: { lifetime: 'scoped' },
+    },
+    ViewerShareReadServiceFactory: {
+      viewerShareReadServiceFactory: { lifetime: 'scoped' },
+    },
     Knex: {
       $contract: { accessKey: 'database' },
     },

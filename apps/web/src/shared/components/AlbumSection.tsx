@@ -15,7 +15,6 @@ import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelection
 import { MediaSelectorSection } from './MediaSelectorSection';
 import { AppModal } from './ui/AppModal';
 import { ConfirmationModal } from './ui/ConfirmationModal';
-import { UploadMediaButton } from './UploadMediaButton';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
 
@@ -43,7 +42,6 @@ export const AlbumSection = ({
   albumItems,
   addAlbumItemState,
   removeAlbumItemState,
-  retrieveAlbumItems,
   submitAddAlbumCover,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
@@ -78,7 +76,6 @@ export const AlbumSection = ({
       </>
     );
   };
-
   return (
     <Container>
       <SelectableGalleryHeader
@@ -106,9 +103,19 @@ export const AlbumSection = ({
           embedInParentScroll
           emptyState={
             <EmptyState
-              title="No media yet"
-              text="Upload your first media to start building your family gallery"
-              action={<UploadMediaButton onComplete={retrieveAlbumItems} />}
+              title="No album items yet"
+              text="Start choosing media items to include to build your gallery"
+              action={
+                <PrimaryButton
+                  type="button"
+                  disabled={!album}
+                  onClick={() => {
+                    addAlbumItemState.setAddItemOpen(true);
+                  }}
+                >
+                  Add items to Album
+                </PrimaryButton>
+              }
             />
           }
           renderItem={({ item }) => <AlbumMediaTile item={item} />}

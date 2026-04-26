@@ -36,6 +36,7 @@ const mediaItemStatusInput = [
   'uploaded',
 ] as const;
 const mediaKindInput = ['photo', 'video'] as const;
+const sharePermissionInput = ['comment', 'download', 'view'] as const;
 const shareViewerRelationshipInput = ['anonymous', 'authenticated', 'member', 'owner'] as const;
 const sortDirInput = ['asc', 'desc'] as const;
 
@@ -47,6 +48,7 @@ export type MediaAssetStatus = Enumeration<typeof MediaAssetStatus>;
 export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
 export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
 export type MediaKind = Enumeration<typeof MediaKind>;
+export type SharePermission = Enumeration<typeof SharePermission>;
 export type ShareViewerRelationship = Enumeration<typeof ShareViewerRelationship>;
 export type SortDir = Enumeration<typeof SortDir>;
 
@@ -72,6 +74,9 @@ export const MediaItemStatus = enumeration<typeof mediaItemStatusInput>('MediaIt
   input: mediaItemStatusInput,
 });
 export const MediaKind = enumeration<typeof mediaKindInput>('MediaKind', { input: mediaKindInput });
+export const SharePermission = enumeration<typeof sharePermissionInput>('SharePermission', {
+  input: sharePermissionInput,
+});
 export const ShareViewerRelationship = enumeration<typeof shareViewerRelationshipInput>(
   'ShareViewerRelationship',
   { input: shareViewerRelationshipInput },

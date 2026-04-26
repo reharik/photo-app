@@ -1,6 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey, MediaItem } from '@packages/media-core';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+  MediaItem,
+} from '@packages/media-core';
 
 import { buildProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';

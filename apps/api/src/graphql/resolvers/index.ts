@@ -10,9 +10,13 @@ import './standardizeInput.js';
 
 import albumMutationResolvers from './album/albumMutationResolver.js';
 import albumResolvers from './album/albumResolver.js';
-import mediaUploadResolvers from './media/mediaMutationsResolver.js';
+import mediaItemUploadResolvers from './media/mediaItemMutationsResolver.js';
+import mediaItemResolvers from './media/mediaItemResolver.js';
+
 import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
+import shareMutationResolvers from './sharing/shareMutationResolver.js';
+import shareResolvers from './sharing/shareResolver.js';
 
 /**
  * Resolvers must be registered with static imports so the Vite production bundle includes them.
@@ -23,7 +27,10 @@ import viewerResolvers from './root/viewerResolver.js';
 export const resolvers = mergeResolvers([
   albumMutationResolvers,
   albumResolvers,
-  mediaUploadResolvers,
+  mediaItemUploadResolvers,
+  mediaItemResolvers,
+  shareMutationResolvers,
+  shareResolvers,
   viewerMutationResolvers,
   viewerResolvers,
 ]);

@@ -1,0 +1,33 @@
+extend type Query {
+  shareContacts(userId: String!): [ShareContactType]
+}
+
+enum SharePermission {
+  VIEW
+  DOWNLOAD
+  COMMENT
+}
+
+type ShareType {
+  id: ID!
+  grantedToUserId: ID
+  permission: SharePermission!
+  label: String
+  expiresAt: DateTime
+  revokedAt: DateTime
+  createdAt: DateTime!
+}
+
+type ShareContactType {
+  userId: ID!
+  handle: String!
+}
+
+type GrantShareResult {
+  data: GrantSharePayload
+  errors: [ContractError!]
+}
+
+type GrantSharePayload {
+  shareId: ID!
+}

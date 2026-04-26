@@ -28,7 +28,6 @@ export const AlbumListSection = ({
   const closeCreate = () => {
     setCreateModalOpen(false);
   };
-
   return (
     <Container>
       <SelectableGalleryHeader

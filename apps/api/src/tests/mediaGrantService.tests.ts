@@ -2,10 +2,10 @@ import { describe, expect, it } from '@jest/globals';
 import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
 import type {
   GrantReadRepository,
+  MediaAssetProjection,
   MediaAssetReadRepository,
   MediaItemReadRepository,
 } from '@packages/media-core';
-import type { MediaAssetProjection } from '@packages/media-core';
 import { buildMediaGrantService } from '../services/mediaGrantService';
 
 const ownerId = 'owner-1';

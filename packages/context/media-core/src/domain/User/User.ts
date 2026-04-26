@@ -67,6 +67,11 @@ export class User extends AggregateRoot<UserRecord> {
     return user;
   }
 
+  /** The user-facing identifier used when shared with by handle (email, today). */
+  handle(): string {
+    return this.props.email;
+  }
+
   rename(firstName: string, lastName: string, actorId: ActorId): void {
     this.props.firstName = firstName;
     this.props.lastName = lastName;

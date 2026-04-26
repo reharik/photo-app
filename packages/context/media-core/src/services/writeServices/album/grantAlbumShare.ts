@@ -1,51 +1,49 @@
+import { AlbumMemberRoleEnum, AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
-import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
-import {
-  ensureUserExists,
-  loadRequiredMediaItem,
-} from '../../../application/support/resourceLoaders';
+import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { hashToken } from '../../../application/support/tokenHash';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
-import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
 import { WriteResult } from '../../../types/types';
+import { GrantShareResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { GrantMediaItemShareCommand, GrantShareResult } from './writeMediaItem.types';
+import { GrantAlbumShareCommand } from './writeAlbum.types';
 
-export interface GrantMediaItemShare extends WriteServiceBase {
-  (input: GrantMediaItemShareCommand): Promise<WriteResult<GrantShareResult>>;
+export interface GrantAlbumShare extends WriteServiceBase {
+  (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>>;
 }
 
-type GrantMediaItemShareDeps = {
-  mediaItemRepository: MediaItemRepository;
+type GrantAlbumShareDeps = {
+  albumRepository: AlbumRepository;
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
   database: Knex;
 };
 
-export const buildGrantMediaItemShare = ({
-  mediaItemRepository,
+export const buildGrantAlbumShare = ({
+  albumRepository,
   userRepository,
   grantRepository,
   shareContactRepository,
   database,
-}: GrantMediaItemShareDeps): GrantMediaItemShare => {
-  return async (input: GrantMediaItemShareCommand): Promise<WriteResult<GrantShareResult>> => {
-    const { viewerId, mediaItemId, permission, grantedToHandle, token, label, expiresAt } = input;
+}: GrantAlbumShareDeps): GrantAlbumShare => {
+  return async (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>> => {
+    const { viewerId, albumId, permission, grantedToHandle, token, label, expiresAt } = input;
     let { grantedToUserId } = input;
 
-    const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
+    const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
       return getResult;
     }
-    const mediaItem = getResult.value;
+    const album = getResult.value;
 
-    const ensureResult = ensureMediaItemOwnedByViewer(mediaItem.ownerId(), viewerId);
-    if (!ensureResult.success) {
-      return ensureResult;
+    const ownerMember = album.getAlbumMember(viewerId);
+    if (!ownerMember || ownerMember.role() !== AlbumMemberRoleEnum.owner) {
+      return fail(AppErrorCollection.album.UserIsNotMember);
     }
 
     let grantedToHandleResolved: string | undefined;
@@ -61,37 +59,35 @@ export const buildGrantMediaItemShare = ({
       grantedToHandleResolved = found?.handle();
     }
 
-    const result = mediaItem.grantShare(
-      permission,
-      viewerId,
-      grantedToUserId,
-      token,
-      label,
-      expiresAt,
-    );
+    const result = album.grantShare(permission, viewerId, grantedToUserId, token, label, expiresAt);
     if (!result.success) {
       return result;
     }
 
     const shareId = result.value.share.id();
+    const tokenHash = token ? hashToken(token) : undefined;
+    const mediaItemIds = album.getMediaItemIds();
 
     await database.transaction(async (trx) => {
-      await mediaItemRepository.save(mediaItem, { trx });
+      await albumRepository.save(album, { trx });
 
-      await grantRepository.createGrant(
-        {
-          id: crypto.randomUUID(),
-          mediaItemId,
-          accessGrantId: shareId,
-          grantedToUser: grantedToUserId,
-          tokenHash: token ? hashToken(token) : undefined,
-          //TODO should be an enum and probably should not be direct_share
-          source: 'direct_share',
-          sourceId: shareId,
-          createdAt: new Date(),
-        },
-        { trx },
-      );
+      const now = new Date();
+      for (const mediaItemId of mediaItemIds) {
+        await grantRepository.createGrant(
+          {
+            id: crypto.randomUUID(),
+            mediaItemId,
+            accessGrantId: shareId,
+            grantedToUser: grantedToUserId,
+            tokenHash,
+            source: 'album_share',
+            sourceId: shareId,
+            sourceAlbumId: albumId,
+            createdAt: now,
+          },
+          { trx },
+        );
+      }
 
       if (grantedToUserId && grantedToHandleResolved) {
         await shareContactRepository.upsertContact(

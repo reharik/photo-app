@@ -177,6 +177,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
   getAlbumItem(albumItemId: EntityId): AlbumItem | undefined {
     return this.#items.find((i) => i.id() === albumItemId) ?? undefined;
   }
+  getMediaItemIds(): EntityId[] {
+    return this.#items.map((i) => i.mediaItemId());
+  }
   getShares(): Share[] {
     return this.#shares;
   }

@@ -8,7 +8,10 @@ import {
 } from '@packages/contracts';
 import { Readable } from 'node:stream';
 import type { MediaStorage } from '../application/media/MediaStorage';
-import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '../application/media/MediaStorage';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+} from '../application/media/MediaStorage';
 import { Album } from '../domain/Album/Album';
 import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
 import { MediaItem } from '../domain/MediaItem/MediaItem';

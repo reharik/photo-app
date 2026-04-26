@@ -40,6 +40,9 @@ export const cleanMediaStorageRoot = async (mediaStorageRoot: string): Promise<v
 export const resetDb = async (db: Knex): Promise<void> => {
   await db.raw(`
     TRUNCATE TABLE
+      share_contact,
+      "grant",
+      access_grant,
       album_item,
       album_member,
       share_link,
