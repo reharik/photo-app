@@ -35,11 +35,12 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
           mediaItems.nodes.map((n) => n.id),
         );
+      const permissionMap = new Map(permissions.map((p) => [p.mediaItemId, p.operations]));
+
       return {
         nodes: mediaItems.nodes.map((n) => ({
           ...n,
-          permissions:
-            permissions.find((p) => p.mediaItemId === n.id)?.operations.map((o) => o.value) ?? [],
+          viewerOperations: permissionMap.get(n.id)?.map((o) => o.value) ?? [],
         })),
         pageInfo: mediaItems.pageInfo,
       };

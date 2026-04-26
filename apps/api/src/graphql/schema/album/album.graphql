@@ -43,6 +43,7 @@ type AlbumItemCollectionPayload {
 type AlbumItem implements Node {
   id: ID!
   mediaItem: MediaItem!
+  viewerOperations: [AlbumOperation!]!
   orderIndex: String!
   createdAt: DateTime!
   updatedAt: DateTime!
