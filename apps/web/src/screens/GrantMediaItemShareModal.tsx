@@ -7,8 +7,8 @@ import {
 } from '../application/sharing/useGrantShare';
 import {
   type GrantManyMediaItemSharesInput,
-  ShareContactsDocument,
   type SharePermission,
+  ViewerShareContactsDocument,
 } from '../graphql/generated/types';
 import {
   GrantShareForm,
@@ -47,7 +47,7 @@ export const GrantMediaItemShareModal = ({
 }: GrantMediaItemShareModalProps) => {
   const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
 
-  const contactsQuery = useQuery(ShareContactsDocument, {
+  const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
@@ -55,7 +55,7 @@ export const GrantMediaItemShareModal = ({
   const { grantManyMediaItemShares, isLoading, errors } = useGrantShare();
 
   const suggestions: ShareContactSuggestion[] = useMemo(
-    () => contactsQuery.data?.shareContacts ?? [],
+    () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],
   );
 

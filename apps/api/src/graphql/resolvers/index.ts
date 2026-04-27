@@ -16,7 +16,6 @@ import mediaItemResolvers from './media/mediaItemResolver.js';
 import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
 import shareMutationResolvers from './sharing/shareMutationResolver.js';
-import shareResolvers from './sharing/shareResolver.js';
 
 /**
  * Resolvers must be registered with static imports so the Vite production bundle includes them.
@@ -30,7 +29,6 @@ export const resolvers = mergeResolvers([
   mediaItemUploadResolvers,
   mediaItemResolvers,
   shareMutationResolvers,
-  shareResolvers,
   viewerMutationResolvers,
   viewerResolvers,
 ]);

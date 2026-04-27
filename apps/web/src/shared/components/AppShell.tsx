@@ -10,6 +10,7 @@ const MOBILE_SHELL = '(max-width: 768px)';
 const NAV_LINKS = [
   { label: 'Media', to: '/media' },
   { label: 'Albums', to: '/albums' },
+  { label: 'Shared with you', to: '/shared-with-me' },
 ] as const;
 
 type OpenMenu = null | 'nav' | 'profile';

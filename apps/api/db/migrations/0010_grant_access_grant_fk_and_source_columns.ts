@@ -70,12 +70,7 @@ export const down = async (knex: Knex): Promise<void> => {
   await knex.schema.alterTable('grant', (table) => {
     table.text('source').notNullable();
     table.uuid('source_id').notNullable();
-    table
-      .uuid('source_album_id')
-      .nullable()
-      .references('id')
-      .inTable('album')
-      .onDelete('SET NULL');
+    table.uuid('source_album_id').nullable().references('id').inTable('album').onDelete('SET NULL');
   });
   await knex.raw(`
     ALTER TABLE "grant"

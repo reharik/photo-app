@@ -1,0 +1,24 @@
+type SharedWithMeResult {
+  mediaItems: [SharedMediaItemType!]!
+  albums: [SharedAlbumType!]!
+}
+
+type SharedMediaItemType {
+  id: ID!
+  permission: SharePermission!
+  sharedAt: DateTime!
+  sharedBy: ID!
+  mediaItem: MediaItem!
+}
+
+type SharedAlbumType {
+  id: ID!
+  permission: SharePermission!
+  sharedAt: DateTime!
+  sharedBy: ID!
+  album: Album!
+}
+
+extend type Query {
+  sharedWithMe: SharedWithMeResult!
+}

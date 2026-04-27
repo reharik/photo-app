@@ -1,0 +1,9 @@
+query ViewerShareContacts {
+  viewer {
+    id
+    shareContacts {
+      userId
+      handle
+    }
+  }
+}

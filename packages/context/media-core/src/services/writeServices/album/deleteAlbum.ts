@@ -1,4 +1,4 @@
-import { ViewerOperation, AppErrorCollection } from '@packages/contracts';
+import { AppErrorCollection, ViewerOperation } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';

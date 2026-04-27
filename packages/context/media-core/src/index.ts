@@ -17,6 +17,7 @@ export * from './repositories/readRepositories/albumReadRepository';
 export * from './repositories/readRepositories/mediaAssetReadRepository';
 export * from './repositories/readRepositories/mediaItemReadRepository';
 export * from './repositories/readRepositories/shareContactRepository';
+export * from './repositories/readRepositories/sharedWithMeReadRepository';
 export * from './repositories/readRepositories/shareReadRepository';
 
 export * from './services/readServices/readServiceBaseType';

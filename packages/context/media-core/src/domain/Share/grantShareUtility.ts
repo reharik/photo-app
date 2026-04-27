@@ -21,7 +21,10 @@ export const grantShareUtility = <T extends Album | MediaItem>(
     return fail(AppErrorCollection.share.ShareMustNotHaveGrantedToUserIdAndToken);
   }
   if (token) {
-    const share = Share.create({ permission, token, label, expiresAt }, actorId);
+    const share = Share.create(
+      { permission, token, grantedBy: actorId, label, expiresAt },
+      actorId,
+    );
     return ok({ share, status: 'created' });
   }
   if (!grantedToUserId) {
@@ -40,7 +43,7 @@ export const grantShareUtility = <T extends Album | MediaItem>(
   const existingShare = item.getShares().find((s) => s.grantedToUser() === grantedToUserId);
   if (!existingShare) {
     const share = Share.create(
-      { permission, grantedToUser: grantedToUserId, label, expiresAt },
+      { permission, grantedToUser: grantedToUserId, grantedBy: actorId, label, expiresAt },
       actorId,
     );
     return ok({ share, status: 'created' });

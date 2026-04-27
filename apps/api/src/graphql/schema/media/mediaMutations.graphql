@@ -6,9 +6,7 @@ type Mutation {
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
   grantMediaItemShare(input: GrantMediaItemShareInput!): GrantShareResult!
-  grantManyMediaItemShares(
-    input: GrantManyMediaItemSharesInput!
-  ): GrantManyMediaItemSharesResult!
+  grantManyMediaItemShares(input: GrantManyMediaItemSharesInput!): GrantManyMediaItemSharesResult!
 }
 
 input CreateMediaUploadInput {

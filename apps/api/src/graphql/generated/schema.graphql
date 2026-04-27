@@ -3,13 +3,7 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(
-  description: String
-  display: String
-  props: [EnumMetaPropInput!]
-  shortDisplay: String
-  sortOrder: Int
-) on ENUM_VALUE
+directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
 
 input AddMediaItemToAlbumInput {
   albumId: ID!
@@ -84,23 +78,13 @@ type AlbumItemCollectionPayload {
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
-}
-
-enum ViewerOperation {
-  ADD_ITEMS
-  DELETE_ALBUM
-  DOWNLOAD
-  EDIT_COVER
-  EDIT_DETAILS
-  REMOVE_ITEMS
-  SHARE
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  TITLE @enumMeta(props: [{name: "column", value: "title"}])
 }
 
 type ContractError {
@@ -336,7 +320,7 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
 }
 
 enum MediaItemStatus {
@@ -357,9 +341,7 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(
-    input: DeleteAlbumItemsFromAlbumInput!
-  ): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
@@ -381,16 +363,12 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""
-Implemented by all entities that have an id.
-"""
+"""Implemented by all entities that have an id."""
 interface Node {
   id: ID!
 }
 
-"""
-Cursor-free paging window (offset-based). Used on output types.
-"""
+"""Cursor-free paging window (offset-based). Used on output types."""
 type PageInfo {
   limit: Int!
   offset: Int!
@@ -405,8 +383,8 @@ input PageInfoInput {
 }
 
 type Query {
-  shareContacts: [ShareContactType!]!
   shareLink(token: String!): ShareLinkAccess
+  sharedWithMe: SharedWithMeResult!
   viewer: Viewer
 }
 
@@ -490,11 +468,32 @@ type SharedAlbumItemConnection {
   pageInfo: PageInfo!
 }
 
+type SharedAlbumType {
+  album: Album!
+  id: ID!
+  permission: SharePermission!
+  sharedAt: DateTime!
+  sharedBy: ID!
+}
+
 type SharedMediaItem implements Node {
   displayUrl: String!
   height: Int
   id: ID!
   width: Int
+}
+
+type SharedMediaItemType {
+  id: ID!
+  mediaItem: MediaItem!
+  permission: SharePermission!
+  sharedAt: DateTime!
+  sharedBy: ID!
+}
+
+type SharedWithMeResult {
+  albums: [SharedAlbumType!]!
+  mediaItems: [SharedMediaItemType!]!
 }
 
 enum SortDir {
@@ -570,6 +569,8 @@ type Viewer {
   lastName: String
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
+  shareContacts: [ShareContactType!]!
+  sharedWithMe: SharedWithMeResult!
 }
 
 input ViewerAlbumItemsInput {
@@ -582,4 +583,14 @@ input ViewerAlbumsInput {
 
 input ViewerMediaItemsInput {
   collectionInfo: MediaItemCollectionInput!
+}
+
+enum ViewerOperation {
+  ADD_ITEMS
+  DELETE_ALBUM
+  DOWNLOAD
+  EDIT_COVER
+  EDIT_DETAILS
+  REMOVE_ITEMS
+  SHARE
 }

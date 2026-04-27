@@ -1,4 +1,5 @@
 import { AlbumItemSortBy } from '@packages/contracts';
+import { mediaItemPermissionsForViewer } from '../../../infrastructure/permissions/mediaItemPermissionsForViewer';
 import { authenticatedResolver } from '../../context/authenticatedContext';
 import type { Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
@@ -12,17 +13,15 @@ const albumResolvers: Resolvers = {
         albumId: album.id,
         collectionInfo,
       });
-      const permissions =
-        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
-          albumItems.nodes.map((n) => n.mediaItem.id),
-        );
-
-      const permissionMap = new Map(permissions.map((p) => [p.mediaItemId, p.operations]));
+      const permissionMap = await mediaItemPermissionsForViewer(
+        ctx.readServices.viewerMediaItemPermissionService,
+        () => albumItems.nodes.map((n) => n.mediaItem.id),
+      );
 
       return {
         nodes: albumItems.nodes.map((n) => ({
           ...n,
-          viewerOperations: permissionMap.get(n.mediaItem.id)?.map((o) => o.value) ?? [],
+          viewerOperations: permissionMap.get(n.mediaItem.id) ?? [],
         })),
         pageInfo: albumItems.pageInfo,
       };

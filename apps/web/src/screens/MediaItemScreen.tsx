@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client/react';
+
 import { MediaAssetKind } from '@packages/contracts';
 import { useCallback, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';

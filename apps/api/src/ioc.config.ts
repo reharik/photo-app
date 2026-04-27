@@ -52,6 +52,9 @@ export default defineIocConfig({
     ShareReadRepository: {
       shareReadRepository: { lifetime: 'scoped' },
     },
+    SharedWithMeReadRepository: {
+      sharedWithMeReadRepository: { lifetime: 'scoped' },
+    },
     ShareContactRepository: {
       shareContactRepository: { lifetime: 'scoped' },
     },

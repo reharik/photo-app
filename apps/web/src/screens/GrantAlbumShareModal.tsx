@@ -7,8 +7,8 @@ import {
 } from '../application/sharing/useGrantShare';
 import {
   type GrantAlbumShareInput,
-  ShareContactsDocument,
   type SharePermission,
+  ViewerShareContactsDocument,
 } from '../graphql/generated/types';
 import {
   GrantShareForm,
@@ -41,7 +41,7 @@ const toIsoExpiry = (value: string | undefined): string | undefined => {
 export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalProps) => {
   const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
 
-  const contactsQuery = useQuery(ShareContactsDocument, {
+  const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
@@ -49,7 +49,7 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
   const { grantAlbumShare, isLoading, errors } = useGrantShare();
 
   const suggestions: ShareContactSuggestion[] = useMemo(
-    () => contactsQuery.data?.shareContacts ?? [],
+    () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],
   );
 

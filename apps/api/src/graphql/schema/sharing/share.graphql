@@ -1,7 +1,3 @@
-extend type Query {
-  shareContacts: [ShareContactType!]!
-}
-
 enum SharePermission {
   VIEW
   DOWNLOAD

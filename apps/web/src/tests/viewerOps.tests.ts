@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
-import { canEveryItemDo } from '../lib/viewerOps';
 import { ViewerOperation } from '@packages/contracts';
+import { canEveryItemDo } from '../lib/viewerOps';
 
 describe('canEveryItemDo', () => {
   describe('When the selection is empty', () => {

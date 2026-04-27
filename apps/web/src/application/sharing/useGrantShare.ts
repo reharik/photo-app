@@ -8,12 +8,14 @@ import {
   GrantMediaItemShareDocument,
   type GrantMediaItemShareInput,
   type GrantMediaItemShareMutation,
-  type ShareContactsQuery,
+  type ViewerShareContactsQuery,
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../shared/components/dataAccess/useAppMutation';
 import { type AppError, type AppResult, type MutationPayload } from '../errors/types';
 
-export type ShareContactSuggestion = ShareContactsQuery['shareContacts'][number];
+export type ShareContactSuggestion = NonNullable<
+  ViewerShareContactsQuery['viewer']
+>['shareContacts'][number];
 
 export type SharePermissionValue = 'view' | 'comment' | 'download';
 
