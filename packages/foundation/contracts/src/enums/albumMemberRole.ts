@@ -1,40 +1,40 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-import { AlbumOperation } from './albumOperations';
+import { ViewerOperation } from './viewerOperations';
 
-const ownerOperations: AlbumOperation[] = [
-  AlbumOperation.addItems,
-  AlbumOperation.removeItems,
-  AlbumOperation.deleteAlbum,
-  AlbumOperation.share,
-  AlbumOperation.download,
+const ownerOperations: ViewerOperation[] = [
+  ViewerOperation.addItems,
+  ViewerOperation.removeItems,
+  ViewerOperation.deleteAlbum,
+  ViewerOperation.share,
+  ViewerOperation.download,
 ] as const;
-const adminOperations: AlbumOperation[] = [
-  AlbumOperation.addItems,
-  AlbumOperation.removeItems,
-  AlbumOperation.share,
-  AlbumOperation.download,
+const adminOperations: ViewerOperation[] = [
+  ViewerOperation.addItems,
+  ViewerOperation.removeItems,
+  ViewerOperation.share,
+  ViewerOperation.download,
 ] as const;
-const contributorOperations: AlbumOperation[] = [
-  AlbumOperation.addItems,
-  AlbumOperation.download,
+const contributorOperations: ViewerOperation[] = [
+  ViewerOperation.addItems,
+  ViewerOperation.download,
 ] as const;
 
 const input = {
   owner: {
     operations: ownerOperations,
-    can: (operation: AlbumOperation) => {
+    can: (operation: ViewerOperation) => {
       return ownerOperations.includes(operation);
     },
   },
   admin: {
     operations: adminOperations,
-    can: (operation: AlbumOperation) => {
+    can: (operation: ViewerOperation) => {
       return adminOperations.includes(operation);
     },
   },
   contributor: {
     operations: contributorOperations,
-    can: (operation: AlbumOperation) => {
+    can: (operation: ViewerOperation) => {
       return contributorOperations.includes(operation);
     },
   },

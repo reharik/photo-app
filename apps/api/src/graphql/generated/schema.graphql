@@ -69,6 +69,7 @@ type AlbumItem implements Node {
   mediaItem: MediaItem!
   orderIndex: String!
   updatedAt: DateTime!
+  viewerOperations: [ViewerOperation!]!
 }
 
 input AlbumItemCollectionInput {
@@ -87,7 +88,7 @@ enum AlbumItemSortBy {
   ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
 }
 
-enum AlbumOperation {
+enum ViewerOperation {
   ADD_ITEMS
   DELETE_ALBUM
   DOWNLOAD
@@ -312,7 +313,6 @@ type MediaItem implements Node {
   kind: MediaKind!
   mimeType: String!
   originalFileName: String!
-  permissions: [AlbumOperation]!
   shares: [ShareType]
   sizeBytes: Int!
   status: MediaItemStatus!
@@ -320,6 +320,7 @@ type MediaItem implements Node {
   takenAt: DateTime
   title: String
   updatedAt: DateTime!
+  viewerOperations: [ViewerOperation!]!
   width: Int
 }
 

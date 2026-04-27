@@ -1,6 +1,8 @@
+import { ViewerOperation } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { canEveryItemDo } from '../../lib/viewerOps';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { SelectionTile } from './gallery/mediaTiles/SelectionTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
@@ -29,6 +31,13 @@ export const MediaSelectorSection = ({
     toggleSelectAt,
     clearSelection,
   } = useMultiSelectIds(orderedMediaIds);
+  const selectedNodes = useMemo(() => {
+    const idSet = new Set(selectedIds);
+    return nodes.filter((n) => idSet.has(n.id));
+  }, [nodes, selectedIds]);
+
+  const canAddSelectionToAlbum = canEveryItemDo(selectedNodes, ViewerOperation.addItems);
+
   const handleAddToAlbum = useMemo(() => {
     return () => {
       onAddToAlbum(Array.from(selectedIds));
@@ -48,7 +57,10 @@ export const MediaSelectorSection = ({
         vPaddingUnits={2}
         hPaddingUnits={3}
         SelectionActions={
-          <MediaSelectionToolbar onCancel={handleClose} onAddToAlbum={handleAddToAlbum} />
+          <MediaSelectionToolbar
+            onCancel={handleClose}
+            onAddToAlbum={canAddSelectionToAlbum ? handleAddToAlbum : undefined}
+          />
         }
         Header={() => <>{header}</>}
       />

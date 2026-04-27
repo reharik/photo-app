@@ -1,4 +1,4 @@
-import { AlbumOperation } from '@packages/contracts';
+import { ViewerOperation } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -27,7 +27,7 @@ export const buildReorderAlbumItems = ({
     }
     const album = r1.value;
 
-    const r2 = ensureMemberCanEditAlbum(album, AlbumOperation.addItems, viewerId);
+    const r2 = ensureMemberCanEditAlbum(album, ViewerOperation.addItems, viewerId);
     if (!r2.success) {
       return r2;
     }

@@ -1,11 +1,11 @@
-import { AlbumMemberRole, AlbumOperation } from '@packages/contracts';
+import { AlbumMemberRole, ViewerOperation } from '@packages/contracts';
 import type { Knex } from 'knex';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;
-  operations: AlbumOperation[];
+  operations: ViewerOperation[];
 };
 
 export type ViewerMediaItemPermissionService = {
@@ -52,11 +52,11 @@ export const buildViewerMediaItemPermissionServiceFactory = ({
           // future: 'ai.allow_reshare as albumItemAllowReshare',
         );
 
-      const permissionMap = rows.reduce<Map<string, Set<AlbumOperation>>>((acc, row) => {
-        const existing = acc.get(row.mediaItemId) ?? new Set<AlbumOperation>();
+      const permissionMap = rows.reduce<Map<string, Set<ViewerOperation>>>((acc, row) => {
+        const existing = acc.get(row.mediaItemId) ?? new Set<ViewerOperation>();
 
         if (row.ownerId === viewerId) {
-          AlbumOperation.items().forEach((op) => existing.add(op));
+          ViewerOperation.items().forEach((op) => existing.add(op));
         } else if (row.albumRole) {
           const role = AlbumMemberRole.fromValue(row.albumRole);
           role.operations.forEach((op) => existing.add(op));
@@ -64,7 +64,7 @@ export const buildViewerMediaItemPermissionServiceFactory = ({
 
         acc.set(row.mediaItemId, existing);
         return acc;
-      }, new Map<string, Set<AlbumOperation>>());
+      }, new Map<string, Set<ViewerOperation>>());
 
       return mediaItemIds.map((id) => ({
         mediaItemId: id,
@@ -74,7 +74,7 @@ export const buildViewerMediaItemPermissionServiceFactory = ({
 
     const canDownload = async (mediaItemId: string): Promise<boolean> => {
       const [result] = await getPermissionsForViewer([mediaItemId]);
-      return result?.operations.includes(AlbumOperation.download) ?? false;
+      return result?.operations.includes(ViewerOperation.download) ?? false;
     };
 
     return {

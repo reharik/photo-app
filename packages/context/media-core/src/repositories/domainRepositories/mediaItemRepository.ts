@@ -158,7 +158,13 @@ export const buildMediaItemRepository = ({
           ...share,
           mediaItemId: record.id,
         }));
-        await trx('access_grant').insert(shareRows).onConflict(['media_item_id']).merge();
+        console.log(`************shareRows************`);
+        console.log(shareRows);
+        console.log(`********END shareRows************`);
+        await trx('access_grant')
+          .insert(shareRows)
+          .onConflict(['media_item_id', 'granted_to_user'])
+          .merge();
       }
 
       await trx('mediaItemTag').where({ mediaItemId: record.id }).delete();

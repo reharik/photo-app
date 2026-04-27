@@ -1,7 +1,9 @@
+import { ViewerOperation } from '@packages/contracts';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { canEveryItemDo } from '../../lib/viewerOps';
 import { GrantAlbumShareModal } from '../../screens/GrantAlbumShareModal';
 import { GrantMediaItemShareModal } from '../../screens/GrantMediaItemShareModal';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
@@ -58,10 +60,21 @@ export const AlbumSection = ({
   const orderedAlbumItemIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
   const albumItemMultiSelectProps = useMultiSelectIds(orderedAlbumItemIds);
 
-  const selectedMediaItemIds = useMemo(() => {
+  const selectedAlbumItems = useMemo(() => {
     const selected = new Set(albumItemMultiSelectProps.selectedIds);
-    return albumItems.filter((item) => selected.has(item.id)).map((item) => item.mediaItem.id);
+    return albumItems.filter((item) => selected.has(item.id));
   }, [albumItems, albumItemMultiSelectProps.selectedIds]);
+
+  const selectedMediaItemIds = useMemo(
+    () => selectedAlbumItems.map((item) => item.mediaItem.id),
+    [selectedAlbumItems],
+  );
+
+  const canShareSelectedItems = canEveryItemDo(selectedAlbumItems, ViewerOperation.share);
+  const canRemoveSelectedFromAlbum = canEveryItemDo(
+    selectedAlbumItems,
+    ViewerOperation.removeItems,
+  );
 
   const onAlbumScroll = useCallback((): void => {
     const el = albumScrollRef.current;
@@ -106,8 +119,12 @@ export const AlbumSection = ({
         clearSelection={albumItemMultiSelectProps.clearSelection}
         SelectionActions={
           <MediaSelectionToolbar
-            onShare={() => shareState.setShareItemsOpen(true)}
-            onRemoveFromAlbum={() => removeAlbumItemState.setRemoveItemOpen(true)}
+            onShare={canShareSelectedItems ? () => shareState.setShareItemsOpen(true) : undefined}
+            onRemoveFromAlbum={
+              canRemoveSelectedFromAlbum
+                ? () => removeAlbumItemState.setRemoveItemOpen(true)
+                : undefined
+            }
           />
         }
         Header={renderHeader}

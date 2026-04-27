@@ -1,4 +1,4 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaKind, ViewerOperation } from '@packages/contracts';
 
 export type MediaItemDetailVM = {
   id: string;
@@ -9,4 +9,5 @@ export type MediaItemDetailVM = {
   originalFileName: string;
   createdAt: string;
   takenAt: string;
+  viewerOperations: ViewerOperation[];
 };

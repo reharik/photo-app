@@ -28,11 +28,10 @@ describe('MediaSelectionToolbar', () => {
   });
 
   describe('When onDeleteFromLibrary is not passed', () => {
-    it('should render a disabled Delete control', () => {
+    it('should not render a Delete control', () => {
       renderWithTheme(<MediaSelectionToolbar onAddToAlbum={() => {}} />);
 
-      const deleteBtn = screen.getByRole('button', { name: 'Delete' });
-      expect((deleteBtn as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
     });
   });
 });

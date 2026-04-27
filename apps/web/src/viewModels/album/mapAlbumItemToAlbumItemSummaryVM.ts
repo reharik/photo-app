@@ -1,3 +1,4 @@
+import { ViewerOperation } from '@packages/contracts';
 import { AlbumItemSummaryFragment } from '../../graphql/generated/types';
 import { mapMediaItemToMediaItemSummaryVM } from '../media/mapMediaItemToMediaItemSummaryVM';
 import { AlbumItemSummaryVM } from './AlbumItemSummaryVM';
@@ -11,6 +12,7 @@ export function mapAlbumItemToAlbumItemSummaryVM(
     mediaItem: mapMediaItemToMediaItemSummaryVM(albumItem.mediaItem),
     orderIndex: albumItem.orderIndex,
     updatedAt: albumItem.updatedAt,
+    viewerOperations: albumItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
   };
 }
 

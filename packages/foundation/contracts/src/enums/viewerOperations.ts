@@ -25,7 +25,7 @@ const input = {
   },
 } as const;
 
-export type AlbumOperation = Enumeration<typeof AlbumOperation>;
-export const AlbumOperation = enumeration<typeof input>('AlbumOperation', {
+export type ViewerOperation = Enumeration<typeof ViewerOperation>;
+export const ViewerOperation = enumeration<typeof input>('ViewerOperation', {
   input,
 });

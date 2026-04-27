@@ -1,4 +1,4 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaKind, ViewerOperation } from '@packages/contracts';
 import { MediaItemDetailFragment } from '../../graphql/generated/types';
 import { MediaItemDetailVM } from './MediaItemDetailVM';
 
@@ -14,6 +14,7 @@ export function mapMediaItemToMediaItemDetailVM(
     description: mediaItem.description,
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
+    viewerOperations: mediaItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
   };
 }
 

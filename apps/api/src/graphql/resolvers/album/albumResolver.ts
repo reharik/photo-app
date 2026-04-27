@@ -16,6 +16,7 @@ const albumResolvers: Resolvers = {
         await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
           albumItems.nodes.map((n) => n.mediaItem.id),
         );
+
       const permissionMap = new Map(permissions.map((p) => [p.mediaItemId, p.operations]));
 
       return {

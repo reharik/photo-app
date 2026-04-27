@@ -7,10 +7,7 @@ query ViewerMediaPicker {
       }
     ) {
       nodes {
-        id
-        kind
-        status
-        title
+        ...MediaItemSummary
       }
     }
   }

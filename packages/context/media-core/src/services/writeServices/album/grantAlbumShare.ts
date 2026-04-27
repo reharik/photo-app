@@ -1,4 +1,4 @@
-import { AlbumOperation } from '@packages/contracts';
+import { ViewerOperation } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { hashToken } from '../../../application/support/tokenHash';
@@ -55,8 +55,8 @@ export const buildGrantAlbumShare = ({
     const album = getResult.value;
 
     const member = album.getAlbumMember(viewerId);
-    if (!member || !member.role().can(AlbumOperation.share)) {
-      return fail(AlbumOperation.share.deniedError);
+    if (!member || !member.role().can(ViewerOperation.share)) {
+      return fail(ViewerOperation.share.deniedError);
     }
 
     let grantedToHandleResolved: string | undefined;

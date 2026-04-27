@@ -14,7 +14,9 @@ type MediaSelectionToolbarProps = {
 };
 
 /**
- * Actions for media-oriented grids (recent media, album detail). Omits “Add to album” when `onAddToAlbum` is omitted (e.g. album list).
+ * Actions for media-oriented grids (recent media, album detail, picker).
+ * Each action is shown only when the corresponding callback is provided (callers gate with
+ * `canEveryItemDo` and `viewerOperations` from the API).
  */
 export const MediaSelectionToolbar = ({
   onShare,
@@ -29,31 +31,27 @@ export const MediaSelectionToolbar = ({
         <ToolbarAction type="button" onClick={onShare}>
           Share
         </ToolbarAction>
-      ) : (
-        <ToolbarAction type="button" disabled title="Coming soon">
-          Share
-        </ToolbarAction>
-      )}
-      {onAddToAlbum && (
+      ) : null}
+      {onAddToAlbum ? (
         <ToolbarAction type="button" onClick={onAddToAlbum}>
           Add to album
         </ToolbarAction>
-      )}
-      {onRemoveFromAlbum && (
+      ) : null}
+      {onRemoveFromAlbum ? (
         <ToolbarAction type="button" onClick={onRemoveFromAlbum}>
           Remove from album
         </ToolbarAction>
-      )}
-      {onDeleteFromLibrary && (
+      ) : null}
+      {onDeleteFromLibrary ? (
         <ToolbarAction type="button" onClick={onDeleteFromLibrary}>
           Delete
         </ToolbarAction>
-      )}
-      {onCancel && (
+      ) : null}
+      {onCancel ? (
         <ToolbarAction type="button" onClick={onCancel}>
           Cancel
         </ToolbarAction>
-      )}
+      ) : null}
     </>
   );
 };

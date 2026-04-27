@@ -15,10 +15,10 @@ type MediaItem implements Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   shares: [ShareType]
-  viewerOperations: [AlbumOperation!]!
+  viewerOperations: [ViewerOperation!]!
 }
 
-enum AlbumOperation {
+enum ViewerOperation {
   SHARE
   EDIT_DETAILS
   ADD_ITEMS

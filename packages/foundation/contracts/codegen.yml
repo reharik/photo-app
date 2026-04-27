@@ -5,6 +5,6 @@ generates:
       - '@reharik/graphql-codegen-smart-enum'
     config:
       emitDescriptionsAsDisplay: true
-      # Hand-authored in src/enums/albumOperations.ts (deniedError, etc.)
+      # Hand-authored in src/enums/viewerOperations.ts (deniedError, etc.)
       skipEnums:
-        - AlbumOperation
+        - ViewerOperation

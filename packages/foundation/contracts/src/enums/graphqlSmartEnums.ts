@@ -7,8 +7,14 @@
 
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
 
-const albumItemSortByInput = ['createdAt', 'orderIndex'] as const;
-const albumSortByInput = ['createdAt', 'title'] as const;
+const albumItemSortByInput = {
+  createdAt: { display: 'Created At', column: 'created_at' },
+  orderIndex: { display: 'Order Index', column: 'order_index' },
+} as const;
+const albumSortByInput = {
+  createdAt: { display: 'Created At', column: 'created_at' },
+  title: { display: 'Title', column: 'title' },
+} as const;
 const errorCategoryInput = [
   'auth',
   'conflict',
@@ -19,7 +25,9 @@ const errorCategoryInput = [
 ] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
-const mediaItemSortByInput = ['createdAt'] as const;
+const mediaItemSortByInput = {
+  createdAt: { display: 'Created At', column: 'created_at' },
+} as const;
 const mediaItemStatusInput = [
   'deleteFailed',
   'deletePending',

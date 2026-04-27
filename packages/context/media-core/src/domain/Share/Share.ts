@@ -7,6 +7,7 @@ export type ShareProps = {
   grantedToUser?: EntityId;
   token?: string;
   permission: SharePermission;
+  grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
@@ -15,6 +16,7 @@ export type ShareProps = {
 export type ShareRecord = {
   id: string;
   grantedToUser?: string;
+  grantedBy: EntityId;
   token?: string;
   permission: SharePermission;
   label?: string;
@@ -25,6 +27,7 @@ export type ShareRecord = {
 export type CreateShareInput = {
   permission: SharePermission;
   grantedToUser?: EntityId;
+  grantedBy: EntityId;
   token?: string;
   label?: string;
   expiresAt?: Date;
@@ -42,6 +45,7 @@ export class Share extends Entity<ShareRecord> {
     return new Share(crypto.randomUUID(), actorId, {
       permission: input.permission,
       grantedToUser: input.grantedToUser,
+      grantedBy: actorId,
       token: input.token,
       label: input.label,
       expiresAt: input.expiresAt,
@@ -52,6 +56,7 @@ export class Share extends Entity<ShareRecord> {
     const asset = new Share(record.id, record.createdBy, {
       permission: record.permission,
       grantedToUser: record.grantedToUser,
+      grantedBy: record.grantedBy,
       token: record.token,
       label: record.label,
       expiresAt: record.expiresAt,
