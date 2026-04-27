@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { SelectableGalleryItem } from './SelectableGalleryItem';
+import { SelectableGalleryItem, type GalleryItemFrameVariant } from './SelectableGalleryItem';
 
 export type MultiSelectProps = {
   isSelected: (id: string) => boolean;
@@ -35,6 +35,8 @@ type SelectableGalleryProps<T extends { id: string }> = {
     isSelected: boolean;
     index: number;
   }) => React.ReactNode;
+  /** When set, non-owner / shared items can use a dashed frame (see `SelectableGalleryItem`). */
+  getItemFrameVariant?: (item: T) => GalleryItemFrameVariant;
 };
 
 export const SelectableGallery = <T extends { id: string }>({
@@ -48,6 +50,7 @@ export const SelectableGallery = <T extends { id: string }>({
   gridGapSpacingStepMobile = DEFAULT_GRID_GAP_SPACING_STEP_MOBILE,
   renderItem,
   orderedMediaIds,
+  getItemFrameVariant,
 }: SelectableGalleryProps<T>) => {
   if (nodes.length === 0) {
     if (emptyState == null) {
@@ -58,6 +61,10 @@ export const SelectableGallery = <T extends { id: string }>({
     }
     return <Content>{emptyState}</Content>;
   }
+
+  const resolveFrameVariant = (item: T): GalleryItemFrameVariant =>
+    getItemFrameVariant == null ? 'default' : getItemFrameVariant(item);
+
   const grid = (
     <GalleryContainer
       $minColumnPx={gridMinColumnWidthPx}
@@ -72,6 +79,9 @@ export const SelectableGallery = <T extends { id: string }>({
             isSelected={multiSelectProps.isSelected(item.id)}
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}
             onModifierClick={(event) => multiSelectProps.handleModifierClick(event, item.id, index)}
+            // Generic `T` + callback triggers no-unsafe-assignment despite explicit return type.
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- frame resolver is `(item: T) => GalleryItemFrameVariant`
+            frameVariant={resolveFrameVariant(item)}
           >
             {renderItem({
               item,

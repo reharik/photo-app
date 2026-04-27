@@ -7,12 +7,14 @@ const ownerOperations: ViewerOperation[] = [
   ViewerOperation.deleteAlbum,
   ViewerOperation.share,
   ViewerOperation.download,
+  ViewerOperation.editCover,
 ] as const;
 const adminOperations: ViewerOperation[] = [
   ViewerOperation.addItems,
   ViewerOperation.removeItems,
   ViewerOperation.share,
   ViewerOperation.download,
+  ViewerOperation.editCover,
 ] as const;
 const contributorOperations: ViewerOperation[] = [
   ViewerOperation.addItems,

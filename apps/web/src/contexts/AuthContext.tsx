@@ -103,7 +103,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     await apiFetch('/auth/logout', { method: 'POST' });
     setUser(undefined);
-    await apolloClient.clearStore();
+    // Refetch active queries so viewer reflects cleared cookie (clearStore alone does not refetch).
+    await apolloClient.resetStore();
   };
 
   const value: AuthContextType = {

@@ -141,6 +141,7 @@ export const AlbumSection = ({
           nodes={albumItems}
           multiSelectProps={albumItemMultiSelectProps}
           orderedMediaIds={orderedAlbumItemIds}
+          getItemFrameVariant={() => (album.viewerIsOwner ? 'default' : 'shared')}
           embedInParentScroll
           emptyState={
             <EmptyState

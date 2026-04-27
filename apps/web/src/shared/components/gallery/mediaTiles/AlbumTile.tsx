@@ -5,12 +5,12 @@ import { localizeDate } from '../../../../lib/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../../../lib/urlBuilders/mediaItemUrlBuilder';
 import { AlbumSummaryVM } from '../../../../viewModels/album/AlbumSummaryVM';
 
-export const AlbumTile = ({ item, isShared }: { item: AlbumSummaryVM; isShared?: boolean }) => {
+export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
   const mediaItem = item.coverMedia;
   const url = mediaItem ? buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail) : undefined;
   return (
     <>
-      <ThumbLink to={`/albums/${item.id}`} $isShared={Boolean(isShared)}>
+      <ThumbLink to={`/albums/${item.id}`}>
         {url ? (
           <ThumbImage src={url} alt={item.title.trim()} />
         ) : (
@@ -26,7 +26,7 @@ export const AlbumTile = ({ item, isShared }: { item: AlbumSummaryVM; isShared?:
     </>
   );
 };
-const ThumbLink = styled(Link)<{ $isShared: boolean }>`
+const ThumbLink = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -39,8 +39,6 @@ const ThumbLink = styled(Link)<{ $isShared: boolean }>`
   text-decoration: none;
   box-sizing: border-box;
   border-radius: ${({ theme }) => theme.radius.md};
-  border: ${({ $isShared, theme }) =>
-    $isShared ? `2px solid ${theme.colors.accent}` : '2px solid transparent'};
 `;
 
 const CaptionLink = styled(Link)`

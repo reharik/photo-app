@@ -109,7 +109,15 @@ export const buildAuthController = ({
   },
 
   logout: (ctx: Context): Context => {
-    ctx.cookies.set('token', null);
+    // Match login cookie attributes so the browser actually clears the session cookie
+    // (path/sameSite/secure must align or the old cookie may keep being sent on GraphQL refetch).
+    ctx.cookies.set('token', '', {
+      httpOnly: true,
+      secure: ctx.app.env === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
     ctx.status = 200;
     ctx.body = { message: 'Logged out successfully' };
     return ctx;

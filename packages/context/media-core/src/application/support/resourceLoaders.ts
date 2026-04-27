@@ -18,6 +18,9 @@ export const loadRequiredAlbum = async (
   albumRepository: AlbumRepository,
 ): Promise<WriteResult<Album, ContractError>> => {
   const album = await albumRepository.getById(albumId);
+  console.log(`************album************`);
+  console.log(JSON.stringify(album, null, 4));
+  console.log(`********END album************`);
   return album ? ok(album) : fail(AppErrorCollection.album.AlbumNotFound);
 };
 

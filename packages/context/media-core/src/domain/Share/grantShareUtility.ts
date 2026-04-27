@@ -31,9 +31,9 @@ export const grantShareUtility = <T extends Album | MediaItem>(
     return fail(AppErrorCollection.share.ShareMustHaveEitherGrantedToUserIdOrToken);
   }
   if (item instanceof Album) {
-    const owner = item.getAlbumMember(grantedToUserId)!;
+    const member = item.getAlbumMember(grantedToUserId)!;
 
-    if (owner.role() === AlbumMemberRole.owner) {
+    if (member && member.role() === AlbumMemberRole.owner) {
       return fail(AppErrorCollection.share.CanNotGrantShareToOwner);
     }
   } else if (item instanceof MediaItem && item.ownerId() === grantedToUserId) {

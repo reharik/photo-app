@@ -38,9 +38,8 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
       { role: AlbumMemberRole },
       { strict: true },
     );
-
     const shareRows = await withEnumRevival(
-      database<ShareRecord>('access_grant').where({ mediaItemId: id }).orderBy('createdAt', 'asc'),
+      database<ShareRecord>('access_grant').where({ albumId: id }).orderBy('createdAt', 'asc'),
       { permission: SharePermission },
       { strict: true },
     );
@@ -83,7 +82,10 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
           ...share,
           albumId: record.id,
         }));
-        await trx('access_grant').insert(shareRows).onConflict(['album_id']).merge();
+        await trx('access_grant')
+          .insert(shareRows)
+          .onConflict(['album_id', 'granted_to_user'])
+          .merge();
       }
     });
   };
