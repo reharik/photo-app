@@ -20,14 +20,6 @@ const mediaItemSelectColumns = [
   'mediaItem.updatedAt as mediaItemUpdatedAt',
 ];
 
-const albumWithCoverSelectColumns = [
-  'album.id as albumId',
-  'album.title as albumTitle',
-  'album.createdAt as albumCreatedAt',
-  'album.updatedAt as albumUpdatedAt',
-  ...mediaItemSelectColumns,
-];
-
 const accessGrantFieldSelect = [
   'accessGrant.permission as permission',
   'accessGrant.id as id',
@@ -42,22 +34,8 @@ export type SharedMediaItemRow = NamespacedMediaItemRow & {
   permission: string;
 };
 
-export type SharedAlbumRow = {
-  id: string;
-  albumId: string;
-  albumTitle: string;
-  albumCreatedAt: Date;
-  albumUpdatedAt: Date;
-  sharedBy: EntityId;
-  sharedAt: Date;
-  permission: string;
-} & NamespacedMediaItemRow; // cover item
-
 export type SharedWithMeReadRepository = {
-  getSharedWithMe: (viewerId: string) => Promise<{
-    sharedMediaItems: SharedMediaItemRow[];
-    sharedAlbums: SharedAlbumRow[];
-  }>;
+  getSharedMediaItems: (viewerId: string) => Promise<SharedMediaItemRow[]>;
 };
 
 type SharedWithMeReadRepositoryDeps = { database: Knex };
@@ -81,7 +59,7 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
 export const buildSharedWithMeReadRepository = ({
   database,
 }: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
-  getSharedWithMe: async (viewerId: string) => {
+  getSharedMediaItems: async (viewerId: string) => {
     const mediaQuery = applyActiveUserGrant(
       database<SharedMediaItemRow>('accessGrant')
         .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
@@ -90,19 +68,6 @@ export const buildSharedWithMeReadRepository = ({
         .select<SharedMediaItemRow[]>(...accessGrantFieldSelect, ...mediaItemSelectColumns),
       { database, viewerId },
     );
-    const mediaRows = await mediaQuery;
-
-    const albumQuery = applyActiveUserGrant(
-      database<SharedAlbumRow>('accessGrant')
-        .innerJoin('album', 'album.id', 'accessGrant.albumId')
-        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-        .whereNotNull('accessGrant.albumId')
-        .orderBy('accessGrant.createdAt', 'desc')
-        .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
-      { database, viewerId },
-    );
-    const albumRows = await albumQuery;
-
-    return { sharedMediaItems: mediaRows, sharedAlbums: albumRows };
+    return mediaQuery;
   },
 });

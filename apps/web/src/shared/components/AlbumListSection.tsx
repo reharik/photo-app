@@ -60,7 +60,7 @@ export const AlbumListSection = ({
             }
           />
         }
-        renderItem={({ item }) => <AlbumTile item={item} />}
+        renderItem={({ item }) => <AlbumTile item={item} isShared={!item.viewerIsOwner} />}
         orderedMediaIds={orderedMediaIds}
       />
       {createModalOpen ? (

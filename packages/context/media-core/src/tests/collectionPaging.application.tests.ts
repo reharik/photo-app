@@ -24,7 +24,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [],
+        }): Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean })[]> => [],
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,
@@ -55,7 +55,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [],
+        }): Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean })[]> => [],
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,
@@ -108,13 +108,14 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         mediaItemTakenAt: null,
         mediaItemCreatedAt: null,
         mediaItemUpdatedAt: null,
-      } as unknown as AlbumWithCoverRow;
+        viewerIsOwner: true,
+      } as unknown as AlbumWithCoverRow & { viewerIsOwner: boolean };
 
       const listByViewerId = jest.fn(
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [albumWithoutCover],
+        }): Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean })[]> => [albumWithoutCover],
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,

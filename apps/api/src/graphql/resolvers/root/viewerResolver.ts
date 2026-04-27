@@ -1,5 +1,5 @@
 import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
-import { mediaItemPermissionsForViewer } from 'apps/api/src/infrastructure/permissions/mediaItemPermissionsForViewer';
+import { mediaItemPermissionsForViewer } from '../../../infrastructure/permissions/mediaItemPermissionsForViewer';
 import { authenticatedResolver } from '../../context/authenticatedContext';
 import type { Resolvers, SharePermission } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
@@ -59,26 +59,13 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerShareReadService.getShareContacts();
     }),
-    sharedWithMe: authenticatedResolver(async (_parent, _args, ctx) => {
-      const { mediaItems, albums } =
-        await ctx.readServices.viewerShareReadService.getSharedWithMe();
-      return {
-        mediaItems: mediaItems.map((row) => ({
-          ...row,
-          permission: row.permission as SharePermission,
-          mediaItem: { ...row.mediaItem, viewerOperations: [] },
-        })),
-        albums: albums.map((row) => ({
-          ...row,
-          album: {
-            ...row.album,
-            permission: row.permission as SharePermission,
-            coverMedia: row.album.coverMedia
-              ? { ...row.album.coverMedia, viewerOperations: [] }
-              : undefined,
-          },
-        })),
-      };
+    sharedMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
+      const { mediaItems } = await ctx.readServices.viewerShareReadService.getSharedMediaItems();
+      return mediaItems.map((row) => ({
+        ...row,
+        permission: row.permission as SharePermission,
+        mediaItem: { ...row.mediaItem, viewerOperations: [] },
+      }));
     }),
   },
 };

@@ -20,6 +20,7 @@ export type AlbumProjection = {
   coverMedia?: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  viewerIsOwner: boolean;
 };
 
 export type AlbumItemProjection = {

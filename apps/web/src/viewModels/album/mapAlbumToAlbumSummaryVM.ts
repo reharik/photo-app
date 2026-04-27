@@ -8,6 +8,7 @@ export function mapAlbumToAlbumSummaryVM(
   return {
     id: album.id,
     title: album.title,
+    viewerIsOwner: album.viewerIsOwner,
     coverMedia: album.coverMedia ? mapMediaItemToMediaItemSummaryVM(album.coverMedia) : undefined,
     itemCount: album.items?.nodes?.length ?? 0,
     updatedAt: album.updatedAt,

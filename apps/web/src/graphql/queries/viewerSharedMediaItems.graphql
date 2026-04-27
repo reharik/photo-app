@@ -1,0 +1,18 @@
+query ViewerSharedMediaItems {
+  viewer {
+    id
+    sharedMediaItems {
+      ...SharedMediaItem
+    }
+  }
+}
+
+fragment SharedMediaItem on SharedMediaItemType {
+  id
+  permission
+  sharedAt
+  sharedBy
+  mediaItem {
+    ...MediaItemSummary
+  }
+}

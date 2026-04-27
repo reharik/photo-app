@@ -1,6 +1,7 @@
 fragment AlbumSummary on Album {
   id
   title
+  viewerIsOwner
   createdAt
   updatedAt
   coverMedia {

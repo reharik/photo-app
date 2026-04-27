@@ -44,6 +44,7 @@ type Album implements Node {
   shares: [ShareType]
   title: String!
   updatedAt: DateTime!
+  viewerIsOwner: Boolean!
 }
 
 input AlbumCollectionInput {
@@ -384,7 +385,6 @@ input PageInfoInput {
 
 type Query {
   shareLink(token: String!): ShareLinkAccess
-  sharedWithMe: SharedWithMeResult!
   viewer: Viewer
 }
 
@@ -468,14 +468,6 @@ type SharedAlbumItemConnection {
   pageInfo: PageInfo!
 }
 
-type SharedAlbumType {
-  album: Album!
-  id: ID!
-  permission: SharePermission!
-  sharedAt: DateTime!
-  sharedBy: ID!
-}
-
 type SharedMediaItem implements Node {
   displayUrl: String!
   height: Int
@@ -489,11 +481,6 @@ type SharedMediaItemType {
   permission: SharePermission!
   sharedAt: DateTime!
   sharedBy: ID!
-}
-
-type SharedWithMeResult {
-  albums: [SharedAlbumType!]!
-  mediaItems: [SharedMediaItemType!]!
 }
 
 enum SortDir {
@@ -570,7 +557,7 @@ type Viewer {
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
   shareContacts: [ShareContactType!]!
-  sharedWithMe: SharedWithMeResult!
+  sharedMediaItems: [SharedMediaItemType!]!
 }
 
 input ViewerAlbumItemsInput {

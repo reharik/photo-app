@@ -1,4 +1,4 @@
-import { AlbumItemSortBy, AlbumSortBy } from '@packages/contracts';
+import { AlbumItemSortBy, AlbumMemberRole, AlbumSortBy } from '@packages/contracts';
 import type { Knex } from 'knex';
 import {
   AlbumItemWithMediaRow,
@@ -13,14 +13,14 @@ export type AlbumReadRepository = {
   }: {
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
-  }) => Promise<AlbumWithCoverRow[]>;
+  }) => Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean })[]>;
   getAlbumForViewer: ({
     albumId,
     viewerId,
   }: {
     albumId: string;
     viewerId: string;
-  }) => Promise<AlbumWithCoverRow | undefined>;
+  }) => Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean }) | undefined>;
   getViewableAlbumItemsForViewer: ({
     albumId,
     viewerId,
@@ -69,6 +69,34 @@ const albumItemWithMediaSelectColumns = [
 
 type AlbumReadRepositoryDeps = { database: Knex };
 
+const viewerIsOwnerSelect = (db: Knex) =>
+  db.raw(
+    'CASE WHEN ?? IS NOT NULL AND ?? = ? THEN true WHEN ?? IS NOT NULL THEN false ELSE false END as "viewerIsOwner"',
+    ['albumMember.id', 'albumMember.role', AlbumMemberRole.owner.value, 'albumMember.id'],
+  );
+
+const whereAlbumViewableByMemberOrAlbumGrant =
+  (db: Knex, viewerId: string) =>
+  (w: {
+    where: (col: string, val: string) => void;
+    orWhereExists: (sub: Knex.QueryBuilder) => void;
+  }): void => {
+    w.where('albumMember.userId', viewerId);
+    w.orWhereExists(
+      db
+        .select(db.raw('1'))
+        .from('accessGrant as ag2')
+        .whereNull('ag2.revokedAt')
+        .where((inner) => {
+          inner.whereNull('ag2.expiresAt').orWhere('ag2.expiresAt', '>', db.raw('now()'));
+        })
+        .where('ag2.grantedToUser', viewerId)
+        .whereNotNull('ag2.albumId')
+        .whereNull('ag2.mediaItemId')
+        .where('ag2.albumId', db.ref('album.id')),
+    );
+  };
+
 export const buildAlbumReadRepository = ({
   database,
 }: AlbumReadRepositoryDeps): AlbumReadRepository => ({
@@ -78,12 +106,18 @@ export const buildAlbumReadRepository = ({
   }: {
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
-  }): Promise<AlbumWithCoverRow[]> => {
-    return database<AlbumWithCoverRow>('album')
-      .innerJoin('albumMember', 'albumMember.albumId', 'album.id')
+  }): Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean })[]> => {
+    return database<AlbumWithCoverRow & { viewerIsOwner: boolean }>('album')
+      .leftJoin('albumMember', (join) => {
+        join
+          .on('albumMember.albumId', 'album.id')
+          .on('albumMember.userId', database.raw('?', [viewerId]));
+      })
       .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-      .where('albumMember.userId', viewerId)
-      .select<AlbumWithCoverRow[]>(...albumWithCoverSelectColumns)
+      .select(...albumWithCoverSelectColumns, viewerIsOwnerSelect(database))
+      .where((b) => {
+        whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
+      })
       .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
       .orderBy('album.id', 'asc') // tie-breaker (unqualified `id` / `created_at` are ambiguous with joined mediaItem)
       .limit(collectionInfo.pageInfo.limit + 1)
@@ -96,15 +130,20 @@ export const buildAlbumReadRepository = ({
   }: {
     albumId: string;
     viewerId: string;
-  }): Promise<AlbumWithCoverRow | undefined> => {
-    const row = await database<AlbumWithCoverRow>('album')
-      .innerJoin('albumMember', 'albumMember.albumId', 'album.id')
+  }): Promise<(AlbumWithCoverRow & { viewerIsOwner: boolean }) | undefined> => {
+    return database<AlbumWithCoverRow & { viewerIsOwner: boolean }>('album')
+      .leftJoin('albumMember', (join) => {
+        join
+          .on('albumMember.albumId', 'album.id')
+          .on('albumMember.userId', database.raw('?', [viewerId]));
+      })
       .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-      .where('albumMember.userId', viewerId)
-      .andWhere('album.id', albumId)
-      .first<AlbumWithCoverRow>(...albumWithCoverSelectColumns);
-
-    return row;
+      .select(...albumWithCoverSelectColumns, viewerIsOwnerSelect(database))
+      .where('album.id', albumId)
+      .andWhere((b) => {
+        whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
+      })
+      .first();
   },
   getViewableAlbumItemsForViewer: async ({
     albumId,
@@ -117,11 +156,22 @@ export const buildAlbumReadRepository = ({
   }): Promise<AlbumItemWithMediaRow[]> => {
     return database<AlbumItemWithMediaRow>('albumItem')
       .innerJoin('album', 'albumItem.albumId', 'album.id')
-      .innerJoin('albumMember', 'albumMember.albumId', 'album.id')
+      .leftJoin('albumMember', (join) => {
+        join
+          .on('albumMember.albumId', 'album.id')
+          .on('albumMember.userId', database.raw('?', [viewerId]));
+      })
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
-      .where('albumMember.userId', viewerId)
-      .andWhere('album.id', albumId)
+      .leftJoin('grant', (join) => {
+        join
+          .on('grant.mediaItemId', 'albumItem.mediaItemId')
+          .on('grant.grantedToUser', database.raw('?', [viewerId]));
+      })
+      .where('album.id', albumId)
       .andWhere('mediaItem.status', 'READY')
+      .andWhere((b) => {
+        b.where('albumMember.userId', viewerId).orWhereNotNull('grant.id');
+      })
       .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
       .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
       .orderBy('albumItem.id', 'asc') // tie-breaker

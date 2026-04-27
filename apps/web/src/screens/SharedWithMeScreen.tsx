@@ -1,29 +1,29 @@
 import { useQuery } from '@apollo/client/react';
 import styled from 'styled-components';
-import { ViewerSharedWithMeDocument } from '../graphql/generated/types';
+import { ViewerSharedMediaItemsDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { SharedWithMeSection } from '../shared/components/SharedWithMeSection';
-import { mapSharedWithMeQueryToVMs } from '../viewModels/sharing/mapSharedWithMeToVMs';
+import { mapSharedMediaItemsQueryToVMs } from '../viewModels/sharing/mapSharedMediaItemsQueryToVMs';
 
 export const SharedWithMeScreen = () => {
-  const query = useQuery(ViewerSharedWithMeDocument, {
+  const query = useQuery(ViewerSharedMediaItemsDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const { data: sharedWithMe, content } = getQueryRenderState({
+  const { data: sharedMediaItems, content } = getQueryRenderState({
     query,
-    select: (data) => data.viewer?.sharedWithMe,
-    map: mapSharedWithMeQueryToVMs,
+    select: (data) => data.viewer?.sharedMediaItems,
+    map: mapSharedMediaItemsQueryToVMs,
   });
 
-  if (!sharedWithMe) {
+  if (!sharedMediaItems) {
     return content;
   }
 
   return (
     <Container>
-      <SharedWithMeSection sharedMediaItems={sharedWithMe.sharedMediaItems} />
+      <SharedWithMeSection sharedMediaItems={sharedMediaItems} />
     </Container>
   );
 };

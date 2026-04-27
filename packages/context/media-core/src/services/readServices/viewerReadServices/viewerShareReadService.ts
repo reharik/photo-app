@@ -7,7 +7,7 @@ import { ShareReadRepository } from '../../../repositories/readRepositories/shar
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { AlbumProjection, NamespacedMediaItemRow } from './viewerAlbumReadService.types';
+import { NamespacedMediaItemRow } from './viewerAlbumReadService.types';
 import { MediaItemProjection } from './viewerMediaItemReadService.types';
 
 export type ShareProjection = {
@@ -28,21 +28,12 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-export type SharedWithMeAlbumItemProjection = {
-  id: EntityId;
-  permission: string;
-  sharedAt: Date;
-  sharedBy: EntityId;
-  album: AlbumProjection;
-};
-
 export interface ViewerShareReadService {
   getMediaItemShares: (args: { mediaItemId: EntityId }) => Promise<ShareProjection[]>;
   getAlbumShares: (args: { albumId: EntityId }) => Promise<ShareProjection[]>;
   getShareContacts: () => Promise<ShareContactSuggestion[]>;
-  getSharedWithMe: () => Promise<{
+  getSharedMediaItems: () => Promise<{
     mediaItems: SharedWithMeItemProjection[];
-    albums: SharedWithMeAlbumItemProjection[];
   }>;
 }
 
@@ -124,16 +115,12 @@ export const buildViewerShareReadServiceFactory = ({
     getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
       return shareContactRepository.getShareSuggestions(viewerId);
     },
-    getSharedWithMe: async () => {
-      const { sharedMediaItems, sharedAlbums } =
-        await sharedWithMeReadRepository.getSharedWithMe(viewerId);
+    getSharedMediaItems: async () => {
+      const sharedMediaItems = await sharedWithMeReadRepository.getSharedMediaItems(viewerId);
 
-      const allMediaBases: Omit<MediaItemProjection, 'tags'>[] = [
-        ...sharedMediaItems.map((row) => mapNamespacedToMediaItemBase(row)),
-        ...sharedAlbums
-          .filter((row) => row.mediaItemId != null)
-          .map((row) => mapNamespacedToMediaItemBase(row)),
-      ];
+      const allMediaBases: Omit<MediaItemProjection, 'tags'>[] = sharedMediaItems.map((row) =>
+        mapNamespacedToMediaItemBase(row),
+      );
       const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
         viewerId,
         mediaItemIds: allMediaBases.map((m) => m.id),
@@ -154,24 +141,7 @@ export const buildViewerShareReadServiceFactory = ({
         };
       });
 
-      const albums: SharedWithMeAlbumItemProjection[] = sharedAlbums.map((row) => {
-        const coverBase = row.mediaItemId != null ? mapNamespacedToMediaItemBase(row) : undefined;
-        return {
-          id: row.id,
-          permission: row.permission,
-          sharedAt: row.sharedAt,
-          sharedBy: row.sharedBy,
-          album: {
-            id: row.albumId,
-            title: row.albumTitle,
-            createdAt: row.albumCreatedAt,
-            updatedAt: row.albumUpdatedAt,
-            coverMedia: coverBase != null ? withTags(coverBase) : undefined,
-          },
-        };
-      });
-
-      return { mediaItems, albums };
+      return { mediaItems };
     },
   });
 };
