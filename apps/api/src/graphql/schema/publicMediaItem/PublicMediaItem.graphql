@@ -1,0 +1,12 @@
+type PublicMediaItem implements Node {
+  id: ID!
+  kind: MediaKind!
+  status: MediaItemStatus!
+  title: String!
+  mimeType: String!
+  width: Int
+  height: Int
+  durationSeconds: Int
+  tags: [String!]!
+  viewerOperations: [ViewerOperation!]!
+}

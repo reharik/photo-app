@@ -1,0 +1,50 @@
+{
+  "name": "notifications",
+  "projectType": "library",
+  "sourceRoot": "{projectRoot}",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "outputPath": "{projectRoot}/dist",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "main": "{projectRoot}/index.ts"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/**/*.{ts,tsx,js,jsx}\"",
+          "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"{projectRoot}/**/*.tests.ts\" \"{projectRoot}/**/*.tests.tsx\" \"{projectRoot}/**/*.test.ts\" \"{projectRoot}/**/*.test.tsx\" \"{projectRoot}/**/*.spec.ts\" \"{projectRoot}/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
+        ],
+        "parallel": false
+      },
+      "configurations": {
+        "fix": {
+          "commands": [
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/**/*.{ts,tsx,js,jsx}\"",
+            "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"{projectRoot}/**/*.tests.ts\" \"{projectRoot}/**/*.tests.tsx\" \"{projectRoot}/**/*.test.ts\" \"{projectRoot}/**/*.test.tsx\" \"{projectRoot}/**/*.spec.ts\" \"{projectRoot}/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
+          ],
+          "parallel": false
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "{projectRoot}/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prettier --write \"{projectRoot}/**/*.{ts,tsx,js,jsx,json}\""
+      }
+    }
+  },
+  "tags": ["layer:context", "scope:notifications"]
+}

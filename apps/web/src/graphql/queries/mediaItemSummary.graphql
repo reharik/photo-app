@@ -2,6 +2,7 @@ fragment MediaItemSummary on MediaItem {
   id
   kind
   title
+  mimeType
   originalFileName
   createdAt
   viewerOperations

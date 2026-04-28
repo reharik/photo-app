@@ -10,6 +10,7 @@ export const requireAuthenticatedContext = (ctx: GraphQLContext): AuthenticatedG
     ...ctx,
     viewer: ctx.viewer,
     writeServices: ctx.writeServices,
+    readServices: ctx.readServices,
   } as AuthenticatedGraphQLContext;
 };
 

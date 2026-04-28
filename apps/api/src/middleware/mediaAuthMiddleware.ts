@@ -1,4 +1,5 @@
 import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
+import { buildMediaAssetStorageKey, hashToken } from '@packages/media-core';
 import jwt from 'jsonwebtoken';
 import type { Context, Next } from 'koa';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
@@ -9,27 +10,26 @@ export const buildMediaAuthMiddleware =
   ({ mediaGrantService, config }: IocGeneratedCradle): MediaAuthMiddleware =>
   async (ctx: Context, next: Next): Promise<void> => {
     // Extract viewer identity from JWT — local verify, no DB hit
-    let viewerId: string | undefined;
     const token = ctx.cookies.get('token');
 
+    let payload: { userId?: string; token?: string } | undefined;
     if (token) {
       try {
-        const payload = jwt.verify(token, config.jwtSecret) as { userId: string };
-        viewerId = payload.userId;
+        payload = jwt.verify(token, config.jwtSecret) as { userId?: string; token?: string };
       } catch {
         ctx.throw(401);
       }
     }
 
-    const shareToken = ctx.query.token as string | undefined;
-
-    if (!viewerId && !shareToken) ctx.throw(401);
+    const hashedToken = payload?.token ? hashToken(payload.token) : undefined;
+    const viewerId = payload?.userId || hashedToken;
+    const { mediaId, variant } = ctx.params as { mediaId: string; variant: string };
+    if (!viewerId && !hashedToken) ctx.throw(401);
 
     const decision = await mediaGrantService.authorizeView({
-      mediaId: ctx.params.mediaId,
-      variant: MediaAssetKind.fromKey(ctx.params.variant),
+      mediaId,
       viewerId,
-      shareToken,
+      hashedToken,
     });
 
     if (!decision.success) {
@@ -47,6 +47,7 @@ export const buildMediaAuthMiddleware =
       }
     }
 
-    ctx.state.authorizedMediaPath = decision.value;
+    const s3Url = buildMediaAssetStorageKey(decision.value, MediaAssetKind.fromKey(variant));
+    ctx.state.authorizedMediaPath = s3Url;
     await next();
   };

@@ -4,7 +4,8 @@ import { css, styled } from 'styled-components';
 import { localizeDate } from '../../lib/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../lib/urlBuilders/mediaItemUrlBuilder';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
-import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { AlbumSummaryVM, UserAlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { UserMediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { SingleSelectionTile } from './gallery/mediaTiles/SingleSelectionTile';
 import { SingleSelectGallery } from './gallery/SingleSelectGallery';
 import { AppModal } from './ui/AppModal';
@@ -14,7 +15,8 @@ type AlbumSectionMetadataProps = {
   album: AlbumSummaryVM;
   metaCompact: boolean;
   albumItems: AlbumItemSummaryVM[];
-  onSelectCover: (mediaId: string) => void;
+  onSelectCover?: (mediaId: string) => void;
+  isPublic?: boolean;
 };
 
 export const AlbumSectionMetadata = ({
@@ -23,6 +25,7 @@ export const AlbumSectionMetadata = ({
   metaCompact,
   albumItems,
   onSelectCover,
+  isPublic,
 }: AlbumSectionMetadataProps) => {
   const [addCoverItemOpen, setAddCoverItemOpen] = useState(false);
   const coverMediaUrl = album.coverMedia
@@ -34,7 +37,7 @@ export const AlbumSectionMetadata = ({
         <AlbumCover $compact={metaCompact}>
           <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
             {album.coverMedia ? (
-              <CoverImage src={coverMediaUrl} alt={album.coverMedia.title ?? ''} />
+              <CoverImage src={coverMediaUrl} alt={album.coverMedia?.kind.display ?? ''} />
             ) : (
               <CoverPlaceholder aria-hidden $compact={metaCompact}>
                 📷
@@ -45,7 +48,7 @@ export const AlbumSectionMetadata = ({
         <AlbumInfo $compact={metaCompact}>
           {metaCompact ? (
             <AlbumCompactSummary>
-              {count} media items · Updated {localizeDate(album.updatedAt)}
+              {`${count} media items ${(album as UserAlbumSummaryVM).updatedAt ? `· Updated ${localizeDate((album as UserAlbumSummaryVM).updatedAt)}` : ''}`}
             </AlbumCompactSummary>
           ) : (
             <>
@@ -53,7 +56,11 @@ export const AlbumSectionMetadata = ({
               <AlbumStats>
                 <Stat>{count} media items</Stat>
               </AlbumStats>
-              <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
+              {(album as UserAlbumSummaryVM).updatedAt && (
+                <AlbumDescription>
+                  Updated {localizeDate((album as UserAlbumSummaryVM).updatedAt)}
+                </AlbumDescription>
+              )}
             </>
           )}
         </AlbumInfo>
@@ -80,12 +87,17 @@ export const AlbumSectionMetadata = ({
             </AddAlbumCoverModalHeader>
           }
         >
-          <SingleSelectGallery
-            nodes={albumItems}
-            renderItem={({ item }) => (
-              <SingleSelectionTile item={item.mediaItem} onSelect={() => onSelectCover(item.id)} />
-            )}
-          />
+          {!isPublic && (
+            <SingleSelectGallery
+              nodes={albumItems}
+              renderItem={({ item }) => (
+                <SingleSelectionTile
+                  item={item.mediaItem as UserMediaItemSummaryVM}
+                  onSelect={() => onSelectCover?.(item.id)}
+                />
+              )}
+            />
+          )}
         </AppModal>
       )}
     </>

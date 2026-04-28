@@ -10,7 +10,7 @@ import { AlbumListSection } from '../shared/components/AlbumListSection';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
 import { AppErrorPanel } from '../shared/components/ui/AppErrorPanel';
-import { mapMultipleAlbumsToAlbumSummaryVMs } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
+import { mapMultipleAlbumsToAlbumSummaryVMs } from '../viewModels/album/mapAlbumToSummaryVM';
 
 export const AlbumsListScreen = () => {
   const navigate = useNavigate();

@@ -40,11 +40,14 @@ export const UploadMediaButton = ({
   };
 
   useEffect(() => {
+    if (isUploading) {
+      return;
+    }
     if (items.some((item) => item.status === FrontendUploadStatus.complete)) {
       void onComplete();
       clearCompleted();
     }
-  }, [items, onComplete, clearCompleted]);
+  }, [items, isUploading, onComplete, clearCompleted]);
 
   return (
     <>

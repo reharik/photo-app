@@ -1,7 +1,10 @@
 import { ViewerOperation } from '@packages/contracts';
 import { MediaItemSummaryVM } from '../media/MediaItemSummaryVM';
+import { PublicAlbumItemSummaryVM } from '../publicAlbum/PublicAlbumItemSummaryVM';
 
-export type AlbumItemSummaryVM = {
+export type AlbumItemSummaryVM = UserAlbumItemSummaryVM | PublicAlbumItemSummaryVM;
+
+export type UserAlbumItemSummaryVM = {
   id: string;
   createdAt: string;
   mediaItem: MediaItemSummaryVM;

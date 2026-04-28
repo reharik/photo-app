@@ -1,6 +1,5 @@
 type Query {
   viewer: Viewer
-  shareLink(token: String!): ShareLinkAccess
 }
 
 type Viewer {

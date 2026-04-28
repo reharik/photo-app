@@ -12,3 +12,17 @@ export const mediaItemPermissionsForViewer = async (
 
   return permissionMap;
 };
+
+export const mediaItemPermissionsForPublicViewer = async (
+  permissionService: PublicMediaItemPermissionService,
+  mediaItemIds: () => string[],
+  token: string,
+) => {
+  const permissions = await permissionService.getPermissionsForViewer(mediaItemIds(), token);
+
+  const permissionMap = new Map(
+    permissions.map((p) => [p.mediaItemId, p.operations.map((o) => o.value)]),
+  );
+
+  return permissionMap;
+};

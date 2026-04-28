@@ -45,6 +45,7 @@ export * from './services/writeServices/writeServiceBaseType';
 export * from './application/media/s3MediaStorage';
 export * from './application/support/tokenHash';
 export * from './repositories/readRepositories/grantReadRepository';
+export * from './repositories/readRepositories/publicLinkReadRepository';
 export * from './services/writeServices/album/setCoverMedia';
 export * from './services/writeServices/album/unsetCoverMedia';
 export * from './services/writeServices/mediaItem/deleteMediaItem';

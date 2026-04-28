@@ -15,12 +15,17 @@ export const buildGrantReadRepository = ({
   database,
 }: GrantReadRepositoryDeps): GrantReadRepository => ({
   hasActiveGrant: (input: HasActiveGrantInput): Promise<boolean> => {
-    return database('grant')
-      .where('media_item_id', input.mediaItemId)
-      .where(function () {
-        if (input.viewerId) this.where('granted_to_user', input.viewerId);
-        if (input.tokenHash) this.orWhere('token_hash', input.tokenHash);
-      })
+    if (input.viewerId) {
+      return database('grant')
+        .where('media_item_id', input.mediaItemId)
+        .where('granted_to_user', input.viewerId)
+        .first();
+    }
+    return database('shareLink')
+      .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')
+      .join('grant', 'accessGrant.id', 'grant.accessGrantId')
+      .where('shareLink.linkToken', input.tokenHash)
+      .where('grant.mediaItemId', input.mediaItemId)
       .first();
   },
 });

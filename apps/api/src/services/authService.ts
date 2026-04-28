@@ -4,6 +4,7 @@ import {
   type SignupInput,
   type User,
 } from '@packages/contracts';
+import { hashToken } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
@@ -14,9 +15,10 @@ export type SanitizedUser = Omit<User, 'passwordHash'>;
 export interface AuthService {
   login: (credentials: LoginInput) => Promise<AuthResponse | undefined>;
   signup: (credentials: SignupInput) => Promise<AuthResponse | undefined>;
-  verifyToken: (token: string) => Promise<User | undefined>;
+  verifyJWTToken: (token: string) => Promise<User | undefined>;
   hashPassword: (password: string) => Promise<string>;
   comparePassword: (password: string, hash: string) => Promise<boolean>;
+  publicAccess: (token: string) => Promise<string | undefined>;
 }
 
 type UserRow = User & {
@@ -143,7 +145,7 @@ export const buildAuthService = ({
     return { user: sanitizeUser(user), token };
   },
 
-  verifyToken: async (token: string) => {
+  verifyJWTToken: async (token: string) => {
     try {
       const decoded = jwt.verify(token, config.jwtSecret) as {
         userId: string;
@@ -170,6 +172,27 @@ export const buildAuthService = ({
       });
       return undefined;
     }
+  },
+  publicAccess: async (token: string) => {
+    const hashedToken = hashToken(token);
+    const authenticated = await database('share_link')
+      .where({ link_token: hashedToken })
+      .whereNull('revoked_at')
+      .where((b) => {
+        b.whereNull('expires_at').orWhere('expires_at', '>', database.fn.now());
+      })
+      .first<{ publicAccessId: string }>('id');
+
+    if (!authenticated.publicAccessId) {
+      logger.warn('Authentication attempt failed: token not found ');
+      return undefined;
+    }
+
+    logger.info('token verified successfully', {
+      id: authenticated.publicAccessId,
+    });
+
+    return authenticated.publicAccessId;
   },
 
   hashPassword: async (password: string) => {

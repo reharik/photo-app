@@ -8,6 +8,10 @@ export const buildMediaPublicRouter = ({
   mediaServeController,
 }: IocGeneratedCradle): MediaPublicRouter => {
   const router = new Router();
-  router.get('/media/:mediaId/:variant', mediaAuthMiddleware, mediaServeController.getMedia);
+  router.get<{ mediaId: string; variant: string }>(
+    '/media/:mediaId/:variant',
+    mediaAuthMiddleware,
+    mediaServeController.getMedia,
+  );
   return router;
 };

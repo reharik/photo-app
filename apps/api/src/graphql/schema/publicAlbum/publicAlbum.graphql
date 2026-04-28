@@ -1,0 +1,33 @@
+type PublicAlbum implements Node {
+  id: ID!
+  title: String!
+  coverMedia: PublicMediaItem
+  items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
+}
+
+input PublicAlbumItemsInput {
+  collectionInfo: PublicAlbumItemCollectionInput!
+}
+
+type PublicAlbumItemCollectionPayload {
+  nodes: [PublicAlbumItem!]!
+  pageInfo: PageInfo!
+}
+
+type PublicAlbumItem implements Node {
+  id: ID!
+  orderIndex: String!
+  mediaItem: PublicMediaItem!
+  viewerOperations: [ViewerOperation!]!
+}
+
+input PublicAlbumItemCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: AlbumItemSortBy!
+  sortDir: SortDir!
+}
+
+type PublicAlbumItemConnection {
+  nodes: [PublicAlbumItem!]!
+  pageInfo: PageInfo!
+}

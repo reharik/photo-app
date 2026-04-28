@@ -1,0 +1,20 @@
+fragment publicAlbumSummary on PublicAlbum {
+  id
+  title
+  coverMedia {
+    ...publicMediaItemSummary
+  }
+  items(
+    input: {
+      collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
+    }
+  ) {
+    nodes {
+      ...publicAlbumItemSummary
+    }
+    pageInfo {
+      limit
+      offset
+    }
+  }
+}

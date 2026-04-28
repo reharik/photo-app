@@ -47,6 +47,7 @@ export const AlbumListSection = ({
         )}
       />
       <SelectableGallery
+        selectable={false}
         nodes={nodes}
         multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
         emptyState={

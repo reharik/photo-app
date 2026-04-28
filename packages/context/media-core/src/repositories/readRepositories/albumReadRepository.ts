@@ -1,4 +1,9 @@
-import { AlbumItemSortBy, AlbumMemberRole, AlbumSortBy } from '@packages/contracts';
+import {
+  AlbumItemSortBy,
+  AlbumMemberRole,
+  AlbumSortBy,
+  MediaItemStatus,
+} from '@packages/contracts';
 import type { Knex } from 'knex';
 import {
   AlbumItemWithMediaRow,
@@ -31,6 +36,12 @@ export type AlbumReadRepository = {
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }) => Promise<AlbumItemWithMediaRow[]>;
   findAlbumIdsReferencingMediaItem: ({ mediaItemId }: { mediaItemId: string }) => Promise<string[]>;
+  /** Album items for public share-link viewing (no membership check). READY media only. */
+  listAlbumItemsForShareLink: (args: {
+    albumId: string;
+    limit: number;
+    offset: number;
+  }) => Promise<AlbumItemWithMediaRow[]>;
 };
 
 const mediaItemSelectColumns = [
@@ -188,5 +199,16 @@ export const buildAlbumReadRepository = ({
       .where('albumItem.mediaItemId', mediaItemId)
       .orWhere('album.coverMediaId', mediaItemId)
       .distinct({ id: 'album.id' });
+  },
+  listAlbumItemsForShareLink: async ({ albumId, limit, offset }) => {
+    return database<AlbumItemWithMediaRow>('albumItem')
+      .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+      .where('albumItem.albumId', albumId)
+      .where('mediaItem.status', MediaItemStatus.ready.key)
+      .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
+      .orderBy('albumItem.orderIndex', 'asc')
+      .orderBy('albumItem.id', 'asc')
+      .limit(limit)
+      .offset(offset);
   },
 });

@@ -158,9 +158,6 @@ export const buildMediaItemRepository = ({
           ...share,
           mediaItemId: record.id,
         }));
-        console.log(`************shareRows************`);
-        console.log(shareRows);
-        console.log(`********END shareRows************`);
         await trx('access_grant')
           .insert(shareRows)
           .onConflict(['media_item_id', 'granted_to_user'])

@@ -3,7 +3,13 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
+directive @enumMeta(
+  description: String
+  display: String
+  props: [EnumMetaPropInput!]
+  shortDisplay: String
+  sortOrder: Int
+) on ENUM_VALUE
 
 input AddMediaItemToAlbumInput {
   albumId: ID!
@@ -79,13 +85,13 @@ type AlbumItemCollectionPayload {
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  TITLE @enumMeta(props: [{name: "column", value: "title"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
 }
 
 type ContractError {
@@ -321,7 +327,7 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
 }
 
 enum MediaItemStatus {
@@ -342,7 +348,9 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(
+    input: DeleteAlbumItemsFromAlbumInput!
+  ): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
@@ -364,12 +372,16 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""Implemented by all entities that have an id."""
+"""
+Implemented by all entities that have an id.
+"""
 interface Node {
   id: ID!
 }
 
-"""Cursor-free paging window (offset-based). Used on output types."""
+"""
+Cursor-free paging window (offset-based). Used on output types.
+"""
 type PageInfo {
   limit: Int!
   offset: Int!
@@ -383,8 +395,59 @@ input PageInfoInput {
   offset: Int!
 }
 
+type PublicAccess {
+  album: PublicAlbum!
+}
+
+type PublicAlbum implements Node {
+  coverMedia: PublicMediaItem
+  id: ID!
+  items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
+  title: String!
+}
+
+type PublicAlbumItem implements Node {
+  id: ID!
+  mediaItem: PublicMediaItem!
+  orderIndex: String!
+  viewerOperations: [ViewerOperation!]!
+}
+
+input PublicAlbumItemCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: AlbumItemSortBy!
+  sortDir: SortDir!
+}
+
+type PublicAlbumItemCollectionPayload {
+  nodes: [PublicAlbumItem!]!
+  pageInfo: PageInfo!
+}
+
+type PublicAlbumItemConnection {
+  nodes: [PublicAlbumItem!]!
+  pageInfo: PageInfo!
+}
+
+input PublicAlbumItemsInput {
+  collectionInfo: PublicAlbumItemCollectionInput!
+}
+
+type PublicMediaItem implements Node {
+  durationSeconds: Int
+  height: Int
+  id: ID!
+  kind: MediaKind!
+  mimeType: String!
+  status: MediaItemStatus!
+  tags: [String!]!
+  title: String!
+  viewerOperations: [ViewerOperation!]!
+  width: Int
+}
+
 type Query {
-  shareLink(token: String!): ShareLinkAccess
+  publicAccess: PublicAccess!
   viewer: Viewer
 }
 
@@ -421,14 +484,6 @@ type ShareContactType {
   userId: ID!
 }
 
-type ShareLinkAccess {
-  target: ShareLinkTarget!
-  token: ID!
-  viewerRelationship: ShareViewerRelationship!
-}
-
-union ShareLinkTarget = SharedAlbum | SharedMediaItem
-
 enum SharePermission {
   COMMENT
   DOWNLOAD
@@ -443,36 +498,6 @@ type ShareType {
   label: String
   permission: SharePermission!
   revokedAt: DateTime
-}
-
-enum ShareViewerRelationship {
-  ANONYMOUS
-  AUTHENTICATED
-  MEMBER
-  OWNER
-}
-
-type SharedAlbum implements Node {
-  id: ID!
-  items(after: String, first: Int = 50): SharedAlbumItemConnection!
-  title: String!
-}
-
-type SharedAlbumItem implements Node {
-  id: ID!
-  media: SharedMediaItem!
-}
-
-type SharedAlbumItemConnection {
-  nodes: [SharedAlbumItem!]!
-  pageInfo: PageInfo!
-}
-
-type SharedMediaItem implements Node {
-  displayUrl: String!
-  height: Int
-  id: ID!
-  width: Int
 }
 
 type SharedMediaItemType {

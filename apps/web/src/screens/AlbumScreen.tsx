@@ -15,9 +15,10 @@ import {
 import { AlbumSection } from '../shared/components/AlbumSection';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
-import { mapAlbumItemToAlbumItemSummaryVM } from '../viewModels/album/mapAlbumItemToAlbumItemSummaryVM';
-import { mapAlbumToAlbumSummaryVM } from '../viewModels/album/mapAlbumToAlbumSummaryVM';
-import { mapMediaItemToMediaItemSummaryVM } from '../viewModels/media/mapMediaItemToMediaItemSummaryVM';
+import { Toast } from '../shared/components/ui/Toast';
+import { mapAlbumItemToSummaryVM } from '../viewModels/album/mapAlbumItemToSummaryVM';
+import { mapAlbumToSummaryVM } from '../viewModels/album/mapAlbumToSummaryVM';
+import { mapMediaItemToSummaryVM } from '../viewModels/media/mapMediaItemToSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
@@ -25,6 +26,7 @@ export const AlbumScreen = () => {
   const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
   const [shareAlbumOpen, setShareAlbumOpen] = useState(false);
   const [shareItemsOpen, setShareItemsOpen] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const addToAlbumMutation = useAppMutationState();
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
@@ -57,15 +59,15 @@ export const AlbumScreen = () => {
 
     return mediaItems
       .filter((item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id))
-      .map(mapMediaItemToMediaItemSummaryVM);
+      .map(mapMediaItemToSummaryVM);
   }, [mediaItemsForPickerQuery.data, data]);
 
   if (!data) {
     return content;
   }
 
-  const album = mapAlbumToAlbumSummaryVM(data);
-  const albumItems = data.items.nodes.map(mapAlbumItemToAlbumItemSummaryVM) ?? [];
+  const album = mapAlbumToSummaryVM(data);
+  const albumItems = data.items.nodes.map(mapAlbumItemToSummaryVM) ?? [];
 
   const submitAddToAlbum = async (newAlbumItemIds: string[]) => {
     const result = await addToAlbumMutation.execute(
@@ -83,6 +85,7 @@ export const AlbumScreen = () => {
 
     if (result.success) {
       setAddAlbumItemModalOpen(false);
+      setShowSaveToast(true);
       void query.refetch();
     }
   };
@@ -103,6 +106,7 @@ export const AlbumScreen = () => {
 
     if (result.success) {
       setRemoveFromAlbumOpen(false);
+      setShowSaveToast(true);
       void query.refetch();
     }
   };
@@ -154,6 +158,7 @@ export const AlbumScreen = () => {
   };
   return (
     <Container>
+      {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       {album && (
         <AlbumSection
           album={album}

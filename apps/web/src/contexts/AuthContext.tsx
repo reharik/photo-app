@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | undefined;
   login: (email: string, password: string) => Promise<AuthActionResult>;
   signup: (email: string, password: string, name: string) => Promise<AuthActionResult>;
-
+  publicAccess: (token: string) => Promise<AuthActionResult>;
   /** Clears session and Apollo cache so routed UI returns to the logged-out experience. */
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -100,6 +100,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const publicAccess = async (token: string): Promise<AuthActionResult> => {
+    try {
+      const data = await apiFetch<{ token: string }>(`/auth/publicAccess`, {
+        method: 'POST',
+        body: { token },
+      });
+
+      if (data.success) {
+        await apolloClient.query({
+          query: ViewerDocument,
+          fetchPolicy: 'network-only',
+        });
+        return { ok: true };
+      }
+      return { ok: false, message: data.error };
+    } catch (error) {
+      console.error('Signup exception:', error);
+      return { ok: false, message: error instanceof Error ? error.message : 'Signup failed' };
+    }
+  };
+
   const logout = async (): Promise<void> => {
     await apiFetch('/auth/logout', { method: 'POST' });
     setUser(undefined);
@@ -111,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     login,
     signup,
+    publicAccess,
     logout,
     isLoading: viewerLoading,
     isAuthenticated: !!viewerData?.viewer,

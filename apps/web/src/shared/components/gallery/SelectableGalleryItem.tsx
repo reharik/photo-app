@@ -11,9 +11,11 @@ interface SelectableGalleryItemProps {
   children: React.ReactNode;
   /** `shared`: viewer is not the owner (e.g. album shared with them). */
   frameVariant?: GalleryItemFrameVariant;
+  selectable?: boolean;
 }
 
-export const SelectableGalleryItem = ({
+export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
+  selectable = true,
   isSelected,
   onModifierClick,
   onToggle,
@@ -26,7 +28,7 @@ export const SelectableGalleryItem = ({
         <ThumbClickCapture onClickCapture={onModifierClick}>
           <SelectionThumbOverlay visible={isSelected} />
           {children}
-          <SelectionToggleControl selected={isSelected} onToggle={onToggle} />
+          {selectable && <SelectionToggleControl selected={isSelected} onToggle={onToggle} />}
         </ThumbClickCapture>
       </MediaThumb>
     </Item>

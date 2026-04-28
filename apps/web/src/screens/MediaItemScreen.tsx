@@ -11,7 +11,9 @@ import { buildMediaItemUrl } from '../lib/urlBuilders/mediaItemUrlBuilder';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
-import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToMediaItemDetailVM';
+import { Toast } from '../shared/components/ui/Toast';
+import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToDetailVM';
+import { isUserMediaItemDetailVM } from '../viewModels/viewModelGuards';
 import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
 import { getGalleryNavigation } from './MediaItemGalleryNavigation';
 
@@ -35,6 +37,7 @@ export const MediaItemScreen = () => {
   });
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [showSaveToast, setShowSaveToast] = useState(false);
   const detailPanelRef = useRef<MediaItemDetailPanelHandle>(null);
 
   /** Escape resets image zoom first (when {@link MediaViewer} reports zoom active), then closes. */
@@ -52,6 +55,7 @@ export const MediaItemScreen = () => {
     if (mediaId != null && mediaId !== '') {
       await query.refetch({ mediaItemId: mediaId });
     }
+    setShowSaveToast(true);
   }, [mediaId, query]);
 
   const galleryNavigation = getGalleryNavigation({
@@ -91,14 +95,20 @@ export const MediaItemScreen = () => {
       return null;
     }
     const displayUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.display);
+
+    let imageAlt = mediaItem.title?.trim() || mediaItem.kind.display;
+
+    if (isUserMediaItemDetailVM(mediaItem)) {
+      imageAlt =
+        mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display;
+    }
+
     return (
       <MediaViewer
         kind={mediaItem.kind}
         mimeType={mediaItem.mimeType}
         displayUrl={displayUrl}
-        imageAlt={
-          mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display
-        }
+        imageAlt={imageAlt}
         onClose={handleClose}
         onNavigate={handleMediaNavigate}
         canNavigate={galleryNavigation.enabled}
@@ -120,6 +130,7 @@ export const MediaItemScreen = () => {
 
   return (
     <Container>
+      {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       <LayoutInner>
         <ViewerColumn>{viewerPane}</ViewerColumn>
 

@@ -73,6 +73,7 @@ const shareMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         permission: SharePermission.fromValue(args.input.permission),
         grantedToUserId: args.input.grantedToUserId ?? undefined,
         grantedToHandle: args.input.grantedToHandle ?? undefined,
+        token: args.input.token ?? undefined,
         label: args.input.label ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
       };

@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "types": ["jest", "node"],
+    "baseUrl": "../../..",
+    "paths": {
+      "@packages/contracts": ["packages/foundation/contracts/src/index.ts"],
+      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"],
+      "@packages/notifications": ["packages/context/notifications/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "jest.config.js"],
+  "exclude": ["dist", "node_modules"]
+}

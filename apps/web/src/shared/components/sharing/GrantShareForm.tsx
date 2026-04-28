@@ -22,6 +22,8 @@ export type GrantShareFormValues = {
 type GrantShareFormProps = {
   suggestions: ShareContactSuggestion[];
   onSubmit: (input: GrantShareFormValues) => Promise<void>;
+  /** When set, shows a "Create shareable link" path and requires a handle for the primary Share action. */
+  onCreateShareableLink?: (input: GrantShareFormValues) => Promise<void>;
   isLoading: boolean;
   errors: AppError[];
   createdToken?: string;
@@ -36,6 +38,7 @@ const trimmedOrUndefined = (value: string): string | undefined => {
 export const GrantShareForm = ({
   suggestions,
   onSubmit,
+  onCreateShareableLink,
   isLoading,
   errors,
   createdToken,
@@ -45,22 +48,47 @@ export const GrantShareForm = ({
   const [permission, setPermission] = useState<SharePermissionValue>('view');
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+  const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
+
+  const setHandleValue = (value: string) => {
+    setHandle(value);
+    if (shareToUserError) {
+      setShareToUserError(undefined);
+    }
+  };
 
   const handleSelectSuggestion = (suggestion: ShareContactSuggestion) => {
-    setHandle(suggestion.handle);
+    setHandleValue(suggestion.handle);
   };
+
+  const formValues = (): GrantShareFormValues => ({
+    handle: handle.trim(),
+    permission,
+    label: trimmedOrUndefined(label),
+    expiresAt: trimmedOrUndefined(expiresAt),
+  });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isLoading) {
       return;
     }
-    await onSubmit({
-      handle: handle.trim(),
-      permission,
-      label: trimmedOrUndefined(label),
-      expiresAt: trimmedOrUndefined(expiresAt),
-    });
+    if (onCreateShareableLink && !handle.trim()) {
+      setShareToUserError(
+        'Enter a user handle to share with a specific person, or use “Create shareable link” below.',
+      );
+      return;
+    }
+    setShareToUserError(undefined);
+    await onSubmit(formValues());
+  };
+
+  const handleCreateShareableLink = async () => {
+    if (isLoading) {
+      return;
+    }
+    setShareToUserError(undefined);
+    await onCreateShareableLink?.(formValues());
   };
 
   if (createdToken) {
@@ -81,9 +109,10 @@ export const GrantShareForm = ({
     <Form onSubmit={handleSubmit}>
       <VStack gap={3}>
         <AppErrorPanel errors={errors} />
+        {shareToUserError && <FieldHint role="alert">{shareToUserError}</FieldHint>}
         <ShareRecipientInput
           value={handle}
-          onChange={setHandle}
+          onChange={setHandleValue}
           suggestions={suggestions}
           onSelectSuggestion={handleSelectSuggestion}
           disabled={isLoading}
@@ -105,13 +134,29 @@ export const GrantShareForm = ({
           }
           disabled={isLoading}
         />
+        {onCreateShareableLink && (
+          <ShareableLinkBlock>
+            <LinkDisclaimer>
+              Anyone with the link can use the access level you select above. Do not share the link
+              with people you do not trust. Access lasts until the share expires or you revoke it.
+            </LinkDisclaimer>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleCreateShareableLink}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Please wait\u2026' : 'Create shareable link'}
+            </Button>
+          </ShareableLinkBlock>
+        )}
         <Actions>
           <HStack gap={2}>
             <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
               Cancel
             </Button>
             <Button type="submit" variant="primary" disabled={isLoading}>
-              {isLoading ? 'Sharing\u2026' : 'Share'}
+              {isLoading ? 'Please wait\u2026' : 'Share with user'}
             </Button>
           </HStack>
         </Actions>
@@ -122,6 +167,27 @@ export const GrantShareForm = ({
 
 const Form = styled.form`
   width: 100%;
+`;
+
+const FieldHint = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.danger};
+`;
+
+const ShareableLinkBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(0.5)};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const LinkDisclaimer = styled.p`
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.subtext};
 `;
 
 const Actions = styled.div`

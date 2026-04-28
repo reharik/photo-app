@@ -1,0 +1,38 @@
+export type TemplateName = 'welcome' | 'share-invite' | 'digest';
+
+export type TemplateData = {
+  welcome: {
+    userName: string;
+    gettingStartedUrl: string;
+    appName?: string;
+  };
+  'share-invite': {
+    inviterName: string;
+    resourceName: string;
+    inviteUrl: string;
+    appName?: string;
+  };
+  digest: {
+    userName: string;
+    periodLabel: string;
+    summaryLine: string;
+    highlights: { title: string; detail: string }[];
+    digestUrl: string;
+    appName?: string;
+  };
+};
+
+export type NotificationChannel = 'email' | 'sms';
+
+export type NotificationPayload<T extends TemplateName> = {
+  to: string | { email?: string; phone?: string };
+  template: T;
+  data: TemplateData[T];
+  channels?: NotificationChannel[];
+};
+
+export type NotifySuccess = { success: true; id: string };
+
+export type NotifyFailure = { success: false; error: string };
+
+export type NotifyResult = NotifySuccess | NotifyFailure;

@@ -2,14 +2,11 @@ import type { Knex } from 'knex';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import type { EntityId } from '../../types/types';
 
-export type GrantSource = 'direct_share' | 'album_share' | 'album_member';
-
 export type GrantRecord = {
   id: EntityId;
   mediaItemId: EntityId;
   accessGrantId?: EntityId;
   grantedToUser?: EntityId;
-  tokenHash?: string;
   createdAt: Date;
 };
 

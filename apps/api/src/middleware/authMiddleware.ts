@@ -21,7 +21,7 @@ export const buildAuthMiddleware =
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const user = await authService.verifyToken(token);
+    const user = await authService.verifyJWTToken(token);
     if (!user) {
       logger.warn('Authentication failed: invalid or expired token', {
         method: ctx.method,
@@ -46,7 +46,7 @@ export const buildOptionalAuthMiddleware =
     ctx.isLoggedIn = false;
 
     if (token) {
-      const user = await authService.verifyToken(token);
+      const user = await authService.verifyJWTToken(token);
       if (user) {
         ctx.state.user = user;
         ctx.state.isLoggedIn = true;

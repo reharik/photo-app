@@ -62,7 +62,28 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
       expiresAt: toIsoExpiry(values.expiresAt),
     };
     const result = await grantAlbumShare(input);
-    if (result.success && result.data.token) {
+    if (!result.success) {
+      return;
+    }
+    if (result.data?.token) {
+      setCreatedToken(result.data.token);
+      return;
+    }
+    onClose();
+  };
+
+  const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
+    const input: GrantAlbumShareInput = {
+      albumId,
+      permission: PERMISSION_BY_VALUE[values.permission],
+      label: values.label,
+      expiresAt: toIsoExpiry(values.expiresAt),
+    };
+    const result = await grantAlbumShare(input);
+    if (!result.success) {
+      return;
+    }
+    if (result.data?.token) {
       setCreatedToken(result.data.token);
     }
   };
@@ -72,6 +93,7 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
       <GrantShareForm
         suggestions={suggestions}
         onSubmit={handleSubmit}
+        onCreateShareableLink={handleCreateShareableLink}
         isLoading={isLoading}
         errors={errors}
         createdToken={createdToken}

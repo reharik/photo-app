@@ -45,8 +45,9 @@ export const buildGrantAlbumShare = ({
   database,
 }: GrantAlbumShareDeps): GrantAlbumShare => {
   return async (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>> => {
-    const { viewerId, albumId, permission, grantedToHandle, token, label, expiresAt } = input;
+    const { viewerId, albumId, permission, grantedToHandle, label, expiresAt } = input;
     let { grantedToUserId } = input;
+    let token: string | undefined = input.token;
 
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
@@ -70,6 +71,8 @@ export const buildGrantAlbumShare = ({
     } else if (grantedToUserId) {
       const found = await userRepository.getById(grantedToUserId);
       grantedToHandleResolved = found?.handle();
+    } else if (!token) {
+      token = crypto.randomUUID();
     }
 
     const result = album.grantShare(permission, viewerId, grantedToUserId, token, label, expiresAt);

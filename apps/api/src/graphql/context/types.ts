@@ -1,6 +1,8 @@
 import { User } from '@packages/contracts';
+import type { AlbumReadRepository, ShareLinkReadRepository } from '@packages/media-core';
 import { StripFactory } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
+import type { Knex } from 'knex';
 import type Koa from 'koa';
 import { IocGeneratedTypes } from '../../di/generated/ioc-registry.types';
 
@@ -15,6 +17,9 @@ export type GraphQLContextViewer = {
 };
 
 export interface GraphQLContext {
+  database: Knex;
+  shareLinkReadRepository: ShareLinkReadRepository;
+  albumReadRepository: AlbumReadRepository;
   viewer?: GraphQLContextViewer;
   writeServices?: IocGeneratedTypes['writeServices'];
   readServices?: ReadServices;

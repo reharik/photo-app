@@ -90,6 +90,26 @@ export const GrantMediaItemShareModal = ({
     onClose();
   };
 
+  const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
+    if (mediaItemIds.length === 0) {
+      return;
+    }
+    const permission = PERMISSION_BY_VALUE[values.permission];
+    const input: GrantManyMediaItemSharesInput = {
+      mediaItemIds,
+      permission,
+      label: values.label,
+      expiresAt: toIsoExpiry(values.expiresAt),
+    };
+    const result = await grantManyMediaItemShares(input);
+    if (!result.success) {
+      return;
+    }
+    if (result.data?.token) {
+      setCreatedToken(result.data.token);
+    }
+  };
+
   return (
     <AppModal
       onClose={onClose}
@@ -99,6 +119,7 @@ export const GrantMediaItemShareModal = ({
       <GrantShareForm
         suggestions={suggestions}
         onSubmit={handleSubmit}
+        onCreateShareableLink={handleCreateShareableLink}
         isLoading={isLoading}
         errors={errors}
         createdToken={createdToken}

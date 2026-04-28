@@ -1,6 +1,9 @@
 import { MediaKind, ViewerOperation } from '@packages/contracts';
+import { PublicMediaItemSummaryVM } from '../publicMedia/PublicMediaItemSummaryVM';
 
-export type MediaItemSummaryVM = {
+export type MediaItemSummaryVM = UserMediaItemSummaryVM | PublicMediaItemSummaryVM;
+
+export type UserMediaItemSummaryVM = {
   id: string;
   title: string;
   createdAt: string;

@@ -15,6 +15,7 @@ import mediaItemResolvers from './media/mediaItemResolver.js';
 
 import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
+import shareLinkResolvers from './sharing/shareLinkResolver.js';
 import shareMutationResolvers from './sharing/shareMutationResolver.js';
 
 /**
@@ -28,6 +29,7 @@ export const resolvers = mergeResolvers([
   albumResolvers,
   mediaItemUploadResolvers,
   mediaItemResolvers,
+  shareLinkResolvers,
   shareMutationResolvers,
   viewerMutationResolvers,
   viewerResolvers,

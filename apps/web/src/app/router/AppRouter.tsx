@@ -3,6 +3,7 @@ import { AlbumScreen } from '../../screens/AlbumScreen';
 import { AlbumsListScreen } from '../../screens/AlbumsListScreen';
 import { HomeScreen } from '../../screens/HomeScreen';
 import { MediaItemScreen } from '../../screens/MediaItemScreen';
+import { PublicAlbumScreen } from '../../screens/PublicAlbumScreen';
 import { SharedWithMeScreen } from '../../screens/SharedWithMeScreen';
 import { AppShell } from '../../shared/components/AppShell';
 
@@ -20,6 +21,7 @@ export const AppRouter = ({ viewer }: AppRouterProps) => {
         <Route path="/albums" element={<AlbumsListScreen />} />
         <Route path="/albums/:albumId" element={<AlbumScreen />} />
         <Route path="/shared-with-me" element={<SharedWithMeScreen />} />
+        <Route path="/share/:token" element={<PublicAlbumScreen />} />
       </Route>
     </Routes>
   );

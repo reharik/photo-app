@@ -3,13 +3,13 @@ import {
   SharedMediaItemFragment,
   ViewerSharedMediaItemsQuery,
 } from '../../graphql/generated/types';
-import { mapMediaItemToMediaItemSummaryVM } from '../media/mapMediaItemToMediaItemSummaryVM';
+import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
 import { SharedMediaItemVM } from './SharedMediaItemVM';
 
 const mapNodeToSharedMediaItemVM = (node: SharedMediaItemFragment): SharedMediaItemVM => ({
   ...node,
   permission: SharePermission.fromValue(node.permission),
-  mediaItem: mapMediaItemToMediaItemSummaryVM(node.mediaItem),
+  mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
 });
 
 type SharedMediaItemsSlice = NonNullable<

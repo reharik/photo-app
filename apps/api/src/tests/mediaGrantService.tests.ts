@@ -5,6 +5,7 @@ import type {
   MediaAssetProjection,
   MediaAssetReadRepository,
   MediaItemReadRepository,
+  ShareLinkReadRepository,
 } from '@packages/media-core';
 import { buildMediaGrantService } from '../services/mediaGrantService';
 
@@ -38,6 +39,13 @@ const mediaAssetReadRepositoryReturning = (
 const grantReadRepositoryReturning = (granted: boolean): GrantReadRepository => ({
   hasActiveGrant: async () => granted,
 });
+
+const shareLinkReadRepositoryReturning = (allowed: boolean): ShareLinkReadRepository => ({
+  findActiveWithGrantsByTokenHash: async () => undefined,
+  canAccessMediaWithLink: async () => allowed,
+});
+
+const denyShareLink = shareLinkReadRepositoryReturning(false);
 
 const buildAsset = (
   overrides: Partial<MediaAssetProjection> & Pick<MediaAssetProjection, 'kind' | 'status'>,
@@ -76,6 +84,7 @@ describe('MediaGrantService', () => {
         mediaItemReadRepository: mediaItemReadRepositoryReturning(undefined),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([]),
         grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -99,6 +108,7 @@ describe('MediaGrantService', () => {
           buildAsset({ kind: 'thumbnail', status: 'ready' }),
         ]),
         grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -121,6 +131,7 @@ describe('MediaGrantService', () => {
           buildAsset({ kind: 'original', status: 'ready' }),
         ]),
         grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -144,6 +155,7 @@ describe('MediaGrantService', () => {
           buildAsset({ kind: 'thumbnail', status: 'ready' }),
         ]),
         grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -166,6 +178,7 @@ describe('MediaGrantService', () => {
           buildAsset({ kind: 'original', status: 'ready' }),
         ]),
         grantReadRepository: grantReadRepositoryReturning(true),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -186,6 +199,7 @@ describe('MediaGrantService', () => {
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([]),
         grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: denyShareLink,
       });
 
       const result = await service.authorizeView({
@@ -197,6 +211,31 @@ describe('MediaGrantService', () => {
       expect(result.success).toBe(true);
       if (!result.success) return;
       expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.original.key}`);
+    });
+  });
+
+  describe('When a non-owner has no grant row but a valid share link token', () => {
+    it('should authorize via share link when canAccessMediaWithLink is true', async () => {
+      const service = buildMediaGrantService({
+        mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
+        mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
+          buildAsset({ kind: 'original', status: 'ready' }),
+          buildAsset({ kind: 'thumbnail', status: 'ready' }),
+        ]),
+        grantReadRepository: grantReadRepositoryReturning(false),
+        shareLinkReadRepository: shareLinkReadRepositoryReturning(true),
+      });
+
+      const result = await service.authorizeView({
+        mediaId: mediaItemId,
+        variant: MediaAssetKind.thumbnail,
+        viewerId: otherViewerId,
+        shareToken: 'link-secret',
+      });
+
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.thumbnail.key}`);
     });
   });
 });

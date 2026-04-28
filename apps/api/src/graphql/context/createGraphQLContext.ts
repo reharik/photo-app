@@ -9,11 +9,20 @@ import {
 export const buildCreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
+  database,
+  shareLinkReadRepository,
+  albumReadRepository,
 }: IocGeneratedCradle): GraphQLContextFactory => {
   return (initialContext: GraphQLInitialContext): GraphQLContext => {
+    const base: GraphQLContext = {
+      database,
+      shareLinkReadRepository,
+      albumReadRepository,
+    };
+
     const user = initialContext.state?.user;
     if (!initialContext.state?.isLoggedIn || !user) {
-      return {};
+      return base;
     }
 
     const viewer = {
@@ -36,6 +45,7 @@ export const buildCreateGraphQLContext = ({
     }
 
     return {
+      ...base,
       viewer,
       writeServices,
       readServices: rs,

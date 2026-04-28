@@ -37,6 +37,7 @@ type SelectableGalleryProps<T extends { id: string }> = {
   }) => React.ReactNode;
   /** When set, non-owner / shared items can use a dashed frame (see `SelectableGalleryItem`). */
   getItemFrameVariant?: (item: T) => GalleryItemFrameVariant;
+  selectable?: boolean;
 };
 
 export const SelectableGallery = <T extends { id: string }>({
@@ -51,6 +52,7 @@ export const SelectableGallery = <T extends { id: string }>({
   renderItem,
   orderedMediaIds,
   getItemFrameVariant,
+  selectable = true,
 }: SelectableGalleryProps<T>) => {
   if (nodes.length === 0) {
     if (emptyState == null) {
@@ -76,11 +78,12 @@ export const SelectableGallery = <T extends { id: string }>({
         return (
           <SelectableGalleryItem
             key={item.id}
+            selectable={selectable}
             isSelected={multiSelectProps.isSelected(item.id)}
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}
             onModifierClick={(event) => multiSelectProps.handleModifierClick(event, item.id, index)}
             // Generic `T` + callback triggers no-unsafe-assignment despite explicit return type.
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- frame resolver is `(item: T) => GalleryItemFrameVariant`
+
             frameVariant={resolveFrameVariant(item)}
           >
             {renderItem({
