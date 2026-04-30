@@ -5,8 +5,9 @@ type Mutation {
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
-  grantMediaItemShare(input: GrantMediaItemShareInput!): GrantShareResult!
-  grantManyMediaItemShares(input: GrantManyMediaItemSharesInput!): GrantManyMediaItemSharesResult!
+  grantUserAuthorizationsForMediaItems(
+    input: GrantUserAuthorizationsForMediaItemsInput!
+  ): GrantUserAuthorizationResult!
 }
 
 input CreateMediaUploadInput {
@@ -114,22 +115,11 @@ type FinalizeMediaUploadPayload {
   kind: MediaKind!
 }
 
-input GrantMediaItemShareInput {
-  mediaItemId: ID!
-  permission: SharePermission!
-  grantedToUserId: ID
-  grantedToHandle: String
-  token: String
-  label: String
-  expiresAt: DateTime
-}
-
-input GrantManyMediaItemSharesInput {
+input GrantUserAuthorizationsForMediaItemsInput {
   mediaItemIds: [ID!]!
   permission: SharePermission!
   grantedToUserId: ID
   grantedToHandle: String
-  token: String
   label: String
   expiresAt: DateTime
 }

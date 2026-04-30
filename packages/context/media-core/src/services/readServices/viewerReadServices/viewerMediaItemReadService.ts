@@ -32,7 +32,6 @@ export const buildViewerMediaItemReadServiceFactory = ({
     const withTags = async (rows: MediaItemRow[]): Promise<MediaItemProjection[]> => {
       const ids = rows.map((r) => r.id);
       const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        viewerId,
         mediaItemIds: ids,
       });
       return rows.map((r) => ({ ...r, tags: tagMap.get(r.id) ?? [] }));

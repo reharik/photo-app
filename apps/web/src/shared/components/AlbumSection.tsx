@@ -70,7 +70,10 @@ export const AlbumSection = ({
     [selectedAlbumItems],
   );
 
-  const canShareSelectedItems = canEveryItemDo(selectedAlbumItems, ViewerOperation.share);
+  const canShareSelectedItems = canEveryItemDo(
+    selectedAlbumItems,
+    ViewerOperation.grantAuthorizations,
+  );
   const canRemoveSelectedFromAlbum = canEveryItemDo(
     selectedAlbumItems,
     ViewerOperation.removeItems,

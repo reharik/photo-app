@@ -13,10 +13,8 @@ import albumResolvers from './album/albumResolver.js';
 import mediaItemUploadResolvers from './media/mediaItemMutationsResolver.js';
 import mediaItemResolvers from './media/mediaItemResolver.js';
 
-import viewerMutationResolvers from './root/ViewerMutationResolver.js';
+import authorizationMutationResolvers from './authorization/authorizationMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
-import shareLinkResolvers from './sharing/shareLinkResolver.js';
-import shareMutationResolvers from './sharing/shareMutationResolver.js';
 
 /**
  * Resolvers must be registered with static imports so the Vite production bundle includes them.
@@ -29,8 +27,7 @@ export const resolvers = mergeResolvers([
   albumResolvers,
   mediaItemUploadResolvers,
   mediaItemResolvers,
-  shareLinkResolvers,
-  shareMutationResolvers,
-  viewerMutationResolvers,
+  authorizationMutationResolvers,
+  authorizationMutationResolvers,
   viewerResolvers,
 ]);

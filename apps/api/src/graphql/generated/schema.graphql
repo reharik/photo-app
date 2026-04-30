@@ -43,11 +43,11 @@ type AddMediaItemsToAlbumResponse {
 }
 
 type Album implements Node {
+  authorizations: [AuthorizationType]
   coverMedia: MediaItem
   createdAt: DateTime!
   id: ID!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
-  shares: [ShareType]
   title: String!
   updatedAt: DateTime!
   viewerIsOwner: Boolean!
@@ -92,6 +92,16 @@ enum AlbumItemSortBy {
 enum AlbumSortBy {
   CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
   TITLE @enumMeta(props: [{ name: "column", value: "title" }])
+}
+
+type AuthorizationType {
+  createdAt: DateTime!
+  expiresAt: DateTime
+  grantedToUserId: ID
+  id: ID!
+  label: String
+  permission: SharePermission!
+  revokedAt: DateTime
 }
 
 type ContractError {
@@ -225,48 +235,32 @@ type FinalizeMediaUploadResponse {
   errors: [ContractError!]
 }
 
-input GrantAlbumShareInput {
+input GrantUserAuthorizationForAlbumInput {
   albumId: ID!
   expiresAt: DateTime
   grantedToHandle: String
   grantedToUserId: ID
   label: String
   permission: SharePermission!
-  token: String
 }
 
-input GrantManyMediaItemSharesInput {
+type GrantUserAuthorizationPayload {
+  authorizationIds: [ID!]!
+  authorizations: [AuthorizationType!]!
+}
+
+type GrantUserAuthorizationResult {
+  data: GrantUserAuthorizationPayload
+  errors: [ContractError!]
+}
+
+input GrantUserAuthorizationsForMediaItemsInput {
   expiresAt: DateTime
   grantedToHandle: String
   grantedToUserId: ID
   label: String
   mediaItemIds: [ID!]!
   permission: SharePermission!
-  token: String
-}
-
-type GrantManyMediaItemSharesResult {
-  errors: [ContractError!]
-  shares: [ShareType!]
-  success: Boolean!
-  token: String
-}
-
-input GrantMediaItemShareInput {
-  expiresAt: DateTime
-  grantedToHandle: String
-  grantedToUserId: ID
-  label: String
-  mediaItemId: ID!
-  permission: SharePermission!
-  token: String
-}
-
-type GrantShareResult {
-  errors: [ContractError!]
-  share: ShareType
-  success: Boolean!
-  token: String
 }
 
 type MediaAsset implements Node {
@@ -296,6 +290,7 @@ enum MediaAssetStatus {
 }
 
 type MediaItem implements Node {
+  authorizations: [AuthorizationType]
   createdAt: DateTime!
   description: String
   durationSeconds: Int
@@ -304,7 +299,6 @@ type MediaItem implements Node {
   kind: MediaKind!
   mimeType: String!
   originalFileName: String!
-  shares: [ShareType]
   sizeBytes: Int!
   status: MediaItemStatus!
   tags: [String!]!
@@ -360,9 +354,12 @@ type Mutation {
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
-  grantAlbumShare(input: GrantAlbumShareInput!): GrantShareResult!
-  grantManyMediaItemShares(input: GrantManyMediaItemSharesInput!): GrantManyMediaItemSharesResult!
-  grantMediaItemShare(input: GrantMediaItemShareInput!): GrantShareResult!
+  grantUserAuthorizationForAlbum(
+    input: GrantUserAuthorizationForAlbumInput!
+  ): GrantUserAuthorizationResult!
+  grantUserAuthorizationsForMediaItems(
+    input: GrantUserAuthorizationsForMediaItemsInput!
+  ): GrantUserAuthorizationResult!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
 }
@@ -447,7 +444,7 @@ type PublicMediaItem implements Node {
 }
 
 type Query {
-  publicAccess: PublicAccess!
+  publicAccess: PublicAccess
   viewer: Viewer
 }
 
@@ -488,16 +485,6 @@ enum SharePermission {
   COMMENT
   DOWNLOAD
   VIEW
-}
-
-type ShareType {
-  createdAt: DateTime!
-  expiresAt: DateTime
-  grantedToUserId: ID
-  id: ID!
-  label: String
-  permission: SharePermission!
-  revokedAt: DateTime
 }
 
 type SharedMediaItemType {
@@ -603,6 +590,6 @@ enum ViewerOperation {
   DOWNLOAD
   EDIT_COVER
   EDIT_DETAILS
+  GRANT_AUTHORIZATION
   REMOVE_ITEMS
-  SHARE
 }

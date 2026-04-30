@@ -10,14 +10,14 @@ const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
       if (!album.coverMedia) {
         return undefined;
       }
-      const permissionMap = await mediaItemPermissionsForToken(
-        ctx.readServices.publicMediaItemPermissionService,
-        () => [album.coverMedia!.id],
-      );
+      const permissionMap =
+        await ctx.readServices.publicMediaItemPermissionService.getPermissionsForPublicLink([
+          album.coverMedia.id,
+        ]);
 
       return {
         ...album.coverMedia,
-        viewerOperations: permissionMap.get(album.coverMedia.id) ?? [],
+        viewerOperations: permissionMap[0]?.operations ?? [],
       };
     },
     items: async (album, { input }, ctx) => {
@@ -27,21 +27,23 @@ const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
         albumId: album.id,
         collectionInfo,
       });
-      const permissionMap = await mediaItemPermissionsForToken(
-        ctx.readServices.publicMediaItemPermissionService,
-        () => albumItems.nodes.map((n) => n.mediaItem.id),
-      );
-
+      const permissionMap =
+        await ctx.readServices.publicMediaItemPermissionService.getPermissionsForPublicLink(
+          albumItems.nodes.map((n) => n.mediaItem.id),
+        );
       return {
-        nodes: albumItems.nodes.map((n) => ({
-          ...n,
-          mediaItem: {
-            ...n.mediaItem,
-
-            viewerOperations: permissionMap.get(n.mediaItem.id) ?? [],
-          },
-          viewerOperations: permissionMap.get(n.mediaItem.id) ?? [],
-        })),
+        nodes: albumItems.nodes.map((n) => {
+          const viewerOperations =
+            permissionMap.find((x) => x.mediaItemId === n.mediaItem.id)?.operations ?? [];
+          return {
+            ...n,
+            mediaItem: {
+              ...n.mediaItem,
+              viewerOperations,
+            },
+            viewerOperations,
+          };
+        }),
         pageInfo: albumItems.pageInfo,
       };
     },

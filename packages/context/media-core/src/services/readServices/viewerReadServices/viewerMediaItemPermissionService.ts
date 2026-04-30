@@ -5,7 +5,7 @@ import { ReadServiceFactoryBase } from '../readServiceBaseType';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;
-  operations: ViewerOperation[];
+  operations: string[];
 };
 
 export type ViewerMediaItemPermissionService = {
@@ -52,19 +52,19 @@ export const buildViewerMediaItemPermissionServiceFactory = ({
           // future: 'ai.allow_reshare as albumItemAllowReshare',
         );
 
-      const permissionMap = rows.reduce<Map<string, Set<ViewerOperation>>>((acc, row) => {
-        const existing = acc.get(row.mediaItemId) ?? new Set<ViewerOperation>();
+      const permissionMap = rows.reduce<Map<string, Set<string>>>((acc, row) => {
+        const existing = acc.get(row.mediaItemId) ?? new Set<string>();
 
         if (row.ownerId === viewerId) {
-          ViewerOperation.items().forEach((op) => existing.add(op));
+          ViewerOperation.items().forEach((op) => existing.add(op.value));
         } else if (row.albumRole) {
           const role = AlbumMemberRole.fromValue(row.albumRole);
-          role.operations.forEach((op) => existing.add(op));
+          role.operations.forEach((op) => existing.add(op.value));
         }
 
         acc.set(row.mediaItemId, existing);
         return acc;
-      }, new Map<string, Set<ViewerOperation>>());
+      }, new Map<string, Set<string>>());
 
       return mediaItemIds.map((id) => ({
         mediaItemId: id,
@@ -74,7 +74,7 @@ export const buildViewerMediaItemPermissionServiceFactory = ({
 
     const canDownload = async (mediaItemId: string): Promise<boolean> => {
       const [result] = await getPermissionsForViewer([mediaItemId]);
-      return result?.operations.includes(ViewerOperation.download) ?? false;
+      return result?.operations.includes(ViewerOperation.download.value) ?? false;
     };
 
     return {

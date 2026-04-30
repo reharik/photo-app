@@ -17,8 +17,8 @@ const input = {
   deleteAlbum: {
     deniedError: ContractError.MemberNotAllowedToDeleteAlbum,
   },
-  share: {
-    deniedError: ContractError.MemberNotAllowedToShareAlbum,
+  grantAuthorization: {
+    deniedError: ContractError.MemberNotAllowedToGrantAuthorization,
   },
   download: {
     deniedError: ContractError.MemberNotAllowedToDownloadItems,

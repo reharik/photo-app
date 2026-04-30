@@ -7,7 +7,7 @@ type Album implements Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
-  shares: [ShareType]
+  authorizations: [AuthorizationType]
 }
 
 input ViewerAlbumItemsInput {

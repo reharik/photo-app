@@ -5,30 +5,29 @@ import {
   ensureUserExists,
   loadRequiredMediaItem,
 } from '../../../application/support/resourceLoaders';
-import { hashToken } from '../../../application/support/tokenHash';
+import { Authorization } from '../../../domain/Authorization/Authorization';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { Share } from '../../../domain/Share/Share';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
 import { EntityId, WriteResult } from '../../../types/types';
-import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
-import { WriteServiceBase } from '../writeServiceBaseType';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAuthorizationReadService';
 import {
-  GrantManyMediaItemSharesCommand,
-  GrantManyMediaItemSharesResult,
-} from './writeMediaItem.types';
+  GrantUserAuthorizationForMediaItemsCommand,
+  GrantUserAuthorizationResult,
+} from '../mediaItem/writeMediaItem.types';
+import { WriteServiceBase } from '../writeServiceBaseType';
 
-const toShareProjection = (share: Share): ShareProjection => ({
-  id: share.id(),
-  grantedToUserId: share.grantedToUser(),
-  permission: share.permission().value,
-  label: share.label(),
-  expiresAt: share.expiresAt(),
-  revokedAt: share.revokedAt(),
-  // Share was just created in this transaction; accurate within milliseconds.
+const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
+  id: authorization.id(),
+  grantedToUserId: authorization.grantedToUser(),
+  permission: authorization.permission().value,
+  label: authorization.label(),
+  expiresAt: authorization.expiresAt(),
+  revokedAt: authorization.revokedAt(),
+  // Authorization was just created in this transaction; accurate within milliseconds.
   createdAt: new Date(),
 });
 
@@ -45,11 +44,13 @@ const dedupePreserveOrder = (ids: EntityId[]): EntityId[] => {
   return out;
 };
 
-export interface GrantManyMediaItemShares extends WriteServiceBase {
-  (input: GrantManyMediaItemSharesCommand): Promise<WriteResult<GrantManyMediaItemSharesResult>>;
+export interface GrantAuthorizationForMediaItems extends WriteServiceBase {
+  (
+    input: GrantUserAuthorizationForMediaItemsCommand,
+  ): Promise<WriteResult<GrantUserAuthorizationResult>>;
 }
 
-type GrantManyMediaItemSharesDeps = {
+type GrantAuthorizationForMediaItemsDeps = {
   mediaItemRepository: MediaItemRepository;
   userRepository: UserRepository;
   grantRepository: GrantRepository;
@@ -58,19 +59,19 @@ type GrantManyMediaItemSharesDeps = {
 };
 
 /**
- * Grants the same share (single recipient OR single token) across many media items
+ * Grants the same authorization (single recipient OR single token) across many media items
  * in one database transaction. Any failure rolls back every grant in the batch.
  */
-export const buildGrantManyMediaItemShares = ({
+export const buildGrantAuthorizationForMediaItems = ({
   mediaItemRepository,
   userRepository,
   grantRepository,
   shareContactRepository,
   database,
-}: GrantManyMediaItemSharesDeps): GrantManyMediaItemShares => {
+}: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
   return async (
-    input: GrantManyMediaItemSharesCommand,
-  ): Promise<WriteResult<GrantManyMediaItemSharesResult>> => {
+    input: GrantUserAuthorizationForMediaItemsCommand,
+  ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, permission, grantedToHandle, label, expiresAt } = input;
     const dedupedIds = dedupePreserveOrder(input.mediaItemIds);
 
@@ -79,7 +80,6 @@ export const buildGrantManyMediaItemShares = ({
     }
 
     let { grantedToUserId } = input;
-    let token: string | undefined;
     let grantedToHandleResolved: string | undefined;
     if (grantedToHandle) {
       const ensureUser = await ensureUserExists(grantedToHandle, userRepository);
@@ -92,10 +92,6 @@ export const buildGrantManyMediaItemShares = ({
     } else if (grantedToUserId) {
       const found = await userRepository.getById(grantedToUserId);
       grantedToHandleResolved = found?.handle();
-    } else {
-      // if neither grantedToHandle nor grantedToUserId are provided,
-      // it means it is a public share.
-      token = crypto.randomUUID();
     }
 
     const mediaItems: MediaItem[] = [];
@@ -111,20 +107,19 @@ export const buildGrantManyMediaItemShares = ({
       mediaItems.push(loaded.value);
     }
 
-    const grants: { mediaItem: MediaItem; share: Share }[] = [];
+    const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
     for (const mediaItem of mediaItems) {
-      const result = mediaItem.grantShare(
+      const result = mediaItem.grantAuthorization(
         permission,
         viewerId,
         grantedToUserId,
-        token,
         label,
         expiresAt,
       );
       if (!result.success) {
         return result;
       }
-      grants.push({ mediaItem, share: result.value.share });
+      grants.push({ mediaItem, authorization: result.value.authorization });
     }
 
     const owner =
@@ -133,16 +128,15 @@ export const buildGrantManyMediaItemShares = ({
         : undefined;
 
     await database.transaction(async (trx) => {
-      for (const { mediaItem, share } of grants) {
+      for (const { mediaItem, authorization } of grants) {
         await mediaItemRepository.save(mediaItem, { trx });
 
         await grantRepository.createGrant(
           {
             id: crypto.randomUUID(),
             mediaItemId: mediaItem.id(),
-            accessGrantId: share.id(),
+            accessGrantId: authorization.id(),
             grantedToUser: grantedToUserId,
-            tokenHash: token ? hashToken(token) : undefined,
             createdAt: new Date(),
           },
           { trx },
@@ -166,9 +160,8 @@ export const buildGrantManyMediaItemShares = ({
     });
 
     return ok({
-      shareIds: grants.map((g) => g.share.id()),
-      shares: grants.map((g) => toShareProjection(g.share)),
-      token,
+      authorizationIds: grants.map((g) => g.authorization.id()),
+      authorizations: grants.map((g) => toAuthorizationProjection(g.authorization)),
     });
   };
 };

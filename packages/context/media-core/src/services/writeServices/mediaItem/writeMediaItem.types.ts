@@ -1,7 +1,7 @@
 import { MediaItemStatus, MediaKind, SharePermission } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
-import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAuthorizationReadService';
 
 export type FinalizeMediaItemUploadCommand = {
   viewerId: EntityId;
@@ -74,24 +74,12 @@ export type UpdateMediaItemTagsResult = {
   tags: string[];
 };
 
-export type GrantMediaItemShareCommand = {
-  viewerId: EntityId;
-  mediaItemId: EntityId;
-  permission: SharePermission;
-  grantedToUserId?: EntityId;
-  grantedToHandle?: string;
-  token?: string;
-  label?: string;
-  expiresAt?: Date;
+export type GrantUserAuthorizationResult = {
+  authorizationIds: EntityId[];
+  authorizations: AuthorizationProjection[];
 };
 
-export type GrantShareResult = {
-  shareId: EntityId;
-  token?: string;
-  share: ShareProjection;
-};
-
-export type GrantManyMediaItemSharesCommand = {
+export type GrantUserAuthorizationForMediaItemsCommand = {
   viewerId: EntityId;
   mediaItemIds: EntityId[];
   permission: SharePermission;
@@ -99,10 +87,4 @@ export type GrantManyMediaItemSharesCommand = {
   grantedToHandle?: string;
   label?: string;
   expiresAt?: Date;
-};
-
-export type GrantManyMediaItemSharesResult = {
-  shareIds: EntityId[];
-  shares: ShareProjection[];
-  token?: string;
 };

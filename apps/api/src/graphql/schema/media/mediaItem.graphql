@@ -14,12 +14,12 @@ type MediaItem implements Node {
   tags: [String!]!
   createdAt: DateTime!
   updatedAt: DateTime!
-  shares: [ShareType]
+  authorizations: [AuthorizationType]
   viewerOperations: [ViewerOperation!]!
 }
 
 enum ViewerOperation {
-  SHARE
+  GRANT_AUTHORIZATION
   EDIT_DETAILS
   ADD_ITEMS
   REMOVE_ITEMS

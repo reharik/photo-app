@@ -3,7 +3,7 @@ import { ActorId, EntityId, WriteResult } from '../../types/types';
 import { Entity, EntityAuditRecord } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 
-export type ShareProps = {
+export type AuthorizationProps = {
   grantedToUser?: EntityId;
   token?: string;
   permission: SharePermission;
@@ -13,7 +13,7 @@ export type ShareProps = {
   revokedAt?: Date;
 };
 
-export type ShareRecord = {
+export type AuthorizationRecord = {
   id: string;
   grantedToUser?: string;
   grantedBy: EntityId;
@@ -24,7 +24,7 @@ export type ShareRecord = {
   revokedAt?: Date;
 } & EntityAuditRecord;
 
-export type CreateShareInput = {
+export type CreateAuthorizationInput = {
   permission: SharePermission;
   grantedToUser?: EntityId;
   grantedBy: EntityId;
@@ -33,16 +33,16 @@ export type CreateShareInput = {
   expiresAt?: Date;
 };
 
-export class Share extends Entity<ShareRecord> {
-  protected props: ShareProps;
+export class Authorization extends Entity<AuthorizationRecord> {
+  protected props: AuthorizationProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: ShareProps) {
+  private constructor(id: EntityId, actorId: ActorId, props: AuthorizationProps) {
     super(id, actorId);
     this.props = props;
   }
 
-  static create(input: CreateShareInput, actorId: ActorId): Share {
-    return new Share(crypto.randomUUID(), actorId, {
+  static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
+    return new Authorization(crypto.randomUUID(), actorId, {
       permission: input.permission,
       grantedToUser: input.grantedToUser,
       grantedBy: actorId,
@@ -52,8 +52,8 @@ export class Share extends Entity<ShareRecord> {
     });
   }
 
-  static rehydrate(record: ShareRecord): Share {
-    const asset = new Share(record.id, record.createdBy, {
+  static rehydrate(record: AuthorizationRecord): Authorization {
+    const asset = new Authorization(record.id, record.createdBy, {
       permission: record.permission,
       grantedToUser: record.grantedToUser,
       grantedBy: record.grantedBy,
@@ -82,19 +82,19 @@ export class Share extends Entity<ShareRecord> {
 
   updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
     if (expiredDate < new Date()) {
-      return fail(AppErrorCollection.share.ExpireDateCannotBeInPast);
+      return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
     if (this.props.revokedAt) {
-      return fail(AppErrorCollection.share.CannotUpdateExpiredDateIfRevoked);
+      return fail(AppErrorCollection.authorization.CannotUpdateExpiredDateIfRevoked);
     }
     this.props.expiresAt = expiredDate;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  revokeShare(actorId: ActorId): WriteResult<undefined> {
+  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
     if (this.props.expiresAt && this.props.expiresAt < new Date()) {
-      return fail(AppErrorCollection.share.CannotRevokeShareIfAlreadyExpired);
+      return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
     }
     this.props.revokedAt = new Date();
     this.touch(actorId);

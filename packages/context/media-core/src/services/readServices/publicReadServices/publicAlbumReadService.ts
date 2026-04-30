@@ -1,0 +1,106 @@
+import { MediaItemReadRepository } from '../../..';
+import { PublicAlbumReadRepository } from '../../../repositories/readRepositories/publicAlbumReadRepository';
+import { PublicMediaItemReadRepository } from '../../../repositories/readRepositories/publicMediaItemReadRepository';
+import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import {
+  PublicAlbumItemCollectionInfo,
+  PublicAlbumItemListProjection,
+  PublicAlbumProjection,
+  PublicNamespacedMediaItemRow,
+} from './publicAlbumReadService.types';
+import { PublicMediaItemProjection } from './publicMediaItemReadService.types';
+
+export interface PublicAlbumReadService {
+  getAlbum: (albumId: string) => Promise<PublicAlbumProjection | undefined>;
+  getViewableAlbumItems: (args: {
+    albumId: string;
+    collectionInfo: PublicAlbumItemCollectionInfo;
+  }) => Promise<PublicAlbumItemListProjection>;
+}
+
+export interface PublicAlbumReadServiceFactory extends ReadServiceFactoryBase {
+  (args: { shareLinkId: string }): PublicAlbumReadService;
+}
+
+const mapPublicMediaItemRowToParent = (
+  mediaItem: PublicNamespacedMediaItemRow,
+): Omit<PublicMediaItemProjection, 'tags'> => {
+  const id = mediaItem.mediaItemId ?? '';
+  return {
+    id,
+    kind: mediaItem.mediaItemKind ?? '',
+    mimeType: mediaItem.mediaItemMimeType ?? '',
+    width: mediaItem.mediaItemWidth,
+    height: mediaItem.mediaItemHeight,
+    durationSeconds: mediaItem.mediaItemDurationSeconds,
+    title: mediaItem.mediaItemTitle,
+  };
+};
+
+type PublicAlbumReadServiceFactoryDeps = {
+  publicAlbumReadRepository: PublicAlbumReadRepository;
+  mediaItemReadRepository: MediaItemReadRepository;
+  publicMediaItemReadRepository: PublicMediaItemReadRepository;
+};
+
+export const buildPublicAlbumReadServiceFactory = ({
+  publicAlbumReadRepository,
+  mediaItemReadRepository,
+}: PublicAlbumReadServiceFactoryDeps): PublicAlbumReadServiceFactory => {
+  return ({ shareLinkId }: { shareLinkId: string }) => {
+    const enrichWithTags = async (
+      items: Omit<PublicMediaItemProjection, 'tags'>[],
+    ): Promise<PublicMediaItemProjection[]> => {
+      if (items.length === 0) {
+        return [];
+      }
+      const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
+        mediaItemIds: items.map((i) => i.id),
+      });
+      return items.map((item) => ({ ...item, tags: tagMap.get(item.id) ?? [] }));
+    };
+
+    return {
+      getAlbum: async (albumId: string): Promise<PublicAlbumProjection | undefined> => {
+        const row = await publicAlbumReadRepository.getAlbumForShareLink({ albumId, shareLinkId });
+        if (!row) {
+          return undefined;
+        }
+        const cover =
+          row.mediaItemId != null
+            ? (await enrichWithTags([mapPublicMediaItemRowToParent(row)]))[0]
+            : undefined;
+        return {
+          id: row.id,
+          title: row.title,
+          coverMedia: cover,
+        };
+      },
+
+      getViewableAlbumItems: async ({
+        albumId,
+        collectionInfo,
+      }: {
+        albumId: string;
+        collectionInfo: PublicAlbumItemCollectionInfo;
+      }): Promise<PublicAlbumItemListProjection> => {
+        const albumItems = await publicAlbumReadRepository.getViewableAlbumItemsForShareLink({
+          albumId,
+          shareLinkId,
+          collectionInfo,
+        });
+        const mediaBases = albumItems.map((albumItem) => mapPublicMediaItemRowToParent(albumItem));
+        const mediaEnriched = await enrichWithTags(mediaBases);
+        const nodes = albumItems.map((albumItem, index) => ({
+          id: albumItem.id,
+          orderIndex: albumItem.publicAlbumItemOrderIndex,
+          mediaItem: mediaEnriched[index],
+        }));
+        return {
+          nodes,
+          pageInfo: collectionInfo.pageInfo,
+        };
+      },
+    };
+  };
+};

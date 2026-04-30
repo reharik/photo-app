@@ -13,10 +13,10 @@ import {
 } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
+import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
+import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import { Comment, CommentRecord } from '../Comment/Comment';
 import type { ChildEntities, EntityAuditRecord } from '../Entity';
-import { grantShareUtility } from '../Share/grantShareUtility';
-import { Share, ShareRecord } from '../Share/Share';
 import { fail, ok } from '../utilities/writeResponse';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 import { normalizeMediaItemTagLabels } from './MediaItemTag';
@@ -62,7 +62,7 @@ export type MediaItemRecord = {
   assets: MediaAssetRecord[];
   /** Normalized display labels (mapped to `user_tag` + `media_item_tag` in persistence). */
   tags: string[];
-  shares: ShareRecord[];
+  authorizations: AuthorizationRecord[];
 } & EntityAuditRecord;
 
 export type CreateMediaItemInput = {
@@ -84,7 +84,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   #comments: Comment[] = [];
   #assets: MediaAsset[] = [];
   #tags: string[] = [];
-  #shares: Share[] = [];
+  #authorizations: Authorization[] = [];
 
   private constructor(id: EntityId, actorId: ActorId, props: MediaItemProps) {
     super(id, actorId);
@@ -110,7 +110,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     mediaItem.rehydrateAudit(record);
     mediaItem.#comments = record.comments.map((r) => Comment.rehydrate(r));
     mediaItem.#assets = record.assets.map((r) => MediaAsset.rehydrate(r));
-    mediaItem.#shares = record.shares.map((r) => Share.rehydrate(r));
+    mediaItem.#authorizations = record.authorizations.map((r) => Authorization.rehydrate(r));
     mediaItem.#tags = [...(record.tags ?? [])];
 
     return mediaItem;
@@ -226,42 +226,51 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return this.props.height;
   }
 
-  getShares(): Share[] {
-    return this.#shares;
+  getAuthorizations(): Authorization[] {
+    return this.#authorizations;
   }
-  grantShare(
+  grantAuthorization(
     permission: SharePermission,
     actorId: ActorId,
     grantedToUserId?: EntityId,
-    token?: string,
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{
-    share: Share;
+    authorization: Authorization;
     status: 'created' | 'updated' | 'noop';
   }> {
-    const result = grantShareUtility(
+    const result = grantAuthorizationValidation(
       this,
       permission,
       actorId,
       grantedToUserId,
-      token,
       label,
       expiresAt,
     );
     if (!result.success) {
       return result;
     }
-    this.#shares.push(result.value.share);
+    // Maybe this should not be an upsert, we'll see.
+    if (result.value.status === 'updated') {
+      const index = this.#authorizations.findIndex(
+        (x) => x.id() === result.value.authorization.id(),
+      );
+      if (index !== -1) {
+        this.#authorizations[index] = result.value.authorization;
+      }
+    } else {
+      this.#authorizations.push(result.value.authorization);
+    }
+
     this.touch(actorId);
     return ok(result.value);
   }
-  revokeShare(shareId: EntityId, actorId: ActorId): WriteResult {
-    const share = this.#shares.find((s) => s.id() === shareId);
-    if (!share) {
-      return fail(AppErrorCollection.share.ShareNotFound);
+  revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
+    const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
+    if (!authorization) {
+      return fail(AppErrorCollection.authorization.AuthorizationNotFound);
     }
-    const result = share.revokeShare(actorId);
+    const result = authorization.revokeAuthorization(actorId);
     if (!result.success) {
       return result;
     }
@@ -321,6 +330,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return {
       ...super.persistenceState(),
       tags: this.#tags,
+      authorizations: this.#authorizations,
+      comments: this.#comments,
+      assets: this.#assets,
     };
   }
 
@@ -328,7 +340,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return {
       comments: this.#comments,
       assets: this.#assets,
-      shares: this.#shares,
+      authorizations: this.#authorizations,
     };
   }
 }

@@ -1,5 +1,4 @@
 import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
-import { mediaItemPermissionsForViewer } from '../../../infrastructure/permissions/mediaItemPermissionsForViewer';
 import { authenticatedResolver } from '../../context/authenticatedContext';
 import type { Resolvers, SharePermission } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
@@ -28,13 +27,11 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!item) {
         return undefined;
       }
-      const permissionMap = await mediaItemPermissionsForViewer(
-        ctx.readServices.viewerMediaItemPermissionService,
-        () => [id],
-      );
+      const permissionMap =
+        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer([id]);
       return {
         ...item,
-        viewerOperations: permissionMap.get(id) ?? [],
+        viewerOperations: permissionMap[0]?.operations ?? [],
       };
     }),
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
@@ -43,24 +40,25 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
         undefined;
 
-      const permissionMap = await mediaItemPermissionsForViewer(
-        ctx.readServices.viewerMediaItemPermissionService,
-        () => mediaItems.nodes.map((n) => n.id),
-      );
+      const permissionMap =
+        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
+          mediaItems.nodes.map((n) => n.id),
+        );
 
       return {
         nodes: mediaItems.nodes.map((n) => ({
           ...n,
-          viewerOperations: permissionMap.get(n.id) ?? [],
+          viewerOperations: permissionMap.find((x) => x.mediaItemId === n.id)?.operations ?? [],
         })),
         pageInfo: mediaItems.pageInfo,
       };
     }),
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
-      return ctx.readServices.viewerShareReadService.getShareContacts();
+      return ctx.readServices.viewerAuthorizationReadService.getShareContacts();
     }),
     sharedMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
-      const { mediaItems } = await ctx.readServices.viewerShareReadService.getSharedMediaItems();
+      const { mediaItems } =
+        await ctx.readServices.viewerAuthorizationReadService.getSharedWithMeMediaItems();
       return mediaItems.map((row) => ({
         ...row,
         permission: row.permission as SharePermission,

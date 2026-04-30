@@ -1,12 +1,13 @@
 import { hashToken } from '@packages/media-core';
 
-import type { Maybe, Resolvers } from '../../generated/types.generated';
+import type { Resolvers } from '../../generated/types.generated';
 
 const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
   Query: {
-    publicAccess: async (_p, { token }, ctx): Promise<Maybe<PublicAccess>> => {
+    publicAccess: async (_p, { token }, ctx) => {
       const tokenHash = hashToken(token);
-      const publicAccess = await ctx.publicAccessReadRepository.findShareLinkByTokenHash(tokenHash);
+      const publicAccess =
+        await ctx.publicAccessReadRepository.findActiveWithGrantsByTokenHash(tokenHash);
 
       if (!publicAccess) {
         return undefined;

@@ -3,19 +3,20 @@ import { ContractError, ErrorArea } from './ContractError';
 
 const getAlbumErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.album);
 const getMediaItemErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.mediaItem);
-const getShareErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.share);
+const getAuthorizationErrors = () =>
+  getSubsetByProp(ContractError, 'area', ErrorArea.authorization);
 const getUserErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.user);
 
 export type AppErrorCollection = {
   album: ReturnType<typeof getAlbumErrors>;
   mediaItem: ReturnType<typeof getMediaItemErrors>;
-  share: ReturnType<typeof getShareErrors>;
+  authorization: ReturnType<typeof getAuthorizationErrors>;
   user: ReturnType<typeof getUserErrors>;
 };
 
 export const AppErrorCollection: AppErrorCollection = {
   album: getAlbumErrors(),
   mediaItem: getMediaItemErrors(),
-  share: getShareErrors(),
+  authorization: getAuthorizationErrors(),
   user: getUserErrors(),
 };

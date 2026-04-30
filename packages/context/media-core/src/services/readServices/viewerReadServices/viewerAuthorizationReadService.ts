@@ -1,16 +1,16 @@
+import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import {
   ShareContactRepository,
   ShareContactSuggestion,
 } from '../../../repositories/readRepositories/shareContactRepository';
-import { ShareReadRepository } from '../../../repositories/readRepositories/shareReadRepository';
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { NamespacedMediaItemRow } from './viewerAlbumReadService.types';
 import { MediaItemProjection } from './viewerMediaItemReadService.types';
 
-export type ShareProjection = {
+export type AuthorizationProjection = {
   id: EntityId;
   grantedToUserId?: EntityId;
   permission: string;
@@ -28,21 +28,23 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-export interface ViewerShareReadService {
-  getMediaItemShares: (args: { mediaItemId: EntityId }) => Promise<ShareProjection[]>;
-  getAlbumShares: (args: { albumId: EntityId }) => Promise<ShareProjection[]>;
+export interface ViewerAuthorizationReadService {
+  getMediaItemAuthorizations: (args: {
+    mediaItemId: EntityId;
+  }) => Promise<AuthorizationProjection[]>;
+  getAlbumAuthorizations: (args: { albumId: EntityId }) => Promise<AuthorizationProjection[]>;
   getShareContacts: () => Promise<ShareContactSuggestion[]>;
-  getSharedMediaItems: () => Promise<{
+  getSharedWithMeMediaItems: () => Promise<{
     mediaItems: SharedWithMeItemProjection[];
   }>;
 }
 
-export interface ViewerShareReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: EntityId }): ViewerShareReadService;
+export interface ViewerAuthorizationReadServiceFactory extends ReadServiceFactoryBase {
+  (args: { viewerId: EntityId }): ViewerAuthorizationReadService;
 }
 
-type ViewerShareReadServiceFactoryDeps = {
-  shareReadRepository: ShareReadRepository;
+type ViewerAuthorizationReadServiceFactoryDeps = {
+  authorizationReadRepository: AuthorizationReadRepository;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
   mediaItemReadRepository: MediaItemReadRepository;
@@ -71,19 +73,19 @@ const mapNamespacedToMediaItemBase = (
   };
 };
 
-export const buildViewerShareReadServiceFactory = ({
-  shareReadRepository,
+export const buildViewerAuthorizationReadServiceFactory = ({
+  authorizationReadRepository,
   shareContactRepository,
   sharedWithMeReadRepository,
   mediaItemReadRepository,
-}: ViewerShareReadServiceFactoryDeps): ViewerShareReadServiceFactory => {
+}: ViewerAuthorizationReadServiceFactoryDeps): ViewerAuthorizationReadServiceFactory => {
   return ({ viewerId }: { viewerId: EntityId }) => ({
-    getMediaItemShares: async ({
+    getMediaItemAuthorizations: async ({
       mediaItemId,
     }: {
       mediaItemId: EntityId;
-    }): Promise<ShareProjection[]> => {
-      const rows = await shareReadRepository.listSharesForOwnedMediaItem({
+    }): Promise<AuthorizationProjection[]> => {
+      const rows = await authorizationReadRepository.listAuthorizationsForOwnedMediaItem({
         mediaItemId,
         ownerId: viewerId,
       });
@@ -97,8 +99,12 @@ export const buildViewerShareReadServiceFactory = ({
         createdAt: row.createdAt,
       }));
     },
-    getAlbumShares: async ({ albumId }: { albumId: EntityId }): Promise<ShareProjection[]> => {
-      const rows = await shareReadRepository.listSharesForOwnedAlbum({
+    getAlbumAuthorizations: async ({
+      albumId,
+    }: {
+      albumId: EntityId;
+    }): Promise<AuthorizationProjection[]> => {
+      const rows = await authorizationReadRepository.listAuthorizationsForOwnedAlbum({
         albumId,
         ownerId: viewerId,
       });
@@ -115,14 +121,18 @@ export const buildViewerShareReadServiceFactory = ({
     getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
       return shareContactRepository.getShareSuggestions(viewerId);
     },
-    getSharedMediaItems: async () => {
-      const sharedMediaItems = await sharedWithMeReadRepository.getSharedMediaItems(viewerId);
+    getSharedWithMeMediaItems: async () => {
+      const { sharedWithMeMediaItems, sharedWithMeAlbums } =
+        await sharedWithMeReadRepository.getItemsSharedWithMe(viewerId);
 
-      const allMediaBases: Omit<MediaItemProjection, 'tags'>[] = sharedMediaItems.map((row) =>
-        mapNamespacedToMediaItemBase(row),
-      );
+      const allMediaBases: Omit<MediaItemProjection, 'tags'>[] = [
+        ...sharedWithMeMediaItems.map((row) => mapNamespacedToMediaItemBase(row)),
+        ...sharedWithMeAlbums
+          .filter((row) => row.mediaItemId != null)
+          .map((row) => mapNamespacedToMediaItemBase(row)),
+      ];
+
       const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        viewerId,
         mediaItemIds: allMediaBases.map((m) => m.id),
       });
       const withTags = (base: Omit<MediaItemProjection, 'tags'>): MediaItemProjection => ({
@@ -130,7 +140,7 @@ export const buildViewerShareReadServiceFactory = ({
         tags: tagMap.get(base.id) ?? [],
       });
 
-      const mediaItems: SharedWithMeItemProjection[] = sharedMediaItems.map((row) => {
+      const mediaItems: SharedWithMeItemProjection[] = sharedWithMeMediaItems.map((row) => {
         const base = mapNamespacedToMediaItemBase(row);
         return {
           id: row.id,

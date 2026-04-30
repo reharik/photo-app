@@ -4,7 +4,7 @@ import type { Knex } from 'knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
 import type { AlbumItemRecord } from '../../domain/Album/AlbumItem';
 import type { AlbumMemberRecord } from '../../domain/Album/AlbumMember';
-import { ShareRecord } from '../../domain/Share/Share';
+import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import { diffCollectionById } from '../../infrastructure/repositories/diffCollectionById';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import { EntityId } from '../../types/types';
@@ -38,15 +38,17 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
       { role: AlbumMemberRole },
       { strict: true },
     );
-    const shareRows = await withEnumRevival(
-      database<ShareRecord>('access_grant').where({ albumId: id }).orderBy('createdAt', 'asc'),
+    const authorizationRows = await withEnumRevival(
+      database<AuthorizationRecord>('access_grant')
+        .where({ albumId: id })
+        .orderBy('createdAt', 'asc'),
       { permission: SharePermission },
       { strict: true },
     );
 
     albumRow.items = itemRows;
     albumRow.members = memberRows;
-    albumRow.shares = shareRows;
+    albumRow.authorizations = authorizationRows;
 
     return Album.rehydrate(albumRow);
   };
@@ -54,7 +56,7 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
   const save = async (album: Album, options?: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       const record = album.toPersistence();
-      const { items, members, shares, ...albumRow } = record;
+      const { items, members, authorizations, ...albumRow } = record;
 
       const existing = await trx<AlbumRecord>('album').where({ id: record.id }).first();
       if (!record.coverMediaId && existing?.coverMediaId) {
@@ -77,13 +79,13 @@ export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRe
           })),
         );
       }
-      if (shares.length > 0) {
-        const shareRows = shares.map((share) => ({
-          ...share,
+      if (authorizations.length > 0) {
+        const authorizationRows = authorizations.map((authorization) => ({
+          ...authorization,
           albumId: record.id,
         }));
         await trx('access_grant')
-          .insert(shareRows)
+          .insert(authorizationRows)
           .onConflict(['album_id', 'granted_to_user'])
           .merge();
       }

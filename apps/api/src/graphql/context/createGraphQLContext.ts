@@ -10,13 +10,13 @@ export const buildCreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
   database,
-  shareLinkReadRepository,
+  publicAccessReadRepository,
   albumReadRepository,
 }: IocGeneratedCradle): GraphQLContextFactory => {
   return (initialContext: GraphQLInitialContext): GraphQLContext => {
     const base: GraphQLContext = {
       database,
-      shareLinkReadRepository,
+      publicAccessReadRepository,
       albumReadRepository,
     };
 

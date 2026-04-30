@@ -3,8 +3,8 @@ import type { Resolvers } from '../../generated/types.generated';
 
 const mediaItemResolvers: Resolvers = {
   MediaItem: {
-    shares: authenticatedResolver(async (parent, _args, ctx) => {
-      return ctx.readServices.viewerShareReadService.getMediaItemShares({
+    authorizations: authenticatedResolver(async (parent, _args, ctx) => {
+      return ctx.readServices.viewerAuthorizationReadService.getMediaItemAuthorizations({
         mediaItemId: parent.id,
       });
     }),

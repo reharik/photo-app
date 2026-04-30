@@ -1,15 +1,17 @@
 import { useQuery } from '@apollo/client/react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   type ShareContactSuggestion,
   type SharePermissionValue,
-  useGrantShare,
 } from '../application/sharing/useGrantShare';
 import {
-  type GrantManyMediaItemSharesInput,
+  GrantUserAuthorizationsForMediaItemsDocument,
+  GrantUserAuthorizationsForMediaItemsInput,
+  GrantUserAuthorizationsForMediaItemsMutation,
   type SharePermission,
   ViewerShareContactsDocument,
 } from '../graphql/generated/types';
+import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
 import {
   GrantShareForm,
   type GrantShareFormValues,
@@ -45,14 +47,14 @@ export const GrantMediaItemShareModal = ({
   mediaItemIds,
   onClose,
 }: GrantMediaItemShareModalProps) => {
-  const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
+  const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
+
+  // const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
 
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
-
-  const { grantManyMediaItemShares, isLoading, errors } = useGrantShare();
 
   const suggestions: ShareContactSuggestion[] = useMemo(
     () => contactsQuery.data?.viewer?.shareContacts ?? [],
@@ -68,29 +70,33 @@ export const GrantMediaItemShareModal = ({
     const expiresAt = toIsoExpiry(values.expiresAt);
     const permission = PERMISSION_BY_VALUE[values.permission];
 
-    const input: GrantManyMediaItemSharesInput = {
+    const input: GrantUserAuthorizationsForMediaItemsInput = {
       mediaItemIds,
       permission,
       grantedToHandle,
       label: values.label,
       expiresAt,
     };
+    void (await grantUserAuthorization.execute(
+      {
+        mutation: GrantUserAuthorizationsForMediaItemsDocument,
+        variables: {
+          input,
+        },
+      },
+      (data: GrantUserAuthorizationsForMediaItemsMutation) =>
+        data.grantUserAuthorizationsForMediaItems.data?.authorizations,
+    ));
 
-    const result = await grantManyMediaItemShares(input);
-
-    if (!result.success) {
-      return;
-    }
-
-    if (result.data.token) {
-      setCreatedToken(result.data.token);
-      return;
-    }
+    // if (result.data.token) {
+    //   setCreatedToken(result.data.token);
+    //   return;
+    // }
 
     onClose();
   };
 
-  const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
+  /*   const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
     if (mediaItemIds.length === 0) {
       return;
     }
@@ -108,7 +114,7 @@ export const GrantMediaItemShareModal = ({
     if (result.data?.token) {
       setCreatedToken(result.data.token);
     }
-  };
+  }; */
 
   return (
     <AppModal
@@ -119,10 +125,10 @@ export const GrantMediaItemShareModal = ({
       <GrantShareForm
         suggestions={suggestions}
         onSubmit={handleSubmit}
-        onCreateShareableLink={handleCreateShareableLink}
+        // onCreateShareableLink={handleCreateShareableLink}
         isLoading={isLoading}
         errors={errors}
-        createdToken={createdToken}
+        // createdToken={createdToken}
         onClose={onClose}
       />
     </AppModal>

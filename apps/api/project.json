@@ -114,7 +114,7 @@
       "executor": "nx:run-commands",
       "dependsOn": ["gen:graphql"],
       "options": {
-        "command": "tsx src/di/gen-ioc-manifest.ts",
+        "command": "ioc generate",
         "cwd": "{projectRoot}"
       }
     },

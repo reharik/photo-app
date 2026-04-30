@@ -1,35 +1,36 @@
 import { ViewerOperation } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { hashToken } from '../../../application/support/tokenHash';
-import { Share } from '../../../domain/Share/Share';
+import { Authorization } from '../../../domain/Authorization/Authorization';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
 import { WriteResult } from '../../../types/types';
-import { ShareProjection } from '../../readServices/viewerReadServices/viewerShareReadService';
-import { GrantShareResult } from '../mediaItem/writeMediaItem.types';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAuthorizationReadService';
+import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
+import { GrantUserAuthorizationResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { GrantAlbumShareCommand } from './writeAlbum.types';
 
-const toShareProjection = (share: Share): ShareProjection => ({
-  id: share.id(),
-  grantedToUserId: share.grantedToUser(),
-  permission: share.permission().value,
-  label: share.label(),
-  expiresAt: share.expiresAt(),
-  revokedAt: share.revokedAt(),
-  // Share was just created in this transaction; accurate within milliseconds.
+const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
+  id: authorization.id(),
+  grantedToUserId: authorization.grantedToUser(),
+  permission: authorization.permission().value,
+  label: authorization.label(),
+  expiresAt: authorization.expiresAt(),
+  revokedAt: authorization.revokedAt(),
+  // Authorization was just created in this transaction;
   createdAt: new Date(),
 });
 
-export interface GrantAlbumShare extends WriteServiceBase {
-  (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>>;
+export interface GrantUserAuthorizationForAlbum extends WriteServiceBase {
+  (
+    input: GrantUserAuthorizationForAlbumCommand,
+  ): Promise<WriteResult<GrantUserAuthorizationResult>>;
 }
 
-type GrantAlbumShareDeps = {
+type GrantUserAuthorizationForAlbumDeps = {
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
   grantRepository: GrantRepository;
@@ -37,17 +38,18 @@ type GrantAlbumShareDeps = {
   database: Knex;
 };
 
-export const buildGrantAlbumShare = ({
+export const buildGrantUserAuthorizationForAlbum = ({
   albumRepository,
   userRepository,
   grantRepository,
   shareContactRepository,
   database,
-}: GrantAlbumShareDeps): GrantAlbumShare => {
-  return async (input: GrantAlbumShareCommand): Promise<WriteResult<GrantShareResult>> => {
+}: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
+  return async (
+    input: GrantUserAuthorizationForAlbumCommand,
+  ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, albumId, permission, grantedToHandle, label, expiresAt } = input;
     let { grantedToUserId } = input;
-    let token: string | undefined = input.token;
 
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
@@ -56,8 +58,8 @@ export const buildGrantAlbumShare = ({
     const album = getResult.value;
 
     const member = album.getAlbumMember(viewerId);
-    if (!member || !member.role().can(ViewerOperation.share)) {
-      return fail(ViewerOperation.share.deniedError);
+    if (!member || !member.role().can(ViewerOperation.grantAuthorization)) {
+      return fail(ViewerOperation.grantAuthorization.deniedError);
     }
 
     let grantedToHandleResolved: string | undefined;
@@ -71,18 +73,21 @@ export const buildGrantAlbumShare = ({
     } else if (grantedToUserId) {
       const found = await userRepository.getById(grantedToUserId);
       grantedToHandleResolved = found?.handle();
-    } else if (!token) {
-      token = crypto.randomUUID();
     }
 
-    const result = album.grantShare(permission, viewerId, grantedToUserId, token, label, expiresAt);
+    const result = album.grantAuthorization(
+      permission,
+      viewerId,
+      grantedToUserId,
+      label,
+      expiresAt,
+    );
     if (!result.success) {
       return result;
     }
 
-    const share = result.value.share;
-    const shareId = share.id();
-    const tokenHash = token ? hashToken(token) : undefined;
+    const authorization = result.value.authorization;
+    const authorizationId = authorization.id();
     const mediaItemIds = album.getMediaItemIds();
 
     await database.transaction(async (trx) => {
@@ -94,9 +99,8 @@ export const buildGrantAlbumShare = ({
           {
             id: crypto.randomUUID(),
             mediaItemId,
-            accessGrantId: shareId,
+            accessGrantId: authorizationId,
             grantedToUser: grantedToUserId,
-            tokenHash,
             createdAt: now,
           },
           { trx },
@@ -119,6 +123,9 @@ export const buildGrantAlbumShare = ({
       }
     });
 
-    return ok({ shareId, token, share: toShareProjection(share) });
+    return ok({
+      authorizationIds: [authorizationId],
+      authorizations: [toAuthorizationProjection(authorization)],
+    });
   };
 };

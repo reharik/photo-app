@@ -9,11 +9,11 @@ import {
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { buildMediaItemBaseStorageKey } from '../../application/media/MediaStorage';
+import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
 import { mediaItemTagLabelKey } from '../../domain/MediaItem/MediaItemTag';
-import { ShareRecord } from '../../domain/Share/Share';
 import {
   type DbExecutor,
   RepoOptions,
@@ -56,7 +56,8 @@ export const buildMediaItemRepository = ({
       { resourceType: ResourceTypeEnum },
       { strict: true },
     );
-
+    // TODO this is a smell. These should be created by a service but not in the repository.
+    // stored on the AR because they are actually never used again.
     const assetRows = await withEnumRevival(
       database<MediaAssetRecord>('mediaAsset')
         .where({ mediaItemId: id })
@@ -65,8 +66,10 @@ export const buildMediaItemRepository = ({
       { strict: true },
     );
 
-    const shareRows = await withEnumRevival(
-      database<ShareRecord>('access_grant').where({ mediaItemId: id }).orderBy('createdAt', 'asc'),
+    const authorizationRows = await withEnumRevival(
+      database<AuthorizationRecord>('access_grant')
+        .where({ mediaItemId: id })
+        .orderBy('createdAt', 'asc'),
       { permission: SharePermission },
       { strict: true },
     );
@@ -79,7 +82,7 @@ export const buildMediaItemRepository = ({
 
     mediaItemRow.comments = commentRows;
     mediaItemRow.assets = assetRows;
-    mediaItemRow.shares = shareRows;
+    mediaItemRow.authorizations = authorizationRows;
     mediaItemRow.tags = tagLabelRows.map((r) => r.label);
     return MediaItem.rehydrate(mediaItemRow);
   };
@@ -119,7 +122,7 @@ export const buildMediaItemRepository = ({
   const save = async (mediaItem: MediaItem, options?: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       const record = mediaItem.toPersistence();
-      const { comments, assets, shares, tags: tagLabels, ...mediaItemRow } = record;
+      const { comments, assets, authorizations, tags: tagLabels, ...mediaItemRow } = record;
       const rowForDb = {
         ...mediaItemRow,
         storageKey: buildMediaItemBaseStorageKey(record.ownerId, record.id),
@@ -153,13 +156,13 @@ export const buildMediaItemRepository = ({
         await trx('mediaAsset').insert(assetRows).onConflict(['media_item_id', 'kind']).merge();
       }
 
-      if (shares.length > 0) {
-        const shareRows = shares.map((share) => ({
-          ...share,
+      if (authorizations.length > 0) {
+        const authorizationRows = authorizations.map((authorization) => ({
+          ...authorization,
           mediaItemId: record.id,
         }));
         await trx('access_grant')
-          .insert(shareRows)
+          .insert(authorizationRows)
           .onConflict(['media_item_id', 'granted_to_user'])
           .merge();
       }

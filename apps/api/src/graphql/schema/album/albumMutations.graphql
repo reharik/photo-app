@@ -8,7 +8,9 @@ type Mutation {
   ): DeleteAlbumItemsFromAlbumResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
-  grantAlbumShare(input: GrantAlbumShareInput!): GrantShareResult!
+  grantUserAuthorizationForAlbum(
+    input: GrantUserAuthorizationForAlbumInput!
+  ): GrantUserAuthorizationResult!
 }
 
 input SetCoverMediaInput {
@@ -113,12 +115,11 @@ input DeleteAlbumItemsFromAlbumInput {
   albumId: ID!
   albumItemIds: [ID!]!
 }
-input GrantAlbumShareInput {
+input GrantUserAuthorizationForAlbumInput {
   albumId: ID!
   permission: SharePermission!
   grantedToUserId: ID
   grantedToHandle: String
-  token: String
   label: String
   expiresAt: DateTime
 }

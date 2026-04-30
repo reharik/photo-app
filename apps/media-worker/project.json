@@ -13,7 +13,7 @@
     "gen:container": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsx src/di/gen-ioc-manifest.ts",
+        "command": "ioc generate",
         "cwd": "{projectRoot}"
       }
     },

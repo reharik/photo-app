@@ -31,39 +31,6 @@ export default defineIocConfig({
     ],
   },
   registrations: {
-    MediaItemReadRepository: {
-      mediaItemReadRepository: { lifetime: 'scoped' },
-    },
-    MediaAssetReadRepository: {
-      mediaAssetReadRepository: { lifetime: 'scoped' },
-    },
-    MediaProcessingJobRepository: {
-      mediaProcessingJobRepository: { lifetime: 'scoped' },
-    },
-    ViewerMediaItemReadServiceFactory: {
-      viewerMediaItemReadServiceFactory: { lifetime: 'scoped' },
-    },
-    AlbumReadRepository: {
-      albumReadRepository: { lifetime: 'scoped' },
-    },
-    ViewerAlbumReadServiceFactory: {
-      viewerAlbumReadServiceFactory: { lifetime: 'scoped' },
-    },
-    ShareReadRepository: {
-      shareReadRepository: { lifetime: 'scoped' },
-    },
-    ShareLinkReadRepository: {
-      shareLinkReadRepository: { lifetime: 'scoped' },
-    },
-    SharedWithMeReadRepository: {
-      sharedWithMeReadRepository: { lifetime: 'scoped' },
-    },
-    ShareContactRepository: {
-      shareContactRepository: { lifetime: 'scoped' },
-    },
-    ViewerShareReadServiceFactory: {
-      viewerShareReadServiceFactory: { lifetime: 'scoped' },
-    },
     Knex: {
       $contract: { accessKey: 'database' },
     },

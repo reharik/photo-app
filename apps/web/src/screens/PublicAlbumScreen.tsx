@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
 import { Toast } from '../shared/components/ui/Toast';
-import { mapPublicAlbumItemToSummaryVM } from '../viewModels/publicAlbum/mapPublicAlbumItemToSummaryVM';
 import { mapPublicAlbumToSummaryVM } from '../viewModels/publicAlbum/mapPublicAlbumToSummaryVM';
 
 export const PublicAlbumScreen = () => {
@@ -25,17 +24,19 @@ export const PublicAlbumScreen = () => {
   }
 
   const album = mapPublicAlbumToSummaryVM(data);
-  const albumItems = data.items.nodes.map(mapPublicAlbumItemToSummaryVM) ?? [];
+  // const albumItems = data.items.nodes.map(mapPublicAlbumItemToSummaryVM) ?? [];
 
   return (
     <Container>
       {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       {album && (
-        <PublicAlbumSection
-          album={album}
-          albumItems={albumItems}
-          retrieveAlbumItems={query.refetch}
-        />
+        <div>{`Public link is on hold. But just for kicks, this album is called ${album.title}`}</div>
+
+        //  <PublicAlbumSection
+        //     album={album}
+        //     albumItems={albumItems}
+        //     retrieveAlbumItems={query.refetch}
+        //   />
       )}
     </Container>
   );

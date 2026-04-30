@@ -1,5 +1,5 @@
 extend type Query {
-  publicAccess: PublicAccess!
+  publicAccess: PublicAccess
 }
 
 type PublicAccess {

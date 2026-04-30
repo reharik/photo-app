@@ -1,9 +1,9 @@
 import { AlbumMemberRole, AppErrorCollection, SharePermission } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
+import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
+import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import type { ChildEntities, EntityAuditRecord } from '../Entity';
-import { grantShareUtility } from '../Share/grantShareUtility';
-import { Share, ShareRecord } from '../Share/Share';
 import { reorderAlbumItems } from '../utilities/reorderAlbumItems';
 import { fail, ok } from '../utilities/writeResponse';
 import type { AlbumItemRecord } from './AlbumItem';
@@ -26,7 +26,7 @@ export type AlbumRecord = {
   coverMediaId?: EntityId | null;
   items: AlbumItemRecord[];
   members: AlbumMemberRecord[];
-  shares: ShareRecord[];
+  authorizations: AuthorizationRecord[];
 } & EntityAuditRecord;
 
 export class Album extends AggregateRoot<AlbumRecord> {
@@ -34,7 +34,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
   #items: AlbumItem[] = [];
   #members: AlbumMember[] = [];
-  #shares: Share[] = [];
+  #authorizations: Authorization[] = [];
 
   private constructor(id: EntityId, actorId: ActorId, props: AlbumProps) {
     super(id, actorId);
@@ -60,7 +60,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
     album.#items = record.items.map((r) => AlbumItem.rehydrate(r));
     album.#members = record.members.map((r) => AlbumMember.rehydrate(r));
-    album.#shares = record.shares.map((r) => Share.rehydrate(r));
+    album.#authorizations = record.authorizations.map((r) => Authorization.rehydrate(r));
     return album;
   }
 
@@ -177,53 +177,71 @@ export class Album extends AggregateRoot<AlbumRecord> {
   getMediaItemIds(): EntityId[] {
     return this.#items.map((i) => i.mediaItemId());
   }
-  getShares(): Share[] {
-    return this.#shares;
+  getAuthorizations(): Authorization[] {
+    return this.#authorizations;
   }
-  grantShare(
+  grantAuthorization(
     permission: SharePermission,
     actorId: ActorId,
     grantedToUserId?: EntityId,
-    token?: string,
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{
-    share: Share;
+    authorization: Authorization;
     status: 'created' | 'updated' | 'noop';
   }> {
-    const result = grantShareUtility(
+    const result = grantAuthorizationValidation(
       this,
       permission,
       actorId,
       grantedToUserId,
-      token,
       label,
       expiresAt,
     );
     if (!result.success) {
       return result;
     }
-    this.#shares.push(result.value.share);
+    // Maybe this should not be an upsert, we'll see.
+    if (result.value.status === 'updated') {
+      const index = this.#authorizations.findIndex(
+        (x) => x.id() === result.value.authorization.id(),
+      );
+      if (index !== -1) {
+        this.#authorizations[index] = result.value.authorization;
+      }
+    } else {
+      this.#authorizations.push(result.value.authorization);
+    }
+
     this.touch(actorId);
     return ok(result.value);
   }
-  revokeShare(shareId: EntityId, actorId: ActorId): WriteResult {
-    const share = this.#shares.find((s) => s.id() === shareId);
-    if (!share) {
-      return fail(AppErrorCollection.share.ShareNotFound);
+  revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
+    const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
+    if (!authorization) {
+      return fail(AppErrorCollection.authorization.AuthorizationNotFound);
     }
-    const result = share.revokeShare(actorId);
+    const result = authorization.revokeAuthorization(actorId);
     if (!result.success) {
       return result;
     }
     this.touch(actorId);
     return ok(undefined);
   }
+
+  public override persistenceState(): Record<string, unknown> {
+    return {
+      ...super.persistenceState(),
+      authorizations: this.#authorizations,
+      members: this.#members,
+    };
+  }
+
   protected childEntities(): ChildEntities {
     return {
       items: this.#items,
       members: this.#members,
-      shares: this.#shares,
+      authorizations: this.#authorizations,
     };
   }
 }

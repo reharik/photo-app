@@ -89,13 +89,12 @@ export type AddMediaItemsToAlbumResult = {
   albumItemIds: EntityId[];
 };
 
-export type GrantAlbumShareCommand = {
+export type GrantUserAuthorizationForAlbumCommand = {
   viewerId: EntityId;
   albumId: EntityId;
   permission: SharePermission;
   grantedToUserId?: EntityId;
   grantedToHandle?: string;
-  token?: string;
   label?: string;
   expiresAt?: Date;
 };

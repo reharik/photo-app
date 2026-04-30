@@ -67,7 +67,6 @@ export const buildViewerAlbumReadServiceFactory = ({
         return [];
       }
       const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        viewerId,
         mediaItemIds: items.map((i) => i.id),
       });
       return items.map((item) => ({ ...item, tags: tagMap.get(item.id) ?? [] }));

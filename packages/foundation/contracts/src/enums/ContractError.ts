@@ -7,7 +7,7 @@ const errorAreaInput = [
   'membership',
   'viewer',
   'auth',
-  'share',
+  'authorization',
   'user',
 ] as const;
 
@@ -214,9 +214,9 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
-  MemberNotAllowedToShareAlbum: {
-    code: 'MEMBER_NOT_ALLOWED_TO_SHARE_ALBUM',
-    display: 'Member not allowed to share album',
+  MemberNotAllowedToGrantAuthorization: {
+    code: 'MEMBER_NOT_ALLOWED_TO_GRANT_AUTHORIZATION',
+    display: 'Member not allowed to grant authorization',
     category: ErrorCategory.auth,
     area: ErrorArea.album,
     retryable: false,
@@ -277,53 +277,53 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
-  CanNotGrantShareToOwner: {
+  CanNotGrantAuthorizationToOwner: {
     code: 'CAN_NOT_GRANT_SHARE_TO_OWNER',
-    display: 'Cannot grant share to owner',
+    display: 'Cannot grant authorization to owner',
     category: ErrorCategory.auth,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
   ExpireDateCannotBeInPast: {
     code: 'EXPIRE_DATE_CANNOT_BE_IN_PAST',
     display: 'Expire date cannot be in past, revoke instead',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
   CannotUpdateExpiredDateIfRevoked: {
     code: 'CANNOT_UPDATE_EXPIRED_DATE_IF_REVOKED',
     display: 'Cannot update expire date if revoked',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
-  CannotRevokeShareIfAlreadyExpired: {
+  CannotRevokeAuthorizationIfAlreadyExpired: {
     code: 'CANNOT_REVOKE_SHARE_IF_ALREADY_EXPIRED',
-    display: 'Cannot revoke share if already expired',
+    display: 'Cannot revoke authorization if already expired',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
-  ShareNotFound: {
+  AuthorizationNotFound: {
     code: 'SHARE_NOT_FOUND',
-    display: 'Share not found',
+    display: 'Authorization not found',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
-  ShareMustHaveEitherGrantedToUserIdOrToken: {
-    code: 'SHARE_MUST_HAVE_EITHER_GRANTED_TO_USER_ID_OR_TOKEN',
-    display: 'Share must have either granted to user id or token',
+  AuthorizationMustHaveGrantedToUserId: {
+    code: 'SHARE_MUST_HAVE_GRANTED_TO_USER_ID',
+    display: 'Authorization must have granted to user id',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
-  ShareMustNotHaveGrantedToUserIdAndToken: {
+  AuthorizationMustNotHaveGrantedToUserIdAndToken: {
     code: 'SHARE_MUST_NOT_HAVE_GRANTED_TO_USER_ID_AND_TOKEN',
-    display: 'Share must not have granted to user id and token',
+    display: 'Authorization must not have granted to user id and token',
     category: ErrorCategory.domain,
-    area: ErrorArea.share,
+    area: ErrorArea.authorization,
     retryable: false,
   },
   UserNotFound: {

@@ -4,7 +4,7 @@ enum SharePermission {
   COMMENT
 }
 
-type ShareType {
+type AuthorizationType {
   id: ID!
   grantedToUserId: ID
   permission: SharePermission!
@@ -19,16 +19,12 @@ type ShareContactType {
   handle: String!
 }
 
-type GrantShareResult {
-  success: Boolean!
-  token: String
-  share: ShareType
+type GrantUserAuthorizationResult {
+  data: GrantUserAuthorizationPayload
   errors: [ContractError!]
 }
 
-type GrantManyMediaItemSharesResult {
-  success: Boolean!
-  token: String
-  shares: [ShareType!]
-  errors: [ContractError!]
+type GrantUserAuthorizationPayload {
+  authorizationIds: [ID!]!
+  authorizations: [AuthorizationType!]!
 }

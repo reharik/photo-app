@@ -13,7 +13,6 @@ import { MediaViewer } from '../shared/components/media/MediaViewer';
 import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
 import { Toast } from '../shared/components/ui/Toast';
 import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToDetailVM';
-import { isUserMediaItemDetailVM } from '../viewModels/viewModelGuards';
 import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
 import { getGalleryNavigation } from './MediaItemGalleryNavigation';
 
@@ -96,12 +95,8 @@ export const MediaItemScreen = () => {
     }
     const displayUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.display);
 
-    let imageAlt = mediaItem.title?.trim() || mediaItem.kind.display;
-
-    if (isUserMediaItemDetailVM(mediaItem)) {
-      imageAlt =
-        mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display;
-    }
+    const imageAlt =
+      mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display;
 
     return (
       <MediaViewer

@@ -26,5 +26,5 @@ generates:
         MediaItem: '@packages/media-core#MediaItemProjection'
         MediaAsset: '@packages/media-core#MediaAssetProjection'
         AlbumItem: '@packages/media-core#AlbumItemProjection'
-        ShareType: '@packages/media-core#ShareProjection'
+        AuthorizationType: '@packages/media-core#AuthorizationProjection'
         ShareContactType: '@packages/media-core#ShareContactSuggestion'

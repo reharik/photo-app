@@ -3,7 +3,7 @@ import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
 
-export type ShareRow = {
+export type AuthorizationRow = {
   id: EntityId;
   grantedToUser?: EntityId;
   permission: SharePermission;
@@ -13,15 +13,18 @@ export type ShareRow = {
   createdAt: Date;
 };
 
-export type ShareReadRepository = {
-  listSharesForOwnedMediaItem: (args: {
+export type AuthorizationReadRepository = {
+  listAuthorizationsForOwnedMediaItem: (args: {
     mediaItemId: EntityId;
     ownerId: EntityId;
-  }) => Promise<ShareRow[]>;
-  listSharesForOwnedAlbum: (args: { albumId: EntityId; ownerId: EntityId }) => Promise<ShareRow[]>;
+  }) => Promise<AuthorizationRow[]>;
+  listAuthorizationsForOwnedAlbum: (args: {
+    albumId: EntityId;
+    ownerId: EntityId;
+  }) => Promise<AuthorizationRow[]>;
 };
 
-type ShareReadRepositoryDeps = { database: Knex };
+type AuthorizationReadRepositoryDeps = { database: Knex };
 
 const shareSelectColumns = [
   'access_grant.id',
@@ -33,42 +36,42 @@ const shareSelectColumns = [
   'access_grant.created_at',
 ];
 
-export const buildShareReadRepository = ({
+export const buildAuthorizationReadRepository = ({
   database,
-}: ShareReadRepositoryDeps): ShareReadRepository => ({
-  listSharesForOwnedMediaItem: async ({
+}: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
+  listAuthorizationsForOwnedMediaItem: async ({
     mediaItemId,
     ownerId,
   }: {
     mediaItemId: EntityId;
     ownerId: EntityId;
-  }): Promise<ShareRow[]> => {
+  }): Promise<AuthorizationRow[]> => {
     return withEnumRevival(
-      database<ShareRow>('accessGrant')
+      database<AuthorizationRow>('accessGrant')
         .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
         .where('accessGrant.mediaItemId', mediaItemId)
         .andWhere('mediaItem.ownerId', ownerId)
         .orderBy('accessGrant.createdAt', 'asc')
-        .select<ShareRow[]>(...shareSelectColumns),
+        .select<AuthorizationRow[]>(...shareSelectColumns),
       { permission: SharePermission },
       { strict: true },
     );
   },
-  listSharesForOwnedAlbum: async ({
+  listAuthorizationsForOwnedAlbum: async ({
     albumId,
     ownerId,
   }: {
     albumId: EntityId;
     ownerId: EntityId;
-  }): Promise<ShareRow[]> => {
+  }): Promise<AuthorizationRow[]> => {
     return withEnumRevival(
-      database<ShareRow>('accessGrant')
+      database<AuthorizationRow>('accessGrant')
         .innerJoin('albumMember', 'albumMember.albumId', 'accessGrant.albumId')
         .where('accessGrant.albumId', albumId)
         .andWhere('albumMember.userId', ownerId)
         .andWhere('albumMember.role', 'owner')
         .orderBy('accessGrant.createdAt', 'asc')
-        .select<ShareRow[]>(...shareSelectColumns),
+        .select<AuthorizationRow[]>(...shareSelectColumns),
       { permission: SharePermission },
       { strict: true },
     );

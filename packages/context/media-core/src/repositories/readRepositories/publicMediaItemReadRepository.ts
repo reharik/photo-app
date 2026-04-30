@@ -5,7 +5,7 @@ import {
 } from '../../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
 import { EntityId } from '../../types/types';
 
-export type MediaItemReadRepository = {
+export type PublicMediaItemReadRepository = {
   /** Loads by id only (no ownership filter). Used for authz after access rules are applied. */
   getByIdForAuthorization: ({
     mediaItemId,
@@ -30,10 +30,9 @@ export type MediaItemReadRepository = {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<MediaItemRow[]>;
-  listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<Map<EntityId, string[]>>;
 };
 
-type MediaItemReadRepositoryDeps = { database: Knex };
+type PublicMediaItemReadRepositoryDeps = { database: Knex };
 
 const mediaItemRowFields = [
   'media_item.id',
@@ -55,9 +54,9 @@ const mediaItemRowFields = [
   'media_item.updated_by',
 ];
 
-export const buildMediaItemReadRepository = ({
+export const buildPublicMediaItemReadRepository = ({
   database,
-}: MediaItemReadRepositoryDeps): MediaItemReadRepository => ({
+}: PublicMediaItemReadRepositoryDeps): PublicMediaItemReadRepository => ({
   getByIdForAuthorization: async ({
     mediaItemId,
   }: {
@@ -111,36 +110,5 @@ export const buildMediaItemReadRepository = ({
       .limit(collectionInfo.pageInfo.limit + 1)
       .offset(collectionInfo.pageInfo.offset);
     return rows;
-  },
-  listTagsForMediaItemIds: async ({
-    mediaItemIds,
-  }: {
-    mediaItemIds: EntityId[];
-  }): Promise<Map<EntityId, string[]>> => {
-    const result = new Map<EntityId, string[]>();
-    if (mediaItemIds.length === 0) {
-      return result;
-    }
-
-    const rows = await database('media_item_tag')
-      .join('mediaItem', 'mediaItemTag.mediaItemId', 'mediaItem.id')
-      .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
-      .whereIn('mediaItemTag.mediaItemId', mediaItemIds)
-      .select<
-        { mediaItemId: EntityId; label: string }[]
-      >('mediaItemTag.mediaItemId', 'userTag.label')
-      .orderBy('mediaItemTag.mediaItemId', 'asc')
-      .orderBy('userTag.label', 'asc');
-
-    for (const id of mediaItemIds) {
-      result.set(id, []);
-    }
-    for (const row of rows) {
-      const list = result.get(row.mediaItemId);
-      if (list) {
-        list.push(row.label);
-      }
-    }
-    return result;
   },
 });

@@ -1,13 +1,9 @@
 import {
-  GrantAlbumShareDocument,
-  type GrantAlbumShareInput,
-  type GrantAlbumShareMutation,
-  GrantManyMediaItemSharesDocument,
-  type GrantManyMediaItemSharesInput,
-  type GrantManyMediaItemSharesMutation,
-  GrantMediaItemShareDocument,
-  type GrantMediaItemShareInput,
-  type GrantMediaItemShareMutation,
+  AuthorizationType,
+  GrantUserAuthorizationForAlbumDocument,
+  type GrantUserAuthorizationForAlbumInput,
+  type GrantUserAuthorizationForAlbumMutation,
+  GrantUserAuthorizationResult,
   type ViewerShareContactsQuery,
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../shared/components/dataAccess/useAppMutation';
@@ -19,38 +15,37 @@ export type ShareContactSuggestion = NonNullable<
 
 export type SharePermissionValue = 'view' | 'comment' | 'download';
 
-type GrantSharePayload = GrantMediaItemShareMutation['grantMediaItemShare'];
+// export type GrantShareData = {
+//   token?: string;
+//   share?: ShareSummary;
+// };
 
-export type ShareSummary = NonNullable<GrantSharePayload['share']>;
-
-export type GrantShareData = {
-  token?: string;
-  share?: ShareSummary;
+export type GrantUserAuthorizationsForMediaItemsInputData = {
+  authorizations: AuthorizationType[];
 };
 
-export type GrantManyMediaItemSharesData = {
-  token?: string;
-  shares: ShareSummary[];
-};
-
-const toMutationPayload = (payload: GrantSharePayload): MutationPayload<GrantShareData> => ({
-  data: payload.success ? { token: payload.token, share: payload.share } : null,
+const toMutationPayload = (
+  payload: GrantUserAuthorizationResult,
+): MutationPayload<AuthorizationType[]> => ({
+  data: !payload.errors ? { authorizations: payload.share } : null,
   errors: payload.errors ?? [],
 });
 
 const toManyMutationPayload = (
-  payload: GrantManyMediaItemSharesMutation['grantManyMediaItemShares'],
-): MutationPayload<GrantManyMediaItemSharesData> => ({
-  data: payload.success ? { token: payload.token, shares: payload.shares ?? [] } : null,
+  payload: GrantUserAuthorizationResult,
+): MutationPayload<GrantUserAuthorizationsForMediaItemsInputData> => ({
+  data: !payload.errors ? { authorizations: payload.authorizations ?? [] } : null,
   errors: payload.errors ?? [],
 });
 
 export type UseGrantShareResult = {
   grantMediaItemShare: (input: GrantMediaItemShareInput) => Promise<AppResult<GrantShareData>>;
-  grantManyMediaItemShares: (
-    input: GrantManyMediaItemSharesInput,
-  ) => Promise<AppResult<GrantManyMediaItemSharesData>>;
-  grantAlbumShare: (input: GrantAlbumShareInput) => Promise<AppResult<GrantShareData>>;
+  grantUserAuthorizationsForMediaItemsInput: (
+    input: GrantUserAuthorizationsForMediaItemsInputInput,
+  ) => Promise<AppResult<GrantUserAuthorizationsForMediaItemsInputData>>;
+  grantUserAuthorizationForAlbum: (
+    input: GrantUserAuthorizationForAlbumInput,
+  ) => Promise<AppResult<GrantShareData>>;
   isLoading: boolean;
   errors: AppError[];
 };
@@ -66,25 +61,28 @@ export const useGrantShare = (): UseGrantShareResult => {
       (data: GrantMediaItemShareMutation) => toMutationPayload(data.grantMediaItemShare),
     );
 
-  const grantManyMediaItemShares = (
-    input: GrantManyMediaItemSharesInput,
-  ): Promise<AppResult<GrantManyMediaItemSharesData>> =>
+  const grantUserAuthorizationsForMediaItemsInput = (
+    input: GrantUserAuthorizationsForMediaItemsInputInput,
+  ): Promise<AppResult<GrantUserAuthorizationsForMediaItemsInputData>> =>
     execute(
-      { mutation: GrantManyMediaItemSharesDocument, variables: { input } },
-      (data: GrantManyMediaItemSharesMutation) =>
-        toManyMutationPayload(data.grantManyMediaItemShares),
+      { mutation: GrantUserAuthorizationsForMediaItemsInputDocument, variables: { input } },
+      (data: GrantUserAuthorizationsForMediaItemsInputMutation) =>
+        toManyMutationPayload(data.grantUserAuthorizationsForMediaItemsInput),
     );
 
-  const grantAlbumShare = (input: GrantAlbumShareInput): Promise<AppResult<GrantShareData>> =>
+  const grantUserAuthorizationForAlbum = (
+    input: GrantUserAuthorizationForAlbumInput,
+  ): Promise<AppResult<GrantShareData>> =>
     execute(
-      { mutation: GrantAlbumShareDocument, variables: { input } },
-      (data: GrantAlbumShareMutation) => toMutationPayload(data.grantAlbumShare),
+      { mutation: GrantUserAuthorizationForAlbumDocument, variables: { input } },
+      (data: GrantUserAuthorizationForAlbumMutation) =>
+        toMutationPayload(data.grantUserAuthorizationForAlbum),
     );
 
   return {
     grantMediaItemShare,
-    grantManyMediaItemShares,
-    grantAlbumShare,
+    grantUserAuthorizationsForMediaItemsInput,
+    grantUserAuthorizationForAlbum,
     isLoading,
     errors,
   };
