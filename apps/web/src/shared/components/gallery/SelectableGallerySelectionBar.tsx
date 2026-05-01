@@ -1,9 +1,10 @@
 import styled from 'styled-components';
+import { GalleryConfigItems } from '../../../hooks/useMultiSelectGallery';
 
 type SelectableGallerySelectionBarProps = {
   count: number;
   onClear: () => void;
-  selectionActions: React.ReactNode;
+  availableActions: GalleryConfigItems[];
 };
 
 /**
@@ -12,7 +13,7 @@ type SelectableGallerySelectionBarProps = {
 export const SelectableGallerySelectionBar = ({
   count,
   onClear,
-  selectionActions,
+  availableActions,
 }: SelectableGallerySelectionBarProps) => {
   const label = count === 1 ? '1 selected' : `${count} selected`;
 
@@ -24,7 +25,13 @@ export const SelectableGallerySelectionBar = ({
         </IconButton>
         <CountText>{label}</CountText>
       </BarLeft>
-      <ActionGroup>{selectionActions}</ActionGroup>
+      <ActionGroup>
+        {availableActions.map((action) => (
+          <ToolbarAction key={action.operation.key} type="button" onClick={action.onAction}>
+            {action.label}
+          </ToolbarAction>
+        ))}
+      </ActionGroup>
     </Bar>
   );
 };
@@ -100,4 +107,33 @@ const ActionGroup = styled.div`
   gap: ${({ theme }) => theme.spacing(1)};
   flex-wrap: wrap;
   justify-content: flex-end;
+`;
+
+const ToolbarAction = styled.button`
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.subtext};
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.text};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;

@@ -35,7 +35,6 @@ export const buildKoaServer = ({
         if (!requestOrigin) {
           return '';
         }
-
         return config.corsOrigins.includes(requestOrigin) ? requestOrigin : '';
       },
       credentials: true,

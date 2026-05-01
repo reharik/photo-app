@@ -1,3 +1,4 @@
+import { AlbumMemberRole } from '@packages/contracts';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import {
@@ -17,7 +18,7 @@ export type AuthorizationProjection = {
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
-  createdAt: Date;
+  createdAt?: Date;
 };
 
 export type SharedWithMeItemProjection = {
@@ -28,22 +29,19 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-export interface ViewerAuthorizationReadService {
-  getMediaItemAuthorizations: (args: {
-    mediaItemId: EntityId;
-  }) => Promise<AuthorizationProjection[]>;
-  getAlbumAuthorizations: (args: { albumId: EntityId }) => Promise<AuthorizationProjection[]>;
+export interface ViewerAlbumAuthzReadService {
+  getAuthz: (args: { viewerMemberRole?: string }) => string[];
   getShareContacts: () => Promise<ShareContactSuggestion[]>;
   getSharedWithMeMediaItems: () => Promise<{
     mediaItems: SharedWithMeItemProjection[];
   }>;
 }
 
-export interface ViewerAuthorizationReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: EntityId }): ViewerAuthorizationReadService;
+export interface ViewerAlbumAuthzReadServiceFactory extends ReadServiceFactoryBase {
+  (args: { viewerId: EntityId }): ViewerAlbumAuthzReadService;
 }
 
-type ViewerAuthorizationReadServiceFactoryDeps = {
+type ViewerAlbumAuthzReadServiceFactoryDeps = {
   authorizationReadRepository: AuthorizationReadRepository;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
@@ -73,50 +71,21 @@ const mapNamespacedToMediaItemBase = (
   };
 };
 
-export const buildViewerAuthorizationReadServiceFactory = ({
-  authorizationReadRepository,
+export const buildViewerAlbumAuthzReadServiceFactory = ({
   shareContactRepository,
   sharedWithMeReadRepository,
   mediaItemReadRepository,
-}: ViewerAuthorizationReadServiceFactoryDeps): ViewerAuthorizationReadServiceFactory => {
+}: ViewerAlbumAuthzReadServiceFactoryDeps): ViewerAlbumAuthzReadServiceFactory => {
   return ({ viewerId }: { viewerId: EntityId }) => ({
-    getMediaItemAuthorizations: async ({
-      mediaItemId,
-    }: {
-      mediaItemId: EntityId;
-    }): Promise<AuthorizationProjection[]> => {
-      const rows = await authorizationReadRepository.listAuthorizationsForOwnedMediaItem({
-        mediaItemId,
-        ownerId: viewerId,
-      });
-      return rows.map((row) => ({
-        id: row.id,
-        grantedToUserId: row.grantedToUser,
-        permission: row.permission.value,
-        label: row.description,
-        expiresAt: row.expiresAt,
-        revokedAt: row.revokedAt,
-        createdAt: row.createdAt,
-      }));
-    },
-    getAlbumAuthorizations: async ({
-      albumId,
-    }: {
-      albumId: EntityId;
-    }): Promise<AuthorizationProjection[]> => {
-      const rows = await authorizationReadRepository.listAuthorizationsForOwnedAlbum({
-        albumId,
-        ownerId: viewerId,
-      });
-      return rows.map((row) => ({
-        id: row.id,
-        grantedToUserId: row.grantedToUser,
-        permission: row.permission.value,
-        label: row.description,
-        expiresAt: row.expiresAt,
-        revokedAt: row.revokedAt,
-        createdAt: row.createdAt,
-      }));
+    getAuthz: ({ viewerMemberRole }: { viewerMemberRole?: string }): string[] => {
+      if (!viewerMemberRole) {
+        return [];
+      }
+      const role = AlbumMemberRole.fromValue(viewerMemberRole);
+      if (!role) {
+        return [];
+      }
+      return role.operations.map((op) => op.value);
     },
     getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
       return shareContactRepository.getShareSuggestions(viewerId);

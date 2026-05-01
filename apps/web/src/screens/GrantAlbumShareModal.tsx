@@ -1,13 +1,11 @@
 import { useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
-import {
-  type ShareContactSuggestion,
-  type SharePermissionValue,
-} from '../application/sharing/useGrantShare';
+
 import {
   GrantUserAuthorizationForAlbumDocument,
   GrantUserAuthorizationForAlbumInput,
   GrantUserAuthorizationForAlbumMutation,
+  ShareContactType,
   type SharePermission,
   ViewerShareContactsDocument,
 } from '../graphql/generated/types';
@@ -23,7 +21,7 @@ type GrantAlbumShareModalProps = {
   onClose: () => void;
 };
 
-const PERMISSION_BY_VALUE: Record<SharePermissionValue, SharePermission> = {
+const PERMISSION_BY_VALUE: Record<string, SharePermission> = {
   view: 'VIEW',
   comment: 'COMMENT',
   download: 'DOWNLOAD',
@@ -50,7 +48,7 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
     nextFetchPolicy: 'cache-first',
   });
 
-  const suggestions: ShareContactSuggestion[] = useMemo(
+  const suggestions: ShareContactType[] = useMemo(
     () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],
   );
@@ -64,15 +62,14 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
       expiresAt: toIsoExpiry(values.expiresAt),
     };
 
-    void (await grantUserAuthorization.execute(
+    void (await grantUserAuthorization(
       {
         mutation: GrantUserAuthorizationForAlbumDocument,
         variables: {
           input,
         },
       },
-      (data: GrantUserAuthorizationForAlbumMutation) =>
-        data.grantUserAuthorizationForAlbum.data?.authorizations,
+      (data: GrantUserAuthorizationForAlbumMutation) => data.grantUserAuthorizationForAlbum,
     ));
 
     // if (result.data?.token) {

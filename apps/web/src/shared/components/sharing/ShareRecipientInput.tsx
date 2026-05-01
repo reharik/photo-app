@@ -1,21 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import styled from 'styled-components';
-import type { ShareContactSuggestion } from '../../../application/sharing/useGrantShare';
+import { type ShareContactType } from '../../../graphql/generated/types';
 import { FormInput } from '../../../ui/FormInput';
 
 type ShareRecipientInputProps = {
   value: string;
   onChange: (value: string) => void;
-  suggestions: ShareContactSuggestion[];
-  onSelectSuggestion: (suggestion: ShareContactSuggestion) => void;
+  suggestions: ShareContactType[];
+  onSelectSuggestion: (suggestion: ShareContactType) => void;
   disabled?: boolean;
   error?: string;
 };
 
-const filterSuggestions = (
-  suggestions: ShareContactSuggestion[],
-  query: string,
-): ShareContactSuggestion[] => {
+const filterSuggestions = (suggestions: ShareContactType[], query: string): ShareContactType[] => {
   const trimmed = query.trim().toLowerCase();
   if (!trimmed) {
     return [];
@@ -36,7 +33,7 @@ export const ShareRecipientInput = ({
   const matches = useMemo(() => filterSuggestions(suggestions, value), [suggestions, value]);
   const showDropdown = isFocused && matches.length > 0;
 
-  const handleSelect = (suggestion: ShareContactSuggestion) => {
+  const handleSelect = (suggestion: ShareContactType) => {
     onSelectSuggestion(suggestion);
     setIsFocused(false);
   };

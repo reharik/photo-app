@@ -22,10 +22,6 @@ type SharedWithMeSectionProps = {
 };
 
 export const SharedWithMeSection = ({ sharedMediaItems }: SharedWithMeSectionProps) => {
-  const mediaGalleryIds = useMemo(
-    () => sharedMediaItems.map((r) => r.mediaItem.id),
-    [sharedMediaItems],
-  );
   const mediaRowIds = useMemo(() => sharedMediaItems.map((r) => r.id), [sharedMediaItems]);
   const { selectionCount, clearSelection } = useMultiSelectIds(mediaRowIds);
 
@@ -35,13 +31,12 @@ export const SharedWithMeSection = ({ sharedMediaItems }: SharedWithMeSectionPro
         <SelectableGalleryHeader
           selectionCount={selectionCount}
           clearSelection={clearSelection}
-          SelectionActions={<></>}
+          availableActions={[]}
           Header={() => <Title>Media Shared with you</Title>}
         />
         <SelectableGallery
           nodes={sharedMediaItems}
           multiSelectProps={noopSelect}
-          orderedMediaIds={mediaGalleryIds}
           emptyState={
             <EmptyState
               title="No shared media"

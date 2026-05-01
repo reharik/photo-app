@@ -2,7 +2,7 @@ import { ViewerOperation } from '@packages/contracts';
 import type { Knex } from 'knex';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { MediaItemPermissionResult } from '../viewerReadServices/viewerMediaItemPermissionService';
+import { MediaItemPermissionResult } from '../viewerReadServices/viewerMediaItemAuthzService';
 
 export type PublicMediaItemPermissionService = {
   getPermissionsForPublicLink: (mediaItemIds: EntityId[]) => Promise<MediaItemPermissionResult[]>;

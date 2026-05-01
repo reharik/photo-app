@@ -2,8 +2,8 @@ import { ViewerOperation } from '@packages/contracts';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
-import { canEveryItemDo } from '../../lib/viewerOps';
+import { useAuth } from '../../contexts/AuthContext';
+import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { GrantAlbumShareModal } from '../../screens/GrantAlbumShareModal';
 import { GrantMediaItemShareModal } from '../../screens/GrantMediaItemShareModal';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
@@ -15,10 +15,10 @@ import { EmptyState } from './gallery/EmptyState';
 import { AlbumMediaTile } from './gallery/mediaTiles/AlbumMediaTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
-import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 import { MediaSelectorSection } from './MediaSelectorSection';
 import { AppModal } from './ui/AppModal';
 import { ConfirmationModal } from './ui/ConfirmationModal';
+import { HasPermission } from './ui/HasPermission';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
 
@@ -55,28 +55,37 @@ export const AlbumSection = ({
   shareState,
   submitAddAlbumCover,
 }: AlbumSectionProps) => {
+  const authContext = useAuth();
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
-  const orderedAlbumItemIds = useMemo(() => albumItems.map((n) => n.id), [albumItems]);
-  const albumItemMultiSelectProps = useMultiSelectIds(orderedAlbumItemIds);
 
-  const selectedAlbumItems = useMemo(() => {
-    const selected = new Set(albumItemMultiSelectProps.selectedIds);
-    return albumItems.filter((item) => selected.has(item.id));
-  }, [albumItems, albumItemMultiSelectProps.selectedIds]);
+  const selectableActions = [
+    {
+      operation: ViewerOperation.grantAuthorization,
+      label: 'Share',
+      onAction: () => shareState.setShareItemsOpen(true),
+    },
+    {
+      operation: ViewerOperation.removeItems,
+      label: 'Remove from album',
+      onAction: () => removeAlbumItemState.setRemoveItemOpen(true),
+    },
+  ];
+  const {
+    multiSelectProps,
+    selectedItems,
+    selectedIds,
+    availableActions,
+    clearSelection,
+    selectionCount,
+  } = useMultiSelectGallery({
+    nodes: albumItems,
+    actions: selectableActions,
+  });
 
   const selectedMediaItemIds = useMemo(
-    () => selectedAlbumItems.map((item) => item.mediaItem.id),
-    [selectedAlbumItems],
-  );
-
-  const canShareSelectedItems = canEveryItemDo(
-    selectedAlbumItems,
-    ViewerOperation.grantAuthorizations,
-  );
-  const canRemoveSelectedFromAlbum = canEveryItemDo(
-    selectedAlbumItems,
-    ViewerOperation.removeItems,
+    () => selectedItems.map((item) => item.mediaItem.id),
+    [selectedItems],
   );
 
   const onAlbumScroll = useCallback((): void => {
@@ -87,30 +96,38 @@ export const AlbumSection = ({
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
   }, []);
 
+  const isItemOwnedByViewer = (ownerId: string) => {
+    return ownerId === authContext.user?.id;
+  };
+
   const renderHeader = () => {
     return (
       <>
         <BackLink to="/albums">← Albums</BackLink>
         <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
-          <SecondaryButton
-            type="button"
-            disabled={!album}
-            onClick={() => {
-              shareState.setShareAlbumOpen(true);
-            }}
-          >
-            Share album
-          </SecondaryButton>
-          <PrimaryButton
-            type="button"
-            disabled={!album}
-            onClick={() => {
-              addAlbumItemState.setAddItemOpen(true);
-            }}
-          >
-            Add items to Album
-          </PrimaryButton>
+          <HasPermission model={album} requiredOperation={ViewerOperation.grantAuthorization}>
+            <SecondaryButton
+              type="button"
+              disabled={!album}
+              onClick={() => {
+                shareState.setShareAlbumOpen(true);
+              }}
+            >
+              Share album
+            </SecondaryButton>
+          </HasPermission>
+          <HasPermission model={album} requiredOperation={ViewerOperation.addItems}>
+            <PrimaryButton
+              type="button"
+              disabled={!album}
+              onClick={() => {
+                addAlbumItemState.setAddItemOpen(true);
+              }}
+            >
+              Add items to Album
+            </PrimaryButton>
+          </HasPermission>
         </HeaderActions>
       </>
     );
@@ -118,18 +135,9 @@ export const AlbumSection = ({
   return (
     <Container>
       <SelectableGalleryHeader
-        selectionCount={albumItemMultiSelectProps.selectionCount}
-        clearSelection={albumItemMultiSelectProps.clearSelection}
-        SelectionActions={
-          <MediaSelectionToolbar
-            onShare={canShareSelectedItems ? () => shareState.setShareItemsOpen(true) : undefined}
-            onRemoveFromAlbum={
-              canRemoveSelectedFromAlbum
-                ? () => removeAlbumItemState.setRemoveItemOpen(true)
-                : undefined
-            }
-          />
-        }
+        selectionCount={selectionCount}
+        clearSelection={clearSelection}
+        availableActions={availableActions}
         Header={renderHeader}
       />
       <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
@@ -142,10 +150,9 @@ export const AlbumSection = ({
         />
         <SelectableGallery
           nodes={albumItems}
-          multiSelectProps={albumItemMultiSelectProps}
-          orderedMediaIds={orderedAlbumItemIds}
-          getItemFrameVariant={() => (album.viewerIsOwner ? 'default' : 'shared')}
+          multiSelectProps={multiSelectProps}
           embedInParentScroll
+          selectableActions={selectableActions.map((x) => x.operation)}
           emptyState={
             <EmptyState
               title="No album items yet"
@@ -171,14 +178,12 @@ export const AlbumSection = ({
           onClose={() => removeAlbumItemState.setRemoveItemOpen(false)}
           isSubmitting={removeAlbumItemState.removeFromAlbumMutation.isLoading}
           mutationErrors={removeAlbumItemState.removeFromAlbumMutation.errors}
-          onConfirm={() =>
-            removeAlbumItemState.submitRemoveFromAlbum(albumItemMultiSelectProps.selectedIds)
-          }
+          onConfirm={() => removeAlbumItemState.submitRemoveFromAlbum(selectedIds)}
           title="Remove from album?"
           body={
-            albumItemMultiSelectProps.selectedIds.length === 1
+            selectionCount === 1
               ? 'This item will be removed from this album only. Your media will stay in your library.'
-              : `These ${albumItemMultiSelectProps.selectedIds.length} items will be removed from this album only. Your media will stay in your library.`
+              : `These ${selectionCount} items will be removed from this album only. Your media will stay in your library.`
           }
           confirmLabel="Remove from album"
           confirmingLabel="Removing..."
@@ -195,7 +200,7 @@ export const AlbumSection = ({
           mediaItemIds={selectedMediaItemIds}
           onClose={() => {
             shareState.setShareItemsOpen(false);
-            albumItemMultiSelectProps.clearSelection();
+            clearSelection();
           }}
         />
       )}
@@ -205,7 +210,7 @@ export const AlbumSection = ({
           showCloseButton={false}
           padding={1}
           onClose={() => {
-            albumItemMultiSelectProps.clearSelection();
+            clearSelection();
             addAlbumItemState.setAddItemOpen(false);
           }}
         >
@@ -213,7 +218,7 @@ export const AlbumSection = ({
             <MediaSelectorSection
               onAddToAlbum={addAlbumItemState.submitAddToAlbum}
               onClose={() => {
-                albumItemMultiSelectProps.clearSelection();
+                clearSelection();
                 addAlbumItemState.setAddItemOpen(false);
               }}
               header={

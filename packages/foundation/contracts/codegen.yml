@@ -8,3 +8,4 @@ generates:
       # Hand-authored in src/enums/viewerOperations.ts (deniedError, etc.)
       skipEnums:
         - ViewerOperation
+        - AlbumMemberRole

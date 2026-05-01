@@ -1,3 +1,4 @@
+import { ViewerOperation } from '@packages/contracts';
 import styled from 'styled-components';
 import { SelectionThumbOverlay } from './SelectionCornerCheck';
 import { SelectionToggleControl } from './SelectionToggleControl';
@@ -10,8 +11,8 @@ interface SelectableGalleryItemProps {
   onModifierClick: (event: React.MouseEvent) => void;
   children: React.ReactNode;
   /** `shared`: viewer is not the owner (e.g. album shared with them). */
-  frameVariant?: GalleryItemFrameVariant;
   selectable?: boolean;
+  selectableActions?: ViewerOperation[];
 }
 
 export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
@@ -20,13 +21,13 @@ export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
   onModifierClick,
   onToggle,
   children,
-  frameVariant = 'default',
+  selectableActions = [],
 }: SelectableGalleryItemProps) => {
   return (
     <Item>
-      <MediaThumb $frameVariant={frameVariant} data-selectable-thumb="">
+      <MediaThumb data-selectable-thumb="">
         <ThumbClickCapture onClickCapture={onModifierClick}>
-          <SelectionThumbOverlay visible={isSelected} />
+          <SelectionThumbOverlay visible={selectable && selectableActions.length > 0} />
           {children}
           {selectable && <SelectionToggleControl selected={isSelected} onToggle={onToggle} />}
         </ThumbClickCapture>
@@ -46,23 +47,13 @@ const Item = styled.div`
   }
 `;
 
-/** Card shell: border, surface, clipping. Positioning for overlays lives on ThumbLink. */
-const MediaThumb = styled.div<{ $frameVariant: GalleryItemFrameVariant }>`
+const MediaThumb = styled('div')`
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: ${({ theme }) => theme.colors.panel};
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
-  ${({ $frameVariant, theme }) =>
-    $frameVariant === 'shared'
-      ? `
-    border: 2px dashed ${theme.colors.subtext};
-    box-shadow: inset 0 0 0 1px ${theme.colors.accent}40;
-  `
-      : `
-    border: 1px solid ${theme.colors.border};
-  `}
 `;
 
 const ThumbClickCapture = styled('div')`

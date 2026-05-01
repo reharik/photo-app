@@ -1,13 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
-import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { CreateAlbumModal } from '../../screens/CreateAlbumModal';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
 import { EmptyState } from './gallery/EmptyState';
 import { AlbumTile } from './gallery/mediaTiles/AlbumTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
-import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 
 type AlbumListSectionProps = {
   nodes: AlbumSummaryVM[];
@@ -20,9 +19,10 @@ export const AlbumListSection = ({
   isCreatingAlbum,
   submitCreateAlbum,
 }: AlbumListSectionProps) => {
-  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
-  const { selectionCount, isSelected, handleModifierClick, toggleSelectAt, clearSelection } =
-    useMultiSelectIds(orderedMediaIds);
+  const { multiSelectProps, clearSelection, selectionCount } = useMultiSelectGallery({
+    nodes,
+    actions: [],
+  });
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const closeCreate = () => {
@@ -33,7 +33,7 @@ export const AlbumListSection = ({
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={<MediaSelectionToolbar />}
+        availableActions={[]}
         Header={() => (
           <Header>
             <Title>Albums</Title>
@@ -49,7 +49,7 @@ export const AlbumListSection = ({
       <SelectableGallery
         selectable={false}
         nodes={nodes}
-        multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
+        multiSelectProps={multiSelectProps}
         emptyState={
           <EmptyState
             title="No albums yet"
@@ -61,9 +61,7 @@ export const AlbumListSection = ({
             }
           />
         }
-        getItemFrameVariant={(item) => (item.viewerIsOwner ? 'default' : 'shared')}
         renderItem={({ item }) => <AlbumTile item={item} />}
-        orderedMediaIds={orderedMediaIds}
       />
       {createModalOpen ? (
         <CreateAlbumModal

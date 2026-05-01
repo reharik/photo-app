@@ -1,13 +1,10 @@
 import { useQuery } from '@apollo/client/react';
 import { useMemo } from 'react';
 import {
-  type ShareContactSuggestion,
-  type SharePermissionValue,
-} from '../application/sharing/useGrantShare';
-import {
   GrantUserAuthorizationsForMediaItemsDocument,
   GrantUserAuthorizationsForMediaItemsInput,
   GrantUserAuthorizationsForMediaItemsMutation,
+  ShareContactType,
   type SharePermission,
   ViewerShareContactsDocument,
 } from '../graphql/generated/types';
@@ -23,7 +20,7 @@ type GrantMediaItemShareModalProps = {
   onClose: () => void;
 };
 
-const PERMISSION_BY_VALUE: Record<SharePermissionValue, SharePermission> = {
+const PERMISSION_BY_VALUE: Record<string, SharePermission> = {
   view: 'VIEW',
   comment: 'COMMENT',
   download: 'DOWNLOAD',
@@ -49,14 +46,12 @@ export const GrantMediaItemShareModal = ({
 }: GrantMediaItemShareModalProps) => {
   const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
 
-  // const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
-
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const suggestions: ShareContactSuggestion[] = useMemo(
+  const suggestions: ShareContactType[] = useMemo(
     () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],
   );
@@ -77,7 +72,7 @@ export const GrantMediaItemShareModal = ({
       label: values.label,
       expiresAt,
     };
-    void (await grantUserAuthorization.execute(
+    void (await grantUserAuthorization(
       {
         mutation: GrantUserAuthorizationsForMediaItemsDocument,
         variables: {
@@ -85,7 +80,7 @@ export const GrantMediaItemShareModal = ({
         },
       },
       (data: GrantUserAuthorizationsForMediaItemsMutation) =>
-        data.grantUserAuthorizationsForMediaItems.data?.authorizations,
+        data.grantUserAuthorizationsForMediaItems,
     ));
 
     // if (result.data.token) {

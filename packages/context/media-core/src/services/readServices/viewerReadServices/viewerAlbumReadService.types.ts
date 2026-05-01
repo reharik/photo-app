@@ -14,13 +14,13 @@ export type AlbumItemListProjection = {
 
 export type AlbumProjection = {
   id: string;
+  viewerMemberRole?: string;
   title: string;
   description?: string;
   coverMediaId?: string;
   coverMedia?: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
-  viewerIsOwner: boolean;
 };
 
 export type AlbumItemProjection = {
@@ -30,6 +30,16 @@ export type AlbumItemProjection = {
   mediaItem: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type DecoratedAlbumItemProjection = AlbumItemProjection & {
+  id: string;
+  /** Sparse bigint order index as string (GraphQL-safe). */
+  orderIndex: string;
+  mediaItem: MediaItemProjection & { viewerOperations: string[] };
+  createdAt: Date;
+  updatedAt: Date;
+  viewerOperations: string[];
 };
 
 export type NamespacedMediaItemRow = {
@@ -56,6 +66,7 @@ export type AlbumWithCoverRow = {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
+  viewerMemberRole?: string;
 } & NamespacedMediaItemRow;
 
 export type AlbumItemWithMediaRow = {

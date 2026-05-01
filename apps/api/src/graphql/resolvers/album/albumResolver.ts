@@ -11,15 +11,11 @@ const albumResolvers: Resolvers = {
       if (!album.coverMedia) {
         return undefined;
       }
-      const permissionMap =
-        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer([
-          album.coverMedia.id,
-        ]);
+      const coverMedia = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(
+        album.coverMedia,
+      );
 
-      return {
-        ...album.coverMedia,
-        viewerOperations: permissionMap[0]?.operations ?? [],
-      };
+      return coverMedia;
     }),
     items: authenticatedResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput(input.collectionInfo, AlbumItemSortBy);
@@ -28,31 +24,15 @@ const albumResolvers: Resolvers = {
         albumId: album.id,
         collectionInfo,
       });
-      const permissionMap =
-        await ctx.readServices.viewerMediaItemPermissionService.getPermissionsForViewer(
-          albumItems.nodes.map((n) => n.mediaItem.id),
-        );
+      const nodes = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToAlbumItemAndMedia(
+        albumItems.nodes,
+        album.viewerMemberRole,
+      );
 
       return {
-        nodes: albumItems.nodes.map((n) => {
-          const viewerOperations =
-            permissionMap.find((x) => x.mediaItemId === n.mediaItem.id)?.operations ?? [];
-          return {
-            ...n,
-            mediaItem: {
-              ...n.mediaItem,
-              viewerOperations,
-            },
-            viewerOperations,
-          };
-        }),
+        nodes,
         pageInfo: albumItems.pageInfo,
       };
-    }),
-    authorizations: authenticatedResolver(async (parent, _args, ctx) => {
-      return ctx.readServices.viewerAuthorizationReadService.getAlbumAuthorizations({
-        albumId: parent.id,
-      });
     }),
   },
 };

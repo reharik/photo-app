@@ -89,7 +89,7 @@ export const buildViewerAlbumReadServiceFactory = ({
           createdAt: album.createdAt,
           updatedAt: album.updatedAt,
           coverMedia: album.mediaItemId != null ? coverById.get(album.mediaItemId) : undefined,
-          viewerIsOwner: album.viewerIsOwner,
+          viewerMemberRole: album.viewerMemberRole,
         }));
 
         return {
@@ -112,8 +112,8 @@ export const buildViewerAlbumReadServiceFactory = ({
           title: row.title,
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
+          viewerMemberRole: row.viewerMemberRole,
           coverMedia: cover,
-          viewerIsOwner: row.viewerIsOwner,
         };
       },
 

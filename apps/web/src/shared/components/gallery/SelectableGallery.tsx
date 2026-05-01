@@ -1,5 +1,7 @@
+import { ViewerOperation } from '@packages/contracts';
+import { useMemo } from 'react';
 import styled from 'styled-components';
-import { SelectableGalleryItem, type GalleryItemFrameVariant } from './SelectableGalleryItem';
+import { SelectableGalleryItem } from './SelectableGalleryItem';
 
 export type MultiSelectProps = {
   isSelected: (id: string) => boolean;
@@ -14,7 +16,6 @@ const DEFAULT_GRID_GAP_SPACING_STEP_MOBILE = 2;
 
 type SelectableGalleryProps<T extends { id: string }> = {
   nodes: T[];
-  orderedMediaIds: string[];
   multiSelectProps: MultiSelectProps;
   /** Shown when `nodes` is empty; ignored if omitted. */
   emptyState?: React.ReactNode;
@@ -36,11 +37,11 @@ type SelectableGalleryProps<T extends { id: string }> = {
     index: number;
   }) => React.ReactNode;
   /** When set, non-owner / shared items can use a dashed frame (see `SelectableGalleryItem`). */
-  getItemFrameVariant?: (item: T) => GalleryItemFrameVariant;
   selectable?: boolean;
+  selectableActions?: ViewerOperation[];
 };
 
-export const SelectableGallery = <T extends { id: string }>({
+export const SelectableGallery = <T extends { id: string; viewerOperations?: ViewerOperation[] }>({
   nodes,
   multiSelectProps,
   emptyState,
@@ -50,10 +51,11 @@ export const SelectableGallery = <T extends { id: string }>({
   gridGapSpacingStep = DEFAULT_GRID_GAP_SPACING_STEP,
   gridGapSpacingStepMobile = DEFAULT_GRID_GAP_SPACING_STEP_MOBILE,
   renderItem,
-  orderedMediaIds,
-  getItemFrameVariant,
   selectable = true,
+  selectableActions = [],
 }: SelectableGalleryProps<T>) => {
+  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
+
   if (nodes.length === 0) {
     if (emptyState == null) {
       return null;
@@ -64,9 +66,6 @@ export const SelectableGallery = <T extends { id: string }>({
     return <Content>{emptyState}</Content>;
   }
 
-  const resolveFrameVariant = (item: T): GalleryItemFrameVariant =>
-    getItemFrameVariant == null ? 'default' : getItemFrameVariant(item);
-
   const grid = (
     <GalleryContainer
       $minColumnPx={gridMinColumnWidthPx}
@@ -75,16 +74,16 @@ export const SelectableGallery = <T extends { id: string }>({
       $gapStepMobile={gridGapSpacingStepMobile}
     >
       {nodes.map((item, index) => {
+        const hasActions = selectableActions.some((x) => item.viewerOperations?.includes(x));
         return (
           <SelectableGalleryItem
             key={item.id}
-            selectable={selectable}
+            selectable={selectable && hasActions}
             isSelected={multiSelectProps.isSelected(item.id)}
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}
             onModifierClick={(event) => multiSelectProps.handleModifierClick(event, item.id, index)}
+            selectableActions={selectableActions}
             // Generic `T` + callback triggers no-unsafe-assignment despite explicit return type.
-
-            frameVariant={resolveFrameVariant(item)}
           >
             {renderItem({
               item,

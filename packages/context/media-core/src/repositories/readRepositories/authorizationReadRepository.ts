@@ -14,11 +14,11 @@ export type AuthorizationRow = {
 };
 
 export type AuthorizationReadRepository = {
-  listAuthorizationsForOwnedMediaItem: (args: {
+  getGrantedAuthorizationsForOwnedMediaItem: (args: {
     mediaItemId: EntityId;
     ownerId: EntityId;
   }) => Promise<AuthorizationRow[]>;
-  listAuthorizationsForOwnedAlbum: (args: {
+  getGrantedAuthorizationsForOwnedAlbum: (args: {
     albumId: EntityId;
     ownerId: EntityId;
   }) => Promise<AuthorizationRow[]>;
@@ -39,7 +39,7 @@ const shareSelectColumns = [
 export const buildAuthorizationReadRepository = ({
   database,
 }: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
-  listAuthorizationsForOwnedMediaItem: async ({
+  getGrantedAuthorizationsForOwnedMediaItem: async ({
     mediaItemId,
     ownerId,
   }: {
@@ -57,7 +57,7 @@ export const buildAuthorizationReadRepository = ({
       { strict: true },
     );
   },
-  listAuthorizationsForOwnedAlbum: async ({
+  getGrantedAuthorizationsForOwnedAlbum: async ({
     albumId,
     ownerId,
   }: {

@@ -1,13 +1,13 @@
 type Album implements Node {
   id: ID!
   title: String!
-  viewerIsOwner: Boolean!
   coverMedia: MediaItem
   # members: (input: ViewerAlbumItemsInput): AlbumItemCollectionPayload!
   createdAt: DateTime!
   updatedAt: DateTime!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
-  authorizations: [AuthorizationType]
+  viewerOperations: [ViewerOperation!]!
+  viewerMemberRole: AlbumMemberRole
 }
 
 input ViewerAlbumItemsInput {
@@ -33,13 +33,11 @@ type AlbumItemCollectionPayload {
 #   updatedAt: DateTime!
 # }
 
-# YAGNI
-# enum AlbumMemberRole {
-#   OWNER
-#   VIEWER
-#   CONTRIBUTOR
-#   ADMIN
-# }
+enum AlbumMemberRole {
+  OWNER
+  CONTRIBUTOR
+  ADMIN
+}
 
 type AlbumItem implements Node {
   id: ID!

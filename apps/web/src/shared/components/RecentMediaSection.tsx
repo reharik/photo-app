@@ -1,4 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
+import { ViewerOperation } from '@packages/contracts';
 import { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -8,7 +9,7 @@ import {
   type DeleteMediaItemsMutation,
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
-import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { GrantMediaItemShareModal } from '../../screens/GrantMediaItemShareModal';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { useAppMutationState } from './dataAccess/useAppMutation';
@@ -17,7 +18,6 @@ import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
 import { SelectableGallery } from './gallery/SelectableGallery';
 import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
-import { MediaSelectionToolbar } from './gallery/selectionActions/MediaSelectionToolbar';
 import { AppModal } from './ui/AppModal';
 import { ConfirmationModal } from './ui/ConfirmationModal';
 import { UploadMediaButton } from './UploadMediaButton';
@@ -29,15 +29,6 @@ type RecentMediaSectionProps = {
 
 export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProps) => {
   const client = useApolloClient();
-  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
-  const {
-    selectedIds,
-    selectionCount,
-    isSelected,
-    handleModifierClick,
-    toggleSelectAt,
-    clearSelection,
-  } = useMultiSelectIds(orderedMediaIds);
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const [shareMediaOpen, setShareMediaOpen] = useState(false);
@@ -61,15 +52,36 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       })) ?? [],
     [albumsQuery.data],
   );
+  const selectableActions = [
+    {
+      operation: ViewerOperation.grantAuthorization,
+      label: 'Share',
+      onAction: () => setShareMediaOpen(true),
+    },
+    {
+      operation: ViewerOperation.addItems,
+      label: 'Add to album',
+      onAction: () => setAddToAlbumOpen(true),
+    },
+    {
+      operation: ViewerOperation.removeItems,
+      label: 'Delete from library',
+      onAction: () => setDeleteMediaOpen(true),
+    },
+  ];
 
-  const mediaItemIdsForModal = useMemo(() => Array.from(selectedIds), [selectedIds]);
+  const { multiSelectProps, selectedIds, availableActions, clearSelection, selectionCount } =
+    useMultiSelectGallery({
+      nodes,
+      actions: selectableActions,
+    });
 
   const submitDeleteMedia = async (): Promise<void> => {
     const result = await executeDelete(
       {
         mutation: DeleteMediaItemsDocument,
         variables: {
-          input: { mediaItemIds: mediaItemIdsForModal },
+          input: { mediaItemIds: selectedIds },
         },
       },
       (data: DeleteMediaItemsMutation) => data.deleteMediaItems,
@@ -90,7 +102,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
         mutation: AddMediaItemsToAlbumDocument,
         variables: {
           input: {
-            mediaItemIds: mediaItemIdsForModal,
+            mediaItemIds: selectedIds,
             ...input,
           },
         },
@@ -111,13 +123,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
-        SelectionActions={
-          <MediaSelectionToolbar
-            onShare={() => setShareMediaOpen(true)}
-            onAddToAlbum={() => setAddToAlbumOpen(true)}
-            onDeleteFromLibrary={() => setDeleteMediaOpen(true)}
-          />
-        }
+        availableActions={availableActions}
         Header={() => (
           <>
             <Title>Recent Media</Title>
@@ -130,7 +136,8 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
 
       <SelectableGallery
         nodes={nodes}
-        multiSelectProps={{ isSelected, handleModifierClick, toggleSelectAt }}
+        multiSelectProps={multiSelectProps}
+        selectableActions={selectableActions.map((x) => x.operation)}
         emptyState={
           <EmptyState
             title="No media yet"
@@ -141,13 +148,12 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
         renderItem={({ item, orderedMediaIds }) => (
           <MediaItemTile item={item} mediaGalleryIds={orderedMediaIds} />
         )}
-        orderedMediaIds={orderedMediaIds}
       />
       {addToAlbumOpen && (
         <AppModal
           onClose={() => setAddToAlbumOpen(false)}
           maxWidth="960px"
-          title={`Add {mediaItemIdsForModal.length} {mediaItemIdsForModal.length === 1 ? 'item' : 'items'} to an album`}
+          title={`Add ${selectedIds.length} ${selectedIds.length === 1 ? 'item' : 'items'} to an album`}
         >
           <AddItemsToAlbum
             onClose={() => setAddToAlbumOpen(false)}
@@ -171,9 +177,9 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
           onConfirm={submitDeleteMedia}
           title="Delete from library?"
           body={
-            mediaItemIdsForModal.length === 1
+            selectedIds.length === 1
               ? 'This item will be removed from your library and from any albums it appears in. This cannot be undone.'
-              : `These ${mediaItemIdsForModal.length} items will be removed from your library and from any albums they appear in. This cannot be undone.`
+              : `These ${selectedIds.length} items will be removed from your library and from any albums they appear in. This cannot be undone.`
           }
           confirmLabel="Delete"
           confirmingLabel="Deleting..."
@@ -183,7 +189,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       )}
       {shareMediaOpen && (
         <GrantMediaItemShareModal
-          mediaItemIds={mediaItemIdsForModal}
+          mediaItemIds={selectedIds}
           onClose={() => {
             setShareMediaOpen(false);
             clearSelection();

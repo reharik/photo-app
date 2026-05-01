@@ -1,20 +1,20 @@
 import styled from 'styled-components';
+import { GalleryConfigItems } from '../../../hooks/useMultiSelectGallery';
 import { SelectableGallerySelectionBar } from './SelectableGallerySelectionBar';
 interface SelectableGalleryHeaderProps {
   selectionCount: number;
   clearSelection: () => void;
-  /** Toolbar content when items are selected (e.g. action buttons). */
-  SelectionActions: React.ReactNode;
   Header: React.ComponentType;
   vPaddingUnits?: number;
   hPaddingUnits?: number;
+  availableActions: GalleryConfigItems[];
 }
 
 export const SelectableGalleryHeader = ({
   selectionCount,
   clearSelection,
+  availableActions,
   Header,
-  SelectionActions,
   vPaddingUnits = 4,
   hPaddingUnits = 6,
 }: SelectableGalleryHeaderProps) => {
@@ -24,7 +24,7 @@ export const SelectableGalleryHeader = ({
         <SelectableGallerySelectionBar
           count={selectionCount}
           onClear={clearSelection}
-          selectionActions={SelectionActions}
+          availableActions={availableActions}
         />
       ) : (
         <Header />

@@ -9,9 +9,10 @@ query ViewerAlbums {
       nodes {
         id
         title
-        viewerIsOwner
         createdAt
         updatedAt
+        viewerOperations
+        viewerMemberRole
         coverMedia {
           ...MediaItemSummary
         }

@@ -3,9 +3,17 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
+    "barrels": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx barrelsby --config barrelsby.json"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["contracts:build"],
+      "dependsOn": ["barrels", "contracts:build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

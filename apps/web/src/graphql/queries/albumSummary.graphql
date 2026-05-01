@@ -1,9 +1,10 @@
 fragment AlbumSummary on Album {
   id
   title
-  viewerIsOwner
   createdAt
   updatedAt
+  viewerOperations
+  viewerMemberRole
   coverMedia {
     ...MediaItemSummary
   }

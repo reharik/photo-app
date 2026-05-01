@@ -5,7 +5,6 @@ import { fail, ok } from '../utilities/writeResponse';
 
 export type AuthorizationProps = {
   grantedToUser?: EntityId;
-  token?: string;
   permission: SharePermission;
   grantedBy: EntityId;
   label?: string;
@@ -17,7 +16,6 @@ export type AuthorizationRecord = {
   id: string;
   grantedToUser?: string;
   grantedBy: EntityId;
-  token?: string;
   permission: SharePermission;
   label?: string;
   expiresAt?: Date;
@@ -28,7 +26,6 @@ export type CreateAuthorizationInput = {
   permission: SharePermission;
   grantedToUser?: EntityId;
   grantedBy: EntityId;
-  token?: string;
   label?: string;
   expiresAt?: Date;
 };
@@ -46,7 +43,6 @@ export class Authorization extends Entity<AuthorizationRecord> {
       permission: input.permission,
       grantedToUser: input.grantedToUser,
       grantedBy: actorId,
-      token: input.token,
       label: input.label,
       expiresAt: input.expiresAt,
     });
@@ -57,7 +53,6 @@ export class Authorization extends Entity<AuthorizationRecord> {
       permission: record.permission,
       grantedToUser: record.grantedToUser,
       grantedBy: record.grantedBy,
-      token: record.token,
       label: record.label,
       expiresAt: record.expiresAt,
       revokedAt: record.revokedAt,

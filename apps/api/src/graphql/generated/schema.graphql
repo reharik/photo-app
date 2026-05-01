@@ -43,14 +43,14 @@ type AddMediaItemsToAlbumResponse {
 }
 
 type Album implements Node {
-  authorizations: [AuthorizationType]
   coverMedia: MediaItem
   createdAt: DateTime!
   id: ID!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   title: String!
   updatedAt: DateTime!
-  viewerIsOwner: Boolean!
+  viewerMemberRole: AlbumMemberRole
+  viewerOperations: [ViewerOperation!]!
 }
 
 input AlbumCollectionInput {
@@ -87,6 +87,12 @@ type AlbumItemCollectionPayload {
 enum AlbumItemSortBy {
   CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
   ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
+}
+
+enum AlbumMemberRole {
+  ADMIN
+  CONTRIBUTOR
+  OWNER
 }
 
 enum AlbumSortBy {
@@ -392,10 +398,6 @@ input PageInfoInput {
   offset: Int!
 }
 
-type PublicAccess {
-  album: PublicAlbum!
-}
-
 type PublicAlbum implements Node {
   coverMedia: PublicMediaItem
   id: ID!
@@ -444,7 +446,6 @@ type PublicMediaItem implements Node {
 }
 
 type Query {
-  publicAccess: PublicAccess
   viewer: Viewer
 }
 

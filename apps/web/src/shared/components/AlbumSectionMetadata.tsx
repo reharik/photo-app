@@ -47,7 +47,7 @@ export const AlbumSectionMetadata = ({
         <AlbumInfo $compact={metaCompact}>
           {metaCompact ? (
             <AlbumCompactSummary>
-              {`${count} media items ${(album as UserAlbumSummaryVM).updatedAt ? `· Updated ${localizeDate((album as UserAlbumSummaryVM).updatedAt)}` : ''}`}
+              {`${count} media items ${album.updatedAt ? `· Updated ${localizeDate(album.updatedAt)}` : ''}`}
             </AlbumCompactSummary>
           ) : (
             <>
@@ -55,10 +55,8 @@ export const AlbumSectionMetadata = ({
               <AlbumStats>
                 <Stat>{count} media items</Stat>
               </AlbumStats>
-              {(album as UserAlbumSummaryVM).updatedAt && (
-                <AlbumDescription>
-                  Updated {localizeDate((album as UserAlbumSummaryVM).updatedAt)}
-                </AlbumDescription>
+              {album.updatedAt && (
+                <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
               )}
             </>
           )}
@@ -91,7 +89,7 @@ export const AlbumSectionMetadata = ({
               nodes={albumItems}
               renderItem={({ item }) => (
                 <SingleSelectionTile
-                  item={item.mediaItem as UserMediaItemSummaryVM}
+                  item={item.mediaItem}
                   onSelect={() => onSelectCover?.(item.id)}
                 />
               )}

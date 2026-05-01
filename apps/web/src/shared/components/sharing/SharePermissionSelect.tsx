@@ -1,20 +1,19 @@
 import React from 'react';
-import type { SharePermissionValue } from '../../../application/sharing/useGrantShare';
 import { FormInput } from '../../../ui/FormInput';
 
 type SharePermissionSelectProps = {
-  value: SharePermissionValue;
-  onChange: (value: SharePermissionValue) => void;
+  value: string;
+  onChange: (value: string) => void;
   disabled?: boolean;
 };
 
-const PERMISSION_OPTIONS: { value: SharePermissionValue; label: string }[] = [
+const PERMISSION_OPTIONS: { value: string; label: string }[] = [
   { value: 'view', label: 'View' },
   { value: 'comment', label: 'Comment' },
   { value: 'download', label: 'Download' },
 ];
 
-const isPermissionValue = (value: string): value is SharePermissionValue =>
+const isPermissionValue = (value: string): value is string =>
   value === 'view' || value === 'comment' || value === 'download';
 
 export const SharePermissionSelect = ({

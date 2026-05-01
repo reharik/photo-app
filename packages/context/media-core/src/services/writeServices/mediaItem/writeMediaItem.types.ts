@@ -1,7 +1,7 @@
 import { MediaItemStatus, MediaKind, SharePermission } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
-import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAuthorizationReadService';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAlbumAuthzReadService';
 
 export type FinalizeMediaItemUploadCommand = {
   viewerId: EntityId;

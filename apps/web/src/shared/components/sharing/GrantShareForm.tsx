@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import type { AppError } from '../../../application/errors/types';
-import type {
-  ShareContactSuggestion,
-  SharePermissionValue,
-} from '../../../application/sharing/useGrantShare';
+
+import { ShareContactType } from '../../../graphql/generated/types';
 import { FormInput } from '../../../ui/FormInput';
 import { Button, HStack, VStack } from '../../../ui/Primitives';
 import { AppErrorPanel } from '../ui/AppErrorPanel';
@@ -14,13 +12,13 @@ import { ShareTokenResult } from './ShareTokenResult';
 
 export type GrantShareFormValues = {
   handle: string;
-  permission: SharePermissionValue;
+  permission: string;
   label?: string;
   expiresAt?: string;
 };
 
 type GrantShareFormProps = {
-  suggestions: ShareContactSuggestion[];
+  suggestions: ShareContactType[];
   onSubmit: (input: GrantShareFormValues) => Promise<void>;
   /** When set, shows a "Create shareable link" path and requires a handle for the primary Share action. */
   onCreateShareableLink?: (input: GrantShareFormValues) => Promise<void>;
@@ -45,7 +43,7 @@ export const GrantShareForm = ({
   onClose,
 }: GrantShareFormProps) => {
   const [handle, setHandle] = useState('');
-  const [permission, setPermission] = useState<SharePermissionValue>('view');
+  const [permission, setPermission] = useState<string>('view');
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
@@ -57,7 +55,7 @@ export const GrantShareForm = ({
     }
   };
 
-  const handleSelectSuggestion = (suggestion: ShareContactSuggestion) => {
+  const handleSelectSuggestion = (suggestion: ShareContactType) => {
     setHandleValue(suggestion.handle);
   };
 
