@@ -9,6 +9,7 @@ export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): Me
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
     viewerOperations: mediaItem.viewerOperations?.map((o) => ViewerOperation.fromValue(o)) ?? [],
+    viewerIsOwner: mediaItem.viewerIsOwner,
   };
 }
 

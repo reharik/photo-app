@@ -1,4 +1,4 @@
-import { SharePermission } from '@packages/contracts';
+import { ViewerOperation } from '@packages/contracts';
 import {
   SharedMediaItemFragment,
   ViewerSharedMediaItemsQuery,
@@ -8,8 +8,9 @@ import { SharedMediaItemVM } from './SharedMediaItemVM';
 
 const mapNodeToSharedMediaItemVM = (node: SharedMediaItemFragment): SharedMediaItemVM => ({
   ...node,
-  permission: SharePermission.fromValue(node.permission),
   mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
+  viewerOperations: node.mediaItem.viewerOperations?.map((o) => ViewerOperation.fromValue(o)) ?? [],
+  viewerIsOwner: false,
 });
 
 type SharedMediaItemsSlice = NonNullable<

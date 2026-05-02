@@ -1,6 +1,7 @@
 import { ViewerOperation } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
+import { ViewableItemVM } from '../../../viewModels/album/AlbumSummaryVM';
 import { SelectableGalleryItem } from './SelectableGalleryItem';
 
 export type MultiSelectProps = {
@@ -41,7 +42,7 @@ type SelectableGalleryProps<T extends { id: string }> = {
   selectableActions?: ViewerOperation[];
 };
 
-export const SelectableGallery = <T extends { id: string; viewerOperations?: ViewerOperation[] }>({
+export const SelectableGallery = <T extends ViewableItemVM>({
   nodes,
   multiSelectProps,
   emptyState,
@@ -75,6 +76,7 @@ export const SelectableGallery = <T extends { id: string; viewerOperations?: Vie
     >
       {nodes.map((item, index) => {
         const hasActions = selectableActions.some((x) => item.viewerOperations?.includes(x));
+
         return (
           <SelectableGalleryItem
             key={item.id}
@@ -83,6 +85,7 @@ export const SelectableGallery = <T extends { id: string; viewerOperations?: Vie
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}
             onModifierClick={(event) => multiSelectProps.handleModifierClick(event, item.id, index)}
             selectableActions={selectableActions}
+            viewerIsOwner={item.viewerIsOwner}
             // Generic `T` + callback triggers no-unsafe-assignment despite explicit return type.
           >
             {renderItem({

@@ -18,7 +18,6 @@ import { SelectableGalleryHeader } from './gallery/SelectableGalleryHeader';
 import { MediaSelectorSection } from './MediaSelectorSection';
 import { AppModal } from './ui/AppModal';
 import { ConfirmationModal } from './ui/ConfirmationModal';
-import { HasPermission } from './ui/HasPermission';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
 
@@ -96,38 +95,34 @@ export const AlbumSection = ({
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
   }, []);
 
-  const isItemOwnedByViewer = (ownerId: string) => {
-    return ownerId === authContext.user?.id;
-  };
-
   const renderHeader = () => {
     return (
       <>
         <BackLink to="/albums">← Albums</BackLink>
         <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
-          <HasPermission model={album} requiredOperation={ViewerOperation.grantAuthorization}>
-            <SecondaryButton
-              type="button"
-              disabled={!album}
-              onClick={() => {
-                shareState.setShareAlbumOpen(true);
-              }}
-            >
-              Share album
-            </SecondaryButton>
-          </HasPermission>
-          <HasPermission model={album} requiredOperation={ViewerOperation.addItems}>
-            <PrimaryButton
-              type="button"
-              disabled={!album}
-              onClick={() => {
-                addAlbumItemState.setAddItemOpen(true);
-              }}
-            >
-              Add items to Album
-            </PrimaryButton>
-          </HasPermission>
+          {album.viewerIsOwner && (
+            <>
+              <SecondaryButton
+                type="button"
+                disabled={!album}
+                onClick={() => {
+                  shareState.setShareAlbumOpen(true);
+                }}
+              >
+                Share album
+              </SecondaryButton>
+              <PrimaryButton
+                type="button"
+                disabled={!album}
+                onClick={() => {
+                  addAlbumItemState.setAddItemOpen(true);
+                }}
+              >
+                Add items to Album
+              </PrimaryButton>
+            </>
+          )}
         </HeaderActions>
       </>
     );

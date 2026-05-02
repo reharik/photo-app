@@ -15,6 +15,7 @@ export function mapMediaItemToMediaItemDetailVM(
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
     viewerOperations: mediaItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
+    viewerIsOwner: mediaItem.viewerIsOwner,
   };
 }
 

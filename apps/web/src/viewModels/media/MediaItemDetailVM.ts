@@ -1,4 +1,5 @@
-import { MediaKind, ViewerOperation } from '@packages/contracts';
+import { MediaKind } from '@packages/contracts';
+import { ViewableItemVM } from '../album/AlbumSummaryVM';
 
 // export type MediaItemDetailVM = UserMediaItemDetailVM | PublicMediaItemSummaryVM;
 
@@ -11,5 +12,4 @@ export type MediaItemDetailVM = {
   originalFileName: string;
   createdAt: string;
   takenAt: string;
-  viewerOperations: ViewerOperation[];
-};
+} & ViewableItemVM;

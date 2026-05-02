@@ -3,8 +3,7 @@ fragment AlbumSummary on Album {
   title
   createdAt
   updatedAt
-  viewerOperations
-  viewerMemberRole
+  ...ViewableAlbum
   coverMedia {
     ...MediaItemSummary
   }

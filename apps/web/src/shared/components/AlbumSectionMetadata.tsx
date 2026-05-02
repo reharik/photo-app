@@ -30,20 +30,27 @@ export const AlbumSectionMetadata = ({
   const coverMediaUrl = album.coverMedia
     ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
     : undefined;
+
+  const renderCover = () => {
+    const cover = album.coverMedia ? (
+      <CoverImage src={coverMediaUrl} alt={album.coverMedia?.kind.display ?? ''} />
+    ) : (
+      <CoverPlaceholder aria-hidden $compact={metaCompact}>
+        📷
+      </CoverPlaceholder>
+    );
+    return album.viewerIsOwner ? (
+      <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
+        {cover}
+      </CoverUploadButton>
+    ) : (
+      <>{cover}</>
+    );
+  };
   return (
     <>
       <AlbumMeta $compact={metaCompact}>
-        <AlbumCover $compact={metaCompact}>
-          <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
-            {album.coverMedia ? (
-              <CoverImage src={coverMediaUrl} alt={album.coverMedia?.kind.display ?? ''} />
-            ) : (
-              <CoverPlaceholder aria-hidden $compact={metaCompact}>
-                📷
-              </CoverPlaceholder>
-            )}
-          </CoverUploadButton>
-        </AlbumCover>
+        <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
         <AlbumInfo $compact={metaCompact}>
           {metaCompact ? (
             <AlbumCompactSummary>

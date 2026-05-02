@@ -5,7 +5,7 @@ import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { AuthorizationProjection } from './viewerAlbumAuthzReadService';
 import { AlbumItemProjection, DecoratedAlbumItemProjection } from './viewerAlbumReadService.types';
-import { MediaItemProjection } from './viewerMediaItemReadService.types';
+import { MediaItemProjection, ViewableItemProjection } from './viewerMediaItemReadService.types';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;
@@ -84,47 +84,57 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
     };
     const addAuthzToItem = async (
       item: MediaItemProjection,
-    ): Promise<MediaItemProjection & { viewerOperations: string[] }> => {
+    ): Promise<MediaItemProjection & ViewableItemProjection> => {
       const result = await addAuthzToItems([item]);
       return result[0] ?? item;
     };
     const addAuthzToItems = async (
       items: MediaItemProjection[],
-    ): Promise<(MediaItemProjection & { viewerOperations: string[] })[]> => {
+    ): Promise<(MediaItemProjection & ViewableItemProjection)[]> => {
       if (items.length === 0) return [];
 
       const permissions = await getAuthzRows(items.map((i) => i.id));
+      const addItem = <T>(x: T, arr: T[]) => {
+        if (!arr.includes(x)) {
+          arr.push(x);
+        }
+        return arr;
+      };
       // Here we create a map of permissions for each media item
       // The complexity is that a media item can have multiple records
       // returned by the query and we need to collect the distinct set of viewerOperations
       const decoratedItems = permissions.reduce<
-        Map<string, MediaItemProjection & { viewerOperations: Set<string> }>
-      >((acc, row) => {
-        // If we have processed a permission for this item before get it from acc
-        // otherwise find the item in the original items array and add the empty operations set
-        let mediaItem = acc.get(row.mediaItemId);
-        if (!mediaItem) {
-          const mediaItemRow = items.find((i) => i.id === row.mediaItemId);
-          if (!mediaItemRow) {
-            return acc;
+        Record<string, MediaItemProjection & ViewableItemProjection>
+      >(
+        (acc, row) => {
+          // If we have processed a permission for this item before get it from acc
+          // otherwise find the item in the original items array and add the empty operations set
+          let mediaItem = acc[row.mediaItemId];
+          if (!mediaItem) {
+            const mediaItemRow = items.find((i) => i.id === row.mediaItemId);
+            if (!mediaItemRow) {
+              return acc;
+            }
+            mediaItem = { ...mediaItemRow, viewerOperations: [], viewerIsOwner: false };
           }
-          mediaItem = { ...mediaItemRow, viewerOperations: new Set<string>() };
-        }
 
-        // now that we have the media item with the operations so far, we add the
-        // new operations from this permission;
-        if (row.ownerId === viewerId) {
-          ViewerOperation.items().forEach((op) => mediaItem.viewerOperations.add(op.value));
-        } else if (row.albumRole) {
-          const role = AlbumMemberRole.fromValue(row.albumRole);
-          role.operations.forEach((op) => mediaItem.viewerOperations.add(op.value));
-        }
-        // assign or reassign the media item back to the acc
-        acc.set(row.mediaItemId, mediaItem);
-        return acc;
-      }, new Map<string, MediaItemProjection & { viewerOperations: Set<string> }>());
+          // now that we have the media item with the operations so far, we add the
+          // new operations from this permission;
+          if (row.ownerId === viewerId) {
+            ViewerOperation.items().forEach((op) => addItem(op.value, mediaItem.viewerOperations));
+          } else if (row.albumRole) {
+            const role = AlbumMemberRole.fromValue(row.albumRole);
+            role.operations.forEach((op) => addItem(op.value, mediaItem.viewerOperations));
+          }
+          mediaItem.viewerIsOwner = row.ownerId === viewerId;
+          // assign or reassign the media item back to the acc
+          acc[row.mediaItemId] = mediaItem;
+          return acc;
+        },
+        {} as Record<string, MediaItemProjection & ViewableItemProjection>,
+      );
 
-      return [...decoratedItems.values()].map((item) => ({
+      return Object.values(decoratedItems).map((item) => ({
         ...item,
         viewerOperations: Array.from(item.viewerOperations ?? []),
       }));
@@ -144,14 +154,20 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
         }
       }
       const mediaItems = await addAuthzToItems(albumItems.map((i) => i.mediaItem));
-      const decoratedAlbumItems = albumItems.map((i) => ({
-        ...i,
-        mediaItem: mediaItems.find((m) => m.id === i.mediaItem.id) ?? {
+      const decoratedAlbumItems = albumItems.map((i) => {
+        const mi = mediaItems.find((m) => m.id === i.mediaItem.id);
+        const mediaItem = mi ?? {
           ...i.mediaItem,
           viewerOperations: albumItemOperations,
-        },
-        viewerOperations: albumItemOperations,
-      }));
+          viewerIsOwner: false,
+        };
+        return {
+          ...i,
+          mediaItem,
+          viewerOperations: albumItemOperations,
+          viewerIsOwner: mediaItem.viewerIsOwner,
+        };
+      });
       return decoratedAlbumItems;
     };
 

@@ -1,4 +1,4 @@
-import { AlbumMemberRole, MediaAssetKind } from '@packages/contracts';
+import { MediaAssetKind } from '@packages/contracts';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { localizeDate } from '../../../../lib/formatters/dateFormatters';
@@ -9,7 +9,7 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
   const mediaItem = item.coverMedia;
   const url = mediaItem ? buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail) : undefined;
   return (
-    <Tile $frameVariant={item.viewerMemberRole !== AlbumMemberRole.owner}>
+    <>
       <ThumbLink to={`/albums/${item.id}`}>
         {url ? (
           <ThumbImage src={url} alt={item.title.trim()} />
@@ -23,21 +23,9 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
           <MediaMeta>Updated {localizeDate(item.updatedAt)}</MediaMeta>
         </MediaInfo>
       </CaptionLink>
-    </Tile>
+    </>
   );
 };
-
-const Tile = styled.div<{ $frameVariant: boolean }>`
-  ${({ $frameVariant, theme }) =>
-    $frameVariant
-      ? `
-    border: 2px dashed ${theme.colors.subtext};
-    box-shadow: inset 0 0 0 1px ${theme.colors.accent}40;
-  `
-      : `
-    border: 1px solid ${theme.colors.border};
-  `}
-`;
 const ThumbLink = styled(Link)`
   display: flex;
   align-items: center;

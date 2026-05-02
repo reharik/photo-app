@@ -11,6 +11,7 @@ export function mapAlbumItemToSummaryVM(albumItem: AlbumItemSummaryFragment): Al
     orderIndex: albumItem.orderIndex,
     updatedAt: albumItem.updatedAt,
     viewerOperations: albumItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
+    viewerIsOwner: albumItem.viewerIsOwner,
   };
 }
 

@@ -1,4 +1,4 @@
-import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
+import { AlbumMemberRole, AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/authenticatedContext';
 import type { Resolvers, SharePermission } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
@@ -21,6 +21,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         });
         return {
           ...row,
+          viewerIsOwner: row.viewerMemberRole === AlbumMemberRole.owner.value,
           viewerOperations,
         };
       });
@@ -42,6 +43,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       return {
         ...album,
         viewerOperations,
+        viewerIsOwner: album.viewerMemberRole === AlbumMemberRole.owner.value,
       };
     }),
     mediaItem: authenticatedResolver(async (_parent, { id }, ctx) => {

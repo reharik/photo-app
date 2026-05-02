@@ -11,8 +11,7 @@ query ViewerAlbums {
         title
         createdAt
         updatedAt
-        viewerOperations
-        viewerMemberRole
+        ...ViewableAlbum
         coverMedia {
           ...MediaItemSummary
         }

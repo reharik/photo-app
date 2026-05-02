@@ -7,5 +7,5 @@ fragment MediaItemDetail on MediaItem {
   originalFileName
   createdAt
   takenAt
-  viewerOperations
+  ...ViewableMediaItem
 }

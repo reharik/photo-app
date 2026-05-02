@@ -19,7 +19,7 @@ export type MediaAssetProjection = {
   updatedAt: Date;
 };
 
-export type MediaItemRow = {
+export interface MediaItemRow {
   id: EntityId;
   ownerId: EntityId;
   kind: string;
@@ -35,14 +35,20 @@ export type MediaItemRow = {
   takenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-};
+}
 
-export type MediaItemProjection = MediaItemRow & {
+export interface MediaItemProjection extends MediaItemRow {
   tags: string[];
-};
+}
 
 export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy> {
   pageInfo: PageInfo;
   sortBy: MediaItemSortBy;
   sortDir: SortDir;
+}
+
+export interface ViewableItemProjection {
+  id: EntityId;
+  viewerIsOwner: boolean;
+  viewerOperations: string[];
 }

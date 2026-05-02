@@ -2,6 +2,11 @@ import { AlbumMemberRole, ViewerOperation } from '@packages/contracts';
 import { MediaItemSummaryVM } from '../media/MediaItemSummaryVM';
 
 // export type AlbumSummaryVM = UserAlbumSummaryVM | PublicAlbumSummaryVM;
+export type ViewableItemVM = {
+  id: string;
+  viewerIsOwner: boolean;
+  viewerOperations: ViewerOperation[];
+};
 
 export type AlbumSummaryVM = {
   id: string;
@@ -11,5 +16,4 @@ export type AlbumSummaryVM = {
   coverMedia?: MediaItemSummaryVM;
   itemCount: number;
   updatedAt: string;
-  viewerOperations: ViewerOperation[];
-};
+} & ViewableItemVM;

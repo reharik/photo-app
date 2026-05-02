@@ -13,6 +13,7 @@ interface SelectableGalleryItemProps {
   /** `shared`: viewer is not the owner (e.g. album shared with them). */
   selectable?: boolean;
   selectableActions?: ViewerOperation[];
+  viewerIsOwner: boolean;
 }
 
 export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
@@ -22,10 +23,11 @@ export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
   onToggle,
   children,
   selectableActions = [],
+  viewerIsOwner,
 }: SelectableGalleryItemProps) => {
   return (
     <Item>
-      <MediaThumb data-selectable-thumb="">
+      <MediaThumb $frameVariant={viewerIsOwner} data-selectable-thumb="">
         <ThumbClickCapture onClickCapture={onModifierClick}>
           <SelectionThumbOverlay visible={selectable && selectableActions.length > 0} />
           {children}
@@ -47,13 +49,23 @@ const Item = styled.div`
   }
 `;
 
-const MediaThumb = styled('div')`
+/** Card shell: border, surface, clipping. Positioning for overlays lives on ThumbLink. */
+const MediaThumb = styled.div<{ $frameVariant: boolean }>`
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: ${({ theme }) => theme.colors.panel};
   border-radius: ${({ theme }) => theme.radius.lg};
   overflow: hidden;
+  ${({ $frameVariant, theme }) =>
+    !$frameVariant
+      ? `
+    border: 2px dashed ${theme.colors.subtext};
+    box-shadow: inset 0 0 0 1px ${theme.colors.accent}40;
+  `
+      : `
+    border: 1px solid ${theme.colors.border};
+  `}
 `;
 
 const ThumbClickCapture = styled('div')`

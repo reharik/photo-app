@@ -42,14 +42,14 @@ type AddMediaItemsToAlbumResponse {
   errors: [ContractError!]
 }
 
-type Album implements Node {
+type Album implements Node & ViewableItem {
   coverMedia: MediaItem
   createdAt: DateTime!
   id: ID!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   title: String!
   updatedAt: DateTime!
-  viewerMemberRole: AlbumMemberRole
+  viewerIsOwner: Boolean!
   viewerOperations: [ViewerOperation!]!
 }
 
@@ -64,12 +64,13 @@ type AlbumCollectionPayload {
   pageInfo: PageInfo!
 }
 
-type AlbumItem implements Node {
+type AlbumItem implements Node & ViewableItem {
   createdAt: DateTime!
   id: ID!
   mediaItem: MediaItem!
   orderIndex: String!
   updatedAt: DateTime!
+  viewerIsOwner: Boolean!
   viewerOperations: [ViewerOperation!]!
 }
 
@@ -87,12 +88,6 @@ type AlbumItemCollectionPayload {
 enum AlbumItemSortBy {
   CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
   ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
-}
-
-enum AlbumMemberRole {
-  ADMIN
-  CONTRIBUTOR
-  OWNER
 }
 
 enum AlbumSortBy {
@@ -295,7 +290,7 @@ enum MediaAssetStatus {
   READY
 }
 
-type MediaItem implements Node {
+type MediaItem implements Node & ViewableItem {
   authorizations: [AuthorizationType]
   createdAt: DateTime!
   description: String
@@ -311,6 +306,7 @@ type MediaItem implements Node {
   takenAt: DateTime
   title: String
   updatedAt: DateTime!
+  viewerIsOwner: Boolean!
   viewerOperations: [ViewerOperation!]!
   width: Int
 }
@@ -557,6 +553,12 @@ type UploadInstructions {
   headers: [UploadHeader!]!
   method: String!
   url: String!
+}
+
+interface ViewableItem implements Node {
+  id: ID!
+  viewerIsOwner: Boolean!
+  viewerOperations: [ViewerOperation!]!
 }
 
 type Viewer {

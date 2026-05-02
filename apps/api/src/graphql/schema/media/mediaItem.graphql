@@ -1,4 +1,4 @@
-type MediaItem implements Node {
+type MediaItem implements ViewableItem & Node {
   id: ID!
   kind: MediaKind!
   status: MediaItemStatus!
@@ -16,6 +16,7 @@ type MediaItem implements Node {
   updatedAt: DateTime!
   authorizations: [AuthorizationType]
   viewerOperations: [ViewerOperation!]!
+  viewerIsOwner: Boolean!
 }
 
 enum ViewerOperation {

@@ -1,4 +1,5 @@
-import { MediaKind, ViewerOperation } from '@packages/contracts';
+import { MediaKind } from '@packages/contracts';
+import { ViewableItemVM } from '../album/AlbumSummaryVM';
 
 // export type MediaItemSummaryVM = UserMediaItemSummaryVM | PublicMediaItemSummaryVM;
 
@@ -8,5 +9,4 @@ export type MediaItemSummaryVM = {
   createdAt: string;
   kind: MediaKind;
   /** From `viewer.viewerOperations` when the item was loaded via a decorated list query. */
-  viewerOperations: ViewerOperation[];
-};
+} & ViewableItemVM;

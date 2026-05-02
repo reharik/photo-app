@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
 import styled from 'styled-components';
-import { useMultiSelectIds } from '../../hooks/useMultiSelectIds';
+import { GalleryConfigItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { SharedMediaItemVM } from '../../viewModels/sharing/SharedMediaItemVM';
 import { EmptyState } from './gallery/EmptyState';
 import { MediaItemTile } from './gallery/mediaTiles/MediaItemTile';
@@ -22,9 +21,12 @@ type SharedWithMeSectionProps = {
 };
 
 export const SharedWithMeSection = ({ sharedMediaItems }: SharedWithMeSectionProps) => {
-  const mediaRowIds = useMemo(() => sharedMediaItems.map((r) => r.id), [sharedMediaItems]);
-  const { selectionCount, clearSelection } = useMultiSelectIds(mediaRowIds);
+  const selectableActions: GalleryConfigItems[] = [];
 
+  const { clearSelection, selectionCount } = useMultiSelectGallery({
+    nodes: sharedMediaItems,
+    actions: selectableActions,
+  });
   return (
     <Container>
       <Block>

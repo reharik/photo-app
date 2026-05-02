@@ -3,7 +3,7 @@ fragment AlbumItemSummary on AlbumItem {
   orderIndex
   createdAt
   updatedAt
-  viewerOperations
+  ...ViewableAlbumItem
   mediaItem {
     ...MediaItemSummary
   }

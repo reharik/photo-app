@@ -1,6 +1,6 @@
 import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../../types/types';
-import { MediaItemProjection } from './viewerMediaItemReadService.types';
+import { MediaItemProjection, ViewableItemProjection } from './viewerMediaItemReadService.types';
 
 export type AlbumListProjection = {
   nodes: AlbumProjection[];
@@ -27,19 +27,19 @@ export type AlbumItemProjection = {
   id: string;
   /** Sparse bigint order index as string (GraphQL-safe). */
   orderIndex: string;
-  mediaItem: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  mediaItem: MediaItemProjection;
 };
 
-export type DecoratedAlbumItemProjection = AlbumItemProjection & {
+export type DecoratedAlbumItemProjection = {
   id: string;
   /** Sparse bigint order index as string (GraphQL-safe). */
   orderIndex: string;
-  mediaItem: MediaItemProjection & { viewerOperations: string[] };
   createdAt: Date;
   updatedAt: Date;
   viewerOperations: string[];
+  mediaItem: MediaItemProjection & ViewableItemProjection;
 };
 
 export type NamespacedMediaItemRow = {

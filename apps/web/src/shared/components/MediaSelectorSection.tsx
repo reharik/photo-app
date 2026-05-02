@@ -30,7 +30,6 @@ export const MediaSelectorSection = ({
       nodes,
       actions: selectableActions,
     });
-
   return (
     <Container>
       <SelectableGalleryHeader
@@ -50,6 +49,7 @@ export const MediaSelectorSection = ({
         gridMinColumnWidthPxMobile={112}
         gridGapSpacingStep={1}
         gridGapSpacingStepMobile={2}
+        selectableActions={selectableActions.map((x) => x.operation)}
       />
     </Container>
   );

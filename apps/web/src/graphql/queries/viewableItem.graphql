@@ -1,0 +1,14 @@
+fragment ViewableAlbum on Album {
+  viewerIsOwner
+  viewerOperations
+}
+
+fragment ViewableAlbumItem on AlbumItem {
+  viewerIsOwner
+  viewerOperations
+}
+
+fragment ViewableMediaItem on MediaItem {
+  viewerIsOwner
+  viewerOperations
+}

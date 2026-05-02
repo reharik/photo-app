@@ -1,4 +1,4 @@
-type Album implements Node {
+type Album implements ViewableItem & Node {
   id: ID!
   title: String!
   coverMedia: MediaItem
@@ -7,7 +7,7 @@ type Album implements Node {
   updatedAt: DateTime!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   viewerOperations: [ViewerOperation!]!
-  viewerMemberRole: AlbumMemberRole
+  viewerIsOwner: Boolean!
 }
 
 input ViewerAlbumItemsInput {
@@ -33,16 +33,17 @@ type AlbumItemCollectionPayload {
 #   updatedAt: DateTime!
 # }
 
-enum AlbumMemberRole {
-  OWNER
-  CONTRIBUTOR
-  ADMIN
-}
+# enum AlbumMemberRole {
+#   OWNER
+#   CONTRIBUTOR
+#   ADMIN
+# }
 
-type AlbumItem implements Node {
+type AlbumItem implements ViewableItem & Node {
   id: ID!
   mediaItem: MediaItem!
   viewerOperations: [ViewerOperation!]!
+  viewerIsOwner: Boolean!
   orderIndex: String!
   createdAt: DateTime!
   updatedAt: DateTime!
