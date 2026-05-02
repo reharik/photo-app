@@ -1,5 +1,5 @@
 import { useEffect, useRef, type MutableRefObject } from 'react';
-import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
+import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
 
 export type UseMediaViewerKeyboardOptions = {
   /** When false, no listeners are registered. */

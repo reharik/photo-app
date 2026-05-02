@@ -1,4 +1,4 @@
-// src/ui/primitives.tsx
+// src/ui/Primitives.tsx
 import React from 'react';
 import styled, { css } from 'styled-components';
 
@@ -9,14 +9,17 @@ export const Field = ({ label, children }: { label: string; children: React.Reac
   </VStack>
 );
 
-// Styled Components
+// ── Surfaces ────────────────────────────────────────────────────
+
 export const Card = styled.div`
-  background: ${({ theme }) => theme.colors.panel};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.lg};
-  box-shadow: ${({ theme }) => theme.shadow.sm};
+  background: ${({ theme }) => theme.color.cardBg};
+  border: 1px solid ${({ theme }) => theme.color.cardBorder};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  box-shadow: ${({ theme }) => theme.boxShadow.sm};
   padding: ${({ theme }) => theme.spacing(2)};
 `;
+
+// ── Layout ──────────────────────────────────────────────────────
 
 const HStackBase = styled.div<{
   $gap?: number;
@@ -28,7 +31,7 @@ const HStackBase = styled.div<{
   gap: ${({ $gap = 2, theme }) => theme.spacing($gap)};
   flex-wrap: ${({ $wrap }) => ($wrap ? 'wrap' : 'nowrap')};
 
-  @media (max-width: 768px) {
+  ${({ theme }) => theme.breakpoints.tabletDown} {
     flex-wrap: wrap;
     ${({ $stackOnMobile }) =>
       $stackOnMobile &&
@@ -67,12 +70,14 @@ export const Spacer = styled.div`
   flex: 1 1 auto;
 `;
 
+// ── Form helpers ────────────────────────────────────────────────
+
 export const Label = styled.label`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.subtext};
+  font-size: ${({ theme }) => theme.fontSize._14};
+  color: ${({ theme }) => theme.color.label};
 `;
 
-// moved input primitives to FormInput.tsx (StyledInput/Select/TextArea)
+// ── Button ──────────────────────────────────────────────────────
 
 const ButtonBase = styled.button<{
   $variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -80,53 +85,63 @@ const ButtonBase = styled.button<{
   $fullWidth?: boolean;
 }>`
   border: 1px solid transparent;
-  border-radius: ${({ theme }) => theme.radius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   padding: ${({ $size = 'md' }) => ($size === 'sm' ? '8px 10px' : '10px 14px')};
   cursor: pointer;
-  font-weight: 600;
+  font-weight: ${({ theme }) => theme.weight.semi};
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    background: ${({ theme }) => theme.color.buttonDisabled};
+    color: ${({ theme }) => theme.color.buttonDisabledText};
+    border-color: transparent;
+  }
 
   ${({ $variant = 'primary', theme }) => {
     switch ($variant) {
       case 'secondary':
         return css`
-          background: transparent;
-          color: ${theme.colors.text};
-          border-color: ${theme.colors.border};
-          &:hover {
-            background: ${theme.colors.bg};
+          background: ${theme.color.secondaryButtonBg};
+          color: ${theme.color.secondaryButtonText};
+          border-color: ${theme.color.secondaryButtonBorder};
+          &:hover:not(:disabled) {
+            background: ${theme.color.secondaryButtonHover};
           }
         `;
       case 'ghost':
         return css`
           background: transparent;
-          color: ${theme.colors.subtext};
-          &:hover {
-            color: ${theme.colors.text};
-            background: ${theme.colors.bg};
+          color: ${theme.color.ghostButtonText};
+          &:hover:not(:disabled) {
+            color: ${theme.color.bodyText};
+            background: ${theme.color.ghostButtonHover};
           }
         `;
       case 'danger':
         return css`
-          background: ${theme.colors.danger};
-          color: ${theme.colors.bg};
-          &:hover {
+          background: ${theme.color.dangerButtonBg};
+          color: ${theme.color.dangerButtonText};
+          &:hover:not(:disabled) {
             filter: brightness(1.1);
           }
         `;
       default:
         return css`
-          background: ${theme.colors.accent};
-          color: ${theme.colors.bg};
-          &:hover {
-            background: ${theme.colors.accentHover};
+          background: ${theme.color.primaryButtonBg};
+          color: ${theme.color.primaryButtonText};
+          &:hover:not(:disabled) {
+            background: ${theme.color.primaryButtonHover};
           }
         `;
     }
   }}
 `;
 
-// Wrapper to map public props to transient props
 type ButtonProps = React.ComponentPropsWithoutRef<'button'> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md';
@@ -140,15 +155,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
+// ── Badge ───────────────────────────────────────────────────────
+
 export const Badge = styled.span`
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: ${({ theme }) => theme.colors.bg};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.subtext};
-  font-size: 12px;
+  background: ${({ theme }) => theme.color.bodyElevated};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: ${({ theme }) => theme.fontSize._12};
 `;
+
+// ── Table ───────────────────────────────────────────────────────
 
 export const Table = styled.table`
   width: 100%;
@@ -157,13 +176,13 @@ export const Table = styled.table`
   td {
     padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    border-bottom: 1px solid ${({ theme }) => theme.color.tableBorder};
   }
   th {
-    color: ${({ theme }) => theme.colors.subtext};
-    font-weight: 600;
+    color: ${({ theme }) => theme.color.tableHeaderText};
+    font-weight: ${({ theme }) => theme.weight.semi};
   }
   tr:hover td {
-    background: rgba(255, 255, 255, 0.02);
+    background: ${({ theme }) => theme.color.cellHoverBg};
   }
 `;

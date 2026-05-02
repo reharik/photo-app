@@ -1,5 +1,5 @@
 import { Button, Section, Text } from '@react-email/components';
-import type { FC } from 'react';
+import type { ReactElement } from 'react';
 import type { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 
@@ -10,7 +10,7 @@ export const subject = (data: DigestData): string => {
   return `Your ${data.periodLabel} recap from ${app}`;
 };
 
-const Digest: FC<DigestData> = (data) => {
+const Digest = (data: DigestData): ReactElement => {
   const appName = data.appName ?? 'PhotoApp';
   const preview = `${data.highlights.length} highlights from ${data.periodLabel}.`;
   return (

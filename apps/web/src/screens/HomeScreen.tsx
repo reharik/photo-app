@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client/react';
 import { useCallback } from 'react';
+import { RecentMediaSection } from '../features/media/RecentMediaSection';
 import { ViewerRecentMediaDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { RecentMediaSection } from '../shared/components/RecentMediaSection';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { mapMultipleMediaItemsToSummaryVMs } from '../viewModels/media/mapMediaItemToSummaryVM';
 
 export const HomeScreen = () => {

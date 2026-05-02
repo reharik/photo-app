@@ -5,7 +5,6 @@ import type {
   MediaAssetProjection,
   MediaAssetReadRepository,
   MediaItemReadRepository,
-  ShareLinkReadRepository,
 } from '@packages/media-core';
 import { buildMediaGrantService } from '../services/mediaGrantService';
 

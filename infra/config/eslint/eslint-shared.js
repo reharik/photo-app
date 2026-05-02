@@ -44,7 +44,7 @@ export const createBaseTypeScriptConfig = async (options = {}) => {
     ecmaVersion = "latest",
     tsconfigRootDir = import.meta.dirname,
     ignores: extraIgnores = [],
-    files = ["**/*.ts"],
+    files = ["**/*.{ts,tsx}"],
     additionalRules = {},
     additionalPlugins = {},
     /**

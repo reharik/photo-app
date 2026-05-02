@@ -2,7 +2,7 @@ import { useApolloClient, useQuery } from '@apollo/client/react';
 import type { User } from '@packages/contracts';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { ViewerDocument } from '../graphql/generated/types';
-import { useApiFetchBase } from '../hooks/apiFetch/useApiFetch';
+import { useApiFetch } from '../hooks/useApiFetch';
 
 type AuthActionResult = { ok: true } | { ok: false; message: string };
 
@@ -25,7 +25,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | undefined>(undefined);
-  const { apiFetch } = useApiFetchBase();
+  const { apiFetch } = useApiFetch();
   const apolloClient = useApolloClient();
 
   const {

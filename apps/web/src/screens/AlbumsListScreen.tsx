@@ -1,15 +1,15 @@
 import { useQuery } from '@apollo/client/react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { AlbumListSection } from '../features/albums/AlbumListSection';
 import {
   CreateAlbumDocument,
   ViewerAlbumsDocument,
   type CreateAlbumMutation,
 } from '../graphql/generated/types';
-import { AlbumListSection } from '../shared/components/AlbumListSection';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
-import { AppErrorPanel } from '../shared/components/ui/AppErrorPanel';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { useAppMutationState } from '../hooks/useAppMutation';
+import { AppErrorPanel } from '../ui/AppErrorPanel';
 import { mapMultipleAlbumsToAlbumSummaryVMs } from '../viewModels/album/mapAlbumToSummaryVM';
 
 export const AlbumsListScreen = () => {

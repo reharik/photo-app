@@ -1,7 +1,7 @@
 import { Button, Section, Text } from '@react-email/components';
-import type { FC } from 'react';
-import type { TemplateData } from '../types.js';
+import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
+import { ReactElement } from 'react';
 
 type WelcomeData = TemplateData['welcome'];
 
@@ -10,7 +10,7 @@ export const subject = (data: WelcomeData): string => {
   return `Welcome to ${app}, ${data.userName}`;
 };
 
-const Welcome: FC<WelcomeData> = (data) => {
+const Welcome = (data: WelcomeData): ReactElement => {
   const appName = data.appName ?? 'PhotoApp';
   return (
     <BaseEmail

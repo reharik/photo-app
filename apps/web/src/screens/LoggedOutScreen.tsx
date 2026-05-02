@@ -145,7 +145,7 @@ export const LoggedOutScreen = () => {
 
 const Container = styled.div`
   min-height: 100vh;
-  background: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.color.body};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -185,7 +185,7 @@ const BrandSection = styled.div`
 const BrandTitle = styled.h1`
   font-size: 48px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.color.bodyText};
   margin: 0;
   letter-spacing: -1px;
 
@@ -196,7 +196,7 @@ const BrandTitle = styled.h1`
 
 const BrandTagline = styled.p`
   font-size: 18px;
-  color: ${({ theme }) => theme.colors.subtext};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
   line-height: 1.6;
   max-width: 480px;
@@ -227,7 +227,7 @@ const FeatureIcon = styled.div`
 `;
 
 const FeatureText = styled.div`
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.color.bodyText};
   font-size: 16px;
 `;
 
@@ -238,9 +238,9 @@ const RightPanel = styled.div`
 `;
 
 const AuthCard = styled.div`
-  background: ${({ theme }) => theme.colors.panel};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radius.xl};
+  background: ${({ theme }) => theme.color.bodyRaised};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
   padding: ${({ theme }) => theme.spacing(6)};
   width: 100%;
   max-width: 440px;
@@ -253,12 +253,12 @@ const AuthHeader = styled.div`
 const AuthTitle = styled.h2`
   font-size: 28px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
+  color: ${({ theme }) => theme.color.bodyText};
   margin: 0 0 ${({ theme }) => theme.spacing(1)} 0;
 `;
 
 const AuthSubtitle = styled.p`
-  color: ${({ theme }) => theme.colors.subtext};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
   font-size: 14px;
 `;
@@ -272,17 +272,17 @@ const Form = styled.form`
 const SubmitButton = styled.button`
   width: 100%;
   padding: ${({ theme }) => theme.spacing(2)};
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.color.primaryButtonBg};
+  color: ${({ theme }) => theme.color.body};
   border: none;
-  border-radius: ${({ theme }) => theme.radius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   font-size: 16px;
   font-weight: 500;
   transition: all 0.2s ease;
   margin-top: ${({ theme }) => theme.spacing(1)};
 
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.accentHover};
+    background: ${({ theme }) => theme.color.primaryButtonHover};
   }
 
   &:disabled {
@@ -294,9 +294,9 @@ const SubmitButton = styled.button`
 const ErrorMessage = styled.div`
   padding: ${({ theme }) => theme.spacing(2)};
   background: rgba(217, 140, 126, 0.1);
-  border: 1px solid ${({ theme }) => theme.colors.danger};
-  border-radius: ${({ theme }) => theme.radius.md};
-  color: ${({ theme }) => theme.colors.danger};
+  border: 1px solid ${({ theme }) => theme.color.alertError};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: ${({ theme }) => theme.color.alertError};
   font-size: 14px;
 `;
 
@@ -306,20 +306,20 @@ const AuthFooter = styled.div`
 `;
 
 const ToggleText = styled.div`
-  color: ${({ theme }) => theme.colors.subtext};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   font-size: 14px;
 `;
 
 const ToggleLink = styled.button`
   background: none;
   border: none;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.color.link};
   font-size: 14px;
   padding: 0;
   text-decoration: underline;
   transition: color 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.accentHover};
+    color: ${({ theme }) => theme.color.linkHover};
   }
 `;

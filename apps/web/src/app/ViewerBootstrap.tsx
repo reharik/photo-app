@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { useViewer } from '../application/viewer/useViewer';
+import { useViewer } from '../hooks/useViewer';
 
-import type { Viewer } from '../application/viewer/useViewer';
+import type { Viewer } from '../hooks/useViewer';
 
 interface ViewerBootstrapProps {
   children: (viewer?: Viewer) => React.ReactNode;
@@ -33,7 +33,7 @@ const LoadingContainer = styled.div`
   justify-content: center;
   height: 100vh;
   width: 100vw;
-  background: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.color.body};
 `;
 
 const LoadingContent = styled.div`
@@ -46,8 +46,8 @@ const LoadingContent = styled.div`
 const Spinner = styled.div`
   width: 40px;
   height: 40px;
-  border: 3px solid ${({ theme }) => theme.colors.border};
-  border-top-color: ${({ theme }) => theme.colors.accent};
+  border: 3px solid ${({ theme }) => theme.color.border};
+  border-top-color: ${({ theme }) => theme.color.loadingSpinner};
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 
@@ -59,7 +59,7 @@ const Spinner = styled.div`
 `;
 
 const LoadingText = styled.div`
-  color: ${({ theme }) => theme.colors.subtext};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   font-size: 14px;
   letter-spacing: 0.5px;
 `;

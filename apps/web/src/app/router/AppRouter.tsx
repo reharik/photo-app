@@ -4,8 +4,8 @@ import { AlbumsListScreen } from '../../screens/AlbumsListScreen';
 import { HomeScreen } from '../../screens/HomeScreen';
 import { MediaItemScreen } from '../../screens/MediaItemScreen';
 // import { PublicAlbumScreen } from '../../screens/PublicAlbumScreen';
+import { AppShell } from '../../features/shell/AppShell';
 import { SharedWithMeScreen } from '../../screens/SharedWithMeScreen';
-import { AppShell } from '../../shared/components/AppShell';
 
 interface AppRouterProps {
   viewer: { id: string; displayName: string };

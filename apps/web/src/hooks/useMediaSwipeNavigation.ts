@@ -1,5 +1,5 @@
 import { useCallback, useRef, type PointerEvent } from 'react';
-import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
+import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
 
 const SWIPE_MIN_PX = 48;
 /** Require swipe to be more horizontal than vertical (ratio). */

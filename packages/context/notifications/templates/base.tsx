@@ -10,7 +10,7 @@ import {
   Section,
   Text,
 } from '@react-email/components';
-import type { FC, ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 
 export type BaseEmailProps = {
   previewText: string;
@@ -19,7 +19,12 @@ export type BaseEmailProps = {
   children: ReactNode;
 };
 
-export const BaseEmail: FC<BaseEmailProps> = ({ previewText, title, appName, children }) => {
+export const BaseEmail = ({
+  previewText,
+  title,
+  appName,
+  children,
+}: BaseEmailProps): ReactElement => {
   return (
     <Html>
       <Head />

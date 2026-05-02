@@ -4,17 +4,23 @@ import { MediaAssetKind } from '@packages/contracts';
 import { useCallback, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import type { MediaItemLocationState } from '../app/mediaItemNavigationState';
+import { buildMediaItemUrl } from '../domain/formatters/mediaItemUrlBuilder';
+import { getGalleryNavigation } from '../features/gallery/mediaItemGalleryNavigation';
+import {
+  MediaItemDetailPanel,
+  type MediaItemDetailPanelHandle,
+} from '../features/media/MediaItemDetailPanel';
+import { MediaViewer } from '../features/media/viewer/MediaViewer';
+import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
 import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
-import { buildMediaItemUrl } from '../lib/urlBuilders/mediaItemUrlBuilder';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { MediaViewer } from '../shared/components/media/MediaViewer';
-import type { NavigateDirection } from '../shared/components/media/mediaViewerTypes';
-import { Toast } from '../shared/components/ui/Toast';
+import { Toast } from '../ui/Toast';
 import { mapMediaItemToMediaItemDetailVM } from '../viewModels/media/mapMediaItemToDetailVM';
-import { MediaItemDetailPanel, type MediaItemDetailPanelHandle } from './MediaItemDetailPanel';
-import { getGalleryNavigation } from './MediaItemGalleryNavigation';
+
+export type MediaItemLocationState = {
+  mediaGalleryIds?: string[];
+};
 
 export const MediaItemScreen = () => {
   const { mediaId } = useParams<{ mediaId: string }>();
@@ -144,7 +150,7 @@ export const MediaItemScreen = () => {
 const Container = styled.div`
   position: fixed;
   inset: 0;
-  background: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.color.body};
   display: flex;
   flex-direction: row;
   min-height: 0;
@@ -167,7 +173,7 @@ const LayoutInner = styled.div`
   min-height: 0;
   min-width: 0;
   width: 100%;
-  background: ${({ theme }) => theme.colors.bg};
+  background: ${({ theme }) => theme.color.body};
 
   @media (max-width: 968px) {
     flex-direction: column;

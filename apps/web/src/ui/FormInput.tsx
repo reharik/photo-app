@@ -6,26 +6,28 @@ const baseInput = css<{ $hasError: boolean }>`
   max-width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  background: #0c0f15;
+  background: ${({ theme }) => theme.color.inputBg};
   border: 1px solid
-    ${({ theme, $hasError }) => ($hasError ? theme.colors.danger : theme.colors.border)};
-  color: ${({ theme }) => theme.colors.text};
-  border-radius: ${({ theme }) => theme.radius.sm};
+    ${({ theme, $hasError }) => ($hasError ? theme.color.formError : theme.color.inputBorder)};
+  color: ${({ theme }) => theme.color.inputText};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   outline: none;
   transition:
     border 120ms ease,
     box-shadow 120ms ease;
   &:focus {
     border-color: ${({ theme, $hasError }) =>
-      $hasError ? theme.colors.danger : theme.colors.accent};
+      $hasError ? theme.color.formError : theme.color.inputBorderFocus};
     box-shadow: 0 0 0 3px
-      ${({ $hasError }) => ($hasError ? `rgba(220, 38, 38, 0.15)` : `rgba(124, 156, 255, 0.15)`)};
+      ${({ $hasError, theme }) =>
+        $hasError ? `${theme.color.formError}26` : `${theme.color.inputBorderFocus}26`};
   }
   &::placeholder {
-    color: ${({ theme }) => theme.colors.subtext};
+    color: ${({ theme }) => theme.color.inputPlaceholder};
   }
   &:disabled {
-    opacity: 0.6;
+    background: ${({ theme }) => theme.color.inputDisabledBg};
+    color: ${({ theme }) => theme.color.inputDisabledText};
     cursor: not-allowed;
   }
 `;
@@ -45,14 +47,14 @@ const StyledTextArea = styled.textarea<{ $hasError: boolean }>`
 `;
 
 const ErrorMessage = styled.div`
-  color: ${({ theme }) => theme.colors.danger};
-  font-size: 0.85rem;
+  color: ${({ theme }) => theme.color.formError};
+  font-size: ${({ theme }) => theme.fontSize._12};
   margin-top: 4px;
 `;
 
 const LabelWrapper = styled.label`
-  font-size: 0.9rem;
-  color: ${({ theme }) => theme.colors.subtext};
+  font-size: ${({ theme }) => theme.fontSize._14};
+  color: ${({ theme }) => theme.color.label};
   display: block;
   margin-bottom: 6px;
 `;

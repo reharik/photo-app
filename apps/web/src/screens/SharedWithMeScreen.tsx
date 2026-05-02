@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client/react';
 import styled from 'styled-components';
+import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
 import { ViewerSharedMediaItemsDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { SharedWithMeSection } from '../shared/components/SharedWithMeSection';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { mapSharedMediaItemsQueryToVMs } from '../viewModels/sharing/mapSharedMediaItemsQueryToVMs';
 
 export const SharedWithMeScreen = () => {

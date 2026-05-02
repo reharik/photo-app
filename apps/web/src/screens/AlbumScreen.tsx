@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client/react';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { AlbumSection } from '../features/albums/AlbumSection';
 import {
   AddMediaItemsToAlbumDocument,
   AddMediaItemsToAlbumMutation,
@@ -12,10 +13,9 @@ import {
   ViewerAlbumDetailDocument,
   ViewerRecentMediaDocument,
 } from '../graphql/generated/types';
-import { AlbumSection } from '../shared/components/AlbumSection';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { useAppMutationState } from '../shared/components/dataAccess/useAppMutation';
-import { Toast } from '../shared/components/ui/Toast';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { useAppMutationState } from '../hooks/useAppMutation';
+import { Toast } from '../ui/Toast';
 import { mapAlbumItemToSummaryVM } from '../viewModels/album/mapAlbumItemToSummaryVM';
 import { mapAlbumToSummaryVM } from '../viewModels/album/mapAlbumToSummaryVM';
 import { mapMediaItemToSummaryVM } from '../viewModels/media/mapMediaItemToSummaryVM';
@@ -184,6 +184,6 @@ const Container = styled.div`
 const StatusMessage = styled.div`
   max-width: 560px;
   margin: 0 auto;
-  color: ${({ theme }) => theme.colors.subtext};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   font-size: 15px;
 `;

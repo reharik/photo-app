@@ -24,6 +24,7 @@ export type SmsSendInput = {
   body: string;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/require-await
 export const sendSms = async (_input: SmsSendInput): Promise<{ id: string }> => {
   throw new NotImplementedError(
     'SMS channel is not yet implemented. See channels/sms.ts for integration notes (e.g. Twilio).',

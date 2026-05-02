@@ -1,6 +1,6 @@
 import { Button, Section, Text } from '@react-email/components';
-import type { FC } from 'react';
-import type { TemplateData } from '../types.js';
+import { ReactElement } from 'react';
+import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 
 type ShareInviteData = TemplateData['share-invite'];
@@ -9,7 +9,7 @@ export const subject = (data: ShareInviteData): string => {
   return `${data.inviterName} shared “${data.resourceName}” with you`;
 };
 
-const ShareInvite: FC<ShareInviteData> = (data) => {
+const ShareInvite = (data: ShareInviteData): ReactElement => {
   const appName = data.appName ?? 'PhotoApp';
   return (
     <BaseEmail
