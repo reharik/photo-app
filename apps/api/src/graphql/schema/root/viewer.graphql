@@ -12,7 +12,7 @@ type Viewer {
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
-  sharedMediaItems: [SharedMediaItemType!]!
+  sharedWithMeMediaItems: [SharedWithMedMediaItemType!]!
   shareContacts: [ShareContactType!]!
 }
 

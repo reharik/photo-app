@@ -9,6 +9,8 @@ export * from './readServices/viewerReadServices/viewerAlbumReadService.types';
 export * from './readServices/viewerReadServices/viewerMediaItemAuthzService';
 export * from './readServices/viewerReadServices/viewerMediaItemReadService';
 export * from './readServices/viewerReadServices/viewerMediaItemReadService.types';
+export * from './readServices/viewerReadServices/viewerSharedWithMeAlbumReadService';
+export * from './readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService';
 export * from './writeServices/writeServiceBaseType';
 export * from './writeServices/album/addAlbumItem';
 export * from './writeServices/album/addMediaItemsToAlbum';

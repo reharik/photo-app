@@ -152,7 +152,6 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       {addToAlbumOpen && (
         <AppModal
           onClose={() => setAddToAlbumOpen(false)}
-          maxWidth="960px"
           title={`Add ${selectedIds.length} ${selectedIds.length === 1 ? 'item' : 'items'} to an album`}
         >
           <AddItemsToAlbum

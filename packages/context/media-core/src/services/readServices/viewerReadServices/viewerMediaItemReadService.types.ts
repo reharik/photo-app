@@ -47,8 +47,9 @@ export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy>
   sortDir: SortDir;
 }
 
-export interface ViewableItemProjection {
+export interface AuthzDecoratedItemProjection {
   id: EntityId;
+  ownerId: EntityId;
   viewerIsOwner: boolean;
   viewerOperations: string[];
 }

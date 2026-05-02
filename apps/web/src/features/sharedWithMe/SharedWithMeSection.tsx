@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { GalleryConfigItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
-import { SharedMediaItemVM } from '../../viewModels/sharing/SharedMediaItemVM';
+import { SharedWithMedMediaItemVM } from '../../viewModels/sharing/SharedWithMedMediaItemVM';
 import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
@@ -17,14 +17,14 @@ const noopSelect: MultiSelectProps = {
 };
 
 type SharedWithMeSectionProps = {
-  sharedMediaItems: SharedMediaItemVM[];
+  sharedWithMeMediaItems: SharedWithMedMediaItemVM[];
 };
 
-export const SharedWithMeSection = ({ sharedMediaItems }: SharedWithMeSectionProps) => {
+export const SharedWithMeSection = ({ sharedWithMeMediaItems }: SharedWithMeSectionProps) => {
   const selectableActions: GalleryConfigItems[] = [];
 
   const { clearSelection, selectionCount } = useMultiSelectGallery({
-    nodes: sharedMediaItems,
+    nodes: sharedWithMeMediaItems,
     actions: selectableActions,
   });
   return (
@@ -37,7 +37,7 @@ export const SharedWithMeSection = ({ sharedMediaItems }: SharedWithMeSectionPro
           Header={() => <Title>Media Shared with you</Title>}
         />
         <SelectableGallery
-          nodes={sharedMediaItems}
+          nodes={sharedWithMeMediaItems}
           multiSelectProps={noopSelect}
           emptyState={
             <EmptyState

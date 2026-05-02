@@ -1,17 +1,18 @@
-query ViewerSharedMediaItems {
+query ViewerSharedWithMedMediaItems {
   viewer {
     id
-    sharedMediaItems {
-      ...SharedMediaItem
+    sharedWithMeMediaItems {
+      ...SharedWithMedMediaItem
     }
   }
 }
 
-fragment SharedMediaItem on SharedMediaItemType {
+fragment SharedWithMedMediaItem on SharedWithMedMediaItemType {
   id
-  permission
   sharedAt
   sharedBy
+  viewerIsOwner
+  viewerOperations
   mediaItem {
     ...MediaItemSummary
   }

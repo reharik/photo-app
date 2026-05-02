@@ -1,19 +1,19 @@
 // import { SharePermission } from '@packages/contracts';
 // import {
 //   SharedAlbumFragment,
-//   SharedMediaItemFragment,
+//   SharedWithMedMediaItemFragment,
 //   ViewerSharedWithMeQuery,
 // } from '../../graphql/generated/types';
 // import { mapAlbumToSummaryVM } from '../album/mapAlbumToSummaryVM';
 // import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
 // import { SharedAlbumVM } from './SharedAlbumVM';
-// import { SharedMediaItemVM } from './SharedMediaItemVM';
+// import { SharedWithMedMediaItemVM } from './SharedWithMedMediaItemVM';
 
 // type SharedWithMeQuerySlice = NonNullable<
 //   NonNullable<ViewerSharedWithMeQuery['viewer']>['sharedWithMe']
 // >;
 
-// const mapNodeToSharedMediaItemVM = (node: SharedMediaItemFragment): SharedMediaItemVM => ({
+// const mapNodeToSharedWithMedMediaItemVM = (node: SharedWithMedMediaItemFragment): SharedWithMedMediaItemVM => ({
 //   ...node,
 //   permission: SharePermission.fromValue(node.permission),
 //   mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
@@ -27,9 +27,9 @@
 
 // export const mapSharedWithMeQueryToVMs = (
 //   data: SharedWithMeQuerySlice,
-// ): { sharedMediaItems: SharedMediaItemVM[]; sharedAlbums: SharedAlbumVM[] } => {
+// ): { sharedWithMeMediaItems: SharedWithMedMediaItemVM[]; sharedAlbums: SharedAlbumVM[] } => {
 //   return {
-//     sharedMediaItems: data.mediaItems.map(mapNodeToSharedMediaItemVM),
+//     sharedWithMeMediaItems: data.mediaItems.map(mapNodeToSharedWithMedMediaItemVM),
 //     sharedAlbums: data.albums.map(mapNodeToSharedAlbumVM),
 //   };
 // };

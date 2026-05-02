@@ -22,7 +22,7 @@ const shareLinkQuery = `
           id
           title
         }
-        ... on SharedMediaItemCollection {
+        ... on SharedWithMedMediaItemCollection {
           id
           items {
             id
@@ -177,7 +177,7 @@ describe('shareLink query', () => {
   });
 
   describe('When the token matches an active media-item share link', () => {
-    it('should return SharedMediaItemCollection with items and display URLs', async () => {
+    it('should return SharedWithMedMediaItemCollection with items and display URLs', async () => {
       const now = new Date();
       const mediaA = randomUUID();
       const mediaB = randomUUID();
@@ -247,7 +247,7 @@ describe('shareLink query', () => {
 
       expect(response.status).toBe(200);
       expect(json.errors).toBeUndefined();
-      expect(json.data?.shareLink?.target.__typename).toBe('SharedMediaItemCollection');
+      expect(json.data?.shareLink?.target.__typename).toBe('SharedWithMedMediaItemCollection');
       const target = json.data?.shareLink?.target as {
         items: Array<{ id: string; displayUrl: string }>;
       };

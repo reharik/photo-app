@@ -1,6 +1,6 @@
 import { AlbumMemberRole, AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/authenticatedContext';
-import type { Resolvers, SharePermission } from '../../generated/types.generated';
+import type { Resolvers } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
 import { standardizeCollectionInput } from '../standardizeInput';
 
@@ -72,14 +72,22 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerAlbumAuthzReadService.getShareContacts();
     }),
-    sharedMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
+    sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
       const { mediaItems } =
-        await ctx.readServices.viewerAlbumAuthzReadService.getSharedWithMeMediaItems();
-      return mediaItems.map((row) => ({
-        ...row,
-        permission: row.permission as SharePermission,
-        mediaItem: { ...row.mediaItem, viewerOperations: [] },
+        await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
+      return await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItems(mediaItems);
+    }),
+    sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
+      const { albums } =
+        await ctx.readServices.viewerSharedWithMeAlbumReadService.getSharedWithMeAlbums();
+      const decoratedAlbums = albums.map((x) => ({
+        ...x,
+        viewerOperations: ctx.readServices.viewerAlbumAuthzReadService.getAuthz(x),
+        viewerIsOwner: false,
       }));
+      return {
+        nodes: decoratedAlbums,
+      };
     }),
   },
 };

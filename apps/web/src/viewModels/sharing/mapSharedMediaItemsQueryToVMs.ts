@@ -1,22 +1,26 @@
 import { ViewerOperation } from '@packages/contracts';
 import {
-  SharedMediaItemFragment,
-  ViewerSharedMediaItemsQuery,
+  SharedWithMedMediaItemFragment,
+  ViewerSharedWithMedMediaItemsQuery,
 } from '../../graphql/generated/types';
 import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
-import { SharedMediaItemVM } from './SharedMediaItemVM';
+import { SharedWithMedMediaItemVM } from './SharedWithMedMediaItemVM';
 
-const mapNodeToSharedMediaItemVM = (node: SharedMediaItemFragment): SharedMediaItemVM => ({
+const mapNodeToSharedWithMedMediaItemVM = (
+  node: SharedWithMedMediaItemFragment,
+): SharedWithMedMediaItemVM => ({
   ...node,
   mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
   viewerOperations: node.mediaItem.viewerOperations?.map((o) => ViewerOperation.fromValue(o)) ?? [],
   viewerIsOwner: false,
 });
 
-type SharedMediaItemsSlice = NonNullable<
-  NonNullable<ViewerSharedMediaItemsQuery['viewer']>['sharedMediaItems']
+type SharedWithMedMediaItemsSlice = NonNullable<
+  NonNullable<ViewerSharedWithMedMediaItemsQuery['viewer']>['sharedWithMeMediaItems']
 >;
 
-export const mapSharedMediaItemsQueryToVMs = (data: SharedMediaItemsSlice): SharedMediaItemVM[] => {
-  return data.map(mapNodeToSharedMediaItemVM);
+export const mapSharedWithMedMediaItemsQueryToVMs = (
+  data: SharedWithMedMediaItemsSlice,
+): SharedWithMedMediaItemVM[] => {
+  return data.map(mapNodeToSharedWithMedMediaItemVM);
 };

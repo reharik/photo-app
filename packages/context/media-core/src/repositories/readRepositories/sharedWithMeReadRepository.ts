@@ -25,21 +25,20 @@ const albumWithCoverSelectColumns = [
   'album.title as albumTitle',
   'album.createdAt as albumCreatedAt',
   'album.updatedAt as albumUpdatedAt',
+  'albumMember.role as viewerMemberRole',
   ...mediaItemSelectColumns,
 ];
 
 const accessGrantFieldSelect = [
-  'accessGrant.permission as permission',
   'accessGrant.id as id',
   'accessGrant.createdAt as sharedAt',
   'accessGrant.grantedBy as sharedBy',
 ];
 
-export type SharedMediaItemRow = NamespacedMediaItemRow & {
+export type SharedWithMedMediaItemRow = NamespacedMediaItemRow & {
   id: string;
   sharedBy: EntityId;
   sharedAt: Date;
-  permission: string;
 };
 
 export type SharedAlbumRow = {
@@ -48,14 +47,16 @@ export type SharedAlbumRow = {
   albumTitle: string;
   albumCreatedAt: Date;
   albumUpdatedAt: Date;
+  viewerMemberRole?: string;
   sharedBy: EntityId;
   sharedAt: Date;
-  permission: string;
 } & NamespacedMediaItemRow; // cover item
 
 export type SharedWithMeReadRepository = {
-  getItemsSharedWithMe: (viewerId: string) => Promise<{
-    sharedWithMeMediaItems: SharedMediaItemRow[];
+  getMediaItemsSharedWithMe: (viewerId: string) => Promise<{
+    sharedWithMeMediaItems: SharedWithMedMediaItemRow[];
+  }>;
+  getAlbumsSharedWithMe: (viewerId: string) => Promise<{
     sharedWithMeAlbums: SharedAlbumRow[];
   }>;
 };
@@ -81,28 +82,32 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
 export const buildSharedWithMeReadRepository = ({
   database,
 }: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
-  getItemsSharedWithMe: async (viewerId: string) => {
-    const mediaQuery = applyActiveUserGrant(
-      database<SharedMediaItemRow>('accessGrant')
+  getMediaItemsSharedWithMe: async (viewerId: string) => {
+    const rows = await applyActiveUserGrant(
+      database<SharedWithMedMediaItemRow>('accessGrant')
         .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
         .whereNotNull('accessGrant.mediaItemId')
         .orderBy('accessGrant.createdAt', 'desc')
-        .select<SharedMediaItemRow[]>(...accessGrantFieldSelect, ...mediaItemSelectColumns),
+        .select<SharedWithMedMediaItemRow[]>(...accessGrantFieldSelect, ...mediaItemSelectColumns),
       { database, viewerId },
     );
-    const mediaRows = await mediaQuery;
-
-    const albumQuery = applyActiveUserGrant(
+    return { sharedWithMeMediaItems: rows };
+  },
+  getAlbumsSharedWithMe: async (viewerId: string) => {
+    const rows = await applyActiveUserGrant(
       database<SharedAlbumRow>('accessGrant')
         .innerJoin('album', 'album.id', 'accessGrant.albumId')
+        .leftJoin('albumMember', (join) => {
+          join
+            .on('albumMember.albumId', 'album.id')
+            .on('albumMember.userId', database.raw('?', [viewerId]));
+        })
         .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
         .whereNotNull('accessGrant.albumId')
         .orderBy('accessGrant.createdAt', 'desc')
         .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
       { database, viewerId },
     );
-    const albumRows = await albumQuery;
-
-    return { sharedWithMeMediaItems: mediaRows, sharedWithMeAlbums: albumRows };
+    return { sharedWithMeAlbums: rows };
   },
 });

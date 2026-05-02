@@ -3,9 +3,8 @@ import type { Knex } from 'knex';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { AuthorizationProjection } from './viewerAlbumAuthzReadService';
-import { AlbumItemProjection, DecoratedAlbumItemProjection } from './viewerAlbumReadService.types';
-import { MediaItemProjection, ViewableItemProjection } from './viewerMediaItemReadService.types';
+import { AuthzDecoratedItemProjection } from './viewerMediaItemReadService.types';
+import { AuthorizationProjection } from './viewerSharedWithMeMediaItemReadService';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;
@@ -13,16 +12,12 @@ export type MediaItemPermissionResult = {
 };
 
 export type ViewerMediaItemAuthzService = {
-  addAuthzToItem: (
-    item: MediaItemProjection,
-  ) => Promise<MediaItemProjection & { viewerOperations: string[] }>;
-  addAuthzToItems: (
-    items: MediaItemProjection[],
-  ) => Promise<(MediaItemProjection & { viewerOperations: string[] })[]>;
-  addAuthzToAlbumItemAndMedia: (
-    albumItems: AlbumItemProjection[],
+  addAuthzToItem: <T>(item: UnDecoratedMediaItem<T>) => Promise<DecoratedMediaItem<T>>;
+  addAuthzToItems: <T>(items: UnDecoratedMediaItem<T>[]) => Promise<DecoratedMediaItem<T>[]>;
+  addAuthzToAlbumItemAndMedia: <T, U>(
+    albumItems: UnDecoratedAlbumItem<T, U>[],
     albumViewerMemberRole?: string,
-  ) => Promise<DecoratedAlbumItemProjection[]>;
+  ) => Promise<DecoratedAlbumItem<T, U>[]>;
   listGrantedAuthorizationsForOwnedMediaItem: (
     mediaItemId: EntityId,
   ) => Promise<AuthorizationProjection[]>;
@@ -39,6 +34,30 @@ type MediaItemPermissionRow = {
   // future: locked: boolean;
   // future: allowReshare: boolean;
   // future: albumItemAllowReshare: boolean | null;
+};
+
+type UnDecoratedAlbumItem<T, U> = T & {
+  id: EntityId;
+  mediaItem: UnDecoratedMediaItem<U>;
+};
+
+type DecoratedAlbumItem<T, U> = T & {
+  id: EntityId;
+  viewerIsOwner: boolean;
+  viewerOperations: string[];
+  mediaItem: DecoratedMediaItem<U>;
+};
+
+type UnDecoratedMediaItem<T> = T & {
+  id: EntityId;
+  ownerId: EntityId;
+};
+
+type DecoratedMediaItem<T> = T & {
+  id: EntityId;
+  ownerId: EntityId;
+  viewerIsOwner: boolean;
+  viewerOperations: string[];
 };
 
 export const buildViewerMediaItemAuthzServiceFactory = ({
@@ -82,15 +101,15 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
           // future: 'ai.allow_reshare as albumItemAllowReshare',
         );
     };
-    const addAuthzToItem = async (
-      item: MediaItemProjection,
-    ): Promise<MediaItemProjection & ViewableItemProjection> => {
+    const addAuthzToItem = async <T>(
+      item: UnDecoratedMediaItem<T>,
+    ): Promise<DecoratedMediaItem<T>> => {
       const result = await addAuthzToItems([item]);
       return result[0] ?? item;
     };
-    const addAuthzToItems = async (
-      items: MediaItemProjection[],
-    ): Promise<(MediaItemProjection & ViewableItemProjection)[]> => {
+    const addAuthzToItems = async <T>(
+      items: UnDecoratedMediaItem<T>[],
+    ): Promise<DecoratedMediaItem<T>[]> => {
       if (items.length === 0) return [];
 
       const permissions = await getAuthzRows(items.map((i) => i.id));
@@ -103,9 +122,7 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       // Here we create a map of permissions for each media item
       // The complexity is that a media item can have multiple records
       // returned by the query and we need to collect the distinct set of viewerOperations
-      const decoratedItems = permissions.reduce<
-        Record<string, MediaItemProjection & ViewableItemProjection>
-      >(
+      const decoratedItems = permissions.reduce<Record<string, T & AuthzDecoratedItemProjection>>(
         (acc, row) => {
           // If we have processed a permission for this item before get it from acc
           // otherwise find the item in the original items array and add the empty operations set
@@ -131,7 +148,7 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
           acc[row.mediaItemId] = mediaItem;
           return acc;
         },
-        {} as Record<string, MediaItemProjection & ViewableItemProjection>,
+        {} as Record<string, T & AuthzDecoratedItemProjection>,
       );
 
       return Object.values(decoratedItems).map((item) => ({
@@ -140,10 +157,10 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       }));
     };
 
-    const addAuthzToAlbumItemAndMedia = async (
-      albumItems: AlbumItemProjection[],
+    const addAuthzToAlbumItemAndMedia = async <T, U>(
+      albumItems: UnDecoratedAlbumItem<T, U>[],
       albumViewerMemberRole?: string,
-    ): Promise<DecoratedAlbumItemProjection[]> => {
+    ): Promise<DecoratedAlbumItem<T, U>[]> => {
       if (albumItems.length === 0) return [];
 
       let albumItemOperations: string[] = [];

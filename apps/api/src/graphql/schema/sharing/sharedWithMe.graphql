@@ -1,7 +1,8 @@
-type SharedMediaItemType {
+type SharedWithMedMediaItemType implements ViewableItem & Node {
   id: ID!
-  permission: SharePermission!
   sharedAt: DateTime!
   sharedBy: ID!
   mediaItem: MediaItem!
+  viewerOperations: [ViewerOperation!]!
+  viewerIsOwner: Boolean!
 }

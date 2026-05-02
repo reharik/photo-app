@@ -468,12 +468,13 @@ enum SharePermission {
   VIEW
 }
 
-type SharedMediaItemType {
+type SharedWithMedMediaItemType implements Node & ViewableItem {
   id: ID!
   mediaItem: MediaItem!
-  permission: SharePermission!
   sharedAt: DateTime!
   sharedBy: ID!
+  viewerIsOwner: Boolean!
+  viewerOperations: [ViewerOperation!]!
 }
 
 enum SortDir {
@@ -556,7 +557,7 @@ type Viewer {
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
   shareContacts: [ShareContactType!]!
-  sharedMediaItems: [SharedMediaItemType!]!
+  sharedWithMeMediaItems: [SharedWithMedMediaItemType!]!
 }
 
 input ViewerAlbumItemsInput {

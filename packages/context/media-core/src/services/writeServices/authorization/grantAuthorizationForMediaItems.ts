@@ -13,7 +13,7 @@ import { MediaItemRepository } from '../../../repositories/domainRepositories/me
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
 import { EntityId, WriteResult } from '../../../types/types';
-import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAlbumAuthzReadService';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService';
 import {
   GrantUserAuthorizationForMediaItemsCommand,
   GrantUserAuthorizationResult,

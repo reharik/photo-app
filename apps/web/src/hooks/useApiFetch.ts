@@ -23,8 +23,8 @@ export const useApiFetchBase = () => {
 
       // Build the headers
       const headers: Record<string, string> = {
-        Accept: 'domain/json',
-        ...(init.body ? { 'Content-Type': 'domain/json' } : {}),
+        Accept: 'application/json',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         ...(init.headers as Record<string, string> | undefined),
       };
 
@@ -76,8 +76,8 @@ export const useApiFetch = () => {
 
       // Build the headers
       const headers: Record<string, string> = {
-        Accept: 'domain/json',
-        ...(init.body ? { 'Content-Type': 'domain/json' } : {}),
+        Accept: 'application/json',
+        ...(init.body ? { 'Content-Type': 'application/json' } : {}),
         ...(init.headers as Record<string, string> | undefined),
       };
 

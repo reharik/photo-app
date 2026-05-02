@@ -1,6 +1,9 @@
 import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../../types/types';
-import { MediaItemProjection, ViewableItemProjection } from './viewerMediaItemReadService.types';
+import {
+  MediaItemProjection,
+  AuthzDecoratedItemProjection,
+} from './viewerMediaItemReadService.types';
 
 export type AlbumListProjection = {
   nodes: AlbumProjection[];
@@ -39,7 +42,7 @@ export type DecoratedAlbumItemProjection = {
   createdAt: Date;
   updatedAt: Date;
   viewerOperations: string[];
-  mediaItem: MediaItemProjection & ViewableItemProjection;
+  mediaItem: MediaItemProjection & AuthzDecoratedItemProjection;
 };
 
 export type NamespacedMediaItemRow = {
