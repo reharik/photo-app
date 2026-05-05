@@ -1,8 +1,16 @@
-import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
+import {
+  AlbumItemSortBy,
+  AlbumMemberRole,
+  AlbumSortBy,
+  MediaItemStatus,
+  MediaKind,
+  SortDir,
+  ViewerOperation,
+} from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../../types/types';
 import {
-  MediaItemProjection,
   AuthzDecoratedItemProjection,
+  MediaItemProjection,
 } from './viewerMediaItemReadService.types';
 
 export type AlbumListProjection = {
@@ -17,7 +25,7 @@ export type AlbumItemListProjection = {
 
 export type AlbumProjection = {
   id: string;
-  viewerMemberRole?: string;
+  viewerMemberRole?: AlbumMemberRole;
   title: string;
   description?: string;
   coverMediaId?: string;
@@ -41,15 +49,15 @@ export type DecoratedAlbumItemProjection = {
   orderIndex: string;
   createdAt: Date;
   updatedAt: Date;
-  viewerOperations: string[];
+  viewerOperations: ViewerOperation[];
   mediaItem: MediaItemProjection & AuthzDecoratedItemProjection;
 };
 
 export type NamespacedMediaItemRow = {
   mediaItemId: EntityId;
   mediaItemOwnerId: EntityId;
-  mediaItemKind: string;
-  mediaItemStatus: string;
+  mediaItemKind: MediaKind;
+  mediaItemStatus: MediaItemStatus;
   mediaItemMimeType?: string;
   mediaItemSizeBytes?: number;
   mediaItemOriginalFileName?: string;
@@ -69,7 +77,7 @@ export type AlbumWithCoverRow = {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
-  viewerMemberRole?: string;
+  viewerMemberRole?: AlbumMemberRole;
 } & NamespacedMediaItemRow;
 
 export type AlbumItemWithMediaRow = {
@@ -77,6 +85,7 @@ export type AlbumItemWithMediaRow = {
   albumItemOrderIndex: string;
   createdAt: Date;
   updatedAt: Date;
+  viewerMemberRole?: AlbumMemberRole;
 } & NamespacedMediaItemRow;
 
 export interface AlbumCollectionInfo extends CollectionInfo<AlbumSortBy> {

@@ -17,12 +17,13 @@
     "gen:graphql:enums": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.3.1",
+    "@reharik/smart-enum": "^0.4.0",
     "typia": "^9.7.2"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^6.2.1",
-    "@reharik/graphql-codegen-smart-enum": "^0.2.5",
+    "@reharik/graphql-codegen-smart-enum": "^0.3.7",
+    "@reharik/graphql-codegen-smart-enum-preset": "^0.1.1",
     "@types/node": "^24.9.1",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.2.1",

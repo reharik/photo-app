@@ -8,12 +8,12 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
 
 const albumItemSortByInput = {
-  createdAt: { display: 'Created At', column: 'created_at' },
-  orderIndex: { display: 'Order Index', column: 'order_index' },
+  createdAt: { column: 'created_at' },
+  orderIndex: { column: 'order_index' },
 } as const;
 const albumSortByInput = {
-  createdAt: { display: 'Created At', column: 'created_at' },
-  title: { display: 'Title', column: 'title' },
+  createdAt: { column: 'created_at' },
+  title: { column: 'title' },
 } as const;
 const errorCategoryInput = [
   'auth',
@@ -25,9 +25,7 @@ const errorCategoryInput = [
 ] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
-const mediaItemSortByInput = {
-  createdAt: { display: 'Created At', column: 'created_at' },
-} as const;
+const mediaItemSortByInput = { createdAt: { column: 'created_at' } } as const;
 const mediaItemStatusInput = [
   'deleteFailed',
   'deletePending',
@@ -54,27 +52,54 @@ export type SortDir = Enumeration<typeof SortDir>;
 
 export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumItemSortBy', {
   input: albumItemSortByInput,
+  serializeAs: 'value',
 });
 export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
   input: albumSortByInput,
+  serializeAs: 'value',
 });
 export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
   input: errorCategoryInput,
+  serializeAs: 'value',
 });
 export const MediaAssetKind = enumeration<typeof mediaAssetKindInput>('MediaAssetKind', {
   input: mediaAssetKindInput,
+  serializeAs: 'value',
 });
 export const MediaAssetStatus = enumeration<typeof mediaAssetStatusInput>('MediaAssetStatus', {
   input: mediaAssetStatusInput,
+  serializeAs: 'value',
 });
 export const MediaItemSortBy = enumeration<typeof mediaItemSortByInput>('MediaItemSortBy', {
   input: mediaItemSortByInput,
+  serializeAs: 'value',
 });
 export const MediaItemStatus = enumeration<typeof mediaItemStatusInput>('MediaItemStatus', {
   input: mediaItemStatusInput,
+  serializeAs: 'value',
 });
-export const MediaKind = enumeration<typeof mediaKindInput>('MediaKind', { input: mediaKindInput });
+export const MediaKind = enumeration<typeof mediaKindInput>('MediaKind', {
+  input: mediaKindInput,
+  serializeAs: 'value',
+});
 export const SharePermission = enumeration<typeof sharePermissionInput>('SharePermission', {
   input: sharePermissionInput,
+  serializeAs: 'value',
 });
-export const SortDir = enumeration<typeof sortDirInput>('SortDir', { input: sortDirInput });
+export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
+  input: sortDirInput,
+  serializeAs: 'value',
+});
+
+export const enumRegistry = {
+  AlbumItemSortBy,
+  AlbumSortBy,
+  ErrorCategory,
+  MediaAssetKind,
+  MediaAssetStatus,
+  MediaItemSortBy,
+  MediaItemStatus,
+  MediaKind,
+  SharePermission,
+  SortDir,
+} as const;

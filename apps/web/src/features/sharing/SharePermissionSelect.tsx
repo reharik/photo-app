@@ -1,20 +1,12 @@
+import { SharePermission } from '@packages/contracts';
 import React from 'react';
 import { FormInput } from '../../ui/FormInput';
 
 type SharePermissionSelectProps = {
-  value: string;
-  onChange: (value: string) => void;
+  value: SharePermission;
+  onChange: (value: SharePermission) => void;
   disabled?: boolean;
 };
-
-const PERMISSION_OPTIONS: { value: string; label: string }[] = [
-  { value: 'view', label: 'View' },
-  { value: 'comment', label: 'Comment' },
-  { value: 'download', label: 'Download' },
-];
-
-const isPermissionValue = (value: string): value is string =>
-  value === 'view' || value === 'comment' || value === 'download';
 
 export const SharePermissionSelect = ({
   value,
@@ -25,18 +17,16 @@ export const SharePermissionSelect = ({
     <FormInput
       as="select"
       label="Permission"
-      value={value}
+      value={value.value}
       disabled={disabled}
       onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
         const next = event.target.value;
-        if (isPermissionValue(next)) {
-          onChange(next);
-        }
+        onChange(SharePermission.fromValue(next));
       }}
     >
-      {PERMISSION_OPTIONS.map((option) => (
+      {SharePermission.items().map((option) => (
         <option key={option.value} value={option.value}>
-          {option.label}
+          {option.display}
         </option>
       ))}
     </FormInput>

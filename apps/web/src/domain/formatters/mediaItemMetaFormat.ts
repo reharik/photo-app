@@ -1,9 +1,6 @@
 import { DateTime } from 'luxon';
-import type { MediaKind } from '../../graphql/generated/types';
 
 export const isNonEmptyDisplayUrl = (url: string): boolean => url.trim().length > 0;
-
-export const kindLabel = (kind: MediaKind): string => (kind === 'VIDEO' ? 'Video' : 'Photo');
 
 export const toDatetimeLocalValue = (iso: string | null | undefined): string => {
   if (iso == null || iso.trim() === '') {

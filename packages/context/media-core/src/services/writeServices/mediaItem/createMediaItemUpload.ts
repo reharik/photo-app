@@ -49,6 +49,7 @@ export const buildCreateMediaItemUpload = ({
     if (!result.success) {
       return result;
     }
+
     const uploadTarget = await mediaStorage.getUploadTarget({
       storageKey: buildMediaAssetStorageKey(
         buildMediaItemBaseStorageKey(mediaItem.ownerId(), mediaItem.id()),
@@ -56,6 +57,7 @@ export const buildCreateMediaItemUpload = ({
       ),
       mimeType,
     });
+
     await mediaItemRepository.save(mediaItem);
 
     return ok({

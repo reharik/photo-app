@@ -1,4 +1,11 @@
-import { AlbumItemSortBy, AlbumSortBy, MediaItemStatus } from '@packages/contracts';
+import {
+  AlbumItemSortBy,
+  AlbumMemberRole,
+  AlbumSortBy,
+  MediaItemStatus,
+  MediaKind,
+} from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import {
   AlbumItemWithMediaRow,
@@ -108,21 +115,29 @@ export const buildAlbumReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
   }): Promise<AlbumWithCoverRow[]> => {
-    return database<AlbumWithCoverRow>('album')
-      .leftJoin('albumMember', (join) => {
-        join
-          .on('albumMember.albumId', 'album.id')
-          .on('albumMember.userId', database.raw('?', [viewerId]));
-      })
-      .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-      .select(...albumWithCoverSelectColumns)
-      .where((b) => {
-        whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
-      })
-      .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
-      .orderBy('album.id', 'asc') // tie-breaker (unqualified `id` / `created_at` are ambiguous with joined mediaItem)
-      .limit(collectionInfo.pageInfo.limit + 1)
-      .offset(collectionInfo.pageInfo.offset);
+    return withEnumRevival(
+      database<AlbumWithCoverRow>('album')
+        .leftJoin('albumMember', (join) => {
+          join
+            .on('albumMember.albumId', 'album.id')
+            .on('albumMember.userId', database.raw('?', [viewerId]));
+        })
+        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .select(...albumWithCoverSelectColumns)
+        .where((b) => {
+          whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
+        })
+        .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
+        .orderBy('album.id', 'asc') // tie-breaker (unqualified `id` / `created_at` are ambiguous with joined mediaItem)
+        .limit(collectionInfo.pageInfo.limit + 1)
+        .offset(collectionInfo.pageInfo.offset),
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+        viewerMemberRole: AlbumMemberRole,
+      },
+      { strict: true },
+    );
   },
 
   getAlbumForViewer: async ({
@@ -132,19 +147,27 @@ export const buildAlbumReadRepository = ({
     albumId: string;
     viewerId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
-    return database<AlbumWithCoverRow>('album')
-      .leftJoin('albumMember', (join) => {
-        join
-          .on('albumMember.albumId', 'album.id')
-          .on('albumMember.userId', database.raw('?', [viewerId]));
-      })
-      .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-      .select(...albumWithCoverSelectColumns)
-      .where('album.id', albumId)
-      .andWhere((b) => {
-        whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
-      })
-      .first<AlbumWithCoverRow>();
+    return withEnumRevival(
+      database<AlbumWithCoverRow>('album')
+        .leftJoin('albumMember', (join) => {
+          join
+            .on('albumMember.albumId', 'album.id')
+            .on('albumMember.userId', database.raw('?', [viewerId]));
+        })
+        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .select(...albumWithCoverSelectColumns)
+        .where('album.id', albumId)
+        .andWhere((b) => {
+          whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
+        })
+        .first<AlbumWithCoverRow>(),
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+        viewerMemberRole: AlbumMemberRole,
+      },
+      { strict: true },
+    );
   },
   getViewableAlbumItemsForViewer: async ({
     albumId,
@@ -155,29 +178,36 @@ export const buildAlbumReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<AlbumItemWithMediaRow[]> => {
-    return database<AlbumItemWithMediaRow>('albumItem')
-      .innerJoin('album', 'albumItem.albumId', 'album.id')
-      .leftJoin('albumMember', (join) => {
-        join
-          .on('albumMember.albumId', 'album.id')
-          .on('albumMember.userId', database.raw('?', [viewerId]));
-      })
-      .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
-      .leftJoin('grant', (join) => {
-        join
-          .on('grant.mediaItemId', 'albumItem.mediaItemId')
-          .on('grant.grantedToUser', database.raw('?', [viewerId]));
-      })
-      .where('album.id', albumId)
-      .andWhere('mediaItem.status', 'READY')
-      .andWhere((b) => {
-        b.where('albumMember.userId', viewerId).orWhereNotNull('grant.id');
-      })
-      .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
-      .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
-      .orderBy('albumItem.id', 'asc') // tie-breaker
-      .limit(collectionInfo.pageInfo.limit + 1)
-      .offset(collectionInfo.pageInfo.offset);
+    return withEnumRevival(
+      database<AlbumItemWithMediaRow>('albumItem')
+        .innerJoin('album', 'albumItem.albumId', 'album.id')
+        .leftJoin('albumMember', (join) => {
+          join
+            .on('albumMember.albumId', 'album.id')
+            .on('albumMember.userId', database.raw('?', [viewerId]));
+        })
+        .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+        .leftJoin('grant', (join) => {
+          join
+            .on('grant.mediaItemId', 'albumItem.mediaItemId')
+            .on('grant.grantedToUser', database.raw('?', [viewerId]));
+        })
+        .where('album.id', albumId)
+        .andWhere('mediaItem.status', 'READY')
+        .andWhere((b) => {
+          b.where('albumMember.userId', viewerId).orWhereNotNull('grant.id');
+        })
+        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
+        .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
+        .orderBy('albumItem.id', 'asc') // tie-breaker
+        .limit(collectionInfo.pageInfo.limit + 1)
+        .offset(collectionInfo.pageInfo.offset),
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+      },
+      { strict: true },
+    );
   },
   findAlbumIdsReferencingMediaItem: async ({
     mediaItemId,
@@ -191,14 +221,21 @@ export const buildAlbumReadRepository = ({
       .distinct({ id: 'album.id' });
   },
   listAlbumItemsForShareLink: async ({ albumId, limit, offset }) => {
-    return database<AlbumItemWithMediaRow>('albumItem')
-      .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
-      .where('albumItem.albumId', albumId)
-      .where('mediaItem.status', MediaItemStatus.ready.key)
-      .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
-      .orderBy('albumItem.orderIndex', 'asc')
-      .orderBy('albumItem.id', 'asc')
-      .limit(limit)
-      .offset(offset);
+    return withEnumRevival(
+      database<AlbumItemWithMediaRow>('albumItem')
+        .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+        .where('albumItem.albumId', albumId)
+        .where('mediaItem.status', MediaItemStatus.ready.key)
+        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
+        .orderBy('albumItem.orderIndex', 'asc')
+        .orderBy('albumItem.id', 'asc')
+        .limit(limit)
+        .offset(offset),
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+      },
+      { strict: true },
+    );
   },
 });

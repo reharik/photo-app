@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
 import { ViewerSharedWithMedMediaItemsDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { mapSharedWithMedMediaItemsQueryToVMs } from '../viewModels/sharing/mapSharedWithMedMediaItemsQueryToVMs';
+import { mapSharedMediaItemsToVMs } from '../viewModels/sharing/mapSharedMediaItemToVM';
 
 export const SharedWithMeScreen = () => {
   const query = useQuery(ViewerSharedWithMedMediaItemsDocument, {
@@ -14,7 +14,7 @@ export const SharedWithMeScreen = () => {
   const { data: sharedWithMeMediaItems, content } = getQueryRenderState({
     query,
     select: (data) => data.viewer?.sharedWithMeMediaItems,
-    map: mapSharedWithMedMediaItemsQueryToVMs,
+    map: mapSharedMediaItemsToVMs,
   });
 
   if (!sharedWithMeMediaItems) {

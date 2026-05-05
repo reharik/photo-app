@@ -12,17 +12,14 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
   },
   Viewer: {
     albums: authenticatedResolver(async (_parent, { input }, ctx) => {
-      const collectionInfo = standardizeCollectionInput(input.collectionInfo, AlbumSortBy);
+      const collectionInfo = standardizeCollectionInput<AlbumSortBy>(input.collectionInfo);
       const albumsRows =
         (await ctx.readServices.viewerAlbumReadService.listAlbums(collectionInfo)) || [];
       const albums = albumsRows.nodes.map((row) => {
-        const viewerOperations = ctx.readServices.viewerAlbumAuthzReadService.getAuthz({
-          viewerMemberRole: row.viewerMemberRole,
-        });
         return {
           ...row,
-          viewerIsOwner: row.viewerMemberRole === AlbumMemberRole.owner.value,
-          viewerOperations,
+          viewerIsOwner: row.viewerMemberRole === AlbumMemberRole.owner,
+          viewerOperations: row.viewerMemberRole?.operations ?? [],
         };
       });
 
@@ -36,14 +33,11 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!album) {
         return undefined;
       }
-      const viewerOperations = ctx.readServices.viewerAlbumAuthzReadService.getAuthz({
-        viewerMemberRole: album.viewerMemberRole,
-      });
 
       return {
         ...album,
-        viewerOperations,
-        viewerIsOwner: album.viewerMemberRole === AlbumMemberRole.owner.value,
+        viewerOperations: album.viewerMemberRole?.operations ?? [],
+        viewerIsOwner: album.viewerMemberRole === AlbumMemberRole.owner,
       };
     }),
     mediaItem: authenticatedResolver(async (_parent, { id }, ctx) => {
@@ -55,8 +49,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       }
       return ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(item);
     }),
+
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
-      const collectionInfo = standardizeCollectionInput(input.collectionInfo, MediaItemSortBy);
+      const collectionInfo = standardizeCollectionInput<MediaItemSortBy>(input.collectionInfo);
       const mediaItems =
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
         undefined;
@@ -75,15 +70,17 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
       const { mediaItems } =
         await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
-      return await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItems(mediaItems);
+      return await ctx.readServices.viewerMediaItemAuthzService.addAuthzToSharedWithMeMediaItems(
+        mediaItems,
+      );
     }),
     sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
       const { albums } =
         await ctx.readServices.viewerSharedWithMeAlbumReadService.getSharedWithMeAlbums();
       const decoratedAlbums = albums.map((x) => ({
         ...x,
-        viewerOperations: ctx.readServices.viewerAlbumAuthzReadService.getAuthz(x),
         viewerIsOwner: false,
+        viewerOperations: x.viewerMemberRole?.operations ?? [],
       }));
       return {
         nodes: decoratedAlbums,

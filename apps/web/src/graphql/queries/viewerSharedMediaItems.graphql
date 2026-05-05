@@ -11,8 +11,6 @@ fragment SharedWithMedMediaItem on SharedWithMedMediaItemType {
   id
   sharedAt
   sharedBy
-  viewerIsOwner
-  viewerOperations
   mediaItem {
     ...MediaItemSummary
   }

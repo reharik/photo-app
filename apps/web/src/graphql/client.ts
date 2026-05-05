@@ -1,5 +1,6 @@
 import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
 import { config } from '../config';
+import { smartEnumTypePolicies } from './generated/graphql-smart-enum-type-policies';
 
 const httpLink = new HttpLink({
   uri: `${config.apiBaseUrl}/graphql`,
@@ -22,6 +23,7 @@ export const apolloClient = new ApolloClient({
   link: httpLink,
   cache: new InMemoryCache({
     typePolicies: {
+      ...smartEnumTypePolicies,
       Query: {
         fields: {
           viewer: { merge: true },

@@ -23,7 +23,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
   id: authorization.id(),
   grantedToUserId: authorization.grantedToUser(),
-  permission: authorization.permission().value,
+  permission: authorization.permission(),
   label: authorization.label(),
   expiresAt: authorization.expiresAt(),
   revokedAt: authorization.revokedAt(),

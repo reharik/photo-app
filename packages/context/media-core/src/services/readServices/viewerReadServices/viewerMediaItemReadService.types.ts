@@ -1,4 +1,12 @@
-import { MediaItemSortBy, SortDir } from '@packages/contracts';
+import {
+  MediaAssetKind,
+  MediaAssetStatus,
+  MediaItemSortBy,
+  MediaItemStatus,
+  MediaKind,
+  SortDir,
+  ViewerOperation,
+} from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../../types/types';
 
 export type MediaItemListProjection = {
@@ -8,13 +16,13 @@ export type MediaItemListProjection = {
 
 export type MediaAssetProjection = {
   id: EntityId;
-  kind: string;
+  kind: MediaAssetKind;
   url: string;
   mimeType: string;
   width?: number;
   height?: number;
   fileSizeBytes?: number;
-  status: string;
+  status: MediaAssetStatus;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -22,8 +30,8 @@ export type MediaAssetProjection = {
 export interface MediaItemRow {
   id: EntityId;
   ownerId: EntityId;
-  kind: string;
-  status: string;
+  kind: MediaKind;
+  status: MediaItemStatus;
   mimeType?: string;
   sizeBytes?: number;
   originalFileName?: string;
@@ -51,5 +59,5 @@ export interface AuthzDecoratedItemProjection {
   id: EntityId;
   ownerId: EntityId;
   viewerIsOwner: boolean;
-  viewerOperations: string[];
+  viewerOperations: ViewerOperation[];
 }

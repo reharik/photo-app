@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
 
+import { SharePermission } from '@packages/contracts';
 import { ShareContactType } from '../../graphql/generated/types';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { FormInput } from '../../ui/FormInput';
@@ -12,7 +13,7 @@ import { ShareTokenResult } from './ShareTokenResult';
 
 export type GrantShareFormValues = {
   handle: string;
-  permission: string;
+  permission: SharePermission;
   label?: string;
   expiresAt?: string;
 };
@@ -43,7 +44,7 @@ export const GrantShareForm = ({
   onClose,
 }: GrantShareFormProps) => {
   const [handle, setHandle] = useState('');
-  const [permission, setPermission] = useState<string>('view');
+  const [permission, setPermission] = useState<SharePermission>(SharePermission.view);
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
@@ -66,7 +67,7 @@ export const GrantShareForm = ({
     expiresAt: trimmedOrUndefined(expiresAt),
   });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.ChangeEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isLoading) {
       return;

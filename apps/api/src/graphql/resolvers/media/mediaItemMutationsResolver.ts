@@ -1,4 +1,3 @@
-import { MediaKind } from '@packages/contracts';
 import type {
   UpdateMediaItemDetailsCommand,
   UpdateMediaItemTagsCommand,
@@ -16,7 +15,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
     createMediaUpload: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createMediaUpload({
         viewerId: ctx.viewer.id,
-        kind: MediaKind.fromValue(args.input.kind),
+        kind: args.input.kind,
         mimeType: args.input.mimeType,
         originalFileName: args.input.originalFileName ?? undefined,
       });
@@ -25,7 +24,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         data: result.success
           ? {
               mediaItemId: result.value.mediaItemId,
-              status: result.value.status.value,
+              status: result.value.status,
               uploadInstructions: {
                 method: result.value.uploadTarget.method,
                 url: result.value.uploadTarget.url,
@@ -39,6 +38,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         errors: result.success ? [] : [toContractErrorPayload(result.error)],
       };
     }),
+
     finalizeMediaUpload: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.finalizeMediaItemUpload({
         viewerId: ctx.viewer.id,
@@ -49,10 +49,10 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         data: result.success
           ? {
               mediaItemId: result.value.mediaItemId,
-              status: result.value.status.value,
+              status: result.value.status,
               mimeType: result.value.mimeType,
               size: result.value.size,
-              kind: result.value.kind.value,
+              kind: result.value.kind,
             }
           : undefined,
         errors: result.success ? [] : [toContractErrorPayload(result.error)],

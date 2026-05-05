@@ -1,3 +1,5 @@
+import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import {
   MediaItemCollectionInfo,
@@ -76,9 +78,16 @@ export const buildMediaItemReadRepository = ({
     mediaItemId: EntityId;
     viewerId: EntityId;
   }): Promise<MediaItemRow | undefined> => {
-    const row = await database<MediaItemRow>('mediaItem')
-      .where({ id: mediaItemId, ownerId: viewerId })
-      .first<MediaItemRow>(...mediaItemRowFields);
+    const row = await withEnumRevival(
+      database<MediaItemRow>('mediaItem')
+        .where({ id: mediaItemId, ownerId: viewerId })
+        .first<MediaItemRow>(...mediaItemRowFields),
+      {
+        kind: MediaKind,
+        status: MediaItemStatus,
+      },
+      { strict: true },
+    );
 
     return row;
   },
@@ -89,10 +98,17 @@ export const buildMediaItemReadRepository = ({
     mediaItemIds: EntityId[];
     viewerId: EntityId;
   }): Promise<MediaItemRow[]> => {
-    const rows = await database<MediaItemRow>('mediaItem')
-      .whereIn('id', mediaItemIds)
-      .andWhere('ownerId', viewerId)
-      .select<MediaItemRow[]>(...mediaItemRowFields);
+    const rows = await withEnumRevival(
+      database<MediaItemRow>('mediaItem')
+        .whereIn('id', mediaItemIds)
+        .andWhere('ownerId', viewerId)
+        .select<MediaItemRow[]>(...mediaItemRowFields),
+      {
+        kind: MediaKind,
+        status: MediaItemStatus,
+      },
+      { strict: true },
+    );
 
     return rows;
   },
@@ -103,13 +119,20 @@ export const buildMediaItemReadRepository = ({
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<MediaItemRow[]> => {
-    const rows = await database<MediaItemRow>('mediaItem')
-      .where({ ownerId: viewerId })
-      .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
-      .orderBy('id', 'asc') // tie-breaker
-      .select<MediaItemRow[]>(...mediaItemRowFields)
-      .limit(collectionInfo.pageInfo.limit + 1)
-      .offset(collectionInfo.pageInfo.offset);
+    const rows = await withEnumRevival(
+      database<MediaItemRow>('mediaItem')
+        .where({ ownerId: viewerId })
+        .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
+        .orderBy('id', 'asc') // tie-breaker
+        .select<MediaItemRow[]>(...mediaItemRowFields)
+        .limit(collectionInfo.pageInfo.limit + 1)
+        .offset(collectionInfo.pageInfo.offset),
+      {
+        kind: MediaKind,
+        status: MediaItemStatus,
+      },
+      { strict: true },
+    );
     return rows;
   },
   listTagsForMediaItemIds: async ({

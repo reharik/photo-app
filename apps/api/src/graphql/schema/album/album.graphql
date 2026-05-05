@@ -33,11 +33,11 @@ type AlbumItemCollectionPayload {
 #   updatedAt: DateTime!
 # }
 
-# enum AlbumMemberRole {
-#   OWNER
-#   CONTRIBUTOR
-#   ADMIN
-# }
+enum AlbumMemberRole {
+  OWNER
+  CONTRIBUTOR
+  ADMIN
+}
 
 type AlbumItem implements ViewableItem & Node {
   id: ID!

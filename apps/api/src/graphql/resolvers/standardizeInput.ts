@@ -1,27 +1,23 @@
 import { SortDir } from '@packages/contracts';
 import type { CollectionInfo } from '@packages/media-core';
-import { reviveEnumField, type AnyEnumLike, type StandardEnumItem } from '@reharik/smart-enum';
+import { type StandardEnumItem } from '@reharik/smart-enum';
 import type { PageInfoInput } from '../generated/types.generated';
 
-type GraphQlCollectionInfoInput = {
+type GraphQlCollectionInfoInput<TSortByItem> = {
   pageInfo: PageInfoInput;
-  sortBy: string;
-  sortDir: string;
+  sortBy: TSortByItem;
+  sortDir: SortDir;
 };
 
 export const standardizeCollectionInput = <
   TSortByItem extends StandardEnumItem & { column: string },
 >(
-  input: GraphQlCollectionInfoInput,
-  sortByEnum: AnyEnumLike<TSortByItem>,
+  input: GraphQlCollectionInfoInput<TSortByItem>,
 ): CollectionInfo<TSortByItem> => {
   const limit = Math.min(input.pageInfo.limit ?? 10, 100);
   const offset = input.pageInfo.offset ?? 0;
 
-  const sortBy = reviveEnumField(input.sortBy, sortByEnum, true);
-  const sortDir = SortDir.fromValue(input.sortDir);
-
-  if (sortBy === undefined || sortDir === undefined) {
+  if (input.sortBy === undefined || input.sortDir === undefined) {
     throw new Error('Invalid collection input: enum revival failed');
   }
 
@@ -30,7 +26,7 @@ export const standardizeCollectionInput = <
       limit,
       offset,
     },
-    sortBy,
-    sortDir,
+    sortBy: input.sortBy,
+    sortDir: input.sortDir,
   };
 };

@@ -7,10 +7,10 @@ export function mapPublicMediaItemToSummaryVM(
 ): PublicMediaItemSummaryVM {
   return {
     id: mediaItem.id,
-    kind: MediaKind.fromValue(mediaItem.kind),
+    kind: mediaItem.kind,
     mimeType: mediaItem.mimeType,
     title: mediaItem.title ?? '',
-    viewerOperations: mediaItem.viewerOperations?.map((o) => ViewerOperation.fromValue(o)) ?? [],
+    viewerOperations: mediaItem.viewerOperations ?? [],
   };
 }
 

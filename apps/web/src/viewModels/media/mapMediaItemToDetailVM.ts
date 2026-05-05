@@ -1,4 +1,3 @@
-import { MediaKind, ViewerOperation } from '@packages/contracts';
 import { MediaItemDetailFragment } from '../../graphql/generated/types';
 import { MediaItemDetailVM } from './MediaItemDetailVM';
 
@@ -7,14 +6,14 @@ export function mapMediaItemToMediaItemDetailVM(
 ): MediaItemDetailVM {
   return {
     id: mediaItem.id,
-    kind: MediaKind.fromValue(mediaItem.kind),
+    kind: mediaItem.kind,
     mimeType: mediaItem.mimeType,
     originalFileName: mediaItem.originalFileName,
     takenAt: mediaItem.takenAt ?? '',
     description: mediaItem.description,
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
-    viewerOperations: mediaItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
+    viewerOperations: mediaItem.viewerOperations,
     viewerIsOwner: mediaItem.viewerIsOwner,
   };
 }

@@ -1,3 +1,4 @@
+import { SharePermission } from '@packages/contracts';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
@@ -12,7 +13,7 @@ import { MediaItemProjection } from './viewerMediaItemReadService.types';
 export type AuthorizationProjection = {
   id: EntityId;
   grantedToUserId?: EntityId;
-  permission: string;
+  permission: SharePermission;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
@@ -23,7 +24,8 @@ export type SharedWithMeItemProjection = {
   id: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
-} & MediaItemProjection;
+  mediaItem: MediaItemProjection;
+};
 
 export interface ViewerSharedWithMeMediaItemReadService {
   getSharedWithMeMediaItems: () => Promise<{
@@ -44,25 +46,29 @@ type ViewerSharedWithMeMediaItemReadServiceFactoryDeps = {
 
 export const mapNamespacedToMediaItemBase = (
   mediaItem: SharedWithMedMediaItemRow,
-): Omit<SharedWithMeItemProjection, 'tags'> => {
+): SharedWithMeItemProjection => {
   return {
-    id: mediaItem.mediaItemId ?? '',
-    ownerId: mediaItem.mediaItemOwnerId ?? '',
-    kind: mediaItem.mediaItemKind ?? '',
-    status: mediaItem.mediaItemStatus ?? '',
-    mimeType: mediaItem.mediaItemMimeType ?? '',
-    sizeBytes: mediaItem.mediaItemSizeBytes ?? 0,
-    originalFileName: mediaItem.mediaItemOriginalFileName ?? undefined,
-    width: mediaItem.mediaItemWidth,
-    height: mediaItem.mediaItemHeight,
-    durationSeconds: mediaItem.mediaItemDurationSeconds,
-    title: mediaItem.mediaItemTitle,
-    description: mediaItem.mediaItemDescription,
-    takenAt: mediaItem.mediaItemTakenAt,
-    createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
-    updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
+    id: mediaItem.id,
     sharedAt: mediaItem.sharedAt,
     sharedBy: mediaItem.sharedBy,
+    mediaItem: {
+      id: mediaItem.mediaItemId,
+      ownerId: mediaItem.mediaItemOwnerId ?? '',
+      kind: mediaItem.mediaItemKind,
+      status: mediaItem.mediaItemStatus,
+      mimeType: mediaItem.mediaItemMimeType ?? '',
+      sizeBytes: mediaItem.mediaItemSizeBytes ?? 0,
+      originalFileName: mediaItem.mediaItemOriginalFileName ?? undefined,
+      width: mediaItem.mediaItemWidth,
+      height: mediaItem.mediaItemHeight,
+      durationSeconds: mediaItem.mediaItemDurationSeconds,
+      title: mediaItem.mediaItemTitle,
+      description: mediaItem.mediaItemDescription,
+      takenAt: mediaItem.mediaItemTakenAt,
+      createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
+      updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
+      tags: [],
+    },
   };
 };
 
@@ -79,11 +85,9 @@ export const buildViewerSharedWithMeMediaItemReadServiceFactory = ({
       const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
         mediaItemIds: sharedWithMeMediaItems.map((m) => m.id),
       });
-      const withTags = (
-        base: Omit<SharedWithMeItemProjection, 'tags'>,
-      ): SharedWithMeItemProjection => ({
+      const withTags = (base: SharedWithMeItemProjection): SharedWithMeItemProjection => ({
         ...base,
-        tags: tagMap.get(base.id) ?? [],
+        mediaItem: { ...base.mediaItem, tags: tagMap.get(base.id) ?? [] },
       });
 
       const mediaItems: SharedWithMeItemProjection[] = sharedWithMeMediaItems.map((row) =>

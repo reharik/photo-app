@@ -1,5 +1,4 @@
 schema: ./src/graphql/schema/**/*.graphql
-
 generates:
   ./src/graphql/generated/schema.graphql:
     plugins:
@@ -8,6 +7,10 @@ generates:
       # printSchema() omits custom directives on enum values; AST print preserves them for contracts codegen.
       includeDirectives: true
   ./src/graphql/generated/types.generated.ts:
+    preset: '@reharik/graphql-codegen-smart-enum-preset'
+    presetConfig:
+      mode: with-enum-values
+      enumImportPath: '@packages/contracts'
     plugins:
       - typescript
       - typescript-resolvers
@@ -19,7 +22,6 @@ generates:
       useIndexSignature: true
       maybeValue: 'T | undefined'
       inputMaybeValue: 'T | undefined'
-      enumsAsTypes: true
       mappers:
         Viewer: ../resolvers/parentModels#ViewerParent
         Album: '@packages/media-core#AlbumProjection'

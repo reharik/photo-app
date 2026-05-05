@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { GalleryConfigItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
-import { SharedWithMedMediaItemVM } from '../../viewModels/sharing/SharedWithMedMediaItemVM';
+import { SharedWithMedMediaItemVM } from '../../viewModels/sharing/SharedMediaItemVM';
 import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { MediaItemTile } from '../gallery/tiles/MediaItemTile';

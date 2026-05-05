@@ -3,6 +3,10 @@ documents:
   - 'src/graphql/**/*.graphql'
 generates:
   src/graphql/generated/types.ts:
+    preset: '@reharik/graphql-codegen-smart-enum-preset'
+    presetConfig:
+      mode: with-enum-values
+      enumImportPath: '@packages/contracts'
     plugins:
       - typescript
       - typescript-operations
@@ -20,4 +24,9 @@ generates:
         Date: string
       namingConvention:
         typeNames: pascal-case#pascalCase
-        enumValues: keep
+
+  ./src/graphql/generated/graphql-smart-enum-type-policies.ts:
+    preset: '@reharik/graphql-codegen-smart-enum-preset'
+    presetConfig:
+      mode: type-policies
+      enumImportPath: '@packages/contracts'

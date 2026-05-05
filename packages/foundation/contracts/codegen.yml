@@ -1,9 +1,10 @@
 schema: ../../../apps/api/src/graphql/generated/schema.graphql
 generates:
   ./src/enums/graphqlSmartEnums.ts:
-    plugins:
-      - '@reharik/graphql-codegen-smart-enum'
-    config:
+    preset: '@reharik/graphql-codegen-smart-enum-preset'
+    presetConfig:
+      mode: enums
+      serializeAs: value
       emitDescriptionsAsDisplay: true
       # Hand-authored in src/enums/viewerOperations.ts (deniedError, etc.)
       skipEnums:

@@ -6,7 +6,6 @@ import {
   GrantUserAuthorizationForAlbumInput,
   GrantUserAuthorizationForAlbumMutation,
   ShareContactType,
-  type SharePermission,
   ViewerShareContactsDocument,
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../hooks/useAppMutation';
@@ -16,12 +15,6 @@ import { GrantShareForm, type GrantShareFormValues } from './GrantShareForm';
 type GrantAlbumShareModalProps = {
   albumId: string;
   onClose: () => void;
-};
-
-const PERMISSION_BY_VALUE: Record<string, SharePermission> = {
-  view: 'VIEW',
-  comment: 'COMMENT',
-  download: 'DOWNLOAD',
 };
 
 const toIsoExpiry = (value: string | undefined): string | undefined => {
@@ -53,7 +46,7 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
   const handleSubmit = async (values: GrantShareFormValues): Promise<void> => {
     const input: GrantUserAuthorizationForAlbumInput = {
       albumId,
-      permission: PERMISSION_BY_VALUE[values.permission],
+      permission: values.permission,
       grantedToHandle: values.handle.length > 0 ? values.handle : undefined,
       label: values.label,
       expiresAt: toIsoExpiry(values.expiresAt),

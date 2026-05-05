@@ -1,6 +1,6 @@
 import type { ApolloClient } from '@apollo/client';
 
-import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus as FUS, MediaKind } from '@packages/contracts';
 import {
   CreateMediaUploadDocument,
   FinalizeMediaUploadDocument,
@@ -13,8 +13,8 @@ import type { UploadWorkflowEvent } from './mediaUploadTypes';
 const resolveMediaKind = (
   file: File,
 ): CreateMediaUploadMutationVariables['input']['kind'] | undefined => {
-  if (file.type.startsWith('image/')) return 'PHOTO';
-  if (file.type.startsWith('video/')) return 'VIDEO';
+  if (file.type.startsWith('image/')) return MediaKind.photo;
+  if (file.type.startsWith('video/')) return MediaKind.video;
   return undefined;
 };
 

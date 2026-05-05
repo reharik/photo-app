@@ -1,4 +1,3 @@
-import { SharePermission } from '@packages/contracts';
 import type {
   GrantUserAuthorizationForAlbumCommand,
   GrantUserAuthorizationForMediaItemsCommand,
@@ -13,7 +12,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       const command: GrantUserAuthorizationForMediaItemsCommand = {
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
-        permission: SharePermission.fromValue(args.input.permission),
+        permission: args.input.permission,
         grantedToUserId: args.input.grantedToUserId ?? undefined,
         grantedToHandle: args.input.grantedToHandle ?? undefined,
         label: args.input.label ?? undefined,
@@ -41,7 +40,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       const command: GrantUserAuthorizationForAlbumCommand = {
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
-        permission: SharePermission.fromValue(args.input.permission),
+        permission: args.input.permission,
         grantedToUserId: args.input.grantedToUserId ?? undefined,
         grantedToHandle: args.input.grantedToHandle ?? undefined,
         label: args.input.label ?? undefined,

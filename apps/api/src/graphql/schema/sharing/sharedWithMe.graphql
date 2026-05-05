@@ -1,8 +1,13 @@
-type SharedWithMedMediaItemType implements ViewableItem & Node {
+type SharedWithMedMediaItemType implements Node {
   id: ID!
   sharedAt: DateTime!
   sharedBy: ID!
   mediaItem: MediaItem!
-  viewerOperations: [ViewerOperation!]!
-  viewerIsOwner: Boolean!
+}
+
+type SharedWithMedMediaAlbumType implements Node {
+  id: ID!
+  sharedAt: DateTime!
+  sharedBy: ID!
+  album: Album!
 }

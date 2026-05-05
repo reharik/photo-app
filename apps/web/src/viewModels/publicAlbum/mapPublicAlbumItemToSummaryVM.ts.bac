@@ -10,7 +10,7 @@ export function mapPublicAlbumItemToSummaryVM(
     id: albumItem.id,
     mediaItem: mapPublicMediaItemToSummaryVM(albumItem.mediaItem),
     orderIndex: albumItem.orderIndex,
-    viewerOperations: albumItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
+    viewerOperations: albumItem.viewerOperations,
   };
 }
 

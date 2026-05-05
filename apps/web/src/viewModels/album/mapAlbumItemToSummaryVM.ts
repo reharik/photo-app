@@ -1,4 +1,3 @@
-import { ViewerOperation } from '@packages/contracts';
 import { AlbumItemSummaryFragment } from '../../graphql/generated/types';
 import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
 import { AlbumItemSummaryVM } from './AlbumItemSummaryVM';
@@ -10,7 +9,7 @@ export function mapAlbumItemToSummaryVM(albumItem: AlbumItemSummaryFragment): Al
     mediaItem: mapMediaItemToSummaryVM(albumItem.mediaItem),
     orderIndex: albumItem.orderIndex,
     updatedAt: albumItem.updatedAt,
-    viewerOperations: albumItem.viewerOperations.map((o) => ViewerOperation.fromValue(o)),
+    viewerOperations: albumItem.viewerOperations,
     viewerIsOwner: albumItem.viewerIsOwner,
   };
 }

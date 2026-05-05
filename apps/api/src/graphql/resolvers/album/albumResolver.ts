@@ -14,17 +14,16 @@ const albumResolvers: Resolvers = {
       const coverMedia = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(
         album.coverMedia,
       );
-
       return coverMedia;
     }),
     items: authenticatedResolver(async (album, { input }, ctx) => {
-      const collectionInfo = standardizeCollectionInput(input.collectionInfo, AlbumItemSortBy);
+      const collectionInfo = standardizeCollectionInput<AlbumItemSortBy>(input.collectionInfo);
 
       const albumItems = await ctx.readServices.viewerAlbumReadService.getViewableAlbumItems({
         albumId: album.id,
         collectionInfo,
       });
-      const nodes = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToAlbumItemAndMedia(
+      const nodes = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToAlbumItemsAndMedia(
         albumItems.nodes,
         album.viewerMemberRole,
       );

@@ -30,7 +30,7 @@ type UserRow = User & {
 const sanitizeUser = (user: UserRow): SanitizedUser => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { passwordHash, ...sanitized } = user;
-  return sanitized as SanitizedUser;
+  return sanitized;
 };
 
 const splitDisplayName = (fullName: string): { firstName: string; lastName: string } => {

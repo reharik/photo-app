@@ -1,3 +1,5 @@
+import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { NamespacedMediaItemRow } from '../../services/readServices/viewerReadServices/viewerAlbumReadService.types';
 import type { EntityId } from '../../types/types';
@@ -47,7 +49,7 @@ export type SharedAlbumRow = {
   albumTitle: string;
   albumCreatedAt: Date;
   albumUpdatedAt: Date;
-  viewerMemberRole?: string;
+  viewerMemberRole?: AlbumMemberRole;
   sharedBy: EntityId;
   sharedAt: Date;
 } & NamespacedMediaItemRow; // cover item
@@ -84,28 +86,43 @@ export const buildSharedWithMeReadRepository = ({
 }: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
   getMediaItemsSharedWithMe: async (viewerId: string) => {
     const rows = await applyActiveUserGrant(
-      database<SharedWithMedMediaItemRow>('accessGrant')
-        .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
-        .whereNotNull('accessGrant.mediaItemId')
-        .orderBy('accessGrant.createdAt', 'desc')
-        .select<SharedWithMedMediaItemRow[]>(...accessGrantFieldSelect, ...mediaItemSelectColumns),
+      withEnumRevival(
+        database<SharedWithMedMediaItemRow>('accessGrant')
+          .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
+          .whereNotNull('accessGrant.mediaItemId')
+          .orderBy('accessGrant.createdAt', 'desc')
+          .select<SharedWithMedMediaItemRow[]>(
+            ...accessGrantFieldSelect,
+            ...mediaItemSelectColumns,
+          ),
+        { mediaItemKind: MediaKind, mediaItemStatus: MediaItemStatus },
+        { strict: true },
+      ),
       { database, viewerId },
     );
     return { sharedWithMeMediaItems: rows };
   },
   getAlbumsSharedWithMe: async (viewerId: string) => {
     const rows = await applyActiveUserGrant(
-      database<SharedAlbumRow>('accessGrant')
-        .innerJoin('album', 'album.id', 'accessGrant.albumId')
-        .leftJoin('albumMember', (join) => {
-          join
-            .on('albumMember.albumId', 'album.id')
-            .on('albumMember.userId', database.raw('?', [viewerId]));
-        })
-        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-        .whereNotNull('accessGrant.albumId')
-        .orderBy('accessGrant.createdAt', 'desc')
-        .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
+      withEnumRevival(
+        database<SharedAlbumRow>('accessGrant')
+          .innerJoin('album', 'album.id', 'accessGrant.albumId')
+          .leftJoin('albumMember', (join) => {
+            join
+              .on('albumMember.albumId', 'album.id')
+              .on('albumMember.userId', database.raw('?', [viewerId]));
+          })
+          .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+          .whereNotNull('accessGrant.albumId')
+          .orderBy('accessGrant.createdAt', 'desc')
+          .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
+        {
+          mediaItemKind: MediaKind,
+          mediaItemStatus: MediaItemStatus,
+          viewerMemberRole: AlbumMemberRole,
+        },
+        { strict: true },
+      ),
       { database, viewerId },
     );
     return { sharedWithMeAlbums: rows };

@@ -3,7 +3,6 @@ import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
 import type {
   GrantReadRepository,
   MediaAssetProjection,
-  MediaAssetReadRepository,
   MediaItemReadRepository,
 } from '@packages/media-core';
 import { buildMediaGrantService } from '../services/mediaGrantService';

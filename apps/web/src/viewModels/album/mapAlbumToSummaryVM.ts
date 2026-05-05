@@ -1,4 +1,3 @@
-import { ViewerOperation } from 'node_modules/@packages/contracts/src/enums/viewerOperations';
 import { AlbumSummaryFragment } from '../../graphql/generated/types';
 import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
 import { AlbumSummaryVM } from './AlbumSummaryVM';
@@ -12,7 +11,7 @@ export function mapAlbumToSummaryVM(
     coverMedia: album.coverMedia ? mapMediaItemToSummaryVM(album.coverMedia) : undefined,
     itemCount: album.items?.nodes?.length ?? 0,
     updatedAt: album.updatedAt,
-    viewerOperations: album.viewerOperations?.map((o) => ViewerOperation.fromValue(o)) ?? [],
+    viewerOperations: album.viewerOperations ?? [],
     viewerIsOwner: album.viewerIsOwner,
   };
 }

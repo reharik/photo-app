@@ -1,22 +1,32 @@
 import { AlbumMemberRole, ViewerOperation } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { AuthzDecoratedItemProjection } from './viewerMediaItemReadService.types';
-import { AuthorizationProjection } from './viewerSharedWithMeMediaItemReadService';
+import {
+  AuthzDecoratedItemProjection,
+  MediaItemProjection,
+} from './viewerMediaItemReadService.types';
+import {
+  AuthorizationProjection,
+  SharedWithMeItemProjection,
+} from './viewerSharedWithMeMediaItemReadService';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;
-  viewerOperations: string[];
+  viewerOperations: ViewerOperation[];
 };
 
 export type ViewerMediaItemAuthzService = {
   addAuthzToItem: <T>(item: UnDecoratedMediaItem<T>) => Promise<DecoratedMediaItem<T>>;
   addAuthzToItems: <T>(items: UnDecoratedMediaItem<T>[]) => Promise<DecoratedMediaItem<T>[]>;
-  addAuthzToAlbumItemAndMedia: <T, U>(
+  addAuthzToSharedWithMeMediaItems: (
+    items: SharedWithMeItemProjection[],
+  ) => Promise<DecoratedSharedWithMeMediaItem[]>;
+  addAuthzToAlbumItemsAndMedia: <T, U>(
     albumItems: UnDecoratedAlbumItem<T, U>[],
-    albumViewerMemberRole?: string,
+    albumViewerMemberRole?: AlbumMemberRole,
   ) => Promise<DecoratedAlbumItem<T, U>[]>;
   listGrantedAuthorizationsForOwnedMediaItem: (
     mediaItemId: EntityId,
@@ -30,7 +40,7 @@ export interface ViewerMediaItemAuthzServiceFactory extends ReadServiceFactoryBa
 type MediaItemPermissionRow = {
   mediaItemId: EntityId;
   ownerId: EntityId;
-  albumRole: string | null;
+  albumRole?: AlbumMemberRole;
   // future: locked: boolean;
   // future: allowReshare: boolean;
   // future: albumItemAllowReshare: boolean | null;
@@ -44,7 +54,7 @@ type UnDecoratedAlbumItem<T, U> = T & {
 type DecoratedAlbumItem<T, U> = T & {
   id: EntityId;
   viewerIsOwner: boolean;
-  viewerOperations: string[];
+  viewerOperations: ViewerOperation[];
   mediaItem: DecoratedMediaItem<U>;
 };
 
@@ -57,7 +67,14 @@ type DecoratedMediaItem<T> = T & {
   id: EntityId;
   ownerId: EntityId;
   viewerIsOwner: boolean;
-  viewerOperations: string[];
+  viewerOperations: ViewerOperation[];
+};
+
+type DecoratedSharedWithMeMediaItem = {
+  id: EntityId;
+  sharedAt: Date;
+  sharedBy: EntityId;
+  mediaItem: DecoratedMediaItem<MediaItemProjection>;
 };
 
 export const buildViewerMediaItemAuthzServiceFactory = ({
@@ -78,7 +95,7 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       return rows.map((row) => ({
         id: row.id,
         grantedToUserId: row.grantedToUser,
-        permission: row.permission.value,
+        permission: row.permission,
         label: row.description,
         expiresAt: row.expiresAt,
         revokedAt: row.revokedAt,
@@ -86,20 +103,24 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       }));
     };
     const getAuthzRows = async (mediaItemIds: EntityId[]): Promise<MediaItemPermissionRow[]> => {
-      return database<MediaItemPermissionRow>('media_item as mi')
-        .leftJoin('album_item as ai', 'ai.media_item_id', 'mi.id')
-        .leftJoin('album_member as am', function (this: Knex.JoinClause) {
-          this.on('am.album_id', '=', 'ai.album_id').andOnVal('am.user_id', '=', viewerId);
-        })
-        .whereIn('mi.id', mediaItemIds)
-        .select<MediaItemPermissionRow[]>(
-          'mi.id as mediaItemId',
-          'mi.owner_id as ownerId',
-          'am.role as albumRole',
-          // future: 'mi.locked',
-          // future: 'mi.allow_reshare as allowReshare',
-          // future: 'ai.allow_reshare as albumItemAllowReshare',
-        );
+      return withEnumRevival(
+        database<MediaItemPermissionRow>('media_item as mi')
+          .leftJoin('album_item as ai', 'ai.media_item_id', 'mi.id')
+          .leftJoin('album_member as am', function (this: Knex.JoinClause) {
+            this.on('am.album_id', '=', 'ai.album_id').andOnVal('am.user_id', '=', viewerId);
+          })
+          .whereIn('mi.id', mediaItemIds)
+          .select<MediaItemPermissionRow[]>(
+            'mi.id as mediaItemId',
+            'mi.owner_id as ownerId',
+            'am.role as albumRole',
+            // future: 'mi.locked',
+            // future: 'mi.allow_reshare as allowReshare',
+            // future: 'ai.allow_reshare as albumItemAllowReshare',
+          ),
+        { albumRole: AlbumMemberRole },
+        { strict: true },
+      );
     };
     const addAuthzToItem = async <T>(
       item: UnDecoratedMediaItem<T>,
@@ -138,10 +159,10 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
           // now that we have the media item with the operations so far, we add the
           // new operations from this permission;
           if (row.ownerId === viewerId) {
-            ViewerOperation.items().forEach((op) => addItem(op.value, mediaItem.viewerOperations));
+            ViewerOperation.items().forEach((op) => addItem(op, mediaItem.viewerOperations));
           } else if (row.albumRole) {
-            const role = AlbumMemberRole.fromValue(row.albumRole);
-            role.operations.forEach((op) => addItem(op.value, mediaItem.viewerOperations));
+            const role = row.albumRole;
+            role.operations.forEach((op) => addItem(op, mediaItem.viewerOperations));
           }
           mediaItem.viewerIsOwner = row.ownerId === viewerId;
           // assign or reassign the media item back to the acc
@@ -157,19 +178,29 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       }));
     };
 
-    const addAuthzToAlbumItemAndMedia = async <T, U>(
+    const addAuthzToSharedWithMeMediaItems = async (
+      items: SharedWithMeItemProjection[],
+    ): Promise<DecoratedSharedWithMeMediaItem[]> => {
+      if (items.length === 0) return [];
+
+      const mediaItems = items.map((i) => i.mediaItem);
+      const decoratedMediaItems = await addAuthzToItems(mediaItems);
+      return items
+        .map((i) => ({
+          ...i,
+          mediaItem: decoratedMediaItems.find((m) => m.id === i.mediaItem.id),
+        }))
+        .filter((i) => i.mediaItem !== undefined) as DecoratedSharedWithMeMediaItem[];
+    };
+
+    const addAuthzToAlbumItemsAndMedia = async <T, U>(
       albumItems: UnDecoratedAlbumItem<T, U>[],
-      albumViewerMemberRole?: string,
+      albumViewerMemberRole?: AlbumMemberRole,
     ): Promise<DecoratedAlbumItem<T, U>[]> => {
       if (albumItems.length === 0) return [];
 
-      let albumItemOperations: string[] = [];
-      if (albumViewerMemberRole) {
-        const role = AlbumMemberRole.fromValue(albumViewerMemberRole);
-        if (role) {
-          albumItemOperations = role.operations.map((op) => op.value);
-        }
-      }
+      const albumItemOperations: ViewerOperation[] = albumViewerMemberRole?.operations ?? [];
+
       const mediaItems = await addAuthzToItems(albumItems.map((i) => i.mediaItem));
       const decoratedAlbumItems = albumItems.map((i) => {
         const mi = mediaItems.find((m) => m.id === i.mediaItem.id);
@@ -192,7 +223,8 @@ export const buildViewerMediaItemAuthzServiceFactory = ({
       addAuthzToItems,
       addAuthzToItem,
       listGrantedAuthorizationsForOwnedMediaItem,
-      addAuthzToAlbumItemAndMedia,
+      addAuthzToAlbumItemsAndMedia,
+      addAuthzToSharedWithMeMediaItems,
     };
   };
 };

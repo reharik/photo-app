@@ -1,14 +1,24 @@
+import { AlbumMemberRole } from '@packages/contracts';
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { AlbumProjection } from './viewerAlbumReadService.types';
-import { mapNamespacedToMediaItemBase } from './viewerSharedWithMeMediaItemReadService';
+import {
+  mapNamespacedToMediaItemBase,
+  SharedWithMeItemProjection,
+} from './viewerSharedWithMeMediaItemReadService';
 
 export type SharedWithMeAlbumProjection = {
   id: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
-} & AlbumProjection;
+  viewerMemberRole?: AlbumMemberRole;
+  title: string;
+  description?: string;
+  coverMediaId?: string;
+  coverMedia?: SharedWithMeItemProjection;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export interface ViewerSharedWithMeAlbumReadService {
   getSharedWithMeAlbums: () => Promise<{
@@ -28,7 +38,7 @@ export const buildViewerSharedWithMeAlbumReadServiceFactory = ({
   sharedWithMeReadRepository,
 }: ViewerSharedWithMeAlbumReadServiceFactoryDeps): ViewerSharedWithMeAlbumReadServiceFactory => {
   return ({ viewerId }: { viewerId: EntityId }) => ({
-    getSharedWithMeAlbums: async () => {
+    getSharedWithMeAlbums: async (): Promise<{ albums: SharedWithMeAlbumProjection[] }> => {
       const { sharedWithMeAlbums: flatAlbums } =
         await sharedWithMeReadRepository.getAlbumsSharedWithMe(viewerId);
 

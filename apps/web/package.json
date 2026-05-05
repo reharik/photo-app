@@ -31,6 +31,8 @@
     "@graphql-codegen/typescript": "^5.0.9",
     "@graphql-codegen/typescript-operations": "^5.0.9",
     "@graphql-codegen/typescript-react-apollo": "^4.4.1",
+    "@reharik/graphql-codegen-smart-enum-preset": "^0.1.1",
+    "@reharik/graphql-codegen-smart-enum-type-policies": "^0.1.2",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/styled-components": "^5.1.34",
