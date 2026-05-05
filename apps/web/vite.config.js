@@ -48,7 +48,9 @@ export default defineConfig(({ mode }) => {
         port: 5174,
       },
       proxy: {
-        '/media': {
+        // Proxy only concrete media asset fetches (e.g. /media/:mediaId/:variant)
+        // so SPA routes like /media keep resolving to index.html on refresh.
+        '^/media/[^/]+/[^/]+$': {
           target: 'http://localhost:3001',
           changeOrigin: true,
         },

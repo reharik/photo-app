@@ -122,28 +122,6 @@ export const buildMediaItemRepository = ({
   const save = async (mediaItem: MediaItem, options?: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       const record = mediaItem.toPersistence();
-      console.log(`************rowForDb*mediaitem***********`);
-      console.log('[debug] kind details:', {
-        hasToPostgres: typeof mediaItem.kind()?.toPostgres === 'function',
-        toPostgresResult: mediaItem.kind()?.toPostgres?.(),
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        toString: String(mediaItem.kind()),
-        ownProps: Object.getOwnPropertyNames(mediaItem.kind()),
-        brand: mediaItem.kind()?.__smart_enum_brand,
-      });
-      console.log(`********END rowForDb************`);
-
-      console.log(`************rowForDb*sss***********`);
-      console.log('[debug] kind details:', {
-        hasToPostgres: typeof record.kind?.toPostgres === 'function',
-        toPostgresResult: record.kind?.toPostgres?.(),
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        toString: String(record.kind),
-        ownProps: Object.getOwnPropertyNames(record.kind),
-        brand: record.kind?.__smart_enum_brand,
-      });
-      console.log(`********END rowForDb************`);
-
       const { comments, assets, authorizations, tags: tagLabels, ...mediaItemRow } = record;
       const rowForDb = {
         ...mediaItemRow,

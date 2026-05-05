@@ -34,7 +34,7 @@ export const deleteViewerOwnedMediaItemsFromLibraryInTransaction = async ({
   for (const mediaItemId of mediaItemIds) {
     const refs = await albumReadRepository.findAlbumIdsReferencingMediaItem({ mediaItemId });
     for (const albumId of refs) {
-      albumIds.add(albumId);
+      albumIds.add(albumId.id);
     }
   }
 

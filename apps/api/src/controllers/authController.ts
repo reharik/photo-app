@@ -102,6 +102,13 @@ export const buildAuthController = ({
       ip: ctx.ip,
     });
 
+    ctx.cookies.set('token', result.token, {
+      httpOnly: true,
+      secure: ctx.app.env === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
     ctx.status = 201;
     ctx.body = {
       user: result.user,

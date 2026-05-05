@@ -55,6 +55,7 @@ export const apolloClient = new ApolloClient({
         },
       },
       MediaItem: {
+        ...smartEnumTypePolicies.MediaItem,
         keyFields: ['id'],
       },
     },

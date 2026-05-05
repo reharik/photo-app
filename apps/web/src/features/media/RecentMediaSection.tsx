@@ -14,6 +14,7 @@ import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { SelectableGallery } from '../gallery/SelectableGallery';
@@ -32,6 +33,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const [shareMediaOpen, setShareMediaOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
   const { isLoading, errors, execute } = useAppMutationState();
   const {
     isLoading: isDeleteLoading,
@@ -113,13 +115,24 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
     if (result.success) {
       setAddToAlbumOpen(false);
       clearSelection();
+      setToastMessage(
+        selectedIds.length === 1
+          ? 'Added 1 item to album'
+          : `Added ${selectedIds.length} items to album`,
+      );
       void reloadData();
       await client.refetchQueries({ include: [ViewerAlbumsDocument] });
+      return;
     }
+
+    setToastMessage(result.errors[0]?.message ?? "Couldn't add items to album");
   };
 
   return (
     <Container>
+      {toastMessage ? (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(undefined)} />
+      ) : null}
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
@@ -189,6 +202,8 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       {shareMediaOpen && (
         <GrantMediaItemShareModal
           mediaItemIds={selectedIds}
+          onSuccessToast={(message) => setToastMessage(message)}
+          onErrorToast={(message) => setToastMessage(message)}
           onClose={() => {
             setShareMediaOpen(false);
             clearSelection();

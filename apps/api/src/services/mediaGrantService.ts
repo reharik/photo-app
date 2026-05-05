@@ -24,7 +24,6 @@ export const buildMediaGrantService = ({
 }: IocGeneratedCradle): MediaGrantService => ({
   authorizeView: async (input: AuthorizeMediaViewInput): Promise<WriteResult<string>> => {
     const { mediaId, viewerId, hashedToken } = input;
-
     if (!viewerId && !hashedToken) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
     }
@@ -32,7 +31,6 @@ export const buildMediaGrantService = ({
     const mediaItemRow = await mediaItemReadRepository.getByIdForAuthorization({
       mediaItemId: mediaId,
     });
-
     if (!mediaItemRow) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotFound);
     }

@@ -13,6 +13,8 @@ import { GrantShareForm, type GrantShareFormValues } from './GrantShareForm';
 
 type GrantMediaItemShareModalProps = {
   mediaItemIds: string[];
+  onSuccessToast?: (message: string) => void;
+  onErrorToast?: (message: string) => void;
   onClose: () => void;
 };
 
@@ -32,6 +34,8 @@ const buildTitle = (count: number): string =>
 
 export const GrantMediaItemShareModal = ({
   mediaItemIds,
+  onSuccessToast,
+  onErrorToast,
   onClose,
 }: GrantMediaItemShareModalProps) => {
   const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
@@ -62,7 +66,7 @@ export const GrantMediaItemShareModal = ({
       label: values.label,
       expiresAt,
     };
-    void (await grantUserAuthorization(
+    const result = await grantUserAuthorization(
       {
         mutation: GrantUserAuthorizationsForMediaItemsDocument,
         variables: {
@@ -71,13 +75,22 @@ export const GrantMediaItemShareModal = ({
       },
       (data: GrantUserAuthorizationsForMediaItemsMutation) =>
         data.grantUserAuthorizationsForMediaItems,
-    ));
+    );
 
     // if (result.data.token) {
     //   setCreatedToken(result.data.token);
     //   return;
     // }
 
+    if (!result.success) {
+      onErrorToast?.(result.errors[0]?.message ?? "Couldn't share items");
+      onClose();
+      return;
+    }
+
+    onSuccessToast?.(
+      mediaItemIds.length === 1 ? 'Shared 1 item with user' : `Shared ${mediaItemIds.length} items`,
+    );
     onClose();
   };
 

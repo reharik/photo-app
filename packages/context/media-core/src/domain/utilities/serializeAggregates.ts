@@ -15,19 +15,6 @@ export const serializeValue = (value: unknown): unknown => {
   if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(serializeValue);
   if (isEntity(value)) return value.toPersistence();
-
-  console.log('[serialize-debug]', {
-    type: typeof value,
-    isSmartEnum: isSmartEnumItem(value),
-    isEntity: isEntity(value),
-    hasBrand: (value as any)?.__smart_enum_brand,
-    ownProps:
-      typeof value === 'object' && value !== null ? Object.getOwnPropertyNames(value) : null,
-  });
-  console.log('[serialize-debug] symbols:', {
-    ownSymbols: Object.getOwnPropertySymbols(value),
-    symbolsAsStrings: Object.getOwnPropertySymbols(value).map((s) => s.toString()),
-  });
   if (isSmartEnumItem(value)) {
     return value.value;
   }

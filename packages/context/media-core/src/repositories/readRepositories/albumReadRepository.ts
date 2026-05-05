@@ -37,7 +37,11 @@ export type AlbumReadRepository = {
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }) => Promise<AlbumItemWithMediaRow[]>;
-  findAlbumIdsReferencingMediaItem: ({ mediaItemId }: { mediaItemId: string }) => Promise<string[]>;
+  findAlbumIdsReferencingMediaItem: ({
+    mediaItemId,
+  }: {
+    mediaItemId: string;
+  }) => Promise<{ id: string }[]>;
   /** Album items for public share-link viewing (no membership check). READY media only. */
   listAlbumItemsForShareLink: (args: {
     albumId: string;
@@ -213,7 +217,7 @@ export const buildAlbumReadRepository = ({
     mediaItemId,
   }: {
     mediaItemId: string;
-  }): Promise<string[]> => {
+  }): Promise<{ id: string }[]> => {
     return database<{ id: string }>('album')
       .leftJoin('albumItem', 'albumItem.albumId', 'album.id')
       .where('albumItem.mediaItemId', mediaItemId)

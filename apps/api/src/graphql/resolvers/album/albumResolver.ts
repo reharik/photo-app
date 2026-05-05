@@ -14,6 +14,7 @@ const albumResolvers: Resolvers = {
       const coverMedia = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(
         album.coverMedia,
       );
+
       return coverMedia;
     }),
     items: authenticatedResolver(async (album, { input }, ctx) => {

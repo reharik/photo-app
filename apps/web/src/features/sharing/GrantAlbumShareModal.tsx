@@ -14,6 +14,8 @@ import { GrantShareForm, type GrantShareFormValues } from './GrantShareForm';
 
 type GrantAlbumShareModalProps = {
   albumId: string;
+  onSuccessToast?: (message: string) => void;
+  onErrorToast?: (message: string) => void;
   onClose: () => void;
 };
 
@@ -28,7 +30,12 @@ const toIsoExpiry = (value: string | undefined): string | undefined => {
   return parsed.toISOString();
 };
 
-export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalProps) => {
+export const GrantAlbumShareModal = ({
+  albumId,
+  onSuccessToast,
+  onErrorToast,
+  onClose,
+}: GrantAlbumShareModalProps) => {
   const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
 
   // const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
@@ -52,7 +59,7 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
       expiresAt: toIsoExpiry(values.expiresAt),
     };
 
-    void (await grantUserAuthorization(
+    const result = await grantUserAuthorization(
       {
         mutation: GrantUserAuthorizationForAlbumDocument,
         variables: {
@@ -60,12 +67,19 @@ export const GrantAlbumShareModal = ({ albumId, onClose }: GrantAlbumShareModalP
         },
       },
       (data: GrantUserAuthorizationForAlbumMutation) => data.grantUserAuthorizationForAlbum,
-    ));
+    );
 
     // if (result.data?.token) {
     //   setCreatedToken(result.data.token);
     //   return;
     // }
+    if (!result.success) {
+      onErrorToast?.(result.errors[0]?.message ?? "Couldn't share album");
+      onClose();
+      return;
+    }
+
+    onSuccessToast?.('Shared album with user');
     onClose();
   };
 

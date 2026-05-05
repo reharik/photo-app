@@ -1,8 +1,30 @@
 {
   "name": "@app/media-worker",
-  "private": true,
   "description": "Background media processing worker",
-  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1028.0",
+    "@aws-sdk/s3-request-presigner": "^3.1028.0",
+    "@packages/contracts": "0.1.0",
+    "@packages/infrastructure": "0.1.0",
+    "@packages/media-core": "0.1.0",
+    "@reharik/smart-enum": "^0.4.0",
+    "@reharik/smart-enum-knex": "^0.0.3",
+    "awilix": "^12.1.1",
+    "dotenv": "^16.6.1",
+    "ioc-manifest": "^0.3.1",
+    "knex": "^3.1.0",
+    "knex-stringcase": "^1.6.0",
+    "pg": "^8.20.0",
+    "sharp": "^0.34.5",
+    "winston": "^3.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "private": true,
   "scripts": {
     "build": "nx build media-worker",
     "build:dev": "nx build media-worker --configuration=development",
@@ -16,27 +38,5 @@
     "start": "node dist/index.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules' nx test media-worker"
   },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1028.0",
-    "@aws-sdk/s3-request-presigner": "^3.1028.0",
-    "@packages/contracts": "*",
-    "@packages/infrastructure": "*",
-    "@packages/media-core": "*",
-    "@reharik/smart-enum": "^0.3.3",
-    "@reharik/smart-enum-knex": "^0.0.3",
-    "awilix": "^12.1.1",
-    "dotenv": "^16.6.1",
-    "ioc-manifest": "^0.3.1",
-    "knex": "^3.1.0",
-    "knex-stringcase": "^1.6.0",
-    "pg": "^8.20.0",
-    "sharp": "^0.34.5",
-    "winston": "^3.15.0"
-  },
-  "devDependencies": {
-    "@types/node": "^22.18.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "vite-tsconfig-paths": "^5.1.4"
-  }
+  "type": "module"
 }

@@ -7,6 +7,7 @@ import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
 import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
 import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
@@ -55,6 +56,7 @@ export const AlbumSection = ({
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
 
   const selectableActions = [
     {
@@ -127,6 +129,9 @@ export const AlbumSection = ({
   };
   return (
     <Container>
+      {toastMessage ? (
+        <Toast message={toastMessage} onDismiss={() => setToastMessage(undefined)} />
+      ) : null}
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
@@ -185,12 +190,16 @@ export const AlbumSection = ({
       {shareState.shareAlbumOpen && (
         <GrantAlbumShareModal
           albumId={album.id}
+          onSuccessToast={(message) => setToastMessage(message)}
+          onErrorToast={(message) => setToastMessage(message)}
           onClose={() => shareState.setShareAlbumOpen(false)}
         />
       )}
       {shareState.shareItemsOpen && (
         <GrantMediaItemShareModal
           mediaItemIds={selectedMediaItemIds}
+          onSuccessToast={(message) => setToastMessage(message)}
+          onErrorToast={(message) => setToastMessage(message)}
           onClose={() => {
             shareState.setShareItemsOpen(false);
             clearSelection();
