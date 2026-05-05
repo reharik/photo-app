@@ -1,6 +1,7 @@
 fragment MediaItemSummary on MediaItem {
   id
   kind
+  status
   title
   mimeType
   originalFileName

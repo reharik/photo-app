@@ -1,0 +1,9 @@
+query ViewerMediaItemStatus($mediaItemId: ID!) {
+  viewer {
+    id
+    mediaItem(id: $mediaItemId) {
+      id
+      status
+    }
+  }
+}

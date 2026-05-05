@@ -5,6 +5,7 @@ export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): Me
   return {
     id: mediaItem.id,
     kind: mediaItem.kind,
+    status: mediaItem.status,
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
     viewerOperations: mediaItem.viewerOperations ?? [],

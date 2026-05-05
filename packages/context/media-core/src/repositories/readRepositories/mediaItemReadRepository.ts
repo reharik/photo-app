@@ -122,6 +122,7 @@ export const buildMediaItemReadRepository = ({
     const rows = await withEnumRevival(
       database<MediaItemRow>('mediaItem')
         .where({ ownerId: viewerId })
+        .andWhere('status', MediaItemStatus.ready.value)
         .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
         .orderBy('id', 'asc') // tie-breaker
         .select<MediaItemRow[]>(...mediaItemRowFields)

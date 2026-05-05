@@ -3,6 +3,7 @@ import { FrontendUploadStatus } from '@packages/contracts';
 import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { type AppError } from '../../domain/errors/errorTypes';
+import { awaitMediaItemsReady } from '../../domain/media/awaitMediaItemsReady';
 import { useUploadQueue } from '../../hooks/useUploadQueue';
 
 type UploadMediaButtonProps = {
@@ -23,6 +24,8 @@ export const UploadMediaButton = ({
   const client = useApolloClient();
   const { items, enqueueFiles, clearCompleted, isUploading } = useUploadQueue(client);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Supersedes older in-flight backend readiness waits when uploads complete again. */
+  const backendWaitGenerationRef = useRef(0);
 
   const startUploadPick = () => {
     fileInputRef.current?.click();
@@ -43,11 +46,30 @@ export const UploadMediaButton = ({
     if (isUploading) {
       return;
     }
-    if (items.some((item) => item.status === FrontendUploadStatus.complete)) {
+
+    const completedRows = items.filter(
+      (item) => item.status === FrontendUploadStatus.complete && item.mediaItemId != null,
+    );
+    if (completedRows.length === 0) {
+      return;
+    }
+
+    const ids = [
+      ...new Set(
+        completedRows.flatMap((item) => (item.mediaItemId != null ? [item.mediaItemId] : [])),
+      ),
+    ];
+    const generation = (backendWaitGenerationRef.current += 1);
+
+    void (async (): Promise<void> => {
+      await awaitMediaItemsReady(client, ids);
+      if (backendWaitGenerationRef.current !== generation) {
+        return;
+      }
       void onComplete();
       clearCompleted();
-    }
-  }, [items, isUploading, onComplete, clearCompleted]);
+    })();
+  }, [items, isUploading, client, onComplete, clearCompleted]);
 
   return (
     <>

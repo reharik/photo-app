@@ -74,18 +74,18 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         mediaItems,
       );
     }),
-    sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
-      const { albums } =
-        await ctx.readServices.viewerSharedWithMeAlbumReadService.getSharedWithMeAlbums();
-      const decoratedAlbums = albums.map((x) => ({
-        ...x,
-        viewerIsOwner: false,
-        viewerOperations: x.viewerMemberRole?.operations ?? [],
-      }));
-      return {
-        nodes: decoratedAlbums,
-      };
-    }),
+    // sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
+    //   const { albums } =
+    //     await ctx.readServices.viewerSharedWithMeAlbumReadService.getSharedWithMeAlbums();
+    //   const decoratedAlbums = albums.map((x) => ({
+    //     ...x,
+    //     viewerIsOwner: false,
+    //     viewerOperations: x.viewerMemberRole?.operations ?? [],
+    //   }));
+    //   return {
+    //     nodes: decoratedAlbums,
+    //   };
+    // }),
   },
 };
 
