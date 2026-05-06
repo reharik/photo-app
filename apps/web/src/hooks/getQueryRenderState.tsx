@@ -33,7 +33,8 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
   select: (data: NonNullable<TQuery['data']>) => TSelected | undefined;
   map?: (value: TSelected) => TMapped;
 }): QueryStateResult<TSelected | TMapped> {
-  if (query.loading) {
+  /** Full-page spinner only when there is nothing to show yet. Keeps subtree mounted during cache-first refetches. */
+  if (query.loading && !query.data) {
     return {
       data: undefined,
       content: <PageSpinner />,

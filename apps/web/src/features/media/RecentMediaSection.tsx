@@ -1,6 +1,6 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
 import { ViewerOperation } from '@packages/contracts';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import {
   AddMediaItemsToAlbumDocument,
@@ -45,6 +45,10 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
     skip: !addToAlbumOpen,
     fetchPolicy: 'cache-first',
   });
+
+  const dismissToast = useCallback((): void => {
+    setToastMessage(undefined);
+  }, []);
 
   const albumOptions = useMemo(
     () =>
@@ -113,14 +117,12 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
     );
 
     if (result.success) {
+      const addedCount = selectedIds.length;
       setAddToAlbumOpen(false);
       clearSelection();
       setToastMessage(
-        selectedIds.length === 1
-          ? 'Added 1 item to album'
-          : `Added ${selectedIds.length} items to album`,
+        addedCount === 1 ? 'Added 1 item to album' : `Added ${addedCount} items to album`,
       );
-      void reloadData();
       await client.refetchQueries({ include: [ViewerAlbumsDocument] });
       return;
     }
@@ -130,9 +132,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
 
   return (
     <Container>
-      {toastMessage ? (
-        <Toast message={toastMessage} onDismiss={() => setToastMessage(undefined)} />
-      ) : null}
+      {toastMessage ? <Toast message={toastMessage} onDismiss={dismissToast} /> : null}
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
@@ -202,8 +202,8 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       {shareMediaOpen && (
         <GrantMediaItemShareModal
           mediaItemIds={selectedIds}
-          onSuccessToast={(message) => setToastMessage(message)}
-          onErrorToast={(message) => setToastMessage(message)}
+          onSuccessToast={setToastMessage}
+          onErrorToast={setToastMessage}
           onClose={() => {
             setShareMediaOpen(false);
             clearSelection();

@@ -78,6 +78,15 @@ export const AddItemsToAlbum = ({
         <Combobox
           items={sortedOptions}
           value={selectedAlbum}
+          onInputValueChange={(value) => {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              setNewAlbumTitle(null);
+              return;
+            }
+            setSelectedAlbumId(null);
+            setNewAlbumTitle(trimmed);
+          }}
           onChange={(next) => {
             if ('customValue' in next) {
               setSelectedAlbumId(null);
@@ -92,7 +101,7 @@ export const AddItemsToAlbum = ({
           allowCustomValue
           customValueLabel={(input) => `Create album: ${input}`}
           label="Album"
-          placeholder={albumsLoading ? 'Loading albums…' : 'Choose an album…'}
+          placeholder={albumsLoading ? 'Loading albums…' : 'Choose an album or type a new title…'}
           disabled={isSubmitting || albumsLoading}
         />
       </SelectRow>

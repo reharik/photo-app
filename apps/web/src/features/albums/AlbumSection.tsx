@@ -57,6 +57,9 @@ export const AlbumSection = ({
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
+  const dismissAlbumToast = useCallback((): void => {
+    setToastMessage(undefined);
+  }, []);
 
   const selectableActions = [
     {
@@ -129,9 +132,7 @@ export const AlbumSection = ({
   };
   return (
     <Container>
-      {toastMessage ? (
-        <Toast message={toastMessage} onDismiss={() => setToastMessage(undefined)} />
-      ) : null}
+      {toastMessage ? <Toast message={toastMessage} onDismiss={dismissAlbumToast} /> : null}
       <SelectableGalleryHeader
         selectionCount={selectionCount}
         clearSelection={clearSelection}
