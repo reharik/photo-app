@@ -16,7 +16,7 @@ const serializeError = (e: unknown): string => {
   return String(e);
 };
 
-export const buildProcessNextMediaImageJob = ({
+export const build__ProcessNextMediaImageJob = ({
   config,
   mediaProcessingJobRepository,
   mediaItemRepository,

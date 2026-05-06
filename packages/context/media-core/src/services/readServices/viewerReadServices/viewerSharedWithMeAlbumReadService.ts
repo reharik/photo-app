@@ -34,7 +34,7 @@ type ViewerSharedWithMeAlbumReadServiceFactoryDeps = {
   sharedWithMeReadRepository: SharedWithMeReadRepository;
 };
 
-export const buildViewerSharedWithMeAlbumReadServiceFactory = ({
+export const build__ViewerSharedWithMeAlbumReadServiceFactory = ({
   sharedWithMeReadRepository,
 }: ViewerSharedWithMeAlbumReadServiceFactoryDeps): ViewerSharedWithMeAlbumReadServiceFactory => {
   return ({ viewerId }: { viewerId: EntityId }) => ({

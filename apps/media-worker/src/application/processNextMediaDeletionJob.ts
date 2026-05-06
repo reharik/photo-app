@@ -22,7 +22,7 @@ const retryBackoffMs = (attemptCount: number): number => {
   return Math.min(60_000, 250 * 2 ** capped);
 };
 
-export const buildProcessNextMediaDeletionJob = ({
+export const build__ProcessNextMediaDeletionJob = ({
   mediaDeletionJobRepository,
   mediaItemRepository,
   mediaStorage,

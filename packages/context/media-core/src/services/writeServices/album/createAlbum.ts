@@ -13,7 +13,7 @@ type CreateAlbumDeps = {
   albumRepository: AlbumRepository;
 };
 
-export const buildCreateAlbum = ({ albumRepository }: CreateAlbumDeps): CreateAlbum => {
+export const build__CreateAlbum = ({ albumRepository }: CreateAlbumDeps): CreateAlbum => {
   return async (input: CreateAlbumCommand): Promise<WriteResult<CreateAlbumResult>> => {
     const { viewerId, title } = input;
     const album = Album.create(

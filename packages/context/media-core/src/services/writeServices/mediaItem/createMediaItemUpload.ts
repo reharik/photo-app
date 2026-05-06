@@ -31,7 +31,7 @@ type CreateMediaItemUploadDeps = {
   mediaStorage: MediaStorage;
 };
 
-export const buildCreateMediaItemUpload = ({
+export const build__CreateMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {

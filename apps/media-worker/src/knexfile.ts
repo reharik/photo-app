@@ -3,7 +3,7 @@ import type { Knex } from 'knex';
 import knexStringcase from 'knex-stringcase';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { buildConfig, type Config } from './config';
+import { build__Config, type Config } from './config';
 import type { IocGeneratedCradle } from './di/generated/ioc-registry.types';
 import { configurePostgresTypes } from './infrastructure/database/configurePostgresTypes';
 
@@ -71,10 +71,10 @@ const createKnexConfig = (config: Config): KnexConfig => {
   };
 };
 
-export const buildKnexConfig = ({ config }: IocGeneratedCradle): KnexConfig => {
+export const build__KnexConfig = ({ config }: IocGeneratedCradle): KnexConfig => {
   return createKnexConfig(config);
 };
 
-export const knexConfig: KnexConfig = createKnexConfig(buildConfig());
+export const knexConfig: KnexConfig = createKnexConfig(build__Config());
 
 export default knexConfig;

@@ -19,7 +19,7 @@ type AlbumRepositoryDeps = {
   database: Knex;
 };
 
-export const buildAlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRepository => {
+export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): AlbumRepository => {
   const getById = async (id: EntityId, options?: RepoOptions): Promise<Album | undefined> => {
     const db = options?.trx ?? database;
     const albumRow = await db<AlbumRecord>('album').where({ id }).first();

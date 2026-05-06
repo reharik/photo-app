@@ -3,7 +3,7 @@ import { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type RequestLogger = (ctx: Context, next: Next) => Promise<void>;
 
-export const buildRequestLogger =
+export const build__RequestLogger =
   ({ logger }: IocGeneratedCradle): RequestLogger =>
   async (ctx: Context, next: Next) => {
     const startTime = Date.now();

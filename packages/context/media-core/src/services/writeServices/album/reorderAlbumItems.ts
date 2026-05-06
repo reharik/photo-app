@@ -15,7 +15,7 @@ type ReorderAlbumItemsDeps = {
   albumRepository: AlbumRepository;
 };
 
-export const buildReorderAlbumItems = ({
+export const build__ReorderAlbumItems = ({
   albumRepository,
 }: ReorderAlbumItemsDeps): ReorderAlbumItems => {
   return async (input: ReorderAlbumItemsCommand): Promise<WriteResult<ReorderAlbumItemsResult>> => {

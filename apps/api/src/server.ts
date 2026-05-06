@@ -4,7 +4,7 @@ export interface Server {
   start(): Promise<void>;
 }
 
-export const buildServer = ({ koaServer, config, logger }: IocGeneratedCradle): Server => {
+export const build__Server = ({ koaServer, config, logger }: IocGeneratedCradle): Server => {
   return {
     async start() {
       await new Promise<void>((resolve) => {

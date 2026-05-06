@@ -49,7 +49,7 @@ const publicAlbumItemWithMediaSelectColumns = [
 
 type PublicAlbumReadRepositoryDeps = { database: Knex };
 
-export const buildPublicAlbumReadRepository = ({
+export const build__PublicAlbumReadRepository = ({
   database,
 }: PublicAlbumReadRepositoryDeps): PublicAlbumReadRepository => ({
   getAlbumForShareLink: async ({

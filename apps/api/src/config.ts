@@ -114,7 +114,7 @@ const createConfigFromEnv = (): Config => {
   };
 };
 
-export const buildConfig = (): Config => {
+export const build__Config = (): Config => {
   ensureEnvLoaded();
   return createConfigFromEnv();
 };

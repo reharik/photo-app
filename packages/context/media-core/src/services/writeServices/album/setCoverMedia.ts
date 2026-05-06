@@ -17,7 +17,7 @@ type SetCoverMediaDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
 };
 
-export const buildSetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): SetCoverMedia => {
+export const build__SetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): SetCoverMedia => {
   return async (input: SetCoverMediaCommand): Promise<WriteResult<SetCoverMediaResult>> => {
     const { viewerId, albumId, albumItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);

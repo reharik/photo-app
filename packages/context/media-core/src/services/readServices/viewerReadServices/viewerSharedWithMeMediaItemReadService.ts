@@ -72,7 +72,7 @@ export const mapNamespacedToMediaItemBase = (
   };
 };
 
-export const buildViewerSharedWithMeMediaItemReadServiceFactory = ({
+export const build__ViewerSharedWithMeMediaItemReadServiceFactory = ({
   sharedWithMeReadRepository,
   mediaItemReadRepository,
 }: ViewerSharedWithMeMediaItemReadServiceFactoryDeps): ViewerSharedWithMeMediaItemReadServiceFactory => {

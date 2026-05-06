@@ -6,7 +6,7 @@ import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type MediaAuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 
-export const buildMediaAuthMiddleware =
+export const build__MediaAuthMiddleware =
   ({ mediaGrantService, config }: IocGeneratedCradle): MediaAuthMiddleware =>
   async (ctx: Context, next: Next): Promise<void> => {
     // Extract viewer identity from JWT — local verify, no DB hit

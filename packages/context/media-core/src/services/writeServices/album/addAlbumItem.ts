@@ -19,7 +19,7 @@ type AddAlbumItemDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
 };
 
-export const buildAddAlbumItem = ({
+export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
 }: AddAlbumItemDeps): AddAlbumItem => {

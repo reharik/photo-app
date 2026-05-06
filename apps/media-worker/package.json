@@ -26,7 +26,7 @@
     "@reharik/smart-enum-knex": "^0.0.3",
     "awilix": "^12.1.1",
     "dotenv": "^16.6.1",
-    "ioc-manifest": "^0.3.1",
+    "ioc-manifest": "^0.3.2",
     "knex": "^3.1.0",
     "knex-stringcase": "^1.6.0",
     "pg": "^8.20.0",

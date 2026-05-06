@@ -81,7 +81,7 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
     });
 };
 
-export const buildSharedWithMeReadRepository = ({
+export const build__SharedWithMeReadRepository = ({
   database,
 }: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
   getMediaItemsSharedWithMe: async (viewerId: string) => {

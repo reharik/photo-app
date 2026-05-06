@@ -21,7 +21,7 @@ const truncateError = (message: string, maxLen: number): string => {
   return `${message.slice(0, maxLen - 3)}...`;
 };
 
-export const buildMediaProcessingJobRepository = ({
+export const build__MediaProcessingJobRepository = ({
   database,
 }: IocGeneratedCradle): MediaProcessingJobRepository => {
   const enqueueIfNoneActive = async (input: {

@@ -7,7 +7,7 @@ const mountRouter = (parent: Router, child: Router) => {
   parent.use(child.allowedMethods());
 };
 
-export const buildApiRoutes = ({ router: authRouter }: IocGeneratedCradle): RootRouter => {
+export const build__ApiRoutes = ({ router: authRouter }: IocGeneratedCradle): RootRouter => {
   const apiRouter = new Router({ prefix: '/api' });
   mountRouter(apiRouter, authRouter);
   return apiRouter;

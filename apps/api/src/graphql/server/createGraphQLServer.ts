@@ -23,7 +23,7 @@ interface GraphQLServerDeps {
   yogaApp: YogaApp;
 }
 
-export const buildYogaApp = ({ graphQLContextFactory, config }: IocGeneratedCradle): YogaApp => {
+export const build__YogaApp = ({ graphQLContextFactory, config }: IocGeneratedCradle): YogaApp => {
   return createYoga<Koa.ParameterizedContext>({
     schema,
     graphqlEndpoint: config.graphqlHttpPath,
@@ -31,7 +31,7 @@ export const buildYogaApp = ({ graphQLContextFactory, config }: IocGeneratedCrad
   }) as YogaApp;
 };
 
-export const buildGraphQLServer = ({ yogaApp }: GraphQLServerDeps): GraphQLServer => {
+export const build__GraphQLServer = ({ yogaApp }: GraphQLServerDeps): GraphQLServer => {
   return async (ctx: Koa.ParameterizedContext) => {
     const response = await yogaApp.handleNodeRequestAndResponse(ctx.request, ctx.res, ctx);
 

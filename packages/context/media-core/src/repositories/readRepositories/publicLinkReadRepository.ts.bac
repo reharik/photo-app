@@ -28,7 +28,7 @@ export type PublicAccessReadRepository = {
 
 type PublicAccessReadRepositoryDeps = { database: Knex };
 
-export const buildPublicAccessReadRepository = ({
+export const build__PublicAccessReadRepository = ({
   database,
 }: PublicAccessReadRepositoryDeps): PublicAccessReadRepository => ({
   findActiveWithGrantsByTokenHash: async (tokenHash: string) => {

@@ -17,7 +17,9 @@ type UnsetCoverMediaDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
 };
 
-export const buildUnsetCoverMedia = ({ albumRepository }: UnsetCoverMediaDeps): UnsetCoverMedia => {
+export const build__UnsetCoverMedia = ({
+  albumRepository,
+}: UnsetCoverMediaDeps): UnsetCoverMedia => {
   return async (input: UnsetCoverMediaCommand): Promise<WriteResult<UnsetCoverMediaResult>> => {
     const { viewerId, albumId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);

@@ -3,7 +3,7 @@ import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type MediaPublicRouter = Router;
 
-export const buildMediaPublicRouter = ({
+export const build__MediaPublicRouter = ({
   mediaAuthMiddleware,
   mediaServeController,
 }: IocGeneratedCradle): MediaPublicRouter => {

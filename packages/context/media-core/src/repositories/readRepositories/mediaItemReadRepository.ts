@@ -57,7 +57,7 @@ const mediaItemRowFields = [
   'media_item.updated_by',
 ];
 
-export const buildMediaItemReadRepository = ({
+export const build__MediaItemReadRepository = ({
   database,
 }: MediaItemReadRepositoryDeps): MediaItemReadRepository => ({
   getByIdForAuthorization: async ({

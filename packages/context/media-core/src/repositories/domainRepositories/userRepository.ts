@@ -12,7 +12,7 @@ export type UserRepository = {
 
 type UserRepositoryDeps = { database: Knex };
 
-export const buildUserRepository = ({ database }: UserRepositoryDeps): UserRepository => {
+export const build__UserRepository = ({ database }: UserRepositoryDeps): UserRepository => {
   const getById = async (id: EntityId): Promise<User | undefined> => {
     const userRow = await database<UserRecord>('user').where({ id }).first();
 

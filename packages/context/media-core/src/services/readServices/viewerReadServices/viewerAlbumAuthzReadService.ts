@@ -17,7 +17,7 @@ type ViewerAlbumAuthzReadServiceFactoryDeps = {
   shareContactRepository: ShareContactRepository;
 };
 
-export const buildViewerAlbumAuthzReadServiceFactory = ({
+export const build__ViewerAlbumAuthzReadServiceFactory = ({
   shareContactRepository,
 }: ViewerAlbumAuthzReadServiceFactoryDeps): ViewerAlbumAuthzReadServiceFactory => {
   return ({ viewerId }: { viewerId: EntityId }) => ({

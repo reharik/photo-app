@@ -4,7 +4,7 @@ import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 export type AuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 export type OptionalAuthMiddleware = AuthMiddleware;
 
-export const buildAuthMiddleware =
+export const build__AuthMiddleware =
   ({ authService, logger }: IocGeneratedCradle): AuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const authHeader = ctx.get('Authorization');
@@ -39,7 +39,7 @@ export const buildAuthMiddleware =
     await next();
   };
 
-export const buildOptionalAuthMiddleware =
+export const build__OptionalAuthMiddleware =
   ({ authService }: IocGeneratedCradle): OptionalAuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.cookies.get('token');

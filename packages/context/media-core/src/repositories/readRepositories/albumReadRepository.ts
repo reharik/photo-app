@@ -109,7 +109,7 @@ const whereAlbumViewableByMemberOrAlbumGrant =
     );
   };
 
-export const buildAlbumReadRepository = ({
+export const build__AlbumReadRepository = ({
   database,
 }: AlbumReadRepositoryDeps): AlbumReadRepository => ({
   listByViewerId: async ({

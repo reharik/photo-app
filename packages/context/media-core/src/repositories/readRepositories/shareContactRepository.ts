@@ -26,7 +26,7 @@ export type ShareContactRepository = {
 
 type ShareContactRepositoryDeps = { database: Knex };
 
-export const buildShareContactRepository = ({
+export const build__ShareContactRepository = ({
   database,
 }: ShareContactRepositoryDeps): ShareContactRepository => ({
   upsertContact: async (

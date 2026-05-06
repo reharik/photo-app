@@ -43,7 +43,7 @@ type PublicAlbumReadServiceFactoryDeps = {
   publicMediaItemReadRepository: PublicMediaItemReadRepository;
 };
 
-export const buildPublicAlbumReadServiceFactory = ({
+export const build__PublicAlbumReadServiceFactory = ({
   publicAlbumReadRepository,
   mediaItemReadRepository,
 }: PublicAlbumReadServiceFactoryDeps): PublicAlbumReadServiceFactory => {

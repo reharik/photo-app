@@ -19,7 +19,7 @@ type UpdateMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
 };
 
-export const buildUpdateMediaItem = ({
+export const build__UpdateMediaItem = ({
   mediaItemRepository,
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (

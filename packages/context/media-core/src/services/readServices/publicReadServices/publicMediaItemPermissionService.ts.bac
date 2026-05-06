@@ -21,7 +21,7 @@ type MediaItemPermissionRow = {
   // future: albumItemAllowReshare: boolean | null;
 };
 
-export const buildPublicMediaItemPermissionServiceFactory = ({
+export const build__PublicMediaItemPermissionServiceFactory = ({
   database,
 }: {
   database: Knex;

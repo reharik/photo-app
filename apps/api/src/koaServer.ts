@@ -6,7 +6,7 @@ import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
 
 export type KoaServer = http.Server;
 
-export const buildKoaServer = ({
+export const build__KoaServer = ({
   mediaPublicRouter,
   rootRouter,
   authMiddleware,

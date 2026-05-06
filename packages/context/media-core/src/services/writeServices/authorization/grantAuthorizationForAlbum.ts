@@ -38,7 +38,7 @@ type GrantUserAuthorizationForAlbumDeps = {
   database: Knex;
 };
 
-export const buildGrantUserAuthorizationForAlbum = ({
+export const build__GrantUserAuthorizationForAlbum = ({
   albumRepository,
   userRepository,
   grantRepository,

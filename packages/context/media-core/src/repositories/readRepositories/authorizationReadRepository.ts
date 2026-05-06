@@ -36,7 +36,7 @@ const shareSelectColumns = [
   'access_grant.created_at',
 ];
 
-export const buildAuthorizationReadRepository = ({
+export const build__AuthorizationReadRepository = ({
   database,
 }: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
   getGrantedAuthorizationsForOwnedMediaItem: async ({

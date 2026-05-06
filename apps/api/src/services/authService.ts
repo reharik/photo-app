@@ -47,7 +47,7 @@ const splitDisplayName = (fullName: string): { firstName: string; lastName: stri
   return { firstName, lastName };
 };
 
-export const buildAuthService = ({
+export const build__AuthService = ({
   database,
   logger,
   config,

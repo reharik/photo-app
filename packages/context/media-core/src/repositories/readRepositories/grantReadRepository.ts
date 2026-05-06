@@ -11,7 +11,7 @@ export type GrantReadRepository = {
 };
 type GrantReadRepositoryDeps = { database: Knex };
 
-export const buildGrantReadRepository = ({
+export const build__GrantReadRepository = ({
   database,
 }: GrantReadRepositoryDeps): GrantReadRepository => ({
   hasActiveGrant: (input: HasActiveGrantInput): Promise<boolean> => {

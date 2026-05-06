@@ -4,7 +4,7 @@ import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 export type TokenAuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 export type OptionalTokenAuthMiddleware = TokenAuthMiddleware;
 
-export const buildTokenAuthMiddleware =
+export const build__TokenAuthMiddleware =
   ({ authService, logger }: IocGeneratedCradle): TokenAuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.getParam.token;

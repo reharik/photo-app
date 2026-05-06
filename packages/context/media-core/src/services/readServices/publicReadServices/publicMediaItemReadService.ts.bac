@@ -31,7 +31,7 @@ export interface PublicMediaItemReadService {
 //   mediaStorage: MediaStorage;
 // };
 
-// export const buildPublicMediaItemReadServiceFactory = ({
+// export const build__PublicMediaItemReadServiceFactory = ({
 //   publicMediaItemReadRepository,
 // }: PublicMediaItemReadServiceFactoryDeps): PublicMediaItemReadServiceFactory => {
 //   return ({ viewerId }: { viewerId: string }) => {

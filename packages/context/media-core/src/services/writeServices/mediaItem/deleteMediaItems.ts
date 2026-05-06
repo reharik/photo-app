@@ -36,7 +36,7 @@ const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
   return out;
 };
 
-export const buildDeleteMediaItems = ({
+export const build__DeleteMediaItems = ({
   mediaItemRepository,
   mediaItemReadRepository,
   albumReadRepository,

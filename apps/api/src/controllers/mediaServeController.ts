@@ -4,7 +4,7 @@ export type MediaServeController = {
   getMedia: (ctx: Context) => Promise<void>;
 };
 
-export const buildMediaServeController = (_deps: IocGeneratedCradle): MediaServeController => ({
+export const build__MediaServeController = (_deps: IocGeneratedCradle): MediaServeController => ({
   getMedia: async (ctx: Context): Promise<void> => {
     if (!ctx.state.authorizedMediaPath) {
       ctx.throw(500, 'Media authorization state missing');

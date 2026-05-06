@@ -3,7 +3,7 @@ import { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type ErrorHandler = (ctx: Context, next: Next) => Promise<void>;
 
-export const buildErrorHandler =
+export const build__ErrorHandler =
   ({ logger }: IocGeneratedCradle): ErrorHandler =>
   async (ctx: Context, next: Next) => {
     try {

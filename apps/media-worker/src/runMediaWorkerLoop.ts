@@ -10,7 +10,7 @@ export type RunMediaWorkerLoop = {
   stop: () => void;
 };
 
-export const buildRunMediaWorkerLoop = ({
+export const build__RunMediaWorkerLoop = ({
   config,
   logger,
   processNextMediaDeletionJob,

@@ -55,7 +55,7 @@ type ViewerAlbumReadServiceFactoryDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
 };
 
-export const buildViewerAlbumReadServiceFactory = ({
+export const build__ViewerAlbumReadServiceFactory = ({
   albumReadRepository,
   mediaItemReadRepository,
 }: ViewerAlbumReadServiceFactoryDeps): ViewerAlbumReadServiceFactory => {

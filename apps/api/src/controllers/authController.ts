@@ -10,7 +10,7 @@ export interface AuthController {
   publicAccess: (ctx: Context) => Promise<Context>;
 }
 
-export const buildAuthController = ({
+export const build__AuthController = ({
   authService,
   logger,
 }: IocGeneratedCradle): AuthController => ({

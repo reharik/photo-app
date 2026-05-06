@@ -14,7 +14,7 @@ type DeleteAlbumDeps = {
   albumRepository: AlbumRepository;
 };
 
-export const buildDeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): DeleteAlbum => {
+export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): DeleteAlbum => {
   return async (input: DeleteAlbumCommand): Promise<WriteResult<DeleteAlbumResult>> => {
     const { viewerId, albumId } = input;
     const getResult = await loadRequiredAlbum(albumId, albumRepository);

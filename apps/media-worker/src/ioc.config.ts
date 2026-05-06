@@ -22,7 +22,7 @@ export default defineIocConfig({
       '**/dist/**',
       '**/node_modules/**',
     ],
-    factoryPrefix: 'build',
+    factoryPrefix: 'build__',
     workspacePackageImportBases: [
       {
         root: 'packages/foundation/infrastructure/src',

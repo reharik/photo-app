@@ -18,7 +18,7 @@ export type MediaGrantService = {
   authorizeView: (input: AuthorizeMediaViewInput) => Promise<WriteResult<string>>;
 };
 
-export const buildMediaGrantService = ({
+export const build__MediaGrantService = ({
   mediaItemReadRepository,
   grantReadRepository,
 }: IocGeneratedCradle): MediaGrantService => ({

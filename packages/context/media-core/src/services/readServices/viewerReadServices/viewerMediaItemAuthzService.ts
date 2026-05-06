@@ -33,7 +33,7 @@ type MediaItemPermissionRow = {
   // future: albumItemAllowReshare: boolean | null;
 };
 
-export const buildViewerMediaItemAuthzServiceFactory = ({
+export const build__ViewerMediaItemAuthzServiceFactory = ({
   database,
   authorizationReadRepository,
 }: {

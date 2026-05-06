@@ -24,7 +24,7 @@ type FinalizeMediaItemUploadDeps = {
   mediaProcessingJobRepository: MediaProcessingJobRepository;
 };
 
-export const buildFinalizeMediaItemUpload = ({
+export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,

@@ -2,7 +2,7 @@ import Router from '@koa/router';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 import { requireAuth } from '../middleware/routeGuards';
 
-export const buildRouter = ({ authController }: IocGeneratedCradle): Router => {
+export const build__Router = ({ authController }: IocGeneratedCradle): Router => {
   const router = new Router({ prefix: '/auth' });
 
   // Public routes

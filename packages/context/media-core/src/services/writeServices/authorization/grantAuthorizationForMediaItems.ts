@@ -62,7 +62,7 @@ type GrantAuthorizationForMediaItemsDeps = {
  * Grants the same authorization (single recipient OR single token) across many media items
  * in one database transaction. Any failure rolls back every grant in the batch.
  */
-export const buildGrantAuthorizationForMediaItems = ({
+export const build__GrantAuthorizationForMediaItems = ({
   mediaItemRepository,
   userRepository,
   grantRepository,

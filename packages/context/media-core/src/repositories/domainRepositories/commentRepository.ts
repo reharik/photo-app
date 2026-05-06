@@ -13,7 +13,9 @@ export type CommentRepository = {
 
 type CommentRepositoryDeps = { database: Knex };
 
-export const buildCommentRepository = ({ database }: CommentRepositoryDeps): CommentRepository => {
+export const build__CommentRepository = ({
+  database,
+}: CommentRepositoryDeps): CommentRepository => {
   const getById = async (id: EntityId): Promise<Comment | undefined> => {
     const commentRow = await withEnumRevival(
       database<CommentRecord>('comment').where({ id }).first(),

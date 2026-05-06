@@ -34,7 +34,7 @@ const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
   return out;
 };
 
-export const buildAddMediaItemsToAlbum = ({
+export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {

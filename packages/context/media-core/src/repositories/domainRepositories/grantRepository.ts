@@ -18,7 +18,7 @@ export type GrantRepository = {
 
 type GrantRepositoryDeps = { database: Knex };
 
-export const buildGrantRepository = ({ database }: GrantRepositoryDeps): GrantRepository => ({
+export const build__GrantRepository = ({ database }: GrantRepositoryDeps): GrantRepository => ({
   createGrant: async (grant: GrantRecord, options: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       await trx<GrantRecord>('grant').insert(grant);

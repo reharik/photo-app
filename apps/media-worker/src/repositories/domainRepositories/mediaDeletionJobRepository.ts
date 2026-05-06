@@ -22,7 +22,7 @@ const truncateError = (message: string, maxLen: number): string => {
   return `${message.slice(0, maxLen - 3)}...`;
 };
 
-export const buildMediaDeletionJobRepository = ({
+export const build__MediaDeletionJobRepository = ({
   database,
 }: IocGeneratedCradle): MediaDeletionJobRepository => {
   const enqueueIfNoneActive = async (input: {

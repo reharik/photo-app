@@ -25,7 +25,7 @@ type ViewerMediaItemReadServiceFactoryDeps = {
   mediaStorage: MediaStorage;
 };
 
-export const buildViewerMediaItemReadServiceFactory = ({
+export const build__ViewerMediaItemReadServiceFactory = ({
   mediaItemReadRepository,
 }: ViewerMediaItemReadServiceFactoryDeps): ViewerMediaItemReadServiceFactory => {
   return ({ viewerId }: { viewerId: string }) => {

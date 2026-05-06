@@ -21,7 +21,7 @@ type DeleteMediaItemDeps = {
   database: Knex;
 };
 
-export const buildDeleteMediaItem = ({
+export const build__DeleteMediaItem = ({
   mediaItemRepository,
   albumRepository,
   albumReadRepository,

@@ -7,7 +7,7 @@ import {
   ReadServices,
 } from './types';
 
-export const buildCreateGraphQLContext = ({
+export const build__CreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
   database,

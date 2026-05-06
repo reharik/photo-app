@@ -36,7 +36,7 @@ type UserTagRow = {
   labelKey: string;
 };
 
-export const buildMediaItemRepository = ({
+export const build__MediaItemRepository = ({
   database,
 }: MediaItemRepositoryDeps): MediaItemRepository => {
   const getById = async (id: EntityId): Promise<MediaItem | undefined> => {

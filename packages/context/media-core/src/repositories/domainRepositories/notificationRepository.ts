@@ -13,7 +13,7 @@ export type NotificationRepository = {
 
 type NotificationRepositoryDeps = { database: Knex };
 
-export const buildNotificationRepository = ({
+export const build__NotificationRepository = ({
   database,
 }: NotificationRepositoryDeps): NotificationRepository => {
   const getById = async (id: EntityId): Promise<Notification | undefined> => {
