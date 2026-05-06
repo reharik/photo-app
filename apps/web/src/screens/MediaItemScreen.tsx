@@ -35,10 +35,6 @@ export const MediaItemScreen = () => {
     nextFetchPolicy: 'cache-first',
   });
 
-  console.log(`************query************`);
-  console.log(query);
-  console.log(`********END query************`);
-
   const { data: mediaItem, content } = getQueryRenderState({
     query,
     select: (data) => data.viewer?.mediaItem,

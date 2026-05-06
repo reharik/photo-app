@@ -4,6 +4,7 @@ import {
   AlbumSortBy,
   MediaItemStatus,
   MediaKind,
+  SharePermission,
   SortDir,
   ViewerOperation,
 } from '@packages/contracts';
@@ -99,3 +100,22 @@ export interface AlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy>
   sortBy: AlbumItemSortBy;
   sortDir: SortDir;
 }
+
+export type AuthorizationProjection = {
+  id: EntityId;
+  grantedToUserId?: EntityId;
+  permission: SharePermission;
+  label?: string;
+  expiresAt?: Date;
+  revokedAt?: Date;
+  createdAt?: Date;
+};
+
+export type SharedWithMeItemProjection = {
+  id: EntityId;
+  sharedAt: Date;
+  sharedBy: EntityId;
+  mediaItem: MediaItemProjection;
+};
+
+export type NestedItemProjection = { id: string; mediaItem: MediaItemProjection };

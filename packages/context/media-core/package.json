@@ -1,6 +1,22 @@
 {
   "name": "@packages/media-core",
   "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "barrels": "barrelsby --config barrelsby.json",
+    "build": "rimraf dist && nx build contracts",
+    "dev": "tsc -w -p tsconfig.json",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' nx test media-core"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1028.0",
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
@@ -18,20 +34,5 @@
     "rimraf": "^6.0.1",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
-    }
-  },
-  "main": "./dist/src/index.js",
-  "private": true,
-  "scripts": {
-    "build": "rimraf dist && nx build contracts",
-    "dev": "tsc -w -p tsconfig.json",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' nx test media-core"
-  },
-  "type": "module",
-  "types": "./dist/src/index.d.ts"
+  }
 }

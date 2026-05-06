@@ -11,11 +11,9 @@ const albumResolvers: Resolvers = {
       if (!album.coverMedia) {
         return undefined;
       }
-      const coverMedia = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(
-        album.coverMedia,
-      );
+      const authorizedCoverMedia = await ctx.applyAuthorizationService.toItem(album.coverMedia);
 
-      return coverMedia;
+      return authorizedCoverMedia;
     }),
     items: authenticatedResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<AlbumItemSortBy>(input.collectionInfo);
@@ -24,13 +22,14 @@ const albumResolvers: Resolvers = {
         albumId: album.id,
         collectionInfo,
       });
-      const nodes = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToAlbumItemsAndMedia(
+
+      const decoratedAlbumItems = await ctx.applyAuthorizationService.toNestedItems(
         albumItems.nodes,
         album.viewerMemberRole,
       );
 
       return {
-        nodes,
+        nodes: decoratedAlbumItems,
         pageInfo: albumItems.pageInfo,
       };
     }),

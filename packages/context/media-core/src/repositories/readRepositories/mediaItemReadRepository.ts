@@ -78,9 +78,9 @@ export const buildMediaItemReadRepository = ({
     mediaItemId: EntityId;
     viewerId: EntityId;
   }): Promise<MediaItemRow | undefined> => {
-    const row = await withEnumRevival(
+    const mediaItem = await withEnumRevival(
       database<MediaItemRow>('mediaItem')
-        .where({ id: mediaItemId, ownerId: viewerId })
+        .where('id', mediaItemId)
         .first<MediaItemRow>(...mediaItemRowFields),
       {
         kind: MediaKind,
@@ -89,7 +89,15 @@ export const buildMediaItemReadRepository = ({
       { strict: true },
     );
 
-    return row;
+    if (!mediaItem) return undefined;
+    if (mediaItem.ownerId === viewerId) return mediaItem;
+
+    const hasGrant = await database<boolean>('grant')
+      .where('mediaItemId', mediaItemId)
+      .where('grantedToUser', viewerId)
+      .first();
+
+    return hasGrant ? mediaItem : undefined;
   },
   getManyForViewer: async ({
     mediaItemIds,

@@ -10,6 +10,7 @@ export const buildCreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
   database,
+
   // publicAccessReadRepository,
   albumReadRepository,
 }: IocGeneratedCradle): GraphQLContextFactory => {
@@ -44,11 +45,15 @@ export const buildCreateGraphQLContext = ({
       });
     }
 
+    const applyAuthorization = applyAuthorizationService({
+      viewerMediaItemAuthzService: rs.viewerMediaItemAuthzService,
+    });
     return {
       ...base,
       viewer,
       writeServices,
       readServices: rs,
+      applyAuthorizationService: applyAuthorization,
     };
   };
 };

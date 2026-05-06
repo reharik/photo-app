@@ -2,6 +2,7 @@ import { StandardEnumItem } from '@reharik/smart-enum';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import { MediaItemProjection } from './viewerMediaItemReadService.types';
 import {
   AlbumCollectionInfo,
   AlbumItemCollectionInfo,
@@ -9,8 +10,7 @@ import {
   AlbumListProjection,
   AlbumProjection,
   NamespacedMediaItemRow,
-} from './viewerAlbumReadService.types';
-import { MediaItemProjection } from './viewerMediaItemReadService.types';
+} from './viewerReadService.types';
 
 export interface ViewerAlbumReadService {
   listAlbums: (collectionInfo: AlbumCollectionInfo) => Promise<AlbumListProjection>;

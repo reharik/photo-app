@@ -1,4 +1,4 @@
-import { AlbumMemberRole, AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
+import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/authenticatedContext';
 import type { Resolvers } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
@@ -15,16 +15,11 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       const collectionInfo = standardizeCollectionInput<AlbumSortBy>(input.collectionInfo);
       const albumsRows =
         (await ctx.readServices.viewerAlbumReadService.listAlbums(collectionInfo)) || [];
-      const albums = albumsRows.nodes.map((row) => {
-        return {
-          ...row,
-          viewerIsOwner: row.viewerMemberRole === AlbumMemberRole.owner,
-          viewerOperations: row.viewerMemberRole?.operations ?? [],
-        };
-      });
+
+      const authorizedAlbums = await ctx.applyAuthorizationService?.toAlbums(albumsRows.nodes);
 
       return {
-        nodes: albums,
+        nodes: authorizedAlbums,
         pageInfo: albumsRows.pageInfo,
       };
     }),
@@ -33,12 +28,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!album) {
         return undefined;
       }
+      const authorizedAlbum = await ctx.applyAuthorizationService?.toAlbum(album);
 
-      return {
-        ...album,
-        viewerOperations: album.viewerMemberRole?.operations ?? [],
-        viewerIsOwner: album.viewerMemberRole === AlbumMemberRole.owner,
-      };
+      return authorizedAlbum;
     }),
     mediaItem: authenticatedResolver(async (_parent, { id }, ctx) => {
       const item = await ctx.readServices.viewerMediaItemReadService.getMediaItemForViewer({
@@ -47,7 +39,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!item) {
         return undefined;
       }
-      return ctx.readServices.viewerMediaItemAuthzService.addAuthzToItem(item);
+      return ctx.applyAuthorizationService?.toItem(item);
     }),
 
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
@@ -56,11 +48,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
         undefined;
 
-      const decoratedItems = await ctx.readServices.viewerMediaItemAuthzService.addAuthzToItems(
-        mediaItems.nodes,
-      );
+      const authorizedItems = await ctx.applyAuthorizationService?.toItems(mediaItems.nodes);
       return {
-        nodes: decoratedItems,
+        nodes: authorizedItems,
         pageInfo: mediaItems.pageInfo,
       };
     }),
@@ -70,9 +60,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
       const { mediaItems } =
         await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
-      return await ctx.readServices.viewerMediaItemAuthzService.addAuthzToSharedWithMeMediaItems(
-        mediaItems,
-      );
+      return await ctx.applyAuthorizationService.toNestedItems(mediaItems);
     }),
     // sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
     //   const { albums } =

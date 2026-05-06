@@ -1,6 +1,21 @@
 {
   "name": "@app/media-worker",
+  "private": true,
   "description": "Background media processing worker",
+  "type": "module",
+  "scripts": {
+    "build": "nx build media-worker",
+    "build:dev": "nx build media-worker --configuration=development",
+    "build:prod": "nx build media-worker --configuration=production",
+    "dev": "tsx watch src/main.ts",
+    "gen:container": "ioc generate",
+    "ioc:bundles": "ioc bundles",
+    "ioc:inspect": "ioc inspect",
+    "ioc:inspect:discovery": "ioc inspect --discovery",
+    "lint": "nx lint media-worker",
+    "start": "node dist/index.js",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' nx test media-worker"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1028.0",
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
@@ -23,20 +38,5 @@
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite-tsconfig-paths": "^5.1.4"
-  },
-  "private": true,
-  "scripts": {
-    "build": "nx build media-worker",
-    "build:dev": "nx build media-worker --configuration=development",
-    "build:prod": "nx build media-worker --configuration=production",
-    "dev": "tsx watch src/main.ts",
-    "gen:container": "ioc generate",
-    "ioc:bundles": "ioc bundles",
-    "ioc:inspect": "ioc inspect",
-    "ioc:inspect:discovery": "ioc inspect --discovery",
-    "lint": "nx lint media-worker",
-    "start": "node dist/index.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' nx test media-worker"
-  },
-  "type": "module"
+  }
 }

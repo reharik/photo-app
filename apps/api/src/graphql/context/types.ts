@@ -1,5 +1,5 @@
 import { User } from '@packages/contracts';
-import type { AlbumReadRepository } from '@packages/media-core';
+import type { AlbumReadRepository, ApplyAuthorizationService } from '@packages/media-core';
 import { StripFactory } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { Knex } from 'knex';
@@ -23,12 +23,14 @@ export interface GraphQLContext {
   viewer?: GraphQLContextViewer;
   writeServices?: IocGeneratedTypes['writeServices'];
   readServices?: ReadServices;
+  applyAuthorizationService?: ApplyAuthorizationService;
 }
 
 export type AuthenticatedGraphQLContext = GraphQLContext & {
   viewer: GraphQLContextViewer;
   writeServices: IocGeneratedTypes['writeServices'];
   readServices: ReadServices;
+  applyAuthorizationService: ApplyAuthorizationService;
 };
 
 export type GraphQLInitialContext = YogaInitialContext &
