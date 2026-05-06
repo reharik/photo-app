@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumMemberRole, AppErrorCollection, MediaItemStatus } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AppErrorCollection,
+  MediaAssetKind,
+  MediaItemStatus,
+} from '@packages/contracts';
+import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -848,6 +854,14 @@ describe('deleteMediaItem', () => {
         integrationTestMediaStorage,
       });
 
+      const baseKey = buildMediaItemBaseStorageKey(TEST_VIEWER_1_ID, mediaItemId);
+      const purgeKeys = [
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.original),
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.display),
+        buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail),
+      ];
+      await expect(integrationTestMediaStorage.verifyExistence(purgeKeys[0])).resolves.toBe(true);
+
       const del = await executeGraphQL<{
         deleteMediaItem: WriteMutationResponse<{ mediaItemId: string }>;
       }>({
@@ -861,6 +875,10 @@ describe('deleteMediaItem', () => {
 
       const row = await database('mediaItem').where({ id: mediaItemId }).first();
       expect(row).toBeUndefined();
+
+      await Promise.all(
+        purgeKeys.map((k) => expect(integrationTestMediaStorage.verifyExistence(k)).resolves.toBe(false)),
+      );
     });
   });
 
@@ -967,6 +985,13 @@ describe('deleteMediaItems', () => {
         integrationTestMediaStorage,
       });
 
+      const baseKey = buildMediaItemBaseStorageKey(TEST_VIEWER_1_ID, mediaItemId);
+      await expect(
+        integrationTestMediaStorage.verifyExistence(
+          buildMediaAssetStorageKey(baseKey, MediaAssetKind.original),
+        ),
+      ).resolves.toBe(true);
+
       const del = await executeGraphQL<{
         deleteMediaItems: WriteMutationResponse<{ deletedMediaItemIds: string[] }>;
       }>({
@@ -980,6 +1005,12 @@ describe('deleteMediaItems', () => {
 
       const row = await database('mediaItem').where({ id: mediaItemId }).first();
       expect(row).toBeUndefined();
+
+      await expect(
+        integrationTestMediaStorage.verifyExistence(
+          buildMediaAssetStorageKey(baseKey, MediaAssetKind.original),
+        ),
+      ).resolves.toBe(false);
     });
   });
 

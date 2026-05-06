@@ -1,5 +1,7 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
+import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
+import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -21,6 +23,7 @@ type DeleteMediaItemsDeps = {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   database: Knex;
+  mediaStorage: MediaStorage;
 };
 
 const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
@@ -42,6 +45,7 @@ export const build__DeleteMediaItems = ({
   albumReadRepository,
   albumRepository,
   database,
+  mediaStorage,
 }: DeleteMediaItemsDeps): DeleteMediaItems => {
   return async (input: DeleteMediaItemsCommand): Promise<WriteResult<DeleteMediaItemsResult>> => {
     const { viewerId } = input;
@@ -81,6 +85,8 @@ export const build__DeleteMediaItems = ({
       mediaItemRepository,
       database,
     });
+
+    await deleteStoredAssetsForMediaItems(mediaStorage, mediaItems);
 
     return ok({ deletedMediaItemIds: dedupedIds });
   };

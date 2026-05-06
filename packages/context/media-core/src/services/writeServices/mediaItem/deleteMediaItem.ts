@@ -1,4 +1,6 @@
 import { Knex } from 'knex';
+import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
+import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -19,6 +21,7 @@ type DeleteMediaItemDeps = {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   database: Knex;
+  mediaStorage: MediaStorage;
 };
 
 export const build__DeleteMediaItem = ({
@@ -26,6 +29,7 @@ export const build__DeleteMediaItem = ({
   albumRepository,
   albumReadRepository,
   database,
+  mediaStorage,
 }: DeleteMediaItemDeps): DeleteMediaItem => {
   return async (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>> => {
     const { viewerId, mediaItemId } = input;
@@ -46,6 +50,9 @@ export const build__DeleteMediaItem = ({
       mediaItemRepository,
       database,
     });
+
+    await deleteStoredAssetsForMediaItems(mediaStorage, [mediaItem]);
+
     return ok({ mediaItemId: mediaItem.id() });
   };
 };
