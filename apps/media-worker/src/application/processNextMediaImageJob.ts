@@ -86,6 +86,30 @@ export const build__ProcessNextMediaImageJob = ({
         });
       };
 
+      if (derivatives.replacementOriginal) {
+        logger.info('S3 PutObject (original replacement)', {
+          bucket: config.s3Bucket,
+          key: originalKey,
+          bodyType: 'Buffer',
+          contentType: derivatives.replacementOriginal.mimeType,
+          contentLength: derivatives.replacementOriginal.fileSizeBytes,
+        });
+
+        await mediaStorage.writeObject({
+          storageKey: originalKey,
+          body: derivatives.replacementOriginal.buffer,
+          mimeType: derivatives.replacementOriginal.mimeType,
+        });
+
+        mediaItem.updateAssetWithMetadata({
+          sizeBytes: derivatives.replacementOriginal.fileSizeBytes,
+          mimeType: derivatives.replacementOriginal.mimeType,
+          width: derivatives.replacementOriginal.width,
+          height: derivatives.replacementOriginal.height,
+          kind: MediaAssetKind.original,
+        });
+      }
+
       logDerivativeUpload(displayKey, derivatives.display.buffer, derivatives.display.mimeType);
       await mediaStorage.writeObject({
         storageKey: displayKey,

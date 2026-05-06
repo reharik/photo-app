@@ -16,6 +16,41 @@ export type GeneratedDerivative = {
 export type ImageDerivatives = {
   display: GeneratedDerivative;
   thumbnail: GeneratedDerivative;
+  replacementOriginal?: GeneratedDerivative;
+};
+
+type HeicConverterModule = {
+  isHeic: (input: Buffer) => Promise<boolean>;
+  convertHeicToJpeg: (
+    input: Buffer,
+    options?: { quality?: number },
+  ) => Promise<{
+    outputBuffer: Buffer;
+    convertedSize: number;
+    width: number;
+    height: number;
+  }>;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
+
+const isHeicConverterModule = (value: unknown): value is HeicConverterModule => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return typeof value.isHeic === 'function' && typeof value.convertHeicToJpeg === 'function';
+};
+
+const loadHeicConverterModule = async (): Promise<HeicConverterModule> => {
+  const importedModule: unknown = await import('@packages/heic-converter');
+  if (!isHeicConverterModule(importedModule)) {
+    throw new Error('@packages/heic-converter does not expose expected API');
+  }
+
+  return importedModule;
 };
 
 const resizeToDerivative = async (
@@ -44,7 +79,23 @@ const resizeToDerivative = async (
 export const generateImageDerivatives = async (
   originalBuffer: Buffer,
 ): Promise<ImageDerivatives> => {
-  const display = await resizeToDerivative(originalBuffer, DISPLAY_MAX_EDGE);
-  const thumbnail = await resizeToDerivative(originalBuffer, THUMBNAIL_MAX_EDGE);
-  return { display, thumbnail };
+  let workingBuffer = originalBuffer;
+  let replacementOriginal: GeneratedDerivative | undefined;
+
+  const heicConverter = await loadHeicConverterModule();
+  if (await heicConverter.isHeic(originalBuffer)) {
+    const result = await heicConverter.convertHeicToJpeg(originalBuffer, { quality: 0.95 });
+    workingBuffer = result.outputBuffer;
+    replacementOriginal = {
+      buffer: result.outputBuffer,
+      mimeType: DERIVATIVE_MIME,
+      width: result.width,
+      height: result.height,
+      fileSizeBytes: result.convertedSize,
+    };
+  }
+
+  const display = await resizeToDerivative(workingBuffer, DISPLAY_MAX_EDGE);
+  const thumbnail = await resizeToDerivative(workingBuffer, THUMBNAIL_MAX_EDGE);
+  return { display, thumbnail, replacementOriginal };
 };
