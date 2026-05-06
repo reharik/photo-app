@@ -62,11 +62,19 @@ export const UploadMediaButton = ({
     const generation = (backendWaitGenerationRef.current += 1);
 
     void (async (): Promise<void> => {
-      await awaitMediaItemsReady(client, ids);
+      let readyRefreshCount = 0;
+      await awaitMediaItemsReady(client, ids, {
+        onItemReady: () => {
+          readyRefreshCount += 1;
+          void onComplete();
+        },
+      });
       if (backendWaitGenerationRef.current !== generation) {
         return;
       }
-      void onComplete();
+      if (readyRefreshCount < ids.length) {
+        void onComplete();
+      }
       clearCompleted();
     })();
   }, [items, isUploading, client, onComplete, clearCompleted]);
@@ -77,7 +85,7 @@ export const UploadMediaButton = ({
         ref={fileInputRef}
         type="file"
         multiple={multiple}
-        accept="image/*,video/*"
+        accept="image/*,video/*,image/heic,image/heif,.heic,.heif"
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />

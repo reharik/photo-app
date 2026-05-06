@@ -6,6 +6,7 @@ type ComboboxProps<T> = {
   items: readonly T[];
   value: T | null;
   onChange: (value: T | { customValue: string }) => void;
+  onInputValueChange?: (value: string) => void;
   getKey: (item: T) => string;
   getLabel: (item: T) => string;
   renderItem?: (item: T) => ReactNode;
@@ -26,6 +27,7 @@ export const Combobox = <T,>({
   items,
   value,
   onChange,
+  onInputValueChange,
   getKey,
   getLabel,
   renderItem,
@@ -92,7 +94,6 @@ export const Combobox = <T,>({
     getMenuProps,
     getInputProps,
     getItemProps,
-    openMenu,
     selectItem,
     closeMenu,
   } = useCombobox<ComboboxOption<T>>({
@@ -101,7 +102,9 @@ export const Combobox = <T,>({
     selectedItem,
     itemToString,
     onInputValueChange: ({ inputValue: nextInputValue }) => {
-      setInputValue(nextInputValue ?? '');
+      const value = nextInputValue ?? '';
+      setInputValue(value);
+      onInputValueChange?.(value);
     },
     onSelectedItemChange: ({ selectedItem: nextSelectedItem }) => {
       if (!nextSelectedItem) {
@@ -131,12 +134,6 @@ export const Combobox = <T,>({
             id: inputId,
             disabled,
             placeholder,
-            onFocus: () => {
-              openMenu();
-            },
-            onClick: () => {
-              openMenu();
-            },
             onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
               if (event.key === 'Tab' && highlightedIndex >= 0) {
                 selectItem(comboboxItems[highlightedIndex] ?? null);
@@ -149,22 +146,28 @@ export const Combobox = <T,>({
           $hasError={hasError}
           aria-invalid={hasError}
         />
-        {isOpen && (
-          <MenuList {...getMenuProps()}>
-            {comboboxItems.map((option, index) => (
-              <MenuItem
-                key={option.kind === 'item' ? getKey(option.item) : `custom-${option.value}`}
-                {...getItemProps({ item: option, index })}
-                $highlighted={highlightedIndex === index}
-              >
-                {option.kind === 'item'
-                  ? (renderItem?.(option.item) ?? getLabel(option.item))
-                  : (customValueLabel?.(option.value) ?? option.value)}
-              </MenuItem>
-            ))}
-            {showEmpty ? <EmptyMessage>{emptyMessage}</EmptyMessage> : null}
-          </MenuList>
-        )}
+        <MenuList
+          {...getMenuProps(
+            {
+              'aria-hidden': !isOpen,
+            },
+            { suppressRefError: true },
+          )}
+          $open={isOpen}
+        >
+          {comboboxItems.map((option, index) => (
+            <MenuItem
+              key={option.kind === 'item' ? getKey(option.item) : `custom-${option.value}`}
+              {...getItemProps({ item: option, index })}
+              $highlighted={highlightedIndex === index}
+            >
+              {option.kind === 'item'
+                ? (renderItem?.(option.item) ?? getLabel(option.item))
+                : (customValueLabel?.(option.value) ?? option.value)}
+            </MenuItem>
+          ))}
+          {showEmpty ? <EmptyMessage>{emptyMessage}</EmptyMessage> : null}
+        </MenuList>
       </InputWrap>
       {error ? <ErrorMessage>{error}</ErrorMessage> : null}
     </FieldWrapper>
@@ -218,7 +221,7 @@ const InputField = styled.input<{ $hasError: boolean }>`
   }
 `;
 
-const MenuList = styled.ul`
+const MenuList = styled.ul<{ $open: boolean }>`
   position: absolute;
   top: calc(100% + ${({ theme }) => theme.spacing(0.5)});
   left: 0;
@@ -233,6 +236,7 @@ const MenuList = styled.ul`
   box-shadow: ${({ theme }) => theme.boxShadow.md};
   max-height: ${({ theme }) => theme.spacing(32)};
   overflow-y: auto;
+  display: ${({ $open }) => ($open ? 'block' : 'none')};
 `;
 
 const MenuItem = styled.li<{ $highlighted: boolean }>`

@@ -1,22 +1,14 @@
 import type { ApolloClient } from '@apollo/client';
 
-import { FrontendError, FrontendUploadStatus as FUS, MediaKind } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
 import {
   CreateMediaUploadDocument,
   FinalizeMediaUploadDocument,
-  type CreateMediaUploadMutationVariables,
 } from '../../graphql/generated/types';
 import { AppResultFailure, fail, ok, type AppResult } from '../errors/errorTypes';
 import { executeMutation } from '../graphql/executeMutation';
 import type { UploadWorkflowEvent } from './mediaUploadTypes';
-
-const resolveMediaKind = (
-  file: File,
-): CreateMediaUploadMutationVariables['input']['kind'] | undefined => {
-  if (file.type.startsWith('image/')) return MediaKind.photo;
-  if (file.type.startsWith('video/')) return MediaKind.video;
-  return undefined;
-};
+import { resolveUploadFileClassification } from './resolveUploadFileClassification';
 
 const buildUploadBody = (file: File, method: string): BodyInit => {
   if (method.toUpperCase() === 'PUT') return file;
@@ -39,13 +31,13 @@ const createMediaUpload = async (
     };
   }>
 > => {
-  const kind = resolveMediaKind(file);
-  if (!kind) {
+  const classified = resolveUploadFileClassification(file);
+  if (!classified) {
     // TODO: add these to FrontendErrorEnum
     return fail([FrontendError.unsupportedMediaType]);
   }
 
-  const mimeType = file.type || 'application/octet-stream';
+  const { kind, mimeType } = classified;
 
   const result = await executeMutation(
     client,

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 
 const EXIT_MS = 280;
+const DISPLAY_MS = 3000;
 
 type ToastProps = {
   message?: string;
@@ -13,14 +15,19 @@ export const Toast = ({ message = 'Changes saved', onDismiss }: ToastProps): Rea
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishedRef = useRef(false);
+  const onDismissRef = useRef(onDismiss);
+
+  useEffect(() => {
+    onDismissRef.current = onDismiss;
+  }, [onDismiss]);
 
   const finish = useCallback((): void => {
     if (finishedRef.current) {
       return;
     }
     finishedRef.current = true;
-    onDismiss();
-  }, [onDismiss]);
+    onDismissRef.current();
+  }, []);
 
   const startExit = useCallback((): void => {
     if (autoTimerRef.current) {
@@ -35,23 +42,30 @@ export const Toast = ({ message = 'Changes saved', onDismiss }: ToastProps): Rea
   }, [finish]);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => setShown(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
+    finishedRef.current = false;
+    setShown(false);
 
-  useEffect(() => {
-    autoTimerRef.current = setTimeout(startExit, 3000);
-    return () => {
+    const clearTimers = (): void => {
       if (autoTimerRef.current) {
         clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
       }
       if (exitTimerRef.current) {
         clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
       }
     };
-  }, [startExit]);
 
-  return (
+    const rafId = requestAnimationFrame(() => setShown(true));
+    autoTimerRef.current = setTimeout(startExit, DISPLAY_MS);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimers();
+    };
+  }, [message, startExit]);
+
+  const bar = (
     <Bar role="status" aria-live="polite" $shown={shown}>
       <Text>{message}</Text>
       <Close type="button" aria-label="Dismiss notification" onClick={startExit}>
@@ -59,13 +73,15 @@ export const Toast = ({ message = 'Changes saved', onDismiss }: ToastProps): Rea
       </Close>
     </Bar>
   );
+
+  return createPortal(bar, document.body);
 };
 
 const Bar = styled.div<{ $shown: boolean }>`
   position: fixed;
   bottom: ${({ theme }) => theme.spacing(4)};
   left: 50%;
-  z-index: 250;
+  z-index: 10000;
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(2)};
