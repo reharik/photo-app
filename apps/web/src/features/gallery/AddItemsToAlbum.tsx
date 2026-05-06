@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
 import { mapSystemError } from '../../domain/errors/mapToError';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
-
-const NEW_ALBUM_VALUE = '__new_album__';
+import { Combobox } from '../../ui/Combobox';
 
 export type AddToAlbumSubmitTarget =
   | { kind: 'existing'; albumId: string }
@@ -28,8 +27,8 @@ export const AddItemsToAlbum = ({
   mutationErrors,
   onSubmit,
 }: AddItemsToAlbumProps) => {
-  const [albumValue, setAlbumValue] = useState('');
-  const [newTitle, setNewTitle] = useState('');
+  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+  const [newAlbumTitle, setNewAlbumTitle] = useState<string | null>(null);
   const [localErrors, setLocalErrors] = useState<AppError[]>([]);
 
   const sortedOptions = useMemo(
@@ -44,60 +43,57 @@ export const AddItemsToAlbum = ({
     if (albumsLoading) {
       return;
     }
-    if (albumValue === '' || albumValue === NEW_ALBUM_VALUE) {
-      if (albumValue === NEW_ALBUM_VALUE) {
-        const t = newTitle.trim();
-        if (!t) {
-          setLocalErrors([mapSystemError('VALIDATION', 'Enter a title for the new album.', false)]);
-          return;
-        }
-        await onSubmit({ kind: 'new', title: t });
-        return;
-      }
+
+    if (!selectedAlbumId && !newAlbumTitle) {
       setLocalErrors([mapSystemError('VALIDATION', 'Select an album or create a new one.', false)]);
       return;
     }
-    await onSubmit({ kind: 'existing', albumId: albumValue });
+
+    if (newAlbumTitle) {
+      const title = newAlbumTitle.trim();
+      if (!title) {
+        setLocalErrors([mapSystemError('VALIDATION', 'Enter a title for the new album.', false)]);
+        return;
+      }
+      await onSubmit({ kind: 'new', title });
+      return;
+    }
+
+    const albumId = selectedAlbumId;
+    if (!albumId) {
+      return;
+    }
+    await onSubmit({ kind: 'existing', albumId });
   };
+
+  const selectedAlbum =
+    selectedAlbumId === null ? null : sortedOptions.find((album) => album.id === selectedAlbumId) ?? null;
 
   return (
     <>
       <AppErrorPanel errors={combinedErrors} />
-      <FieldLabel htmlFor="add-to-album-select">Album</FieldLabel>
       <SelectRow>
-        <Select
-          id="add-to-album-select"
-          value={albumValue}
-          onChange={(e) => {
-            setAlbumValue(e.target.value);
-            if (e.target.value !== NEW_ALBUM_VALUE) {
-              setNewTitle('');
+        <Combobox
+          items={sortedOptions}
+          value={selectedAlbum}
+          onChange={(next) => {
+            if ('customValue' in next) {
+              setSelectedAlbumId(null);
+              setNewAlbumTitle(next.customValue);
+              return;
             }
+            setSelectedAlbumId(next.id);
+            setNewAlbumTitle(null);
           }}
+          getKey={(album) => album.id}
+          getLabel={(album) => album.title}
+          allowCustomValue
+          customValueLabel={(input) => `Create album: ${input}`}
+          label="Album"
+          placeholder={albumsLoading ? 'Loading albums…' : 'Choose an album…'}
           disabled={isSubmitting || albumsLoading}
-        >
-          <option value="">{albumsLoading ? 'Loading albums…' : 'Choose an album…'}</option>
-          {sortedOptions.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.title}
-            </option>
-          ))}
-          <option value={NEW_ALBUM_VALUE}>+ New album…</option>
-        </Select>
+        />
       </SelectRow>
-      {albumValue === NEW_ALBUM_VALUE ? (
-        <>
-          <FieldLabel htmlFor="add-to-album-new-title">New album title</FieldLabel>
-          <TextInput
-            id="add-to-album-new-title"
-            value={newTitle}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewTitle(e.target.value)}
-            placeholder="Summer 2026"
-            autoFocus
-            disabled={isSubmitting}
-          />
-        </>
-      ) : null}
       <Actions>
         <CancelButton type="button" onClick={onClose} disabled={isSubmitting}>
           Cancel
@@ -116,46 +112,8 @@ export const AddItemsToAlbum = ({
   );
 };
 
-const FieldLabel = styled.label`
-  display: block;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  margin-bottom: ${({ theme }) => theme.spacing(1)};
-`;
-
 const SelectRow = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing(3)};
-`;
-
-const Select = styled.select`
-  width: 100%;
-  box-sizing: border-box;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  background: ${({ theme }) => theme.color.bodyRaised};
-  color: ${({ theme }) => theme.color.bodyText};
-  font-size: 15px;
-  cursor: pointer;
-`;
-
-const TextInput = styled.input`
-  width: 100%;
-  box-sizing: border-box;
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(2)};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  background: ${({ theme }) => theme.color.bodyRaised};
-  color: ${({ theme }) => theme.color.bodyText};
-  font-size: 15px;
-  margin-bottom: ${({ theme }) => theme.spacing(3)};
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-  }
 `;
 
 const Actions = styled.div`

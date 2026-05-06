@@ -1,6 +1,5 @@
 import { SharePermission } from '@packages/contracts';
-import React from 'react';
-import { FormInput } from '../../ui/FormInput';
+import { Select } from '../../ui/Select';
 
 type SharePermissionSelectProps = {
   value: SharePermission;
@@ -13,22 +12,17 @@ export const SharePermissionSelect = ({
   onChange,
   disabled,
 }: SharePermissionSelectProps) => {
+  const options = SharePermission.items();
+
   return (
-    <FormInput
-      as="select"
+    <Select
+      items={options}
+      value={value}
       label="Permission"
-      value={value.value}
       disabled={disabled}
-      onChange={(event: React.ChangeEvent<HTMLSelectElement>) => {
-        const next = event.target.value;
-        onChange(SharePermission.fromValue(next));
-      }}
-    >
-      {SharePermission.items().map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.display}
-        </option>
-      ))}
-    </FormInput>
+      onChange={onChange}
+      getKey={(item) => item.value}
+      getLabel={(item) => item.display}
+    />
   );
 };

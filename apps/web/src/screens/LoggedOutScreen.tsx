@@ -9,7 +9,6 @@ export const LoggedOutScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'adult' | 'kid'>('adult');
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -107,20 +106,6 @@ export const LoggedOutScreen = () => {
                 minLength={isSignup ? 8 : undefined}
                 autoComplete={isSignup ? 'new-password' : 'current-password'}
               />
-              {isSignup && (
-                <FormInput
-                  label="Role"
-                  as="select"
-                  value={role}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setRole(e.target.value as 'adult' | 'kid')
-                  }
-                >
-                  <option value="adult">Adult</option>
-                  <option value="kid">Kid</option>
-                </FormInput>
-              )}
-
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
               <SubmitButton type="submit" disabled={isLoading}>

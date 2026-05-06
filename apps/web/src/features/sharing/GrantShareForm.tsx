@@ -56,10 +56,6 @@ export const GrantShareForm = ({
     }
   };
 
-  const handleSelectSuggestion = (suggestion: ShareContactType) => {
-    setHandleValue(suggestion.handle);
-  };
-
   const formValues = (): GrantShareFormValues => ({
     handle: handle.trim(),
     permission,
@@ -113,7 +109,6 @@ export const GrantShareForm = ({
           value={handle}
           onChange={setHandleValue}
           suggestions={suggestions}
-          onSelectSuggestion={handleSelectSuggestion}
           disabled={isLoading}
         />
         <SharePermissionSelect value={permission} onChange={setPermission} disabled={isLoading} />
