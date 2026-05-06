@@ -67,7 +67,9 @@ export const AddItemsToAlbum = ({
   };
 
   const selectedAlbum =
-    selectedAlbumId === null ? null : sortedOptions.find((album) => album.id === selectedAlbumId) ?? null;
+    selectedAlbumId === null
+      ? null
+      : (sortedOptions.find((album) => album.id === selectedAlbumId) ?? null);
 
   return (
     <>

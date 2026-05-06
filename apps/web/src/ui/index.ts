@@ -1,8 +1,8 @@
 // UI primitives barrel export
-export { FormInput } from './FormInput';
-export type { FormInputProps } from './FormInput';
 export { Combobox } from './Combobox';
 export type { ComboboxProps } from './Combobox';
+export { FormInput } from './FormInput';
+export type { FormInputProps } from './FormInput';
 export { LoadingDots } from './LoadingDots';
 export { Badge, Button, Card, Field, HStack, Label, Spacer, Table, VStack } from './Primitives';
 export { Select } from './Select';

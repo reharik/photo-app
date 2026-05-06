@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
 import {
-  buildViewerAlbumReadServiceFactory,
+  build__ViewerAlbumReadServiceFactory,
   CollectionInfo,
   type AlbumCollectionInfo,
   type AlbumItemCollectionInfo,
@@ -30,7 +30,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = buildViewerAlbumReadServiceFactory({
+      const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
         mediaItemReadRepository: noopMediaItemReadRepository,
       } as never);
@@ -61,7 +61,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = buildViewerAlbumReadServiceFactory({
+      const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
         mediaItemReadRepository: noopMediaItemReadRepository,
       } as never);
@@ -120,7 +120,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = buildViewerAlbumReadServiceFactory({
+      const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
         mediaItemReadRepository: noopMediaItemReadRepository,
       } as never);
@@ -152,7 +152,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         getViewableAlbumItemsForViewer,
       };
 
-      const factory = buildViewerAlbumReadServiceFactory({
+      const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
         mediaItemReadRepository: noopMediaItemReadRepository,
       } as never);
@@ -188,7 +188,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         getViewableAlbumItemsForViewer,
       };
 
-      const factory = buildViewerAlbumReadServiceFactory({
+      const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
         mediaItemReadRepository: noopMediaItemReadRepository,
       } as never);

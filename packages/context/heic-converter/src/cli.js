@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import pino from "pino";
+import pino from 'pino';
 
-import { convertHeicToJpeg, isHeic } from "./converter.js";
+import { convertHeicToJpeg, isHeic } from './converter.js';
 
 const logger = pino({
-  name: "heic-converter-cli",
-  level: process.env.LOG_LEVEL ?? "info",
+  name: 'heic-converter-cli',
+  level: process.env.LOG_LEVEL ?? 'info',
 });
 
 /**
@@ -18,12 +18,12 @@ const parseArgs = (argv) => {
   const [inputPath, outputPath, qualityArg] = args;
 
   if (!inputPath || !outputPath) {
-    throw new Error("Usage: node src/cli.js <input.heic> <output.jpg> [quality=0.9]");
+    throw new Error('Usage: node src/cli.js <input.heic> <output.jpg> [quality=0.9]');
   }
 
   const quality = qualityArg === undefined ? 0.9 : Number(qualityArg);
   if (Number.isNaN(quality) || quality <= 0 || quality > 1) {
-    throw new Error("quality must be a number between 0 (exclusive) and 1 (inclusive)");
+    throw new Error('quality must be a number between 0 (exclusive) and 1 (inclusive)');
   }
 
   return { inputPath, outputPath, quality };
@@ -53,8 +53,8 @@ const main = async () => {
         height: result.height,
       },
       null,
-      2
-    ) + "\n"
+      2,
+    ) + '\n',
   );
 };
 

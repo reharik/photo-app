@@ -8,7 +8,7 @@ import { GrantRepository } from '../../../repositories/domainRepositories/grantR
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
 import { WriteResult } from '../../../types/types';
-import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService';
+import { AuthorizationProjection } from '../../readServices/viewerReadServices/viewerAlbumReadService.types';
 import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
 import { GrantUserAuthorizationResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';

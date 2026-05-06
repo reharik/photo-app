@@ -158,7 +158,7 @@ export const Combobox = <T,>({
                 $highlighted={highlightedIndex === index}
               >
                 {option.kind === 'item'
-                  ? renderItem?.(option.item) ?? getLabel(option.item)
+                  ? (renderItem?.(option.item) ?? getLabel(option.item))
                   : (customValueLabel?.(option.value) ?? option.value)}
               </MenuItem>
             ))}

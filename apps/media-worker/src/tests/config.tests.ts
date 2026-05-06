@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 
-import { buildConfig } from '../config';
+import { build__Config } from '../config';
 
 const ENV_KEYS = [
   'NODE_ENV',
@@ -22,7 +22,7 @@ const ENV_KEYS = [
   'JWT_SECRET',
 ] as const;
 
-describe('buildConfig', () => {
+describe('build__Config', () => {
   const snapshot: Partial<Record<(typeof ENV_KEYS)[number], string | undefined>> = {};
 
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('buildConfig', () => {
     it('should default nodeEnv to development', () => {
       delete process.env.NODE_ENV;
       process.env.POSTGRES_HOST = '127.0.0.1';
-      const config = buildConfig();
+      const config = build__Config();
       expect(config.nodeEnv).toBe('development');
     });
   });
@@ -56,7 +56,7 @@ describe('buildConfig', () => {
       process.env.NODE_ENV = 'production';
       process.env.POSTGRES_HOST = '127.0.0.1';
       delete process.env.LOG_LEVEL;
-      const config = buildConfig();
+      const config = build__Config();
       expect(config.logLevel).toBe('info');
     });
   });
@@ -65,7 +65,7 @@ describe('buildConfig', () => {
     it('should throw', () => {
       process.env.NODE_ENV = 'not-a-real-env';
       process.env.POSTGRES_HOST = '127.0.0.1';
-      expect(() => buildConfig()).toThrow(/Invalid value/);
+      expect(() => build__Config()).toThrow(/Invalid value/);
     });
   });
 
@@ -75,7 +75,7 @@ describe('buildConfig', () => {
       process.env.MEDIA_WORKER_POLL_MS = '5000';
       process.env.S3_UPLOAD_URL_TTL_SECONDS = '120';
       process.env.S3_DOWNLOAD_URL_TTL_SECONDS = '240';
-      const config = buildConfig();
+      const config = build__Config();
       expect(config.mediaWorkerPollIntervalMs).toBe(5000);
       expect(config.s3UploadUrlTtlSeconds).toBe(120);
       expect(config.s3DownloadUrlTtlSeconds).toBe(240);

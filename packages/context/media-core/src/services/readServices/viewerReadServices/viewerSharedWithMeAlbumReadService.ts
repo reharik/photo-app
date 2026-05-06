@@ -2,10 +2,8 @@ import { AlbumMemberRole } from '@packages/contracts';
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import {
-  mapNamespacedToMediaItemBase,
-  SharedWithMeItemProjection,
-} from './viewerSharedWithMeMediaItemReadService';
+import { SharedWithMeItemProjection } from './viewerAlbumReadService.types';
+import { mapNamespacedToMediaItemBase } from './viewerSharedWithMeMediaItemReadService';
 
 export type SharedWithMeAlbumProjection = {
   id: EntityId;

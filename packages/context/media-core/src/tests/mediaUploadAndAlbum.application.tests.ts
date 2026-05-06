@@ -19,11 +19,11 @@ import type { MediaProcessingJobRepository } from '../domain/MediaProcessingJob/
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
 import type { MediaItemRow } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
-import { buildAddAlbumItem } from '../services/writeServices/album/addAlbumItem';
-import { buildAddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
-import { buildCreateAlbum } from '../services/writeServices/album/createAlbum';
-import { buildCreateMediaItemUpload } from '../services/writeServices/mediaItem/createMediaItemUpload';
-import { buildFinalizeMediaItemUpload } from '../services/writeServices/mediaItem/finalizeMediaItemUpload';
+import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem';
+import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
+import { build__CreateAlbum } from '../services/writeServices/album/createAlbum';
+import { build__CreateMediaItemUpload } from '../services/writeServices/mediaItem/createMediaItemUpload';
+import { build__FinalizeMediaItemUpload } from '../services/writeServices/mediaItem/finalizeMediaItemUpload';
 import { EntityId } from '../types/types';
 import { TEST_VIEWER_A_ID, TEST_VIEWER_B_ID, TEST_VIEWER_ONLY_ID } from './testViewerIds';
 
@@ -175,7 +175,7 @@ describe('Media upload pipeline (application services)', () => {
     it('should persist a pending media item and return upload instructions', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
@@ -211,11 +211,11 @@ describe('Media upload pipeline (application services)', () => {
     it('should transition the item to processing and return confirmed size and mime type', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -277,11 +277,11 @@ describe('Media upload pipeline (application services)', () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
       const jobRepository = createTrackingMediaProcessingJobRepository();
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: jobRepository,
@@ -328,11 +328,11 @@ describe('Media upload pipeline (application services)', () => {
     it('should fail and leave the media item pending', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -363,11 +363,11 @@ describe('Media upload pipeline (application services)', () => {
     it('should fail with not owned by viewer', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -422,7 +422,7 @@ describe('Album integration (application services)', () => {
   describe('When createAlbum runs', () => {
     it('should persist a new album and return its id', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const result = await createAlbum({ viewerId, title: 'Summer' });
       expect(result.success).toBe(true);
       if (!result.success) {
@@ -439,14 +439,14 @@ describe('Album integration (application services)', () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
 
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage: createTrackingMediaStorage('http://localhost:0'),
       });
@@ -465,7 +465,7 @@ describe('Album integration (application services)', () => {
       }
       projectionFromReadRepo.set(item.id(), projectionFromAggregate(item));
 
-      const addAlbumItem = buildAddAlbumItem({
+      const addAlbumItem = build__AddAlbumItem({
         albumRepository,
         mediaItemReadRepository: {
           getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
@@ -487,8 +487,8 @@ describe('Album integration (application services)', () => {
     });
   });
 
-  describe('When addAlbumItem is called by an album member with viewer role', () => {
-    it('should fail with member not allowed to add item', async () => {
+  describe('When addAlbumItem is called by an album contributor member', () => {
+    it('should allow adding the item', async () => {
       const ownerId = TEST_VIEWER_A_ID;
       const viewerOnlyId = TEST_VIEWER_ONLY_ID;
       const albumRepository = createInMemoryAlbumRepository();
@@ -496,7 +496,7 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId: ownerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
@@ -511,11 +511,11 @@ describe('Album integration (application services)', () => {
       expect(memberResult.success).toBe(true);
       await albumRepository.save(album);
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -554,13 +554,23 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
+      const afterFinalize = await mediaItemRepository.getById(item.id());
+      if (!afterFinalize) {
+        return;
+      }
+      const readyMark = afterFinalize.markReadyAfterDerivatives(
+        { displayWidth: 1, displayHeight: 1 },
+        viewerOnlyId,
+      );
+      expect(readyMark.success).toBe(true);
+      await mediaItemRepository.save(afterFinalize);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = buildAddAlbumItem({
+      const addAlbumItem = build__AddAlbumItem({
         albumRepository,
         mediaItemReadRepository: {
           // eslint-disable-next-line @typescript-eslint/require-await
@@ -574,12 +584,7 @@ describe('Album integration (application services)', () => {
         albumId: albumResult.value.albumId,
         mediaItemId: readyItem.id(),
       });
-      expect(add.success).toBe(false);
-      let code = '';
-      if (!add.success) {
-        code = add.error.code;
-      }
-      expect(code).toBe(AppErrorCollection.album.MemberNotAllowedToAddItem.code);
+      expect(add.success).toBe(true);
     });
   });
 
@@ -590,18 +595,18 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -656,7 +661,7 @@ describe('Album integration (application services)', () => {
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = buildAddAlbumItem({
+      const addAlbumItem = build__AddAlbumItem({
         albumRepository,
         mediaItemReadRepository: {
           // eslint-disable-next-line @typescript-eslint/require-await
@@ -688,18 +693,18 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -750,7 +755,7 @@ describe('Album integration (application services)', () => {
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = buildAddAlbumItem({
+      const addAlbumItem = build__AddAlbumItem({
         albumRepository,
         mediaItemReadRepository: {
           // eslint-disable-next-line @typescript-eslint/require-await
@@ -782,7 +787,7 @@ describe('Album integration (application services)', () => {
   describe('When addMediaItemsToAlbum is called', () => {
     it('should reject when both albumId and newAlbum are provided', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = buildAddMediaItemsToAlbum({
+      const addMany = build__AddMediaItemsToAlbum({
         albumRepository,
         mediaItemReadRepository: { getForViewer: async () => undefined } as never,
       });
@@ -802,7 +807,7 @@ describe('Album integration (application services)', () => {
 
     it('should reject when neither albumId nor newAlbum is provided', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = buildAddMediaItemsToAlbum({
+      const addMany = build__AddMediaItemsToAlbum({
         albumRepository,
         mediaItemReadRepository: { getForViewer: async () => undefined } as never,
       });
@@ -820,7 +825,7 @@ describe('Album integration (application services)', () => {
 
     it('should reject an empty list after deduplication', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = buildAddMediaItemsToAlbum({
+      const addMany = build__AddMediaItemsToAlbum({
         albumRepository,
         mediaItemReadRepository: { getForViewer: async () => undefined } as never,
       });
@@ -843,17 +848,17 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
       });
 
-      const addMany = buildAddMediaItemsToAlbum({
+      const addMany = build__AddMediaItemsToAlbum({
         albumRepository,
         mediaItemReadRepository: {
           // eslint-disable-next-line @typescript-eslint/require-await
@@ -949,18 +954,18 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, MediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = buildCreateAlbum({ albumRepository });
+      const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = buildCreateMediaItemUpload({
+      const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
       });
-      const finalize = buildFinalizeMediaItemUpload({
+      const finalize = build__FinalizeMediaItemUpload({
         mediaItemRepository,
         mediaStorage,
         mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
@@ -1015,7 +1020,7 @@ describe('Album integration (application services)', () => {
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addMany = buildAddMediaItemsToAlbum({
+      const addMany = build__AddMediaItemsToAlbum({
         albumRepository,
         mediaItemReadRepository: {
           // eslint-disable-next-line @typescript-eslint/require-await

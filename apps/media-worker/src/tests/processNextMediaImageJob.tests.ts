@@ -3,7 +3,7 @@ import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { MediaItem } from '@packages/media-core';
 import { Readable } from 'node:stream';
 
-import { buildProcessNextMediaImageJob } from '../application/processNextMediaImageJob';
+import { build__ProcessNextMediaImageJob } from '../application/processNextMediaImageJob';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 const MINIMAL_PNG_1X1 = Buffer.from([
@@ -29,7 +29,7 @@ const createUploadedPhoto = (): MediaItem => {
   return item;
 };
 
-describe('buildProcessNextMediaImageJob', () => {
+describe('build__ProcessNextMediaImageJob', () => {
   const baseConfig = {
     s3Bucket: 'test-bucket',
   } as IocGeneratedCradle['config'];
@@ -81,7 +81,7 @@ describe('buildProcessNextMediaImageJob', () => {
   describe('When there is no available job', () => {
     it('should return idle', async () => {
       const cradle = createCradle({});
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await expect(run()).resolves.toBe('idle');
       expect(cradle.mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
       expect(cradle.mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('buildProcessNextMediaImageJob', () => {
         }),
         getById: jest.fn().mockResolvedValue(undefined),
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
         JOB_ID,
@@ -133,7 +133,7 @@ describe('buildProcessNextMediaImageJob', () => {
         getById: jest.fn().mockResolvedValue(item),
         getObjectStream,
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(getObjectStream).not.toHaveBeenCalled();
       expect(cradle.mediaProcessingJobRepository.markSucceeded).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe('buildProcessNextMediaImageJob', () => {
         getById: jest.fn().mockResolvedValue(item),
         getObjectStream,
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(getObjectStream).not.toHaveBeenCalled();
       expect(cradle.mediaProcessingJobRepository.markSucceeded).toHaveBeenCalledWith(
@@ -191,7 +191,7 @@ describe('buildProcessNextMediaImageJob', () => {
           };
         }),
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
         JOB_ID,
@@ -214,7 +214,7 @@ describe('buildProcessNextMediaImageJob', () => {
         }),
         getById: jest.fn().mockResolvedValue(item),
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
         JOB_ID,
@@ -236,7 +236,7 @@ describe('buildProcessNextMediaImageJob', () => {
         getById: jest.fn().mockResolvedValue(item),
         getObjectStream: jest.fn().mockResolvedValue(undefined),
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
         JOB_ID,
@@ -262,7 +262,7 @@ describe('buildProcessNextMediaImageJob', () => {
         getById: jest.fn().mockResolvedValue(item),
         getObjectStream,
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
 
       expect(cradle.mediaStorage.writeObject).toHaveBeenCalledTimes(2);
@@ -292,7 +292,7 @@ describe('buildProcessNextMediaImageJob', () => {
         }),
         writeObject,
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
 
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
@@ -316,7 +316,7 @@ describe('buildProcessNextMediaImageJob', () => {
         getById: jest.fn().mockResolvedValue(item),
         getObjectStream: jest.fn().mockRejectedValue(new Error('s3 down')),
       });
-      const run = buildProcessNextMediaImageJob(cradle);
+      const run = build__ProcessNextMediaImageJob(cradle);
       await run();
       expect(cradle.logger.error).toHaveBeenCalled();
       expect(cradle.mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(

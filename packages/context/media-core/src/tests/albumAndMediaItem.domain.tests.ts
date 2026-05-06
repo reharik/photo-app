@@ -168,7 +168,10 @@ describe('Album (domain)', () => {
       const mediaId = 'media-cover';
       const add = album.addItem(mediaId, ownerId);
       expect(add.success).toBe(true);
-      const r = album.setCoverMedia(mediaId, ownerId);
+      if (!add.success) {
+        throw new Error('expected addItem to succeed');
+      }
+      const r = album.setCoverMedia(add.value.id(), ownerId);
       expect(r.success).toBe(true);
     });
   });
@@ -201,7 +204,10 @@ describe('Album (domain)', () => {
       const mediaId = 'media-a';
       const add = album.addItem(mediaId, ownerId);
       expect(add.success).toBe(true);
-      const cover = album.setCoverMedia(mediaId, ownerId);
+      if (!add.success) {
+        throw new Error('expected addItem to succeed');
+      }
+      const cover = album.setCoverMedia(add.value.id(), ownerId);
       expect(cover.success).toBe(true);
 
       const removed = album.removeMediaItemFromAlbum(mediaId, ownerId);
@@ -220,7 +226,7 @@ describe('Album (domain)', () => {
       if (!a.success || !b.success) {
         throw new Error('expected both addItem calls to succeed');
       }
-      const cover = album.setCoverMedia('keep-cover', ownerId);
+      const cover = album.setCoverMedia(a.value.id(), ownerId);
       expect(cover.success).toBe(true);
 
       const removed = album.removeMediaItemFromAlbum('remove-me', ownerId);

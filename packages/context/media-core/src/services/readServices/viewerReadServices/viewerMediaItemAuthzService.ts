@@ -4,8 +4,12 @@ import type { Knex } from 'knex';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { DecoratedItem, HasId, UnDecoratedItem } from './viewerReadService.types';
-import { AuthorizationProjection } from './viewerSharedWithMeMediaItemReadService';
+import {
+  AuthorizationProjection,
+  DecoratedItem,
+  HasId,
+  UnDecoratedItem,
+} from './viewerReadService.types';
 
 export type MediaItemPermissionResult = {
   mediaItemId: string;

@@ -2,9 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 
 import type { Config } from '../config';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
-import { buildKnexConfig } from '../knexfile';
+import { build__KnexConfig } from '../knexfile';
 
-describe('buildKnexConfig', () => {
+describe('build__KnexConfig', () => {
   describe('When given worker config', () => {
     it('should return a pg client config with connection and migrations', () => {
       const config: Config = {
@@ -23,7 +23,7 @@ describe('buildKnexConfig', () => {
         mediaWorkerPollIntervalMs: 2000,
       };
 
-      const knexConfig = buildKnexConfig({ config } as IocGeneratedCradle);
+      const knexConfig = build__KnexConfig({ config } as IocGeneratedCradle);
 
       expect(knexConfig.client).toBe('pg');
       expect(knexConfig.connection).toEqual(

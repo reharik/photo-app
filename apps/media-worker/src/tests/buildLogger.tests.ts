@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
-import { buildLogger } from '../infrastructure/logger/logger';
+import { build__Logger } from '../infrastructure/logger/logger';
 
-describe('buildLogger', () => {
+describe('build__Logger', () => {
   describe('When built with log level only', () => {
     it('should return a logger with callable levels', () => {
-      const logger = buildLogger({
+      const logger = build__Logger({
         config: { logLevel: 'error' } as IocGeneratedCradle['config'],
       } as IocGeneratedCradle);
 

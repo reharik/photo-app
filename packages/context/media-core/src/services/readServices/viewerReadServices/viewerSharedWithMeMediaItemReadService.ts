@@ -1,4 +1,3 @@
-import { SharePermission } from '@packages/contracts';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
@@ -8,24 +7,7 @@ import {
 } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { MediaItemProjection } from './viewerMediaItemReadService.types';
-
-export type AuthorizationProjection = {
-  id: EntityId;
-  grantedToUserId?: EntityId;
-  permission: SharePermission;
-  label?: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-  createdAt?: Date;
-};
-
-export type SharedWithMeItemProjection = {
-  id: EntityId;
-  sharedAt: Date;
-  sharedBy: EntityId;
-  mediaItem: MediaItemProjection;
-};
+import { SharedWithMeItemProjection } from './viewerAlbumReadService.types';
 
 export interface ViewerSharedWithMeMediaItemReadService {
   getSharedWithMeMediaItems: () => Promise<{

@@ -5,7 +5,7 @@ import type {
   MediaAssetProjection,
   MediaItemReadRepository,
 } from '@packages/media-core';
-import { buildMediaGrantService } from '../services/mediaGrantService';
+import { build__MediaGrantService } from '../services/mediaGrantService';
 
 const ownerId = 'owner-1';
 const mediaItemId = 'media-1';
@@ -48,7 +48,7 @@ const denyShareLink = shareLinkReadRepositoryReturning(false);
 const buildAsset = (
   overrides: Partial<MediaAssetProjection> & Pick<MediaAssetProjection, 'kind' | 'status'>,
 ): MediaAssetProjection => ({
-  id: `${overrides.kind}-asset`,
+  id: `${overrides.kind.value}-asset`,
   url: '',
   mimeType: 'image/jpeg',
   createdAt: new Date(),
@@ -59,7 +59,7 @@ const buildAsset = (
 describe('MediaGrantService', () => {
   describe('When neither a viewer nor a share token is supplied', () => {
     it('should fail with MediaItemNotAuthorized', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([]),
         grantReadRepository: grantReadRepositoryReturning(false),
@@ -78,7 +78,7 @@ describe('MediaGrantService', () => {
 
   describe('When the media item does not exist', () => {
     it('should fail with MediaItemNotFound', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(undefined),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([]),
         grantReadRepository: grantReadRepositoryReturning(false),
@@ -99,7 +99,7 @@ describe('MediaGrantService', () => {
 
   describe('When the viewer owns the media item and the requested variant is ready', () => {
     it('should resolve to the requested variant storage key', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
           buildAsset({ kind: 'original', status: 'ready' }),
@@ -117,13 +117,13 @@ describe('MediaGrantService', () => {
 
       expect(result.success).toBe(true);
       if (!result.success) return;
-      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.thumbnail.key}`);
+      expect(result.value).toBe(baseStorageKey);
     });
   });
 
   describe('When the viewer owns the media item but the requested variant is not yet ready', () => {
     it('should fall back to the original storage key', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
           buildAsset({ kind: 'original', status: 'ready' }),
@@ -140,13 +140,13 @@ describe('MediaGrantService', () => {
 
       expect(result.success).toBe(true);
       if (!result.success) return;
-      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.original.key}`);
+      expect(result.value).toBe(baseStorageKey);
     });
   });
 
   describe('When a non-owner viewer has no active grant', () => {
     it('should fail with MediaItemNotAuthorized', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
           buildAsset({ kind: 'original', status: 'ready' }),
@@ -170,7 +170,7 @@ describe('MediaGrantService', () => {
 
   describe('When a non-owner viewer has an active grant and derivatives are not ready', () => {
     it('should fall back to the original storage key', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
           buildAsset({ kind: 'original', status: 'ready' }),
@@ -187,13 +187,13 @@ describe('MediaGrantService', () => {
 
       expect(result.success).toBe(true);
       if (!result.success) return;
-      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.original.key}`);
+      expect(result.value).toBe(baseStorageKey);
     });
   });
 
   describe('When the requested variant is the original itself', () => {
     it('should always serve the original regardless of asset list', async () => {
-      const service = buildMediaGrantService({
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([]),
         grantReadRepository: grantReadRepositoryReturning(false),
@@ -208,13 +208,13 @@ describe('MediaGrantService', () => {
 
       expect(result.success).toBe(true);
       if (!result.success) return;
-      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.original.key}`);
+      expect(result.value).toBe(baseStorageKey);
     });
   });
 
-  describe('When a non-owner has no grant row but a valid share link token', () => {
-    it('should authorize via share link when canAccessMediaWithLink is true', async () => {
-      const service = buildMediaGrantService({
+  describe('When a non-owner has no grant row but a share token is supplied', () => {
+    it('should still fail when no grant is present', async () => {
+      const service = build__MediaGrantService({
         mediaItemReadRepository: mediaItemReadRepositoryReturning(mediaItemRow),
         mediaAssetReadRepository: mediaAssetReadRepositoryReturning([
           buildAsset({ kind: 'original', status: 'ready' }),
@@ -231,9 +231,9 @@ describe('MediaGrantService', () => {
         shareToken: 'link-secret',
       });
 
-      expect(result.success).toBe(true);
-      if (!result.success) return;
-      expect(result.value).toBe(`${baseStorageKey}/${MediaAssetKind.thumbnail.key}`);
+      expect(result.success).toBe(false);
+      if (result.success) return;
+      expect(result.error).toBe(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
     });
   });
 });

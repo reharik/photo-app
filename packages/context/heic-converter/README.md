@@ -19,14 +19,14 @@ npm install
 ## Local usage
 
 ```js
-import { convertHeicToJpeg, isHeic } from "./src/index.js";
+import { convertHeicToJpeg, isHeic } from './src/index.js';
 
-const inputPath = "./test/fixtures/sample.heic";
+const inputPath = './test/fixtures/sample.heic';
 
 if (await isHeic(inputPath)) {
   const result = await convertHeicToJpeg(inputPath, {
     quality: 0.9,
-    destination: "./output.jpg",
+    destination: './output.jpg',
   });
 
   console.log(result.width, result.height, result.convertedSize);

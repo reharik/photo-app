@@ -1,12 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
-import { buildMediaStorage } from '../infrastructure/media/mediaStorage';
+import { build__MediaStorage } from '../infrastructure/media/mediaStorage';
 
-describe('buildMediaStorage', () => {
+describe('build__MediaStorage', () => {
   describe('When built with bucket and region', () => {
     it('should return storage with expected operations', () => {
-      const storage = buildMediaStorage({
+      const storage = build__MediaStorage({
         config: {
           s3Bucket: 'test-bucket',
           awsRegion: 'us-east-1',

@@ -14,7 +14,7 @@ export class ConversionError extends Error {
    */
   constructor(message, context, cause) {
     super(message);
-    this.name = "ConversionError";
+    this.name = 'ConversionError';
     this.context = context;
 
     if (cause !== undefined) {

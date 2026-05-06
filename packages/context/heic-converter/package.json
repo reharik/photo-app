@@ -1,11 +1,17 @@
 {
   "name": "@packages/heic-converter",
   "version": "0.1.0",
-  "description": "Standalone HEIC to JPEG conversion module for Node.js and AWS Lambda",
   "private": true,
+  "description": "Standalone HEIC to JPEG conversion module for Node.js and AWS Lambda",
+  "keywords": [
+    "heic",
+    "jpeg",
+    "lambda",
+    "image-conversion"
+  ],
+  "license": "MIT",
+  "author": "",
   "type": "module",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
@@ -15,24 +21,18 @@
     "./errors": "./src/errors.js",
     "./lambdaHandler": "./src/lambdaHandler.js"
   },
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "bin": {
     "heic-converter": "./src/cli.js"
   },
   "scripts": {
     "build": "node --eval \"import('./src/index.js')\"",
     "convert": "node ./src/cli.js",
-    "lint": "npx eslint --config ../../../../eslint.config.js \"src/**/*.js\" \"test/**/*.js\"",
+    "lint": "npx eslint --config ../../../eslint.config.js \"src/**/*.js\" \"test/**/*.js\"",
     "test": "node --test",
     "test:watch": "node --test --watch"
   },
-  "keywords": [
-    "heic",
-    "jpeg",
-    "lambda",
-    "image-conversion"
-  ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "3.1043.0",
     "exifr": "7.1.3",

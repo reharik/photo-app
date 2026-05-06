@@ -1,5 +1,15 @@
 {
   "name": "@app/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nx build web",
+    "codegen": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
+    "dev": "nx serve",
+    "lint": "nx eslint:lint",
+    "preview": "nx preview web",
+    "serve": "nx serve web"
+  },
   "dependencies": {
     "@apollo/client": "^4.1.6",
     "@packages/contracts": "0.1.0",
@@ -40,15 +50,5 @@
     "typescript": "^5.9.2",
     "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4"
-  },
-  "private": true,
-  "scripts": {
-    "build": "nx build web",
-    "codegen": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
-    "dev": "nx serve",
-    "lint": "nx eslint:lint",
-    "preview": "nx preview web",
-    "serve": "nx serve web"
-  },
-  "type": "module"
+  }
 }

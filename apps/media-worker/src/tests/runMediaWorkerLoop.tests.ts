@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
-import { buildRunMediaWorkerLoop } from '../runMediaWorkerLoop';
+import { build__RunMediaWorkerLoop } from '../runMediaWorkerLoop';
 
-describe('buildRunMediaWorkerLoop', () => {
+describe('build__RunMediaWorkerLoop', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -28,7 +28,7 @@ describe('buildRunMediaWorkerLoop', () => {
         verbose: jest.fn(),
       };
 
-      const loop = buildRunMediaWorkerLoop({
+      const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as IocGeneratedCradle['config'],
         logger,
         processNextMediaDeletionJob,
@@ -65,7 +65,7 @@ describe('buildRunMediaWorkerLoop', () => {
         verbose: jest.fn(),
       };
 
-      const loop = buildRunMediaWorkerLoop({
+      const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as IocGeneratedCradle['config'],
         logger,
         processNextMediaDeletionJob,
@@ -99,7 +99,7 @@ describe('buildRunMediaWorkerLoop', () => {
         verbose: jest.fn(),
       };
 
-      const loop = buildRunMediaWorkerLoop({
+      const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 100 } as IocGeneratedCradle['config'],
         logger,
         processNextMediaDeletionJob,
@@ -143,7 +143,7 @@ describe('buildRunMediaWorkerLoop', () => {
         verbose: jest.fn(),
       };
 
-      const loop = buildRunMediaWorkerLoop({
+      const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 50 } as IocGeneratedCradle['config'],
         logger,
         processNextMediaDeletionJob,
@@ -180,7 +180,7 @@ describe('buildRunMediaWorkerLoop', () => {
         verbose: jest.fn(),
       };
 
-      const loop = buildRunMediaWorkerLoop({
+      const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10 } as IocGeneratedCradle['config'],
         logger,
         processNextMediaDeletionJob,

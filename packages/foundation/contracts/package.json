@@ -1,6 +1,21 @@
 {
   "name": "@packages/contracts",
   "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && nx build contracts",
+    "dev": "tsc -w -p tsconfig.json",
+    "gen:graphql:enums": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts"
+  },
   "dependencies": {
     "@reharik/smart-enum": "^0.4.0",
     "typia": "^9.7.2"
@@ -15,20 +30,5 @@
     "graphql": "^16.13.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.9.2"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
-    }
-  },
-  "main": "./dist/src/index.js",
-  "private": true,
-  "scripts": {
-    "build": "rimraf dist && nx build contracts",
-    "dev": "tsc -w -p tsconfig.json",
-    "gen:graphql:enums": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts"
-  },
-  "type": "module",
-  "types": "./dist/src/index.d.ts"
+  }
 }

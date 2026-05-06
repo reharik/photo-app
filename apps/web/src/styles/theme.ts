@@ -58,10 +58,6 @@ export const theme: DefaultTheme = {
   },
 
   color: {
-    /* ── General ─────────────────────────────────────────── */
-    white: colors.white,
-    black: colors.black,
-
     /* ── Body / Surfaces ─────────────────────────────────── */
     body: colors.gray_10,
     bodyRaised: colors.gray_15,

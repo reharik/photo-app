@@ -1,19 +1,19 @@
-import { createReadStream, promises as fsPromises } from "node:fs";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
+import { promises as fsPromises } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
-import exifr from "exifr";
-import heicConvert from "heic-convert";
-import jpeg from "jpeg-js";
-import pino from "pino";
+import exifr from 'exifr';
+import heicConvert from 'heic-convert';
+import jpeg from 'jpeg-js';
+import pino from 'pino';
 
-import { ConversionError } from "./errors.js";
+import { ConversionError } from './errors.js';
 
-const SUPPORTED_BRANDS = new Set(["heic", "heix", "mif1", "msf1"]);
+const SUPPORTED_BRANDS = new Set(['heic', 'heix', 'mif1', 'msf1']);
 
 const defaultLogger = pino({
-  name: "heic-converter",
-  level: process.env.LOG_LEVEL ?? "info",
+  name: 'heic-converter',
+  level: process.env.LOG_LEVEL ?? 'info',
 });
 
 /**
@@ -51,9 +51,9 @@ export const convertHeicToJpeg = async (input, options = {}) => {
   const logger = options.logger ?? defaultLogger;
   const quality = options.quality ?? 0.9;
 
-  if (typeof quality !== "number" || Number.isNaN(quality) || quality <= 0 || quality > 1) {
-    throw new ConversionError("quality must be a number between 0 (exclusive) and 1 (inclusive)", {
-      stage: "validate_options",
+  if (typeof quality !== 'number' || Number.isNaN(quality) || quality <= 0 || quality > 1) {
+    throw new ConversionError('quality must be a number between 0 (exclusive) and 1 (inclusive)', {
+      stage: 'validate_options',
       inputSize: null,
       detectedFormat: null,
       details: { quality },
@@ -65,20 +65,24 @@ export const convertHeicToJpeg = async (input, options = {}) => {
   try {
     inputBuffer = await readInputToBuffer(input);
   } catch (error) {
-    throw new ConversionError("Unable to read input data", {
-      stage: "read_input",
-      inputSize: null,
-      detectedFormat: null,
-    }, error);
+    throw new ConversionError(
+      'Unable to read input data',
+      {
+        stage: 'read_input',
+        inputSize: null,
+        detectedFormat: null,
+      },
+      error,
+    );
   }
 
   const detectedBrand = detectHeicBrand(inputBuffer);
 
   if (detectedBrand === null) {
-    throw new ConversionError("Input is not a supported HEIC/HEIF file (magic byte check failed)", {
-      stage: "validate_format",
+    throw new ConversionError('Input is not a supported HEIC/HEIF file (magic byte check failed)', {
+      stage: 'validate_format',
       inputSize: inputBuffer.length,
-      detectedFormat: "unknown",
+      detectedFormat: 'unknown',
     });
   }
 
@@ -87,11 +91,11 @@ export const convertHeicToJpeg = async (input, options = {}) => {
 
   try {
     exifMetadata = await exifr.parse(inputBuffer, true);
-    if (typeof exifMetadata?.Orientation === "number") {
+    if (typeof exifMetadata?.Orientation === 'number') {
       orientation = exifMetadata.Orientation;
     }
   } catch (error) {
-    logger.warn({ err: error }, "Failed to parse EXIF metadata; continuing with orientation=1");
+    logger.warn({ err: error }, 'Failed to parse EXIF metadata; continuing with orientation=1');
   }
 
   let convertedBuffer;
@@ -100,15 +104,19 @@ export const convertHeicToJpeg = async (input, options = {}) => {
     // avoid heicConvert.all() to keep single-image output behavior explicit.
     convertedBuffer = await heicConvert({
       buffer: inputBuffer,
-      format: "JPEG",
+      format: 'JPEG',
       quality,
     });
   } catch (error) {
-    throw new ConversionError("HEIC conversion failed; input may be malformed", {
-      stage: "convert_primary_image",
-      inputSize: inputBuffer.length,
-      detectedFormat: detectedBrand,
-    }, error);
+    throw new ConversionError(
+      'HEIC conversion failed; input may be malformed',
+      {
+        stage: 'convert_primary_image',
+        inputSize: inputBuffer.length,
+        detectedFormat: detectedBrand,
+      },
+      error,
+    );
   }
 
   let outputBuffer;
@@ -121,23 +129,31 @@ export const convertHeicToJpeg = async (input, options = {}) => {
       height: oriented.height,
     };
   } catch (error) {
-    throw new ConversionError("Failed to apply EXIF orientation to converted JPEG", {
-      stage: "apply_orientation",
-      inputSize: inputBuffer.length,
-      detectedFormat: detectedBrand,
-      details: { orientation },
-    }, error);
+    throw new ConversionError(
+      'Failed to apply EXIF orientation to converted JPEG',
+      {
+        stage: 'apply_orientation',
+        inputSize: inputBuffer.length,
+        detectedFormat: detectedBrand,
+        details: { orientation },
+      },
+      error,
+    );
   }
 
   if (options.destination !== undefined) {
     try {
       await writeOutput(outputBuffer, options.destination);
     } catch (error) {
-      throw new ConversionError("Failed writing converted output", {
-        stage: "write_output",
-        inputSize: inputBuffer.length,
-        detectedFormat: detectedBrand,
-      }, error);
+      throw new ConversionError(
+        'Failed writing converted output',
+        {
+          stage: 'write_output',
+          inputSize: inputBuffer.length,
+          detectedFormat: detectedBrand,
+        },
+        error,
+      );
     }
   }
 
@@ -153,9 +169,9 @@ export const convertHeicToJpeg = async (input, options = {}) => {
       inputExifPresent: exifMetadata !== null,
       outputExifStripped: true,
       conversion: {
-        format: "JPEG",
+        format: 'JPEG',
         quality,
-        selectedImage: "primary",
+        selectedImage: 'primary',
       },
     },
   };
@@ -170,7 +186,7 @@ const readInputToBuffer = async (input) => {
     return input;
   }
 
-  if (typeof input === "string") {
+  if (typeof input === 'string') {
     return fsPromises.readFile(input);
   }
 
@@ -182,7 +198,7 @@ const readInputToBuffer = async (input) => {
     return Buffer.concat(chunks);
   }
 
-  throw new TypeError("input must be a file path string, Buffer, or Readable stream");
+  throw new TypeError('input must be a file path string, Buffer, or Readable stream');
 };
 
 /**
@@ -194,12 +210,12 @@ const detectHeicBrand = (buffer) => {
     return null;
   }
 
-  const boxType = buffer.subarray(4, 8).toString("ascii");
-  if (boxType !== "ftyp") {
+  const boxType = buffer.subarray(4, 8).toString('ascii');
+  if (boxType !== 'ftyp') {
     return null;
   }
 
-  const brand = buffer.subarray(8, 12).toString("ascii");
+  const brand = buffer.subarray(8, 12).toString('ascii');
   return SUPPORTED_BRANDS.has(brand) ? brand : null;
 };
 
@@ -218,7 +234,7 @@ const applyExifOrientation = (jpegBuffer, orientation) => {
       width: transformed.width,
       height: transformed.height,
     },
-    90
+    90,
   );
 
   return {
@@ -295,13 +311,13 @@ const orientationCoordinateMapper = (orientation, width, height) => {
  * @returns {Promise<void>}
  */
 const writeOutput = async (outputBuffer, destination) => {
-  if (typeof destination === "string") {
+  if (typeof destination === 'string') {
     await fsPromises.writeFile(destination, outputBuffer);
     return;
   }
 
   if (!isWritableStream(destination)) {
-    throw new TypeError("destination must be a file path string or Writable stream");
+    throw new TypeError('destination must be a file path string or Writable stream');
   }
 
   await pipeline(Readable.from(outputBuffer), destination);
@@ -312,11 +328,12 @@ const writeOutput = async (outputBuffer, destination) => {
  * @returns {value is Readable}
  */
 const isReadableStream = (value) => {
-  return value instanceof Readable || (
-    typeof value === "object" &&
-    value !== null &&
-    typeof value[Symbol.asyncIterator] === "function" &&
-    typeof value.pipe === "function"
+  return (
+    value instanceof Readable ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof value[Symbol.asyncIterator] === 'function' &&
+      typeof value.pipe === 'function')
   );
 };
 
@@ -325,7 +342,7 @@ const isReadableStream = (value) => {
  * @returns {value is import("node:stream").Writable}
  */
 const isWritableStream = (value) => {
-  return typeof value === "object" && value !== null && typeof value.write === "function";
+  return typeof value === 'object' && value !== null && typeof value.write === 'function';
 };
 
 export const __internal = {
