@@ -48,7 +48,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
         undefined;
 
-      const authorizedItems = await ctx.applyAuthorizationService?.toItems(mediaItems.nodes);
+      const authorizedItems = await ctx.applyAuthorizationService.toItems(mediaItems.nodes);
       return {
         nodes: authorizedItems,
         pageInfo: mediaItems.pageInfo,

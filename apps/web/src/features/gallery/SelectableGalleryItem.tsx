@@ -60,8 +60,8 @@ const MediaThumb = styled.div<{ $frameVariant: boolean }>`
   ${({ $frameVariant, theme }) =>
     !$frameVariant
       ? `
-    border: 2px dashed ${theme.color.bodyTextSecondary};
-    box-shadow: inset 0 0 0 1px ${theme.color.primaryButtonBg}40;
+    border: 2px solid ${theme.color.green_darkest};
+    box-shadow: inset 0 0 0 2px ${theme.color.primaryButtonBg}40;
   `
       : `
     border: 1px solid ${theme.color.border};

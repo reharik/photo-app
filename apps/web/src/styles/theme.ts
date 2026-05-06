@@ -170,6 +170,8 @@ export const theme: DefaultTheme = {
     graphWarning: colors.yellow,
     graphGrid: colors.gray_30,
     graphLabel: colors.gray_70,
+
+    ...colors,
   },
 
   // ── Backward-compat aliases ─────────────────────────────────

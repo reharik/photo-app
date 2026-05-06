@@ -1,3 +1,4 @@
+import { applyAuthorizationService } from '@packages/media-core';
 import type { IocGeneratedCradle } from '../../di/generated/ioc-registry.types';
 import {
   GraphQLContext,

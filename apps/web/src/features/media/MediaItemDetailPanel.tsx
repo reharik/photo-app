@@ -1,3 +1,4 @@
+import { ViewerOperation } from '@packages/contracts';
 import { DateTime } from 'luxon';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import styled from 'styled-components';
@@ -53,15 +54,15 @@ export const MediaItemDetailPanel = forwardRef<
   if (mediaItem == null) {
     return null;
   }
-
+  const canEdit = mediaItem.viewerOperations.includes(ViewerOperation.editDetails);
   const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
-    <EditableRowButton type="button" onClick={openEditDetails}>
+    <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>
       <RowFieldLabel>{label}</RowFieldLabel>
       <EditableRowValueRow>
         <EditableValueText $multiline $muted={muted != null ? muted : !value?.trim()}>
           {value?.trim() ? value.trim() : 'Not set'}
         </EditableValueText>
-        <EditCue aria-hidden>✎</EditCue>
+        {canEdit && <EditCue aria-hidden>✎</EditCue>}
       </EditableRowValueRow>
     </EditableRowButton>
   );
@@ -244,6 +245,7 @@ const EditableRowButton = styled.button`
   gap: ${({ theme }) => theme.spacing(0.5)};
   padding: ${({ theme }) => theme.spacing(1)} 0;
   cursor: pointer;
+
   border-radius: ${({ theme }) => theme.borderRadius.sm};
   box-sizing: border-box;
   width: 100%;
@@ -256,6 +258,14 @@ const EditableRowButton = styled.button`
   &:hover ${EditableRowValueRow} {
     border-color: ${({ theme }) => theme.color.border};
     background: ${({ theme }) => theme.color.body};
+  }
+
+  &:disabled {
+    cursor: default;
+    ${EditableRowValueRow} {
+      border: none;
+      background: ${({ theme }) => theme.color.bodyRaised};
+    }
   }
 `;
 

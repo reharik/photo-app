@@ -1,4 +1,5 @@
 import 'styled-components';
+import { colors } from './colors';
 
 declare module 'styled-components' {
   export interface DefaultTheme {
@@ -158,7 +159,7 @@ declare module 'styled-components' {
       graphWarning: string;
       graphGrid: string;
       graphLabel: string;
-    };
+    } & typeof colors;
 
     /* ── Backward-compat aliases (remove after migration) ── */
     colors: {
