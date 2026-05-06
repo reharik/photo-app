@@ -1,6 +1,4 @@
 import { MediaItemReadRepository } from '../../..';
-import { PublicAlbumReadRepository } from '../../../repositories/readRepositories/publicAlbumReadRepository';
-import { PublicMediaItemReadRepository } from '../../../repositories/readRepositories/publicMediaItemReadRepository';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import {
   PublicAlbumItemCollectionInfo,

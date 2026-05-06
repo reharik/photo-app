@@ -1,7 +1,0 @@
-# extend type Query {
-#   publicAccess: PublicAccess
-# }
-
-# type PublicAccess {
-#   album: PublicAlbum!
-# }
