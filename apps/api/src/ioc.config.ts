@@ -41,6 +41,10 @@ export default defineIocConfig({
     },
   },
   groups: {
+    publicReadServiceFactories: {
+      kind: 'object',
+      baseType: 'PublicReadServiceFactoryBase',
+    },
     readServiceFactories: {
       kind: 'object',
       baseType: 'ReadServiceFactoryBase',

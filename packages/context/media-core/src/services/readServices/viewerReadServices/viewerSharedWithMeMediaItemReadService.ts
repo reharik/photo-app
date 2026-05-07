@@ -7,7 +7,8 @@ import {
 } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { SharedWithMeItemProjection } from './viewerAlbumReadService.types';
+import { mapMediaItemRowToProjection } from '../readServiceMappers';
+import { SharedWithMeItemProjection } from '../types';
 
 export interface ViewerSharedWithMeMediaItemReadService {
   getSharedWithMeMediaItems: () => Promise<{
@@ -33,24 +34,7 @@ export const mapNamespacedToMediaItemBase = (
     id: mediaItem.id,
     sharedAt: mediaItem.sharedAt,
     sharedBy: mediaItem.sharedBy,
-    mediaItem: {
-      id: mediaItem.mediaItemId,
-      ownerId: mediaItem.mediaItemOwnerId ?? '',
-      kind: mediaItem.mediaItemKind,
-      status: mediaItem.mediaItemStatus,
-      mimeType: mediaItem.mediaItemMimeType ?? '',
-      sizeBytes: mediaItem.mediaItemSizeBytes ?? 0,
-      originalFileName: mediaItem.mediaItemOriginalFileName ?? undefined,
-      width: mediaItem.mediaItemWidth,
-      height: mediaItem.mediaItemHeight,
-      durationSeconds: mediaItem.mediaItemDurationSeconds,
-      title: mediaItem.mediaItemTitle,
-      description: mediaItem.mediaItemDescription,
-      takenAt: mediaItem.mediaItemTakenAt,
-      createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
-      updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
-      tags: [],
-    },
+    mediaItem: { ...mapMediaItemRowToProjection(mediaItem), tags: [] },
   };
 };
 

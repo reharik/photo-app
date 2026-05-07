@@ -2,7 +2,7 @@ import type { ContractError } from '@packages/contracts';
 import { ViewerOperation } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
-import type { MediaItemRow } from '../../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
+import type { MediaItemRow } from '../../services/readServices/types';
 import { EntityId, WriteResult } from '../../types/types';
 import { ensureMemberCanEditAlbum } from './albumguard';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from './mediaItemGuard';

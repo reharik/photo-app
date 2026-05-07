@@ -12,5 +12,6 @@ export * from './readRepositories/albumReadRepository';
 export * from './readRepositories/authorizationReadRepository';
 export * from './readRepositories/grantReadRepository';
 export * from './readRepositories/mediaItemReadRepository';
+export * from './readRepositories/publicAccessReadRepository';
 export * from './readRepositories/shareContactRepository';
 export * from './readRepositories/sharedWithMeReadRepository';

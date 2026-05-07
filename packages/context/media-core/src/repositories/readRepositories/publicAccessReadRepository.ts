@@ -84,7 +84,7 @@ export const build__PublicAccessReadRepository = ({
       )
       .where('grant.mediaItemId', mediaItemId);
 
-    const row = await q.first();
+    const row = await q.first<boolean>();
     return row !== undefined;
   },
 });

@@ -7,10 +7,7 @@ import {
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import {
-  AlbumItemWithMediaRow,
-  AlbumWithCoverRow,
-} from '../../services/readServices/viewerReadServices/viewerAlbumReadService.types';
+import { AlbumItemWithMediaRow, AlbumWithCoverRow } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
 
 export type AlbumReadRepository = {
@@ -42,11 +39,22 @@ export type AlbumReadRepository = {
   }: {
     mediaItemId: string;
   }) => Promise<{ id: string }[]>;
-  /** Album items for public share-link viewing (no membership check). READY media only. */
-  listAlbumItemsForShareLink: (args: {
+  getAlbumForShareLink: ({
+    albumId,
+    shareLinkId,
+  }: {
     albumId: string;
-    limit: number;
-    offset: number;
+    shareLinkId: string;
+  }) => Promise<AlbumWithCoverRow | undefined>;
+  /** Album items for public share-link viewing (no membership check). READY media only. */
+  listAlbumItemsForShareLink: ({
+    albumId,
+    shareLinkId,
+    collectionInfo,
+  }: {
+    albumId: string;
+    shareLinkId: string;
+    collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }) => Promise<AlbumItemWithMediaRow[]>;
 };
 
@@ -106,6 +114,22 @@ const whereAlbumViewableByMemberOrAlbumGrant =
         .whereNotNull('ag2.albumId')
         .whereNull('ag2.mediaItemId')
         .where('ag2.albumId', db.ref('album.id')),
+    );
+  };
+
+const whereActiveShareLinkGrant =
+  (db: Knex, albumId: string, shareLinkId: string) =>
+  (qb: Knex.QueryBuilder): void => {
+    qb.whereExists(
+      db
+        .select(db.raw('1'))
+        .from('accessGrant as ag')
+        .where('ag.albumId', albumId)
+        .where('ag.shareLinkId', shareLinkId)
+        .whereNull('ag.revokedAt')
+        .andWhere((expiry) => {
+          expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', db.raw('now()'));
+        }),
     );
   };
 
@@ -224,17 +248,54 @@ export const build__AlbumReadRepository = ({
       .orWhere('album.coverMediaId', mediaItemId)
       .distinct({ id: 'album.id' });
   },
-  listAlbumItemsForShareLink: async ({ albumId, limit, offset }) => {
+
+  getAlbumForShareLink: async ({
+    albumId,
+    shareLinkId,
+  }: {
+    albumId: string;
+    shareLinkId: string;
+  }): Promise<AlbumWithCoverRow | undefined> => {
+    return withEnumRevival(
+      database<AlbumWithCoverRow>('album')
+        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .where('album.id', albumId)
+        .where((b) => {
+          whereActiveShareLinkGrant(database, albumId, shareLinkId)(b);
+        })
+        .select<AlbumWithCoverRow>(...albumWithCoverSelectColumns)
+        .first(),
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+        viewerMemberRole: AlbumMemberRole,
+      },
+      { strict: true },
+    );
+  },
+
+  listAlbumItemsForShareLink: async ({
+    albumId,
+    shareLinkId,
+    collectionInfo,
+  }: {
+    albumId: string;
+    shareLinkId: string;
+    collectionInfo: CollectionInfo<AlbumItemSortBy>;
+  }): Promise<AlbumItemWithMediaRow[]> => {
     return withEnumRevival(
       database<AlbumItemWithMediaRow>('albumItem')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('albumItem.albumId', albumId)
         .where('mediaItem.status', MediaItemStatus.ready.key)
+        .where((b) => {
+          whereActiveShareLinkGrant(database, albumId, shareLinkId)(b);
+        })
         .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
         .orderBy('albumItem.orderIndex', 'asc')
         .orderBy('albumItem.id', 'asc')
-        .limit(limit)
-        .offset(offset),
+        .limit(collectionInfo.pageInfo.limit + 1)
+        .offset(collectionInfo.pageInfo.offset),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,

@@ -9,8 +9,13 @@
     "noEmit": false,
     "skipLibCheck": true,
     "strictNullChecks": true,
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@packages/contracts": ["packages/foundation/contracts/dist/src/index.d.ts"],
+      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"]
+    }
   },
+  "references": [{ "path": "../../foundation/contracts" }],
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "src/tests/**"]
 }

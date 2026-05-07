@@ -2,17 +2,14 @@ import {
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
+  MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
   SharePermission,
   SortDir,
   ViewerOperation,
 } from '@packages/contracts';
-import { CollectionInfo, EntityId, PageInfo } from '../../../types/types';
-import {
-  AuthzDecoratedItemProjection,
-  MediaItemProjection,
-} from './viewerMediaItemReadService.types';
+import { CollectionInfo, EntityId, PageInfo } from '../../types';
 
 export type AlbumListProjection = {
   nodes: AlbumProjection[];
@@ -44,15 +41,15 @@ export type AlbumItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-export type DecoratedAlbumItemProjection = {
-  id: string;
-  /** Sparse bigint order index as string (GraphQL-safe). */
-  orderIndex: string;
-  createdAt: Date;
-  updatedAt: Date;
-  viewerOperations: ViewerOperation[];
-  mediaItem: MediaItemProjection & AuthzDecoratedItemProjection;
-};
+// export type DecoratedAlbumItemProjection = {
+//   id: string;
+//   /** Sparse bigint order index as string (GraphQL-safe). */
+//   orderIndex: string;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   viewerOperations: ViewerOperation[];
+//   mediaItem: MediaItemProjection & AuthzDecoratedItemProjection;
+// };
 
 export type NamespacedMediaItemRow = {
   mediaItemId: EntityId;
@@ -118,4 +115,84 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-export type NestedItemProjection = { id: string; mediaItem: MediaItemProjection };
+// export type NestedItemProjection = { id: string; mediaItem: MediaItemProjection };
+
+export type MediaItemListProjection = {
+  nodes: MediaItemProjection[];
+  pageInfo: PageInfo;
+};
+
+// export type MediaAssetProjection = {
+//   id: EntityId;
+//   kind: MediaAssetKind;
+//   url: string;
+//   mimeType: string;
+//   width?: number;
+//   height?: number;
+//   fileSizeBytes?: number;
+//   status: MediaAssetStatus;
+//   createdAt: Date;
+//   updatedAt: Date;
+// };
+
+export interface MediaItemRow {
+  id: EntityId;
+  ownerId: EntityId;
+  kind: MediaKind;
+  status: MediaItemStatus;
+  mimeType: string;
+  sizeBytes?: number;
+  originalFileName?: string;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  title: string;
+  description?: string;
+  takenAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface MediaItemProjection extends MediaItemRow {
+  tags: string[];
+}
+
+export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy> {
+  pageInfo: PageInfo;
+  sortBy: MediaItemSortBy;
+  sortDir: SortDir;
+}
+
+// export interface AuthzDecoratedItemProjection {
+//   id: EntityId;
+//   ownerId: EntityId;
+//   viewerIsOwner: boolean;
+//   viewerOperations: ViewerOperation[];
+// }
+
+export interface HasId {
+  id: EntityId;
+}
+
+export type UnDecoratedItem<T extends HasId> = T;
+
+export type DecoratedItem<T extends HasId> = T & {
+  viewerIsOwner: boolean;
+  viewerOperations: ViewerOperation[];
+};
+
+export type UnDecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
+  mediaItem: UnDecoratedItem<U>;
+};
+
+export type DecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
+  viewerIsOwner: boolean;
+  viewerOperations: ViewerOperation[];
+  mediaItem: DecoratedItem<U>;
+};
+
+export type PublicAccessProjection = {
+  publicLinkId: string;
+  albumId: string;
+  permissions: ViewerOperation[];
+};

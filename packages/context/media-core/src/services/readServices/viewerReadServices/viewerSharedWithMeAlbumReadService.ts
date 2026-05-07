@@ -2,7 +2,7 @@ import { AlbumMemberRole } from '@packages/contracts';
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { SharedWithMeItemProjection } from './viewerAlbumReadService.types';
+import { SharedWithMeItemProjection } from '../types';
 import { mapNamespacedToMediaItemBase } from './viewerSharedWithMeMediaItemReadService';
 
 export type SharedWithMeAlbumProjection = {

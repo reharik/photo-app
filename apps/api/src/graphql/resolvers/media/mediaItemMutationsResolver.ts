@@ -2,7 +2,7 @@ import type {
   UpdateMediaItemDetailsCommand,
   UpdateMediaItemTagsCommand,
 } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/authenticatedContext';
+import { authenticatedResolver } from '../../context/contextWrappers';
 import type {
   MutationUpdateMediaItemDetailsArgs,
   MutationUpdateMediaItemTagsArgs,

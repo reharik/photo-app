@@ -1,4 +1,4 @@
-import { authenticatedResolver } from '../../context/authenticatedContext';
+import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
 const mediaItemResolvers: Resolvers = {

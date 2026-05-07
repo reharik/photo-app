@@ -4,6 +4,7 @@
 
 export * from './media/MediaStorage';
 export * from './media/createDerivedMediaItemUrl';
+export * from './media/deleteStoredAssetsForMediaItems';
 export * from './media/resolveMediaAssetUrl';
 export * from './media/s3MediaStorage';
 export * from './support/albumguard';

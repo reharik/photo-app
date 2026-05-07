@@ -1,35 +1,34 @@
 import { AlbumItemSortBy } from '@packages/contracts';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { publicResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
 
-const albumResolvers: Resolvers = {
-  Album: {
-    coverMedia: authenticatedResolver(async (album, _args, ctx) => {
+const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
+  PublicAlbum: {
+    coverMedia: publicResolver(async (album, _args, ctx) => {
       // Album ( parent ) always get coverMedia on query. If that stops
       // being the case we need to add the query here.
       if (!album.coverMedia) {
         return undefined;
       }
-      const authorizedCoverMedia = await ctx.applyAuthorizationService.toItem(
-        ctx.viewer.id,
+      const authorizedCoverMedia = await ctx.applyAuthorizationService.toPublicItem(
+        ctx.publicLinkId,
         album.coverMedia,
       );
 
       return authorizedCoverMedia;
     }),
-    items: authenticatedResolver(async (album, { input }, ctx) => {
+    items: publicResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<AlbumItemSortBy>(input.collectionInfo);
 
-      const albumItems = await ctx.readServices.viewerAlbumReadService.getViewableAlbumItems({
+      const albumItems = await ctx.publicReadServices.publicAlbumReadService.getViewableAlbumItems({
         albumId: album.id,
         collectionInfo,
       });
 
-      const decoratedAlbumItems = await ctx.applyAuthorizationService.toNestedItems(
-        ctx.viewer.id,
+      const decoratedAlbumItems = await ctx.applyAuthorizationService.toPublicNestedItems(
+        ctx.publicLinkId,
         albumItems.nodes,
-        album.viewerMemberRole,
       );
 
       return {
@@ -40,4 +39,4 @@ const albumResolvers: Resolvers = {
   },
 };
 
-export default albumResolvers;
+export default publicAlbumResolver;

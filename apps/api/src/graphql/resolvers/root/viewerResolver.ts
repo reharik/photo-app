@@ -1,5 +1,5 @@
 import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
-import { authenticatedResolver } from '../../context/authenticatedContext';
+import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
 import { standardizeCollectionInput } from '../standardizeInput';
@@ -16,7 +16,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       const albumsRows =
         (await ctx.readServices.viewerAlbumReadService.listAlbums(collectionInfo)) || [];
 
-      const authorizedAlbums = await ctx.applyAuthorizationService?.toAlbums(albumsRows.nodes);
+      const authorizedAlbums = await ctx.readServices.applyAuthorizationService.toAlbums(
+        albumsRows.nodes,
+      );
 
       return {
         nodes: authorizedAlbums,
@@ -28,7 +30,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!album) {
         return undefined;
       }
-      const authorizedAlbum = await ctx.applyAuthorizationService?.toAlbum(album);
+      const authorizedAlbum = await ctx.readServices.applyAuthorizationService.toAlbum(album);
 
       return authorizedAlbum;
     }),
@@ -39,7 +41,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       if (!item) {
         return undefined;
       }
-      return ctx.applyAuthorizationService?.toItem(item);
+      return ctx.readServices.applyAuthorizationService.toItem(item);
     }),
 
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
@@ -48,19 +50,21 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         (await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo)) ||
         undefined;
 
-      const authorizedItems = await ctx.applyAuthorizationService.toItems(mediaItems.nodes);
+      const authorizedItems = await ctx.readServices.applyAuthorizationService.toItems(
+        mediaItems.nodes,
+      );
       return {
         nodes: authorizedItems,
         pageInfo: mediaItems.pageInfo,
       };
     }),
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
-      return ctx.readServices.viewerAlbumAuthzReadService.getShareContacts();
+      return ctx.readServices.viewerSharedContactsReadService.getShareContacts();
     }),
     sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
       const { mediaItems } =
         await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
-      return await ctx.applyAuthorizationService.toNestedItems(mediaItems);
+      return await ctx.readServices.applyAuthorizationService.toNestedItems(mediaItems);
     }),
     // sharedWithMeAlbums: authenticatedResolver(async (_parent, _args, ctx) => {
     //   const { albums } =

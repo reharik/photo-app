@@ -18,7 +18,7 @@ import { MediaItem } from '../domain/MediaItem/MediaItem';
 import type { MediaProcessingJobRepository } from '../domain/MediaProcessingJob/MediaProcessingJobRepository';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
-import type { MediaItemRow } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
+import type { MediaItemRow } from '../services/readServices/types';
 import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem';
 import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
 import { build__CreateAlbum } from '../services/writeServices/album/createAlbum';

@@ -1,7 +1,10 @@
- extend type Query {
-   publicAccess: PublicAccess
- }
+extend type Query {
+  publicAccess: PublicAccess
+}
 
- type PublicAccess {
-   album: PublicAlbum!
- }
+type PublicAccess {
+  publicLinkId: ID!
+  albumId: ID!
+  permissions: [ViewerOperation!]!
+  album(albumId: ID!): PublicAlbum!
+}

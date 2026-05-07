@@ -1,10 +1,7 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import {
-  MediaItemCollectionInfo,
-  MediaItemRow,
-} from '../../services/readServices/viewerReadServices/viewerMediaItemReadService.types';
+import { MediaItemCollectionInfo, MediaItemRow } from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
 
 export type MediaItemReadRepository = {

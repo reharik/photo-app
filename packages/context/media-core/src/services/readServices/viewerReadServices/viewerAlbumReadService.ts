@@ -2,15 +2,15 @@ import { StandardEnumItem } from '@reharik/smart-enum';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
-import { MediaItemProjection } from './viewerMediaItemReadService.types';
+import { mapMediaItemRowToProjection } from '../readServiceMappers';
 import {
   AlbumCollectionInfo,
   AlbumItemCollectionInfo,
   AlbumItemListProjection,
   AlbumListProjection,
   AlbumProjection,
-  NamespacedMediaItemRow,
-} from './viewerReadService.types';
+  MediaItemProjection,
+} from '../types';
 
 export interface ViewerAlbumReadService {
   listAlbums: (collectionInfo: AlbumCollectionInfo) => Promise<AlbumListProjection>;
@@ -24,29 +24,6 @@ export interface ViewerAlbumReadService {
 export interface ViewerAlbumReadServiceFactory extends ReadServiceFactoryBase {
   (args: { viewerId: string }): ViewerAlbumReadService;
 }
-
-const mapMediaItemRowToParent = (
-  mediaItem: NamespacedMediaItemRow,
-): Omit<MediaItemProjection, 'tags'> => {
-  const id = mediaItem.mediaItemId ?? '';
-  return {
-    id,
-    ownerId: mediaItem.mediaItemOwnerId ?? '',
-    kind: mediaItem.mediaItemKind ?? '',
-    status: mediaItem.mediaItemStatus ?? '',
-    mimeType: mediaItem.mediaItemMimeType ?? '',
-    sizeBytes: mediaItem.mediaItemSizeBytes ?? 0,
-    originalFileName: mediaItem.mediaItemOriginalFileName ?? undefined,
-    width: mediaItem.mediaItemWidth,
-    height: mediaItem.mediaItemHeight,
-    durationSeconds: mediaItem.mediaItemDurationSeconds,
-    title: mediaItem.mediaItemTitle,
-    description: mediaItem.mediaItemDescription,
-    takenAt: mediaItem.mediaItemTakenAt,
-    createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
-    updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
-  };
-};
 
 export type SortableEnum = StandardEnumItem & { column: string };
 
@@ -80,7 +57,7 @@ export const build__ViewerAlbumReadServiceFactory = ({
         });
         const coverBases = albums
           .filter((album) => album.mediaItemId != null)
-          .map((album) => mapMediaItemRowToParent(album));
+          .map((album) => mapMediaItemRowToProjection(album));
         const coversEnriched = await enrichWithTags(coverBases);
         const coverById = new Map(coversEnriched.map((c) => [c.id, c]));
         const nodes = albums.map((album) => ({
@@ -105,7 +82,7 @@ export const build__ViewerAlbumReadServiceFactory = ({
         }
         const cover =
           row.mediaItemId != null
-            ? (await enrichWithTags([mapMediaItemRowToParent(row)]))[0]
+            ? (await enrichWithTags([mapMediaItemRowToProjection(row)]))[0]
             : undefined;
         return {
           id: row.id,
@@ -129,7 +106,7 @@ export const build__ViewerAlbumReadServiceFactory = ({
           viewerId,
           collectionInfo,
         });
-        const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToParent(albumItem));
+        const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToProjection(albumItem));
         const mediaEnriched = await enrichWithTags(mediaBases);
         const nodes = albumItems.map((albumItem, index) => ({
           id: albumItem.id,

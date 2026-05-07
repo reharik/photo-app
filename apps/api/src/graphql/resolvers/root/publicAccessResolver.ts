@@ -1,27 +1,20 @@
-import { hashToken } from '@packages/media-core';
-
+import { publicResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
 const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
   Query: {
-    publicAccess: async (_p, { token }, ctx) => {
-      const tokenHash = hashToken(token);
-      const publicAccess =
-        await ctx.publicAccessReadRepository.findActiveWithGrantsByTokenHash(tokenHash);
-
-      if (!publicAccess) {
-        return undefined;
-      }
-
-      return {
-        publicAccess,
-      };
-    },
+    publicAccess: publicResolver((_, args, ctx) => {
+      return ctx.publicAccess;
+    }),
   },
   PublicAccess: {
-    publicAlbum: async (_parent, { id }, ctx) => {
-      return await ctx.readServices.publicAlbumReadService.getAlbum(id);
-    },
+    album: publicResolver(async (_, { albumId }, ctx) => {
+      const album = await ctx.publicReadServices.publicAlbumReadService.getAlbum(albumId);
+      if (!album) {
+        throw new Error('Public album not found for provided access token');
+      }
+      return ctx.publicReadServices.applyPublicAuthorizationService.toAlbum(album);
+    }),
   },
 };
 

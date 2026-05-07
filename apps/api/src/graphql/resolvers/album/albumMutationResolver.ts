@@ -1,5 +1,5 @@
 import type { AddMediaItemsToAlbumCommand, ReorderAlbumItemsCommand } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/authenticatedContext';
+import { authenticatedResolver } from '../../context/contextWrappers';
 import type {
   MutationAddMediaItemsToAlbumArgs,
   MutationReorderAlbumItemsArgs,

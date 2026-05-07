@@ -1,60 +1,113 @@
-import { applyAuthorizationService } from '@packages/media-core';
+import { User } from '@packages/contracts';
+import { PublicAccessProjection } from '@packages/media-core';
+import { Knex } from 'knex';
 import type { IocGeneratedCradle } from '../../di/generated/ioc-registry.types';
 import {
-  GraphQLContext,
+  AuthenticatedGraphQLContext,
   GraphQLContextFactory,
   GraphQLInitialContext,
+  PublicGraphQLContext,
+  PublicReadServices,
   ReadServices,
 } from './types';
+
+type ContextDeps = {
+  publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
+  publicAccessReadService: IocGeneratedCradle['publicAccessReadService'];
+  writeServices: IocGeneratedCradle['writeServices'];
+  readServiceFactories: IocGeneratedCradle['readServiceFactories'];
+  database: Knex;
+};
+type PublicContextDeps = {
+  publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
+  database: Knex;
+  publicAccess: PublicAccessProjection;
+};
+type AuthenticatedContextDeps = {
+  user: User;
+  readServiceFactories: IocGeneratedCradle['readServiceFactories'];
+  database: Knex;
+  writeServices: IocGeneratedCradle['writeServices'];
+};
 
 export const build__CreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
+  publicReadServiceFactories,
   database,
-
-  // publicAccessReadRepository,
-  albumReadRepository,
-}: IocGeneratedCradle): GraphQLContextFactory => {
-  return (initialContext: GraphQLInitialContext): GraphQLContext => {
-    const base: GraphQLContext = {
-      database,
-      // publicAccessReadRepository,
-      albumReadRepository,
-    };
-
+  publicAccessReadService,
+}: ContextDeps): GraphQLContextFactory => {
+  return (
+    initialContext: GraphQLInitialContext,
+  ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
     const user = initialContext.state?.user;
-    if (!initialContext.state?.isLoggedIn || !user) {
-      return base;
-    }
-
-    const viewer = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      displayName: `${user.firstName} ${user.lastName}`,
-      isAuthenticated: true,
-    };
-
-    const rs = {} as ReadServices;
-
-    for (const key of Object.keys(readServiceFactories) as Array<
-      keyof typeof readServiceFactories
-    >) {
-      const serviceKey = key.replace(/Factory$/, '') as keyof ReadServices;
-      (rs as Record<string, unknown>)[serviceKey] = readServiceFactories[key]({
-        viewerId: viewer.id,
+    const publicAccess = initialContext.state?.publicAccess;
+    if (initialContext.state?.isLoggedIn && user) {
+      return buildAuthenticatedContext({
+        user,
+        readServiceFactories,
+        database,
+        writeServices,
       });
     }
-
-    const applyAuthorization = applyAuthorizationService({
-      viewerMediaItemAuthzService: rs.viewerMediaItemAuthzService,
+    if (!publicAccess) {
+      throw new Error('Public access not found');
+    }
+    return buildPublicContext({
+      publicReadServiceFactories,
+      database,
+      publicAccess,
     });
-    return {
-      ...base,
-      viewer,
-      writeServices,
-      readServices: rs,
-      applyAuthorizationService: applyAuthorization,
-    };
+  };
+};
+
+const buildAuthenticatedContext = ({
+  user,
+  readServiceFactories,
+  database,
+  writeServices,
+}: AuthenticatedContextDeps): AuthenticatedGraphQLContext => {
+  const viewer = {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    displayName: `${user.firstName} ${user.lastName}`,
+    isAuthenticated: true,
+  };
+
+  type ServiceFactory = (deps: { viewerId: string }) => unknown;
+  const rs = Object.fromEntries(
+    Object.entries(readServiceFactories).map(([key, factory]) => [
+      key.replace(/Factory$/, ''),
+      (factory as ServiceFactory)({ viewerId: viewer.id }),
+    ]),
+  ) as ReadServices;
+
+  return {
+    database,
+    viewer,
+    writeServices,
+    readServices: rs,
+  };
+};
+
+const buildPublicContext = ({
+  publicReadServiceFactories,
+  database,
+  publicAccess,
+}: PublicContextDeps): PublicGraphQLContext => {
+  type PublicServiceFactory = (deps: { shareLinkId: string }) => unknown;
+
+  const publicReadServices = Object.fromEntries(
+    Object.entries(publicReadServiceFactories).map(([key, factory]) => [
+      key.replace(/Factory$/, ''),
+      (factory as PublicServiceFactory)({ shareLinkId: publicAccess.publicLinkId }),
+    ]),
+  ) as PublicReadServices;
+
+  return {
+    database,
+    publicReadServices,
+    publicAccess: publicAccess,
   };
 };

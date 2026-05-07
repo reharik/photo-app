@@ -1,7 +1,7 @@
 import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { NamespacedMediaItemRow } from '../../services/readServices/viewerReadServices/viewerAlbumReadService.types';
+import { NamespacedMediaItemRow } from '../../services/readServices/types';
 import type { EntityId } from '../../types/types';
 
 const mediaItemSelectColumns = [

@@ -1,13 +1,15 @@
 import { MediaStorage } from '../../../application/media/MediaStorage';
+import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import {
+  AuthorizationProjection,
   MediaItemCollectionInfo,
   MediaItemListProjection,
   MediaItemProjection,
   MediaItemRow,
-} from './viewerMediaItemReadService.types';
+} from '../types';
 
 export interface ViewerMediaItemReadService {
   listMediaItems: (collectionInfo: MediaItemCollectionInfo) => Promise<MediaItemListProjection>;
@@ -22,11 +24,13 @@ export interface ViewerMediaItemReadServiceFactory extends ReadServiceFactoryBas
 
 type ViewerMediaItemReadServiceFactoryDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
+  authorizationReadRepository: AuthorizationReadRepository;
   mediaStorage: MediaStorage;
 };
 
 export const build__ViewerMediaItemReadServiceFactory = ({
   mediaItemReadRepository,
+  authorizationReadRepository,
 }: ViewerMediaItemReadServiceFactoryDeps): ViewerMediaItemReadServiceFactory => {
   return ({ viewerId }: { viewerId: string }) => {
     const withTags = async (rows: MediaItemRow[]): Promise<MediaItemProjection[]> => {
@@ -62,6 +66,23 @@ export const build__ViewerMediaItemReadServiceFactory = ({
         }
         const [projection] = await withTags([row]);
         return projection;
+      },
+      listGrantedAuthorizationsForOwnedMediaItem: async (
+        mediaItemId: EntityId,
+      ): Promise<AuthorizationProjection[]> => {
+        const rows = await authorizationReadRepository.getGrantedAuthorizationsForOwnedMediaItem({
+          mediaItemId,
+          ownerId: viewerId,
+        });
+        return rows.map((row) => ({
+          id: row.id,
+          grantedToUserId: row.grantedToUser,
+          permission: row.permission,
+          label: row.description,
+          expiresAt: row.expiresAt,
+          revokedAt: row.revokedAt,
+          createdAt: row.createdAt,
+        }));
       },
     };
   };

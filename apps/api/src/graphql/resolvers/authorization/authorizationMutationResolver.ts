@@ -2,7 +2,7 @@ import type {
   GrantUserAuthorizationForAlbumCommand,
   GrantUserAuthorizationForMediaItemsCommand,
 } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/authenticatedContext';
+import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 

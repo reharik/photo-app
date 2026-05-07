@@ -1,54 +1,39 @@
-import { MediaItemReadRepository } from '../../..';
-import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
+import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import { PublicReadServiceFactoryBase } from '../readServiceBaseType';
+import { mapMediaItemRowToProjection } from '../readServiceMappers';
 import {
-  PublicAlbumItemCollectionInfo,
-  PublicAlbumItemListProjection,
-  PublicAlbumProjection,
-  PublicNamespacedMediaItemRow,
-} from './publicAlbumReadService.types';
-import { PublicMediaItemProjection } from './publicMediaItemReadService.types';
+  AlbumItemCollectionInfo,
+  AlbumItemListProjection,
+  AlbumProjection,
+  MediaItemProjection,
+} from '../types';
 
 export interface PublicAlbumReadService {
-  getAlbum: (albumId: string) => Promise<PublicAlbumProjection | undefined>;
+  getAlbum: (albumId: string) => Promise<AlbumProjection | undefined>;
   getViewableAlbumItems: (args: {
     albumId: string;
-    collectionInfo: PublicAlbumItemCollectionInfo;
-  }) => Promise<PublicAlbumItemListProjection>;
+    collectionInfo: AlbumItemCollectionInfo;
+  }) => Promise<AlbumItemListProjection>;
 }
 
-export interface PublicAlbumReadServiceFactory extends ReadServiceFactoryBase {
+export interface PublicAlbumReadServiceFactory extends PublicReadServiceFactoryBase {
   (args: { shareLinkId: string }): PublicAlbumReadService;
 }
 
-const mapPublicMediaItemRowToParent = (
-  mediaItem: PublicNamespacedMediaItemRow,
-): Omit<PublicMediaItemProjection, 'tags'> => {
-  const id = mediaItem.mediaItemId ?? '';
-  return {
-    id,
-    kind: mediaItem.mediaItemKind ?? '',
-    mimeType: mediaItem.mediaItemMimeType ?? '',
-    width: mediaItem.mediaItemWidth,
-    height: mediaItem.mediaItemHeight,
-    durationSeconds: mediaItem.mediaItemDurationSeconds,
-    title: mediaItem.mediaItemTitle,
-  };
-};
-
 type PublicAlbumReadServiceFactoryDeps = {
-  publicAlbumReadRepository: PublicAlbumReadRepository;
+  albumReadRepository: AlbumReadRepository;
   mediaItemReadRepository: MediaItemReadRepository;
-  publicMediaItemReadRepository: PublicMediaItemReadRepository;
 };
 
 export const build__PublicAlbumReadServiceFactory = ({
-  publicAlbumReadRepository,
+  albumReadRepository,
   mediaItemReadRepository,
 }: PublicAlbumReadServiceFactoryDeps): PublicAlbumReadServiceFactory => {
   return ({ shareLinkId }: { shareLinkId: string }) => {
     const enrichWithTags = async (
-      items: Omit<PublicMediaItemProjection, 'tags'>[],
-    ): Promise<PublicMediaItemProjection[]> => {
+      items: Omit<MediaItemProjection, 'tags'>[],
+    ): Promise<MediaItemProjection[]> => {
       if (items.length === 0) {
         return [];
       }
@@ -59,18 +44,20 @@ export const build__PublicAlbumReadServiceFactory = ({
     };
 
     return {
-      getAlbum: async (albumId: string): Promise<PublicAlbumProjection | undefined> => {
-        const row = await publicAlbumReadRepository.getAlbumForShareLink({ albumId, shareLinkId });
+      getAlbum: async (albumId: string): Promise<AlbumProjection | undefined> => {
+        const row = await albumReadRepository.getAlbumForShareLink({ albumId, shareLinkId });
         if (!row) {
           return undefined;
         }
         const cover =
           row.mediaItemId != null
-            ? (await enrichWithTags([mapPublicMediaItemRowToParent(row)]))[0]
+            ? (await enrichWithTags([mapMediaItemRowToProjection(row)]))[0]
             : undefined;
         return {
           id: row.id,
           title: row.title,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
           coverMedia: cover,
         };
       },
@@ -80,19 +67,21 @@ export const build__PublicAlbumReadServiceFactory = ({
         collectionInfo,
       }: {
         albumId: string;
-        collectionInfo: PublicAlbumItemCollectionInfo;
-      }): Promise<PublicAlbumItemListProjection> => {
-        const albumItems = await publicAlbumReadRepository.getViewableAlbumItemsForShareLink({
+        collectionInfo: AlbumItemCollectionInfo;
+      }): Promise<AlbumItemListProjection> => {
+        const albumItems = await albumReadRepository.listAlbumItemsForShareLink({
           albumId,
           shareLinkId,
           collectionInfo,
         });
-        const mediaBases = albumItems.map((albumItem) => mapPublicMediaItemRowToParent(albumItem));
+        const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToProjection(albumItem));
         const mediaEnriched = await enrichWithTags(mediaBases);
         const nodes = albumItems.map((albumItem, index) => ({
           id: albumItem.id,
-          orderIndex: albumItem.publicAlbumItemOrderIndex,
+          orderIndex: albumItem.albumItemOrderIndex,
           mediaItem: mediaEnriched[index],
+          createdAt: albumItem.createdAt,
+          updatedAt: albumItem.updatedAt,
         }));
         return {
           nodes,
