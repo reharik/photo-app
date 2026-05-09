@@ -1,0 +1,43 @@
+import { useMutation } from '@apollo/client/react';
+import {
+  EditCommentDocument,
+  type EditCommentInput,
+} from '../../../graphql/generated/types';
+
+export type UseEditCommentResult = {
+  // CHANGED: Mutation Responses — removed `existing: CommentFieldsFragment` param; Apollo merges
+  // optimistic response into the cache by entity ID, so only changed fields are needed.
+  editComment: (input: EditCommentInput) => Promise<void>;
+  loading: boolean;
+};
+
+export const useEditComment = (): UseEditCommentResult => {
+  const [mutate, { loading }] = useMutation(EditCommentDocument);
+
+  const editComment = async (input: EditCommentInput): Promise<void> => {
+    await mutate({
+      variables: { input },
+      // CHANGED: Mutation Responses — optimistic response uses data+errors envelope.
+      // __typename is CommentMutationResponse, not CommentMutationResult; no success field.
+      // Only the fields that change are included; Apollo merges with the cached entity by ID.
+      optimisticResponse: {
+        editComment: {
+          __typename: 'CommentMutationResponse' as const,
+          data: {
+            __typename: 'CommentMutationPayload' as const,
+            comment: {
+              __typename: 'Comment' as const,
+              id: input.commentId,
+              body: input.body,
+              isEdited: true,
+              updatedAt: new Date(),
+            },
+          },
+          errors: [],
+        },
+      },
+    });
+  };
+
+  return { editComment, loading };
+};

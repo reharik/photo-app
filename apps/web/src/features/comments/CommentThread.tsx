@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import type { CommentWithReplies } from './hooks/useCommentsForTarget';
-import type { CommentFieldsFragment } from '../../graphql/generated/types';
+// CHANGED: Frontend View Models — components consume VM types instead of raw fragment types.
+import { type CommentDetailVM } from '../../viewModels/comment/CommentDetailVM';
+import { type CommentVM } from '../../viewModels/comment/CommentVM';
 import { CommentReplyList } from './CommentReplyList';
 import { CommentRow } from './CommentRow';
 import { ReplyComposer } from './ReplyComposer';
@@ -12,11 +13,11 @@ type Viewer = {
 };
 
 type Props = {
-  comment: CommentWithReplies;
+  comment: CommentDetailVM;
   viewer: Viewer;
   onAddReply: (parentCommentId: string, body: string) => Promise<void>;
   onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (comment: CommentFieldsFragment) => Promise<void>;
+  onDelete: (commentId: string) => Promise<void>;
   addReplyLoading: boolean;
 };
 
@@ -30,7 +31,8 @@ export const CommentThread = ({
 }: Props) => {
   const [replyOpen, setReplyOpen] = useState(false);
 
-  const replies = comment.replies.edges.map((e) => e.node);
+  // CHANGED: Pagination — replies is now CommentVM[] (from VM), not edges[].node (cursor shape).
+  const replies: CommentVM[] = comment.replies;
 
   const handleReplySubmit = async (body: string) => {
     await onAddReply(comment.id, body);

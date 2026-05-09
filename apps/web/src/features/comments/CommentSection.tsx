@@ -1,6 +1,6 @@
 import { CommentTargetType } from '@packages/contracts';
 import styled from 'styled-components';
-import type { CommentFieldsFragment } from '../../graphql/generated/types';
+import { mapMultipleCommentDetailFieldsToCommentDetailVMs } from '../../viewModels/comment/mapCommentDetailFieldsToCommentDetailVM';
 import { CommentComposer } from './CommentComposer';
 import { CommentList } from './CommentList';
 import { useAddComment } from './hooks/useAddComment';
@@ -29,11 +29,15 @@ export const CommentSection = ({
   viewer,
   isPublicAccess = false,
 }: Props) => {
-  const { comments, loading, error, refetch } = useCommentsForTarget({
+  const { comments: rawComments, loading, error, refetch } = useCommentsForTarget({
     targetType,
     targetId,
     isPublicAccess,
   });
+
+  // CHANGED: Frontend View Models — mapping happens at the screen level (data boundary),
+  // converting raw fragments to VMs before passing to presentational components.
+  const comments = mapMultipleCommentDetailFieldsToCommentDetailVMs(rawComments);
 
   const { addComment, loading: addLoading } = useAddComment({
     targetType,
@@ -53,13 +57,13 @@ export const CommentSection = ({
   };
 
   const handleEdit = async (commentId: string, newBody: string) => {
-    const existing = findComment(comments, commentId);
-    if (!existing) return;
-    await editComment({ commentId, body: newBody }, existing);
+    await editComment({ commentId, body: newBody });
   };
 
-  const handleDelete = async (comment: CommentFieldsFragment) => {
-    await deleteComment({ commentId: comment.id }, comment);
+  // CHANGED: Mutation Responses — handleDelete now receives only commentId since the mutation
+  // hook no longer requires the full existing entity for its optimistic response.
+  const handleDelete = async (commentId: string) => {
+    await deleteComment({ commentId });
   };
 
   return (
@@ -85,18 +89,6 @@ export const CommentSection = ({
       )}
     </Root>
   );
-};
-
-const findComment = (
-  comments: Parameters<typeof CommentList>[0]['comments'],
-  id: string,
-): CommentFieldsFragment | undefined => {
-  for (const thread of comments) {
-    if (thread.id === id) return thread;
-    const reply = thread.replies.edges.find((e) => e.node.id === id);
-    if (reply) return reply.node;
-  }
-  return undefined;
 };
 
 const Root = styled.div`

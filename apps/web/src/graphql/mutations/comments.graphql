@@ -1,8 +1,9 @@
+# CHANGED: Fragments — use CommentDetailFields (entity-named) instead of CommentThreadFields (surface-named).
 mutation AddComment($input: AddCommentInput!) {
   addComment(input: $input) {
     data {
       comment {
-        ...CommentThreadFields
+        ...CommentDetailFields
       }
     }
     errors {

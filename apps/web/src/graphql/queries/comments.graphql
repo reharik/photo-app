@@ -13,7 +13,9 @@ fragment CommentFields on Comment {
   updatedAt
 }
 
-fragment CommentThreadFields on Comment {
+# CHANGED: Fragments — name by what they return, not the UI surface that consumes them.
+# Was CommentThreadFields (named after CommentThread component); renamed to CommentDetailFields.
+fragment CommentDetailFields on Comment {
   ...CommentFields
   replies(input: { collectionInfo: { pageInfo: { limit: 50, offset: 0 } } }) {
     nodes {
@@ -33,7 +35,7 @@ query CommentsForViewerMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!)
       id
       comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
         nodes {
-          ...CommentThreadFields
+          ...CommentDetailFields
         }
         pageInfo {
           limit
@@ -51,7 +53,7 @@ query CommentsForViewerAlbum($albumId: ID!, $limit: Int!, $offset: Int!) {
       id
       comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
         nodes {
-          ...CommentThreadFields
+          ...CommentDetailFields
         }
         pageInfo {
           limit
@@ -69,7 +71,7 @@ query CommentsForPublicMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!)
       id
       comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
         nodes {
-          ...CommentThreadFields
+          ...CommentDetailFields
         }
         pageInfo {
           limit
@@ -87,7 +89,7 @@ query CommentsForPublicAlbum($limit: Int!, $offset: Int!) {
       id
       comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
         nodes {
-          ...CommentThreadFields
+          ...CommentDetailFields
         }
         pageInfo {
           limit

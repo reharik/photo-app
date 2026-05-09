@@ -28,7 +28,7 @@ export type MinimalAlbumSummaryVM = {
 
 export type MinimalMediaItemSummaryVM = {
   id: string;
-  title: string;
+  title?: string;
   kind: MediaKind;
   createdAt?: string;
   status?: MediaItemStatus;

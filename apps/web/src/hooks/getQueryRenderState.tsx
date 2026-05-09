@@ -4,13 +4,15 @@ import { QueryErrorState } from '../ui/QueryErrorState';
 
 export type QueryStateResult<TData> = {
   data: TData | undefined;
-  content: ReactNode | null;
+  content: ReactNode | undefined;
+  refetch: () => void;
 };
 
 export type QueryLike<TData = unknown> = {
   loading: boolean;
   error?: unknown;
   data?: TData;
+  refetch: () => void;
 };
 
 export function getQueryRenderState<TQuery extends QueryLike, TSelected>(args: {
@@ -38,6 +40,7 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
     return {
       data: undefined,
       content: <PageSpinner />,
+      refetch: query.refetch,
     };
   }
 
@@ -66,13 +69,15 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
           }}
         />
       ),
+      refetch: query.refetch,
     };
   }
 
   if (!query.data) {
     return {
       data: undefined,
-      content: null,
+      content: undefined,
+      refetch: query.refetch,
     };
   }
 
@@ -81,12 +86,14 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
   if (!selected) {
     return {
       data: undefined,
-      content: null,
+      content: undefined,
+      refetch: query.refetch,
     };
   }
 
   return {
     data: map ? map(selected) : selected,
-    content: null,
+    content: undefined,
+    refetch: query.refetch,
   };
 }

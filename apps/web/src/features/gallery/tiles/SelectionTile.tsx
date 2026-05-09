@@ -10,7 +10,7 @@ export const SelectionTile = ({ item }: { item: MediaItemSummaryVM }) => {
   return (
     <ThumbFrame>
       {item.kind === MediaKind.photo ? (
-        <ThumbImage src={url} alt={item.title.trim()} />
+        <ThumbImage src={url} alt={item.title?.trim() ?? ''} />
       ) : (
         <ThumbIcon aria-hidden $scale={THUMB_SCALE}>
           {'🎬'}

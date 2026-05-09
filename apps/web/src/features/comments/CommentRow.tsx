@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import type { CommentFieldsFragment } from '../../graphql/generated/types';
+// CHANGED: Frontend View Models — CommentRow takes CommentVM (UI-facing type) instead of
+// CommentFieldsFragment (wire type). Single-purpose component, so VM is passed directly
+// rather than a structural prop type (per convention exception for single-purpose components).
+import { type CommentVM } from '../../viewModels/comment/CommentVM';
 import { CommentActionsRevealWrapper, CommentActions } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
@@ -13,11 +16,13 @@ type Viewer = {
 };
 
 type Props = {
-  comment: CommentFieldsFragment;
+  comment: CommentVM;
   viewer: Viewer;
   onReply?: () => void;
   onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (comment: CommentFieldsFragment) => Promise<void>;
+  // CHANGED: Mutation Responses — onDelete receives only commentId; the handler no longer
+  // needs the full comment object since the mutation hook builds its own optimistic response.
+  onDelete: (commentId: string) => Promise<void>;
 };
 
 export const CommentRow = ({ comment, viewer, onReply, onEdit, onDelete }: Props) => {
@@ -66,7 +71,7 @@ export const CommentRow = ({ comment, viewer, onReply, onEdit, onDelete }: Props
               canDelete={canDelete}
               onReply={() => onReply?.()}
               onEdit={() => setIsEditing(true)}
-              onDelete={() => void onDelete(comment)}
+              onDelete={() => void onDelete(comment.id)}
             />
           </TopRow>
           <CommentBody

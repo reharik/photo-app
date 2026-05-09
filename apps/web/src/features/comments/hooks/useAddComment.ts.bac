@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client/react';
 import { CommentTargetType } from '@packages/contracts';
-import { useViewer } from '../../../hooks/useViewer';
 import {
   AddCommentDocument,
   CommentFieldsFragmentDoc,
   type AddCommentInput,
 } from '../../../graphql/generated/types';
+import { useViewer } from '../../../hooks/useViewer';
 
 type Args = {
   targetType: CommentTargetType;
@@ -33,41 +33,48 @@ export const useAddComment = ({
   const { viewer } = useViewer();
 
   const [mutate, { loading }] = useMutation(AddCommentDocument, {
+    // CHANGED: Mutation Responses — optimistic response uses data+errors envelope
+    // (not flat success/comment shape). __typename is CommentMutationResponse, not CommentMutationResult.
+    // CHANGED: Pagination — replies use CommentCollectionPayload with nodes[] + pageInfo{limit,offset}
+    // instead of cursor-based CommentConnection with edges[]+endCursor.
     optimisticResponse: (vars) => ({
       addComment: {
-        __typename: 'CommentMutationResult' as const,
-        success: true,
-        comment: {
-          __typename: 'Comment' as const,
-          id: `optimistic-${Date.now()}`,
-          targetType: vars.input.targetType ?? targetType,
-          targetId: vars.input.targetId ?? targetId,
-          parentCommentId: vars.input.parentCommentId ?? null,
-          authorUserId: viewer?.id ?? null,
-          body: vars.input.body,
-          displayName: viewer?.displayName ?? 'You',
-          displayAvatarUrl: null,
-          isEdited: false,
-          isDeleted: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          replies: {
-            __typename: 'CommentConnection' as const,
-            edges: [],
-            pageInfo: {
-              __typename: 'PageInfo' as const,
-              hasNextPage: false,
-              endCursor: null,
+        __typename: 'CommentMutationResponse' as const,
+        data: {
+          __typename: 'CommentMutationPayload' as const,
+          comment: {
+            __typename: 'Comment' as const,
+            id: `optimistic-${Date.now()}`,
+            targetType: vars.input.targetType ?? targetType,
+            targetId: vars.input.targetId ?? targetId,
+            parentCommentId: vars.input.parentCommentId ?? null,
+            authorUserId: viewer?.id ?? null,
+            body: vars.input.body,
+            displayName: viewer?.displayName ?? 'You',
+            displayAvatarUrl: null,
+            isEdited: false,
+            isDeleted: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            replies: {
+              __typename: 'CommentCollectionPayload' as const,
+              nodes: [],
+              pageInfo: {
+                __typename: 'PageInfo' as const,
+                limit: 50,
+                offset: 0,
+              },
             },
-            totalCount: 0,
           },
         },
-        errors: null,
+        errors: [],
       },
     }),
 
     update(cache, { data }) {
-      const comment = data?.addComment.comment;
+      // CHANGED: Mutation Responses — access comment through data.addComment.data.comment
+      // (data+errors envelope) rather than data.addComment.comment (flat shape).
+      const comment = data?.addComment.data?.comment;
       if (!comment) return;
 
       const commentRef = cache.writeFragment({
@@ -80,14 +87,11 @@ export const useAddComment = ({
         cache.modify({
           id: cache.identify({ __typename: 'Comment', id: comment.parentCommentId }),
           fields: {
-            replies(existing: { edges: unknown[]; totalCount: number }) {
+            // CHANGED: Pagination — cache update appends to nodes[] instead of edges[].node cursor list.
+            replies(existing: { nodes: unknown[] }) {
               return {
                 ...existing,
-                edges: [
-                  ...existing.edges,
-                  { __typename: 'CommentEdge', cursor: comment.id, node: commentRef },
-                ],
-                totalCount: (existing.totalCount ?? 0) + 1,
+                nodes: [...existing.nodes, commentRef],
               };
             },
           },
@@ -100,14 +104,11 @@ export const useAddComment = ({
         cache.modify({
           id: cache.identify({ __typename: typename, id: comment.targetId }),
           fields: {
-            comments(existing: { edges: unknown[]; totalCount: number }) {
+            // CHANGED: Pagination — cache update prepends to nodes[] instead of edges[].node cursor list.
+            comments(existing: { nodes: unknown[] }) {
               return {
                 ...existing,
-                edges: [
-                  { __typename: 'CommentEdge', cursor: comment.id, node: commentRef },
-                  ...existing.edges,
-                ],
-                totalCount: (existing.totalCount ?? 0) + 1,
+                nodes: [commentRef, ...existing.nodes],
               };
             },
           },

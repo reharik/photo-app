@@ -1,5 +1,6 @@
 import styled from 'styled-components';
-import type { CommentFieldsFragment } from '../../graphql/generated/types';
+// CHANGED: Frontend View Models — takes CommentVM[] instead of CommentFieldsFragment[].
+import { type CommentVM } from '../../viewModels/comment/CommentVM';
 import { CommentRow } from './CommentRow';
 
 type Viewer = {
@@ -8,10 +9,10 @@ type Viewer = {
 };
 
 type Props = {
-  replies: CommentFieldsFragment[];
+  replies: CommentVM[];
   viewer: Viewer;
   onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (comment: CommentFieldsFragment) => Promise<void>;
+  onDelete: (commentId: string) => Promise<void>;
 };
 
 export const CommentReplyList = ({ replies, viewer, onEdit, onDelete }: Props) => {

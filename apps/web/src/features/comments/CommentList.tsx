@@ -1,6 +1,6 @@
 import styled from 'styled-components';
-import type { CommentWithReplies } from './hooks/useCommentsForTarget';
-import type { CommentFieldsFragment } from '../../graphql/generated/types';
+// CHANGED: Frontend View Models — components consume CommentDetailVM instead of raw fragment types.
+import { type CommentDetailVM } from '../../viewModels/comment/CommentDetailVM';
 import { CommentThread } from './CommentThread';
 
 type Viewer = {
@@ -9,17 +9,19 @@ type Viewer = {
 };
 
 type Props = {
-  comments: CommentWithReplies[];
+  comments: CommentDetailVM[];
   viewer: Viewer;
   onAddReply: (parentCommentId: string, body: string) => Promise<void>;
   onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (comment: CommentFieldsFragment) => Promise<void>;
+  onDelete: (commentId: string) => Promise<void>;
   addReplyLoading: boolean;
 };
 
-const shouldRenderThread = (comment: CommentWithReplies): boolean => {
+const shouldRenderThread = (comment: CommentDetailVM): boolean => {
   if (!comment.isDeleted) return true;
-  return comment.replies.totalCount > 0;
+  // CHANGED: Pagination — check replies.length (nodes array) instead of replies.totalCount
+  // (cursor-style field that no longer exists in the offset/limit payload shape).
+  return comment.replies.length > 0;
 };
 
 export const CommentList = ({

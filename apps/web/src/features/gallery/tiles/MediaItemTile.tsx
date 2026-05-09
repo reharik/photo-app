@@ -17,14 +17,14 @@ export const MediaItemTile = ({
     <>
       <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
         {item.kind === MediaKind.photo ? (
-          <ThumbImage src={url} alt={item.title.trim()} />
+          <ThumbImage src={url} alt={item.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
       <CaptionLink to={`/media/${item.id}`}>
         <MediaInfo>
-          <MediaTitle>{item.title?.trim()}</MediaTitle>
+          <MediaTitle>{item.title?.trim() ?? ''}</MediaTitle>
           <MediaMeta>{localizeDate(item.createdAt)}</MediaMeta>
         </MediaInfo>
       </CaptionLink>

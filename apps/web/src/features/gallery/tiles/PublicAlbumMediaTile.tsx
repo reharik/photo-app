@@ -13,14 +13,14 @@ export const PublicAlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM
     <>
       <ThumbLink to={`/shared/${token}/media/${mediaItem.id}`}>
         {mediaItem.kind === MediaKind.photo ? (
-          <ThumbImage src={url} alt={mediaItem.title.trim()} />
+          <ThumbImage src={url} alt={mediaItem.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
       <CaptionLink to={`/media/${mediaItem.id}`}>
         <MediaInfo>
-          <MediaTitle>{mediaItem.title.trim()}</MediaTitle>
+          <MediaTitle>{mediaItem.title?.trim() ?? ''}</MediaTitle>
           <MediaMeta>{mediaItem.createdAt ? localizeDate(mediaItem.createdAt) : ''}</MediaMeta>
         </MediaInfo>
       </CaptionLink>
