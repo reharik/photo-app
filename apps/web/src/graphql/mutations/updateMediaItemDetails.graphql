@@ -7,11 +7,7 @@ mutation UpdateMediaItemDetails($input: UpdateMediaItemDetailsInput!) {
       takenAt
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }

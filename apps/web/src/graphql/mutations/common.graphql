@@ -1,0 +1,7 @@
+fragment errorsFragment on ContractError {
+  code
+  message
+  field
+  category
+  retryable
+}

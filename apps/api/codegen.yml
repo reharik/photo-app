@@ -32,3 +32,4 @@ generates:
         AlbumItem: '@packages/media-core#AlbumItemProjection'
         AuthorizationType: '@packages/media-core#AuthorizationProjection'
         ShareContactType: '@packages/media-core#ShareContactSuggestion'
+        Comment: '@packages/media-core#CommentRow'

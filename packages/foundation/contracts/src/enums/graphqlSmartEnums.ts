@@ -15,6 +15,10 @@ const albumSortByInput = {
   createdAt: { column: 'created_at' },
   title: { column: 'title' },
 } as const;
+const commentTargetTypeInput = {
+  album: { display: 'Album' },
+  mediaItem: { display: 'Media Item' },
+} as const;
 const errorCategoryInput = [
   'auth',
   'conflict',
@@ -41,6 +45,7 @@ const sortDirInput = ['asc', 'desc'] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
+export type CommentTargetType = Enumeration<typeof CommentTargetType>;
 export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export type MediaAssetKind = Enumeration<typeof MediaAssetKind>;
 export type MediaAssetStatus = Enumeration<typeof MediaAssetStatus>;
@@ -56,6 +61,10 @@ export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumIt
 });
 export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
   input: albumSortByInput,
+  serializeAs: 'value',
+});
+export const CommentTargetType = enumeration<typeof commentTargetTypeInput>('CommentTargetType', {
+  input: commentTargetTypeInput,
   serializeAs: 'value',
 });
 export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
@@ -94,6 +103,7 @@ export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
 export const enumRegistry = {
   AlbumItemSortBy,
   AlbumSortBy,
+  CommentTargetType,
   ErrorCategory,
   MediaAssetKind,
   MediaAssetStatus,

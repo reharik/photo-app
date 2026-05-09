@@ -17,6 +17,7 @@ type MediaItem implements ViewableItem & Node {
   authorizations: [AuthorizationType]
   viewerOperations: [ViewerOperation!]!
   viewerIsOwner: Boolean!
+  comments(input: CommentsInput!): CommentCollectionPayload!
 }
 
 enum ViewerOperation {

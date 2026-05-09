@@ -1,0 +1,36 @@
+extend type Mutation {
+  addComment(input: AddCommentInput!): CommentMutationResponse!
+  editComment(input: EditCommentInput!): CommentMutationResponse!
+  deleteComment(input: DeleteCommentInput!): CommentMutationResponse!
+}
+
+type CommentMutationResponse {
+  data: CommentMutationPayload
+  errors: [ContractError!]
+}
+
+type CommentMutationPayload {
+  comment: Comment
+}
+
+input AddCommentInput {
+  """
+  Ignored when parentCommentId is set; the service copies target from the parent.
+  """
+  targetType: CommentTargetType
+  """
+  Ignored when parentCommentId is set; the service copies target from the parent.
+  """
+  targetId: ID
+  parentCommentId: ID
+  body: String!
+}
+
+input EditCommentInput {
+  commentId: ID!
+  body: String!
+}
+
+input DeleteCommentInput {
+  commentId: ID!
+}

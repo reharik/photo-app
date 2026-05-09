@@ -11,6 +11,19 @@ directive @enumMeta(
   sortOrder: Int
 ) on ENUM_VALUE
 
+input AddCommentInput {
+  body: String!
+  parentCommentId: ID
+  """
+  Ignored when parentCommentId is set; the service copies target from the parent.
+  """
+  targetId: ID
+  """
+  Ignored when parentCommentId is set; the service copies target from the parent.
+  """
+  targetType: CommentTargetType
+}
+
 input AddMediaItemToAlbumInput {
   albumId: ID!
   mediaItemId: ID!
@@ -43,6 +56,7 @@ type AddMediaItemsToAlbumResponse {
 }
 
 type Album implements Node & ViewableItem {
+  comments(input: CommentsInput!): CommentCollectionPayload!
   coverMedia: MediaItem
   createdAt: DateTime!
   id: ID!
@@ -109,6 +123,57 @@ type AuthorizationType {
   label: String
   permission: SharePermission!
   revokedAt: DateTime
+}
+
+type Comment {
+  authorUserId: ID
+  body: String!
+  createdAt: DateTime!
+  displayAvatarUrl: String
+  displayName: String!
+  id: ID!
+  """
+  True when deleted_at is non-null. Body should be treated as redacted on the client.
+  Resolved by the field resolver; not stored in the DB.
+  """
+  isDeleted: Boolean!
+  """
+  True when updated_at is meaningfully later than created_at (grace window: 5 s).
+  Resolved by the field resolver; not stored in the DB.
+  """
+  isEdited: Boolean!
+  parentCommentId: ID
+  replies(input: CommentsInput!): CommentCollectionPayload!
+  targetId: ID!
+  targetType: CommentTargetType!
+  updatedAt: DateTime!
+}
+
+input CommentCollectionInput {
+  pageInfo: PageInfoInput!
+}
+
+type CommentCollectionPayload {
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+}
+
+type CommentMutationPayload {
+  comment: Comment
+}
+
+type CommentMutationResponse {
+  data: CommentMutationPayload
+  errors: [ContractError!]
+}
+
+enum CommentTargetType {
+  ALBUM
+  MEDIA_ITEM
+}
+
+input CommentsInput {
+  collectionInfo: CommentCollectionInput!
 }
 
 type ContractError {
@@ -204,6 +269,10 @@ type DeleteAlbumResponse {
   errors: [ContractError!]
 }
 
+input DeleteCommentInput {
+  commentId: ID!
+}
+
 input DeleteMediaItemInput {
   mediaItemId: ID!
 }
@@ -228,6 +297,11 @@ type DeleteMediaItemsPayload {
 type DeleteMediaItemsResponse {
   data: DeleteMediaItemsPayload
   errors: [ContractError!]
+}
+
+input EditCommentInput {
+  body: String!
+  commentId: ID!
 }
 
 """
@@ -320,6 +394,7 @@ enum MediaAssetStatus {
 
 type MediaItem implements Node & ViewableItem {
   authorizations: [AuthorizationType]
+  comments(input: CommentsInput!): CommentCollectionPayload!
   createdAt: DateTime!
   description: String
   durationSeconds: Int
@@ -378,6 +453,7 @@ type Mutation {
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
+  addComment(input: AddCommentInput!): CommentMutationResponse!
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
   createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
   createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
@@ -385,8 +461,10 @@ type Mutation {
     input: CreatePublicLinkForMediaItemsInput!
   ): CreatePublicLinkResponse!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
+  deleteComment(input: DeleteCommentInput!): CommentMutationResponse!
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
+  editComment(input: EditCommentInput!): CommentMutationResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
   grantUserAuthorizationForAlbum(
     input: GrantUserAuthorizationForAlbumInput!
@@ -437,6 +515,7 @@ type PublicAccess {
 }
 
 type PublicAlbum implements Node {
+  comments(input: CommentsInput!): CommentCollectionPayload!
   coverMedia: PublicMediaItem
   id: ID!
   items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
@@ -471,6 +550,7 @@ input PublicAlbumItemsInput {
 }
 
 type PublicMediaItem implements Node {
+  comments(input: CommentsInput!): CommentCollectionPayload!
   durationSeconds: Int
   height: Int
   id: ID!

@@ -4,11 +4,7 @@ mutation DeleteMediaItems($input: DeleteMediaItemsInput!) {
       deletedMediaItemIds
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }

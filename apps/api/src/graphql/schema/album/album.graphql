@@ -8,6 +8,7 @@ type Album implements ViewableItem & Node {
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   viewerOperations: [ViewerOperation!]!
   viewerIsOwner: Boolean!
+  comments(input: CommentsInput!): CommentCollectionPayload!
 }
 
 input ViewerAlbumItemsInput {

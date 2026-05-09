@@ -8,5 +8,6 @@ type PublicMediaItem implements Node {
   height: Int
   durationSeconds: Int
   tags: [String!]!
+  comments(input: CommentsInput!): CommentCollectionPayload!
   viewerOperations: [ViewerOperation!]!
 }

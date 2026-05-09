@@ -11,11 +11,7 @@ mutation grantUserAuthorizationsForMediaItems($input: GrantUserAuthorizationsFor
       }
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -33,11 +29,7 @@ mutation GrantUserAuthorizationForAlbum($input: GrantUserAuthorizationForAlbumIn
       }
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }

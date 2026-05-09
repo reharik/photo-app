@@ -13,11 +13,7 @@ mutation CreateMediaUpload($input: CreateMediaUploadInput!) {
       }
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -31,11 +27,7 @@ mutation FinalizeMediaUpload($input: FinalizeMediaUploadInput!) {
       kind
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }

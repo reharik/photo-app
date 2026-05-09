@@ -3,6 +3,7 @@ type PublicAlbum implements Node {
   title: String!
   coverMedia: PublicMediaItem
   items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
+  comments(input: CommentsInput!): CommentCollectionPayload!
 }
 
 input PublicAlbumItemsInput {

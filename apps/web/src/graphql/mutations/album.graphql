@@ -4,11 +4,7 @@ mutation CreateAlbum($input: CreateAlbumInput!) {
       albumId
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -20,11 +16,7 @@ mutation AddMediaItemToAlbum($input: AddMediaItemToAlbumInput!) {
       albumItemId
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -36,11 +28,7 @@ mutation AddMediaItemsToAlbum($input: AddMediaItemsToAlbumInput!) {
       albumItemIds
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -52,11 +40,7 @@ mutation DeleteAlbumItemsFromAlbum($input: DeleteAlbumItemsFromAlbumInput!) {
       albumItemIds
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }
@@ -67,11 +51,7 @@ mutation SetCoverMedia($input: SetCoverMediaInput!) {
       albumId
     }
     errors {
-      code
-      message
-      field
-      category
-      retryable
+      ...errorsFragment
     }
   }
 }

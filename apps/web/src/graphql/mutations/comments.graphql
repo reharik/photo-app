@@ -1,0 +1,38 @@
+mutation AddComment($input: AddCommentInput!) {
+  addComment(input: $input) {
+    data {
+      comment {
+        ...CommentThreadFields
+      }
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation EditComment($input: EditCommentInput!) {
+  editComment(input: $input) {
+    data {
+      comment {
+        ...CommentFields
+      }
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation DeleteComment($input: DeleteCommentInput!) {
+  deleteComment(input: $input) {
+    data {
+      comment {
+        ...CommentFields
+      }
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

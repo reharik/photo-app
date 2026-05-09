@@ -1,0 +1,41 @@
+enum CommentTargetType {
+  MEDIA_ITEM
+  ALBUM
+}
+
+type Comment {
+  id: ID!
+  targetType: CommentTargetType!
+  targetId: ID!
+  parentCommentId: ID
+  authorUserId: ID
+  body: String!
+  displayName: String!
+  displayAvatarUrl: String
+  """
+  True when updated_at is meaningfully later than created_at (grace window: 5 s).
+  Resolved by the field resolver; not stored in the DB.
+  """
+  isEdited: Boolean!
+  """
+  True when deleted_at is non-null. Body should be treated as redacted on the client.
+  Resolved by the field resolver; not stored in the DB.
+  """
+  isDeleted: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  replies(input: CommentsInput!): CommentCollectionPayload!
+}
+
+input CommentsInput {
+  collectionInfo: CommentCollectionInput!
+}
+
+input CommentCollectionInput {
+  pageInfo: PageInfoInput!
+}
+
+type CommentCollectionPayload {
+  nodes: [Comment!]!
+  pageInfo: PageInfo!
+}

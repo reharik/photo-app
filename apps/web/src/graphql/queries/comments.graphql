@@ -1,0 +1,99 @@
+fragment CommentFields on Comment {
+  id
+  targetType
+  targetId
+  parentCommentId
+  authorUserId
+  body
+  displayName
+  displayAvatarUrl
+  isEdited
+  isDeleted
+  createdAt
+  updatedAt
+}
+
+fragment CommentThreadFields on Comment {
+  ...CommentFields
+  replies(input: { collectionInfo: { pageInfo: { limit: 50, offset: 0 } } }) {
+    nodes {
+      ...CommentFields
+    }
+    pageInfo {
+      limit
+      offset
+    }
+  }
+}
+
+query CommentsForViewerMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!) {
+  viewer {
+    id
+    mediaItem(id: $mediaItemId) {
+      id
+      comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
+        nodes {
+          ...CommentThreadFields
+        }
+        pageInfo {
+          limit
+          offset
+        }
+      }
+    }
+  }
+}
+
+query CommentsForViewerAlbum($albumId: ID!, $limit: Int!, $offset: Int!) {
+  viewer {
+    id
+    album(id: $albumId) {
+      id
+      comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
+        nodes {
+          ...CommentThreadFields
+        }
+        pageInfo {
+          limit
+          offset
+        }
+      }
+    }
+  }
+}
+
+query CommentsForPublicMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!) {
+  publicAccess {
+    id
+    mediaItem(id: $mediaItemId) {
+      id
+      comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
+        nodes {
+          ...CommentThreadFields
+        }
+        pageInfo {
+          limit
+          offset
+        }
+      }
+    }
+  }
+}
+
+query CommentsForPublicAlbum($limit: Int!, $offset: Int!) {
+  publicAccess {
+    id
+    album {
+      id
+      comments(input: { collectionInfo: { pageInfo: { limit: $limit, offset: $offset } } }) {
+        nodes {
+          ...CommentThreadFields
+        }
+        pageInfo {
+          limit
+          offset
+        }
+      }
+    }
+  }
+}
