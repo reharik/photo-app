@@ -1,16 +1,14 @@
-import { ViewerOperation } from 'packages/foundation/contracts/src/enums/viewerOperations';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
-import { PublicAccessReadRepository } from '../../../repositories/readRepositories/publicAccessReadRepository';
-import { PublicAccessProjection } from '../types';
+import {
+  PublicAccessReadRepository,
+  PublicAccessRow,
+} from '../../../repositories/readRepositories/publicAccessReadRepository';
 
 export interface PublicAccessReadService {
-  publicAccessByTokenHash: (tokenHash: string) => Promise<PublicAccessProjection | undefined>;
+  validateHashedToken: (tokenHash: string) => Promise<string | undefined>;
+  getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
 }
 
 type PublicAccessReadServiceDeps = {
-  albumReadRepository: AlbumReadRepository;
-  mediaItemReadRepository: MediaItemReadRepository;
   publicAccessReadRepository: PublicAccessReadRepository;
 };
 
@@ -18,27 +16,20 @@ export const build__PublicAccessReadService = ({
   publicAccessReadRepository,
 }: PublicAccessReadServiceDeps): PublicAccessReadService => {
   return {
-    publicAccessByTokenHash: async (
-      tokenHash: string,
-    ): Promise<PublicAccessProjection | undefined> => {
-      const publicAccessRow =
-        await publicAccessReadRepository.findActiveWithGrantsByTokenHash(tokenHash);
-      if (!publicAccessRow) {
+    validateHashedToken: async (tokenHash: string): Promise<string | undefined> => {
+      const publicAccess =
+        await publicAccessReadRepository.getPublicAccessIdByHashedToken(tokenHash);
+      if (!publicAccess) {
         return undefined;
       }
-      const grant = publicAccessRow.publicAccess.grants[0];
-      if (!grant || !grant.albumId) {
+      return publicAccess.publicAccessId;
+    },
+    getPublicAccessById: async (publicLinkId: string): Promise<PublicAccessRow | undefined> => {
+      const publicAccess = await publicAccessReadRepository.getPublicAccessById(publicLinkId);
+      if (!publicAccess) {
         return undefined;
       }
-      const permissions = grant.permission
-        .split(',')
-        .map((p) => ViewerOperation.fromValue(p.trim()));
-
-      return {
-        publicLinkId: publicAccessRow.publicAccess.id,
-        albumId: grant.albumId,
-        permissions,
-      };
+      return publicAccess;
     },
   };
 };

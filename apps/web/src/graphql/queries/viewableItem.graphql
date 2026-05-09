@@ -12,3 +12,7 @@ fragment ViewableMediaItem on MediaItem {
   viewerIsOwner
   viewerOperations
 }
+
+fragment PublicViewableMediaItem on PublicMediaItem {
+  viewerOperations
+}

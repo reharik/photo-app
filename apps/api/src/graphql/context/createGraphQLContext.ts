@@ -1,5 +1,4 @@
 import { User } from '@packages/contracts';
-import { PublicAccessProjection } from '@packages/media-core';
 import { Knex } from 'knex';
 import type { IocGeneratedCradle } from '../../di/generated/ioc-registry.types';
 import {
@@ -20,8 +19,9 @@ type ContextDeps = {
 };
 type PublicContextDeps = {
   publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
+  publicAccessReadService: IocGeneratedCradle['publicAccessReadService'];
   database: Knex;
-  publicAccess: PublicAccessProjection;
+  publicLinkId: string;
 };
 type AuthenticatedContextDeps = {
   user: User;
@@ -34,14 +34,14 @@ export const build__CreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
   publicReadServiceFactories,
-  database,
   publicAccessReadService,
+  database,
 }: ContextDeps): GraphQLContextFactory => {
   return (
     initialContext: GraphQLInitialContext,
   ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
     const user = initialContext.state?.user;
-    const publicAccess = initialContext.state?.publicAccess;
+    const publicAccessId = initialContext.state?.publicAccessId;
     if (initialContext.state?.isLoggedIn && user) {
       return buildAuthenticatedContext({
         user,
@@ -50,13 +50,15 @@ export const build__CreateGraphQLContext = ({
         writeServices,
       });
     }
-    if (!publicAccess) {
+    if (!publicAccessId) {
       throw new Error('Public access not found');
     }
     return buildPublicContext({
       publicReadServiceFactories,
       database,
-      publicAccess,
+      // Rename/map here for clarity down the line
+      publicLinkId: publicAccessId,
+      publicAccessReadService,
     });
   };
 };
@@ -93,21 +95,23 @@ const buildAuthenticatedContext = ({
 
 const buildPublicContext = ({
   publicReadServiceFactories,
+  publicAccessReadService,
   database,
-  publicAccess,
+  publicLinkId,
 }: PublicContextDeps): PublicGraphQLContext => {
-  type PublicServiceFactory = (deps: { shareLinkId: string }) => unknown;
+  type PublicServiceFactory = (deps: { publicLinkId: string }) => unknown;
 
   const publicReadServices = Object.fromEntries(
     Object.entries(publicReadServiceFactories).map(([key, factory]) => [
       key.replace(/Factory$/, ''),
-      (factory as PublicServiceFactory)({ shareLinkId: publicAccess.publicLinkId }),
+      (factory as PublicServiceFactory)({ publicLinkId }),
     ]),
   ) as PublicReadServices;
 
   return {
     database,
     publicReadServices,
-    publicAccess: publicAccess,
+    publicAccessReadService,
+    publicLinkId,
   };
 };

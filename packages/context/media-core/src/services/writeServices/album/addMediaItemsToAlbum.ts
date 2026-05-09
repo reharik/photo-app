@@ -89,7 +89,7 @@ export const build__AddMediaItemsToAlbum = ({
       albumItemIds.push(append.value.id());
     }
 
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
 
     return ok({
       albumId: album.id(),

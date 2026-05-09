@@ -7,7 +7,7 @@ export type MediaItemDetailVM = {
   id: string;
   kind: MediaKind;
   mimeType: string;
-  title: string;
+  title?: string;
   description?: string;
   originalFileName: string;
   createdAt: string;

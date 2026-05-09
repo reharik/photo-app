@@ -20,7 +20,7 @@ type MediaItemPermissionRow = {
   mediaItemId: EntityId;
   ownerId: EntityId;
   albumRole?: AlbumMemberRole;
-  permission: string;
+  permissions: string;
   // future: locked: boolean;
   // future: allowReshare: boolean;
   // future: albumItemAllowReshare: boolean | null;
@@ -46,7 +46,7 @@ export const build__MediaItemAuthzService = ({
           'mi.id as mediaItemId',
           'mi.owner_id as ownerId',
           'am.role as albumRole',
-          '"" as permission',
+          database.raw(`'' as permissions`),
           // future: 'mi.locked',
           // future: 'mi.allow_reshare as allowReshare',
           // future: 'ai.allow_reshare as albumItemAllowReshare',

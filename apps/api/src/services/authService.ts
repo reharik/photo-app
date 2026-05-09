@@ -18,7 +18,7 @@ export interface AuthService {
   verifyJWTToken: (token: string) => Promise<User | undefined>;
   hashPassword: (password: string) => Promise<string>;
   comparePassword: (password: string, hash: string) => Promise<boolean>;
-  publicAccess: (token: string) => Promise<string | undefined>;
+  publicAccess: (token: string) => Promise<{ publicAccessId: string; albumId: string } | undefined>;
 }
 
 type UserRow = User & {
@@ -175,13 +175,16 @@ export const build__AuthService = ({
   },
   publicAccess: async (token: string) => {
     const hashedToken = hashToken(token);
+    console.log('[VALIDATE] token:', JSON.stringify(token));
+    console.log('[VALIDATE] hash:', hashedToken);
+
     const authenticated = await database('share_link')
       .where({ link_token: hashedToken })
       .whereNull('revoked_at')
       .where((b) => {
         b.whereNull('expires_at').orWhere('expires_at', '>', database.fn.now());
       })
-      .first<{ publicAccessId: string }>('id');
+      .first<{ publicAccessId: string; albumId: string }>('id as publicAccessId, albumId');
 
     if (!authenticated.publicAccessId) {
       logger.warn('Authentication attempt failed: token not found ');
@@ -192,7 +195,7 @@ export const build__AuthService = ({
       id: authenticated.publicAccessId,
     });
 
-    return authenticated.publicAccessId;
+    return authenticated;
   },
 
   hashPassword: async (password: string) => {

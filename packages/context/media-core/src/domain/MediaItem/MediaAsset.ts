@@ -4,7 +4,7 @@
 
 import { MediaAssetKind, MediaAssetStatus } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type EntityAuditRecord } from '../Entity';
+import { Entity, type AuditRecord } from '../Entity';
 
 export type MediaAssetProps = {
   kind: MediaAssetKind;
@@ -23,7 +23,7 @@ export type MediaAssetRecord = {
   height?: number;
   fileSizeBytes?: number;
   status: MediaAssetStatus;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateMediaAssetInput = {
   kind: MediaAssetKind;

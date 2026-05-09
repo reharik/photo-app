@@ -12,6 +12,7 @@ export type GrantRecord = {
 
 export type GrantRepository = {
   createGrant: (grant: GrantRecord, options: RepoOptions) => Promise<void>;
+  createGrants: (grants: GrantRecord[], options: RepoOptions) => Promise<void>;
   deleteGrantsBySourceId: (sourceId: EntityId, options: RepoOptions) => Promise<void>;
   deleteGrantsByAlbumId: (albumId: EntityId, options: RepoOptions) => Promise<void>;
 };
@@ -22,6 +23,12 @@ export const build__GrantRepository = ({ database }: GrantRepositoryDeps): Grant
   createGrant: async (grant: GrantRecord, options: RepoOptions): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
       await trx<GrantRecord>('grant').insert(grant);
+    });
+  },
+
+  createGrants: async (grants: GrantRecord[], options: RepoOptions): Promise<void> => {
+    await runInTransaction(database, options, async (trx) => {
+      await trx<GrantRecord>('grant').insert(grants);
     });
   },
 

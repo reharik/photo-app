@@ -1,10 +1,11 @@
 import { AppErrorCollection, SharePermission } from '@packages/contracts';
 import { ActorId, EntityId, WriteResult } from '../../types/types';
-import { Entity, EntityAuditRecord } from '../Entity';
+import { AuditRecord, Entity } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 
 export type AuthorizationProps = {
   grantedToUser?: EntityId;
+  publicLinkId?: EntityId;
   permission: SharePermission;
   grantedBy: EntityId;
   label?: string;
@@ -15,15 +16,17 @@ export type AuthorizationProps = {
 export type AuthorizationRecord = {
   id: string;
   grantedToUser?: string;
+  publicLinkId?: string;
   grantedBy: EntityId;
   permission: SharePermission;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateAuthorizationInput = {
   permission: SharePermission;
+  publicLinkId?: EntityId;
   grantedToUser?: EntityId;
   grantedBy: EntityId;
   label?: string;
@@ -42,6 +45,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
     return new Authorization(crypto.randomUUID(), actorId, {
       permission: input.permission,
       grantedToUser: input.grantedToUser,
+      publicLinkId: input.publicLinkId,
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
@@ -52,6 +56,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
     const asset = new Authorization(record.id, record.createdBy, {
       permission: record.permission,
       grantedToUser: record.grantedToUser,
+      publicLinkId: record.publicLinkId,
       grantedBy: record.grantedBy,
       label: record.label,
       expiresAt: record.expiresAt,
@@ -62,6 +67,9 @@ export class Authorization extends Entity<AuthorizationRecord> {
   }
   grantedToUser(): EntityId | undefined {
     return this.props.grantedToUser;
+  }
+  publicLinkId(): EntityId | undefined {
+    return this.props.publicLinkId;
   }
   permission(): SharePermission {
     return this.props.permission;

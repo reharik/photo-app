@@ -39,7 +39,7 @@ export const build__DeleteAlbumItems = ({
     if (!deleteResult.success) {
       return deleteResult;
     }
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
     return ok({ albumId: album.id(), albumItemIds });
   };
 };

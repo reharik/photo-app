@@ -7,7 +7,7 @@ export interface AuthController {
   signup: (ctx: Context) => Promise<Context>;
   logout: (ctx: Context) => Context;
   me: (ctx: Context) => Context;
-  publicAccess: (ctx: Context) => Promise<Context>;
+  publicAccess: (ctx: Context) => Context;
 }
 
 export const build__AuthController = ({
@@ -148,22 +148,12 @@ export const build__AuthController = ({
     return ctx;
   },
 
-  publicAccess: async (ctx: Context): Promise<Context> => {
-    const { token } = ctx.request.body as {
-      token: string;
-    };
+  publicAccess: (ctx: Context): Context => {
+    const publicAccessId = ctx.state.publicAccessId;
 
-    if (!token) {
-      ctx.status = 400;
-      ctx.body = { error: 'A public access token is required' };
-      return ctx;
-    }
-
-    const publicAccessId = await authService.publicAccess(token);
     if (!publicAccessId) {
-      logger.warn('Public access attempt failed from controller');
-      ctx.status = 401;
-      ctx.body = { error: 'Invalid public access token' };
+      ctx.status = 400;
+      ctx.body = { success: false, error: 'A public access token is required' };
       return ctx;
     }
 
@@ -171,13 +161,7 @@ export const build__AuthController = ({
       ip: ctx.ip,
     });
 
-    ctx.cookies.set('token', token, {
-      httpOnly: true,
-      secure: ctx.app.env === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
-
+    ctx.body = { success: true };
     ctx.status = 200;
     return ctx;
   },

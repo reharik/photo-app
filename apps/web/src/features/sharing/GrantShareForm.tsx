@@ -22,7 +22,7 @@ type GrantShareFormProps = {
   suggestions: ShareContactType[];
   onSubmit: (input: GrantShareFormValues) => Promise<void>;
   /** When set, shows a "Create shareable link" path and requires a handle for the primary Share action. */
-  onCreateShareableLink?: (input: GrantShareFormValues) => Promise<void>;
+  onCreatePublicLink?: (input: GrantShareFormValues) => Promise<void>;
   isLoading: boolean;
   errors: AppError[];
   createdToken?: string;
@@ -37,7 +37,7 @@ const trimmedOrUndefined = (value: string): string | undefined => {
 export const GrantShareForm = ({
   suggestions,
   onSubmit,
-  onCreateShareableLink,
+  onCreatePublicLink,
   isLoading,
   errors,
   createdToken,
@@ -68,7 +68,7 @@ export const GrantShareForm = ({
     if (isLoading) {
       return;
     }
-    if (onCreateShareableLink && !handle.trim()) {
+    if (onCreatePublicLink && !handle.trim()) {
       setShareToUserError(
         'Enter a user handle to share with a specific person, or use “Create shareable link” below.',
       );
@@ -83,7 +83,7 @@ export const GrantShareForm = ({
       return;
     }
     setShareToUserError(undefined);
-    await onCreateShareableLink?.(formValues());
+    await onCreatePublicLink?.(formValues());
   };
 
   if (createdToken) {
@@ -128,7 +128,7 @@ export const GrantShareForm = ({
           }
           disabled={isLoading}
         />
-        {onCreateShareableLink && (
+        {onCreatePublicLink && (
           <ShareableLinkBlock>
             <LinkDisclaimer>
               Anyone with the link can use the access level you select above. Do not share the link

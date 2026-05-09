@@ -157,7 +157,7 @@ const projectionFromAggregate = (item: MediaItem): MediaItemRow => {
     width: p.width,
     height: p.height,
     durationSeconds: p.durationSeconds,
-    title: p.title,
+    title: p.title ?? '',
     originalFileName: p.originalFileName,
     description: p.description,
     takenAt: p.takenAt,
@@ -509,7 +509,7 @@ describe('Album integration (application services)', () => {
       }
       const memberResult = album.addMember(viewerOnlyId, AlbumMemberRole.contributor, ownerId);
       expect(memberResult.success).toBe(true);
-      await albumRepository.save(album);
+      await albumRepository.save(album, ownerId);
 
       const createUpload = build__CreateMediaItemUpload({
         mediaItemRepository,

@@ -114,6 +114,7 @@ export const build__SharedWithMeReadRepository = ({
           })
           .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
           .whereNotNull('accessGrant.albumId')
+          .andWhere('album.isPublicLinkAlbum', false)
           .orderBy('accessGrant.createdAt', 'desc')
           .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
         {

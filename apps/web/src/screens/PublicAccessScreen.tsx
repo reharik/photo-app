@@ -4,28 +4,32 @@ import { useAuth } from '../contexts/AuthContext';
 import { PublicAlbumScreen } from './PublicAlbumScreen';
 
 export const PublicAccessScreen = () => {
-  const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState<string | undefined>();
-
-  const { publicAccess } = useAuth();
-
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const auth = useAuth();
   const { token } = useParams<{ token: string }>();
+
   useEffect(() => {
     if (!token) return;
 
     void Promise.all([
-      publicAccess(token).then((result) => {
-        if (!result.ok) {
-          setError(result.message);
-          return;
-        }
-        setIsValid(true);
-      }),
+      auth
+        .publicAccess(token)
+        .then((result) => {
+          if (!result.success) {
+            setError(result.error);
+            return;
+          }
+          setIsAuthenticated(true);
+        })
+        .catch((error) => {
+          setError(error instanceof Error ? error.message : 'Public access failed');
+        }),
       new Promise((resolve) => setTimeout(resolve, 800)),
     ]);
-  }, [publicAccess, token]);
+  }, [auth, token]);
 
-  if (isValid) {
+  if (isAuthenticated) {
     return <PublicAlbumScreen />;
   }
 };

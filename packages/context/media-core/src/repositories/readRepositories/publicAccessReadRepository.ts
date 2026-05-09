@@ -1,28 +1,19 @@
 import type { Knex } from 'knex';
 
-export type PublicAccessGrantRow = {
-  id: string;
-  shareLinkId: string;
-  accessGrantId: string;
-  mediaItemId?: string;
-  albumId?: string;
-  permission: string;
-};
-
 export type PublicAccessRow = {
   id: string;
-  createdBy: string;
+  albumId: string;
+  linkToken: string;
+  grantedBy: string;
   expiresAt?: Date;
   revokedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  grants: PublicAccessGrantRow[];
 };
 
 export type PublicAccessReadRepository = {
-  findActiveWithGrantsByTokenHash: (
+  getPublicAccessIdByHashedToken: (
     tokenHash: string,
-  ) => Promise<{ publicAccess: PublicAccessRow } | undefined>;
+  ) => Promise<{ publicAccessId: string } | undefined>;
+  getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
   canAccessMediaWithLink: (input: { tokenHash: string; mediaItemId: string }) => Promise<boolean>;
 };
 
@@ -31,42 +22,32 @@ type PublicAccessReadRepositoryDeps = { database: Knex };
 export const build__PublicAccessReadRepository = ({
   database,
 }: PublicAccessReadRepositoryDeps): PublicAccessReadRepository => ({
-  findActiveWithGrantsByTokenHash: async (tokenHash: string) => {
-    const publicAccess = await database<PublicAccessRow>('shareLink')
-      .where({ linkToken: tokenHash })
-      .whereNull('revokedAt')
+  getPublicAccessIdByHashedToken: async (tokenHash: string) => {
+    const publicAccess = await database<{ publicAccessId: string }>('shareLink')
+      .where('shareLink.linkToken', tokenHash)
+      .whereNull('shareLink.revokedAt')
       .where((b) => {
-        b.whereNull('expiresAt').orWhere('expiresAt', '>', database.fn.now());
+        b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
       })
-      .first();
-
+      .first<{ publicAccessId: string }>('id as publicAccessId');
     if (!publicAccess) {
       return undefined;
     }
-
-    const grants = await database<PublicAccessGrantRow>('shareLinkGrant')
-      .join('accessGrant', 'accessGrant.id', 'shareLinkGrant.accessGrantId')
-      .where('shareLinkGrant.shareLinkId', publicAccess.id)
-      .whereNull('accessGrant.revokedAt')
-      .where((b) => {
-        b.whereNull('accessGrant.expiresAt').orWhere(
-          'accessGrant.expiresAt',
-          '>',
-          database.fn.now(),
-        );
-      })
-      .select<PublicAccessGrantRow[]>(
-        'shareLinkGrant.id as id',
-        'shareLinkGrant.shareLinkId as publicAccessId',
-        'accessGrant.id as accessGrantId',
-        'accessGrant.mediaItemId as mediaItemId',
-        'accessGrant.albumId as albumId',
-        'accessGrant.permission as permission',
-      );
-
-    return { publicAccess: { ...publicAccess, grants } };
+    return publicAccess;
   },
-
+  getPublicAccessById: async (publicAccessId: string) => {
+    const publicAccess = await database('shareLink')
+      .where('shareLink.id', publicAccessId)
+      .whereNull('shareLink.revokedAt')
+      .where((b) => {
+        b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
+      })
+      .first<PublicAccessRow>();
+    if (!publicAccess) {
+      return undefined;
+    }
+    return publicAccess;
+  },
   canAccessMediaWithLink: async ({ tokenHash, mediaItemId }) => {
     const q = database('shareLink')
       .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')

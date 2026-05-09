@@ -4,7 +4,7 @@
  */
 
 import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type EntityAuditRecord } from '../Entity';
+import { Entity, type AuditRecord } from '../Entity';
 
 export type AlbumItemProps = {
   mediaItemId: EntityId;
@@ -16,7 +16,7 @@ export type AlbumItemRecord = {
   mediaItemId: EntityId;
   /** Stored as string in persistence (DB bigint / JSON-safe). */
   orderIndex: string;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export class AlbumItem extends Entity<AlbumItemRecord> {
   protected props: AlbumItemProps;

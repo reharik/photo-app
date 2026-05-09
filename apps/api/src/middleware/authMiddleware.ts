@@ -1,3 +1,4 @@
+import { hashToken } from '@packages/media-core';
 import type { Context, Next } from 'koa';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
@@ -40,7 +41,7 @@ export const build__AuthMiddleware =
   };
 
 export const build__OptionalAuthMiddleware =
-  ({ authService }: IocGeneratedCradle): OptionalAuthMiddleware =>
+  ({ authService, publicAccessReadService }: IocGeneratedCradle): OptionalAuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.cookies.get('token');
     ctx.isLoggedIn = false;
@@ -51,6 +52,13 @@ export const build__OptionalAuthMiddleware =
         ctx.state.user = user;
         ctx.state.isLoggedIn = true;
       }
+    }
+
+    const publicToken = ctx.cookies.get('public');
+    if (publicToken) {
+      const hashedToken = hashToken(publicToken);
+      const publicAccessId = await publicAccessReadService.validateHashedToken(hashedToken);
+      ctx.state.publicAccessId = publicAccessId;
     }
     await next();
   };

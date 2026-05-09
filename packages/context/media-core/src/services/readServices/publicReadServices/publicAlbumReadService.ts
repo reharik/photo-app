@@ -18,7 +18,7 @@ export interface PublicAlbumReadService {
 }
 
 export interface PublicAlbumReadServiceFactory extends PublicReadServiceFactoryBase {
-  (args: { shareLinkId: string }): PublicAlbumReadService;
+  (args: { publicLinkId: string }): PublicAlbumReadService;
 }
 
 type PublicAlbumReadServiceFactoryDeps = {
@@ -30,7 +30,7 @@ export const build__PublicAlbumReadServiceFactory = ({
   albumReadRepository,
   mediaItemReadRepository,
 }: PublicAlbumReadServiceFactoryDeps): PublicAlbumReadServiceFactory => {
-  return ({ shareLinkId }: { shareLinkId: string }) => {
+  return ({ publicLinkId }: { publicLinkId: string }) => {
     const enrichWithTags = async (
       items: Omit<MediaItemProjection, 'tags'>[],
     ): Promise<MediaItemProjection[]> => {
@@ -45,7 +45,7 @@ export const build__PublicAlbumReadServiceFactory = ({
 
     return {
       getAlbum: async (albumId: string): Promise<AlbumProjection | undefined> => {
-        const row = await albumReadRepository.getAlbumForShareLink({ albumId, shareLinkId });
+        const row = await albumReadRepository.getAlbumForShareLink({ albumId, publicLinkId });
         if (!row) {
           return undefined;
         }
@@ -71,9 +71,13 @@ export const build__PublicAlbumReadServiceFactory = ({
       }): Promise<AlbumItemListProjection> => {
         const albumItems = await albumReadRepository.listAlbumItemsForShareLink({
           albumId,
-          shareLinkId,
+          publicLinkId,
           collectionInfo,
         });
+        console.log(`************publicLinkId************`);
+        console.log(albumItems);
+        console.log(publicLinkId);
+        console.log(`********END publicLinkId************`);
         const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToProjection(albumItem));
         const mediaEnriched = await enrichWithTags(mediaBases);
         const nodes = albumItems.map((albumItem, index) => ({

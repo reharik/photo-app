@@ -1,0 +1,31 @@
+mutation CreatePublicLinkForAlbum($input: CreatePublicLinkForAlbumInput!) {
+  createPublicLinkForAlbum(input: $input) {
+    success
+    data {
+      token
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}
+
+mutation CreatePublicLinkForMediaItems($input: CreatePublicLinkForMediaItemsInput!) {
+  createPublicLinkForMediaItems(input: $input) {
+    success
+    data {
+      token
+    }
+    errors {
+      code
+      message
+      field
+      category
+      retryable
+    }
+  }
+}

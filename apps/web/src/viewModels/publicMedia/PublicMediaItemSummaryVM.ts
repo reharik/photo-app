@@ -4,6 +4,9 @@ export type PublicMediaItemSummaryVM = {
   id: string;
   kind: MediaKind;
   mimeType: string;
-  title: string;
+  title?: string;
+  width?: number | null;
+  height?: number | null;
+  durationSeconds?: number | null;
   viewerOperations: ViewerOperation[];
 };

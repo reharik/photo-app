@@ -1,0 +1,10 @@
+fragment PublicMediaItemSummary on PublicMediaItem {
+  id
+  kind
+  title
+  mimeType
+  width
+  height
+  durationSeconds
+  viewerOperations
+}

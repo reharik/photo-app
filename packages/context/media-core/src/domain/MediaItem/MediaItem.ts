@@ -16,7 +16,7 @@ import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import { Comment, CommentRecord } from '../Comment/Comment';
-import type { ChildEntities, EntityAuditRecord } from '../Entity';
+import type { AuditRecord, ChildEntities } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 import { normalizeMediaItemTagLabels } from './MediaItemTag';
@@ -63,7 +63,7 @@ export type MediaItemRecord = {
   /** Normalized display labels (mapped to `user_tag` + `media_item_tag` in persistence). */
   tags: string[];
   authorizations: AuthorizationRecord[];
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateMediaItemInput = {
   kind: MediaKind;
@@ -237,33 +237,52 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     expiresAt?: Date,
   ): WriteResult<{
     authorization: Authorization;
-    status: 'created' | 'updated' | 'noop';
   }> {
-    const result = grantAuthorizationValidation(
-      this,
-      permission,
-      actorId,
-      grantedToUserId,
-      label,
-      expiresAt,
-    );
+    const result = grantAuthorizationValidation(this, grantedToUserId, undefined, label, expiresAt);
     if (!result.success) {
       return result;
     }
     // Maybe this should not be an upsert, we'll see.
-    if (result.value.status === 'updated') {
-      const index = this.#authorizations.findIndex(
-        (x) => x.id() === result.value.authorization.id(),
+
+    const existingAuthorization = this.#authorizations.find(
+      (s) => s.grantedToUser() === grantedToUserId,
+    );
+    if (!existingAuthorization) {
+      const authorization = Authorization.create(
+        {
+          permission,
+          grantedToUser: grantedToUserId,
+          publicLinkId: undefined,
+          grantedBy: actorId,
+          label,
+          expiresAt,
+        },
+        actorId,
       );
-      if (index !== -1) {
-        this.#authorizations[index] = result.value.authorization;
-      }
-    } else {
-      this.#authorizations.push(result.value.authorization);
+      this.#authorizations.push(authorization);
+      this.touch(actorId);
+      return ok({ authorization });
     }
 
-    this.touch(actorId);
-    return ok(result.value);
+    if (expiresAt && result.value.status === 'updateExpireDate') {
+      const updatedExpireDate = existingAuthorization.updateExpireDate(expiresAt, actorId);
+      if (!updatedExpireDate.success) {
+        return updatedExpireDate;
+      }
+      this.touch(actorId);
+      return ok({ authorization: existingAuthorization });
+    }
+
+    if (label && result.value.status === 'updateLabel') {
+      const updatedLabel = existingAuthorization.updateLabel(label, actorId);
+      if (!updatedLabel.success) {
+        return updatedLabel;
+      }
+      this.touch(actorId);
+      return ok({ authorization: existingAuthorization });
+    }
+
+    return fail(AppErrorCollection.album.NoActionProvidedOnAuthorizationCommand);
   }
   revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
     const authorization = this.#authorizations.find((s) => s.id() === authorizationId);

@@ -1,5 +1,5 @@
 import { User } from '@packages/contracts';
-import { PublicAccessProjection, StripFactory } from '@packages/media-core';
+import type { PublicAccessReadService, PublicAccessRow, StripFactory } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { Knex } from 'knex';
 import type Koa from 'koa';
@@ -22,6 +22,9 @@ export interface GraphQLContext {
   writeServices?: IocGeneratedTypes['writeServices'];
   readServices?: ReadServices;
   publicReadServices?: PublicReadServices;
+  /** Present for public (share-link) operations; link id is also on `publicAccess`. */
+  publicAccess?: PublicAccessRow;
+  publicAccessReadService?: PublicAccessReadService;
   publicLinkId?: string;
 }
 
@@ -33,12 +36,13 @@ export type AuthenticatedGraphQLContext = GraphQLContext & {
 
 export type PublicGraphQLContext = GraphQLContext & {
   publicReadServices: PublicReadServices;
-  publicAccess: PublicAccessProjection;
+  publicAccessReadService: PublicAccessReadService;
+  publicLinkId: string;
 };
 
 export type GraphQLInitialContext = YogaInitialContext &
   Koa.Context & {
-    state: { isLoggedIn: boolean; user?: User; publicAccess?: PublicAccessProjection };
+    state: { isLoggedIn: boolean; user?: User; publicAccess?: PublicAccessRow };
   };
 
 export interface GraphQLContextFactory {

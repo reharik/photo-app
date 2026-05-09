@@ -10,6 +10,7 @@ export * from './readServices/publicReadServices/applyPublicAuthorizationService
 export * from './readServices/publicReadServices/publicAccessReadService';
 export * from './readServices/publicReadServices/publicAlbumReadService';
 export * from './readServices/publicReadServices/publicMediaItemAuthzService';
+export * from './readServices/publicReadServices/publicMediaItemReadService';
 export * from './readServices/viewerReadServices/applyAuthorizationService';
 export * from './readServices/viewerReadServices/viewerAlbumReadService';
 export * from './readServices/viewerReadServices/viewerMediaItemReadService';
@@ -36,3 +37,5 @@ export * from './writeServices/mediaItem/finalizeMediaItemUpload';
 export * from './writeServices/mediaItem/updateMediaItem';
 export * from './writeServices/mediaItem/updateMediaItemTags';
 export * from './writeServices/mediaItem/writeMediaItem.types';
+export * from './writeServices/publicLink/createPublicLinkForAlbum';
+export * from './writeServices/publicLink/createPublicLinkForMediaItems';

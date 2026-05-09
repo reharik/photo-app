@@ -41,19 +41,19 @@ export type AlbumReadRepository = {
   }) => Promise<{ id: string }[]>;
   getAlbumForShareLink: ({
     albumId,
-    shareLinkId,
+    publicLinkId,
   }: {
     albumId: string;
-    shareLinkId: string;
+    publicLinkId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
   /** Album items for public share-link viewing (no membership check). READY media only. */
   listAlbumItemsForShareLink: ({
     albumId,
-    shareLinkId,
+    publicLinkId,
     collectionInfo,
   }: {
     albumId: string;
-    shareLinkId: string;
+    publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }) => Promise<AlbumItemWithMediaRow[]>;
 };
@@ -82,6 +82,14 @@ const albumWithCoverSelectColumns = [
   'album.createdAt as createdAt',
   'album.updatedAt as updatedAt',
   'albumMember.role as viewerMemberRole',
+  ...mediaItemSelectColumns,
+];
+
+const publicAlbumWithCoverSelectColumns = [
+  'album.id as id',
+  'album.title as title',
+  'album.createdAt as createdAt',
+  'album.updatedAt as updatedAt',
   ...mediaItemSelectColumns,
 ];
 
@@ -118,14 +126,14 @@ const whereAlbumViewableByMemberOrAlbumGrant =
   };
 
 const whereActiveShareLinkGrant =
-  (db: Knex, albumId: string, shareLinkId: string) =>
+  (db: Knex, albumId: string, publicLinkId: string) =>
   (qb: Knex.QueryBuilder): void => {
     qb.whereExists(
       db
         .select(db.raw('1'))
         .from('accessGrant as ag')
         .where('ag.albumId', albumId)
-        .where('ag.shareLinkId', shareLinkId)
+        .where('ag.shareLinkId', publicLinkId)
         .whereNull('ag.revokedAt')
         .andWhere((expiry) => {
           expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', db.raw('now()'));
@@ -155,6 +163,7 @@ export const build__AlbumReadRepository = ({
         .where((b) => {
           whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
         })
+        .andWhere('album.isPublicLinkAlbum', false)
         .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
         .orderBy('album.id', 'asc') // tie-breaker (unqualified `id` / `created_at` are ambiguous with joined mediaItem)
         .limit(collectionInfo.pageInfo.limit + 1)
@@ -251,24 +260,23 @@ export const build__AlbumReadRepository = ({
 
   getAlbumForShareLink: async ({
     albumId,
-    shareLinkId,
+    publicLinkId,
   }: {
     albumId: string;
-    shareLinkId: string;
+    publicLinkId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
     return withEnumRevival(
       database<AlbumWithCoverRow>('album')
         .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
         .where('album.id', albumId)
         .where((b) => {
-          whereActiveShareLinkGrant(database, albumId, shareLinkId)(b);
+          whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
         })
-        .select<AlbumWithCoverRow>(...albumWithCoverSelectColumns)
+        .select<AlbumWithCoverRow>(...publicAlbumWithCoverSelectColumns)
         .first(),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
-        viewerMemberRole: AlbumMemberRole,
       },
       { strict: true },
     );
@@ -276,20 +284,20 @@ export const build__AlbumReadRepository = ({
 
   listAlbumItemsForShareLink: async ({
     albumId,
-    shareLinkId,
+    publicLinkId,
     collectionInfo,
   }: {
     albumId: string;
-    shareLinkId: string;
+    publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<AlbumItemWithMediaRow[]> => {
     return withEnumRevival(
       database<AlbumItemWithMediaRow>('albumItem')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('albumItem.albumId', albumId)
-        .where('mediaItem.status', MediaItemStatus.ready.key)
+        .where('mediaItem.status', MediaItemStatus.ready.value)
         .where((b) => {
-          whereActiveShareLinkGrant(database, albumId, shareLinkId)(b);
+          whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
         })
         .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
         .orderBy('albumItem.orderIndex', 'asc')

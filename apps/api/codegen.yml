@@ -24,7 +24,7 @@ generates:
       inputMaybeValue: 'T | undefined'
       mappers:
         Viewer: ../resolvers/parentModels#ViewerParent
-        PublicAccess: '@packages/media-core#PublicAccessProjection'
+        PublicAccess: '@packages/media-core#PublicAccessRow'
         PublicAlbum: '@packages/media-core#AlbumProjection'
         Album: '@packages/media-core#AlbumProjection'
         MediaItem: '@packages/media-core#MediaItemProjection'

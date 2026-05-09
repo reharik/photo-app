@@ -1,11 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
-import {
-  buildMediaItemBaseStorageKey,
-  fail,
-  hashToken,
-  ok,
-  WriteResult,
-} from '@packages/media-core';
+import { buildMediaItemBaseStorageKey, fail, ok, WriteResult } from '@packages/media-core';
 import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
 
 export type AuthorizeMediaViewInput = {
@@ -44,7 +38,7 @@ export const build__MediaGrantService = ({
     const granted = await grantReadRepository.hasActiveGrant({
       mediaItemId: mediaId,
       viewerId,
-      tokenHash: hashedToken ? hashToken(hashedToken) : undefined,
+      tokenHash: hashedToken,
     });
 
     if (!granted) {

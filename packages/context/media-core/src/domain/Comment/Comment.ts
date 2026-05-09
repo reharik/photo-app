@@ -6,7 +6,7 @@
 import type { ResourceTypeEnum } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { EntityAuditRecord } from '../Entity';
+import type { AuditRecord } from '../Entity';
 
 export type CommentProps = {
   resourceType: ResourceTypeEnum;
@@ -19,7 +19,7 @@ export type CommentRecord = {
   resourceType: ResourceTypeEnum;
   authorId: EntityId;
   content: string;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateCommentInput = {
   resourceType: ResourceTypeEnum;

@@ -41,16 +41,6 @@ export type AlbumItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-// export type DecoratedAlbumItemProjection = {
-//   id: string;
-//   /** Sparse bigint order index as string (GraphQL-safe). */
-//   orderIndex: string;
-//   createdAt: Date;
-//   updatedAt: Date;
-//   viewerOperations: ViewerOperation[];
-//   mediaItem: MediaItemProjection & AuthzDecoratedItemProjection;
-// };
-
 export type NamespacedMediaItemRow = {
   mediaItemId: EntityId;
   mediaItemOwnerId: EntityId;
@@ -115,25 +105,10 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
-// export type NestedItemProjection = { id: string; mediaItem: MediaItemProjection };
-
 export type MediaItemListProjection = {
   nodes: MediaItemProjection[];
   pageInfo: PageInfo;
 };
-
-// export type MediaAssetProjection = {
-//   id: EntityId;
-//   kind: MediaAssetKind;
-//   url: string;
-//   mimeType: string;
-//   width?: number;
-//   height?: number;
-//   fileSizeBytes?: number;
-//   status: MediaAssetStatus;
-//   createdAt: Date;
-//   updatedAt: Date;
-// };
 
 export interface MediaItemRow {
   id: EntityId;
@@ -146,7 +121,7 @@ export interface MediaItemRow {
   width?: number;
   height?: number;
   durationSeconds?: number;
-  title: string;
+  title?: string;
   description?: string;
   takenAt?: Date;
   createdAt: Date;
@@ -162,13 +137,6 @@ export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy>
   sortBy: MediaItemSortBy;
   sortDir: SortDir;
 }
-
-// export interface AuthzDecoratedItemProjection {
-//   id: EntityId;
-//   ownerId: EntityId;
-//   viewerIsOwner: boolean;
-//   viewerOperations: ViewerOperation[];
-// }
 
 export interface HasId {
   id: EntityId;
@@ -191,8 +159,17 @@ export type DecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
   mediaItem: DecoratedItem<U>;
 };
 
-export type PublicAccessProjection = {
-  publicLinkId: string;
-  albumId: string;
-  permissions: ViewerOperation[];
-};
+export interface PublicMediaItemRow {
+  id: EntityId;
+  kind: MediaKind;
+  status: MediaItemStatus;
+  title?: string;
+  mimeType: string;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+}
+
+export interface PublicMediaItemProjection extends PublicMediaItemRow {
+  tags: string[];
+}

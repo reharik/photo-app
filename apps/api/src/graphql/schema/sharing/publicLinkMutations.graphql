@@ -1,0 +1,28 @@
+type Mutation {
+  createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
+  createPublicLinkForMediaItems(
+    input: CreatePublicLinkForMediaItemsInput!
+  ): CreatePublicLinkResponse!
+}
+
+input CreatePublicLinkForAlbumInput {
+  albumId: ID!
+  name: String
+  expiresAt: DateTime
+}
+
+input CreatePublicLinkForMediaItemsInput {
+  mediaItemIds: [ID!]!
+  name: String
+  expiresAt: DateTime
+}
+
+type CreatePublicLinkPayload {
+  token: String!
+}
+
+type CreatePublicLinkResponse {
+  errors: [ContractError!]
+  success: Boolean!
+  data: CreatePublicLinkPayload
+}

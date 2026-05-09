@@ -1,21 +1,45 @@
-import { MediaAssetKind } from '@packages/contracts';
+import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { AppModal } from '../../ui/AppModal';
-import { AlbumItemSummaryVM } from '../../viewModels/album/AlbumItemSummaryVM';
-import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
 import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
 import { SingleSelectionTile } from '../gallery/tiles/SingleSelectionTile';
 
 type AlbumSectionMetadataProps = {
   count: number;
-  album: AlbumSummaryVM;
+  album: MinimalAlbumSummaryVM;
   metaCompact: boolean;
-  albumItems: AlbumItemSummaryVM[];
+  albumItems: MinimalAlbumItemSummaryVM[];
   onSelectCover?: (mediaId: string) => void;
   isPublic?: boolean;
+};
+
+export type MinimalAlbumSummaryVM = {
+  id: string;
+  title?: string;
+  coverMedia?: MinimalMediaItemSummaryVM;
+  itemCount: number;
+  updatedAt?: string;
+  viewerIsOwner?: boolean;
+};
+
+export type MinimalMediaItemSummaryVM = {
+  id: string;
+  title: string;
+  kind: MediaKind;
+  createdAt?: string;
+  status?: MediaItemStatus;
+};
+
+export type MinimalAlbumItemSummaryVM = {
+  id: string;
+  mediaItem: MinimalMediaItemSummaryVM;
+  orderIndex: string;
+  updatedAt?: string;
+  viewerIsOwner?: boolean;
 };
 
 export const AlbumSectionMetadata = ({
@@ -96,7 +120,7 @@ export const AlbumSectionMetadata = ({
               nodes={albumItems}
               renderItem={({ item }) => (
                 <SingleSelectionTile
-                  item={item.mediaItem}
+                  item={item.mediaItem as MediaItemSummaryVM}
                   onSelect={() => onSelectCover?.(item.id)}
                 />
               )}

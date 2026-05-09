@@ -312,16 +312,16 @@ const contractErrorInput = {
     area: ErrorArea.authorization,
     retryable: false,
   },
-  AuthorizationMustHaveGrantedToUserId: {
-    code: 'SHARE_MUST_HAVE_GRANTED_TO_USER_ID',
-    display: 'Authorization must have granted to user id',
+  AuthorizationMustHaveGrantedToUserIdOrPublicLinkId: {
+    code: 'SHARE_MUST_HAVE_GRANTED_TO_USER_ID_OR_PUBLIC_LINK_ID',
+    display: 'Authorization must have granted to user id or public link id',
     category: ErrorCategory.domain,
     area: ErrorArea.authorization,
     retryable: false,
   },
-  AuthorizationMustNotHaveGrantedToUserIdAndToken: {
-    code: 'SHARE_MUST_NOT_HAVE_GRANTED_TO_USER_ID_AND_TOKEN',
-    display: 'Authorization must not have granted to user id and token',
+  AuthorizationMustNotHaveGrantedToUserIdAndPublicLinkId: {
+    code: 'SHARE_MUST_NOT_HAVE_GRANTED_TO_USER_ID_AND_PUBLIC_LINK_ID',
+    display: 'Authorization must not have granted to user id and public link id at the same time',
     category: ErrorCategory.domain,
     area: ErrorArea.authorization,
     retryable: false,
@@ -331,6 +331,34 @@ const contractErrorInput = {
     display: 'User not found',
     category: ErrorCategory.domain,
     area: ErrorArea.user,
+    retryable: false,
+  },
+  NoActionProvidedOnAuthorizationCommand: {
+    code: 'NO_ACTION_PROVIDED_ON_AUTHORIZATION_COMMAND',
+    display: 'No action provided on authorization command',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  NoActionProvidedOnPublicLinkCommand: {
+    code: 'NO_ACTION_PROVIDED_ON_PUBLIC_LINK_COMMAND',
+    display: 'No action provided on public link command',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  PublicLinkMustHaveTokenOrId: {
+    code: 'PUBLIC_LINK_MUST_HAVE_TOKEN_OR_ID',
+    display: 'Public link must have token or id',
+    category: ErrorCategory.domain,
+    area: ErrorArea.authorization,
+    retryable: false,
+  },
+  PublicLinkNotFound: {
+    code: 'PUBLIC_LINK_NOT_FOUND',
+    display: 'Public link not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.authorization,
     retryable: false,
   },
 } as const;

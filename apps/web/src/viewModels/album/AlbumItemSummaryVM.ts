@@ -4,9 +4,9 @@ import { ViewableItemVM } from './AlbumSummaryVM';
 // export type AlbumItemSummaryVM = UserAlbumItemSummaryVM | PublicAlbumItemSummaryVM;
 
 export type AlbumItemSummaryVM = {
-  createdAt: string;
+  createdAt?: string;
   mediaItem: MediaItemSummaryVM;
   orderIndex: string;
-  updatedAt: string;
+  updatedAt?: string;
   /** From `AlbumItem.viewerOperations` (decorated in `album.items` resolver). */
 } & ViewableItemVM;

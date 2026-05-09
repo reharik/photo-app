@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { Navigation } from './Navigation';
@@ -15,11 +15,11 @@ const NAV_LINKS = [
 
 type OpenMenu = null | 'nav' | 'profile';
 
-interface AppShellProps {
-  viewer: { id: string; displayName: string };
-}
-
-export const AppShell = ({ viewer }: AppShellProps) => {
+export const AppShell = () => {
+  const { viewer } = useOutletContext<{ viewer: { id: string; displayName: string } }>();
+  console.log(`************"here"************`);
+  console.log('here');
+  console.log(`********END "here"************`);
   const location = useLocation();
   const isMobileShell = useMediaQuery(MOBILE_SHELL);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);

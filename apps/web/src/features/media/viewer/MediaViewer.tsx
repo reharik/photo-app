@@ -17,6 +17,7 @@ export type MediaViewerProps = {
   mimeType: string;
   displayUrl: string;
   imageAlt: string;
+  showCloseButton?: boolean;
   onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
@@ -39,6 +40,7 @@ export const MediaViewer = ({
   displayUrl,
   imageAlt,
   onClose,
+  showCloseButton = true,
   onNavigate,
   canNavigate = false,
   escapeConsumedRef,
@@ -104,7 +106,7 @@ export const MediaViewer = ({
     <ViewerRoot>
       <ViewerShell>
         {!showNavControls ? (
-          <MediaViewerSingle media={media} onClose={onClose} />
+          <MediaViewerSingle media={media} onClose={onClose} showCloseButton={showCloseButton} />
         ) : isMobileLayout ? (
           <MediaViewerMobileNav
             media={media}

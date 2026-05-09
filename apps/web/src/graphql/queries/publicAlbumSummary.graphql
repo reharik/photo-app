@@ -2,7 +2,7 @@ fragment publicAlbumSummary on PublicAlbum {
   id
   title
   coverMedia {
-    ...publicMediaItemSummary
+    ...PublicMediaItemSummary
   }
   items(
     input: {
@@ -10,7 +10,7 @@ fragment publicAlbumSummary on PublicAlbum {
     }
   ) {
     nodes {
-      ...publicAlbumItemSummary
+      ...PublicAlbumItemSummary
     }
     pageInfo {
       limit

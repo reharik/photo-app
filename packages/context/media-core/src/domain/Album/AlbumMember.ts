@@ -1,6 +1,6 @@
 import { AlbumMemberRole } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type EntityAuditRecord } from '../Entity';
+import { Entity, type AuditRecord } from '../Entity';
 
 export type AlbumMemberProps = {
   userId: EntityId;
@@ -11,7 +11,7 @@ export type AlbumMemberRecord = {
   id: EntityId;
   userId: EntityId;
   role: AlbumMemberRole;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export class AlbumMember extends Entity<AlbumMemberRecord> {
   protected props: AlbumMemberProps;

@@ -1,0 +1,8 @@
+fragment PublicAlbumItemSummary on PublicAlbumItem {
+  id
+  orderIndex
+  viewerOperations
+  mediaItem {
+    ...PublicMediaItemSummary
+  }
+}

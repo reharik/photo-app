@@ -11,18 +11,22 @@ export const build__MediaAuthMiddleware =
   async (ctx: Context, next: Next): Promise<void> => {
     // Extract viewer identity from JWT — local verify, no DB hit
     const token = ctx.cookies.get('token');
-
+    const publicToken = ctx.cookies.get('public');
     let payload: { userId?: string; token?: string } | undefined;
     if (token) {
       try {
-        payload = jwt.verify(token, config.jwtSecret) as { userId?: string; token?: string };
+        payload = jwt.verify(token, config.jwtSecret) as { userId?: string };
       } catch {
         ctx.throw(401);
       }
+    } else if (publicToken) {
+      payload = { token: publicToken };
     }
-
+    console.log(`************payload************`);
+    console.log(payload);
+    console.log(`********END payload************`);
     const hashedToken = payload?.token ? hashToken(payload.token) : undefined;
-    const viewerId = payload?.userId || hashedToken;
+    const viewerId = payload?.userId;
     const { mediaId, variant } = ctx.params as { mediaId: string; variant: string };
     if (!viewerId && !hashedToken) ctx.throw(401);
 

@@ -150,6 +150,28 @@ type CreateMediaUploadResponse {
   errors: [ContractError!]
 }
 
+input CreatePublicLinkForAlbumInput {
+  albumId: ID!
+  expiresAt: DateTime
+  name: String
+}
+
+input CreatePublicLinkForMediaItemsInput {
+  expiresAt: DateTime
+  mediaItemIds: [ID!]!
+  name: String
+}
+
+type CreatePublicLinkPayload {
+  token: String!
+}
+
+type CreatePublicLinkResponse {
+  data: CreatePublicLinkPayload
+  errors: [ContractError!]
+  success: Boolean!
+}
+
 scalar Date
 
 scalar DateTime
@@ -358,6 +380,10 @@ type Mutation {
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
   createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
+  createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
+  createPublicLinkForMediaItems(
+    input: CreatePublicLinkForMediaItemsInput!
+  ): CreatePublicLinkResponse!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
@@ -401,10 +427,13 @@ input PageInfoInput {
 }
 
 type PublicAccess {
-  album(albumId: ID!): PublicAlbum!
+  album: PublicAlbum!
   albumId: ID!
-  permissions: [ViewerOperation!]!
-  publicLinkId: ID!
+  expiresAt: DateTime
+  grantedBy: ID!
+  id: ID!
+  mediaItem(id: ID!): PublicMediaItem!
+  revokedAt: DateTime
 }
 
 type PublicAlbum implements Node {
@@ -449,7 +478,7 @@ type PublicMediaItem implements Node {
   mimeType: String!
   status: MediaItemStatus!
   tags: [String!]!
-  title: String!
+  title: String
   viewerOperations: [ViewerOperation!]!
   width: Int
 }

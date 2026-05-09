@@ -1,0 +1,8 @@
+query PublicMediaItemDetail($mediaItemId: ID!) {
+  publicAccess {
+    id
+    mediaItem(id: $mediaItemId) {
+      ...PublicMediaItemSummary
+    }
+  }
+}

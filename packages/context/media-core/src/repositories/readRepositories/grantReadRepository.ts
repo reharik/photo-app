@@ -15,6 +15,9 @@ export const build__GrantReadRepository = ({
   database,
 }: GrantReadRepositoryDeps): GrantReadRepository => ({
   hasActiveGrant: (input: HasActiveGrantInput): Promise<boolean> => {
+    console.log(`************input************`);
+    console.log(input);
+    console.log(`********END input************`);
     if (input.viewerId) {
       return database('grant')
         .where('media_item_id', input.mediaItemId)

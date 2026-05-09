@@ -35,7 +35,7 @@ export const build__SetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): Se
     if (!r3.success) {
       return r3;
     }
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
 
     return ok({
       albumId: album.id(),

@@ -41,7 +41,7 @@ export const build__AddAlbumItem = ({
       return r3;
     }
     const albumItem = r3.value;
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
 
     return ok({
       albumId: album.id(),

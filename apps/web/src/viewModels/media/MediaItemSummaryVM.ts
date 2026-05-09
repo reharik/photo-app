@@ -5,7 +5,7 @@ import { ViewableItemVM } from '../album/AlbumSummaryVM';
 
 export type MediaItemSummaryVM = {
   id: string;
-  title: string;
+  title?: string;
   createdAt: string;
   kind: MediaKind;
   status: MediaItemStatus;

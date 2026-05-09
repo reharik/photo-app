@@ -2,6 +2,9 @@ import { useQuery } from '@apollo/client/react';
 import { useMemo, useState } from 'react';
 
 import {
+  CreatePublicLinkForAlbumDocument,
+  CreatePublicLinkForAlbumInput,
+  CreatePublicLinkForAlbumMutation,
   GrantUserAuthorizationForAlbumDocument,
   GrantUserAuthorizationForAlbumInput,
   GrantUserAuthorizationForAlbumMutation,
@@ -37,6 +40,11 @@ export const GrantAlbumShareModal = ({
   onClose,
 }: GrantAlbumShareModalProps) => {
   const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
+  const {
+    // publicLinkIsLoading,
+    // publicLinkErrors,
+    execute: createPublicLinkForAlbum,
+  } = useAppMutationState();
 
   const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
 
@@ -69,10 +77,6 @@ export const GrantAlbumShareModal = ({
       (data: GrantUserAuthorizationForAlbumMutation) => data.grantUserAuthorizationForAlbum,
     );
 
-    if (result.success && result.data?.token) {
-      setCreatedToken(result.data.token);
-      return;
-    }
     if (!result.success) {
       onErrorToast?.(result.errors[0]?.message ?? "Couldn't share album");
       onClose();
@@ -83,14 +87,23 @@ export const GrantAlbumShareModal = ({
     onClose();
   };
 
-  const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
-    const input: GrantAlbumShareInput = {
+  const handleCreatePublicLink = async (values: GrantShareFormValues): Promise<void> => {
+    const input: CreatePublicLinkForAlbumInput = {
       albumId,
-      permission: values.permission,
-      label: values.label,
+      name: values.label,
       expiresAt: toIsoExpiry(values.expiresAt),
     };
-    const result = await grantAlbumShare(input);
+
+    const result = await createPublicLinkForAlbum(
+      {
+        mutation: CreatePublicLinkForAlbumDocument,
+        variables: {
+          input,
+        },
+      },
+      (data: CreatePublicLinkForAlbumMutation) => data.createPublicLinkForAlbum,
+    );
+
     if (!result.success) {
       return;
     }
@@ -104,7 +117,7 @@ export const GrantAlbumShareModal = ({
       <GrantShareForm
         suggestions={suggestions}
         onSubmit={handleSubmit}
-        onCreateShareableLink={handleCreateShareableLink}
+        onCreatePublicLink={handleCreatePublicLink}
         isLoading={isLoading}
         errors={errors}
         createdToken={createdToken}

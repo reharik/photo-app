@@ -37,7 +37,7 @@ export const build__ReorderAlbumItems = ({
       return r3;
     }
 
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
 
     return ok({
       albumId: album.id(),

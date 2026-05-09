@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { localizeDate } from '../../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import { AlbumItemSummaryVM } from '../../../viewModels/album/AlbumItemSummaryVM';
+import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
 
-export const AlbumMediaTile = ({ item }: { item: AlbumItemSummaryVM }) => {
+export const AlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM }) => {
   const mediaItem = item.mediaItem;
   const url = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
   return (
@@ -20,7 +20,7 @@ export const AlbumMediaTile = ({ item }: { item: AlbumItemSummaryVM }) => {
       <CaptionLink to={`/media/${mediaItem.id}`}>
         <MediaInfo>
           <MediaTitle>{mediaItem.title.trim()}</MediaTitle>
-          <MediaMeta>{localizeDate(mediaItem.createdAt)}</MediaMeta>
+          <MediaMeta>{mediaItem.createdAt ? localizeDate(mediaItem.createdAt) : ''}</MediaMeta>
         </MediaInfo>
       </CaptionLink>
     </>

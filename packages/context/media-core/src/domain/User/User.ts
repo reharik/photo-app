@@ -6,7 +6,7 @@
 
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { EntityAuditRecord } from '../Entity';
+import type { AuditRecord } from '../Entity';
 
 export type UserProps = {
   email: string;
@@ -39,7 +39,7 @@ export type UserRecord = {
   passwordHash?: string;
   lastLoginAt?: Date;
   emailVerified?: boolean;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateUserInput = {
   email: string;

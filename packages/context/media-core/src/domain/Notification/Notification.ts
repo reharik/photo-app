@@ -6,7 +6,7 @@
 import { NotificationKindEnum } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { EntityAuditRecord } from '../Entity';
+import type { AuditRecord } from '../Entity';
 
 export type NotificationProps = {
   recipientId: EntityId;
@@ -23,7 +23,7 @@ export type NotificationRecord = {
   title: string;
   body: string;
   readAt?: Date;
-} & EntityAuditRecord;
+} & AuditRecord;
 
 export type CreateNotificationInput = {
   recipientId: EntityId;

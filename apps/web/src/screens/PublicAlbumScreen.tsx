@@ -1,12 +1,17 @@
 import { useQuery } from '@apollo/client/react';
 import { useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../shared/components/dataAccess/getQueryRenderState';
-import { Toast } from '../shared/components/ui/Toast';
+import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { Toast } from '../ui/Toast';
+import { mapPublicAlbumItemToSummaryVM } from '../viewModels/publicAlbum/mapPublicAlbumItemToSummaryVM';
 import { mapPublicAlbumToSummaryVM } from '../viewModels/publicAlbum/mapPublicAlbumToSummaryVM';
 
 export const PublicAlbumScreen = () => {
+  const { token } = useParams<{ token: string }>();
+
   const [showSaveToast, setShowSaveToast] = useState(false);
 
   const query = useQuery(PublicAlbumViewDocument, {
@@ -24,19 +29,22 @@ export const PublicAlbumScreen = () => {
   }
 
   const album = mapPublicAlbumToSummaryVM(data);
-  // const albumItems = data.items.nodes.map(mapPublicAlbumItemToSummaryVM) ?? [];
-
+  const albumItems = data.items.nodes.map(mapPublicAlbumItemToSummaryVM) ?? [];
+  if (!data) {
+    return content;
+  }
+  if (data.items.nodes.length === 1) {
+    return <Navigate to={`/shared/${token}/media/${data.items.nodes[0].mediaItem.id}`} replace />;
+  }
   return (
     <Container>
       {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       {album && (
-        <div>{`Public link is on hold. But just for kicks, this album is called ${album.title}`}</div>
-
-        //  <PublicAlbumSection
-        //     album={album}
-        //     albumItems={albumItems}
-        //     retrieveAlbumItems={query.refetch}
-        //   />
+        <PublicAlbumSection
+          album={album}
+          albumItems={albumItems}
+          retrieveAlbumItems={query.refetch}
+        />
       )}
     </Container>
   );

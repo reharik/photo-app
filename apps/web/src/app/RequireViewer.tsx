@@ -1,19 +1,15 @@
 import styled from 'styled-components';
 import { useViewer } from '../hooks/useViewer';
 
-import type { Viewer } from '../hooks/useViewer';
+import { Navigate, Outlet } from 'react-router-dom';
 
-interface ViewerBootstrapProps {
-  children: (viewer?: Viewer) => React.ReactNode;
-}
-
-export const ViewerBootstrap = ({ children }: ViewerBootstrapProps) => {
+export const RequireViewer = () => {
   const { viewer, loading, error } = useViewer();
 
   if (loading) return <LoadingShell />;
-  if (error) return children(undefined);
+  if (error || !viewer) return <Navigate to="/login" replace />;
 
-  return <>{children(viewer)}</>;
+  return <Outlet context={{ viewer }} />;
 };
 
 const LoadingShell = () => {

@@ -3,8 +3,11 @@ extend type Query {
 }
 
 type PublicAccess {
-  publicLinkId: ID!
+  id: ID!
   albumId: ID!
-  permissions: [ViewerOperation!]!
-  album(albumId: ID!): PublicAlbum!
+  grantedBy: ID!
+  expiresAt: DateTime
+  revokedAt: DateTime
+  album: PublicAlbum!
+  mediaItem(id: ID!): PublicMediaItem!
 }

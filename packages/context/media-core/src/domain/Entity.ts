@@ -11,7 +11,7 @@ export interface Persistable<TRecord> {
   persistenceState(): Record<string, unknown>;
 }
 
-export type EntityAuditRecord = {
+export type AuditRecord = {
   createdAt: Date;
   updatedAt: Date;
   createdBy: ActorId;
@@ -39,7 +39,7 @@ export abstract class Entity<
     this.#updatedBy = actorId;
   }
 
-  protected rehydrateAudit(audit: EntityAuditRecord): void {
+  protected rehydrateAudit(audit: AuditRecord): void {
     this.#createdAt = audit.createdAt;
     this.#updatedAt = audit.updatedAt;
     this.#createdBy = audit.createdBy;
@@ -51,7 +51,7 @@ export abstract class Entity<
     this.#updatedBy = actorId;
   }
 
-  protected exportAudit(): EntityAuditRecord {
+  protected exportAudit(): AuditRecord {
     return {
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,

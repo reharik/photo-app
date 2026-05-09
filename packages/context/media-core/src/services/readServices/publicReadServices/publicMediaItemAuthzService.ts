@@ -19,13 +19,13 @@ type PublicMediaItemPermissionRow = {
   mediaItemId: EntityId;
   ownerId: EntityId;
   albumRole?: AlbumMemberRole;
-  permission: string;
+  permissions: string;
   // future: locked: boolean;
   // future: allowReshare: boolean;
   // future: albumItemAllowReshare: boolean | null;
 };
 
-export const Build__publicMediaItemAuthzService = ({
+export const build__PublicMediaItemAuthzService = ({
   database,
 }: {
   database: Knex;
@@ -45,13 +45,13 @@ export const Build__publicMediaItemAuthzService = ({
       .whereIn('g.media_item_id', ids)
       .select<
         PublicMediaItemPermissionRow[]
-      >('g.media_item_id as mediaItemId', 'g.permission as permission');
+      >('g.media_item_id as mediaItemId', 'g.permissions as permissions');
 
     const permissionMap = new Map(
       permissions.map((p) => [
         p.mediaItemId,
-        p.permission
-          ? p.permission
+        p.permissions
+          ? p.permissions
               .split(',')
               .filter(Boolean)
               .map((op) => ViewerOperation.fromValue(op))

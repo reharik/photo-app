@@ -2,7 +2,7 @@ import type { ResolverFn } from '../generated/types.generated';
 import { AuthenticatedGraphQLContext, GraphQLContext, PublicGraphQLContext } from './types';
 
 export const requireAuthenticatedContext = (ctx: GraphQLContext): AuthenticatedGraphQLContext => {
-  if (!ctx.viewer || !ctx.writeServices || !ctx.readServices || !ctx.applyAuthorizationService) {
+  if (!ctx.viewer || !ctx.writeServices || !ctx.readServices) {
     throw new Error('Not authenticated');
   }
 
@@ -11,26 +11,20 @@ export const requireAuthenticatedContext = (ctx: GraphQLContext): AuthenticatedG
     viewer: ctx.viewer,
     writeServices: ctx.writeServices,
     readServices: ctx.readServices,
-    applyAuthorizationService: ctx.applyAuthorizationService,
   };
 };
 
 export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext => {
-  if (
-    !ctx.publicReadServices ||
-    !ctx.applyAuthorizationService ||
-    !ctx.publicLinkId ||
-    !ctx.publicAccessReadRepository
-  ) {
+  const { publicReadServices, publicLinkId, publicAccessReadService } = ctx;
+  if (!publicReadServices || !publicLinkId || !publicAccessReadService) {
     throw new Error('Not authenticated');
   }
 
   return {
     ...ctx,
-    publicReadServices: ctx.publicReadServices,
-    applyAuthorizationService: ctx.applyAuthorizationService,
-    publicLinkId: ctx.publicLinkId,
-    publicAccessReadRepository: ctx.publicAccessReadRepository,
+    publicReadServices,
+    publicLinkId,
+    publicAccessReadService,
   };
 };
 

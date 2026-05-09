@@ -7,4 +7,5 @@ export type PublicAlbumItemSummaryVM = {
   orderIndex: string;
   /** From `AlbumItem.viewerOperations` (decorated in `album.items` resolver). */
   viewerOperations: ViewerOperation[];
+  viewerIsOwner: false;
 };

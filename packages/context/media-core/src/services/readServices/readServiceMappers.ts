@@ -15,7 +15,7 @@ export const mapMediaItemRowToProjection = (
     width: mediaItem.mediaItemWidth,
     height: mediaItem.mediaItemHeight,
     durationSeconds: mediaItem.mediaItemDurationSeconds,
-    title: mediaItem.mediaItemTitle,
+    title: mediaItem.mediaItemTitle ?? '',
     description: mediaItem.mediaItemDescription,
     takenAt: mediaItem.mediaItemTakenAt,
     createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),

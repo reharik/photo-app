@@ -2,7 +2,7 @@ type PublicMediaItem implements Node {
   id: ID!
   kind: MediaKind!
   status: MediaItemStatus!
-  title: String!
+  title: String
   mimeType: String!
   width: Int
   height: Int

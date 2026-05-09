@@ -35,7 +35,7 @@ export interface ApplyPublicAuthorizationService {
 export const build__ApplyPublicAuthorizationServiceFactory = ({
   publicMediaItemAuthzService,
 }: ApplyPublicAuthorizationServiceFactoryDeps): ApplyPublicAuthorizationServiceFactory => {
-  return ({ publicLinkId }: { publicLinkId: string }) => {
+  return ({ publicLinkId: publicLinkId }: { publicLinkId: string }) => {
     // Albums
     const toAlbums = async <T extends HasId & { viewerMemberRole?: AlbumMemberRole }>(
       items: UnDecoratedItem<T>[],

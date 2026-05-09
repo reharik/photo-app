@@ -23,7 +23,7 @@ export const build__CreateAlbum = ({ albumRepository }: CreateAlbumDeps): Create
       viewerId,
     );
 
-    await albumRepository.save(album);
+    await albumRepository.save(album, viewerId);
 
     return ok({
       albumId: album.id(),

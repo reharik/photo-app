@@ -1,6 +1,9 @@
 import { useQuery } from '@apollo/client/react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
+  CreatePublicLinkForMediaItemsDocument,
+  CreatePublicLinkForMediaItemsInput,
+  CreatePublicLinkForMediaItemsMutation,
   GrantUserAuthorizationsForMediaItemsDocument,
   GrantUserAuthorizationsForMediaItemsInput,
   GrantUserAuthorizationsForMediaItemsMutation,
@@ -38,7 +41,14 @@ export const GrantMediaItemShareModal = ({
   onErrorToast,
   onClose,
 }: GrantMediaItemShareModalProps) => {
+  const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
+
   const { isLoading, errors, execute: grantUserAuthorization } = useAppMutationState();
+  const {
+    // publicLinkIsLoading,
+    // publicLinkErrors,
+    execute: createPublicLinkForMediaItems,
+  } = useAppMutationState();
 
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
@@ -94,25 +104,32 @@ export const GrantMediaItemShareModal = ({
     onClose();
   };
 
-  /*   const handleCreateShareableLink = async (values: GrantShareFormValues): Promise<void> => {
+  const handleCreatePublicLink = async (values: GrantShareFormValues): Promise<void> => {
     if (mediaItemIds.length === 0) {
       return;
     }
-    const permission = PERMISSION_BY_VALUE[values.permission];
-    const input: GrantManyMediaItemSharesInput = {
+    const input: CreatePublicLinkForMediaItemsInput = {
       mediaItemIds,
-      permission,
-      label: values.label,
+      name: values.label,
       expiresAt: toIsoExpiry(values.expiresAt),
     };
-    const result = await grantManyMediaItemShares(input);
+    const result = await createPublicLinkForMediaItems(
+      {
+        mutation: CreatePublicLinkForMediaItemsDocument,
+        variables: {
+          input,
+        },
+      },
+      (data: CreatePublicLinkForMediaItemsMutation) => data.createPublicLinkForMediaItems,
+    );
+
     if (!result.success) {
       return;
     }
     if (result.data?.token) {
       setCreatedToken(result.data.token);
     }
-  }; */
+  };
 
   return (
     <AppModal
@@ -123,10 +140,10 @@ export const GrantMediaItemShareModal = ({
       <GrantShareForm
         suggestions={suggestions}
         onSubmit={handleSubmit}
-        // onCreateShareableLink={handleCreateShareableLink}
+        onCreatePublicLink={handleCreatePublicLink}
         isLoading={isLoading}
         errors={errors}
-        // createdToken={createdToken}
+        createdToken={createdToken}
         onClose={onClose}
       />
     </AppModal>

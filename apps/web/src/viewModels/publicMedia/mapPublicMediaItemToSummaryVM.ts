@@ -10,6 +10,9 @@ export function mapPublicMediaItemToSummaryVM(
     kind: mediaItem.kind,
     mimeType: mediaItem.mimeType,
     title: mediaItem.title ?? '',
+    width: mediaItem.width,
+    height: mediaItem.height,
+    durationSeconds: mediaItem.durationSeconds,
     viewerOperations: mediaItem.viewerOperations ?? [],
   };
 }

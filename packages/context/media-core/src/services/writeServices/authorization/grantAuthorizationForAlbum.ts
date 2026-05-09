@@ -91,7 +91,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const mediaItemIds = album.getMediaItemIds();
 
     await database.transaction(async (trx) => {
-      await albumRepository.save(album, { trx });
+      await albumRepository.save(album, viewerId, { trx });
 
       const now = new Date();
       for (const mediaItemId of mediaItemIds) {

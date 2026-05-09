@@ -73,7 +73,6 @@ export const useApiFetch = () => {
         ? config.apiBaseUrl.slice(0, -1)
         : config.apiBaseUrl;
       const url = `${API}${path.startsWith('/') ? '' : '/'}${path}`;
-
       // Build the headers
       const headers: Record<string, string> = {
         Accept: 'application/json',
@@ -91,7 +90,6 @@ export const useApiFetch = () => {
 
       // Parse response
       const data = await response.json();
-
       if (!response.ok) {
         return {
           success: false,
