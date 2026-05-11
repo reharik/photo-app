@@ -5,6 +5,7 @@ import type {
 } from '@packages/media-core';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -17,7 +18,8 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         body: args.input.body,
       };
 
-      return ctx.writeServices.addComment(command);
+      const result = await ctx.writeServices.addComment(command);
+      return writeResultToPayload(result);
     }),
 
     editComment: authenticatedResolver(async (_parent, args, ctx) => {
@@ -27,7 +29,8 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         body: args.input.body,
       };
 
-      return ctx.writeServices.editComment(command);
+      const result = await ctx.writeServices.editComment(command);
+      return writeResultToPayload(result);
     }),
 
     deleteComment: authenticatedResolver(async (_parent, args, ctx) => {
@@ -36,7 +39,8 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         commentId: args.input.commentId,
       };
 
-      return ctx.writeServices.deleteComment(command);
+      const result = await ctx.writeServices.deleteComment(command);
+      return writeResultToPayload(result);
     }),
   },
 };

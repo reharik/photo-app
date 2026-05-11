@@ -1,6 +1,7 @@
 import { CommentTargetType } from '@packages/contracts';
 import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
+import { CommentRow } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -23,7 +24,7 @@ export type AddCommentCommand = {
 };
 
 export type AddCommentResult = {
-  commentId: EntityId;
+  comment: CommentRow;
 };
 
 export interface AddComment extends WriteServiceBase {
@@ -58,7 +59,27 @@ export const build__AddComment = (_deps: AddCommentDeps): AddComment => {
     // TODO: Insert into the comment table.
 
     return ok({
-      commentId: 'stub-comment-id',
+      comment: {
+        id: 'STUB_COMMENT_ID', // TODO: Generate a real ID
+        targetType: command.targetType ?? CommentTargetType.mediaItem,
+        targetId: command.targetId ?? '',
+        parentCommentId: command.parentCommentId,
+        authorUserId: command.viewerUserId ?? 'viewer.id',
+        body: command.body,
+        displayName: 'STUB_DISPLAY_NAME', // TODO: Get the display name from the viewer
+        displayAvatarUrl: undefined,
+        createdAt: new Date(), // TODO: Generate a real createdAt
+        updatedAt: new Date(), // TODO: Generate a real updatedAt
+        isEdited: false,
+        isDeleted: false,
+        replies: {
+          nodes: [],
+          pageInfo: {
+            limit: 50,
+            offset: 0,
+          },
+        },
+      },
     });
   };
 };

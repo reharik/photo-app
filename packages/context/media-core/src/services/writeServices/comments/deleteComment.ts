@@ -1,5 +1,7 @@
+import { CommentTargetType } from '@packages/contracts';
 import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
+import { CommentRow } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type DeleteCommentCommand = {
@@ -8,7 +10,7 @@ export type DeleteCommentCommand = {
 };
 
 export type DeleteCommentResult = {
-  commentId: EntityId;
+  comment: CommentRow;
 };
 
 export interface DeleteComment extends WriteServiceBase {
@@ -26,7 +28,19 @@ export const build__DeleteComment = (_deps: DeleteCommentDeps): DeleteComment =>
     // TODO: Soft-delete: set comment.deleted_at = now(). Do NOT hard delete.
 
     return ok({
-      commentId: command.commentId,
+      comment: {
+        id: command.commentId,
+        targetType: CommentTargetType.mediaItem,
+        targetId: '',
+        parentCommentId: undefined,
+        authorUserId: command.viewerUserId,
+        body: '',
+        displayName: 'STUB_DISPLAY_NAME', // TODO: Get the display name from the viewer
+        displayAvatarUrl: undefined,
+        createdAt: new Date(), // TODO: Generate a real createdAt
+        updatedAt: new Date(), // TODO: Generate a real updatedAt
+        deletedAt: new Date(), // TODO: Generate a real deletedAt
+      },
     });
   };
 };

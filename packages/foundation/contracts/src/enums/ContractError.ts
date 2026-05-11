@@ -228,6 +228,13 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  MemberNotAllowedToComment: {
+    code: 'MEMBER_NOT_ALLOWED_TO_COMMENT',
+    display: 'Member not allowed to comment',
+    category: ErrorCategory.auth,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
   StatusNotPending: {
     code: 'MEDIA_ITEM_STATUS_NOT_PENDING',
     display: 'Media item status is not pending',

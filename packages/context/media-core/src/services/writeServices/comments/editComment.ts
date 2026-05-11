@@ -1,5 +1,7 @@
+import { CommentTargetType } from '@packages/contracts';
 import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
+import { CommentRow } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type EditCommentCommand = {
@@ -9,7 +11,7 @@ export type EditCommentCommand = {
 };
 
 export type EditCommentResult = {
-  commentId: EntityId;
+  comment: CommentRow;
 };
 
 export interface EditComment extends WriteServiceBase {
@@ -26,7 +28,19 @@ export const build__EditComment = (_deps: EditCommentDeps): EditComment => {
     // TODO: Update comment.body to command.body and bump comment.updated_at to now().
 
     return ok({
-      commentId: command.commentId,
+      comment: {
+        id: command.commentId,
+        targetType: CommentTargetType.mediaItem,
+        targetId: '',
+        parentCommentId: undefined,
+        authorUserId: command.viewerUserId,
+        body: command.body,
+        displayName: 'STUB_DISPLAY_NAME', // TODO: Get the display name from the viewer
+        displayAvatarUrl: undefined,
+        createdAt: new Date(), // TODO: Generate a real createdAt
+        updatedAt: new Date(), // TODO: Generate a real updatedAt
+        deletedAt: undefined,
+      },
     });
   };
 };

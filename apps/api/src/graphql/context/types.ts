@@ -1,5 +1,4 @@
-import { User } from '@packages/contracts';
-import type { PublicAccessReadService, PublicAccessRow, StripFactory } from '@packages/media-core';
+import type { StripFactory } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { Knex } from 'knex';
 import type Koa from 'koa';
@@ -17,34 +16,27 @@ export type GraphQLContextViewer = {
   isAuthenticated: boolean;
 };
 
-export interface GraphQLContext {
+type GraphQLContextShared = {
   database: Knex;
-  viewer?: GraphQLContextViewer;
-  writeServices?: IocGeneratedTypes['writeServices'];
-  readServices?: ReadServices;
-  publicReadServices?: PublicReadServices;
   agnosticReadServices: AgnosticReadServices;
-  /** Present for public (share-link) operations; link id is also on `publicAccess`. */
-  publicAccess?: PublicAccessRow;
-  publicAccessReadService?: PublicAccessReadService;
-  publicLinkId?: string;
-}
+};
 
-export type AuthenticatedGraphQLContext = GraphQLContext & {
+export type AuthenticatedGraphQLContext = GraphQLContextShared & {
+  kind: 'authenticated';
   viewer: GraphQLContextViewer;
   writeServices: IocGeneratedTypes['writeServices'];
   readServices: ReadServices;
 };
 
-export type PublicGraphQLContext = GraphQLContext & {
+export type PublicGraphQLContext = GraphQLContextShared & {
+  kind: 'public';
   publicReadServices: PublicReadServices;
   publicLinkId: string;
 };
 
-export type GraphQLInitialContext = YogaInitialContext &
-  Koa.Context & {
-    state: { isLoggedIn: boolean; user?: User; publicAccess?: PublicAccessRow };
-  };
+export type GraphQLContext = AuthenticatedGraphQLContext | PublicGraphQLContext;
+
+export type GraphQLInitialContext = YogaInitialContext & Koa.Context;
 
 export interface GraphQLContextFactory {
   (initialContext: GraphQLInitialContext): AuthenticatedGraphQLContext | PublicGraphQLContext;

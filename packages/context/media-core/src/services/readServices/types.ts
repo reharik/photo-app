@@ -218,6 +218,7 @@ export type CommentRow = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
+  totalCount?: number;
 };
 export type CommentGraph = CommentRow & {
   replies: CommentRow[];

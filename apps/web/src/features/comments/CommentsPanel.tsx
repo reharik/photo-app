@@ -30,6 +30,9 @@ export type CommentsPanelProps = {
   onAddComment?: (body: string, parentCommentId: string | null) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  addCommentLoading?: boolean;
+  editCommentLoading?: boolean;
+  deletingCommentId?: string | null;
 };
 
 const shouldRenderThread = (comment: CommentsPanelComment): boolean => {
@@ -47,6 +50,9 @@ export const CommentsPanel = ({
   onAddComment,
   onEditComment,
   onDeleteComment,
+  addCommentLoading = false,
+  editCommentLoading = false,
+  deletingCommentId = null,
 }: CommentsPanelProps): JSX.Element => {
   const threads = comments.filter(shouldRenderThread);
 
@@ -62,7 +68,10 @@ export const CommentsPanel = ({
     return (
       <Root>
         {canComment && onAddComment ? (
-          <CommentComposer onSubmit={(body) => void Promise.resolve(onAddComment(body, null))} />
+          <CommentComposer
+            isLoading={addCommentLoading}
+            onSubmit={(body) => void Promise.resolve(onAddComment(body, null))}
+          />
         ) : null}
         <CommentsEmptyState canComment={canComment} />
       </Root>
@@ -72,7 +81,10 @@ export const CommentsPanel = ({
   return (
     <Root>
       {canComment && onAddComment ? (
-        <CommentComposer onSubmit={(body) => void Promise.resolve(onAddComment(body, null))} />
+        <CommentComposer
+          isLoading={addCommentLoading}
+          onSubmit={(body) => void Promise.resolve(onAddComment(body, null))}
+        />
       ) : null}
       <ThreadList role="list">
         {threads.map((comment) => (
@@ -81,6 +93,9 @@ export const CommentsPanel = ({
             comment={comment}
             canComment={canComment}
             viewerUserId={viewerUserId}
+            addCommentLoading={addCommentLoading}
+            editCommentLoading={editCommentLoading}
+            deletingCommentId={deletingCommentId}
             onAddComment={onAddComment}
             onEditComment={onEditComment}
             onDeleteComment={onDeleteComment}

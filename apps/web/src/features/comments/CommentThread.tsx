@@ -12,6 +12,9 @@ type Props = {
   onAddComment?: (body: string, parentCommentId: string | null) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  addCommentLoading?: boolean;
+  editCommentLoading?: boolean;
+  deletingCommentId?: string | null;
 };
 
 export const CommentThread = ({
@@ -21,6 +24,9 @@ export const CommentThread = ({
   onAddComment,
   onEditComment,
   onDeleteComment,
+  addCommentLoading = false,
+  editCommentLoading = false,
+  deletingCommentId = null,
 }: Props): JSX.Element => {
   const [replyOpen, setReplyOpen] = useState(false);
   const replies = comment.replies;
@@ -39,6 +45,8 @@ export const CommentThread = ({
         depth={0}
         canComment={canComment}
         viewerUserId={viewerUserId}
+        editCommentLoading={editCommentLoading}
+        deleteCommentPending={deletingCommentId === comment.id}
         onReply={
           canComment && onAddComment && comment.parentCommentId == null
             ? () => setReplyOpen(true)
@@ -51,6 +59,8 @@ export const CommentThread = ({
         replies={replies}
         canComment={canComment}
         viewerUserId={viewerUserId}
+        editCommentLoading={editCommentLoading}
+        deletingCommentId={deletingCommentId}
         onEditComment={onEditComment}
         onDeleteComment={onDeleteComment}
       />
@@ -59,7 +69,7 @@ export const CommentThread = ({
           <ReplyComposer
             onSubmit={(b) => void handleReplySubmit(b)}
             onCancel={() => setReplyOpen(false)}
-            isLoading={false}
+            isLoading={addCommentLoading}
           />
         </ReplyArea>
       ) : null}

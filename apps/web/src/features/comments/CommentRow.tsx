@@ -15,6 +15,10 @@ type Props = {
   onReply?: () => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  /** True while edit mutation is running (only one editor expected at a time). */
+  editCommentLoading?: boolean;
+  /** True while delete mutation is running for this comment. */
+  deleteCommentPending?: boolean;
 };
 
 export const CommentRow = ({
@@ -25,6 +29,8 @@ export const CommentRow = ({
   onReply,
   onEditComment,
   onDeleteComment,
+  editCommentLoading = false,
+  deleteCommentPending = false,
 }: Props): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false);
   const avatarSize = depth > 0 ? 28 : 32;
@@ -70,6 +76,7 @@ export const CommentRow = ({
             canReply={canReply}
             canEdit={canEdit}
             canDelete={canDelete}
+            interactionDisabled={deleteCommentPending}
             onReply={onReply}
             onEdit={onEditComment ? () => setIsEditing(true) : undefined}
             onDelete={onDeleteComment ? () => void onDeleteComment(comment.id) : undefined}
@@ -78,6 +85,7 @@ export const CommentRow = ({
         <CommentBody
           comment={{ body: comment.body }}
           isEditing={isEditing}
+          isSaving={isEditing && editCommentLoading}
           onSave={onEditComment ? handleSave : undefined}
           onCancelEdit={onEditComment ? () => setIsEditing(false) : undefined}
         />

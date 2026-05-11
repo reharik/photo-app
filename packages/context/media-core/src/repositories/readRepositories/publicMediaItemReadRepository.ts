@@ -58,9 +58,6 @@ export const build__PublicMediaItemReadRepository = ({
       },
       { strict: true },
     );
-    console.log(`************mediaItem************`);
-    console.log(mediaItem);
-    console.log(`********END mediaItem************`);
     if (!mediaItem) return undefined;
     return mediaItem;
   },

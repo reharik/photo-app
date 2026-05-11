@@ -42,8 +42,9 @@ export const build__CommentReadRepository = ({
   }): Promise<CommentRow[]> => {
     const { pageInfo } = collectionInfo;
     return withEnumRevival(
-      database('comments')
+      database('comment')
         .select(...commentSelectColumns)
+        .select(database.raw('COUNT(*) OVER () AS total_count'))
         .where('target_type', targetType)
         .where('target_id', targetId)
         .whereNull('parent_comment_id')

@@ -28,6 +28,7 @@ enum ViewerOperation {
   EDIT_COVER
   DELETE_ALBUM
   DOWNLOAD
+  COMMENT
 }
 
 enum MediaKind {

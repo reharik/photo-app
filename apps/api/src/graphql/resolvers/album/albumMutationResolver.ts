@@ -6,6 +6,7 @@ import type {
   Resolvers,
 } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const albumResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -16,10 +17,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         description: args.input.description,
       });
 
-      return {
-        data: result.success ? { albumId: result.value.albumId } : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
     AddMediaItemToAlbum: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.addAlbumItem({
@@ -47,16 +45,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
           newAlbum: args.input.newAlbum ?? undefined,
         };
         const result = await ctx.writeServices.addMediaItemsToAlbum(command);
-
-        return {
-          data: result.success
-            ? {
-                albumId: result.value.albumId,
-                albumItemIds: result.value.albumItemIds,
-              }
-            : undefined,
-          errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        };
+        return writeResultToPayload(result);
       },
     ),
     ReorderAlbumItems: authenticatedResolver(
@@ -67,10 +56,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
           albumItemIds: args.input.albumItemIds,
         };
         const result = await ctx.writeServices.reorderAlbumItems(command);
-        return {
-          data: result.success ? { albumId: result.value.albumId } : undefined,
-          errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        };
+        return writeResultToPayload(result);
       },
     ),
     DeleteAlbumItemsFromAlbum: authenticatedResolver(async (_parent, args, ctx) => {
@@ -80,15 +66,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         albumItemIds: args.input.albumItemIds,
       });
 
-      return {
-        data: result.success
-          ? {
-              albumId: result.value.albumId,
-              albumItemIds: result.value.albumItemIds,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
 
     SetCoverMedia: authenticatedResolver(async (_parent, args, ctx) => {
@@ -97,28 +75,14 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         albumId: args.input.albumId,
         albumItemId: args.input.albumItemId,
       });
-      return {
-        data: result.success
-          ? {
-              albumId: result.value.albumId,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
     UnsetCoverMedia: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.unsetCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
       });
-      return {
-        data: result.success
-          ? {
-              albumId: result.value.albumId,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
   },
 };

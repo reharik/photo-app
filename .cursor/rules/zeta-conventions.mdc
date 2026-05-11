@@ -286,6 +286,18 @@ type XyzMutationPayload {
 Success is implicit: `data` non-null = success, `errors` non-empty =
 failure. Do NOT produce flat `{ success, entity, errors }` shapes.
 
+## Resolver Boundary Mapping
+
+- Write services return `WriteResult<T>` (a discriminated union of
+  success/value vs. failure/error). This shape stays in the service
+  and application layers.
+- GraphQL mutation resolvers convert `WriteResult<T>` to the
+  `{ data, errors }` envelope at the transport boundary using
+  `writeResultToPayload(result, mapValue)`. Do NOT hand-roll the
+  ternary at each resolver. Do NOT have services return the
+  `{ data, errors }` shape directly — that would leak transport
+  concerns into the service layer.
+
 ### What to return
 
 - **Single-entity mutations return the full entity fragment**, matching

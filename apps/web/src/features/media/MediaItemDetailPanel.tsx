@@ -4,6 +4,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import styled from 'styled-components';
 import { formatDateOnly, formatTakenDisplay } from '../../domain/formatters/mediaItemMetaFormat';
 import type { MediaItemDetailVM } from '../../viewModels/media/MediaItemDetailVM';
+import { CommentsForViewerMediaItemContainer } from './CommentsForViewerMediaItemContainer';
 import { MediaItemDetailForm } from './MediaItemDetailForm';
 
 export type MediaItemDetailPanelHandle = {
@@ -55,6 +56,7 @@ export const MediaItemDetailPanel = forwardRef<
     return null;
   }
   const canEdit = mediaItem.viewerOperations.includes(ViewerOperation.editDetails);
+  const canComment = mediaItem.viewerOperations.includes(ViewerOperation.comment);
   const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
     <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>
       <RowFieldLabel>{label}</RowFieldLabel>
@@ -106,6 +108,10 @@ export const MediaItemDetailPanel = forwardRef<
           <MetadataValue>{formatDateOnly(mediaItem.createdAt)}</MetadataValue>
         </MetadataItem>
       </MetadataSection>
+
+      <CommentsSection>
+        <CommentsForViewerMediaItemContainer mediaItemId={mediaItem.id} canComment={canComment} />
+      </CommentsSection>
     </MetadataPanel>
   );
 });
@@ -286,4 +292,13 @@ const EditCue = styled.span`
   line-height: 1.4;
   opacity: 0.45;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
+`;
+
+const CommentsSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  border-top: 1px solid ${({ theme }) => theme.color.border};
 `;

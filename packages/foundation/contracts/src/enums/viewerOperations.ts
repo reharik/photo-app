@@ -23,6 +23,9 @@ const input = {
   download: {
     deniedError: ContractError.MemberNotAllowedToDownloadItems,
   },
+  comment: {
+    deniedError: ContractError.MemberNotAllowedToComment,
+  },
 } as const;
 
 export type ViewerOperation = Enumeration<typeof ViewerOperation>;

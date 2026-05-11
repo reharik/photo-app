@@ -7,6 +7,9 @@ import { standardizeCollectionInput } from '../standardizeInput';
 const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
   Query: {
     viewer: (_p, _a, ctx): ViewerParent | undefined => {
+      if (ctx.kind !== 'authenticated') {
+        return undefined;
+      }
       return ctx.viewer;
     },
   },

@@ -8,6 +8,8 @@ type Props = {
   onReply?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  /** Disables reply / menu actions while a mutation is in flight for this row */
+  interactionDisabled?: boolean;
 };
 
 export const CommentActions = ({
@@ -17,6 +19,7 @@ export const CommentActions = ({
   onReply,
   onEdit,
   onDelete,
+  interactionDisabled = false,
 }: Props) => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -44,7 +47,7 @@ export const CommentActions = ({
   return (
     <Root ref={rootRef}>
       {showReply ? (
-        <ReplyButton type="button" onClick={onReply}>
+        <ReplyButton type="button" onClick={onReply} disabled={interactionDisabled}>
           Reply
         </ReplyButton>
       ) : null}
@@ -55,6 +58,7 @@ export const CommentActions = ({
             aria-label="Comment actions"
             aria-haspopup="true"
             aria-expanded={open}
+            disabled={interactionDisabled}
             onClick={() => setOpen((v) => !v)}
           >
             ···
@@ -122,9 +126,14 @@ const ReplyButton = styled.button`
   cursor: pointer;
   border-radius: ${({ theme }) => theme.borderRadius.sm};
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: ${({ theme }) => theme.color.bodyText};
     background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
@@ -149,9 +158,14 @@ const KebabButton = styled.button`
   border-radius: ${({ theme }) => theme.borderRadius.sm};
   line-height: 1;
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: ${({ theme }) => theme.color.bodyText};
     background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   &:focus-visible {

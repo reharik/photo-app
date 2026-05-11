@@ -2,30 +2,17 @@ import type { ResolverFn } from '../generated/types.generated';
 import { AuthenticatedGraphQLContext, GraphQLContext, PublicGraphQLContext } from './types';
 
 export const requireAuthenticatedContext = (ctx: GraphQLContext): AuthenticatedGraphQLContext => {
-  if (!ctx.viewer || !ctx.writeServices || !ctx.readServices) {
+  if (ctx.kind !== 'authenticated') {
     throw new Error('Not authenticated');
   }
-
-  return {
-    ...ctx,
-    viewer: ctx.viewer,
-    writeServices: ctx.writeServices,
-    readServices: ctx.readServices,
-  };
+  return ctx;
 };
 
 export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext => {
-  const { publicReadServices, publicLinkId, publicAccessReadService } = ctx;
-  if (!publicReadServices || !publicLinkId || !publicAccessReadService) {
-    throw new Error('Not authenticated');
+  if (ctx.kind !== 'public') {
+    throw new Error('Public access context required');
   }
-
-  return {
-    ...ctx,
-    publicReadServices,
-    publicLinkId,
-    publicAccessReadService,
-  };
+  return ctx;
 };
 
 export const authenticatedResolver =
@@ -42,6 +29,6 @@ export const publicResolver =
     resolver: ResolverFn<TResult, TParent, PublicGraphQLContext, TArgs>,
   ): ResolverFn<TResult, TParent, GraphQLContext, TArgs> =>
   (parent, args, ctx, info) => {
-    const authCtx = requirePublicContext(ctx);
-    return resolver(parent, args, authCtx, info);
+    const publicCtx = requirePublicContext(ctx);
+    return resolver(parent, args, publicCtx, info);
   };

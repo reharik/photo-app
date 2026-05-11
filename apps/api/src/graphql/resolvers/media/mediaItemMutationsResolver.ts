@@ -9,6 +9,7 @@ import type {
   Resolvers,
 } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -44,19 +45,20 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
       });
+      return writeResultToPayload(result);
 
-      return {
-        data: result.success
-          ? {
-              mediaItemId: result.value.mediaItemId,
-              status: result.value.status,
-              mimeType: result.value.mimeType,
-              size: result.value.size,
-              kind: result.value.kind,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      // return {
+      //   data: result.success
+      //     ? {
+      //         mediaItemId: result.value.mediaItemId,
+      //         status: result.value.status,
+      //         mimeType: result.value.mimeType,
+      //         size: result.value.size,
+      //         kind: result.value.kind,
+      //       }
+      //     : undefined,
+      //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
+      // };
     }),
     deleteMediaItem: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteMediaItem({
@@ -64,14 +66,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         mediaItemId: args.input.mediaItemId,
       });
 
-      return {
-        data: result.success
-          ? {
-              mediaItemId: result.value.mediaItemId,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
     deleteMediaItems: authenticatedResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteMediaItems({
@@ -79,14 +74,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         mediaItemIds: args.input.mediaItemIds,
       });
 
-      return {
-        data: result.success
-          ? {
-              deletedMediaItemIds: result.value.deletedMediaItemIds,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return writeResultToPayload(result);
     }),
     updateMediaItemDetails: authenticatedResolver(
       async (_parent, args: MutationUpdateMediaItemDetailsArgs, ctx) => {
@@ -97,18 +85,19 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         };
 
         const result = await ctx.writeServices.updateMediaItem(command);
+        return writeResultToPayload(result);
 
-        return {
-          data: result.success
-            ? {
-                mediaItemId: result.value.mediaItemId,
-                title: result.value.title,
-                description: result.value.description,
-                takenAt: result.value.takenAt,
-              }
-            : undefined,
-          errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        };
+        // return {
+        //   data: result.success
+        //     ? {
+        //         mediaItemId: result.value.mediaItemId,
+        //         title: result.value.title,
+        //         description: result.value.description,
+        //         takenAt: result.value.takenAt,
+        //       }
+        //     : undefined,
+        //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
+        // };
       },
     ),
     updateMediaItemTags: authenticatedResolver(
@@ -119,15 +108,16 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
           tags: args.input.tags,
         };
         const result = await ctx.writeServices.updateMediaItemTags(command);
-        return {
-          data: result.success
-            ? {
-                mediaItemId: result.value.mediaItemId,
-                tags: result.value.tags,
-              }
-            : undefined,
-          errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        };
+        // return {
+        //   data: result.success
+        //     ? {
+        //         mediaItemId: result.value.mediaItemId,
+        //         tags: result.value.tags,
+        //       }
+        //     : undefined,
+        //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
+        // };
+        return writeResultToPayload(result);
       },
     ),
   },

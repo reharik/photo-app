@@ -7,6 +7,7 @@ const ownerOperations: ViewerOperation[] = [
   ViewerOperation.deleteAlbum,
   ViewerOperation.grantAuthorization,
   ViewerOperation.download,
+  ViewerOperation.comment,
   ViewerOperation.editCover,
 ] as const;
 const adminOperations: ViewerOperation[] = [
@@ -14,11 +15,13 @@ const adminOperations: ViewerOperation[] = [
   ViewerOperation.removeItems,
   ViewerOperation.grantAuthorization,
   ViewerOperation.download,
+  ViewerOperation.comment,
   ViewerOperation.editCover,
 ] as const;
 const contributorOperations: ViewerOperation[] = [
   ViewerOperation.addItems,
   ViewerOperation.download,
+  ViewerOperation.comment,
 ] as const;
 
 const input = {

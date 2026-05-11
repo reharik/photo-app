@@ -89,6 +89,7 @@ const buildAuthenticatedContext = ({
   ) as ReadServices;
 
   return {
+    kind: 'authenticated',
     database,
     viewer,
     writeServices,
@@ -113,6 +114,7 @@ const buildPublicContext = ({
   ) as PublicReadServices;
 
   return {
+    kind: 'public',
     database,
     publicReadServices,
     publicLinkId,

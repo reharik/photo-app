@@ -1,10 +1,10 @@
 import { CommentTargetType } from '@packages/contracts';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { publicResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
 const publicMediaItemResolvers: Resolvers = {
   PublicMediaItem: {
-    comments: authenticatedResolver(async (parent, args, ctx) => {
+    comments: publicResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       return ctx.agnosticReadServices.commentReadService.listComments({
         targetType: CommentTargetType.mediaItem,

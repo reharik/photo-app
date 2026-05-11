@@ -12,9 +12,16 @@ type Props = {
   isEditing: boolean;
   onSave?: (newBody: string) => void | Promise<void>;
   onCancelEdit?: () => void;
+  isSaving?: boolean;
 };
 
-export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props): JSX.Element => {
+export const CommentBody = ({
+  comment,
+  isEditing,
+  onSave,
+  onCancelEdit,
+  isSaving = false,
+}: Props): JSX.Element => {
   const { body } = comment;
   const [draft, setDraft] = useState(body);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,14 +38,16 @@ export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props)
   }, [isEditing, body]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !isSaving) {
       e.preventDefault();
       onCancelEdit?.();
     }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       const trimmed = draft.trim();
-      if (trimmed && trimmed !== body && onSave) void Promise.resolve(onSave(trimmed));
+      if (!isSaving && trimmed && trimmed !== body && onSave) {
+        void Promise.resolve(onSave(trimmed));
+      }
     }
   };
 
@@ -48,7 +57,11 @@ export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props)
 
   const trimmed = draft.trim();
   const canSave =
-    trimmed.length > 0 && trimmed !== body && trimmed.length <= COMMENT_MAX_LENGTH && !!onSave;
+    trimmed.length > 0 &&
+    trimmed !== body &&
+    trimmed.length <= COMMENT_MAX_LENGTH &&
+    !!onSave &&
+    !isSaving;
   const charCount = draft.length;
   const showCounter = charCount >= COMMENT_MAX_LENGTH * 0.8;
 
@@ -61,6 +74,7 @@ export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props)
         onKeyDown={handleKeyDown}
         maxLength={COMMENT_MAX_LENGTH}
         rows={3}
+        disabled={isSaving}
         aria-label="Edit comment"
       />
       <EditFooter>
@@ -70,7 +84,7 @@ export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props)
           </CharCount>
         ) : null}
         <EditActions>
-          <CancelButton type="button" onClick={() => onCancelEdit?.()}>
+          <CancelButton type="button" onClick={() => onCancelEdit?.()} disabled={isSaving}>
             Cancel
           </CancelButton>
           <SaveButton
@@ -78,7 +92,7 @@ export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props)
             onClick={() => canSave && onSave && void Promise.resolve(onSave(trimmed))}
             disabled={!canSave}
           >
-            Save
+            {isSaving ? 'Saving…' : 'Save'}
           </SaveButton>
         </EditActions>
       </EditFooter>

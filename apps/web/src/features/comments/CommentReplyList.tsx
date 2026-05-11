@@ -9,6 +9,8 @@ type Props = {
   viewerUserId: string | null;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  editCommentLoading?: boolean;
+  deletingCommentId?: string | null;
 };
 
 export const CommentReplyList = ({
@@ -17,6 +19,8 @@ export const CommentReplyList = ({
   viewerUserId,
   onEditComment,
   onDeleteComment,
+  editCommentLoading = false,
+  deletingCommentId = null,
 }: Props): JSX.Element | null => {
   const visible = replies.filter((r) => !r.isDeleted);
   if (visible.length === 0) return null;
@@ -30,6 +34,8 @@ export const CommentReplyList = ({
           depth={1}
           canComment={canComment}
           viewerUserId={viewerUserId}
+          editCommentLoading={editCommentLoading}
+          deleteCommentPending={deletingCommentId === reply.id}
           onEditComment={onEditComment}
           onDeleteComment={onDeleteComment}
         />

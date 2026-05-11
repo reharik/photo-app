@@ -22,9 +22,6 @@ export const build__MediaAuthMiddleware =
     } else if (publicToken) {
       payload = { token: publicToken };
     }
-    console.log(`************payload************`);
-    console.log(payload);
-    console.log(`********END payload************`);
     const hashedToken = payload?.token ? hashToken(payload.token) : undefined;
     const viewerId = payload?.userId;
     const { mediaId, variant } = ctx.params as { mediaId: string; variant: string };
