@@ -2,6 +2,7 @@ import {
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
+  CommentTargetType,
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
@@ -159,6 +160,37 @@ export type DecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
   mediaItem: DecoratedItem<U>;
 };
 
+export type PublicAlbumItemListProjection = {
+  nodes: PublicAlbumItemProjection[];
+  pageInfo: PageInfo;
+};
+
+export interface PublicAlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy> {
+  pageInfo: PageInfo;
+  sortBy: AlbumItemSortBy;
+  sortDir: SortDir;
+}
+
+export type PublicAlbumProjection = {
+  id: string;
+  viewerMemberRole?: AlbumMemberRole;
+  title: string;
+  description?: string;
+  coverMediaId?: string;
+  coverMedia?: PublicMediaItemProjection;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PublicAlbumItemProjection = {
+  id: string;
+  /** Sparse bigint order index as string (GraphQL-safe). */
+  orderIndex: string;
+  createdAt: Date;
+  updatedAt: Date;
+  mediaItem: PublicMediaItemProjection;
+};
+
 export interface PublicMediaItemRow {
   id: EntityId;
   kind: MediaKind;
@@ -173,3 +205,20 @@ export interface PublicMediaItemRow {
 export interface PublicMediaItemProjection extends PublicMediaItemRow {
   tags: string[];
 }
+
+export type CommentRow = {
+  id: EntityId;
+  targetType: CommentTargetType;
+  targetId: EntityId;
+  parentCommentId?: EntityId;
+  authorUserId?: EntityId;
+  body: string;
+  displayName: string;
+  displayAvatarUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date;
+};
+export type CommentGraph = CommentRow & {
+  replies: CommentRow[];
+};

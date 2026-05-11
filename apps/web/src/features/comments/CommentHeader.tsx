@@ -1,12 +1,19 @@
+import { JSX } from 'react';
 import styled from 'styled-components';
 
-type Props = {
+type CommentHeaderDisplay = {
   displayName: string;
-  createdAt: Date;
+  /** ISO timestamp string */
+  createdAt: string;
   isEdited: boolean;
 };
 
-const formatRelativeTime = (date: Date): string => {
+type Props = {
+  comment: CommentHeaderDisplay;
+};
+
+const formatRelativeTime = (iso: string): string => {
+  const date = new Date(iso);
   const now = Date.now();
   const diffMs = now - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
@@ -22,15 +29,19 @@ const formatRelativeTime = (date: Date): string => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-export const CommentHeader = ({ displayName, createdAt, isEdited }: Props) => (
-  <Root>
-    <DisplayName>{displayName}</DisplayName>
-    <Timestamp dateTime={createdAt.toISOString()} title={createdAt.toLocaleString()}>
-      {formatRelativeTime(createdAt)}
-    </Timestamp>
-    {isEdited && <EditedBadge>(edited)</EditedBadge>}
-  </Root>
-);
+export const CommentHeader = ({ comment }: Props): JSX.Element => {
+  const { displayName, createdAt, isEdited } = comment;
+  const date = new Date(createdAt);
+  return (
+    <Root>
+      <DisplayName>{displayName}</DisplayName>
+      <Timestamp dateTime={createdAt} title={date.toLocaleString()}>
+        {formatRelativeTime(createdAt)}
+      </Timestamp>
+      {isEdited ? <EditedBadge>(edited)</EditedBadge> : null}
+    </Root>
+  );
+};
 
 const Root = styled.div`
   display: flex;

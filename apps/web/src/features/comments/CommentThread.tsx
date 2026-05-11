@@ -1,63 +1,68 @@
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import styled from 'styled-components';
-// CHANGED: Frontend View Models — components consume VM types instead of raw fragment types.
-import { type CommentDetailVM } from '../../viewModels/comment/CommentDetailVM';
-import { type CommentVM } from '../../viewModels/comment/CommentVM';
 import { CommentReplyList } from './CommentReplyList';
 import { CommentRow } from './CommentRow';
+import type { CommentsPanelComment } from './CommentsPanel';
 import { ReplyComposer } from './ReplyComposer';
 
-type Viewer = {
-  userId: string | null;
-  canComment: boolean;
-};
-
 type Props = {
-  comment: CommentDetailVM;
-  viewer: Viewer;
-  onAddReply: (parentCommentId: string, body: string) => Promise<void>;
-  onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (commentId: string) => Promise<void>;
-  addReplyLoading: boolean;
+  comment: CommentsPanelComment;
+  canComment: boolean;
+  viewerUserId: string | null;
+  onAddComment?: (body: string, parentCommentId: string | null) => void;
+  onEditComment?: (commentId: string, body: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 };
 
 export const CommentThread = ({
   comment,
-  viewer,
-  onAddReply,
-  onEdit,
-  onDelete,
-  addReplyLoading,
-}: Props) => {
+  canComment,
+  viewerUserId,
+  onAddComment,
+  onEditComment,
+  onDeleteComment,
+}: Props): JSX.Element => {
   const [replyOpen, setReplyOpen] = useState(false);
+  const replies = comment.replies;
 
-  // CHANGED: Pagination — replies is now CommentVM[] (from VM), not edges[].node (cursor shape).
-  const replies: CommentVM[] = comment.replies;
-
-  const handleReplySubmit = async (body: string) => {
-    await onAddReply(comment.id, body);
+  const handleReplySubmit = async (body: string): Promise<void> => {
+    if (onAddComment) await Promise.resolve(onAddComment(body, comment.id));
     setReplyOpen(false);
   };
+
+  const showReplyComposer = canComment && !!onAddComment && replyOpen;
 
   return (
     <Root>
       <CommentRow
         comment={comment}
-        viewer={viewer}
-        onReply={viewer.canComment ? () => setReplyOpen(true) : undefined}
-        onEdit={onEdit}
-        onDelete={onDelete}
+        depth={0}
+        canComment={canComment}
+        viewerUserId={viewerUserId}
+        onReply={
+          canComment && onAddComment && comment.parentCommentId == null
+            ? () => setReplyOpen(true)
+            : undefined
+        }
+        onEditComment={onEditComment}
+        onDeleteComment={onDeleteComment}
       />
-      <CommentReplyList replies={replies} viewer={viewer} onEdit={onEdit} onDelete={onDelete} />
-      {replyOpen && (
+      <CommentReplyList
+        replies={replies}
+        canComment={canComment}
+        viewerUserId={viewerUserId}
+        onEditComment={onEditComment}
+        onDeleteComment={onDeleteComment}
+      />
+      {showReplyComposer ? (
         <ReplyArea>
           <ReplyComposer
-            onSubmit={handleReplySubmit}
+            onSubmit={(b) => void handleReplySubmit(b)}
             onCancel={() => setReplyOpen(false)}
-            isLoading={addReplyLoading}
+            isLoading={false}
           />
         </ReplyArea>
-      )}
+      ) : null}
     </Root>
   );
 };

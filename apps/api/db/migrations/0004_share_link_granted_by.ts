@@ -24,10 +24,10 @@ export const up = async (knex: Knex): Promise<void> => {
     [GRANTED_BY_COLUMN]: knex.raw('created_by'),
   });
 
-  await knex.raw(
-    `ALTER TABLE ?? ALTER COLUMN ?? SET NOT NULL`,
-    [SHARE_LINK_TABLE, GRANTED_BY_COLUMN],
-  );
+  await knex.raw(`ALTER TABLE ?? ALTER COLUMN ?? SET NOT NULL`, [
+    SHARE_LINK_TABLE,
+    GRANTED_BY_COLUMN,
+  ]);
 };
 
 export const down = async (knex: Knex): Promise<void> => {

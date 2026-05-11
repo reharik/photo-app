@@ -1,3 +1,4 @@
+import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
@@ -24,11 +25,8 @@ export const build__DeleteComment = (_deps: DeleteCommentDeps): DeleteComment =>
     //   OWNER role). Reject with ContractError otherwise.
     // TODO: Soft-delete: set comment.deleted_at = now(). Do NOT hard delete.
 
-    return {
-      success: true,
-      value: {
-        commentId: command.commentId,
-      },
-    };
+    return ok({
+      commentId: command.commentId,
+    });
   };
 };

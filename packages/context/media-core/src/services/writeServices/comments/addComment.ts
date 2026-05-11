@@ -1,4 +1,5 @@
-import { CommentTargetType } from '../../readServices/comments/listCommentsForTarget';
+import { CommentTargetType } from '@packages/contracts';
+import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
@@ -56,11 +57,8 @@ export const build__AddComment = (_deps: AddCommentDeps): AddComment => {
 
     // TODO: Insert into the comment table.
 
-    return {
-      success: true,
-      value: {
-        commentId: 'stub-comment-id',
-      },
-    };
+    return ok({
+      commentId: 'stub-comment-id',
+    });
   };
 };

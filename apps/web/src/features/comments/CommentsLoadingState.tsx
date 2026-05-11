@@ -1,6 +1,7 @@
+import { JSX } from 'react';
 import styled, { keyframes } from 'styled-components';
 
-export const CommentLoadingState = () => (
+export const CommentsLoadingState = (): JSX.Element => (
   <Root aria-label="Loading comments">
     <Shimmer $wide />
     <ShimmerRow>
@@ -24,7 +25,7 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(2)} 0;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
 `;
 
 const ShimmerRow = styled.div`

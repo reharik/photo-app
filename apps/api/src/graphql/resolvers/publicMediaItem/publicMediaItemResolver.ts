@@ -2,15 +2,8 @@ import { CommentTargetType } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
-const mediaItemResolvers: Resolvers = {
-  MediaItem: {
-    authorizations: authenticatedResolver(async (parent, _args, ctx) => {
-      return ctx.readServices.viewerAuthorizationsReadService.listGrantedAuthorizationsForOwnedMediaItem(
-        {
-          mediaItemId: parent.id,
-        },
-      );
-    }),
+const publicMediaItemResolvers: Resolvers = {
+  PublicMediaItem: {
     comments: authenticatedResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       return ctx.agnosticReadServices.commentReadService.listComments({
@@ -22,4 +15,4 @@ const mediaItemResolvers: Resolvers = {
   },
 };
 
-export default mediaItemResolvers;
+export default publicMediaItemResolvers;

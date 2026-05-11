@@ -1,4 +1,3 @@
-import { MediaKind, ViewerOperation } from '@packages/contracts';
 import { PublicMediaItemSummaryFragment } from '../../graphql/generated/types';
 import { PublicMediaItemSummaryVM } from './PublicMediaItemSummaryVM';
 

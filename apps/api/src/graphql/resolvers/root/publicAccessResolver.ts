@@ -8,7 +8,8 @@ const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
       if (!publicLinkId) {
         throw new Error('Public link id not found');
       }
-      const publicAccess = await ctx.publicAccessReadService.getPublicAccessById(publicLinkId);
+      const publicAccess =
+        await ctx.agnosticReadServices.publicAccessReadService.getPublicAccessById(publicLinkId);
       if (!publicAccess) {
         throw new Error('Public access not found');
       }

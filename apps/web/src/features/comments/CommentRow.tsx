@@ -1,48 +1,49 @@
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import styled from 'styled-components';
-// CHANGED: Frontend View Models — CommentRow takes CommentVM (UI-facing type) instead of
-// CommentFieldsFragment (wire type). Single-purpose component, so VM is passed directly
-// rather than a structural prop type (per convention exception for single-purpose components).
-import { type CommentVM } from '../../viewModels/comment/CommentVM';
-import { CommentActionsRevealWrapper, CommentActions } from './CommentActions';
+import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
 import { CommentHeader } from './CommentHeader';
-import { DeletedCommentPlaceholder } from './states/DeletedCommentPlaceholder';
-
-type Viewer = {
-  userId: string | null;
-  canComment: boolean;
-};
+import type { CommentsPanelComment } from './CommentsPanel';
+import { DeletedCommentPlaceholder } from './DeletedCommentPlaceholder';
 
 type Props = {
-  comment: CommentVM;
-  viewer: Viewer;
+  comment: CommentsPanelComment;
+  depth: number;
+  canComment: boolean;
+  viewerUserId: string | null;
   onReply?: () => void;
-  onEdit: (commentId: string, newBody: string) => Promise<void>;
-  // CHANGED: Mutation Responses — onDelete receives only commentId; the handler no longer
-  // needs the full comment object since the mutation hook builds its own optimistic response.
-  onDelete: (commentId: string) => Promise<void>;
+  onEditComment?: (commentId: string, body: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 };
 
-export const CommentRow = ({ comment, viewer, onReply, onEdit, onDelete }: Props) => {
+export const CommentRow = ({
+  comment,
+  depth,
+  canComment,
+  viewerUserId,
+  onReply,
+  onEditComment,
+  onDeleteComment,
+}: Props): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false);
+  const avatarSize = depth > 0 ? 28 : 32;
 
-  const isMine = viewer.userId !== null && comment.authorUserId === viewer.userId;
-  const isTopLevel = !comment.parentCommentId;
-  const canReply = viewer.canComment && isTopLevel && !!onReply;
-  const canEdit = isMine;
-  const canDelete = isMine;
+  const isMine = viewerUserId !== null && comment.authorUserId === viewerUserId;
+  const isTopLevel = comment.parentCommentId == null;
+  const canReply = canComment && isTopLevel && !!onReply;
+  const canEdit = isMine && !!onEditComment;
+  const canDelete = isMine && !!onDeleteComment;
 
-  const handleSave = async (newBody: string) => {
-    await onEdit(comment.id, newBody);
+  const handleSave = async (newBody: string): Promise<void> => {
+    if (onEditComment) await Promise.resolve(onEditComment(comment.id, newBody));
     setIsEditing(false);
   };
 
   if (comment.isDeleted) {
     return (
       <Root>
-        <DeletedAvatarPlaceholder aria-hidden />
+        <DeletedAvatarPlaceholder $size={avatarSize} aria-hidden />
         <Content>
           <DeletedCommentPlaceholder />
         </Content>
@@ -50,40 +51,45 @@ export const CommentRow = ({ comment, viewer, onReply, onEdit, onDelete }: Props
     );
   }
 
-  return (
-    <CommentActionsRevealWrapper>
-      <Root>
-        <CommentAvatar
-          displayName={comment.displayName}
-          displayAvatarUrl={comment.displayAvatarUrl}
-          size={32}
-        />
-        <Content>
-          <TopRow>
-            <CommentHeader
-              displayName={comment.displayName}
-              createdAt={comment.createdAt}
-              isEdited={comment.isEdited}
-            />
-            <CommentActions
-              canReply={canReply}
-              canEdit={canEdit}
-              canDelete={canDelete}
-              onReply={() => onReply?.()}
-              onEdit={() => setIsEditing(true)}
-              onDelete={() => void onDelete(comment.id)}
-            />
-          </TopRow>
-          <CommentBody
-            body={comment.body}
-            isEditing={isEditing}
-            onSave={handleSave}
-            onCancelEdit={() => setIsEditing(false)}
+  const inner = (
+    <Root>
+      <CommentAvatar
+        comment={{ displayName: comment.displayName, displayAvatarUrl: comment.displayAvatarUrl }}
+        size={avatarSize}
+      />
+      <Content>
+        <TopRow>
+          <CommentHeader
+            comment={{
+              displayName: comment.displayName,
+              createdAt: comment.createdAt,
+              isEdited: comment.isEdited,
+            }}
           />
-        </Content>
-      </Root>
-    </CommentActionsRevealWrapper>
+          <CommentActions
+            canReply={canReply}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            onReply={onReply}
+            onEdit={onEditComment ? () => setIsEditing(true) : undefined}
+            onDelete={onDeleteComment ? () => void onDeleteComment(comment.id) : undefined}
+          />
+        </TopRow>
+        <CommentBody
+          comment={{ body: comment.body }}
+          isEditing={isEditing}
+          onSave={onEditComment ? handleSave : undefined}
+          onCancelEdit={onEditComment ? () => setIsEditing(false) : undefined}
+        />
+      </Content>
+    </Root>
   );
+
+  if (canReply || canEdit || canDelete) {
+    return <CommentActionsRevealWrapper>{inner}</CommentActionsRevealWrapper>;
+  }
+
+  return inner;
 };
 
 const Root = styled.div`
@@ -108,9 +114,9 @@ const TopRow = styled.div`
   min-width: 0;
 `;
 
-const DeletedAvatarPlaceholder = styled.div`
-  width: 32px;
-  height: 32px;
+const DeletedAvatarPlaceholder = styled.div<{ $size: number }>`
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
   border-radius: 50%;
   background: ${({ theme }) => theme.color.bodyElevated};
   flex-shrink: 0;

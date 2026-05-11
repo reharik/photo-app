@@ -53,5 +53,9 @@ export default defineIocConfig({
       kind: 'object',
       baseType: 'WriteServiceBase',
     },
+    agnosticReadServices: {
+      kind: 'object',
+      baseType: 'AgnosticReadServiceBase',
+    },
   },
 });

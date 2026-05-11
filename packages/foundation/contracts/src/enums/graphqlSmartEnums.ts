@@ -15,10 +15,7 @@ const albumSortByInput = {
   createdAt: { column: 'created_at' },
   title: { column: 'title' },
 } as const;
-const commentTargetTypeInput = {
-  album: { display: 'Album' },
-  mediaItem: { display: 'Media Item' },
-} as const;
+const commentTargetTypeInput = ['album', 'mediaItem'] as const;
 const errorCategoryInput = [
   'auth',
   'conflict',

@@ -1,3 +1,4 @@
+import { ok } from '../../../domain';
 import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
@@ -24,11 +25,8 @@ export const build__EditComment = (_deps: EditCommentDeps): EditComment => {
     //   (only the original author may edit their own comment).
     // TODO: Update comment.body to command.body and bump comment.updated_at to now().
 
-    return {
-      success: true,
-      value: {
-        commentId: command.commentId,
-      },
-    };
+    return ok({
+      commentId: command.commentId,
+    });
   };
 };

@@ -7,6 +7,7 @@ import { IocGeneratedTypes } from '../../di/generated/ioc-registry.types';
 
 export type ReadServices = StripFactory<IocGeneratedTypes['readServiceFactories']>;
 export type PublicReadServices = StripFactory<IocGeneratedTypes['publicReadServiceFactories']>;
+export type AgnosticReadServices = IocGeneratedTypes['agnosticReadServices'];
 
 export type GraphQLContextViewer = {
   id: string;
@@ -22,6 +23,7 @@ export interface GraphQLContext {
   writeServices?: IocGeneratedTypes['writeServices'];
   readServices?: ReadServices;
   publicReadServices?: PublicReadServices;
+  agnosticReadServices: AgnosticReadServices;
   /** Present for public (share-link) operations; link id is also on `publicAccess`. */
   publicAccess?: PublicAccessRow;
   publicAccessReadService?: PublicAccessReadService;
@@ -36,7 +38,6 @@ export type AuthenticatedGraphQLContext = GraphQLContext & {
 
 export type PublicGraphQLContext = GraphQLContext & {
   publicReadServices: PublicReadServices;
-  publicAccessReadService: PublicAccessReadService;
   publicLinkId: string;
 };
 

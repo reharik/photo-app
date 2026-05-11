@@ -1,20 +1,20 @@
-import { useRef, useState } from 'react';
+import { type JSX, type KeyboardEvent, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 const COMMENT_MAX_LENGTH = 500;
 const COUNTER_THRESHOLD = COMMENT_MAX_LENGTH * 0.8;
 
 type Props = {
-  onSubmit: (body: string) => Promise<void>;
-  isLoading: boolean;
+  onSubmit: (body: string) => void | Promise<void>;
+  isLoading?: boolean;
   placeholder?: string;
 };
 
 export const CommentComposer = ({
   onSubmit,
-  isLoading,
+  isLoading = false,
   placeholder = 'Add a comment…',
-}: Props) => {
+}: Props): JSX.Element => {
   const [body, setBody] = useState('');
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,19 +24,20 @@ export const CommentComposer = ({
   const charCount = body.length;
   const showCounter = charCount >= COUNTER_THRESHOLD;
 
-  const submit = async () => {
+  const submit = (): void => {
     if (!canSubmit) return;
-    await onSubmit(trimmed);
-    setBody('');
-    setFocused(false);
+    void (async () => {
+      await Promise.resolve(onSubmit(trimmed));
+      setBody('');
+      setFocused(false);
+    })();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      void submit();
+      submit();
     }
-    // shift+enter falls through to default newline behavior
   };
 
   return (
@@ -56,19 +57,19 @@ export const CommentComposer = ({
         disabled={isLoading}
         aria-label={placeholder}
       />
-      {focused && (
+      {focused ? (
         <Footer>
-          {showCounter && (
+          {showCounter ? (
             <CharCount $overLimit={charCount > COMMENT_MAX_LENGTH}>
               {charCount}/{COMMENT_MAX_LENGTH}
             </CharCount>
-          )}
+          ) : null}
           <Hint>⌘↵ to submit</Hint>
-          <SubmitButton type="button" onClick={() => void submit()} disabled={!canSubmit}>
+          <SubmitButton type="button" onClick={submit} disabled={!canSubmit}>
             {isLoading ? 'Posting…' : 'Post'}
           </SubmitButton>
         </Footer>
-      )}
+      ) : null}
     </Root>
   );
 };

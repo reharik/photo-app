@@ -1,33 +1,37 @@
+import { JSX } from 'react';
 import styled from 'styled-components';
-// CHANGED: Frontend View Models — takes CommentVM[] instead of CommentFieldsFragment[].
-import { type CommentVM } from '../../viewModels/comment/CommentVM';
 import { CommentRow } from './CommentRow';
-
-type Viewer = {
-  userId: string | null;
-  canComment: boolean;
-};
+import type { CommentsPanelComment } from './CommentsPanel';
 
 type Props = {
-  replies: CommentVM[];
-  viewer: Viewer;
-  onEdit: (commentId: string, newBody: string) => Promise<void>;
-  onDelete: (commentId: string) => Promise<void>;
+  replies: CommentsPanelComment[];
+  canComment: boolean;
+  viewerUserId: string | null;
+  onEditComment?: (commentId: string, body: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 };
 
-export const CommentReplyList = ({ replies, viewer, onEdit, onDelete }: Props) => {
-  const visibleReplies = replies.filter((r) => !r.isDeleted);
-  if (visibleReplies.length === 0) return null;
+export const CommentReplyList = ({
+  replies,
+  canComment,
+  viewerUserId,
+  onEditComment,
+  onDeleteComment,
+}: Props): JSX.Element | null => {
+  const visible = replies.filter((r) => !r.isDeleted);
+  if (visible.length === 0) return null;
 
   return (
     <Root>
-      {visibleReplies.map((reply) => (
+      {visible.map((reply) => (
         <CommentRow
           key={reply.id}
           comment={reply}
-          viewer={viewer}
-          onEdit={onEdit}
-          onDelete={onDelete}
+          depth={1}
+          canComment={canComment}
+          viewerUserId={viewerUserId}
+          onEditComment={onEditComment}
+          onDeleteComment={onDeleteComment}
         />
       ))}
     </Root>
@@ -38,7 +42,7 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
-  padding-left: ${({ theme }) => theme.spacing(5)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  padding-left: ${({ theme }) => theme.spacing(4)};
   border-left: 2px solid ${({ theme }) => theme.color.border};
-  margin-top: ${({ theme }) => theme.spacing(1.5)};
 `;

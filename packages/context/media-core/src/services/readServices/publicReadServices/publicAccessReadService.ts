@@ -2,8 +2,9 @@ import {
   PublicAccessReadRepository,
   PublicAccessRow,
 } from '../../../repositories/readRepositories/publicAccessReadRepository';
+import { AgnosticReadServiceBase } from '../readServiceBaseType';
 
-export interface PublicAccessReadService {
+export interface PublicAccessReadService extends AgnosticReadServiceBase {
   validateHashedToken: (tokenHash: string) => Promise<string | undefined>;
   getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
 }

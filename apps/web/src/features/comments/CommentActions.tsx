@@ -5,9 +5,9 @@ type Props = {
   canReply: boolean;
   canEdit: boolean;
   canDelete: boolean;
-  onReply: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onReply?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
 export const CommentActions = ({
@@ -23,7 +23,7 @@ export const CommentActions = ({
 
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent): void => {
       if (!rootRef.current?.contains(e.target as Node)) {
         setOpen(false);
       }
@@ -32,16 +32,23 @@ export const CommentActions = ({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const hasMenuItems = canEdit || canDelete;
+  const showReply = canReply && !!onReply;
+  const showEdit = canEdit && !!onEdit;
+  const showDelete = canDelete && !!onDelete;
+  const hasMenuItems = showEdit || showDelete;
+
+  if (!showReply && !hasMenuItems) {
+    return null;
+  }
 
   return (
     <Root ref={rootRef}>
-      {canReply && (
+      {showReply ? (
         <ReplyButton type="button" onClick={onReply}>
           Reply
         </ReplyButton>
-      )}
-      {hasMenuItems && (
+      ) : null}
+      {hasMenuItems ? (
         <>
           <KebabButton
             type="button"
@@ -52,37 +59,37 @@ export const CommentActions = ({
           >
             ···
           </KebabButton>
-          {open && (
+          {open ? (
             <Menu role="menu" aria-label="Comment actions">
-              {canEdit && (
+              {showEdit ? (
                 <MenuItem
                   type="button"
                   role="menuitem"
                   onClick={() => {
                     setOpen(false);
-                    onEdit();
+                    onEdit?.();
                   }}
                 >
                   Edit
                 </MenuItem>
-              )}
-              {canDelete && (
+              ) : null}
+              {showDelete ? (
                 <MenuItem
                   type="button"
                   role="menuitem"
                   $danger
                   onClick={() => {
                     setOpen(false);
-                    onDelete();
+                    onDelete?.();
                   }}
                 >
                   Delete
                 </MenuItem>
-              )}
+              ) : null}
             </Menu>
-          )}
+          ) : null}
         </>
-      )}
+      ) : null}
     </Root>
   );
 };
@@ -95,7 +102,6 @@ const Root = styled.div`
   opacity: 0;
   transition: opacity 0.1s ease;
 
-  /* Show on hover/focus for the parent row; always visible on touch devices */
   @media (hover: none) {
     opacity: 1;
   }

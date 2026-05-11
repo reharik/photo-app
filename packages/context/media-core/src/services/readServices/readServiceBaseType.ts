@@ -5,3 +5,7 @@ export interface ReadServiceFactoryBase {
 export interface PublicReadServiceFactoryBase {
   readonly __publicReadServiceBrand?: true;
 }
+
+export interface AgnosticReadServiceBase {
+  readonly __agnosticReadServiceBrand?: true;
+}

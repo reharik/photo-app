@@ -1,25 +1,28 @@
+import { JSX } from 'react';
 import styled from 'styled-components';
 
 type Props = {
+  error: Error;
   onRetry?: () => void;
 };
 
-export const CommentErrorState = ({ onRetry }: Props) => (
+export const CommentsErrorState = ({ error, onRetry }: Props): JSX.Element => (
   <Root role="alert">
-    <Message>Could not load comments.</Message>
-    {onRetry && (
+    <Message>{error.message || 'Could not load comments.'}</Message>
+    {onRetry ? (
       <RetryButton type="button" onClick={onRetry}>
         Try again
       </RetryButton>
-    )}
+    ) : null}
   </Root>
 );
 
 const Root = styled.div`
   display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1.5)};
-  padding: ${({ theme }) => theme.spacing(2)};
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(2)} 0;
   color: ${({ theme }) => theme.color.textDanger};
   font-size: ${({ theme }) => theme.fontSize._14};
 `;

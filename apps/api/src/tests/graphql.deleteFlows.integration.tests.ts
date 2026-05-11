@@ -877,7 +877,9 @@ describe('deleteMediaItem', () => {
       expect(row).toBeUndefined();
 
       await Promise.all(
-        purgeKeys.map((k) => expect(integrationTestMediaStorage.verifyExistence(k)).resolves.toBe(false)),
+        purgeKeys.map((k) =>
+          expect(integrationTestMediaStorage.verifyExistence(k)).resolves.toBe(false),
+        ),
       );
     });
   });

@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState } from 'react';
+import { type JSX, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 const COMMENT_MAX_LENGTH = 500;
 
-type Props = {
+type CommentBodyDisplay = {
   body: string;
-  isEditing: boolean;
-  onSave: (newBody: string) => void;
-  onCancelEdit: () => void;
 };
 
-export const CommentBody = ({ body, isEditing, onSave, onCancelEdit }: Props) => {
+type Props = {
+  comment: CommentBodyDisplay;
+  isEditing: boolean;
+  onSave?: (newBody: string) => void | Promise<void>;
+  onCancelEdit?: () => void;
+};
+
+export const CommentBody = ({ comment, isEditing, onSave, onCancelEdit }: Props): JSX.Element => {
+  const { body } = comment;
   const [draft, setDraft] = useState(body);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -25,15 +30,15 @@ export const CommentBody = ({ body, isEditing, onSave, onCancelEdit }: Props) =>
     }
   }, [isEditing, body]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Escape') {
       e.preventDefault();
-      onCancelEdit();
+      onCancelEdit?.();
     }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       const trimmed = draft.trim();
-      if (trimmed && trimmed !== body) onSave(trimmed);
+      if (trimmed && trimmed !== body && onSave) void Promise.resolve(onSave(trimmed));
     }
   };
 
@@ -42,7 +47,8 @@ export const CommentBody = ({ body, isEditing, onSave, onCancelEdit }: Props) =>
   }
 
   const trimmed = draft.trim();
-  const canSave = trimmed.length > 0 && trimmed !== body && trimmed.length <= COMMENT_MAX_LENGTH;
+  const canSave =
+    trimmed.length > 0 && trimmed !== body && trimmed.length <= COMMENT_MAX_LENGTH && !!onSave;
   const charCount = draft.length;
   const showCounter = charCount >= COMMENT_MAX_LENGTH * 0.8;
 
@@ -58,16 +64,20 @@ export const CommentBody = ({ body, isEditing, onSave, onCancelEdit }: Props) =>
         aria-label="Edit comment"
       />
       <EditFooter>
-        {showCounter && (
+        {showCounter ? (
           <CharCount $overLimit={charCount > COMMENT_MAX_LENGTH}>
             {charCount}/{COMMENT_MAX_LENGTH}
           </CharCount>
-        )}
+        ) : null}
         <EditActions>
-          <CancelButton type="button" onClick={onCancelEdit}>
+          <CancelButton type="button" onClick={() => onCancelEdit?.()}>
             Cancel
           </CancelButton>
-          <SaveButton type="button" onClick={() => canSave && onSave(trimmed)} disabled={!canSave}>
+          <SaveButton
+            type="button"
+            onClick={() => canSave && onSave && void Promise.resolve(onSave(trimmed))}
+            disabled={!canSave}
+          >
             Save
           </SaveButton>
         </EditActions>

@@ -1,8 +1,13 @@
+import { JSX } from 'react';
 import styled, { type DefaultTheme } from 'styled-components';
 
-type Props = {
+type CommentAvatarDisplay = {
   displayName: string;
   displayAvatarUrl?: string | null;
+};
+
+type Props = {
+  comment: CommentAvatarDisplay;
   size?: number;
 };
 
@@ -30,7 +35,8 @@ const initials = (name: string): string => {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
-export const CommentAvatar = ({ displayName, displayAvatarUrl, size = 32 }: Props) => {
+export const CommentAvatar = ({ comment, size = 32 }: Props): JSX.Element => {
+  const { displayName, displayAvatarUrl } = comment;
   if (displayAvatarUrl) {
     return (
       <AvatarImage

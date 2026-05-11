@@ -10,6 +10,7 @@ export * from './domainRepositories/notificationRepository';
 export * from './domainRepositories/userRepository';
 export * from './readRepositories/albumReadRepository';
 export * from './readRepositories/authorizationReadRepository';
+export * from './readRepositories/commentReadRepository';
 export * from './readRepositories/grantReadRepository';
 export * from './readRepositories/mediaItemReadRepository';
 export * from './readRepositories/publicAccessReadRepository';

@@ -12,14 +12,14 @@ import {
 
 type ContextDeps = {
   publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
-  publicAccessReadService: IocGeneratedCradle['publicAccessReadService'];
+  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
   writeServices: IocGeneratedCradle['writeServices'];
   readServiceFactories: IocGeneratedCradle['readServiceFactories'];
   database: Knex;
 };
 type PublicContextDeps = {
   publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
-  publicAccessReadService: IocGeneratedCradle['publicAccessReadService'];
+  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
   database: Knex;
   publicLinkId: string;
 };
@@ -28,13 +28,14 @@ type AuthenticatedContextDeps = {
   readServiceFactories: IocGeneratedCradle['readServiceFactories'];
   database: Knex;
   writeServices: IocGeneratedCradle['writeServices'];
+  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
 };
 
 export const build__CreateGraphQLContext = ({
   writeServices,
   readServiceFactories,
   publicReadServiceFactories,
-  publicAccessReadService,
+  agnosticReadServices,
   database,
 }: ContextDeps): GraphQLContextFactory => {
   return (
@@ -48,6 +49,7 @@ export const build__CreateGraphQLContext = ({
         readServiceFactories,
         database,
         writeServices,
+        agnosticReadServices,
       });
     }
     if (!publicAccessId) {
@@ -58,7 +60,7 @@ export const build__CreateGraphQLContext = ({
       database,
       // Rename/map here for clarity down the line
       publicLinkId: publicAccessId,
-      publicAccessReadService,
+      agnosticReadServices,
     });
   };
 };
@@ -68,6 +70,7 @@ const buildAuthenticatedContext = ({
   readServiceFactories,
   database,
   writeServices,
+  agnosticReadServices,
 }: AuthenticatedContextDeps): AuthenticatedGraphQLContext => {
   const viewer = {
     id: user.id,
@@ -90,14 +93,15 @@ const buildAuthenticatedContext = ({
     viewer,
     writeServices,
     readServices: rs,
+    agnosticReadServices,
   };
 };
 
 const buildPublicContext = ({
   publicReadServiceFactories,
-  publicAccessReadService,
   database,
   publicLinkId,
+  agnosticReadServices,
 }: PublicContextDeps): PublicGraphQLContext => {
   type PublicServiceFactory = (deps: { publicLinkId: string }) => unknown;
 
@@ -111,7 +115,7 @@ const buildPublicContext = ({
   return {
     database,
     publicReadServices,
-    publicAccessReadService,
     publicLinkId,
+    agnosticReadServices,
   };
 };

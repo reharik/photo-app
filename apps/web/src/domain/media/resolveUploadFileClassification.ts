@@ -21,8 +21,7 @@ const getExtensionLower = (fileName: string): string => {
   return trimmed.slice(dot).toLowerCase();
 };
 
-const mimeIsGenericOrMissing = (type: string): boolean =>
-  type === '' || type === TYPE_OCTET_STREAM;
+const mimeIsGenericOrMissing = (type: string): boolean => type === '' || type === TYPE_OCTET_STREAM;
 
 /** Extension (lowercase, includes dot) → photo MIME for createMediaUpload. */
 const PHOTO_EXT_TO_MIME: Record<string, string> = {
@@ -46,7 +45,9 @@ const VIDEO_EXT_TO_MIME: Record<string, string> = {
   '.m4v': 'video/x-m4v',
 };
 
-export const resolveUploadFileClassification = (file: File): ResolvedUploadClassification | undefined => {
+export const resolveUploadFileClassification = (
+  file: File,
+): ResolvedUploadClassification | undefined => {
   const rawType = file.type.trim();
 
   if (rawType.startsWith('image/')) {

@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { type JSX, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 
 const COMMENT_MAX_LENGTH = 500;
 const COUNTER_THRESHOLD = COMMENT_MAX_LENGTH * 0.8;
 
 type Props = {
-  onSubmit: (body: string) => Promise<void>;
+  onSubmit: (body: string) => void | Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
 };
 
-export const ReplyComposer = ({ onSubmit, onCancel, isLoading }: Props) => {
+export const ReplyComposer = ({ onSubmit, onCancel, isLoading }: Props): JSX.Element => {
   const [body, setBody] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -29,7 +29,7 @@ export const ReplyComposer = ({ onSubmit, onCancel, isLoading }: Props) => {
     setBody('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();

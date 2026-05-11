@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle } from 'react';
 import styled from 'styled-components';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/publicMedia/PublicMediaItemSummaryVM';
+import { PublicCommentsForMediaItemContainer } from './PublicCommentsForMediaItemContainer';
 
 export type PublicMediaItemDetailPanelHandle = {
   /** Cancels an active edit, or runs {@link PublicMediaItemDetailPanelProps.onDismissScreen} when not editing. */
@@ -89,6 +90,10 @@ export const PublicMediaItemDetailPanel = forwardRef<
           </MetadataItem>
         ) : null}
       </MetadataSection>
+
+      <CommentsSection>
+        <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} />
+      </CommentsSection>
     </MetadataPanel>
   );
 });
@@ -232,4 +237,13 @@ const ReadOnlyValueText = styled.div<{ $muted?: boolean }>`
   overflow-wrap: break-word;
   white-space: normal;
   font-style: ${({ $muted }) => ($muted ? 'italic' : 'normal')};
+`;
+
+const CommentsSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+  padding-top: ${({ theme }) => theme.spacing(2)};
+  margin-top: ${({ theme }) => theme.spacing(1)};
+  border-top: 1px solid ${({ theme }) => theme.color.border};
 `;

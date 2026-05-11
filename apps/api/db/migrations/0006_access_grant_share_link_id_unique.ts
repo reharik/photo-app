@@ -17,10 +17,10 @@ export const up = async (knex: Knex): Promise<void> => {
     return;
   }
 
-  await knex.raw(
-    `ALTER TABLE ?? ADD CONSTRAINT ?? UNIQUE (share_link_id)`,
-    [ACCESS_GRANT_TABLE, CONSTRAINT_NAME],
-  );
+  await knex.raw(`ALTER TABLE ?? ADD CONSTRAINT ?? UNIQUE (share_link_id)`, [
+    ACCESS_GRANT_TABLE,
+    CONSTRAINT_NAME,
+  ]);
 };
 
 export const down = async (knex: Knex): Promise<void> => {

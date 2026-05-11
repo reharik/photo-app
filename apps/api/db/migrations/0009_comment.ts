@@ -28,12 +28,7 @@ export const up = async (knex: Knex): Promise<void> => {
     // Nullable on purpose: v1 rejects unauthenticated authors in the write
     // service, but the column stays nullable for future anonymous-via-share-token
     // support without a schema migration.
-    table
-      .uuid('author_user_id')
-      .nullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('SET NULL');
+    table.uuid('author_user_id').nullable().references('id').inTable('user').onDelete('SET NULL');
 
     table.text('body').notNullable();
 

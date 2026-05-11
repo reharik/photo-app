@@ -25,11 +25,13 @@ generates:
       mappers:
         Viewer: ../resolvers/parentModels#ViewerParent
         PublicAccess: '@packages/media-core#PublicAccessRow'
-        PublicAlbum: '@packages/media-core#AlbumProjection'
+        PublicAlbum: '@packages/media-core#PublicAlbumProjection'
         Album: '@packages/media-core#AlbumProjection'
         MediaItem: '@packages/media-core#MediaItemProjection'
+        PublicMediaItem: '@packages/media-core#PublicMediaItemProjection'
         MediaAsset: '@packages/media-core#MediaAssetProjection'
         AlbumItem: '@packages/media-core#AlbumItemProjection'
+        PublicAlbumItem: '@packages/media-core#PublicAlbumItemProjection'
         AuthorizationType: '@packages/media-core#AuthorizationProjection'
         ShareContactType: '@packages/media-core#ShareContactSuggestion'
         Comment: '@packages/media-core#CommentRow'

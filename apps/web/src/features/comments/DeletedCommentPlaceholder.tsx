@@ -1,8 +1,7 @@
+import { JSX } from 'react';
 import styled from 'styled-components';
 
-export const DeletedCommentPlaceholder = () => (
-  <Root>[deleted]</Root>
-);
+export const DeletedCommentPlaceholder = (): JSX.Element => <Root>[deleted]</Root>;
 
 const Root = styled.p`
   margin: 0;

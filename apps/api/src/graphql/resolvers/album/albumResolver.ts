@@ -1,4 +1,4 @@
-import { AlbumItemSortBy } from '@packages/contracts';
+import { AlbumItemSortBy, CommentTargetType } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
@@ -30,6 +30,14 @@ const albumResolvers: Resolvers = {
         nodes: decoratedAlbumItems,
         pageInfo: albumItems.pageInfo,
       };
+    }),
+    comments: authenticatedResolver(async (parent, args, ctx) => {
+      const collectionInfo = args.input.collectionInfo;
+      return ctx.agnosticReadServices.commentReadService.listComments({
+        targetType: CommentTargetType.album,
+        targetId: parent.id,
+        collectionInfo,
+      });
     }),
   },
 };
