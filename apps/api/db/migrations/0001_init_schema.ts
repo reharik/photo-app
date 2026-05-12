@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 
 /**
- * Consolidated baseline schema for PhotoApp (PostgreSQL); replaces migrations 0001–0019.
+ * Consolidated baseline schema for PhotoApp (PostgreSQL); replaces migrations 0001–0013.
  * Use string/varchar columns for enum-like fields. Do NOT use Postgres enum types.
  *
  * After replacing migration history: truncate `knex_migrations` (or equivalent) and insert a single
@@ -59,6 +59,7 @@ export const up = async (knex: Knex): Promise<void> => {
       .references('id')
       .inTable('media_item')
       .onDelete('SET NULL');
+    table.boolean('is_public_link_album').notNullable().defaultTo(false);
     table.timestamp('created_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
     table.timestamp('updated_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
     table.uuid('created_by').notNullable();
@@ -95,17 +96,50 @@ export const up = async (knex: Knex): Promise<void> => {
   });
 
   await knex.schema.createTable('comment', (table) => {
-    table.uuid('id').primary();
-    table.string('resource_type', 32).notNullable();
-    table.uuid('resource_id').notNullable();
-    table.uuid('author_id').notNullable().references('id').inTable('user').onDelete('CASCADE');
-    table.text('content').notNullable();
-    table.timestamp('created_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
-    table.timestamp('updated_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
-    table.uuid('created_by').notNullable();
-    table.uuid('updated_by').notNullable();
-    table.index(['resource_type', 'resource_id']);
+    table.uuid('id').primary().defaultTo(knex.fn.uuid());
+
+    table.text('target_type').notNullable();
+    table.uuid('target_id').notNullable();
+
+    table
+      .uuid('parent_comment_id')
+      .nullable()
+      .references('id')
+      .inTable('comment')
+      .onDelete('CASCADE');
+
+    table.uuid('author_id').nullable().references('id').inTable('user').onDelete('SET NULL');
+
+    table.text('body').notNullable();
+
+    table.text('display_name').notNullable();
+    table.text('display_avatar_url').nullable();
+
+    table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+    table.timestamp('updated_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
+    table.timestamp('deleted_at', { useTz: true }).nullable();
+
+    table.uuid('created_by').nullable().references('id').inTable('user').onDelete('SET NULL');
+    table.uuid('updated_by').nullable().references('id').inTable('user').onDelete('SET NULL');
+
+    table.boolean('is_edited').notNullable().defaultTo(false);
+
+    table.index(['target_type', 'target_id', 'created_at']);
+    table.index(['parent_comment_id']);
+    table.index(['author_id']);
   });
+
+  await knex.raw(`
+    ALTER TABLE "comment"
+    ADD CONSTRAINT comment_target_type_check
+    CHECK (target_type IN ('MEDIA_ITEM', 'ALBUM'))
+  `);
+
+  await knex.raw(`
+    ALTER TABLE "comment"
+    ADD CONSTRAINT comment_body_not_empty_check
+    CHECK (char_length(body) > 0)
+  `);
 
   await knex.schema.createTable('notification', (table) => {
     table.uuid('id').primary();
@@ -232,7 +266,27 @@ export const up = async (knex: Knex): Promise<void> => {
   await knex.schema.createTable('share_link', (table) => {
     table.uuid('id').primary();
     table.text('link_token').notNullable().unique();
+    table
+      .uuid('album_id')
+      .nullable()
+      .references('id')
+      .inTable('album')
+      .onDelete('CASCADE');
+    table.index(['album_id']);
     table.uuid('created_by').notNullable().references('id').inTable('user').onDelete('CASCADE');
+    table
+      .uuid('granted_by')
+      .notNullable()
+      .references('id')
+      .inTable('user')
+      .onDelete('CASCADE');
+    table.index(['granted_by']);
+    table
+      .uuid('updated_by')
+      .notNullable()
+      .references('id')
+      .inTable('user')
+      .onDelete('CASCADE');
     table.timestamp('expires_at', { useTz: false }).nullable();
     table.timestamp('revoked_at', { useTz: false }).nullable();
     table.timestamp('created_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());
@@ -287,6 +341,11 @@ export const up = async (knex: Knex): Promise<void> => {
   `);
 
   await knex.raw(`
+    ALTER TABLE "access_grant"
+    ADD CONSTRAINT access_grant_share_link_id_unique UNIQUE (share_link_id)
+  `);
+
+  await knex.raw(`
     CREATE UNIQUE INDEX access_grant_media_item_granted_user_unique
     ON access_grant (media_item_id, granted_to_user)
   `);
@@ -311,6 +370,7 @@ export const up = async (knex: Knex): Promise<void> => {
       .inTable('access_grant')
       .onDelete('CASCADE');
     table.uuid('granted_to_user').nullable().references('id').inTable('user').onDelete('CASCADE');
+    table.string('permissions').nullable();
     table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     table.index(['media_item_id', 'granted_to_user']);
   });

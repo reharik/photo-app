@@ -12,6 +12,7 @@
     "build:dev": "nx build api --configuration=development",
     "build:prod": "nx build api --configuration=production",
     "db:make": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:make",
+    "db:baseline:migrations": "tsx src/localScripts/baselineKnexMigrations.ts",
     "db:migrate:local": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:latest",
     "db:migrate:prod": "knex --knexfile dist/knexfile.js migrate:latest",
     "db:rollback": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:rollback",
