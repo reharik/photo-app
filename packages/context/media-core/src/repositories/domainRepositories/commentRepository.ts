@@ -1,14 +1,14 @@
-import { ResourceTypeEnum } from '@packages/contracts';
+import { CommentTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import type { CommentRecord } from '../../domain/Comment/Comment';
+import { CommentRecord, ok } from '../..';
 import { Comment } from '../../domain/Comment/Comment';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
-import type { EntityId } from '../../types/types';
+import type { EntityId, WriteResult } from '../../types/types';
 
 export type CommentRepository = {
   getById: (id: EntityId) => Promise<Comment | undefined>;
-  save: (comment: Comment, resourceId: EntityId, options?: RepoOptions) => Promise<void>;
+  save: (comment: Comment, options?: RepoOptions) => Promise<WriteResult<void>>;
 };
 
 type CommentRepositoryDeps = { database: Knex };
@@ -17,36 +17,32 @@ export const build__CommentRepository = ({
   database,
 }: CommentRepositoryDeps): CommentRepository => {
   const getById = async (id: EntityId): Promise<Comment | undefined> => {
-    const commentRow = await withEnumRevival(
+    const row = await withEnumRevival(
       database<CommentRecord>('comment').where({ id }).first(),
-      { resourceType: ResourceTypeEnum },
+      { targetType: CommentTargetType },
       { strict: true },
     );
 
-    if (!commentRow) {
+    if (!row) {
       return;
     }
 
-    return Comment.rehydrate(commentRow);
+    return Comment.rehydrate(row);
   };
 
-  const save = async (
-    comment: Comment,
-    resourceId: EntityId,
-    options?: RepoOptions,
-  ): Promise<void> => {
+  const save = async (comment: Comment, options?: RepoOptions): Promise<WriteResult<void>> => {
     await runInTransaction(database, options, async (trx) => {
       const record = comment.toPersistence();
-      const row = { ...record, resourceId };
 
       const existing = await trx<CommentRecord>('comment').where({ id: record.id }).first();
 
       if (existing) {
-        await trx<CommentRecord>('comment').where({ id: record.id }).update(row);
+        await trx<CommentRecord>('comment').where({ id: record.id }).update(record);
       } else {
-        await trx<CommentRecord>('comment').insert(row);
+        await trx<CommentRecord>('comment').insert(record);
       }
     });
+    return ok(undefined);
   };
 
   return {

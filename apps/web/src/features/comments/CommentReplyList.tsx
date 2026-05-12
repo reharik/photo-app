@@ -6,7 +6,6 @@ import type { CommentsPanelComment } from './CommentsPanel';
 type Props = {
   replies: CommentsPanelComment[];
   canComment: boolean;
-  viewerUserId: string | null;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
   editCommentLoading?: boolean;
@@ -16,7 +15,6 @@ type Props = {
 export const CommentReplyList = ({
   replies,
   canComment,
-  viewerUserId,
   onEditComment,
   onDeleteComment,
   editCommentLoading = false,
@@ -33,7 +31,6 @@ export const CommentReplyList = ({
           comment={reply}
           depth={1}
           canComment={canComment}
-          viewerUserId={viewerUserId}
           editCommentLoading={editCommentLoading}
           deleteCommentPending={deletingCommentId === reply.id}
           onEditComment={onEditComment}

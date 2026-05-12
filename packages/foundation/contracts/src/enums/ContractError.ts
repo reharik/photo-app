@@ -4,6 +4,7 @@ import { ErrorCategory } from './graphqlSmartEnums';
 const errorAreaInput = [
   'album',
   'mediaItem',
+  'comment',
   'membership',
   'viewer',
   'auth',
@@ -366,6 +367,27 @@ const contractErrorInput = {
     display: 'Public link not found',
     category: ErrorCategory.domain,
     area: ErrorArea.authorization,
+    retryable: false,
+  },
+  ReplyDepthExceeded: {
+    code: 'REPLY_DEPTH_EXCEEDED',
+    display: 'Reply depth exceeded',
+    category: ErrorCategory.domain,
+    area: ErrorArea.comment,
+    retryable: false,
+  },
+  CommentNotFound: {
+    code: 'COMMENT_NOT_FOUND',
+    display: 'Comment not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.comment,
+    retryable: false,
+  },
+  CanNotDeleteComment: {
+    code: 'CAN_NOT_DELETE_COMMENT',
+    display: 'Can not delete comment',
+    category: ErrorCategory.auth,
+    area: ErrorArea.comment,
     retryable: false,
   },
 } as const;

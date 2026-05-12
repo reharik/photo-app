@@ -1,5 +1,6 @@
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
+import { useViewer } from '../../hooks/useViewer';
 import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
@@ -11,7 +12,6 @@ type Props = {
   comment: CommentsPanelComment;
   depth: number;
   canComment: boolean;
-  viewerUserId: string | null;
   onReply?: () => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
@@ -25,17 +25,18 @@ export const CommentRow = ({
   comment,
   depth,
   canComment,
-  viewerUserId,
   onReply,
   onEditComment,
   onDeleteComment,
   editCommentLoading = false,
   deleteCommentPending = false,
 }: Props): JSX.Element => {
+  const { viewer } = useViewer();
+  const authorId = viewer?.id;
   const [isEditing, setIsEditing] = useState(false);
   const avatarSize = depth > 0 ? 28 : 32;
 
-  const isMine = viewerUserId !== null && comment.authorUserId === viewerUserId;
+  const isMine = authorId !== null && comment.authorId === authorId;
   const isTopLevel = comment.parentCommentId == null;
   const canReply = canComment && isTopLevel && !!onReply;
   const canEdit = isMine && !!onEditComment;

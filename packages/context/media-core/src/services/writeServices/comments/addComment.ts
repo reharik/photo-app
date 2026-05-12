@@ -1,7 +1,9 @@
-import { CommentTargetType } from '@packages/contracts';
-import { ok } from '../../../domain';
+import { AppErrorCollection, CommentTargetType } from '@packages/contracts';
+import { Comment, fail, ok } from '../../../domain';
+import { CommentRepository } from '../../../repositories';
+import { UserReadRepository } from '../../../repositories/readRepositories/userReadRepository';
 import { EntityId, WriteResult } from '../../../types/types';
-import { CommentRow } from '../../readServices/types';
+import { ValidateViewerOperationService } from '../../readServices/mediaGrantService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -10,76 +12,84 @@ export type AddCommentCommand = {
    * but keeping it nullable here allows the anon-via-share-token path to land
    * on the same command type in a future iteration without a type change.
    */
-  viewerUserId: EntityId | null;
+  authorId: EntityId;
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
-  targetType?: CommentTargetType;
+  targetType: CommentTargetType;
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
-  targetId?: EntityId;
+  targetId: EntityId;
   parentCommentId?: EntityId;
   body: string;
 };
 
-export type AddCommentResult = {
-  comment: CommentRow;
-};
-
 export interface AddComment extends WriteServiceBase {
-  (command: AddCommentCommand): Promise<WriteResult<AddCommentResult>>;
+  (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
 }
 
-type AddCommentDeps = Record<string, never>;
+type AddCommentDeps = {
+  commentRepository: CommentRepository;
+  userReadRepository: UserReadRepository;
+  validateViewerOperationService: ValidateViewerOperationService;
+};
 
-export const build__AddComment = (_deps: AddCommentDeps): AddComment => {
-  return async (command: AddCommentCommand): Promise<WriteResult<AddCommentResult>> => {
-    // TODO: Validate viewer is authed (command.viewerUserId present). Return ContractError
-    //   if null. (Eventually the anon-via-share-token path will skip this check — leave
-    //   a branch point here.)
-
-    if (command.parentCommentId) {
-      // TODO: Load parent comment by command.parentCommentId.
-      // TODO: Copy parent.target_type and parent.target_id down onto this comment
-      //   (silently ignore any targetType / targetId the caller passed).
-      // TODO: Reject with ContractError if parent.parent_comment_id is non-null
-      //   (two-level cap: replies-to-replies are not allowed; service-layer rule only,
-      //   not a DB constraint — easy to remove later).
-    } else {
-      // TODO: Validate target exists — query media_item or album table based on targetType.
-      // TODO: Validate viewer can comment on target: viewer must either own the target
-      //   OR have an access_grant with permission IN ('COMMENT', 'DOWNLOAD').
-      //   Do NOT introduce a new permission level; use the existing access_grant table.
-    }
-
-    // TODO: Look up viewer's display_name and avatar_url from the user table and
-    //   snapshot them into the row (denormalized — do not join through user on reads).
-
-    // TODO: Insert into the comment table.
-
-    return ok({
-      comment: {
-        id: 'STUB_COMMENT_ID', // TODO: Generate a real ID
-        targetType: command.targetType ?? CommentTargetType.mediaItem,
-        targetId: command.targetId ?? '',
-        parentCommentId: command.parentCommentId,
-        authorUserId: command.viewerUserId ?? 'viewer.id',
-        body: command.body,
-        displayName: 'STUB_DISPLAY_NAME', // TODO: Get the display name from the viewer
-        displayAvatarUrl: undefined,
-        createdAt: new Date(), // TODO: Generate a real createdAt
-        updatedAt: new Date(), // TODO: Generate a real updatedAt
-        isEdited: false,
-        isDeleted: false,
-        replies: {
-          nodes: [],
-          pageInfo: {
-            limit: 50,
-            offset: 0,
-          },
-        },
-      },
+export const build__AddComment = ({
+  commentRepository,
+  userReadRepository,
+  validateViewerOperationService,
+}: AddCommentDeps): AddComment => {
+  return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+    const result = await validateViewerOperationService.authorizeMediaComment({
+      mediaItemId: command.targetId,
+      viewerId: command.authorId,
     });
+    if (!result.success) {
+      return result;
+    }
+    const user = await userReadRepository.getById(command.authorId);
+    if (!user) {
+      return fail(AppErrorCollection.user.UserNotFound);
+    }
+    if (command.parentCommentId) {
+      const parentComment = await commentRepository.getById(command.parentCommentId);
+      if (!parentComment) {
+        return fail(AppErrorCollection.comment.CommentNotFound);
+      }
+      command.targetType = parentComment.targetType();
+      command.targetId = parentComment.targetId();
+
+      if (parentComment.isReply()) {
+        return fail(AppErrorCollection.comment.ReplyDepthExceeded);
+      }
+      const comment = Comment.create(
+        {
+          ...command,
+          authorId: command.authorId,
+          displayName: `${user.firstName}, ${user.lastName}`,
+          displayAvatarUrl: undefined,
+        },
+        command.authorId,
+      );
+
+      await commentRepository.save(comment);
+      return ok({ entityId: comment.id() });
+    } else {
+      // TODO: Look up viewer's display_name and avatar_url from the user table and
+      //   snapshot them into the row (denormalized — do not join through user on reads).
+      const comment = Comment.create(
+        {
+          ...command,
+          authorId: command.authorId,
+          displayName: `${user.firstName}, ${user.lastName}`,
+          displayAvatarUrl: undefined,
+        },
+        command.authorId,
+      );
+
+      await commentRepository.save(comment);
+      return ok({ entityId: comment.id() });
+    }
   };
 };

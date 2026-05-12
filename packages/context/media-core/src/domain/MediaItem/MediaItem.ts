@@ -3,9 +3,10 @@
  * Encapsulates metadata; can appear in multiple albums via AlbumItem.
  */
 
-import type { MediaAssetKind, ResourceTypeEnum, SharePermission } from '@packages/contracts';
+import type { MediaAssetKind, SharePermission } from '@packages/contracts';
 import {
   AppErrorCollection,
+  CommentTargetType,
   ContractError,
   MediaAssetStatus,
   MediaItemStatus,
@@ -118,13 +119,28 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
   addComment(
     props: {
-      resourceType: ResourceTypeEnum;
       authorId: EntityId;
-      content: string;
+      body: string;
+      displayName: string;
+      displayAvatarUrl?: string;
+      parentCommentId?: EntityId;
     },
     actorId: ActorId,
   ): void {
-    this.#comments.push(Comment.create(props, actorId));
+    this.#comments.push(
+      Comment.create(
+        {
+          targetType: CommentTargetType.mediaItem,
+          targetId: this.id(),
+          authorId: props.authorId,
+          body: props.body,
+          displayName: props.displayName,
+          displayAvatarUrl: props.displayAvatarUrl,
+          parentCommentId: props.parentCommentId,
+        },
+        actorId,
+      ),
+    );
     this.touch(actorId);
   }
 

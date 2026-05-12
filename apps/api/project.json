@@ -112,7 +112,7 @@
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["gen:graphql"],
+      "dependsOn": ["media-core:barrels", "gen:graphql"],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"

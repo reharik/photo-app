@@ -5,7 +5,7 @@ import { AgnosticReadServiceBase } from '../readServiceBaseType';
 import { CommentGraph, CommentRow } from '../types';
 
 export interface CommentReadService extends AgnosticReadServiceBase {
-  listComments: (args: ListCommentsProps) => Promise<{ nodes: CommentRow[]; pageInfo: PageInfo }>;
+  listComments: (args: ListCommentsProps) => Promise<CommentRow[]>;
 }
 
 type CommentReadServiceDeps = {
@@ -26,13 +26,12 @@ export const build__CommentReadService = ({
       targetType,
       targetId,
       collectionInfo,
-    }: ListCommentsProps): Promise<{ nodes: CommentRow[]; pageInfo: PageInfo }> => {
+    }: ListCommentsProps): Promise<CommentRow[]> => {
       const nodes = await commentReadRepository.getCommentsForTarget({
         targetType,
         targetId,
         collectionInfo,
       });
-
       const byId: Record<EntityId, CommentGraph> = {};
       for (const node of nodes) {
         byId[node.id] = { ...node, replies: [] };
@@ -57,11 +56,7 @@ export const build__CommentReadService = ({
         byId[id].replies.sort(byCreatedAtAsc);
       }
       roots.sort(byCreatedAtAsc);
-
-      return {
-        nodes: roots,
-        pageInfo: collectionInfo.pageInfo,
-      };
+      return roots;
     },
   };
 };

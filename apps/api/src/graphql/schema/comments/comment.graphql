@@ -8,7 +8,7 @@ type Comment {
   targetType: CommentTargetType!
   targetId: ID!
   parentCommentId: ID
-  authorUserId: ID
+  authorId: ID!
   body: String!
   displayName: String!
   displayAvatarUrl: String
@@ -24,7 +24,7 @@ type Comment {
   isDeleted: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
-  replies(input: CommentsInput!): CommentCollectionPayload!
+  replies: [Comment!]!
 }
 
 input CommentsInput {
@@ -37,5 +37,6 @@ input CommentCollectionInput {
 
 type CommentCollectionPayload {
   nodes: [Comment!]!
+  totalCount: Int!
   pageInfo: PageInfo!
 }

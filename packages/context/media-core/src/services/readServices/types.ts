@@ -211,14 +211,14 @@ export type CommentRow = {
   targetType: CommentTargetType;
   targetId: EntityId;
   parentCommentId?: EntityId;
-  authorUserId?: EntityId;
+  authorId?: EntityId;
   body: string;
   displayName: string;
   displayAvatarUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date;
-  totalCount?: number;
+  totalCount: number;
 };
 export type CommentGraph = CommentRow & {
   replies: CommentRow[];

@@ -1,12 +1,10 @@
 import { useQuery } from '@apollo/client/react';
-import { JSX, useMemo } from 'react';
+import { JSX } from 'react';
 import styled from 'styled-components';
 import { CommentsForPublicMediaItemDocument } from '../../graphql/generated/types';
+import { getQueryRenderState } from '../../hooks/getQueryRenderState';
+import { mapMultipleCommentRootFieldsToVMs } from '../../viewModels/comment/mapCommentDetailFieldsToVM';
 import { CommentsPanel } from '../comments/CommentsPanel';
-import {
-  countVisiblePanelComments,
-  groupCommentDetailFieldsToPanelComments,
-} from '../comments/groupCommentDetailFieldsToPanelComments';
 
 const PAGE_SIZE = 50;
 
@@ -17,33 +15,30 @@ export type PublicCommentsForMediaItemContainerProps = {
 export const PublicCommentsForMediaItemContainer = ({
   mediaItemId,
 }: PublicCommentsForMediaItemContainerProps): JSX.Element => {
-  const { data, loading, error, refetch } = useQuery(CommentsForPublicMediaItemDocument, {
+  const query = useQuery(CommentsForPublicMediaItemDocument, {
     variables: { mediaItemId, limit: PAGE_SIZE, offset: 0 },
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const rawNodes = data?.publicAccess?.mediaItem?.comments?.nodes;
-  const comments = useMemo(
-    () => groupCommentDetailFieldsToPanelComments(rawNodes ?? []),
-    [rawNodes],
-  );
-  const count = countVisiblePanelComments(comments);
-  const titleText = rawNodes != null ? `Comments · ${count}` : 'Comments';
-
-  const err: Error | null =
-    error != null ? (error instanceof Error ? error : new Error('Failed to load comments')) : null;
-
+  const { data, content } = getQueryRenderState({
+    query,
+    select: (data) => data.publicAccess?.mediaItem?.comments,
+  });
+  const comments = mapMultipleCommentRootFieldsToVMs(data?.nodes ?? []);
+  const titleText = data && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
+  if (!comments) {
+    return <>{content}</>;
+  }
   return (
     <Root>
       <SectionTitle>{titleText}</SectionTitle>
       <CommentsPanel
         comments={comments}
-        loading={loading}
-        error={err}
+        loading={query.loading}
+        error={[]}
         canComment={false}
-        viewerUserId={null}
-        onRetry={() => void refetch()}
+        onRetry={() => void query.refetch()}
       />
     </Root>
   );

@@ -10,18 +10,18 @@ type CommentMutationResponse {
 }
 
 type CommentMutationPayload {
-  comment: Comment
+  entityId: ID!
 }
 
 input AddCommentInput {
   """
   Ignored when parentCommentId is set; the service copies target from the parent.
   """
-  targetType: CommentTargetType
+  targetType: CommentTargetType!
   """
   Ignored when parentCommentId is set; the service copies target from the parent.
   """
-  targetId: ID
+  targetId: ID!
   parentCommentId: ID
   body: String!
 }

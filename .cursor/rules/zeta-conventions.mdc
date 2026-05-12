@@ -10,18 +10,21 @@ the prompt wins. If the prompt is silent, this file is the answer.
 
 When uncertain, stop and add a `// QUESTION:` comment rather than guessing.
 
+See `zeta-conventions-examples.mdc` for concrete code examples that
+illustrate these rules.
+
 ---
 
 ## Architecture
 
-Organize code by domain/feature, not by technical layer dumped into
-global folders. Use the following high-level structure:
+Organize code by domain/feature, not by technical layer. High-level
+structure:
 
-- **domain**: domain entities, value objects, domain errors,
-  repository interfaces
+- **domain**: domain entities, value objects, domain errors, repository
+  interfaces
 - **application**: use cases / services that orchestrate domain behavior
-- **infrastructure**: persistence, storage, external integrations,
-  http transport
+- **infrastructure**: persistence, storage, external integrations, http
+  transport
 
 Keep route/controller handlers thin. Controllers parse input, call an
 application use case, and map output to DTOs. Business rules must not
@@ -32,63 +35,50 @@ business logic.
 
 ## Transport Boundary
 
-The architecture must remain transport-agnostic.
-
-- Domain entities, application services, and repositories must not
-  depend on REST or GraphQL.
-- Transport layers (REST controllers or GraphQL resolvers) must be
-  thin adapters that call application services.
-- Do not add GraphQL decorators or REST concerns to domain entities.
-- If GraphQL is used, define GraphQL models at the boundary rather
-  than decorating domain classes.
+The architecture must remain transport-agnostic. Domain entities,
+application services, and repositories must not depend on REST or
+GraphQL. Transport layers are thin adapters that call application
+services. Define GraphQL models at the boundary rather than decorating
+domain classes.
 
 ## Dependency Injection
 
-- Use Awilix for dependency injection.
-- Do not introduce framework IoC or decorator-based DI.
-- Prefer explicit constructor injection.
-- Keep dependency wiring in composition root / container setup only.
+Use Awilix. Prefer explicit constructor injection. Do not use
+decorator-based or framework IoC. Keep dependency wiring in composition
+root / container setup only.
 
 ## Domain Modeling
 
-- Domain entities must be implemented as classes.
+- Domain entities are implemented as classes.
 - Use classes only for domain entities and closely related value
-  objects where justified. Do NOT use classes for anything else.
-- Domain entities encapsulate mutation through explicit
-  methods/commands. Do not expose public mutable state. Avoid
-  general-purpose setters. Prefer domain-specific methods such as
-  `addMember`, `rename`, `revokeShareLink`, `addItem`.
-- Public accessors should be minimal; avoid boilerplate getters/setters
-  unless needed. Collections may be exposed through read-only access
-  when necessary.
-- Domain entities must enforce their own invariants.
-- Domain entities must not depend on ORM, HTTP, or framework concerns.
-- Use `#` private fields for entity state, not `protected` fields.
-- Avoid clever generic type patterns in the domain layer. Prefer
-  explicit `create()` and `rehydrate()` factory methods over
-  union-typed constructor arguments or discriminated-union constructor
-  modes. Keep domain code boring, explicit, and easy to reason about.
-- Do not add getters for every entity field by default. Expose domain
-  data only when needed through:
-  - behavior-oriented methods
-  - readonly collection access where justified
-  - explicit snapshot/export methods for persistence or mapping
+  objects. Do NOT use classes for anything else.
+- Entities encapsulate mutation through explicit domain methods
+  (`addMember`, `rename`, `revokeShareLink`). Do not expose public
+  mutable state. Avoid general-purpose setters.
+- Public accessors should be minimal. Collections may be exposed as
+  read-only when necessary.
+- Entities enforce their own invariants.
+- Entities must not depend on ORM, HTTP, or framework concerns.
+- Use `#` private fields for entity state, not `protected`.
+- Prefer explicit `create()` and `rehydrate()` factory methods over
+  union-typed constructor arguments. Keep domain code boring, explicit,
+  and easy to reason about.
+- Do not add getters for every field by default. Expose domain data
+  through behavior-oriented methods, read-only collection access, or
+  explicit snapshot/export methods.
 
 ## Application Layer
 
-- Application logic should be implemented as use case functions or
-  services.
+- Application logic is use case functions or services.
 - Use case functions orchestrate repositories, domain entities, and
-  external services.
-- Use case functions should not contain low-level persistence details.
-- Cross-aggregate orchestration belongs in application services,
-  not domain entities.
-- Services are exported as factories named `build__ServiceName`.
-  They accept dependencies as a typed object and return the service
-  function. IoC injection is generated via `gen:container`.
-- Auth checks live in the service layer. Resolvers are thin
-  pass-through wrappers; the service is responsible for permission
-  validation.
+  external services. They do not contain low-level persistence details.
+- Cross-aggregate orchestration belongs in application services, not
+  domain entities.
+- Services are exported as factories named `build__ServiceName`. They
+  accept dependencies as a typed object and return the service function.
+  IoC injection is generated via `gen:container`.
+- Auth checks live in the service layer. Resolvers are thin pass-through
+  wrappers.
 - Read services and write services live in separate folders under
   `packages/context/media-core/src/services/`.
 
@@ -98,58 +88,76 @@ The architecture must remain transport-agnostic.
 - Repository implementations belong in infrastructure.
 - Repositories load and save entities but do not implement business
   rules.
+- Repository methods may use `knex.raw` with named parameters for
+  complex queries (window functions, CTEs) that fight the builder.
+  Keep them contained to the repository layer.
 
 ## DTOs and Mapping
 
-- Use DTOs at external boundaries such as HTTP input/output.
+- Use DTOs at external boundaries.
 - Do not leak domain entities directly through API responses.
 - Prefer explicit mapping functions over magic or reflection-based
-  mapping. Keep mapping code simple and local to the transport boundary.
-- Avoid excessive DTO proliferation where a simple explicit mapper is
-  sufficient.
-- Do not treat every shape as a DTO. Use distinct names by purpose:
-  - `Command` for use-case command — use action-based names
+  mapping.
+- Use distinct names by purpose:
+  - `Command` for use-case commands (action-based names)
   - `Record` for persistence
   - `Response` for transport output
   - `Snapshot` for explicit entity export
-- Do not create multiple redundant types when the shape is identical.
-  Prefer one shared type when multiple boundaries use the same shape.
+- Prefer one shared type when multiple boundaries use the same shape.
+
+## Null vs Undefined
+
+Use `undefined` everywhere by default. Do NOT use `null` except in two
+specific cases:
+
+1. **Comparing to existing nullable values.** Use `x != null` (note:
+   `!=`, not `!==`). This catches both `null` and `undefined` in one
+   check.
+2. **Explicit DB column deletions.** When the intent is "set this
+   column to NULL in the database," the value passed to the persistence
+   layer is `null`. Within app code, "unset" continues to be
+   `undefined`; conversion to `null` happens at the persistence boundary.
+
+Everywhere else: `undefined`. Optional parameters and fields use
+`name?:` syntax. Return `undefined` for "no value." Types are
+`string | undefined`, not `string | null`.
+
+When data arrives from the DB or external API with `null` values, map
+them to `undefined` at the boundary (in the repository or DTO mapper).
+Domain and application code should never see `null`.
 
 ## Database & Migrations
 
-- **Singular table names.** `user`, `media_item`, `album`, `share_link`,
-  `access_grant`, `grant`, `comment`. NEVER pluralize.
-- **No Postgres enum types.** Use string/varchar columns for enum-like
-  fields, with CHECK constraints for validation.
-- **Knex migration style.** Mirror existing migrations:
-  - `useTz: true` for timestamps
-  - `knex.fn.now()` for default timestamps
-  - `knex.raw` for CHECK constraints, added AFTER `createTable`
-  - Snake_case column names
+- **Singular table names.** `user`, `media_item`, `album`, `comment`.
+  Never pluralize.
+- **No Postgres enum types.** Use string/varchar with CHECK constraints.
+- **Knex migration style:** match the style of recent migrations
+  (`useTz: true`, `knex.fn.now()`, `knex.raw` for CHECK constraints
+  after `createTable`, snake_case columns).
 - **Uppercase enum values in DB CHECK constraints.** `'VIEW'`, not
-  `'view'`. `'MEDIA_ITEM'`, not `'media_item'`.
+  `'view'`.
 - **Polymorphic columns have NO foreign key.** When a column is a
   polymorphic target (e.g. `target_id` paired with `target_type`),
-  do NOT add an FK. Existence validation lives in the service layer.
-- **Denormalized snapshot columns are intentional.** Columns like
-  `display_name` or `display_avatar_url` that mirror data from another
-  table are deliberate snapshots, not redundancy. Do not "normalize"
-  them away.
+  existence validation lives in the service layer.
+- **Denormalized snapshot columns are intentional.** Do not normalize
+  away columns like `display_name` or `display_avatar_url` that
+  capture state at a specific moment.
 - **Read models are CSV-flat by design.** The `grant` table stores
   permissions as a CSV in a single column. Do not propose a join table.
 - **The `grant` table answers binary access questions only.**
-  Action-level permissions (download, comment) are checked against
-  `access_grant.permission` in the relevant service, not at the
-  read-model layer.
+  Action-level permissions are checked against `access_grant.permission`
+  in the service, not at the read-model layer.
+- **Cast bigint counts to int.** `COUNT(*)` returns bigint, which
+  node-postgres represents as a string. Use `::int` in the SQL when
+  returning a count to avoid the type mismatch.
 
 ## TypeScript Style
 
-- Use TypeScript with explicit, precise types.
-- Do not use decorators unless explicitly requested.
-- Do not use NestJS-specific patterns such as decorators, modules,
-  or framework IoC.
+- Explicit, precise types.
+- No decorators unless explicitly requested.
+- No NestJS-specific patterns (decorators, modules, framework IoC).
 - Keep files focused and reasonably small.
-- Prefer explicit naming such as `CreateAlbumUseCase`, `AlbumRepository`.
+- Explicit naming such as `CreateAlbumUseCase`, `AlbumRepository`.
 
 ## Enums — Smart-Enums Only
 
@@ -161,32 +169,16 @@ This project uses a smart-enum library. Do NOT use:
 
 **Values returned from GraphQL are already smart-enum instances** —
 codegen's `enumValues` mapping handles this. Consume them directly.
-The smart-enum API exposes:
 
-- `.includes(EnumName.value)` for membership on arrays
-- `.display` for human-readable labels
-- `EnumName.value` for the canonical instance
+API: `.includes(EnumName.value)` for membership, `.display` for
+human-readable labels, `EnumName.value` for the canonical instance.
 
-Real example from `useMultiSelectGallery.ts`:
-
-```ts
-actions
-  .filter((x) => selectedItems.some((y) => y.viewerOperations?.includes(x.operation)))
-  .map((x) => ({ ...x, label: x.label ?? x.operation.display }));
-```
-
-So a comment-permission check is:
-
-```ts
-viewerOperations.includes(ViewerOperation.comment); // YES
-viewerOperations.includes('COMMENT'); // NO
-viewerOperations.some((op) => op.value === 'COMMENT'); // NO
-```
+Before defining or consuming any enum, find an existing smart-enum in
+the codebase and mirror it exactly. See examples file for the consumption
+pattern.
 
 Do NOT write helper functions to extract values, get keys, or iterate —
-the smart-enum library already provides those. Before defining or
-consuming any enum, find an existing smart-enum in the codebase and
-mirror it exactly.
+the smart-enum library provides those.
 
 ## Backend GraphQL Structure
 
@@ -194,9 +186,8 @@ mirror it exactly.
   `apps/api/src/graphql/resolvers/<domain>/` and their own schema files
   under `apps/api/src/graphql/schema/<domain>/`.
 - Schema files use **singular form**, matching the singular table
-  convention: `comment.graphql`, `album.graphql`. Mutation schema files
-  mirror: `commentMutation.graphql`, `albumMutation.graphql`. Do not
-  pluralize file names even when the file contains list operations.
+  convention: `comment.graphql`, `albumMutation.graphql`. Do not
+  pluralize even when the file contains list operations.
 - Do NOT add new types to existing schema files when starting a new
   domain.
 - Resolvers are thin pass-through wrappers around application services.
@@ -210,11 +201,31 @@ connections:
 type CommentCollectionPayload {
   nodes: [Comment!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 ```
 
 Where `PageInfo` carries `limit` and `offset`. Do NOT generate
 cursor-based connections, edges, or `endCursor` fields.
+
+Where `totalCount` is needed, compute it in the same query using a
+window function (`COUNT(*) OVER ()::int AS total_count`), then extract
+it from the rows and strip it before returning. Do not run a separate
+COUNT query.
+
+## Paged Lists vs. Bounded Lists
+
+- **Paged lists** return `CollectionPayload` (nodes + pageInfo +
+  totalCount). Use for unbounded or large lists that the caller pages
+  through.
+- **Bounded lists** return plain arrays `[T!]!`. Use when the caller
+  always gets the full set (e.g. a comment's replies under a two-level
+  cap, an album's tags, a small fixed set of options).
+
+The decision is "does the caller need to page through this, or are
+they getting all of it?" Don't wrap everything in `CollectionPayload`
+for consistency — the wrapping adds metadata the caller doesn't need
+when the list is bounded.
 
 ## GraphQL List Inputs
 
@@ -222,18 +233,15 @@ List query inputs use a nested structure that separates concerns:
 
 ```graphql
 input XyzInput {
-  # Identity/scope fields at the top level
-  someEntityId: ID
-
-  # Collection shape fields nested under collectionInfo
+  someEntityId: ID # identity/scope fields at top level
   collectionInfo: XyzCollectionInput!
 }
 
 input XyzCollectionInput {
-  pageInfo: PageInfoInput! # always required for paginated lists
-  sortBy: XyzSortBy # per-entity enum, fields vary by type
+  pageInfo: PageInfoInput! # always required
+  sortBy: XyzSortBy # per-entity enum
   sortDir: SortDir # shared enum
-  filter: XyzFilterInput # optional, when filtering applies
+  filter: XyzFilterInput # optional
 }
 ```
 
@@ -241,30 +249,26 @@ Why this shape:
 
 - **Identity vs collection-shape are different concerns.** Flattening
   them mixes categories.
-- **Per-entity sort enums** (`CommentSortBy`, `MediaItemSortBy`) have
-  different fields because what's sortable depends on the entity.
-  Nesting under `collectionInfo` keeps them with their peers
-  (`pageInfo`, `filter`).
+- **Per-entity sort enums** have different fields because what's
+  sortable depends on the entity. Nesting under `collectionInfo` keeps
+  them with their peers.
 - **Extensible.** Adding a filter or new sort dimension doesn't break
-  existing callers because new fields go into the existing
-  sub-objects.
+  existing callers.
 - **`PageInfoInput` is shared** across all list queries, defined once.
 
-Do NOT flatten list inputs to `(limit: Int, offset: Int, sortBy: ...,
-filter: ...)`. The verbosity of the nested form is intentional.
+Do NOT flatten list inputs to `(limit: Int, offset: Int, sortBy: ...)`.
+The verbosity is intentional.
 
-**Default sort behavior must be explicit on the server side.** Do not
-rely on database insertion order. Each list query specifies its default
-`sortBy` and `sortDir` when the input omits them.
+**Default sort behavior must be explicit on the server side.** Each
+list query specifies its default `sortBy` and `sortDir` when the input
+omits them. Do not rely on database insertion order.
 
 ## GraphQL Query Roots
 
-- **Authed queries are scoped under `viewer`.** Example:
-  `viewer { id, mediaItem(id) { ... } }`. The viewer's `id` is included
-  at the top level for cache normalization.
+- **Authed queries are scoped under `viewer`.** The viewer's `id` is
+  included at the top level for cache normalization.
 - **Public queries are scoped under `publicAccess(token)`.** The same
-  fragments are reusable across both roots since the underlying types
-  are the same.
+  fragments are reusable across both roots.
 - Do NOT add top-level queries that bypass these roots without explicit
   reason.
 
@@ -279,12 +283,36 @@ type XyzMutationResponse {
 }
 
 type XyzMutationPayload {
-  entity: Entity # named appropriately, e.g. comment, album, mediaItem
+  entityId: ID! # see below
 }
 ```
 
 Success is implicit: `data` non-null = success, `errors` non-empty =
 failure. Do NOT produce flat `{ success, entity, errors }` shapes.
+
+### What to return
+
+**Return only the IDs needed to confirm success and identify the
+affected entity.** Do NOT return the full entity in a query-shape.
+
+Rationale: returning a view-shape from a write implies that the write
+response equals the eventual read response. With any eventual
+consistency in the system (read replica lag, denormalized read models,
+derived fields, async projections, cache invalidation), this equivalence
+does not hold. Cached values from mutation responses can drift silently
+from canonical reads.
+
+Clients refetch the canonical read query after mutation success
+(`awaitRefetchQueries`) to pick up the new state.
+
+For mutations with side effects across multiple entities, include the
+IDs needed to refetch the affected queries.
+
+### Cache writes
+
+Do NOT use `cache.modify` or other manual cache writes unless there is
+a very good reason. The default path is `awaitRefetchQueries`. If you
+think manual cache writes are needed, stop and ask before implementing.
 
 ## Resolver Boundary Mapping
 
@@ -292,45 +320,26 @@ failure. Do NOT produce flat `{ success, entity, errors }` shapes.
   success/value vs. failure/error). This shape stays in the service
   and application layers.
 - GraphQL mutation resolvers convert `WriteResult<T>` to the
-  `{ data, errors }` envelope at the transport boundary using
-  `writeResultToPayload(result, mapValue)`. Do NOT hand-roll the
-  ternary at each resolver. Do NOT have services return the
-  `{ data, errors }` shape directly — that would leak transport
-  concerns into the service layer.
-
-### What to return
-
-- **Single-entity mutations return the full entity fragment**, matching
-  the query fragment used to display that entity. This lets Apollo's
-  normalized cache merge updates automatically.
-- **Diffuse or invisible mutations return minimal results.** Examples:
-  bulk operations, server-side side effects, hard deletes.
-
-### Optimistic updates and cache writes
-
-- **For mutations that edit an existing entity**, simple
-  `optimisticResponse` matching the entity's fragment is enough — no
-  `update` function needed, since the entity is already in the cache.
-- **For mutations that add a new entity to a list**, prefer
-  `awaitRefetchQueries` for v1 simplicity. Manual `cache.modify` is a
-  last resort when refetch is expensive (large lists).
+  `{ data, errors }` envelope using `writeResultToPayload(result)`.
+  Do NOT hand-roll the ternary at each resolver.
+- Do NOT have services return the `{ data, errors }` shape directly —
+  that would leak transport concerns into the service layer.
 
 ## GraphQL Fragments
 
 - **Name fragments after what they return, not the consumer.**
-  `CommentFields`, not `CommentThreadFields`. If a different shape is
-  needed, name the variant by what it is: `CommentSummaryFields`,
-  `CommentDetailFields`, `CommentMinimalFields`. Avoid naming fragments
-  after the UI surface that uses them.
+  `CommentFields`, not `CommentThreadFields`. Variants are named by
+  what they are: `CommentSummaryFields`, `CommentDetailFields`,
+  `CommentLeafFields`.
 - Define one fragment per entity per screen, in the screen's GraphQL
-  file. Used by both the query and the mutations on that screen so
-  shapes can't drift.
+  file. Used by both query and mutations on that screen so shapes
+  can't drift.
 - Do NOT define fragments at the component level. Components don't own
   their data shape; the screen does.
-- Do NOT try to share fragments across screens. If two screens need
-  similar shapes, each defines its own. Local clarity beats DRY here.
+- Do NOT share fragments across screens. If two screens need similar
+  shapes, each defines its own. Local clarity beats DRY.
 - A fragment includes only the fields actually used by that screen's
-  components, not everything available on the entity.
+  components.
 
 ## Frontend
 
@@ -346,20 +355,16 @@ failure. Do NOT produce flat `{ success, entity, errors }` shapes.
 ## Frontend Data Flow
 
 - **Screens own data fetching.** Screen components call `useQuery` and
-  `useMutation` directly and pass results down to presentational
-  children as props. Presentational components are pure — they don't
-  fetch their own data.
+  `useMutation` directly and pass results down as props.
+  Presentational components are pure — they don't fetch their own data.
 - **Keep prop drilling shallow.** If a screen is passing props through
-  more than 2–3 levels, that's a signal to either restructure the
-  component tree, lift state to a closer common parent, or use context
-  for genuinely cross-cutting concerns (current viewer, theme, etc.).
+  more than 2–3 levels, restructure the tree, lift state, or use
+  context for genuinely cross-cutting concerns.
 - **Extract a custom hook only when the same fetching + transformation
   logic is reused across multiple screens.** Don't wrap a single-use
-  query in a hook just for the sake of it — the hook adds indirection
-  without adding reuse.
+  query in a hook for the sake of it.
 - **Mutation handlers can be hooks** when they encapsulate non-trivial
-  logic (optimistic updates, cache writes, error handling). A simple
-  pass-through mutation can live inline in the screen.
+  logic. A simple pass-through mutation can live inline in the screen.
 
 ## Frontend View Models
 
@@ -370,82 +375,53 @@ For entities displayed in the UI, use a layered structure:
 3. **Mapper function** converts fragment → VM at the data boundary
    (typically the screen).
 
-Why: Generated GraphQL types are wire shapes with nullables, schema-style
+Generated GraphQL types are wire shapes with nullables, schema-style
 naming, and over-fetched fields. VMs are clean UI types. The mapper is
 the single seam where coalescing, defaulting, renaming, and deriving
-happen — components consume VMs without seeing wire concerns.
+happen.
 
 ### Multiple fragments and VMs per entity
 
 When the same entity is displayed at meaningfully different levels of
-detail across screens, define multiple fragments and matching VMs:
+detail, define multiple fragments and matching VMs:
 
-- **Summary fragment + SummaryVM** — for list/grid views. Just enough
-  to render a card or row.
-- **Detail fragment + DetailVM** — for detail screens. All the fields.
+- **Summary fragment + SummaryVM** — list/grid views.
+- **Detail fragment + DetailVM** — detail screens.
 - **Other variants** as needed (e.g. `MinimalVM` for selection pickers).
-
-Name fragments and VMs by what they contain (`Summary`, `Detail`),
-not by what consumes them.
 
 ### Do NOT extend one VM from another
 
-Do not extend a DetailVM from a SummaryVM (or vice versa). TypeScript's
-structural typing makes upcasting work without extension, and extension
-creates a domain claim ("Detail is a kind of Summary") that constrains
-both types as the schema evolves. Independent types with overlapping
-fields are simpler and safer than inheritance, even when fields are
-duplicated.
+Do not extend a DetailVM from a SummaryVM. TypeScript's structural
+typing makes upcasting work without extension, and extension creates
+a domain claim that constrains both types as the schema evolves.
+Independent types with overlapping fields are simpler and safer than
+inheritance, even when fields are duplicated.
 
 ### Mappers
 
 - Mappers are plain functions named `mapXxxToYyyVM`, consistently
-  source-to-destination. No abbreviation drift.
+  source-to-destination.
 - Provide a `mapMultiple...` variant if list-mapping is common, or
-  inline `.map(mapper)` at call sites — pick one convention and stick.
-- Mappers do not fetch data. They are pure transformations.
-- VMs and mappers live with the entity (`src/viewModels/<entity>/`) when
-  reused across screens. Co-locate with a screen only when truly
+  inline `.map(mapper)` — pick one and stick.
+- Mappers are pure transformations. They do not fetch data.
+- VMs and mappers live with the entity (`src/viewModels/<entity>/`)
+  when reused across screens. Co-locate with a screen only when truly
   single-use.
 
 ## Component Prop Types
 
-For components reused across multiple entity types, multiple detail
-levels (Summary/Detail), or both, declare a component-level prop type
-that lists only the fields the component actually reads:
+For components reused across multiple entity types or detail levels,
+declare a component-level prop type that lists only the fields the
+component actually reads. TypeScript's structural typing allows any
+value with at least those fields to be passed in.
 
-```ts
-export type GalleryThumbnailItem = {
-  id: string;
-  title?: string;
-  thumbnailUrl: string;
-  viewerOperations: ViewerOperation[];
-};
-
-type Props = { item: GalleryThumbnailItem; onClick: () => void };
-```
-
-Why:
-
-- **TypeScript's structural typing** allows any value with at least
-  these fields to be passed in. `MediaItemSummaryVM`, `PublicMediaItemVM`,
-  etc. all satisfy the prop type if they have the required fields. No
-  extension, no casting, no discriminated unions.
-- **Self-documenting.** The component's prop type is its data
-  dependency list. Removing a field nobody uses doesn't break the
-  component.
-- **Stubs cleanly.** Test/storybook fixtures only need to provide the
-  declared fields.
-- **Forces clean defaulting decisions.** Whether a field is `title:
-string` or `title?: string` makes the upstream contract explicit.
-
-Naming: name the prop type after the component's role, not the entity.
-`GalleryThumbnailItem`, not `ThumbnailMediaItem`.
+Name the prop type after the component's role: `GalleryThumbnailItem`,
+not `ThumbnailMediaItem`.
 
 When NOT to use this:
 
 - Single-purpose components tied to one entity type — pass the VM
-  directly (`MediaItemDetailScreen` takes `MediaItemDetailVM`).
+  directly.
 - Container/screen components that own data fetching — they work with
   full VMs.
 
@@ -462,23 +438,20 @@ even if their parent does not.
 
 - Read referenced files BEFORE writing. Do not pattern-match on what
   you imagine the conventions probably are.
-- Mirror existing files explicitly. If you're tempted to do something
+- Mirror existing files explicitly. If tempted to do something
   differently than the reference, stop and add a `// QUESTION:` comment.
 - Stub services should return fakes with `// TODO:` comments listing
-  exactly what real implementation needs to do.
+  what real implementation needs to do.
 - Do NOT modify files outside the explicit scope of a task.
-- Do NOT touch generated files (`*.generated.ts`, `ioc-manifest.ts`,
-  etc.) — those are regenerated by tooling.
+- Do NOT touch generated files (`*.generated.ts`, `ioc-manifest.ts`).
 
 ## File Naming
 
-- Migrations: `NNNN_descriptive_name.ts` (zero-padded number, snake_case)
+- Migrations: `NNNN_descriptive_name.ts`
 - GraphQL schema files: singular form, e.g. `comment.graphql`,
   `commentMutation.graphql`
 - Resolvers: `<domain><Type>Resolver.ts`
-  (e.g. `commentMutationResolver.ts`)
 - Services: `verbNoun.ts`
-  (e.g. `addComment.ts`, `listCommentsForTarget.ts`)
 - React components: `PascalCase.tsx`
 - Hooks: `useCamelCase.ts`
 

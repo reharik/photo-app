@@ -2,9 +2,7 @@
 mutation AddComment($input: AddCommentInput!) {
   addComment(input: $input) {
     data {
-      comment {
-        ...CommentDetailFields
-      }
+      entityId
     }
     errors {
       ...errorsFragment
@@ -15,9 +13,7 @@ mutation AddComment($input: AddCommentInput!) {
 mutation EditComment($input: EditCommentInput!) {
   editComment(input: $input) {
     data {
-      comment {
-        ...CommentFields
-      }
+      entityId
     }
     errors {
       ...errorsFragment
@@ -28,9 +24,7 @@ mutation EditComment($input: EditCommentInput!) {
 mutation DeleteComment($input: DeleteCommentInput!) {
   deleteComment(input: $input) {
     data {
-      comment {
-        ...CommentFields
-      }
+      entityId
     }
     errors {
       ...errorsFragment

@@ -10,6 +10,8 @@ export interface UseViewerResult {
 }
 
 /** Anonymous callers get `viewer: null` from the API; authenticated callers get the session viewer. */
+// This looks like it's making a query every time you need the viewer but it's really
+// just pulling it from cache.
 export const useViewer = (): UseViewerResult => {
   const { data, loading, error } = useQuery(ViewerDocument);
 

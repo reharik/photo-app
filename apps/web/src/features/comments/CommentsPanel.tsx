@@ -1,41 +1,28 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
+import { AppError } from '../../domain/errors/errorTypes';
+import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
 import { CommentComposer } from './CommentComposer';
 import { CommentThread } from './CommentThread';
 import { CommentsEmptyState } from './CommentsEmptyState';
 import { CommentsErrorState } from './CommentsErrorState';
 import { CommentsLoadingState } from './CommentsLoadingState';
 
-export type CommentsPanelComment = {
-  id: string;
-  body: string;
-  authorUserId: string | null;
-  displayName: string;
-  displayAvatarUrl: string | null;
-  isEdited: boolean;
-  isDeleted: boolean;
-  /** ISO string; subcomponents format for display */
-  createdAt: string;
-  parentCommentId: string | null;
-  replies: CommentsPanelComment[];
-};
-
 export type CommentsPanelProps = {
-  comments: CommentsPanelComment[];
+  comments: CommentRootVM[];
   loading: boolean;
-  error: Error | null;
+  error?: AppError[];
   canComment: boolean;
-  viewerUserId: string | null;
   onRetry?: () => void;
-  onAddComment?: (body: string, parentCommentId: string | null) => void;
+  onAddComment?: (body: string, parentCommentId?: string) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
   addCommentLoading?: boolean;
   editCommentLoading?: boolean;
-  deletingCommentId?: string | null;
+  deletingCommentId?: string;
 };
 
-const shouldRenderThread = (comment: CommentsPanelComment): boolean => {
+const shouldRenderThread = (comment: CommentRootVM): boolean => {
   if (!comment.isDeleted) return true;
   return comment.replies.length > 0;
 };
@@ -45,19 +32,18 @@ export const CommentsPanel = ({
   loading,
   error,
   canComment,
-  viewerUserId,
+
   onRetry,
   onAddComment,
   onEditComment,
   onDeleteComment,
   addCommentLoading = false,
   editCommentLoading = false,
-  deletingCommentId = null,
+  deletingCommentId = undefined,
 }: CommentsPanelProps): JSX.Element => {
   const threads = comments.filter(shouldRenderThread);
-
-  if (error) {
-    return <CommentsErrorState error={error} onRetry={onRetry} />;
+  if (error && error.length > 0) {
+    return <CommentsErrorState error={error[0]} onRetry={onRetry} />;
   }
 
   if (loading && threads.length === 0) {
@@ -70,7 +56,7 @@ export const CommentsPanel = ({
         {canComment && onAddComment ? (
           <CommentComposer
             isLoading={addCommentLoading}
-            onSubmit={(body) => void Promise.resolve(onAddComment(body, null))}
+            onSubmit={(body) => void Promise.resolve(onAddComment(body))}
           />
         ) : null}
         <CommentsEmptyState canComment={canComment} />
@@ -83,7 +69,7 @@ export const CommentsPanel = ({
       {canComment && onAddComment ? (
         <CommentComposer
           isLoading={addCommentLoading}
-          onSubmit={(body) => void Promise.resolve(onAddComment(body, null))}
+          onSubmit={(body) => void Promise.resolve(onAddComment(body))}
         />
       ) : null}
       <ThreadList role="list">
@@ -92,7 +78,6 @@ export const CommentsPanel = ({
             key={comment.id}
             comment={comment}
             canComment={canComment}
-            viewerUserId={viewerUserId}
             addCommentLoading={addCommentLoading}
             editCommentLoading={editCommentLoading}
             deletingCommentId={deletingCommentId}

@@ -11,9 +11,9 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     addComment: authenticatedResolver(async (_parent, args, ctx) => {
       const command: AddCommentCommand = {
-        viewerUserId: ctx.viewer.id,
-        targetType: args.input.targetType ?? undefined,
-        targetId: args.input.targetId ?? undefined,
+        authorId: ctx.viewer.id,
+        targetType: args.input.targetType,
+        targetId: args.input.targetId,
         parentCommentId: args.input.parentCommentId ?? undefined,
         body: args.input.body,
       };
@@ -24,7 +24,7 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
 
     editComment: authenticatedResolver(async (_parent, args, ctx) => {
       const command: EditCommentCommand = {
-        viewerUserId: ctx.viewer.id,
+        authorId: ctx.viewer.id,
         commentId: args.input.commentId,
         body: args.input.body,
       };
@@ -35,7 +35,7 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
 
     deleteComment: authenticatedResolver(async (_parent, args, ctx) => {
       const command: DeleteCommentCommand = {
-        viewerUserId: ctx.viewer.id,
+        authorId: ctx.viewer.id,
         commentId: args.input.commentId,
       };
 

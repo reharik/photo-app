@@ -3,7 +3,7 @@ fragment CommentFields on Comment {
   targetType
   targetId
   parentCommentId
-  authorUserId
+  authorId
   body
   displayName
   displayAvatarUrl
@@ -17,14 +17,8 @@ fragment CommentFields on Comment {
 # Was CommentThreadFields (named after CommentThread component); renamed to CommentDetailFields.
 fragment CommentDetailFields on Comment {
   ...CommentFields
-  replies(input: { collectionInfo: { pageInfo: { limit: 50, offset: 0 } } }) {
-    nodes {
-      ...CommentFields
-    }
-    pageInfo {
-      limit
-      offset
-    }
+  replies {
+    ...CommentFields
   }
 }
 
@@ -37,6 +31,7 @@ query CommentsForViewerMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!)
         nodes {
           ...CommentDetailFields
         }
+        totalCount
         pageInfo {
           limit
           offset
@@ -55,6 +50,7 @@ query CommentsForViewerAlbum($albumId: ID!, $limit: Int!, $offset: Int!) {
         nodes {
           ...CommentDetailFields
         }
+        totalCount
         pageInfo {
           limit
           offset
@@ -73,6 +69,7 @@ query CommentsForPublicMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!)
         nodes {
           ...CommentDetailFields
         }
+        totalCount
         pageInfo {
           limit
           offset
@@ -91,6 +88,7 @@ query CommentsForPublicAlbum($limit: Int!, $offset: Int!) {
         nodes {
           ...CommentDetailFields
         }
+        totalCount
         pageInfo {
           limit
           offset

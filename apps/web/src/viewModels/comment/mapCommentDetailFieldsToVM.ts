@@ -1,28 +1,25 @@
 import { type CommentDetailFieldsFragment } from '../../graphql/generated/types';
-import { CommentDetailVM } from './CommentDetailVM';
-import { mapCommentFieldsToVM } from './mapCommentFieldsToVM';
+import { CommentRootVM } from './CommentRootVM';
+import { mapCommentReplyFieldsToVM } from './mapCommentReplyFieldsToVM';
 
-// CHANGED: Frontend View Models — mapper converts detail wire fragment → CommentDetailVM.
+// CHANGED: Frontend View Models — mapper converts Root wire fragment → CommentRootVM.
 // Handles the nested replies.nodes (offset/limit shape) and converts each reply to CommentVM.
-export const mapCommentDetailFieldsToVM = (
-  fragment: CommentDetailFieldsFragment,
-): CommentDetailVM => ({
+export const mapCommentRootFieldsToVM = (fragment: CommentDetailFieldsFragment): CommentRootVM => ({
   id: fragment.id,
   targetType: fragment.targetType,
   targetId: fragment.targetId,
-  parentCommentId: fragment.parentCommentId ?? null,
-  authorUserId: fragment.authorUserId ?? null,
+  parentCommentId: fragment.parentCommentId,
+  authorId: fragment.authorId,
   body: fragment.body,
   displayName: fragment.displayName,
-  displayAvatarUrl: fragment.displayAvatarUrl ?? null,
+  displayAvatarUrl: fragment.displayAvatarUrl,
   isEdited: fragment.isEdited,
   isDeleted: fragment.isDeleted,
   createdAt: new Date(fragment.createdAt),
   updatedAt: new Date(fragment.updatedAt),
-  // CHANGED: Pagination — reads nodes[] from offset/limit payload (not edges[].node from cursor shape).
-  replies: (fragment.replies.nodes ?? []).map(mapCommentFieldsToVM),
+  replies: fragment.replies.map(mapCommentReplyFieldsToVM),
 });
 
-export const mapMultipleCommentDetailFieldsToVMs = (
+export const mapMultipleCommentRootFieldsToVMs = (
   fragments: CommentDetailFieldsFragment[],
-): CommentDetailVM[] => fragments.map(mapCommentDetailFieldsToVM);
+): CommentRootVM[] => fragments.map(mapCommentRootFieldsToVM);

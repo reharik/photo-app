@@ -1,0 +1,173 @@
+---
+description: Concrete code examples referenced by zeta-conventions.mdc
+alwaysApply: false
+---
+
+# Zeta Conventions — Code Examples
+
+Examples for patterns described in `zeta-conventions.mdc`. Read this
+when working with smart-enums, view models, structural prop types, or
+GraphQL inputs.
+
+---
+
+## Smart-Enum Consumption
+
+From `useMultiSelectGallery.ts`:
+
+```ts
+actions
+  .filter((x) => selectedItems.some((y) => y.viewerOperations?.includes(x.operation)))
+  .map((x) => ({ ...x, label: x.label ?? x.operation.display }));
+```
+
+Permission check pattern:
+
+```ts
+viewerOperations.includes(ViewerOperation.comment); // YES
+viewerOperations.includes('COMMENT'); // NO
+viewerOperations.some((op) => op.value === 'COMMENT'); // NO
+```
+
+## View Models — Summary and Detail
+
+```ts
+export type MediaItemSummaryVM = {
+  id: string;
+  title?: string;
+  createdAt: string;
+  kind: MediaKind;
+  status: MediaItemStatus;
+} & ViewableItemVM;
+
+export type MediaItemDetailVM = {
+  id: string;
+  kind: MediaKind;
+  mimeType: string;
+  title?: string;
+  description?: string;
+  originalFileName: string;
+  createdAt: string;
+  takenAt: string;
+} & ViewableItemVM;
+
+export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): MediaItemSummaryVM {
+  return {
+    id: mediaItem.id,
+    kind: mediaItem.kind,
+    status: mediaItem.status,
+    title: mediaItem.title ?? mediaItem.originalFileName ?? '',
+    createdAt: mediaItem.createdAt,
+    viewerOperations: mediaItem.viewerOperations ?? [],
+    viewerIsOwner: mediaItem.viewerIsOwner,
+  };
+}
+```
+
+## Component Prop Types — Structural
+
+```ts
+export type GalleryThumbnailItem = {
+  id: string;
+  title?: string;
+  thumbnailUrl: string;
+  viewerOperations: ViewerOperation[];
+};
+
+type Props = { item: GalleryThumbnailItem; onClick: () => void };
+```
+
+Any value with at least these fields satisfies the prop type:
+`MediaItemSummaryVM`, `PublicMediaItemVM`, etc.
+
+## GraphQL List Input — Nested Shape
+
+```graphql
+input CommentsInput {
+  collectionInfo: CommentCollectionInput!
+}
+
+input CommentCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: CommentSortBy
+  sortDir: SortDir
+}
+
+input PageInfoInput {
+  limit: Int!
+  offset: Int!
+}
+```
+
+## Paged Query with totalCount via Window Function
+
+```sql
+SELECT
+  id, target_type, target_id, /* ... */,
+  COUNT(*) OVER ()::int AS total_count
+FROM comment
+WHERE target_type = :targetType AND target_id = :targetId
+  AND parent_comment_id IS NULL AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT :limit OFFSET :offset
+```
+
+In the repository, extract `total_count` from any row and strip it
+from individual records before returning:
+
+```ts
+const allRows = result.rows;
+const totalCount = allRows.length > 0 ? Number(allRows[0].total_count) : 0;
+const rows = allRows.map(({ total_count, ...rest }) => rest);
+return { rows, totalCount };
+```
+
+## GraphQL Fragments — Bounded-Depth Tree
+
+When a fragment references itself for replies but the depth is capped
+(e.g. two-level), define a leaf variant:
+
+```graphql
+fragment CommentLeafFields on Comment {
+  id
+  body
+  authorId
+  displayName
+  # ... scalar fields only
+}
+
+fragment CommentFields on Comment {
+  ...CommentLeafFields
+  replies {
+    ...CommentLeafFields
+  }
+}
+```
+
+Top-level comments use `CommentFields`; replies use `CommentLeafFields`
+because they're guaranteed to be leaves under the two-level cap.
+
+## Mutation Response — IDs Only
+
+```graphql
+type AddCommentResponse {
+  data: AddCommentPayload
+  errors: [ContractError!]
+}
+
+type AddCommentPayload {
+  commentId: ID!
+  parentCommentId: ID
+}
+```
+
+Resolver:
+
+```ts
+const result = await ctx.writeServices.addComment(input);
+return writeResultToPayload(result);
+```
+
+Where the write service returns
+`WriteResult<{ commentId: string; parentCommentId?: string }>` and the
+helper maps success/failure to the envelope.

@@ -48,7 +48,7 @@ export const useAddComment = ({
             targetType: vars.input.targetType ?? targetType,
             targetId: vars.input.targetId ?? targetId,
             parentCommentId: vars.input.parentCommentId ?? null,
-            authorUserId: viewer?.id ?? null,
+            authorId: viewer?.id ?? null,
             body: vars.input.body,
             displayName: viewer?.displayName ?? 'You',
             displayAvatarUrl: null,

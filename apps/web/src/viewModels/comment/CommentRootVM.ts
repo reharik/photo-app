@@ -1,20 +1,20 @@
 import { CommentTargetType } from '@packages/contracts';
-import { CommentVM } from './CommentVM';
+import { CommentReplyVM } from './CommentReplyVM';
 
 // CHANGED: Frontend View Models — separate Detail VM that includes pre-fetched replies.
 // Defined independently from CommentVM (no extension/inheritance) per convention.
-export type CommentDetailVM = {
+export type CommentRootVM = {
   id: string;
   targetType: CommentTargetType;
   targetId: string;
-  parentCommentId: string | null;
-  authorUserId: string | null;
+  parentCommentId?: string;
+  authorId: string;
   body: string;
   displayName: string;
-  displayAvatarUrl: string | null;
+  displayAvatarUrl?: string;
   isEdited: boolean;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-  replies: CommentVM[];
+  replies: CommentReplyVM[];
 };

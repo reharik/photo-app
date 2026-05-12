@@ -19,7 +19,7 @@ const commentSelectColumns = [
   'target_type',
   'target_id',
   'parent_comment_id',
-  'author_user_id',
+  'author_id',
   'body',
   'display_name',
   'display_avatar_url',
@@ -44,10 +44,9 @@ export const build__CommentReadRepository = ({
     return withEnumRevival(
       database('comment')
         .select(...commentSelectColumns)
-        .select(database.raw('COUNT(*) OVER () AS total_count'))
+        .select(database.raw('COUNT(*) OVER () AS "totalCount"'))
         .where('target_type', targetType)
         .where('target_id', targetId)
-        .whereNull('parent_comment_id')
         .whereNull('deleted_at')
         .limit(pageInfo.limit)
         .offset(pageInfo.offset),

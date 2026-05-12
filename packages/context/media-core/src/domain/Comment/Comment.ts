@@ -1,30 +1,46 @@
 /**
  * Comment: user comment attached to an Album or MediaItem (by resource type and ID).
  * Aggregate Root with its own lifecycle; references target and author by ID only.
+ *
  */
 
-import type { ResourceTypeEnum } from '@packages/contracts';
+import type { CommentTargetType } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { AuditRecord } from '../Entity';
 
-export type CommentProps = {
-  resourceType: ResourceTypeEnum;
-  authorId: EntityId;
-  content: string;
-};
-
+/** Row shape persisted to `comment` (matches columns after knex-stringcase). */
 export type CommentRecord = {
   id: EntityId;
-  resourceType: ResourceTypeEnum;
-  authorId: EntityId;
-  content: string;
+  targetType: CommentTargetType;
+  targetId: EntityId;
+  parentCommentId?: EntityId;
+  authorId?: EntityId;
+  body: string;
+  displayName: string;
+  displayAvatarUrl?: string;
+  deletedAt?: Date;
 } & AuditRecord;
 
-export type CreateCommentInput = {
-  resourceType: ResourceTypeEnum;
+export type CommentProps = {
+  targetType: CommentTargetType;
+  targetId: EntityId;
+  parentCommentId?: EntityId;
   authorId: EntityId;
-  content: string;
+  body: string;
+  displayName: string;
+  displayAvatarUrl?: string;
+  deletedAt?: Date;
+};
+
+export type CreateCommentInput = {
+  targetType: CommentTargetType;
+  targetId: EntityId;
+  parentCommentId?: EntityId;
+  authorId: EntityId;
+  body: string;
+  displayName: string;
+  displayAvatarUrl?: string;
 };
 
 export class Comment extends AggregateRoot<CommentRecord> {
@@ -32,23 +48,54 @@ export class Comment extends AggregateRoot<CommentRecord> {
 
   private constructor(id: EntityId, actorId: ActorId, props: CommentProps) {
     super(id, actorId);
-    this.props = props;
+    this.props = { ...props };
   }
 
   static create(input: CreateCommentInput, actorId: ActorId): Comment {
-    return new Comment(crypto.randomUUID(), actorId, input);
+    return new Comment(crypto.randomUUID(), actorId, { ...input });
   }
 
   static rehydrate(record: CommentRecord): Comment {
-    const comment = new Comment(record.id, record.createdBy, record);
+    const { id, createdAt, updatedAt, createdBy, updatedBy, ...rest } = record;
+    const comment = new Comment(id, createdBy, {
+      targetType: rest.targetType,
+      targetId: rest.targetId,
+      parentCommentId: rest.parentCommentId,
+      authorId: rest.authorId,
+      body: rest.body,
+      displayName: rest.displayName,
+      displayAvatarUrl: rest.displayAvatarUrl,
+      deletedAt: rest.deletedAt,
+    });
 
-    comment.rehydrateAudit(record);
+    comment.rehydrateAudit({ createdAt, updatedAt, createdBy, updatedBy });
 
     return comment;
   }
 
-  editContent(content: string, actorId: ActorId): void {
-    this.props.content = content;
+  editBody(body: string, actorId: ActorId): void {
+    this.props.body = body;
     this.touch(actorId);
+  }
+
+  markDeleted(actorId: ActorId): void {
+    this.props.deletedAt = new Date();
+    this.touch(actorId);
+  }
+
+  targetType(): CommentTargetType {
+    return this.props.targetType;
+  }
+
+  targetId(): EntityId {
+    return this.props.targetId;
+  }
+
+  isReply(): boolean {
+    return this.props.parentCommentId !== undefined;
+  }
+
+  authorId(): EntityId {
+    return this.props.authorId;
   }
 }

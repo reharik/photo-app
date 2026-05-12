@@ -8,25 +8,23 @@ import { ReplyComposer } from './ReplyComposer';
 type Props = {
   comment: CommentsPanelComment;
   canComment: boolean;
-  viewerUserId: string | null;
-  onAddComment?: (body: string, parentCommentId: string | null) => void;
+  onAddComment?: (body: string, parentCommentId?: string) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
   addCommentLoading?: boolean;
   editCommentLoading?: boolean;
-  deletingCommentId?: string | null;
+  deletingCommentId?: string;
 };
 
 export const CommentThread = ({
   comment,
   canComment,
-  viewerUserId,
   onAddComment,
   onEditComment,
   onDeleteComment,
   addCommentLoading = false,
   editCommentLoading = false,
-  deletingCommentId = null,
+  deletingCommentId = undefined,
 }: Props): JSX.Element => {
   const [replyOpen, setReplyOpen] = useState(false);
   const replies = comment.replies;
@@ -44,7 +42,6 @@ export const CommentThread = ({
         comment={comment}
         depth={0}
         canComment={canComment}
-        viewerUserId={viewerUserId}
         editCommentLoading={editCommentLoading}
         deleteCommentPending={deletingCommentId === comment.id}
         onReply={
@@ -58,7 +55,6 @@ export const CommentThread = ({
       <CommentReplyList
         replies={replies}
         canComment={canComment}
-        viewerUserId={viewerUserId}
         editCommentLoading={editCommentLoading}
         deletingCommentId={deletingCommentId}
         onEditComment={onEditComment}

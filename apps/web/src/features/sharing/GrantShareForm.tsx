@@ -7,7 +7,6 @@ import { ShareContactType } from '../../graphql/generated/types';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { FormInput } from '../../ui/FormInput';
 import { Button, HStack, VStack } from '../../ui/Primitives';
-import { SharePermissionSelect } from './SharePermissionSelect';
 import { ShareRecipientInput } from './ShareRecipientInput';
 import { ShareTokenResult } from './ShareTokenResult';
 
@@ -111,7 +110,7 @@ export const GrantShareForm = ({
           suggestions={suggestions}
           disabled={isLoading}
         />
-        <SharePermissionSelect value={permission} onChange={setPermission} disabled={isLoading} />
+        {/* <SharePermissionSelect value={permission} onChange={setPermission} disabled={isLoading} /> */}
         <FormInput
           label="Label (optional)"
           placeholder="e.g. Family album"

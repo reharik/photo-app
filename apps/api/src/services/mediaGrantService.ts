@@ -1,6 +1,12 @@
 import { AppErrorCollection } from '@packages/contracts';
-import { buildMediaItemBaseStorageKey, fail, ok, WriteResult } from '@packages/media-core';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import {
+  buildMediaItemBaseStorageKey,
+  fail,
+  GrantReadRepository,
+  MediaItemReadRepository,
+  ok,
+  WriteResult,
+} from '@packages/media-core';
 
 export type AuthorizeMediaViewInput = {
   mediaId: string;
@@ -12,10 +18,14 @@ export type MediaGrantService = {
   authorizeView: (input: AuthorizeMediaViewInput) => Promise<WriteResult<string>>;
 };
 
+type MediaGrantServiceDeps = {
+  mediaItemReadRepository: MediaItemReadRepository;
+  grantReadRepository: GrantReadRepository;
+};
 export const build__MediaGrantService = ({
   mediaItemReadRepository,
   grantReadRepository,
-}: IocGeneratedCradle): MediaGrantService => ({
+}: MediaGrantServiceDeps): MediaGrantService => ({
   authorizeView: async (input: AuthorizeMediaViewInput): Promise<WriteResult<string>> => {
     const { mediaId, viewerId, hashedToken } = input;
     if (!viewerId && !hashedToken) {

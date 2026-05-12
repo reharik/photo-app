@@ -1,9 +1,9 @@
 import {
+  CommentTargetType,
   MediaAssetKind,
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
-  ResourceTypeEnum,
   SharePermission,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
@@ -51,9 +51,9 @@ export const build__MediaItemRepository = ({
 
     const commentRows = await withEnumRevival(
       database<CommentRecord>('comment')
-        .where({ resourceType: 'mediaItem', resourceId: id })
+        .where({ targetType: CommentTargetType.mediaItem, targetId: id })
         .orderBy('createdAt', 'asc'),
-      { resourceType: ResourceTypeEnum },
+      { targetType: CommentTargetType },
       { strict: true },
     );
     // TODO this is a smell. These should be created by a service but not in the repository.
@@ -136,16 +136,12 @@ export const build__MediaItemRepository = ({
         await trx('mediaItem').insert(rowForDb);
       }
 
-      await trx('comment').where({ resourceType: 'mediaItem', resourceId: record.id }).delete();
+      await trx('comment')
+        .where({ targetType: CommentTargetType.mediaItem, targetId: record.id })
+        .delete();
 
       if (comments.length > 0) {
-        await trx('comment').insert(
-          comments.map((comment) => ({
-            ...comment,
-            resourceType: 'mediaItem',
-            resourceId: record.id,
-          })),
-        );
+        await trx('comment').insert(comments);
       }
 
       if (assets.length > 0) {

@@ -1,14 +1,15 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
+import { AppError } from '../../domain/errors/errorTypes';
 
 type Props = {
-  error: Error;
+  error: AppError;
   onRetry?: () => void;
 };
 
 export const CommentsErrorState = ({ error, onRetry }: Props): JSX.Element => (
   <Root role="alert">
-    <Message>{error.message || 'Could not load comments.'}</Message>
+    <Message>{error?.message || 'Could not load comments.'}</Message>
     {onRetry ? (
       <RetryButton type="button" onClick={onRetry}>
         Try again

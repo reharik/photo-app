@@ -50,6 +50,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   static create(input: CreateAlbumInput, actorId: ActorId): Album {
     const album = new Album(crypto.randomUUID(), actorId, {
       title: input.title,
+      isPublicLinkAlbum: input.isPublicLinkAlbum,
     });
     const member = AlbumMember.create({ userId: actorId, role: AlbumMemberRole.owner }, actorId);
     album.#members.push(member);

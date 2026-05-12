@@ -29,7 +29,7 @@
     "gen:gql": "npm run gen:graphql --workspace=@app/api; npm run codegen --workspace=@app/web",
     "gen:gql:be": "npm run gen:graphql --workspace=@app/api",
     "gen:gql:fe": "npm run codegen --workspace=@app/web",
-    "gen:ioc": "npm run gen:container --workspace=@app/api && npm run gen:container --workspace=@app/media-worker",
+    "gen:ioc": "nx run api:gen:container && nx run media-worker:gen:container",
     "graph": "nx graph",
     "ioc:inspect": "npm run ioc:inspect --workspace=@app/api && npm run ioc:inspect --workspace=@app/media-worker",
     "ioc:inspect:discovery": "npm run ioc:inspect:discovery --workspace=@app/api && npm run ioc:inspect:discovery --workspace=@app/media-worker",

@@ -1,22 +1,23 @@
 import { type CommentFieldsFragment } from '../../graphql/generated/types';
-import { CommentVM } from './CommentVM';
+import { CommentReplyVM } from './CommentReplyVM';
 
 // CHANGED: Frontend View Models — mapper converts wire fragment → clean UI VM.
 // Pure transformation; no data fetching.
-export const mapCommentFieldsToVM = (fragment: CommentFieldsFragment): CommentVM => ({
+export const mapCommentReplyFieldsToVM = (fragment: CommentFieldsFragment): CommentReplyVM => ({
   id: fragment.id,
   targetType: fragment.targetType,
   targetId: fragment.targetId,
-  parentCommentId: fragment.parentCommentId ?? null,
-  authorUserId: fragment.authorUserId ?? null,
+  parentCommentId: fragment.parentCommentId,
+  authorId: fragment.authorId,
   body: fragment.body,
   displayName: fragment.displayName,
-  displayAvatarUrl: fragment.displayAvatarUrl ?? null,
+  displayAvatarUrl: fragment.displayAvatarUrl,
   isEdited: fragment.isEdited,
   isDeleted: fragment.isDeleted,
   createdAt: new Date(fragment.createdAt),
   updatedAt: new Date(fragment.updatedAt),
 });
 
-export const mapMultipleCommentFieldsToVMs = (fragments: CommentFieldsFragment[]): CommentVM[] =>
-  fragments.map(mapCommentFieldsToVM);
+export const mapMultipleCommentReplyFieldsToVMs = (
+  fragments: CommentFieldsFragment[],
+): CommentReplyVM[] => fragments.map(mapCommentReplyFieldsToVM);

@@ -70,14 +70,14 @@ export const up = async (knex: Knex): Promise<void> => {
 
   await knex.raw('DROP INDEX IF EXISTS comment_resource_type_resource_id_index');
 
-  const hasAuthorUserIdCol = await knex.schema.hasColumn(TABLE, 'author_user_id');
+  const hasauthorIdCol = await knex.schema.hasColumn(TABLE, 'author_user_id');
 
   await knex.schema.alterTable(TABLE, (table) => {
     table.timestamp('deleted_at', { useTz: true }).nullable();
     table.uuid('parent_comment_id').nullable().references('id').inTable(TABLE).onDelete('CASCADE');
     table.index(['target_type', 'target_id', 'created_at']);
     table.index(['parent_comment_id']);
-    if (hasAuthorUserIdCol) {
+    if (hasauthorIdCol) {
       table.index(['author_user_id']);
     }
   });
@@ -129,8 +129,8 @@ export const down = async (knex: Knex): Promise<void> => {
     table.dropColumn('display_name');
   });
 
-  const hasAuthorUserId = await knex.schema.hasColumn(TABLE, 'author_user_id');
-  if (hasAuthorUserId) {
+  const hasauthorId = await knex.schema.hasColumn(TABLE, 'author_user_id');
+  if (hasauthorId) {
     await knex.schema.alterTable(TABLE, (table) => {
       table.renameColumn('author_user_id', 'author_id');
     });
