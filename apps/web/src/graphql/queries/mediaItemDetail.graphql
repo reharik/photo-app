@@ -10,6 +10,9 @@ fragment MediaItemDetail on MediaItem {
   reactionCounts {
     ...ReactionCounts
   }
-  viewerReactions
+  viewerReactions {
+    ...ViewerReaction
+  }
+
   ...ViewableMediaItem
 }

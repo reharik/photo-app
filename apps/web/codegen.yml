@@ -13,10 +13,8 @@ generates:
       - typed-document-node
     config:
       scalars:
-        DateTime:
-          input: string
-          output: string
-        Date: string
+        DateTime: 'luxon#DateTime'
+        Date: 'luxon#DateTime'
         UUID: string
         JSON: unknown # or whatever you actually want for JSON
       maybeValue: 'T | undefined'

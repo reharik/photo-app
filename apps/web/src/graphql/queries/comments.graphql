@@ -12,7 +12,9 @@ fragment CommentFields on Comment {
   reactionCounts {
     ...ReactionCounts
   }
-  viewerReactions
+  viewerReactions {
+    ...ViewerReaction
+  }
   createdAt
   updatedAt
 }

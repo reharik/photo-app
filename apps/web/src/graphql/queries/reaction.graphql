@@ -9,3 +9,8 @@ fragment EmojiCount on EmojiCount {
   emoji
   count
 }
+
+fragment ViewerReaction on ViewerReaction {
+  emoji
+  id
+}

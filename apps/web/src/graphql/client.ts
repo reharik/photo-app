@@ -1,26 +1,32 @@
 import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { withScalars } from 'apollo-link-scalars';
+import { buildSchema } from 'graphql';
+import { DateTime } from 'luxon';
 import { config } from '../config';
 import { smartEnumTypePolicies } from './generated/graphql-smart-enum-type-policies';
+import sdl from './generated/schema.graphql?raw';
+
+// Build a runtime GraphQLSchema instance from the SDL.
+const schema = buildSchema(sdl);
+
+const scalarLink = withScalars({
+  schema,
+  typesMap: {
+    DateTime: {
+      serialize: (parsed) => (DateTime.isDateTime(parsed) ? parsed.toISO() : null),
+      parseValue: (raw) => (typeof raw === 'string' ? DateTime.fromISO(raw) : null),
+    },
+  },
+});
 
 const httpLink = new HttpLink({
   uri: `${config.apiBaseUrl}/graphql`,
   credentials: 'include',
 });
-
-// using cookies now so don't need authLink
-// const authLink = new SetContextLink((prevContext) => {
-//   const token = localStorage.getItem('authToken');
-
-//   return {
-//     headers: {
-//       ...prevContext.headers,
-//       authorization: token ? `Bearer ${token}` : '',
-//     },
-//   };
-// });
-
+console.log('sdl type:', typeof sdl);
+console.log('sdl first 200 chars:', typeof sdl === 'string' ? sdl.slice(0, 200) : sdl);
 export const apolloClient = new ApolloClient({
-  link: httpLink,
+  link: ApolloLink.from([scalarLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
       ...smartEnumTypePolicies,

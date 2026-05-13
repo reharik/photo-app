@@ -154,7 +154,7 @@ type Comment {
   targetId: ID!
   targetType: CommentTargetType!
   updatedAt: DateTime!
-  viewerReactions: [ReactionEmoji!]!
+  viewerReactions: [ViewerReaction!]!
 }
 
 input CommentCollectionInput {
@@ -426,7 +426,7 @@ type MediaItem implements Node & ViewableItem {
   updatedAt: DateTime!
   viewerIsOwner: Boolean!
   viewerOperations: [ViewerOperation!]!
-  viewerReactions: [ReactionEmoji!]!
+  viewerReactions: [ViewerReaction!]!
   width: Int
 }
 
@@ -775,4 +775,9 @@ enum ViewerOperation {
   EDIT_DETAILS
   GRANT_AUTHORIZATION
   REMOVE_ITEMS
+}
+
+type ViewerReaction {
+  emoji: ReactionEmoji!
+  id: ID!
 }
