@@ -18,6 +18,8 @@ type MediaItem implements ViewableItem & Node {
   viewerOperations: [ViewerOperation!]!
   viewerIsOwner: Boolean!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  reactionCounts: ReactionCounts!
+  viewerReactions: [ViewerReaction!]!
 }
 
 enum ViewerOperation {

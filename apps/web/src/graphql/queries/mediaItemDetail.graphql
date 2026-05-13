@@ -7,5 +7,9 @@ fragment MediaItemDetail on MediaItem {
   originalFileName
   createdAt
   takenAt
+  reactionCounts {
+    ...ReactionCounts
+  }
+  viewerReactions
   ...ViewableMediaItem
 }

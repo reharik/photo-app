@@ -1,4 +1,5 @@
-import { CommentTargetType } from '@packages/contracts';
+import { CommentTargetType, ReactionEmoji } from '@packages/contracts';
+import { ReactionCountsVM } from '../reactions/ReactionCountsVM';
 
 export type CommentReplyVM = {
   id: string;
@@ -11,6 +12,8 @@ export type CommentReplyVM = {
   displayAvatarUrl?: string;
   isEdited: boolean;
   isDeleted: boolean;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions: ReactionEmoji[];
   createdAt: Date;
   updatedAt: Date;
 };

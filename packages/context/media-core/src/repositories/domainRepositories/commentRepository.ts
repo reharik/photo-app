@@ -1,4 +1,4 @@
-import { CommentTargetType } from '@packages/contracts';
+import { CommentTargetType, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { CommentRecord, ok } from '../..';
@@ -9,6 +9,17 @@ import type { EntityId, WriteResult } from '../../types/types';
 export type CommentRepository = {
   getById: (id: EntityId) => Promise<Comment | undefined>;
   save: (comment: Comment, options?: RepoOptions) => Promise<WriteResult<void>>;
+  incrementReactionCount(
+    commentId: EntityId,
+    emoji: ReactionEmoji,
+    options?: RepoOptions,
+  ): Promise<void>;
+
+  decrementReactionCount(
+    commentId: EntityId,
+    emoji: ReactionEmoji,
+    options?: RepoOptions,
+  ): Promise<void>;
 };
 
 type CommentRepositoryDeps = { database: Knex };
@@ -45,8 +56,52 @@ export const build__CommentRepository = ({
     return ok(undefined);
   };
 
+  const incrementReactionCount = async (
+    commentId: EntityId,
+    emoji: ReactionEmoji,
+    options?: RepoOptions,
+  ): Promise<void> => {
+    await runInTransaction(database, options, async (trx) => {
+      await trx('comment')
+        .where({ id: commentId })
+        .update({
+          reaction_counts: trx.raw(
+            `jsonb_set(
+            reaction_counts,
+            ARRAY[?]::text[],
+            to_jsonb(COALESCE((reaction_counts->>?)::int, 0) + 1)
+          )`,
+            [emoji, emoji],
+          ),
+        });
+    });
+  };
+
+  const decrementReactionCount = async (
+    commentId: EntityId,
+    emoji: ReactionEmoji,
+    options?: RepoOptions,
+  ): Promise<void> => {
+    await runInTransaction(database, options, async (trx) => {
+      await trx('comment')
+        .where({ id: commentId })
+        .update({
+          reaction_counts: trx.raw(
+            `jsonb_set(
+              reaction_counts,
+              ARRAY[?]::text[],
+              to_jsonb(GREATEST(COALESCE((reaction_counts->>?)::int, 0) - 1, 0))
+            )`,
+            [emoji, emoji],
+          ),
+        });
+    });
+  };
+
   return {
     getById,
     save,
+    incrementReactionCount,
+    decrementReactionCount,
   };
 };

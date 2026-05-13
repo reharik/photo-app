@@ -1,0 +1,23 @@
+mutation AddReaction($input: AddReactionInput!) {
+  addReaction(input: $input) {
+    data {
+      targetType
+      targetId
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation RemoveReaction($input: RemoveReactionInput!) {
+  removeReaction(input: $input) {
+    data {
+      targetType
+      targetId
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

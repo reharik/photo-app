@@ -1,0 +1,26 @@
+extend type Mutation {
+  addReaction(input: AddReactionInput!): ReactionMutationResponse!
+  removeReaction(input: RemoveReactionInput!): ReactionMutationResponse!
+}
+
+input AddReactionInput {
+  targetType: ReactionTargetType!
+  targetId: ID!
+  emoji: ReactionEmoji!
+}
+
+input RemoveReactionInput {
+  id: ID!
+  targetType: ReactionTargetType!
+  targetId: ID!
+}
+
+type ReactionMutationResponse {
+  data: ReactionMutationPayload
+  errors: [ContractError!]
+}
+
+type ReactionMutationPayload {
+  targetType: ReactionTargetType!
+  targetId: ID!
+}

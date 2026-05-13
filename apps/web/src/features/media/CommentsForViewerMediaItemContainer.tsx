@@ -15,7 +15,7 @@ import {
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
-import { mapMultipleCommentRootFieldsToVMs } from '../../viewModels/comment/mapCommentDetailFieldsToVM';
+import { mapMultipleCommentRootsToVMs } from '../../viewModels/comment/mapCommentRootsToVM';
 import { CommentsPanel } from '../comments/CommentsPanel';
 
 const PAGE_SIZE = 50;
@@ -46,7 +46,7 @@ export const CommentsForViewerMediaItemContainer = ({
     select: (data) => data.viewer?.mediaItem?.comments,
   });
 
-  const comments = mapMultipleCommentRootFieldsToVMs(data?.nodes ?? []);
+  const comments = mapMultipleCommentRootsToVMs(data?.nodes ?? []);
   const titleText = data && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
 
   const mutationErrors: AppError[] = useMemo(
@@ -133,6 +133,9 @@ export const CommentsForViewerMediaItemContainer = ({
         onAddComment={canComment ? handleAddComment : undefined}
         onEditComment={canComment ? handleEditComment : undefined}
         onDeleteComment={canComment ? handleDeleteComment : undefined}
+        onRefetchComments={async () => {
+          await query.refetch();
+        }}
         addCommentLoading={addMutation.isLoading}
         editCommentLoading={editMutation.isLoading}
         deletingCommentId={deletingCommentId}

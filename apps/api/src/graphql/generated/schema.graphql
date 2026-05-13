@@ -3,7 +3,13 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
+directive @enumMeta(
+  description: String
+  display: String
+  props: [EnumMetaPropInput!]
+  shortDisplay: String
+  sortOrder: Int
+) on ENUM_VALUE
 
 input AddCommentInput {
   body: String!
@@ -47,6 +53,12 @@ type AddMediaItemsToAlbumPayload {
 type AddMediaItemsToAlbumResponse {
   data: AddMediaItemsToAlbumPayload
   errors: [ContractError!]
+}
+
+input AddReactionInput {
+  emoji: ReactionEmoji!
+  targetId: ID!
+  targetType: ReactionTargetType!
 }
 
 type Album implements Node & ViewableItem {
@@ -94,8 +106,8 @@ type AlbumItemCollectionPayload {
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
 }
 
 enum AlbumMemberRole {
@@ -105,8 +117,8 @@ enum AlbumMemberRole {
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  TITLE @enumMeta(props: [{name: "column", value: "title"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
 }
 
 type AuthorizationType {
@@ -137,10 +149,12 @@ type Comment {
   """
   isEdited: Boolean!
   parentCommentId: ID
+  reactionCounts: ReactionCounts!
   replies: [Comment!]!
   targetId: ID!
   targetType: CommentTargetType!
   updatedAt: DateTime!
+  viewerReactions: [ReactionEmoji!]!
 }
 
 input CommentCollectionInput {
@@ -299,6 +313,11 @@ input EditCommentInput {
   commentId: ID!
 }
 
+type EmojiCount {
+  count: Int!
+  emoji: ReactionEmoji!
+}
+
 """
 Optional metadata on enum values for SmartEnum / codegen (e.g. DB column names).
 """
@@ -398,6 +417,7 @@ type MediaItem implements Node & ViewableItem {
   kind: MediaKind!
   mimeType: String!
   originalFileName: String!
+  reactionCounts: ReactionCounts!
   sizeBytes: Int!
   status: MediaItemStatus!
   tags: [String!]!
@@ -406,6 +426,7 @@ type MediaItem implements Node & ViewableItem {
   updatedAt: DateTime!
   viewerIsOwner: Boolean!
   viewerOperations: [ViewerOperation!]!
+  viewerReactions: [ReactionEmoji!]!
   width: Int
 }
 
@@ -421,7 +442,7 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
 }
 
 enum MediaItemStatus {
@@ -442,23 +463,33 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(
+    input: DeleteAlbumItemsFromAlbumInput!
+  ): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
   addComment(input: AddCommentInput!): CommentMutationResponse!
+  addReaction(input: AddReactionInput!): ReactionMutationResponse!
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
   createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
   createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
-  createPublicLinkForMediaItems(input: CreatePublicLinkForMediaItemsInput!): CreatePublicLinkResponse!
+  createPublicLinkForMediaItems(
+    input: CreatePublicLinkForMediaItemsInput!
+  ): CreatePublicLinkResponse!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   deleteComment(input: DeleteCommentInput!): CommentMutationResponse!
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   editComment(input: EditCommentInput!): CommentMutationResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
-  grantUserAuthorizationForAlbum(input: GrantUserAuthorizationForAlbumInput!): GrantUserAuthorizationResult!
-  grantUserAuthorizationsForMediaItems(input: GrantUserAuthorizationsForMediaItemsInput!): GrantUserAuthorizationResult!
+  grantUserAuthorizationForAlbum(
+    input: GrantUserAuthorizationForAlbumInput!
+  ): GrantUserAuthorizationResult!
+  grantUserAuthorizationsForMediaItems(
+    input: GrantUserAuthorizationsForMediaItemsInput!
+  ): GrantUserAuthorizationResult!
+  removeReaction(input: RemoveReactionInput!): ReactionMutationResponse!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
 }
@@ -468,12 +499,16 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""Implemented by all entities that have an id."""
+"""
+Implemented by all entities that have an id.
+"""
 interface Node {
   id: ID!
 }
 
-"""Cursor-free paging window (offset-based). Used on output types."""
+"""
+Cursor-free paging window (offset-based). Used on output types.
+"""
 type PageInfo {
   limit: Int!
   offset: Int!
@@ -539,6 +574,7 @@ type PublicMediaItem implements Node {
   id: ID!
   kind: MediaKind!
   mimeType: String!
+  reactionCounts: ReactionCounts!
   status: MediaItemStatus!
   tags: [String!]!
   title: String
@@ -549,6 +585,36 @@ type PublicMediaItem implements Node {
 type Query {
   publicAccess: PublicAccess
   viewer: Viewer
+}
+
+type ReactionCounts {
+  byEmoji: [EmojiCount!]!
+  total: Int!
+}
+
+enum ReactionEmoji {
+  HEART
+}
+
+type ReactionMutationPayload {
+  targetId: ID!
+  targetType: ReactionTargetType!
+}
+
+type ReactionMutationResponse {
+  data: ReactionMutationPayload
+  errors: [ContractError!]
+}
+
+enum ReactionTargetType {
+  COMMENT
+  MEDIA_ITEM
+}
+
+input RemoveReactionInput {
+  id: ID!
+  targetId: ID!
+  targetType: ReactionTargetType!
 }
 
 input ReorderAlbumItemsInput {

@@ -3,6 +3,14 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
+    "barrels": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx barrelsby --config barrelsby.json"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
       "outputs": ["{projectRoot}/dist"],

@@ -10,7 +10,7 @@
     "packages/*/*"
   ],
   "scripts": {
-    "barrels": "npm run barrels --workspace=@packages/media-core",
+    "barrels": "npm run barrels --workspace=@packages/media-core && npm run barrels --workspace=@packages/contracts",
     "build": "nx run-many -t build",
     "build:clean": "nx reset && nx run-many -t build",
     "build:web:production": "nx run web:build:production",

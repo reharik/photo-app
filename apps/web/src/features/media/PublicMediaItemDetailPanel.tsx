@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from 'react';
 import styled from 'styled-components';
+import { PublicReactionsForMediaItemContainer } from '../../features/reactions/PublicReactionsForMediaItemContainer';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/publicMedia/PublicMediaItemSummaryVM';
 import { PublicCommentsForMediaItemContainer } from './PublicCommentsForMediaItemContainer';
 
@@ -90,6 +91,10 @@ export const PublicMediaItemDetailPanel = forwardRef<
           </MetadataItem>
         ) : null}
       </MetadataSection>
+
+      <ReactionsSection>
+        <PublicReactionsForMediaItemContainer reactionCounts={mediaItem.reactionCounts} />
+      </ReactionsSection>
 
       <CommentsSection>
         <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} />
@@ -237,6 +242,12 @@ const ReadOnlyValueText = styled.div<{ $muted?: boolean }>`
   overflow-wrap: break-word;
   white-space: normal;
   font-style: ${({ $muted }) => ($muted ? 'italic' : 'normal')};
+`;
+
+const ReactionsSection = styled.div`
+  display: flex;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
 `;
 
 const CommentsSection = styled.div`

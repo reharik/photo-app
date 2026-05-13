@@ -6,5 +6,12 @@ fragment PublicMediaItemSummary on PublicMediaItem {
   width
   height
   durationSeconds
+  reactionCounts {
+    total
+    byEmoji {
+      emoji
+      count
+    }
+  }
   viewerOperations
 }

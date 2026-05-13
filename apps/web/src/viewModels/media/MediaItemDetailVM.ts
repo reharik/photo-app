@@ -1,7 +1,6 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaKind, ReactionEmoji } from '@packages/contracts';
 import { ViewableItemVM } from '../album/AlbumSummaryVM';
-
-// export type MediaItemDetailVM = UserMediaItemDetailVM | PublicMediaItemSummaryVM;
+import { ReactionCountsVM } from '../reactions/ReactionCountsVM';
 
 export type MediaItemDetailVM = {
   id: string;
@@ -12,4 +11,6 @@ export type MediaItemDetailVM = {
   originalFileName: string;
   createdAt: string;
   takenAt: string;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions: ReactionEmoji[];
 } & ViewableItemVM;

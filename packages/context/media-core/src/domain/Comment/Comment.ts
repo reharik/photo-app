@@ -9,13 +9,12 @@ import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { AuditRecord } from '../Entity';
 
-/** Row shape persisted to `comment` (matches columns after knex-stringcase). */
 export type CommentRecord = {
   id: EntityId;
   targetType: CommentTargetType;
   targetId: EntityId;
   parentCommentId?: EntityId;
-  authorId?: EntityId;
+  authorId: EntityId;
   body: string;
   displayName: string;
   displayAvatarUrl?: string;

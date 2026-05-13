@@ -1,4 +1,5 @@
 import { MediaItemSummaryFragment } from '../../graphql/generated/types';
+import { mapReactionCountsToVM } from '../reactions/mapReactionCountsToVM';
 import { MediaItemSummaryVM } from './MediaItemSummaryVM';
 
 export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): MediaItemSummaryVM {
@@ -10,6 +11,8 @@ export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): Me
     createdAt: mediaItem.createdAt,
     viewerOperations: mediaItem.viewerOperations ?? [],
     viewerIsOwner: mediaItem.viewerIsOwner,
+    reactionCounts: mapReactionCountsToVM(mediaItem.reactionCounts),
+    viewerReactions: mediaItem.viewerReactions,
   };
 }
 

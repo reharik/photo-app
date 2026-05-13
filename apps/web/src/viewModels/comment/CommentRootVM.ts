@@ -1,4 +1,6 @@
-import { CommentTargetType } from '@packages/contracts';
+import { CommentTargetType, ReactionEmoji } from '@packages/contracts';
+
+import { ReactionCountsVM } from '../reactions/ReactionCountsVM';
 import { CommentReplyVM } from './CommentReplyVM';
 
 // CHANGED: Frontend View Models — separate Detail VM that includes pre-fetched replies.
@@ -14,6 +16,8 @@ export type CommentRootVM = {
   displayAvatarUrl?: string;
   isEdited: boolean;
   isDeleted: boolean;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions: ReactionEmoji[];
   createdAt: Date;
   updatedAt: Date;
   replies: CommentReplyVM[];

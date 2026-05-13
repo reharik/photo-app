@@ -20,6 +20,7 @@ export * from './MediaProcessingJob/MediaProcessingJobRepository';
 export * from './MediaProcessingJob/mediaProcessingJobStatus';
 export * from './Notification/Notification';
 export * from './PublicLink/PublicLink';
+export * from './Reaction/Reaction';
 export * from './User/User';
 export * from './utilities/entityGuard';
 export * from './utilities/reorderAlbumItems';

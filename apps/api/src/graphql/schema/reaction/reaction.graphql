@@ -1,0 +1,23 @@
+enum ReactionTargetType {
+  MEDIA_ITEM
+  COMMENT
+}
+
+enum ReactionEmoji {
+  HEART
+}
+
+type ReactionCounts {
+  total: Int! # sum across all emoji
+  byEmoji: [EmojiCount!]! # detailed breakdown
+}
+
+type EmojiCount {
+  emoji: ReactionEmoji!
+  count: Int!
+}
+
+type ViewerReaction {
+  emoji: ReactionEmoji!
+  id: ID!
+}

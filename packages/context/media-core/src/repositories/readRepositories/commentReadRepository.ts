@@ -26,6 +26,7 @@ const commentSelectColumns = [
   'created_at',
   'updated_at',
   'deleted_at',
+  'reaction_count',
 ];
 
 export const build__CommentReadRepository = ({

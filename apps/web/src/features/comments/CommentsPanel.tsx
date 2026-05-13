@@ -8,6 +8,9 @@ import { CommentsEmptyState } from './CommentsEmptyState';
 import { CommentsErrorState } from './CommentsErrorState';
 import { CommentsLoadingState } from './CommentsLoadingState';
 
+/** @deprecated Use CommentRootVM | CommentReplyVM directly from the viewModels. */
+export type CommentsPanelComment = CommentRootVM;
+
 export type CommentsPanelProps = {
   comments: CommentRootVM[];
   loading: boolean;
@@ -17,6 +20,7 @@ export type CommentsPanelProps = {
   onAddComment?: (body: string, parentCommentId?: string) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onRefetchComments?: () => Promise<void>;
   addCommentLoading?: boolean;
   editCommentLoading?: boolean;
   deletingCommentId?: string;
@@ -32,11 +36,11 @@ export const CommentsPanel = ({
   loading,
   error,
   canComment,
-
   onRetry,
   onAddComment,
   onEditComment,
   onDeleteComment,
+  onRefetchComments,
   addCommentLoading = false,
   editCommentLoading = false,
   deletingCommentId = undefined,
@@ -84,6 +88,7 @@ export const CommentsPanel = ({
             onAddComment={onAddComment}
             onEditComment={onEditComment}
             onDeleteComment={onDeleteComment}
+            onRefetchComments={onRefetchComments}
           />
         ))}
       </ThreadList>

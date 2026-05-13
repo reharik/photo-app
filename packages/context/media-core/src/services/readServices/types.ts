@@ -58,6 +58,7 @@ export type NamespacedMediaItemRow = {
   mediaItemTakenAt?: Date;
   mediaItemCreatedAt: Date;
   mediaItemUpdatedAt: Date;
+  mediaItemReactionCount?: number;
 };
 
 export type AlbumWithCoverRow = {
@@ -127,6 +128,7 @@ export interface MediaItemRow {
   takenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  reactionCount: number;
 }
 
 export interface MediaItemProjection extends MediaItemRow {
@@ -200,6 +202,7 @@ export interface PublicMediaItemRow {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  reactionCount: number;
 }
 
 export interface PublicMediaItemProjection extends PublicMediaItemRow {
@@ -219,6 +222,7 @@ export type CommentRow = {
   updatedAt: Date;
   deletedAt?: Date;
   totalCount: number;
+  reactionCount: number;
 };
 export type CommentGraph = CommentRow & {
   replies: CommentRow[];

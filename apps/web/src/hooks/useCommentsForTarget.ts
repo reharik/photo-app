@@ -7,12 +7,12 @@ import {
   CommentsForViewerAlbumDocument,
   CommentsForViewerMediaItemDocument,
 } from '../graphql/generated/types';
-import { CommentDetailVM } from '../viewModels/comment/CommentDetailVM';
-import { mapMultipleCommentDetailFieldsToVMs } from '../viewModels/comment/mapCommentDetailFieldsToVM';
+import { CommentRootVM } from '../viewModels/comment/CommentRootVM';
+import { mapMultipleCommentRootsToVMs } from '../viewModels/comment/mapCommentRootsToVM';
 import { getQueryRenderState } from './getQueryRenderState';
 
 export type UseCommentsForTargetResult = {
-  data: CommentDetailVM[] | undefined;
+  data: CommentRootVM[] | undefined;
   content: ReactNode | undefined;
   refetch: () => void;
 };
@@ -69,7 +69,7 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: viewerMediaItemQuery,
       select: (data) => data?.viewer?.mediaItem?.comments?.nodes,
-      map: mapMultipleCommentDetailFieldsToVMs,
+      map: mapMultipleCommentRootsToVMs,
     });
   }
 
@@ -77,7 +77,7 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: viewerAlbumQuery,
       select: (data) => data?.viewer?.album?.comments?.nodes,
-      map: mapMultipleCommentDetailFieldsToVMs,
+      map: mapMultipleCommentRootsToVMs,
     });
   }
 
@@ -85,13 +85,13 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: publicMediaItemQuery,
       select: (data) => data?.publicAccess?.mediaItem?.comments?.nodes,
-      map: mapMultipleCommentDetailFieldsToVMs,
+      map: mapMultipleCommentRootsToVMs,
     });
   }
 
   return getQueryRenderState({
     query: publicAlbumQuery,
     select: (data) => data?.publicAccess?.album?.comments?.nodes,
-    map: mapMultipleCommentDetailFieldsToVMs,
+    map: mapMultipleCommentRootsToVMs,
   });
 };

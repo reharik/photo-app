@@ -3,7 +3,7 @@ import { JSX } from 'react';
 import styled from 'styled-components';
 import { CommentsForPublicMediaItemDocument } from '../../graphql/generated/types';
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
-import { mapMultipleCommentRootFieldsToVMs } from '../../viewModels/comment/mapCommentDetailFieldsToVM';
+import { mapMultipleCommentRootsToVMs } from '../../viewModels/comment/mapCommentRootsToVM';
 import { CommentsPanel } from '../comments/CommentsPanel';
 
 const PAGE_SIZE = 50;
@@ -25,7 +25,7 @@ export const PublicCommentsForMediaItemContainer = ({
     query,
     select: (data) => data.publicAccess?.mediaItem?.comments,
   });
-  const comments = mapMultipleCommentRootFieldsToVMs(data?.nodes ?? []);
+  const comments = mapMultipleCommentRootsToVMs(data?.nodes ?? []);
   const titleText = data && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
   if (!comments) {
     return <>{content}</>;

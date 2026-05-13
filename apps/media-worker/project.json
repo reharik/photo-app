@@ -12,7 +12,7 @@
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["media-core:barrels"],
+      "dependsOn": ["media-core:barrels", "contracts:barrels"],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"

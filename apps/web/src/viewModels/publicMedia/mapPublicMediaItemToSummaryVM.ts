@@ -1,4 +1,5 @@
 import { PublicMediaItemSummaryFragment } from '../../graphql/generated/types';
+import { mapReactionCountsToVM } from '../reactions/mapReactionCountsToVM';
 import { PublicMediaItemSummaryVM } from './PublicMediaItemSummaryVM';
 
 export function mapPublicMediaItemToSummaryVM(
@@ -12,6 +13,7 @@ export function mapPublicMediaItemToSummaryVM(
     width: mediaItem.width,
     height: mediaItem.height,
     durationSeconds: mediaItem.durationSeconds,
+    reactionCounts: mapReactionCountsToVM(mediaItem.reactionCounts),
     viewerOperations: mediaItem.viewerOperations ?? [],
   };
 }

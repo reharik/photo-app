@@ -13,6 +13,7 @@ const publicMediaItemRowFields = [
   'media_item.width',
   'media_item.height',
   'media_item.duration_seconds',
+  'media_item.reaction_count',
 ];
 
 type PublicMediaItemReadRepositoryDeps = { database: Knex };

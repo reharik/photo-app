@@ -20,5 +20,6 @@ export const mapMediaItemRowToProjection = (
     takenAt: mediaItem.mediaItemTakenAt,
     createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
     updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
+    reactionCount: mediaItem.mediaItemReactionCount ?? 0,
   };
 };

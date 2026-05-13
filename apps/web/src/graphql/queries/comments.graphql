@@ -9,6 +9,10 @@ fragment CommentFields on Comment {
   displayAvatarUrl
   isEdited
   isDeleted
+  reactionCounts {
+    ...ReactionCounts
+  }
+  viewerReactions
   createdAt
   updatedAt
 }

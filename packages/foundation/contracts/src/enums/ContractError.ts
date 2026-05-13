@@ -10,6 +10,7 @@ const errorAreaInput = [
   'auth',
   'authorization',
   'user',
+  'reaction',
 ] as const;
 
 export type ErrorArea = Enumeration<typeof ErrorArea>;
@@ -388,6 +389,28 @@ const contractErrorInput = {
     display: 'Can not delete comment',
     category: ErrorCategory.auth,
     area: ErrorArea.comment,
+    retryable: false,
+  },
+
+  ReactionTargetNotFound: {
+    code: 'REACTION_TARGET_NOT_FOUND',
+    display: 'Reaction target not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.reaction,
+    retryable: false,
+  },
+  ReactionNotAuthorized: {
+    code: 'REACTION_NOT_AUTHORIZED',
+    display: 'Not authorized to react',
+    category: ErrorCategory.auth,
+    area: ErrorArea.reaction,
+    retryable: false,
+  },
+  ReactionNotFound: {
+    code: 'REACTION_NOT_FOUND',
+    display: 'Reaction not found',
+    category: ErrorCategory.domain,
+    area: ErrorArea.reaction,
     retryable: false,
   },
 } as const;

@@ -12,16 +12,23 @@ generates:
       - typescript-operations
       - typed-document-node
     config:
-      skipTypename: false
-      enumsAsTypes: true
-      constEnums: false
-      maybeValue: 'T | undefined'
-      inputMaybeValue: 'T | undefined'
       scalars:
         DateTime:
           input: string
           output: string
         Date: string
+        UUID: string
+        JSON: unknown # or whatever you actually want for JSON
+      maybeValue: 'T | undefined'
+      avoidOptionals:
+        field: false # nullable fields become optional `field?:`
+        inputValue: false
+        object: false
+        defaultValue: false
+      skipTypename: true
+      nonOptionalTypename: false
+      enumsAsTypes: true
+      inputMaybeValue: 'T | undefined'
       namingConvention:
         typeNames: pascal-case#pascalCase
 

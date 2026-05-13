@@ -52,6 +52,7 @@ const mediaItemRowFields = [
   'media_item.updated_at',
   'media_item.created_by',
   'media_item.updated_by',
+  'media_item.reaction_count',
 ];
 
 export const build__MediaItemReadRepository = ({

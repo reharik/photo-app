@@ -1,20 +1,24 @@
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
+import { PublicReactionsForCommentContainer } from '../../features/reactions/PublicReactionsForCommentContainer';
+import { ReactionsForCommentContainer } from '../../features/reactions/ReactionsForCommentContainer';
 import { useViewer } from '../../hooks/useViewer';
+import { CommentReplyVM } from '../../viewModels/comment/CommentReplyVM';
+import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
 import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
 import { CommentHeader } from './CommentHeader';
-import type { CommentsPanelComment } from './CommentsPanel';
 import { DeletedCommentPlaceholder } from './DeletedCommentPlaceholder';
 
 type Props = {
-  comment: CommentsPanelComment;
+  comment: CommentRootVM | CommentReplyVM;
   depth: number;
   canComment: boolean;
   onReply?: () => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onRefetchComments?: () => Promise<void>;
   /** True while edit mutation is running (only one editor expected at a time). */
   editCommentLoading?: boolean;
   /** True while delete mutation is running for this comment. */
@@ -28,6 +32,7 @@ export const CommentRow = ({
   onReply,
   onEditComment,
   onDeleteComment,
+  onRefetchComments,
   editCommentLoading = false,
   deleteCommentPending = false,
 }: Props): JSX.Element => {
@@ -69,7 +74,10 @@ export const CommentRow = ({
           <CommentHeader
             comment={{
               displayName: comment.displayName,
-              createdAt: comment.createdAt,
+              createdAt:
+                comment.createdAt instanceof Date
+                  ? comment.createdAt.toISOString()
+                  : comment.createdAt,
               isEdited: comment.isEdited,
             }}
           />
@@ -90,6 +98,17 @@ export const CommentRow = ({
           onSave={onEditComment ? handleSave : undefined}
           onCancelEdit={onEditComment ? () => setIsEditing(false) : undefined}
         />
+        {onRefetchComments ? (
+          <ReactionsForCommentContainer
+            commentId={comment.id}
+            reactionCount={comment.reactionCount}
+            viewerHasReacted={comment.viewerHasReacted}
+            canReact
+            onRefetch={onRefetchComments}
+          />
+        ) : (
+          <PublicReactionsForCommentContainer reactionCount={comment.reactionCount} />
+        )}
       </Content>
     </Root>
   );

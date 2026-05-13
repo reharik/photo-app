@@ -7,6 +7,7 @@ const getAuthorizationErrors = () =>
   getSubsetByProp(ContractError, 'area', ErrorArea.authorization);
 const getUserErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.user);
 const getCommentErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.comment);
+const getReactionErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.reaction);
 
 export type AppErrorCollection = {
   album: ReturnType<typeof getAlbumErrors>;
@@ -14,6 +15,7 @@ export type AppErrorCollection = {
   authorization: ReturnType<typeof getAuthorizationErrors>;
   user: ReturnType<typeof getUserErrors>;
   comment: ReturnType<typeof getCommentErrors>;
+  reaction: ReturnType<typeof getReactionErrors>;
 };
 
 export const AppErrorCollection: AppErrorCollection = {
@@ -22,4 +24,5 @@ export const AppErrorCollection: AppErrorCollection = {
   authorization: getAuthorizationErrors(),
   user: getUserErrors(),
   comment: getCommentErrors(),
+  reaction: getReactionErrors(),
 };

@@ -1,4 +1,5 @@
 import { MediaKind, ViewerOperation } from '@packages/contracts';
+import { ReactionCountsVM } from '../reactions/ReactionCountsVM';
 
 export type PublicMediaItemSummaryVM = {
   id: string;
@@ -8,5 +9,6 @@ export type PublicMediaItemSummaryVM = {
   width?: number | null;
   height?: number | null;
   durationSeconds?: number | null;
+  reactionCounts: ReactionCountsVM;
   viewerOperations: ViewerOperation[];
 };

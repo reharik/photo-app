@@ -1,16 +1,17 @@
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
+import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
 import { CommentReplyList } from './CommentReplyList';
 import { CommentRow } from './CommentRow';
-import type { CommentsPanelComment } from './CommentsPanel';
 import { ReplyComposer } from './ReplyComposer';
 
 type Props = {
-  comment: CommentsPanelComment;
+  comment: CommentRootVM;
   canComment: boolean;
   onAddComment?: (body: string, parentCommentId?: string) => void;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onRefetchComments?: () => Promise<void>;
   addCommentLoading?: boolean;
   editCommentLoading?: boolean;
   deletingCommentId?: string;
@@ -22,12 +23,13 @@ export const CommentThread = ({
   onAddComment,
   onEditComment,
   onDeleteComment,
+  onRefetchComments,
   addCommentLoading = false,
   editCommentLoading = false,
   deletingCommentId = undefined,
 }: Props): JSX.Element => {
   const [replyOpen, setReplyOpen] = useState(false);
-  const replies = comment.replies;
+  const replies = comment.replies ?? [];
 
   const handleReplySubmit = async (body: string): Promise<void> => {
     if (onAddComment) await Promise.resolve(onAddComment(body, comment.id));
@@ -51,6 +53,7 @@ export const CommentThread = ({
         }
         onEditComment={onEditComment}
         onDeleteComment={onDeleteComment}
+        onRefetchComments={onRefetchComments}
       />
       <CommentReplyList
         replies={replies}
@@ -59,6 +62,7 @@ export const CommentThread = ({
         deletingCommentId={deletingCommentId}
         onEditComment={onEditComment}
         onDeleteComment={onDeleteComment}
+        onRefetchComments={onRefetchComments}
       />
       {showReplyComposer ? (
         <ReplyArea>

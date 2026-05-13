@@ -10,4 +10,5 @@ type PublicMediaItem implements Node {
   tags: [String!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
   viewerOperations: [ViewerOperation!]!
+  reactionCounts: ReactionCounts!
 }

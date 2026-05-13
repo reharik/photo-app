@@ -3,6 +3,7 @@ import { DateTime } from 'luxon';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { formatDateOnly, formatTakenDisplay } from '../../domain/formatters/mediaItemMetaFormat';
+import { ReactionsForMediaItemContainer } from '../../features/reactions/ReactionsForMediaItemContainer';
 import type { MediaItemDetailVM } from '../../viewModels/media/MediaItemDetailVM';
 import { CommentsForViewerMediaItemContainer } from './CommentsForViewerMediaItemContainer';
 import { MediaItemDetailForm } from './MediaItemDetailForm';
@@ -108,6 +109,16 @@ export const MediaItemDetailPanel = forwardRef<
           <MetadataValue>{formatDateOnly(mediaItem.createdAt)}</MetadataValue>
         </MetadataItem>
       </MetadataSection>
+
+      <ReactionsSection>
+        <ReactionsForMediaItemContainer
+          mediaItemId={mediaItem.id}
+          reactionCounts={mediaItem.reactionCounts}
+          viewerReactions={mediaItem.viewerReactions}
+          canReact
+          onRefetch={onSaved}
+        />
+      </ReactionsSection>
 
       <CommentsSection>
         <CommentsForViewerMediaItemContainer mediaItemId={mediaItem.id} canComment={canComment} />
@@ -292,6 +303,12 @@ const EditCue = styled.span`
   line-height: 1.4;
   opacity: 0.45;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
+`;
+
+const ReactionsSection = styled.div`
+  display: flex;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
 `;
 
 const CommentsSection = styled.div`

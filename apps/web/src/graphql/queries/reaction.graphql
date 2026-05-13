@@ -1,0 +1,11 @@
+fragment ReactionCounts on ReactionCounts {
+  total
+  byEmoji {
+    ...EmojiCount
+  }
+}
+
+fragment EmojiCount on EmojiCount {
+  emoji
+  count
+}

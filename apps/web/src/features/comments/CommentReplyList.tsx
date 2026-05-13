@@ -1,13 +1,14 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
+import { CommentReplyVM } from '../../viewModels/comment/CommentReplyVM';
 import { CommentRow } from './CommentRow';
-import type { CommentsPanelComment } from './CommentsPanel';
 
 type Props = {
-  replies: CommentsPanelComment[];
+  replies: CommentReplyVM[];
   canComment: boolean;
   onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (commentId: string) => void;
+  onRefetchComments?: () => Promise<void>;
   editCommentLoading?: boolean;
   deletingCommentId?: string | null;
 };
@@ -17,6 +18,7 @@ export const CommentReplyList = ({
   canComment,
   onEditComment,
   onDeleteComment,
+  onRefetchComments,
   editCommentLoading = false,
   deletingCommentId = null,
 }: Props): JSX.Element | null => {
@@ -35,6 +37,7 @@ export const CommentReplyList = ({
           deleteCommentPending={deletingCommentId === reply.id}
           onEditComment={onEditComment}
           onDeleteComment={onDeleteComment}
+          onRefetchComments={onRefetchComments}
         />
       ))}
     </Root>

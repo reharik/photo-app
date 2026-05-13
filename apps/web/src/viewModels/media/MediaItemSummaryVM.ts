@@ -1,5 +1,6 @@
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaItemStatus, MediaKind, ReactionEmoji } from '@packages/contracts';
 import { ViewableItemVM } from '../album/AlbumSummaryVM';
+import { ReactionCountsVM } from '../reactions/ReactionCountsVM';
 
 // export type MediaItemSummaryVM = UserMediaItemSummaryVM | PublicMediaItemSummaryVM;
 
@@ -9,5 +10,7 @@ export type MediaItemSummaryVM = {
   createdAt: string;
   kind: MediaKind;
   status: MediaItemStatus;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions: ReactionEmoji[];
   /** From `viewer.viewerOperations` when the item was loaded via a decorated list query. */
 } & ViewableItemVM;

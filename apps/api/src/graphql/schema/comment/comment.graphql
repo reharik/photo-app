@@ -25,6 +25,8 @@ type Comment {
   createdAt: DateTime!
   updatedAt: DateTime!
   replies: [Comment!]!
+  reactionCounts: ReactionCounts!
+  viewerReactions: [ViewerReaction!]!
 }
 
 input CommentsInput {
