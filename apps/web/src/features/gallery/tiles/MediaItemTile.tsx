@@ -1,20 +1,25 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { DateTime } from 'luxon';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { localizeDate } from '../../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import { MediaItemSummaryVM } from '../../../viewModels/media/MediaItemSummaryVM';
+import { ReactionsForMediaItemContainer } from '../../../features/reactions/ReactionsForMediaItemContainer';
+import { MediaItemSummaryVM } from '../../../viewModels/';
 
 export const MediaItemTile = ({
   item,
   mediaGalleryIds,
+  onReactionsRefetch,
 }: {
   item: MediaItemSummaryVM;
   mediaGalleryIds: string[];
+  onReactionsRefetch?: () => Promise<void>;
 }) => {
   const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
+  const refetchReactions = onReactionsRefetch ?? (async (): Promise<void> => {});
+
   return (
-    <>
+    <TileColumn>
       <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
         {item.kind === MediaKind.photo ? (
           <ThumbImage src={url} alt={item.title?.trim() ?? ''} />
@@ -22,15 +27,41 @@ export const MediaItemTile = ({
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
+      <ReactionsStrip onClick={(e) => e.stopPropagation()}>
+        <ReactionsForMediaItemContainer
+          mediaItemId={item.id}
+          reactionCounts={item.reactionCounts}
+          viewerReactions={item.viewerReactions}
+          canReact
+          onRefetch={refetchReactions}
+        />
+      </ReactionsStrip>
       <CaptionLink to={`/media/${item.id}`}>
         <MediaInfo>
           <MediaTitle>{item.title?.trim() ?? ''}</MediaTitle>
-          <MediaMeta>{localizeDate(item.createdAt)}</MediaMeta>
+          <MediaMeta>
+            {item.createdAt ? item.createdAt.toLocaleString(DateTime.DATE_MED) : ''}
+          </MediaMeta>
         </MediaInfo>
       </CaptionLink>
-    </>
+    </TileColumn>
   );
 };
+
+const TileColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+`;
+
+const ReactionsStrip = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)} 0;
+  min-height: 0;
+`;
 
 const ThumbLink = styled(Link)`
   display: flex;

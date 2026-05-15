@@ -79,3 +79,14 @@ export const ViewerCard = styled.div<{ $positionForOverlay?: boolean }>`
     gap: ${({ theme }) => theme.spacing(2)};
   }
 `;
+
+/** Renders beneath the zoomable media inside the viewer card (desktop / single-with-card). On mobile narrow nav, sits below the swipe/tap stage instead (see MediaViewerMobileNav). */
+export const ViewerBelowMediaSlot = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(2)} 0;
+  box-sizing: border-box;
+`;

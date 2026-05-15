@@ -2,15 +2,15 @@ import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { JSX } from 'react';
 import styled from 'styled-components';
 
-import { ReactionCountsVM } from '../../viewModels/reactions/ReactionCountsVM';
+import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 
 type Props = {
   emoji: ReactionEmoji;
   targetType: ReactionTargetType;
-  targetId: string;
+  targetId?: string;
   reactionCounts: ReactionCountsVM;
-  viewerReactions: ReactionEmoji[];
-  canReact: boolean;
+  viewerReactions?: ViewerReactionVM[];
+  canReact?: boolean;
   onToggle?: () => void;
 };
 
@@ -21,8 +21,8 @@ export const ReactionButton = ({
   canReact,
   onToggle,
 }: Props): JSX.Element => {
-  const hasReaction = viewerReactions.includes(emoji);
-  const { display, icon } = emoji.hasReaction(hasReaction);
+  const hasReaction = viewerReactions?.some((r) => r.emoji === emoji) ?? false;
+  const icon = emoji.hasReaction(hasReaction);
   const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
   return (
     <Root>
@@ -30,7 +30,7 @@ export const ReactionButton = ({
         type="button"
         $reacted={hasReaction}
         disabled={!canReact}
-        aria-label={display}
+        aria-label={hasReaction ? 'Remove reaction' : 'Add reaction'}
         aria-pressed={hasReaction}
         onClick={canReact ? onToggle : undefined}
       >
@@ -80,10 +80,12 @@ const Button = styled.button<{ $reacted: boolean }>`
 `;
 
 const Icon = styled.span`
-  font-size: 14px;
+  color: ${({ theme }) => theme.color.red_darker};
+
+  font-size: ${({ theme }) => theme.fontSize._32};
 `;
 
 const Count = styled.span`
-  font-size: ${({ theme }) => theme.fontSize._12};
+  font-size: ${({ theme }) => theme.fontSize._14};
   color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;

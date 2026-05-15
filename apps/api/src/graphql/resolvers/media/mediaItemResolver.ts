@@ -19,6 +19,7 @@ const mediaItemResolvers: Resolvers = {
         targetType: CommentTargetType.mediaItem,
         targetId: parent.id,
         collectionInfo,
+        viewerId: ctx.viewer?.id,
       });
       const totalCount = comments.length > 0 ? comments[0].totalCount : 0;
       return {

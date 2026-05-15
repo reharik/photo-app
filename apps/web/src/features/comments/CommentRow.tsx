@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import { PublicReactionsForCommentContainer } from '../../features/reactions/PublicReactionsForCommentContainer';
 import { ReactionsForCommentContainer } from '../../features/reactions/ReactionsForCommentContainer';
 import { useViewer } from '../../hooks/useViewer';
-import { CommentReplyVM } from '../../viewModels/comment/CommentReplyVM';
-import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
+import { CommentReplyVM, CommentRootVM } from '../../viewModels/';
 import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
@@ -74,10 +73,7 @@ export const CommentRow = ({
           <CommentHeader
             comment={{
               displayName: comment.displayName,
-              createdAt:
-                comment.createdAt instanceof Date
-                  ? comment.createdAt.toISOString()
-                  : comment.createdAt,
+              createdAt: comment.createdAt,
               isEdited: comment.isEdited,
             }}
           />
@@ -101,13 +97,13 @@ export const CommentRow = ({
         {onRefetchComments ? (
           <ReactionsForCommentContainer
             commentId={comment.id}
-            reactionCount={comment.reactionCount}
-            viewerHasReacted={comment.viewerHasReacted}
+            reactionCounts={comment.reactionCounts}
+            viewerReactions={comment.viewerReactions}
             canReact
             onRefetch={onRefetchComments}
           />
         ) : (
-          <PublicReactionsForCommentContainer reactionCount={comment.reactionCount} />
+          <PublicReactionsForCommentContainer reactionCounts={comment.reactionCounts} />
         )}
       </Content>
     </Root>

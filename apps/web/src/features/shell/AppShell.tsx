@@ -17,9 +17,6 @@ type OpenMenu = null | 'nav' | 'profile';
 
 export const AppShell = () => {
   const { viewer } = useOutletContext<{ viewer: { id: string; displayName: string } }>();
-  console.log(`************"here"************`);
-  console.log('here');
-  console.log(`********END "here"************`);
   const location = useLocation();
   const isMobileShell = useMediaQuery(MOBILE_SHELL);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);

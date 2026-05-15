@@ -1,5 +1,18 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-import { ErrorCategory } from './graphqlSmartEnums';
+
+const errorCategoryInput = [
+  'auth',
+  'conflict',
+  'domain',
+  'network',
+  'system',
+  'validation',
+] as const;
+
+export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
+  input: errorCategoryInput,
+  serializeAs: 'value',
+});
 
 const errorAreaInput = [
   'album',

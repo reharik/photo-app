@@ -15,11 +15,10 @@ import mediaItemResolvers from './media/mediaItemResolver.js';
 
 import authorizationMutationResolvers from './authorization/authorizationMutationResolver.js';
 import commentMutationResolvers from './comments/commentMutationResolver.js';
-import reactionMutationResolvers from './reactions/reactionMutationResolver.js';
-import reactionFieldResolvers from './reactions/reactionFieldResolvers.js';
 import publicAlbumResolver from './publicAlbum/publicAlbumResolver.js';
 import publicLinkMutationResolvers from './publicLink/publicLinkMutationResolver.js';
 import publicMediaItemResolver from './publicMediaItem/publicMediaItemResolver.js';
+import reactionMutationResolvers from './reactions/reactionMutationResolver.js';
 import publicAccessResolver from './root/publicAccessResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
 
@@ -37,7 +36,6 @@ export const resolvers = mergeResolvers([
   authorizationMutationResolvers,
   commentMutationResolvers,
   reactionMutationResolvers,
-  reactionFieldResolvers,
   publicLinkMutationResolvers,
   publicAccessResolver,
   publicMediaItemResolver,

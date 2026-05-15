@@ -1,8 +1,15 @@
 import { AppErrorCollection, ReactionTargetType } from '@packages/contracts';
 import { Knex } from 'knex';
 import { fail, ok } from '../../../domain';
-import { CommentRepository, MediaItemRepository, ReactionRepository } from '../../../repositories';
+import {
+  CommentReadRepository,
+  CommentRepository,
+  MediaItemReadRepository,
+  MediaItemRepository,
+  ReactionRepository,
+} from '../../../repositories';
 import type { EntityId, WriteResult } from '../../../types/types';
+import { DBReactionCounts } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type RemoveReactionCommand = {
@@ -22,12 +29,16 @@ type RemoveReactionDeps = {
   reactionRepository: ReactionRepository;
   mediaItemRepository: MediaItemRepository;
   commentRepository: CommentRepository;
+  mediaItemReadRepository: MediaItemReadRepository;
+  commentReadRepository: CommentReadRepository;
   database: Knex;
 };
 
 export const build__RemoveReaction = ({
   reactionRepository,
   mediaItemRepository,
+  mediaItemReadRepository,
+  commentReadRepository,
   commentRepository,
   database,
 }: RemoveReactionDeps): RemoveReaction => {
@@ -37,16 +48,40 @@ export const build__RemoveReaction = ({
       return fail(AppErrorCollection.reaction.ReactionNotFound);
     }
 
-    await reactionRepository.delete(reaction);
+    let updatedReactionCount: DBReactionCounts;
+    if (reaction.targetType() === ReactionTargetType.mediaItem) {
+      const mediaItem = await mediaItemReadRepository.getByIdForAuthorization({
+        mediaItemId: reaction.targetId(),
+      });
+      if (!mediaItem) {
+        return fail(AppErrorCollection.reaction.ReactionTargetNotFound);
+      }
+      updatedReactionCount = mediaItem.reactionCounts;
+    } else {
+      const comment = await commentReadRepository.getByIdForAuthorization({
+        commentId: reaction.targetId(),
+      });
+      if (!comment) {
+        return fail(AppErrorCollection.reaction.ReactionTargetNotFound);
+      }
+      updatedReactionCount = comment.reactionCounts;
+    }
+    updatedReactionCount.total--;
+    const existingCount = updatedReactionCount.byEmoji?.find(
+      (e) => e.emoji === reaction.emoji().value,
+    );
+    if (existingCount) {
+      existingCount.count--;
+    }
 
     await database.transaction(async (trx) => {
       await reactionRepository.delete(reaction, { trx });
       if (reaction.targetType() === ReactionTargetType.mediaItem) {
-        await mediaItemRepository.decrementReactionCount(reaction.targetId(), reaction.emoji(), {
+        await mediaItemRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, {
           trx,
         });
       } else if (reaction.targetType() === ReactionTargetType.comment) {
-        await commentRepository.decrementReactionCount(reaction.targetId(), reaction.emoji(), {
+        await commentRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, {
           trx,
         });
       }

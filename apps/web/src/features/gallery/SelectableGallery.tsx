@@ -1,7 +1,7 @@
 import { ViewerOperation } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
-import { ViewableItemVM } from '../../viewModels/album/AlbumSummaryVM';
+import { ViewableItemVM } from '../../viewModels';
 import { SelectableGalleryItem } from './SelectableGalleryItem';
 
 export type MultiSelectProps = {

@@ -79,6 +79,7 @@ const createInMemoryMediaItemRepository = (): MediaItemRepository => {
     delete: async (item: MediaItem) => {
       byId.delete(item.id());
     },
+    updateReactionCounts: async () => {},
   };
 };
 

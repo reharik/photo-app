@@ -7,6 +7,7 @@ import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { WriteResult } from '../../../types/types';
+import { ReadReactionService } from '../../readServices/readReactionService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
 
@@ -17,11 +18,13 @@ export interface AddAlbumItem extends WriteServiceBase {
 type AddAlbumItemDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  readReactionService: ReadReactionService;
 };
 
 export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
+  readReactionService,
 }: AddAlbumItemDeps): AddAlbumItem => {
   return async (input: AddAlbumItemCommand): Promise<WriteResult<AddAlbumItemResult>> => {
     const { viewerId, albumId, mediaItemId } = input;
@@ -29,7 +32,12 @@ export const build__AddAlbumItem = ({
     if (!r1.success) {
       return r1;
     }
-    const r2 = await loadRequiredReadOnlyMediaItem(mediaItemId, viewerId, mediaItemReadRepository);
+    const r2 = await loadRequiredReadOnlyMediaItem(
+      mediaItemId,
+      viewerId,
+      mediaItemReadRepository,
+      readReactionService,
+    );
     if (!r2.success) {
       return r2;
     }

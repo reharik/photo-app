@@ -20,7 +20,7 @@ export const up = async (knex: Knex): Promise<void> => {
   await knex.raw(`
     ALTER TABLE "reaction"
     ADD CONSTRAINT reaction_target_type_check
-    CHECK (target_type IN ('mediaItem', 'comment'))
+    CHECK (target_type IN ('MEDIA_ITEM', 'COMMENT'))
   `);
 
   await knex.raw(`

@@ -7,6 +7,11 @@
 
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
 
+import { AlbumMemberRole } from './albumMemberRole';
+import { ErrorCategory } from './ContractError';
+import { ReactionEmoji } from './reactionEmojis';
+import { ViewerOperation } from './viewerOperations';
+
 const albumItemSortByInput = {
   createdAt: { column: 'created_at' },
   orderIndex: { column: 'order_index' },
@@ -16,14 +21,6 @@ const albumSortByInput = {
   title: { column: 'title' },
 } as const;
 const commentTargetTypeInput = ['album', 'mediaItem'] as const;
-const errorCategoryInput = [
-  'auth',
-  'conflict',
-  'domain',
-  'network',
-  'system',
-  'validation',
-] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = { createdAt: { column: 'created_at' } } as const;
@@ -44,7 +41,6 @@ const sortDirInput = ['asc', 'desc'] as const;
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
 export type CommentTargetType = Enumeration<typeof CommentTargetType>;
-export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export type MediaAssetKind = Enumeration<typeof MediaAssetKind>;
 export type MediaAssetStatus = Enumeration<typeof MediaAssetStatus>;
 export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
@@ -64,10 +60,6 @@ export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
 });
 export const CommentTargetType = enumeration<typeof commentTargetTypeInput>('CommentTargetType', {
   input: commentTargetTypeInput,
-  serializeAs: 'value',
-});
-export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
-  input: errorCategoryInput,
   serializeAs: 'value',
 });
 export const MediaAssetKind = enumeration<typeof mediaAssetKindInput>('MediaAssetKind', {
@@ -105,6 +97,7 @@ export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
 
 export const enumRegistry = {
   AlbumItemSortBy,
+  AlbumMemberRole,
   AlbumSortBy,
   CommentTargetType,
   ErrorCategory,
@@ -113,7 +106,9 @@ export const enumRegistry = {
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
+  ReactionEmoji,
   ReactionTargetType,
   SharePermission,
   SortDir,
+  ViewerOperation,
 } as const;

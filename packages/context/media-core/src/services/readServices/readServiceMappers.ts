@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { MediaItemProjection, NamespacedMediaItemRow } from './types';
 
 export const mapMediaItemRowToProjection = (
@@ -18,8 +19,9 @@ export const mapMediaItemRowToProjection = (
     title: mediaItem.mediaItemTitle ?? '',
     description: mediaItem.mediaItemDescription,
     takenAt: mediaItem.mediaItemTakenAt,
-    createdAt: mediaItem.mediaItemCreatedAt ?? new Date(),
-    updatedAt: mediaItem.mediaItemUpdatedAt ?? new Date(),
-    reactionCount: mediaItem.mediaItemReactionCount ?? 0,
+    createdAt: mediaItem.mediaItemCreatedAt ?? DateTime.now(),
+    updatedAt: mediaItem.mediaItemUpdatedAt ?? DateTime.now(),
+    reactionCounts: mediaItem.mediaItemReactionCounts,
+    viewerReactions: [],
   };
 };

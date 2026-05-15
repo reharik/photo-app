@@ -1,7 +1,7 @@
 import { ViewerOperation } from '@packages/contracts';
 import styled from 'styled-components';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
-import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
+import { MediaItemSummaryVM } from '../../viewModels/';
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { SelectionTile } from '../gallery/tiles/SelectionTile';

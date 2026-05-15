@@ -1,7 +1,7 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import { MediaItemSummaryVM } from '../../../viewModels/media/MediaItemSummaryVM';
+import { MediaItemSummaryVM } from '../../../viewModels/';
 
 const THUMB_SCALE = 0.65;
 

@@ -22,17 +22,6 @@ type GrantAlbumShareModalProps = {
   onClose: () => void;
 };
 
-const toIsoExpiry = (value: string | undefined): string | undefined => {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return undefined;
-  }
-  return parsed.toISOString();
-};
-
 export const GrantAlbumShareModal = ({
   albumId,
   onSuccessToast,
@@ -64,7 +53,7 @@ export const GrantAlbumShareModal = ({
       permission: values.permission,
       grantedToHandle: values.handle.length > 0 ? values.handle : undefined,
       label: values.label,
-      expiresAt: toIsoExpiry(values.expiresAt),
+      expiresAt: values.expiresAt,
     };
 
     const result = await grantUserAuthorization(
@@ -91,7 +80,7 @@ export const GrantAlbumShareModal = ({
     const input: CreatePublicLinkForAlbumInput = {
       albumId,
       name: values.label,
-      expiresAt: toIsoExpiry(values.expiresAt),
+      expiresAt: values.expiresAt,
     };
 
     const result = await createPublicLinkForAlbum(

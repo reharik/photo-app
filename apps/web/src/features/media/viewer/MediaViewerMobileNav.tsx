@@ -5,6 +5,7 @@ import type { NavigateDirection } from './mediaViewerTypes';
 
 type MediaViewerMobileNavProps = {
   media: ReactNode;
+  belowMedia?: ReactNode;
   onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
@@ -14,6 +15,7 @@ type MediaViewerMobileNavProps = {
 
 export const MediaViewerMobileNav = ({
   media,
+  belowMedia,
   onClose,
   onNavigate,
   canNavigate,
@@ -46,6 +48,7 @@ export const MediaViewerMobileNav = ({
           </TapZonesOverlay>
         </MobileTapStage>
       </SwipeableMediaPane>
+      {belowMedia}
     </MobileNavLayout>
   );
 };

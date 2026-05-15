@@ -1,15 +1,14 @@
+import { SharedWithMedMediaItemVM } from '..';
 import {
   SharedWithMedMediaItemFragment,
   ViewerSharedWithMedMediaItemsQuery,
 } from '../../graphql/generated/types';
-import { mapMediaItemToSummaryVM } from '../media/mapMediaItemToSummaryVM';
-import { SharedWithMedMediaItemVM } from './SharedMediaItemVM';
 
 const mapSharedMediaItemToVM = (
   node: SharedWithMedMediaItemFragment,
 ): SharedWithMedMediaItemVM => ({
   ...node,
-  mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
+  mediaItem: node.mediaItem,
   viewerOperations: node.mediaItem.viewerOperations ?? [],
   viewerIsOwner: false,
 });

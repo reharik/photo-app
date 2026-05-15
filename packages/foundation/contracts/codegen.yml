@@ -11,3 +11,9 @@ generates:
         - ViewerOperation
         - AlbumMemberRole
         - ReactionEmoji
+        - ErrorCategory
+      externalEnums:
+        ViewerOperation: './viewerOperations'
+        AlbumMemberRole: './albumMemberRole'
+        ReactionEmoji: './reactionEmojis'
+        ErrorCategory: './ContractError'

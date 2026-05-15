@@ -1,9 +1,9 @@
 import { MediaAssetKind } from '@packages/contracts';
+import { DateTime } from 'luxon';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { localizeDate } from '../../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import { AlbumSummaryVM } from '../../../viewModels/album/AlbumSummaryVM';
+import { AlbumSummaryVM } from '../../../viewModels/';
 
 export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
   const mediaItem = item.coverMedia;
@@ -20,7 +20,9 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
       <CaptionLink to={`/albums/${item.id}`}>
         <MediaInfo>
           <MediaTitle>{item.title.trim()}</MediaTitle>
-          <MediaMeta>Updated {localizeDate(item.updatedAt)}</MediaMeta>
+          <MediaMeta>
+            Updated {item.updatedAt ? item.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}
+          </MediaMeta>
         </MediaInfo>
       </CaptionLink>
     </>

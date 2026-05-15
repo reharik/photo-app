@@ -16,7 +16,6 @@ import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
 import { Toast } from '../ui/Toast';
-import { mapPublicMediaItemToSummaryVM } from '../viewModels/publicMedia/mapPublicMediaItemToSummaryVM';
 
 export type MediaItemLocationState = {
   mediaGalleryIds?: string[];
@@ -38,7 +37,6 @@ export const PublicMediaItemScreen = () => {
   const { data: mediaItem, content } = getQueryRenderState({
     query,
     select: (data) => data.publicAccess?.mediaItem,
-    map: mapPublicMediaItemToSummaryVM,
   });
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -91,6 +89,8 @@ export const PublicMediaItemScreen = () => {
         mimeType={mediaItem.mimeType}
         displayUrl={displayUrl}
         imageAlt={imageAlt}
+        mediaItemId={mediaItem.id}
+        reactionCounts={mediaItem.reactionCounts}
         onClose={handleDismissScreen}
         showCloseButton={galleryNavigation.enabled}
         onNavigate={handleMediaNavigate}

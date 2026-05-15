@@ -1,17 +1,15 @@
-import type { ReactionTargetType } from '@packages/contracts';
+import type { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { AuditRecord } from '../Entity';
 
 export { ReactionTargetType } from '@packages/contracts';
 
-export const SUPPORTED_REACTION_EMOJIS_V1 = ['❤️'] as const;
-
 export type ReactionProps = {
   targetType: ReactionTargetType;
   targetId: EntityId;
   userId: EntityId;
-  emoji: string;
+  emoji: ReactionEmoji;
 };
 
 export type ReactionRecord = {
@@ -19,7 +17,7 @@ export type ReactionRecord = {
   targetType: ReactionTargetType;
   targetId: EntityId;
   userId: EntityId;
-  emoji: string;
+  emoji: ReactionEmoji;
 } & AuditRecord;
 
 export class Reaction extends AggregateRoot<ReactionRecord> {
@@ -34,17 +32,8 @@ export class Reaction extends AggregateRoot<ReactionRecord> {
     targetType: ReactionTargetType;
     targetId: EntityId;
     userId: EntityId;
-    emoji: string;
+    emoji: ReactionEmoji;
   }): Reaction {
-    if (
-      !SUPPORTED_REACTION_EMOJIS_V1.includes(
-        input.emoji as (typeof SUPPORTED_REACTION_EMOJIS_V1)[number],
-      )
-    ) {
-      throw new Error(
-        `Emoji '${input.emoji}' is not supported in v1. Supported: ${SUPPORTED_REACTION_EMOJIS_V1.join(', ')}`,
-      );
-    }
     return new Reaction(crypto.randomUUID(), input.userId, {
       targetType: input.targetType,
       targetId: input.targetId,
@@ -72,15 +61,7 @@ export class Reaction extends AggregateRoot<ReactionRecord> {
     return this.props.userId;
   }
 
-  emoji(): string {
+  emoji(): ReactionEmoji {
     return this.props.emoji;
-  }
-
-  toRecord(): ReactionRecord {
-    return {
-      id: this.id(),
-      ...this.props,
-      ...this.exportAudit(),
-    };
   }
 }

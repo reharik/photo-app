@@ -15,7 +15,7 @@ import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
-import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
+import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
@@ -25,7 +25,7 @@ import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 
 type RecentMediaSectionProps = {
   nodes: MediaItemSummaryVM[];
-  reloadData: () => void;
+  reloadData: () => Promise<void>;
 };
 
 export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProps) => {
@@ -159,7 +159,11 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
           />
         }
         renderItem={({ item, orderedMediaIds }) => (
-          <MediaItemTile item={item} mediaGalleryIds={orderedMediaIds} />
+          <MediaItemTile
+            item={item}
+            mediaGalleryIds={orderedMediaIds}
+            onReactionsRefetch={reloadData}
+          />
         )}
       />
       {addToAlbumOpen && (

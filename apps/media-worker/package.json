@@ -23,7 +23,7 @@
     "@packages/heic-converter": "0.1.0",
     "@packages/infrastructure": "0.1.0",
     "@packages/media-core": "0.1.0",
-    "@reharik/smart-enum": "^0.4.0",
+    "@reharik/smart-enum": "^0.4.1",
     "@reharik/smart-enum-knex": "^0.0.3",
     "awilix": "^12.1.1",
     "dotenv": "^16.6.1",

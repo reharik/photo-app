@@ -2,12 +2,8 @@ import { DateTime } from 'luxon';
 
 export const isNonEmptyDisplayUrl = (url: string): boolean => url.trim().length > 0;
 
-export const toDatetimeLocalValue = (iso: string | null | undefined): string => {
-  if (iso == null || iso.trim() === '') {
-    return '';
-  }
-  const dt = DateTime.fromISO(iso);
-  if (!dt.isValid) {
+export const toDatetimeLocalValue = (dt?: DateTime): string => {
+  if (!dt || !dt.isValid) {
     return '';
   }
   return dt.toFormat("yyyy-LL-dd'T'HH:mm");
@@ -21,23 +17,15 @@ export const fromDatetimeLocalToIso = (local: string): string | null => {
   return dt.toISO();
 };
 
-export const formatTakenDisplay = (takenAt: string | null | undefined): string => {
-  if (takenAt == null || takenAt.trim() === '') {
+export const formatTakenDisplay = (takenAt?: DateTime): string => {
+  if (!takenAt || !takenAt.isValid) {
     return '—';
   }
-  const dt = DateTime.fromISO(takenAt);
-  if (!dt.isValid) {
-    return '—';
-  }
-  return dt.toLocaleString(DateTime.DATETIME_MED);
+  return takenAt.toLocaleString(DateTime.DATETIME_MED);
 };
 
-export const formatDateOnly = (iso: string | null | undefined): string => {
-  if (iso == null || iso.trim() === '') {
-    return '—';
-  }
-  const dt = DateTime.fromISO(iso);
-  if (!dt.isValid) {
+export const formatDateOnly = (dt?: DateTime): string => {
+  if (!dt || !dt.isValid) {
     return '—';
   }
   return dt.toLocaleString(DateTime.DATE_MED);

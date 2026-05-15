@@ -15,7 +15,6 @@ import {
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
-import { mapMultipleCommentRootsToVMs } from '../../viewModels/comment/mapCommentRootsToVM';
 import { CommentsPanel } from '../comments/CommentsPanel';
 
 const PAGE_SIZE = 50;
@@ -43,11 +42,15 @@ export const CommentsForViewerMediaItemContainer = ({
 
   const { data, content } = getQueryRenderState({
     query,
-    select: (data) => data.viewer?.mediaItem?.comments,
+    select: (data) => ({
+      nodes: data.viewer?.mediaItem?.comments?.nodes ?? [],
+      totalCount: data.viewer?.mediaItem?.comments?.totalCount ?? 0,
+    }),
   });
 
-  const comments = mapMultipleCommentRootsToVMs(data?.nodes ?? []);
-  const titleText = data && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
+  const comments = data?.nodes ?? [];
+  const titleText =
+    data && data.totalCount && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
 
   const mutationErrors: AppError[] = useMemo(
     () => [...addMutation.errors, ...editMutation.errors, ...deleteMutation.errors],

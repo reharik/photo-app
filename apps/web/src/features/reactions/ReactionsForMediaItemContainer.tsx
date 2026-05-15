@@ -7,15 +7,15 @@ import {
   type RemoveReactionMutation,
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../hooks/useAppMutation';
-import { ReactionCountsVM } from '../../viewModels/reactions/ReactionCountsVM';
+import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { ReactionButton } from './ReactionButton';
 
 type Props = {
-  mediaItemId: string;
+  mediaItemId?: string;
   reactionCounts: ReactionCountsVM;
-  viewerReactions: ReactionEmoji[];
-  canReact: boolean;
-  onRefetch: () => Promise<void>;
+  viewerReactions?: ViewerReactionVM[];
+  canReact?: boolean;
+  onRefetch?: () => Promise<void>;
 };
 
 export const ReactionsForMediaItemContainer = ({
@@ -28,7 +28,11 @@ export const ReactionsForMediaItemContainer = ({
   const toggleMutation = useAppMutationState();
 
   const handleToggle = useCallback(async (): Promise<void> => {
-    if (viewerReactions.includes(ReactionEmoji.heart)) {
+    if (!mediaItemId || !onRefetch) {
+      return;
+    }
+    const heartReaction = viewerReactions?.find((r) => r.emoji === ReactionEmoji.heart);
+    if (heartReaction) {
       const result = await toggleMutation.execute(
         {
           mutation: RemoveReactionDocument,
@@ -36,7 +40,7 @@ export const ReactionsForMediaItemContainer = ({
             input: {
               targetType: ReactionTargetType.mediaItem,
               targetId: mediaItemId,
-              id: viewerReactions.find((r) => r === ReactionEmoji.heart)?.id ?? '',
+              id: heartReaction.id,
             },
           },
         },

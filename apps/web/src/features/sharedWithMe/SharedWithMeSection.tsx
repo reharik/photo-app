@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { GalleryConfigItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
-import { SharedWithMedMediaItemVM } from '../../viewModels/sharing/SharedMediaItemVM';
+import { SharedWithMedMediaItemVM } from '../../viewModels/';
 import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
@@ -18,9 +18,13 @@ const noopSelect: MultiSelectProps = {
 
 type SharedWithMeSectionProps = {
   sharedWithMeMediaItems: SharedWithMedMediaItemVM[];
+  onReactionsRefetch: () => Promise<void>;
 };
 
-export const SharedWithMeSection = ({ sharedWithMeMediaItems }: SharedWithMeSectionProps) => {
+export const SharedWithMeSection = ({
+  sharedWithMeMediaItems,
+  onReactionsRefetch,
+}: SharedWithMeSectionProps) => {
   const selectableActions: GalleryConfigItems[] = [];
 
   const { clearSelection, selectionCount } = useMultiSelectGallery({
@@ -46,7 +50,11 @@ export const SharedWithMeSection = ({ sharedWithMeMediaItems }: SharedWithMeSect
             />
           }
           renderItem={({ item, orderedMediaIds: galleryIds }) => (
-            <MediaItemTile item={item.mediaItem} mediaGalleryIds={galleryIds} />
+            <MediaItemTile
+              item={item.mediaItem}
+              mediaGalleryIds={galleryIds}
+              onReactionsRefetch={onReactionsRefetch}
+            />
           )}
         />
       </Block>

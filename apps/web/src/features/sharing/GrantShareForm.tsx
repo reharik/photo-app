@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
 
 import { SharePermission } from '@packages/contracts';
+import { DateTime } from 'luxon';
 import { ShareContactType } from '../../graphql/generated/types';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { FormInput } from '../../ui/FormInput';
@@ -14,7 +15,7 @@ export type GrantShareFormValues = {
   handle: string;
   permission: SharePermission;
   label?: string;
-  expiresAt?: string;
+  expiresAt?: DateTime;
 };
 
 type GrantShareFormProps = {
@@ -45,7 +46,7 @@ export const GrantShareForm = ({
   const [handle, setHandle] = useState('');
   const [permission, setPermission] = useState<SharePermission>(SharePermission.view);
   const [label, setLabel] = useState('');
-  const [expiresAt, setExpiresAt] = useState('');
+  const [expiresAt, setExpiresAt] = useState<DateTime | undefined>();
   const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
 
   const setHandleValue = (value: string) => {
@@ -59,7 +60,7 @@ export const GrantShareForm = ({
     handle: handle.trim(),
     permission,
     label: trimmedOrUndefined(label),
-    expiresAt: trimmedOrUndefined(expiresAt),
+    expiresAt: expiresAt,
   });
 
   const handleSubmit = async (event: React.ChangeEvent<HTMLFormElement>) => {
@@ -121,9 +122,9 @@ export const GrantShareForm = ({
         <FormInput
           type="date"
           label="Expires (optional)"
-          value={expiresAt}
+          value={expiresAt?.toISO() ?? ''}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setExpiresAt(event.target.value)
+            setExpiresAt(DateTime.fromISO(event.target.value))
           }
           disabled={isLoading}
         />

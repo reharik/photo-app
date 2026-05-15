@@ -1,6 +1,6 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
-import { CommentReplyVM } from '../../viewModels/comment/CommentReplyVM';
+import { CommentReplyVM } from '../../viewModels/';
 import { CommentRow } from './CommentRow';
 
 type Props = {

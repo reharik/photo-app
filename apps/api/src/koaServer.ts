@@ -11,6 +11,7 @@ export const build__KoaServer = ({
   rootRouter,
   authMiddleware,
   logger,
+
   graphQLServer,
   errorHandler,
   requestLogger,

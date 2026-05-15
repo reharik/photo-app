@@ -4,6 +4,7 @@
 
 export * from './readServices/mediaGrantService';
 export * from './readServices/mediaItemAuthzService';
+export * from './readServices/readReactionService';
 export * from './readServices/readServiceBaseType';
 export * from './readServices/readServiceMappers';
 export * from './readServices/types';

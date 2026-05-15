@@ -1,7 +1,7 @@
-import { CommentTargetType, ReactionEmoji } from '@packages/contracts';
+import { CommentTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { CommentRecord, ok } from '../..';
+import { CommentRecord, DBReactionCounts, ok } from '../..';
 import { Comment } from '../../domain/Comment/Comment';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import type { EntityId, WriteResult } from '../../types/types';
@@ -9,15 +9,9 @@ import type { EntityId, WriteResult } from '../../types/types';
 export type CommentRepository = {
   getById: (id: EntityId) => Promise<Comment | undefined>;
   save: (comment: Comment, options?: RepoOptions) => Promise<WriteResult<void>>;
-  incrementReactionCount(
+  updateReactionCounts(
     commentId: EntityId,
-    emoji: ReactionEmoji,
-    options?: RepoOptions,
-  ): Promise<void>;
-
-  decrementReactionCount(
-    commentId: EntityId,
-    emoji: ReactionEmoji,
+    reactionCounts: DBReactionCounts,
     options?: RepoOptions,
   ): Promise<void>;
 };
@@ -56,52 +50,19 @@ export const build__CommentRepository = ({
     return ok(undefined);
   };
 
-  const incrementReactionCount = async (
+  const updateReactionCounts = async (
     commentId: EntityId,
-    emoji: ReactionEmoji,
+    reactionCounts: DBReactionCounts,
     options?: RepoOptions,
   ): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
-      await trx('comment')
-        .where({ id: commentId })
-        .update({
-          reaction_counts: trx.raw(
-            `jsonb_set(
-            reaction_counts,
-            ARRAY[?]::text[],
-            to_jsonb(COALESCE((reaction_counts->>?)::int, 0) + 1)
-          )`,
-            [emoji, emoji],
-          ),
-        });
-    });
-  };
-
-  const decrementReactionCount = async (
-    commentId: EntityId,
-    emoji: ReactionEmoji,
-    options?: RepoOptions,
-  ): Promise<void> => {
-    await runInTransaction(database, options, async (trx) => {
-      await trx('comment')
-        .where({ id: commentId })
-        .update({
-          reaction_counts: trx.raw(
-            `jsonb_set(
-              reaction_counts,
-              ARRAY[?]::text[],
-              to_jsonb(GREATEST(COALESCE((reaction_counts->>?)::int, 0) - 1, 0))
-            )`,
-            [emoji, emoji],
-          ),
-        });
+      await trx('comment').where({ id: commentId }).update({ reactionCounts });
     });
   };
 
   return {
     getById,
     save,
-    incrementReactionCount,
-    decrementReactionCount,
+    updateReactionCounts,
   };
 };

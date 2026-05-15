@@ -1,4 +1,6 @@
-import { ApolloClient, HttpLink, InMemoryCache } from '@apollo/client';
+import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from '@apollo/client';
+import { enumRegistry } from '@packages/contracts';
+import { patchSchemaEnumSerializers } from '@reharik/smart-enum/graphql';
 import { withScalars } from 'apollo-link-scalars';
 import { buildSchema } from 'graphql';
 import { DateTime } from 'luxon';
@@ -8,7 +10,26 @@ import sdl from './generated/schema.graphql?raw';
 
 // Build a runtime GraphQLSchema instance from the SDL.
 const schema = buildSchema(sdl);
-
+patchSchemaEnumSerializers(schema, enumRegistry);
+const reactionEmoji = schema.getType('ReactionEmoji');
+if (reactionEmoji) {
+  console.log(
+    '[debug] ReactionEmoji values:',
+    (reactionEmoji as any).getValues().map((v: any) => ({ name: v.name, value: v.value })),
+  );
+  try {
+    console.log('[debug] serialize HEART:', (reactionEmoji as any).serialize('HEART'));
+  } catch (e) {
+    console.log('[debug] serialize HEART threw:', e);
+  }
+  try {
+    // Simulate what apollo-link-scalars might be passing
+    const fake = { __smart_enum_type: 'ReactionEmoji', value: 'HEART', key: 'heart' };
+    console.log('[debug] serialize smart-enum-like:', (reactionEmoji as any).serialize(fake));
+  } catch (e) {
+    console.log('[debug] serialize smart-enum-like threw:', e);
+  }
+}
 const scalarLink = withScalars({
   schema,
   typesMap: {
@@ -23,8 +44,7 @@ const httpLink = new HttpLink({
   uri: `${config.apiBaseUrl}/graphql`,
   credentials: 'include',
 });
-console.log('sdl type:', typeof sdl);
-console.log('sdl first 200 chars:', typeof sdl === 'string' ? sdl.slice(0, 200) : sdl);
+
 export const apolloClient = new ApolloClient({
   link: ApolloLink.from([scalarLink, httpLink]),
   cache: new InMemoryCache({

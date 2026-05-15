@@ -1,5 +1,5 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-import { ErrorCategory } from './graphqlSmartEnums';
+import { ErrorCategory } from './ContractError';
 
 const frontendErrorInput = {
   networkError: {

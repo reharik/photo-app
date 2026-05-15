@@ -1,6 +1,6 @@
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
-import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
+import { CommentRootVM } from '../../viewModels/';
 import { CommentReplyList } from './CommentReplyList';
 import { CommentRow } from './CommentRow';
 import { ReplyComposer } from './ReplyComposer';

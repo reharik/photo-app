@@ -10,7 +10,6 @@ const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         ...args.input,
         viewer: { userId: ctx.viewer.id },
       };
-
       const result = await ctx.writeServices.addReaction(command);
       return writeResultToPayload(result);
     }),
@@ -20,7 +19,6 @@ const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         ...args.input,
         viewer: { userId: ctx.viewer.id },
       };
-
       const result = await ctx.writeServices.removeReaction(command);
       return writeResultToPayload(result);
     }),

@@ -5,6 +5,7 @@ import { NavigateDirection } from './mediaViewerTypes';
 
 type MediaViewerDesktopNavProps = {
   media: ReactNode;
+  belowMedia?: ReactNode;
   onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
@@ -12,6 +13,7 @@ type MediaViewerDesktopNavProps = {
 
 export const MediaViewerDesktopNav = ({
   media,
+  belowMedia,
   onClose,
   onNavigate,
   canNavigate,
@@ -19,7 +21,10 @@ export const MediaViewerDesktopNav = ({
   return (
     <DesktopNavLayout>
       <DesktopMediaStage>
-        <ViewerCardDesktop>{media}</ViewerCardDesktop>
+        <ViewerCardDesktop>
+          {media}
+          {belowMedia}
+        </ViewerCardDesktop>
 
         <DesktopNavOverlayButton
           type="button"

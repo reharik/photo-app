@@ -1,7 +1,7 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
 import { AppError } from '../../domain/errors/errorTypes';
-import { CommentRootVM } from '../../viewModels/comment/CommentRootVM';
+import { CommentRootVM } from '../../viewModels/';
 import { CommentComposer } from './CommentComposer';
 import { CommentThread } from './CommentThread';
 import { CommentsEmptyState } from './CommentsEmptyState';

@@ -6,6 +6,7 @@ import {
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
+  ReactionEmoji,
   SharePermission,
   SortDir,
   ViewerOperation,
@@ -58,7 +59,7 @@ export type NamespacedMediaItemRow = {
   mediaItemTakenAt?: Date;
   mediaItemCreatedAt: Date;
   mediaItemUpdatedAt: Date;
-  mediaItemReactionCount?: number;
+  mediaItemReactionCounts: ReactionCounts;
 };
 
 export type AlbumWithCoverRow = {
@@ -107,6 +108,16 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
+export type ReactionCount = {
+  emoji: ReactionEmoji;
+  count: number;
+};
+
+export type ReactionCounts = {
+  total: number;
+  byEmoji: ReactionCount[];
+};
+
 export type MediaItemListProjection = {
   nodes: MediaItemProjection[];
   pageInfo: PageInfo;
@@ -128,11 +139,17 @@ export interface MediaItemRow {
   takenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-  reactionCount: number;
+  reactionCounts: ReactionCounts;
+  viewerReactions: ViewerReaction[];
 }
-
+export type DBMediaItemRow = Omit<MediaItemRow, 'reactionCounts'> & {
+  reactionCounts: DBReactionCounts;
+};
+export type DBReactionCounts = { total: number; byEmoji: { emoji: string; count: number }[] };
 export interface MediaItemProjection extends MediaItemRow {
   tags: string[];
+  reactionCounts: ReactionCounts;
+  viewerReactions: ViewerReaction[];
 }
 
 export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy> {
@@ -202,7 +219,7 @@ export interface PublicMediaItemRow {
   width?: number;
   height?: number;
   durationSeconds?: number;
-  reactionCount: number;
+  reactionCounts: ReactionCounts;
 }
 
 export interface PublicMediaItemProjection extends PublicMediaItemRow {
@@ -222,8 +239,13 @@ export type CommentRow = {
   updatedAt: Date;
   deletedAt?: Date;
   totalCount: number;
-  reactionCount: number;
+  reactionCounts: ReactionCounts;
 };
 export type CommentGraph = CommentRow & {
   replies: CommentRow[];
+};
+
+export type ViewerReaction = {
+  id: EntityId;
+  emoji: ReactionEmoji;
 };

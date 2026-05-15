@@ -3,7 +3,6 @@ import { useCallback } from 'react';
 import { RecentMediaSection } from '../features/media/RecentMediaSection';
 import { ViewerRecentMediaDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { mapMultipleMediaItemsToSummaryVMs } from '../viewModels/media/mapMediaItemToSummaryVM';
 
 export const HomeScreen = () => {
   const query = useQuery(ViewerRecentMediaDocument, {
@@ -12,14 +11,13 @@ export const HomeScreen = () => {
   });
   const { refetch } = query;
 
-  const reloadData = useCallback((): void => {
-    void refetch();
+  const reloadData = useCallback(async (): Promise<void> => {
+    await refetch();
   }, [refetch]);
 
   const { data: nodes, content } = getQueryRenderState({
     query,
-    select: (data) => data.viewer?.mediaItems.nodes,
-    map: mapMultipleMediaItemsToSummaryVMs,
+    select: (data) => data.viewer?.mediaItems.nodes ?? [],
   });
 
   if (!nodes) {

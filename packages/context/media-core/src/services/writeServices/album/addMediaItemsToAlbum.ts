@@ -9,6 +9,7 @@ import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { EntityId, WriteResult } from '../../../types/types';
+import { ReadReactionService } from '../../readServices/readReactionService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddMediaItemsToAlbumCommand, AddMediaItemsToAlbumResult } from './writeAlbum.types';
 
@@ -19,6 +20,7 @@ export interface AddMediaItemsToAlbum extends WriteServiceBase {
 type AddMediaItemsToAlbumDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  readReactionService: ReadReactionService;
 };
 
 const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
@@ -37,6 +39,7 @@ const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
 export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
+  readReactionService,
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {
   return async (
     input: AddMediaItemsToAlbumCommand,
@@ -77,6 +80,7 @@ export const build__AddMediaItemsToAlbum = ({
       mediaItemIds,
       viewerId,
       mediaItemReadRepository,
+      readReactionService,
     );
     if (!rMedias.success) {
       return rMedias;

@@ -1,21 +1,23 @@
-import { ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
 
 export type ReactionReadRepository = {
   countForTarget: (args: { targetType: ReactionTargetType; targetId: EntityId }) => Promise<number>;
   viewerReactionsForTargets: (args: {
-    userId: EntityId;
+    viewerId: EntityId;
     targetType: ReactionTargetType;
     targetIds: EntityId[];
-  }) => Promise<Map<EntityId, string[]>>;
+  }) => Promise<DbReactionRow[]>;
 };
 
 type ReactionReadRepositoryDeps = { database: Knex };
 
-type DbReactionRow = {
-  target_id: EntityId;
-  emoji: string;
+export type DbReactionRow = {
+  id: EntityId;
+  targetId: EntityId;
+  emoji: ReactionEmoji;
 };
 
 export const build__ReactionReadRepository = ({
@@ -39,36 +41,26 @@ export const build__ReactionReadRepository = ({
   },
 
   viewerReactionsForTargets: async ({
-    userId,
+    viewerId,
     targetType,
     targetIds,
   }: {
-    userId: EntityId;
+    viewerId: EntityId;
     targetType: ReactionTargetType;
     targetIds: EntityId[];
-  }): Promise<Map<EntityId, string[]>> => {
-    const result = new Map<EntityId, string[]>();
-    for (const id of targetIds) {
-      result.set(id, []);
-    }
-
+  }): Promise<DbReactionRow[]> => {
     if (targetIds.length === 0) {
-      return result;
+      return [];
     }
 
-    const rows = await database('reaction')
-      .select<Pick<DbReactionRow, 'target_id' | 'emoji'>[]>('target_id', 'emoji')
-      .where('user_id', userId)
-      .where('target_type', targetType)
-      .whereIn('target_id', targetIds);
-
-    for (const row of rows) {
-      const list = result.get(row.target_id);
-      if (list) {
-        list.push(row.emoji);
-      }
-    }
-
-    return result;
+    return withEnumRevival(
+      database<DbReactionRow>('reaction')
+        .select<DbReactionRow[]>()
+        .where('user_id', viewerId)
+        .where('target_type', targetType.value)
+        .whereIn('target_id', targetIds),
+      { reactionEmoji: ReactionEmoji },
+      { strict: true },
+    );
   },
 });

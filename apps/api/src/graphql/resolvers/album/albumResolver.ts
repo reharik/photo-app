@@ -37,6 +37,7 @@ const albumResolvers: Resolvers = {
         targetType: CommentTargetType.album,
         targetId: parent.id,
         collectionInfo,
+        viewerId: ctx.viewer?.id,
       });
     }),
   },

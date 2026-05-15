@@ -1,7 +1,10 @@
+import { ReactionTargetType } from '@packages/contracts';
 import { MediaStorage } from '../../../application/media/MediaStorage';
 import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
 import { EntityId } from '../../../types/types';
+import { ReadReactionService } from '../readReactionService';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import {
   AuthorizationProjection,
@@ -25,12 +28,15 @@ export interface ViewerMediaItemReadServiceFactory extends ReadServiceFactoryBas
 type ViewerMediaItemReadServiceFactoryDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
   authorizationReadRepository: AuthorizationReadRepository;
+  reactionReadRepository: ReactionReadRepository;
   mediaStorage: MediaStorage;
+  readReactionService: ReadReactionService;
 };
 
 export const build__ViewerMediaItemReadServiceFactory = ({
   mediaItemReadRepository,
   authorizationReadRepository,
+  readReactionService,
 }: ViewerMediaItemReadServiceFactoryDeps): ViewerMediaItemReadServiceFactory => {
   return ({ viewerId }: { viewerId: string }) => {
     const withTags = async (rows: MediaItemRow[]): Promise<MediaItemProjection[]> => {
@@ -45,10 +51,15 @@ export const build__ViewerMediaItemReadServiceFactory = ({
       listMediaItems: async (
         collectionInfo: MediaItemCollectionInfo,
       ): Promise<MediaItemListProjection> => {
-        const mediaItems = await mediaItemReadRepository.listForViewer({
+        const dbMediaItems = await mediaItemReadRepository.listForViewer({
           viewerId,
           collectionInfo,
         });
+        const mediaItems = await readReactionService.withViewerReactions(
+          dbMediaItems,
+          ReactionTargetType.mediaItem,
+          viewerId,
+        );
         const nodes = await withTags(mediaItems);
         return {
           nodes,
@@ -64,7 +75,13 @@ export const build__ViewerMediaItemReadServiceFactory = ({
         if (!row) {
           return undefined;
         }
-        const [projection] = await withTags([row]);
+        const mediaItem = await readReactionService.withViewerReactions(
+          [row],
+          ReactionTargetType.mediaItem,
+          viewerId,
+        );
+
+        const [projection] = await withTags(mediaItem);
         return projection;
       },
       listGrantedAuthorizationsForOwnedMediaItem: async (

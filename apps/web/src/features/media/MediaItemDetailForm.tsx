@@ -4,22 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import styled, { createGlobalStyle, css } from 'styled-components';
-import {
-  fromDatetimeLocalToIso,
-  toDatetimeLocalValue,
-} from '../../domain/formatters/mediaItemMetaFormat';
 import { UpdateMediaItemDetailsDocument } from '../../graphql/generated/types';
-import type { MediaItemDetailVM } from '../../viewModels/media/MediaItemDetailVM';
-
-const takenLocalFormat = "yyyy-LL-dd'T'HH:mm";
-
-const parseDraftTaken = (local: string): Date | undefined => {
-  if (local.trim() === '') {
-    return undefined;
-  }
-  const dt = DateTime.fromFormat(local.trim(), takenLocalFormat);
-  return dt.isValid ? dt.toJSDate() : undefined;
-};
+import type { MediaItemDetailVM } from '../../viewModels/';
 
 export type MediaItemDetailFormProps = {
   mediaItem: MediaItemDetailVM;
@@ -39,7 +25,7 @@ export const MediaItemDetailForm = ({
 
   const [draftTitle, setDraftTitle] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
-  const [draftTakenLocal, setDraftTakenLocal] = useState('');
+  const [draftTakenLocal, setDraftTakenLocal] = useState<DateTime | undefined>();
   const [saveError, setSaveError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -48,7 +34,7 @@ export const MediaItemDetailForm = ({
     }
     setDraftTitle(mediaItem.title?.trim() ?? '');
     setDraftDescription(mediaItem.description?.trim() ?? '');
-    setDraftTakenLocal(toDatetimeLocalValue(mediaItem.takenAt));
+    setDraftTakenLocal(mediaItem.takenAt);
     setSaveError(undefined);
   }, [mediaItem]);
 
@@ -59,12 +45,7 @@ export const MediaItemDetailForm = ({
 
   const saveEditDetails = useCallback(async (): Promise<void> => {
     setSaveError(undefined);
-    const takenIso =
-      draftTakenLocal.trim() === '' ? undefined : fromDatetimeLocalToIso(draftTakenLocal);
-    if (draftTakenLocal.trim() !== '' && takenIso == null) {
-      setSaveError('Taken date is not valid.');
-      return;
-    }
+
     try {
       const result = await updateMediaItemDetails({
         variables: {
@@ -72,7 +53,7 @@ export const MediaItemDetailForm = ({
             mediaItemId: mediaItem.id,
             title: draftTitle.trim() === '' ? undefined : draftTitle.trim(),
             description: draftDescription.trim() === '' ? undefined : draftDescription.trim(),
-            takenAt: takenIso ?? undefined,
+            takenAt: draftTakenLocal,
           },
         },
       });
@@ -101,7 +82,7 @@ export const MediaItemDetailForm = ({
     return (
       draftTitle.trim() === (mediaItem.title?.trim() ?? '') &&
       draftDescription.trim() === (mediaItem.description?.trim() ?? '') &&
-      draftTakenLocal === toDatetimeLocalValue(mediaItem.takenAt)
+      draftTakenLocal === mediaItem.takenAt
     );
   }, [draftDescription, draftTakenLocal, draftTitle, mediaItem]);
 
@@ -136,13 +117,13 @@ export const MediaItemDetailForm = ({
           <DatePicker
             popperClassName="media-detail-form-datepicker-popper"
             customInput={<FormTextInput id="media-detail-taken" autoComplete="off" />}
-            selected={parseDraftTaken(draftTakenLocal)}
+            selected={draftTakenLocal?.toJSDate()}
             onChange={(date: Date | null) => {
               if (date == null) {
-                setDraftTakenLocal('');
+                setDraftTakenLocal(undefined);
                 return;
               }
-              setDraftTakenLocal(DateTime.fromJSDate(date).toFormat(takenLocalFormat));
+              setDraftTakenLocal(DateTime.fromJSDate(date));
             }}
             showTimeSelect
             timeIntervals={60}

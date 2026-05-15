@@ -1,4 +1,3 @@
-import type { ContractError } from '@packages/contracts';
 import { ViewerOperation } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
@@ -15,7 +14,7 @@ export const tryAppendOneMediaToAlbum = (
   mediaItem: MediaItemRow,
   mediaItemId: EntityId,
   viewerId: EntityId,
-): WriteResult<AlbumItem, ContractError> => {
+): WriteResult<AlbumItem> => {
   const r1 = ensureMediaItemOwnedByViewer(mediaItem.ownerId, viewerId);
   if (!r1.success) {
     return r1;

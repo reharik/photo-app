@@ -4,11 +4,11 @@ import {
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
-  ReactionEmoji,
   SharePermission,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
+import { DBReactionCounts } from '../..';
 import { buildMediaItemBaseStorageKey } from '../../application/media/MediaStorage';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import type { CommentRecord } from '../../domain/Comment/Comment';
@@ -26,15 +26,9 @@ export type MediaItemRepository = {
   getById: (id: EntityId) => Promise<MediaItem | undefined>;
   save: (mediaItem: MediaItem, options?: RepoOptions) => Promise<void>;
   delete: (mediaItem: MediaItem, options?: RepoOptions) => Promise<void>;
-  incrementReactionCount(
+  updateReactionCounts(
     mediaItemId: EntityId,
-    emoji: ReactionEmoji,
-    options?: RepoOptions,
-  ): Promise<void>;
-
-  decrementReactionCount(
-    mediaItemId: EntityId,
-    emoji: ReactionEmoji,
+    reactionCounts: DBReactionCounts,
     options?: RepoOptions,
   ): Promise<void>;
 };
@@ -208,45 +202,13 @@ export const build__MediaItemRepository = ({
       return await trx<MediaItemRecord>('mediaItem').where({ id: mediaItem.id() }).delete();
     });
   };
-  const incrementReactionCount = async (
+  const updateReactionCounts = async (
     mediaItemId: EntityId,
-    emoji: ReactionEmoji,
+    reactionCounts: DBReactionCounts,
     options?: RepoOptions,
   ): Promise<void> => {
     await runInTransaction(database, options, async (trx) => {
-      await trx('comment')
-        .where({ id: mediaItemId })
-        .update({
-          reaction_counts: trx.raw(
-            `jsonb_set(
-            reaction_counts,
-            ARRAY[?]::text[],
-            to_jsonb(COALESCE((reaction_counts->>?)::int, 0) + 1)
-          )`,
-            [emoji, emoji],
-          ),
-        });
-    });
-  };
-
-  const decrementReactionCount = async (
-    mediaItemId: EntityId,
-    emoji: ReactionEmoji,
-    options?: RepoOptions,
-  ): Promise<void> => {
-    await runInTransaction(database, options, async (trx) => {
-      await trx('comment')
-        .where({ id: mediaItemId })
-        .update({
-          reaction_counts: trx.raw(
-            `jsonb_set(
-              reaction_counts,
-              ARRAY[?]::text[],
-              to_jsonb(GREATEST(COALESCE((reaction_counts->>?)::int, 0) - 1, 0))
-            )`,
-            [emoji, emoji],
-          ),
-        });
+      await trx('mediaItem').where({ id: mediaItemId }).update({ reactionCounts });
     });
   };
 
@@ -254,7 +216,6 @@ export const build__MediaItemRepository = ({
     getById,
     save,
     delete: deleteMediaItem,
-    incrementReactionCount,
-    decrementReactionCount,
+    updateReactionCounts,
   };
 };

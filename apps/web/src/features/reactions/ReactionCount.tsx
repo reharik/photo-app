@@ -1,7 +1,7 @@
 import { ReactionEmoji } from '@packages/contracts';
 import { JSX } from 'react';
 import styled from 'styled-components';
-import { ReactionCountsVM } from '../../viewModels/reactions/ReactionCountsVM';
+import { ReactionCountsVM } from '../../viewModels/';
 
 type Props = {
   emoji: ReactionEmoji;
@@ -12,7 +12,7 @@ export const ReactionCount = ({ emoji, reactionCounts }: Props): JSX.Element => 
   const count = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
   return (
     <Root>
-      <Icon aria-hidden>{emoji.hasReaction(count > 0).icon}</Icon>
+      <Icon aria-hidden>{emoji.hasReaction(count > 0)}</Icon>
       {count > 0 ? <Count>{count}</Count> : null}
     </Root>
   );

@@ -4,12 +4,17 @@ import type { Knex } from 'knex';
 import { CommentRow } from '../../services/readServices/types';
 import type { EntityId, PageInfo } from '../../types/types';
 
+export type DBCommentRow = Omit<CommentRow, 'reactionCounts'> & {
+  reactionCounts: { total: number; byEmoji: { emoji: string; count: number }[] };
+};
+
 export type CommentReadRepository = {
   getCommentsForTarget: (args: {
     targetType: CommentTargetType;
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
-  }) => Promise<CommentRow[]>;
+  }) => Promise<DBCommentRow[]>;
+  getByIdForAuthorization: (args: { commentId: EntityId }) => Promise<DBCommentRow | undefined>;
 };
 
 type CommentReadRepositoryDeps = { database: Knex };
@@ -26,7 +31,7 @@ const commentSelectColumns = [
   'created_at',
   'updated_at',
   'deleted_at',
-  'reaction_count',
+  'reaction_counts',
 ];
 
 export const build__CommentReadRepository = ({
@@ -40,7 +45,7 @@ export const build__CommentReadRepository = ({
     targetType: CommentTargetType;
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
-  }): Promise<CommentRow[]> => {
+  }): Promise<DBCommentRow[]> => {
     const { pageInfo } = collectionInfo;
     return withEnumRevival(
       database('comment')
@@ -52,6 +57,20 @@ export const build__CommentReadRepository = ({
         .limit(pageInfo.limit)
         .offset(pageInfo.offset),
 
+      { targetType: CommentTargetType },
+      { strict: true },
+    );
+  },
+  getByIdForAuthorization: async ({
+    commentId,
+  }: {
+    commentId: EntityId;
+  }): Promise<DBCommentRow | undefined> => {
+    return withEnumRevival(
+      database('comment')
+        .select(...commentSelectColumns)
+        .where('id', commentId)
+        .first<DBCommentRow>(...commentSelectColumns),
       { targetType: CommentTargetType },
       { strict: true },
     );

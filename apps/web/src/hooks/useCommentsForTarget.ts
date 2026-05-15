@@ -7,8 +7,7 @@ import {
   CommentsForViewerAlbumDocument,
   CommentsForViewerMediaItemDocument,
 } from '../graphql/generated/types';
-import { CommentRootVM } from '../viewModels/comment/CommentRootVM';
-import { mapMultipleCommentRootsToVMs } from '../viewModels/comment/mapCommentRootsToVM';
+import { CommentRootVM } from '../viewModels/';
 import { getQueryRenderState } from './getQueryRenderState';
 
 export type UseCommentsForTargetResult = {
@@ -69,7 +68,6 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: viewerMediaItemQuery,
       select: (data) => data?.viewer?.mediaItem?.comments?.nodes,
-      map: mapMultipleCommentRootsToVMs,
     });
   }
 
@@ -77,7 +75,6 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: viewerAlbumQuery,
       select: (data) => data?.viewer?.album?.comments?.nodes,
-      map: mapMultipleCommentRootsToVMs,
     });
   }
 
@@ -85,13 +82,11 @@ export const useCommentsForTarget = ({
     return getQueryRenderState({
       query: publicMediaItemQuery,
       select: (data) => data?.publicAccess?.mediaItem?.comments?.nodes,
-      map: mapMultipleCommentRootsToVMs,
     });
   }
 
   return getQueryRenderState({
     query: publicAlbumQuery,
     select: (data) => data?.publicAccess?.album?.comments?.nodes,
-    map: mapMultipleCommentRootsToVMs,
   });
 };

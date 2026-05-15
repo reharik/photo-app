@@ -16,9 +16,6 @@ import {
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
 import { Toast } from '../ui/Toast';
-import { mapAlbumItemToSummaryVM } from '../viewModels/album/mapAlbumItemToSummaryVM';
-import { mapAlbumToSummaryVM } from '../viewModels/album/mapAlbumToSummaryVM';
-import { mapMediaItemToSummaryVM } from '../viewModels/media/mapMediaItemToSummaryVM';
 
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
@@ -57,17 +54,17 @@ export const AlbumScreen = () => {
       return [];
     }
 
-    return mediaItems
-      .filter((item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id))
-      .map(mapMediaItemToSummaryVM);
+    return mediaItems.filter(
+      (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
+    );
   }, [mediaItemsForPickerQuery.data, data]);
 
   if (!data) {
     return content;
   }
 
-  const album = mapAlbumToSummaryVM(data);
-  const albumItems = data.items.nodes.map(mapAlbumItemToSummaryVM) ?? [];
+  const album = { ...data, itemCount: data.items?.nodes?.length ?? 0 };
+  const albumItems = data.items.nodes ?? [];
 
   const submitAddToAlbum = async (newAlbumItemIds: string[]) => {
     const result = await addToAlbumMutation.execute(

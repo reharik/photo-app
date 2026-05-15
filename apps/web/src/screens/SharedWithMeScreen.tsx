@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client/react';
+import { useCallback } from 'react';
 import styled from 'styled-components';
 import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
 import { ViewerSharedWithMedMediaItemsDocument } from '../graphql/generated/types';
@@ -11,9 +12,13 @@ export const SharedWithMeScreen = () => {
     nextFetchPolicy: 'cache-first',
   });
 
+  const onReactionsRefetch = useCallback(async (): Promise<void> => {
+    await query.refetch();
+  }, [query]);
+
   const { data: sharedWithMeMediaItems, content } = getQueryRenderState({
     query,
-    select: (data) => data.viewer?.sharedWithMeMediaItems,
+    select: (data) => data.viewer?.sharedWithMeMediaItems ?? [],
     map: mapSharedMediaItemsToVMs,
   });
 
@@ -23,7 +28,10 @@ export const SharedWithMeScreen = () => {
 
   return (
     <Container>
-      <SharedWithMeSection sharedWithMeMediaItems={sharedWithMeMediaItems} />
+      <SharedWithMeSection
+        sharedWithMeMediaItems={sharedWithMeMediaItems}
+        onReactionsRefetch={onReactionsRefetch}
+      />
     </Container>
   );
 };

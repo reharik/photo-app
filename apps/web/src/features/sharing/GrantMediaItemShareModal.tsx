@@ -21,17 +21,6 @@ type GrantMediaItemShareModalProps = {
   onClose: () => void;
 };
 
-const toIsoExpiry = (value: string | undefined): string | undefined => {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return undefined;
-  }
-  return parsed.toISOString();
-};
-
 const buildTitle = (count: number): string =>
   count === 1 ? 'Share photo' : `Share ${count} photos`;
 
@@ -66,7 +55,6 @@ export const GrantMediaItemShareModal = ({
     }
 
     const grantedToHandle = values.handle.length > 0 ? values.handle : undefined;
-    const expiresAt = toIsoExpiry(values.expiresAt);
     const permission = values.permission;
 
     const input: GrantUserAuthorizationsForMediaItemsInput = {
@@ -74,7 +62,7 @@ export const GrantMediaItemShareModal = ({
       permission,
       grantedToHandle,
       label: values.label,
-      expiresAt,
+      expiresAt: values.expiresAt,
     };
     const result = await grantUserAuthorization(
       {
@@ -111,7 +99,7 @@ export const GrantMediaItemShareModal = ({
     const input: CreatePublicLinkForMediaItemsInput = {
       mediaItemIds,
       name: values.label,
-      expiresAt: toIsoExpiry(values.expiresAt),
+      expiresAt: values.expiresAt,
     };
     const result = await createPublicLinkForMediaItems(
       {

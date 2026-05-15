@@ -1,4 +1,4 @@
-import { ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { Reaction, ReactionRecord } from '../../domain/Reaction/Reaction';
@@ -19,14 +19,14 @@ export const build__ReactionRepository = ({
   getById: async (id: EntityId): Promise<Reaction | undefined> => {
     const reaction = await withEnumRevival(
       database<ReactionRecord>('reaction').where({ id }).first(),
-      { reactionTargetType: ReactionTargetType },
+      { targetType: ReactionTargetType, emoji: ReactionEmoji },
       { strict: true },
     );
     return reaction ? Reaction.rehydrate(reaction) : undefined;
   },
 
   save: async (reaction: Reaction, options?: RepoOptions): Promise<void> => {
-    const record = reaction.toRecord();
+    const record = reaction.toPersistence();
     await runInTransaction(database, options, async (trx) => {
       await trx('reaction')
         .insert(record)

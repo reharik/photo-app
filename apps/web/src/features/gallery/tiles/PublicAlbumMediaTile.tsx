@@ -1,10 +1,10 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
-import { localizeDate } from '../../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
 
+import { DateTime } from 'luxon';
 export const PublicAlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM }) => {
   const mediaItem = item.mediaItem;
   const { token } = useParams<{ token: string }>();
@@ -21,7 +21,9 @@ export const PublicAlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM
       <CaptionLink to={`/media/${mediaItem.id}`}>
         <MediaInfo>
           <MediaTitle>{mediaItem.title?.trim() ?? ''}</MediaTitle>
-          <MediaMeta>{mediaItem.createdAt ? localizeDate(mediaItem.createdAt) : ''}</MediaMeta>
+          <MediaMeta>
+            {mediaItem.createdAt ? mediaItem.createdAt.toLocaleString(DateTime.DATE_MED) : ''}
+          </MediaMeta>
         </MediaInfo>
       </CaptionLink>
     </>

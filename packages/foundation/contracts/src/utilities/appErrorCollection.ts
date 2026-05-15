@@ -1,5 +1,5 @@
 import { getSubsetByProp } from '@reharik/smart-enum';
-import { ContractError, ErrorArea } from './ContractError';
+import { ContractError, ErrorArea } from '../enums/ContractError';
 
 const getAlbumErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.album);
 const getMediaItemErrors = () => getSubsetByProp(ContractError, 'area', ErrorArea.mediaItem);

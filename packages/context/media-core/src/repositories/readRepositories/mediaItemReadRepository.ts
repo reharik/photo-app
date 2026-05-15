@@ -1,7 +1,7 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { MediaItemCollectionInfo, MediaItemRow } from '../../services/readServices/types';
+import { DBMediaItemRow, MediaItemCollectionInfo } from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
 
 export type MediaItemReadRepository = {
@@ -10,31 +10,31 @@ export type MediaItemReadRepository = {
     mediaItemId,
   }: {
     mediaItemId: EntityId;
-  }) => Promise<MediaItemRow | undefined>;
+  }) => Promise<DBMediaItemRow | undefined>;
   getForViewer: ({
     mediaItemId,
     viewerId,
   }: {
     mediaItemId: EntityId;
     viewerId: EntityId;
-  }) => Promise<MediaItemRow | undefined>;
+  }) => Promise<DBMediaItemRow | undefined>;
   getManyForViewer: ({
     mediaItemIds,
     viewerId,
   }: {
     mediaItemIds: EntityId[];
     viewerId: EntityId;
-  }) => Promise<MediaItemRow[]>;
+  }) => Promise<DBMediaItemRow[]>;
   listForViewer(args: {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
-  }): Promise<MediaItemRow[]>;
+  }): Promise<DBMediaItemRow[]>;
   listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<Map<EntityId, string[]>>;
 };
 
 type MediaItemReadRepositoryDeps = { database: Knex };
 
-const mediaItemRowFields = [
+const DBmediaItemRowFields = [
   'media_item.id',
   'media_item.owner_id',
   'media_item.kind',
@@ -52,7 +52,7 @@ const mediaItemRowFields = [
   'media_item.updated_at',
   'media_item.created_by',
   'media_item.updated_by',
-  'media_item.reaction_count',
+  'media_item.reaction_counts',
 ];
 
 export const build__MediaItemReadRepository = ({
@@ -62,10 +62,10 @@ export const build__MediaItemReadRepository = ({
     mediaItemId,
   }: {
     mediaItemId: EntityId;
-  }): Promise<MediaItemRow | undefined> => {
-    const row = await database<MediaItemRow>('mediaItem')
+  }): Promise<DBMediaItemRow | undefined> => {
+    const row = await database<DBMediaItemRow>('mediaItem')
       .where({ id: mediaItemId })
-      .first<MediaItemRow>(...mediaItemRowFields);
+      .first<DBMediaItemRow>(...DBmediaItemRowFields);
 
     return row;
   },
@@ -75,11 +75,11 @@ export const build__MediaItemReadRepository = ({
   }: {
     mediaItemId: EntityId;
     viewerId: EntityId;
-  }): Promise<MediaItemRow | undefined> => {
+  }): Promise<DBMediaItemRow | undefined> => {
     const mediaItem = await withEnumRevival(
-      database<MediaItemRow>('mediaItem')
+      database<DBMediaItemRow>('mediaItem')
         .where('id', mediaItemId)
-        .first<MediaItemRow>(...mediaItemRowFields),
+        .first<DBMediaItemRow>(...DBmediaItemRowFields),
       {
         kind: MediaKind,
         status: MediaItemStatus,
@@ -103,12 +103,12 @@ export const build__MediaItemReadRepository = ({
   }: {
     mediaItemIds: EntityId[];
     viewerId: EntityId;
-  }): Promise<MediaItemRow[]> => {
+  }): Promise<DBMediaItemRow[]> => {
     const rows = await withEnumRevival(
-      database<MediaItemRow>('mediaItem')
+      database<DBMediaItemRow>('mediaItem')
         .whereIn('id', mediaItemIds)
         .andWhere('ownerId', viewerId)
-        .select<MediaItemRow[]>(...mediaItemRowFields),
+        .select<DBMediaItemRow[]>(...DBmediaItemRowFields),
       {
         kind: MediaKind,
         status: MediaItemStatus,
@@ -124,14 +124,14 @@ export const build__MediaItemReadRepository = ({
   }: {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
-  }): Promise<MediaItemRow[]> => {
+  }): Promise<DBMediaItemRow[]> => {
     const rows = await withEnumRevival(
-      database<MediaItemRow>('mediaItem')
+      database<DBMediaItemRow>('mediaItem')
         .where({ ownerId: viewerId })
         .andWhere('status', MediaItemStatus.ready.value)
         .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
         .orderBy('id', 'asc') // tie-breaker
-        .select<MediaItemRow[]>(...mediaItemRowFields)
+        .select<DBMediaItemRow[]>(...DBmediaItemRowFields)
         .limit(collectionInfo.pageInfo.limit + 1)
         .offset(collectionInfo.pageInfo.offset),
       {

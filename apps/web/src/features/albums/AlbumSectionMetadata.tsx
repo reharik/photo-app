@@ -1,10 +1,11 @@
 import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { DateTime } from 'luxon';
 import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { AppModal } from '../../ui/AppModal';
-import { MediaItemSummaryVM } from '../../viewModels/media/MediaItemSummaryVM';
+import { MediaItemSummaryVM } from '../../viewModels/';
 import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
 import { SingleSelectionTile } from '../gallery/tiles/SingleSelectionTile';
 
@@ -22,7 +23,7 @@ export type MinimalAlbumSummaryVM = {
   title?: string;
   coverMedia?: MinimalMediaItemSummaryVM;
   itemCount: number;
-  updatedAt?: string;
+  updatedAt?: DateTime;
   viewerIsOwner?: boolean;
 };
 
@@ -30,7 +31,7 @@ export type MinimalMediaItemSummaryVM = {
   id: string;
   title?: string;
   kind: MediaKind;
-  createdAt?: string;
+  createdAt?: DateTime;
   status?: MediaItemStatus;
 };
 
@@ -38,7 +39,7 @@ export type MinimalAlbumItemSummaryVM = {
   id: string;
   mediaItem: MinimalMediaItemSummaryVM;
   orderIndex: string;
-  updatedAt?: string;
+  updatedAt?: DateTime;
   viewerIsOwner?: boolean;
 };
 
@@ -78,7 +79,7 @@ export const AlbumSectionMetadata = ({
         <AlbumInfo $compact={metaCompact}>
           {metaCompact ? (
             <AlbumCompactSummary>
-              {`${count} media items ${album.updatedAt ? `· Updated ${localizeDate(album.updatedAt)}` : ''}`}
+              {`${count} media items ${album.updatedAt ? `· Updated ${album.updatedAt.isValid ? album.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}` : ''}`}
             </AlbumCompactSummary>
           ) : (
             <>
@@ -87,7 +88,14 @@ export const AlbumSectionMetadata = ({
                 <Stat>{count} media items</Stat>
               </AlbumStats>
               {album.updatedAt && (
-                <AlbumDescription>Updated {localizeDate(album.updatedAt)}</AlbumDescription>
+                <AlbumDescription>
+                  Updated{' '}
+                  {localizeDate(
+                    album.updatedAt.isValid
+                      ? album.updatedAt.toLocaleString(DateTime.DATE_MED)
+                      : '',
+                  )}
+                </AlbumDescription>
               )}
             </>
           )}

@@ -10,7 +10,6 @@ import {
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
 import { AppErrorPanel } from '../ui/AppErrorPanel';
-import { mapMultipleAlbumsToAlbumSummaryVMs } from '../viewModels/album/mapAlbumToSummaryVM';
 
 export const AlbumsListScreen = () => {
   const navigate = useNavigate();
@@ -23,8 +22,7 @@ export const AlbumsListScreen = () => {
 
   const { data: albums, content } = getQueryRenderState({
     query,
-    select: (data) => data.viewer?.albums.nodes,
-    map: mapMultipleAlbumsToAlbumSummaryVMs,
+    select: (data) => data.viewer?.albums.nodes ?? [],
   });
 
   if (!albums) {

@@ -74,6 +74,8 @@ const mediaItemSelectColumns = [
   'mediaItem.takenAt as mediaItemTakenAt',
   'mediaItem.createdAt as mediaItemCreatedAt',
   'mediaItem.updatedAt as mediaItemUpdatedAt',
+  'mediaItem.reactionCounts as mediaItemReactionCounts',
+  'mediaItem.viewerReactions as mediaItemViewerReactions',
 ];
 
 const albumWithCoverSelectColumns = [

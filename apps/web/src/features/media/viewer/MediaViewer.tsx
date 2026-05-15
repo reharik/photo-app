@@ -3,10 +3,13 @@ import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react'
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaSwipeNavigation } from '../../../hooks/useMediaSwipeNavigation';
+import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
+import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
 import { MediaRenderer } from './MediaRenderer';
 import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobileNav } from './MediaViewerMobileNav';
 import { MediaViewerSingle } from './MediaViewerSingle';
+import { ViewerBelowMediaSlot } from './MediaViewerStyles';
 import type { NavigateDirection } from './mediaViewerTypes';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
@@ -17,6 +20,12 @@ export type MediaViewerProps = {
   mimeType: string;
   displayUrl: string;
   imageAlt: string;
+  mediaItemId?: string;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions?: ViewerReactionVM[];
+  canReact?: boolean;
+  onRefetch?: () => Promise<void>;
+  /** When false, hides the reactions strip below the media. */
   showCloseButton?: boolean;
   onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
@@ -39,6 +48,11 @@ export const MediaViewer = ({
   mimeType,
   displayUrl,
   imageAlt,
+  mediaItemId,
+  reactionCounts,
+  viewerReactions,
+  canReact,
+  onRefetch,
   onClose,
   showCloseButton = true,
   onNavigate,
@@ -102,14 +116,32 @@ export const MediaViewer = ({
     </MediaChrome>
   );
 
+  const belowMediaSlot = (
+    <ViewerBelowMediaSlot>
+      <ReactionsForMediaItemContainer
+        mediaItemId={mediaItemId}
+        reactionCounts={reactionCounts}
+        viewerReactions={viewerReactions}
+        canReact={canReact}
+        onRefetch={onRefetch}
+      />
+    </ViewerBelowMediaSlot>
+  );
+
   return (
     <ViewerRoot>
       <ViewerShell>
         {!showNavControls ? (
-          <MediaViewerSingle media={media} onClose={onClose} showCloseButton={showCloseButton} />
+          <MediaViewerSingle
+            media={media}
+            belowMedia={belowMediaSlot}
+            onClose={onClose}
+            showCloseButton={showCloseButton}
+          />
         ) : isMobileLayout ? (
           <MediaViewerMobileNav
             media={media}
+            belowMedia={belowMediaSlot}
             onClose={onClose}
             onNavigate={onNavigate}
             canNavigate={canNavigate}
@@ -119,6 +151,7 @@ export const MediaViewer = ({
         ) : (
           <MediaViewerDesktopNav
             media={media}
+            belowMedia={belowMediaSlot}
             onClose={onClose}
             onNavigate={onNavigate}
             canNavigate={canNavigate}

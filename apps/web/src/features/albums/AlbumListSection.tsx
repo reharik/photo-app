@@ -2,7 +2,7 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
-import { AlbumSummaryVM } from '../../viewModels/album/AlbumSummaryVM';
+import { AlbumSummaryVM } from '../../viewModels/';
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { AlbumTile } from '../gallery/tiles/AlbumTile';
