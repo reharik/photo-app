@@ -20,6 +20,7 @@ const mediaItemSelectColumns = [
   'mediaItem.takenAt as mediaItemTakenAt',
   'mediaItem.createdAt as mediaItemCreatedAt',
   'mediaItem.updatedAt as mediaItemUpdatedAt',
+  'mediaItem.reactionCounts as mediaItemReactionCounts',
 ];
 
 const albumWithCoverSelectColumns = [
@@ -55,12 +56,8 @@ export type SharedAlbumRow = {
 } & NamespacedMediaItemRow; // cover item
 
 export type SharedWithMeReadRepository = {
-  getMediaItemsSharedWithMe: (viewerId: string) => Promise<{
-    sharedWithMeMediaItems: SharedWithMedMediaItemRow[];
-  }>;
-  getAlbumsSharedWithMe: (viewerId: string) => Promise<{
-    sharedWithMeAlbums: SharedAlbumRow[];
-  }>;
+  getMediaItemsSharedWithMe: (viewerId: string) => Promise<SharedWithMedMediaItemRow[]>;
+  getAlbumsSharedWithMe: (viewerId: string) => Promise<SharedAlbumRow[]>;
 };
 
 type SharedWithMeReadRepositoryDeps = { database: Knex };
@@ -84,10 +81,10 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
 export const build__SharedWithMeReadRepository = ({
   database,
 }: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
-  getMediaItemsSharedWithMe: async (viewerId: string) => {
-    const rows = await applyActiveUserGrant(
+  getMediaItemsSharedWithMe: async (viewerId: string): Promise<SharedWithMedMediaItemRow[]> => {
+    return applyActiveUserGrant(
       withEnumRevival(
-        database<SharedWithMedMediaItemRow>('accessGrant')
+        database('accessGrant')
           .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
           .whereNotNull('accessGrant.mediaItemId')
           .orderBy('accessGrant.createdAt', 'desc')
@@ -100,10 +97,9 @@ export const build__SharedWithMeReadRepository = ({
       ),
       { database, viewerId },
     );
-    return { sharedWithMeMediaItems: rows };
   },
   getAlbumsSharedWithMe: async (viewerId: string) => {
-    const rows = await applyActiveUserGrant(
+    return applyActiveUserGrant(
       withEnumRevival(
         database<SharedAlbumRow>('accessGrant')
           .innerJoin('album', 'album.id', 'accessGrant.albumId')
@@ -126,6 +122,5 @@ export const build__SharedWithMeReadRepository = ({
       ),
       { database, viewerId },
     );
-    return { sharedWithMeAlbums: rows };
   },
 });

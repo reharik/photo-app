@@ -6,6 +6,7 @@ import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { Toast } from '../ui/Toast';
+import { PublicAlbumItemSummaryVM } from '../viewModels';
 
 export const PublicAlbumScreen = () => {
   const { token } = useParams<{ token: string }>();
@@ -27,7 +28,7 @@ export const PublicAlbumScreen = () => {
   }
 
   const album = { ...data, itemCount: data.items.nodes.length };
-  const albumItems = data.items.nodes ?? [];
+  const albumItems: PublicAlbumItemSummaryVM[] = data.items.nodes;
   if (!data) {
     return content;
   }

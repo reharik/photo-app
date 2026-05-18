@@ -6,6 +6,7 @@ type MediaViewerSingleProps = {
   belowMedia?: ReactNode;
   onClose: () => void;
   showCloseButton?: boolean;
+  showIfEmpty?: boolean;
 };
 
 export const MediaViewerSingle = ({

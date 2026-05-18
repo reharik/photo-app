@@ -9,6 +9,7 @@ const errorCategoryInput = [
   'validation',
 ] as const;
 
+export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
   input: errorCategoryInput,
   serializeAs: 'value',
@@ -229,11 +230,18 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
-  MemberNotAllowedToGrantAuthorization: {
-    code: 'MEMBER_NOT_ALLOWED_TO_GRANT_AUTHORIZATION',
-    display: 'Member not allowed to grant authorization',
+  NotAllowedToGrantAuthorizationForAlbum: {
+    code: 'NOT_ALLOWED_TO_GRANT_AUTHORIZATION_FOR_ALBUM',
+    display: 'Not allowed to grant authorization for album',
     category: ErrorCategory.auth,
     area: ErrorArea.album,
+    retryable: false,
+  },
+  NotAllowedToGrantAuthorizationForMediaItem: {
+    code: 'NOT_ALLOWED_TO_GRANT_AUTHORIZATION_FOR_MEDIA_ITEM',
+    display: 'Not allowed to grant authorization for media item',
+    category: ErrorCategory.auth,
+    area: ErrorArea.mediaItem,
     retryable: false,
   },
   MemberNotAllowedToDownloadItems: {

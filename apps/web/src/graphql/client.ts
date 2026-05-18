@@ -11,25 +11,7 @@ import sdl from './generated/schema.graphql?raw';
 // Build a runtime GraphQLSchema instance from the SDL.
 const schema = buildSchema(sdl);
 patchSchemaEnumSerializers(schema, enumRegistry);
-const reactionEmoji = schema.getType('ReactionEmoji');
-if (reactionEmoji) {
-  console.log(
-    '[debug] ReactionEmoji values:',
-    (reactionEmoji as any).getValues().map((v: any) => ({ name: v.name, value: v.value })),
-  );
-  try {
-    console.log('[debug] serialize HEART:', (reactionEmoji as any).serialize('HEART'));
-  } catch (e) {
-    console.log('[debug] serialize HEART threw:', e);
-  }
-  try {
-    // Simulate what apollo-link-scalars might be passing
-    const fake = { __smart_enum_type: 'ReactionEmoji', value: 'HEART', key: 'heart' };
-    console.log('[debug] serialize smart-enum-like:', (reactionEmoji as any).serialize(fake));
-  } catch (e) {
-    console.log('[debug] serialize smart-enum-like threw:', e);
-  }
-}
+
 const scalarLink = withScalars({
   schema,
   typesMap: {
@@ -73,8 +55,10 @@ export const apolloClient = new ApolloClient({
                   ? (args as { id: string }).id
                   : '';
               if (id.length === 0) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
                 return existing;
               }
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
               return existing ?? toReference({ __typename: 'MediaItem', id });
             },
           },

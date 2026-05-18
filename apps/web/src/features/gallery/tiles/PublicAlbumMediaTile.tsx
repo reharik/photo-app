@@ -4,28 +4,35 @@ import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
 
-import { DateTime } from 'luxon';
-export const PublicAlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM }) => {
+import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
+export const PublicAlbumMediaTile = ({
+  item,
+  mediaGalleryIds,
+}: {
+  item: MinimalAlbumItemSummaryVM;
+  mediaGalleryIds: string[];
+}) => {
   const mediaItem = item.mediaItem;
   const { token } = useParams<{ token: string }>();
   const url = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
+
   return (
     <>
-      <ThumbLink to={`/shared/${token}/media/${mediaItem.id}`}>
+      <ThumbLink to={`/shared/${token}/media/${mediaItem.id}`} state={{ mediaGalleryIds }}>
         {mediaItem.kind === MediaKind.photo ? (
           <ThumbImage src={url} alt={mediaItem.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
-      <CaptionLink to={`/media/${mediaItem.id}`}>
-        <MediaInfo>
-          <MediaTitle>{mediaItem.title?.trim() ?? ''}</MediaTitle>
-          <MediaMeta>
-            {mediaItem.createdAt ? mediaItem.createdAt.toLocaleString(DateTime.DATE_MED) : ''}
-          </MediaMeta>
-        </MediaInfo>
-      </CaptionLink>
+      <ReactionsStrip>
+        <ReactionsForMediaItemContainer
+          mediaItemId={item.mediaItem.id}
+          reactionCounts={item.mediaItem.reactionCounts}
+          viewerReactions={item.mediaItem.viewerReactions}
+          canReact={false}
+        />
+      </ReactionsStrip>
     </>
   );
 };
@@ -42,12 +49,6 @@ const ThumbLink = styled(Link)`
   text-decoration: none;
 `;
 
-const CaptionLink = styled(Link)`
-  display: block;
-  color: inherit;
-  text-decoration: none;
-`;
-
 const ThumbImage = styled.img`
   width: 100%;
   height: 100%;
@@ -60,18 +61,10 @@ const ThumbIcon = styled.div`
   opacity: 0.35;
 `;
 
-const MediaInfo = styled.div`
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(2)};
-`;
-
-const MediaTitle = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-  margin-bottom: ${({ theme }) => theme.spacing(0.5)};
-`;
-
-const MediaMeta = styled.div`
-  font-size: 13px;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+const ReactionsStrip = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)} 0;
+  min-height: 0;
 `;

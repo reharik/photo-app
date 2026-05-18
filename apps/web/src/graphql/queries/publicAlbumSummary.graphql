@@ -1,9 +1,11 @@
 fragment publicAlbumSummary on PublicAlbum {
   id
   title
+  itemCount
   coverMedia {
     ...PublicMediaItemSummary
   }
+  operations
   items(
     input: {
       collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }

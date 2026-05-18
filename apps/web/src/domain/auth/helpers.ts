@@ -1,5 +1,5 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 
-export const hasPermission = (viewerOperations: ViewerOperation[], permission: ViewerOperation) => {
-  return viewerOperations.includes(permission);
+export const hasPermission = (operations: Operation[], permission: Operation) => {
+  return operations.includes(permission);
 };

@@ -1,20 +1,22 @@
+import { indexByUnique } from '@packages/infrastructure';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { PublicReadServiceFactoryBase } from '../readServiceBaseType';
-import { mapMediaItemRowToProjection } from '../readServiceMappers';
+import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {
-  MediaItemProjection,
+  AlbumWithCoverRow,
+  PagedList,
   PublicAlbumItemCollectionInfo,
-  PublicAlbumItemListProjection,
+  PublicAlbumItemProjection,
   PublicAlbumProjection,
 } from '../types';
+import { EnrichMediaItems } from '../viewerReadServices/enrichMediaItems';
 
 export interface PublicAlbumReadService {
   getAlbum: (albumId: string) => Promise<PublicAlbumProjection | undefined>;
   getViewableAlbumItems: (args: {
     albumId: string;
     collectionInfo: PublicAlbumItemCollectionInfo;
-  }) => Promise<PublicAlbumItemListProjection>;
+  }) => Promise<PagedList<PublicAlbumItemProjection>>;
 }
 
 export interface PublicAlbumReadServiceFactory extends PublicReadServiceFactoryBase {
@@ -23,24 +25,28 @@ export interface PublicAlbumReadServiceFactory extends PublicReadServiceFactoryB
 
 type PublicAlbumReadServiceFactoryDeps = {
   albumReadRepository: AlbumReadRepository;
-  mediaItemReadRepository: MediaItemReadRepository;
+  enrichMediaItems: EnrichMediaItems;
 };
 
 export const build__PublicAlbumReadServiceFactory = ({
   albumReadRepository,
-  mediaItemReadRepository,
+  enrichMediaItems,
 }: PublicAlbumReadServiceFactoryDeps): PublicAlbumReadServiceFactory => {
   return ({ publicLinkId }: { publicLinkId: string }) => {
-    const enrichWithTags = async (
-      items: Omit<MediaItemProjection, 'tags'>[],
-    ): Promise<MediaItemProjection[]> => {
-      if (items.length === 0) {
-        return [];
+    const buildCover = (album: AlbumWithCoverRow) => {
+      if (album.mediaItemId == null) {
+        return undefined;
       }
-      const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        mediaItemIds: items.map((i) => i.id),
-      });
-      return items.map((item) => ({ ...item, tags: tagMap.get(item.id) ?? [] }));
+      const cover = mapMediaItemRowToDBMediaItemRow(album);
+      return {
+        ...cover,
+        tags: [],
+        viewerReactions: [],
+        reactionCounts: { total: 0, byEmoji: [] },
+        // This is a mediaItem, however, it is special because it is
+        // actually a feature of the album that can be added and removed but nothing else.
+        operations: [],
+      };
     };
 
     return {
@@ -49,16 +55,17 @@ export const build__PublicAlbumReadServiceFactory = ({
         if (!row) {
           return undefined;
         }
-        const cover =
-          row.mediaItemId != null
-            ? (await enrichWithTags([mapMediaItemRowToProjection(row)]))[0]
-            : undefined;
+        const coverMedia = buildCover(row);
+
         return {
           id: row.id,
           title: row.title,
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
-          coverMedia: cover,
+          itemCount: row.itemCount,
+          viewerMemberRole: row.viewerMemberRole,
+          coverMedia,
+          operations: [],
         };
       },
 
@@ -68,24 +75,33 @@ export const build__PublicAlbumReadServiceFactory = ({
       }: {
         albumId: string;
         collectionInfo: PublicAlbumItemCollectionInfo;
-      }): Promise<PublicAlbumItemListProjection> => {
-        const albumItems = await albumReadRepository.listAlbumItemsForShareLink({
+      }): Promise<PagedList<PublicAlbumItemProjection>> => {
+        const albumItemsResult = await albumReadRepository.listAlbumItemsForShareLink({
           albumId,
           publicLinkId,
           collectionInfo,
         });
-        const mediaBases = albumItems.map((albumItem) => mapMediaItemRowToProjection(albumItem));
-        const mediaEnriched = await enrichWithTags(mediaBases);
-        const nodes = albumItems.map((albumItem, index) => ({
-          id: albumItem.id,
-          orderIndex: albumItem.albumItemOrderIndex,
-          mediaItem: mediaEnriched[index],
-          createdAt: albumItem.createdAt,
-          updatedAt: albumItem.updatedAt,
-        }));
+        const dbMediaItems = albumItemsResult.nodes.map((albumItem) =>
+          mapMediaItemRowToDBMediaItemRow(albumItem),
+        );
+        const enrichedMediaItems = indexByUnique(
+          await enrichMediaItems.enrichPublic(publicLinkId, dbMediaItems),
+        );
+
+        const nodes = albumItemsResult.nodes.map(
+          (albumItem) =>
+            ({
+              id: albumItem.id,
+              orderIndex: albumItem.albumItemOrderIndex,
+              createdAt: albumItem.createdAt,
+              updatedAt: albumItem.updatedAt,
+              mediaItem: enrichedMediaItems.get(albumItem.mediaItemId),
+              operations: [],
+            }) as PublicAlbumItemProjection,
+        );
         return {
           nodes,
-          pageInfo: collectionInfo.pageInfo,
+          totalCount: albumItemsResult.totalCount,
         };
       },
     };

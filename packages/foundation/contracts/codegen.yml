@@ -6,14 +6,14 @@ generates:
       mode: enums
       serializeAs: value
       emitDescriptionsAsDisplay: true
-      # Hand-authored in src/enums/viewerOperations.ts (deniedError, etc.)
+      # Hand-authored in src/enums/operations.ts (deniedError, etc.)
       skipEnums:
-        - ViewerOperation
+        - Operation
         - AlbumMemberRole
         - ReactionEmoji
         - ErrorCategory
       externalEnums:
-        ViewerOperation: './viewerOperations'
+        Operation: './operation'
         AlbumMemberRole: './albumMemberRole'
         ReactionEmoji: './reactionEmojis'
         ErrorCategory: './ContractError'

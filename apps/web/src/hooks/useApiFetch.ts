@@ -37,11 +37,14 @@ export const useApiFetchBase = () => {
       });
 
       // Parse response
+      // response types are difficult to type and validate and it's not really necessary here
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const data = await response.json();
 
       if (!response.ok) {
         return {
           success: false,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           error: data.error || data.message || `HTTP ${response.status}`,
         };
       }
@@ -89,10 +92,12 @@ export const useApiFetch = () => {
       });
 
       // Parse response
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const data = await response.json();
       if (!response.ok) {
         return {
           success: false,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           error: data.error || data.message || `HTTP ${response.status}`,
         };
       }

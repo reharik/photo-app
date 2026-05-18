@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
@@ -58,8 +58,8 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const album = getResult.value;
 
     const member = album.getAlbumMember(viewerId);
-    if (!member || !member.role().can(ViewerOperation.grantAuthorization)) {
-      return fail(ViewerOperation.grantAuthorization.deniedError);
+    if (!member || !member.role().can(Operation.grantAlbumAuthorization)) {
+      return fail(Operation.grantAlbumAuthorization.deniedError);
     }
 
     let grantedToHandleResolved: string | undefined;

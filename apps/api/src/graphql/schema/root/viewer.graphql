@@ -52,6 +52,7 @@ input MediaItemCollectionInput {
 
 type MediaItemCollectionPayload {
   nodes: [MediaItem!]!
+  totalCount: Int!
   pageInfo: PageInfo!
 }
 
@@ -61,6 +62,7 @@ enum MediaItemSortBy {
 
 type AlbumCollectionPayload {
   nodes: [Album!]!
+  totalCount: Int!
   pageInfo: PageInfo!
 }
 

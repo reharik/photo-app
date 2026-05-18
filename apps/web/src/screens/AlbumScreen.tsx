@@ -41,14 +41,18 @@ export const AlbumScreen = () => {
     nextFetchPolicy: 'cache-first',
   });
 
-  const { data, content } = getQueryRenderState({
+  const {
+    data: album,
+    content,
+    refetch,
+  } = getQueryRenderState({
     query,
     select: (data) => data.viewer?.album,
   });
 
   const pickerMediaItems = useMemo(() => {
     const mediaItems = mediaItemsForPickerQuery.data?.viewer?.mediaItems.nodes;
-    const existingAlbumItems = data?.items.nodes;
+    const existingAlbumItems = album?.items.nodes;
 
     if (!mediaItems || !existingAlbumItems) {
       return [];
@@ -57,14 +61,13 @@ export const AlbumScreen = () => {
     return mediaItems.filter(
       (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
     );
-  }, [mediaItemsForPickerQuery.data, data]);
+  }, [mediaItemsForPickerQuery.data, album]);
 
-  if (!data) {
+  if (!album) {
     return content;
   }
 
-  const album = { ...data, itemCount: data.items?.nodes?.length ?? 0 };
-  const albumItems = data.items.nodes ?? [];
+  const albumItems = album.items.nodes ?? [];
 
   const submitAddToAlbum = async (newAlbumItemIds: string[]) => {
     const result = await addToAlbumMutation.execute(
@@ -165,6 +168,7 @@ export const AlbumScreen = () => {
           shareState={shareState}
           retrieveAlbumItems={query.refetch}
           submitAddAlbumCover={submitAddAlbumCover}
+          reloadData={refetch}
         />
       )}
     </Container>

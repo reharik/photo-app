@@ -1,4 +1,4 @@
-import { SharePermission } from '@packages/contracts';
+import { Operation, SharePermission } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
@@ -13,6 +13,16 @@ export type AuthorizationRow = {
   createdAt: Date;
 };
 
+type MediaItemOperations = {
+  mediaItemId: EntityId;
+  operations: Operation[];
+};
+
+type MediaItemOperationsRow = {
+  mediaItemId: EntityId;
+  operations: string;
+};
+
 export type AuthorizationReadRepository = {
   getGrantedAuthorizationsForOwnedMediaItem: (args: {
     mediaItemId: EntityId;
@@ -22,6 +32,14 @@ export type AuthorizationReadRepository = {
     albumId: EntityId;
     ownerId: EntityId;
   }) => Promise<AuthorizationRow[]>;
+  getMediaItemOperationsFromGrants(
+    viewerId: EntityId,
+    mediaItemIds: EntityId[],
+  ): Promise<MediaItemOperations[]>;
+  getPublicMediaItemOperationsFromGrants: (
+    publicLinkId: EntityId,
+    mediaItemIds: EntityId[],
+  ) => Promise<MediaItemOperations[]>;
 };
 
 type AuthorizationReadRepositoryDeps = { database: Knex };
@@ -75,5 +93,56 @@ export const build__AuthorizationReadRepository = ({
       { permission: SharePermission },
       { strict: true },
     );
+  },
+
+  getMediaItemOperationsFromGrants: async (
+    viewerId: EntityId,
+    mediaItemIds: EntityId[],
+  ): Promise<MediaItemOperations[]> => {
+    if (mediaItemIds.length === 0) {
+      return [];
+    }
+    return (
+      (await database<MediaItemOperationsRow>('grant as g')
+        .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
+        .whereIn('g.media_item_id', mediaItemIds)
+        .where('g.granted_to_user', viewerId)
+        .whereNull('ag.revoked_at')
+        .where((expiry) => {
+          expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', database.fn.now());
+        })
+        .select<MediaItemOperationsRow[]>(
+          'g.media_item_id as mediaItemId',
+          'g.permissions as operations',
+        )) || []
+    ).map((x) => ({
+      mediaItemId: x.mediaItemId,
+      operations: x.operations ? x.operations.split(',').map((p) => Operation.fromValue(p)) : [],
+    }));
+  },
+  getPublicMediaItemOperationsFromGrants: async (
+    publicLinkId: EntityId,
+    mediaItemIds: EntityId[],
+  ): Promise<MediaItemOperations[]> => {
+    if (mediaItemIds.length === 0) {
+      return [];
+    }
+    return (
+      (await database<MediaItemOperationsRow>('grant as g')
+        .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
+        .whereIn('g.media_item_id', mediaItemIds)
+        .where('ag.share_link_id', publicLinkId)
+        .whereNull('ag.revoked_at')
+        .where((expiry) => {
+          expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', database.fn.now());
+        })
+        .select<MediaItemOperationsRow[]>(
+          'g.media_item_id as mediaItemId',
+          'g.permissions as operations',
+        )) || []
+    ).map((x) => ({
+      mediaItemId: x.mediaItemId,
+      operations: x.operations ? x.operations.split(',').map((p) => Operation.fromValue(p)) : [],
+    }));
   },
 });

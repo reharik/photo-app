@@ -3,13 +3,7 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(
-  description: String
-  display: String
-  props: [EnumMetaPropInput!]
-  shortDisplay: String
-  sortOrder: Int
-) on ENUM_VALUE
+directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
 
 input AddCommentInput {
   body: String!
@@ -66,11 +60,11 @@ type Album implements Node & ViewableItem {
   coverMedia: MediaItem
   createdAt: DateTime!
   id: ID!
+  itemCount: Int!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
+  operations: [Operation!]!
   title: String!
   updatedAt: DateTime!
-  viewerIsOwner: Boolean!
-  viewerOperations: [ViewerOperation!]!
 }
 
 input AlbumCollectionInput {
@@ -82,16 +76,16 @@ input AlbumCollectionInput {
 type AlbumCollectionPayload {
   nodes: [Album!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type AlbumItem implements Node & ViewableItem {
   createdAt: DateTime!
   id: ID!
   mediaItem: MediaItem!
+  operations: [Operation!]!
   orderIndex: String!
   updatedAt: DateTime!
-  viewerIsOwner: Boolean!
-  viewerOperations: [ViewerOperation!]!
 }
 
 input AlbumItemCollectionInput {
@@ -103,11 +97,12 @@ input AlbumItemCollectionInput {
 type AlbumItemCollectionPayload {
   nodes: [AlbumItem!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
 }
 
 enum AlbumMemberRole {
@@ -117,8 +112,8 @@ enum AlbumMemberRole {
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  TITLE @enumMeta(props: [{name: "column", value: "title"}])
 }
 
 type AuthorizationType {
@@ -416,6 +411,7 @@ type MediaItem implements Node & ViewableItem {
   id: ID!
   kind: MediaKind!
   mimeType: String!
+  operations: [Operation!]!
   originalFileName: String!
   reactionCounts: ReactionCounts!
   sizeBytes: Int!
@@ -424,9 +420,7 @@ type MediaItem implements Node & ViewableItem {
   takenAt: DateTime
   title: String
   updatedAt: DateTime!
-  viewerIsOwner: Boolean!
-  viewerOperations: [ViewerOperation!]!
-  viewerReactions: [ViewerReaction!]!
+  viewerReactions: [ViewerReaction!]
   width: Int
 }
 
@@ -439,10 +433,11 @@ input MediaItemCollectionInput {
 type MediaItemCollectionPayload {
   nodes: [MediaItem!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
 }
 
 enum MediaItemStatus {
@@ -463,9 +458,7 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(
-    input: DeleteAlbumItemsFromAlbumInput!
-  ): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
@@ -474,21 +467,15 @@ type Mutation {
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
   createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
   createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
-  createPublicLinkForMediaItems(
-    input: CreatePublicLinkForMediaItemsInput!
-  ): CreatePublicLinkResponse!
+  createPublicLinkForMediaItems(input: CreatePublicLinkForMediaItemsInput!): CreatePublicLinkResponse!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   deleteComment(input: DeleteCommentInput!): CommentMutationResponse!
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   editComment(input: EditCommentInput!): CommentMutationResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
-  grantUserAuthorizationForAlbum(
-    input: GrantUserAuthorizationForAlbumInput!
-  ): GrantUserAuthorizationResult!
-  grantUserAuthorizationsForMediaItems(
-    input: GrantUserAuthorizationsForMediaItemsInput!
-  ): GrantUserAuthorizationResult!
+  grantUserAuthorizationForAlbum(input: GrantUserAuthorizationForAlbumInput!): GrantUserAuthorizationResult!
+  grantUserAuthorizationsForMediaItems(input: GrantUserAuthorizationsForMediaItemsInput!): GrantUserAuthorizationResult!
   removeReaction(input: RemoveReactionInput!): ReactionMutationResponse!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
@@ -499,16 +486,23 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""
-Implemented by all entities that have an id.
-"""
+"""Implemented by all entities that have an id."""
 interface Node {
   id: ID!
 }
 
-"""
-Cursor-free paging window (offset-based). Used on output types.
-"""
+enum Operation {
+  ADD_ITEMS
+  COMMENT
+  DELETE_ALBUM
+  DOWNLOAD
+  EDIT_COVER
+  EDIT_DETAILS
+  GRANT_AUTHORIZATION
+  REMOVE_ITEMS
+}
+
+"""Cursor-free paging window (offset-based). Used on output types."""
 type PageInfo {
   limit: Int!
   offset: Int!
@@ -536,15 +530,17 @@ type PublicAlbum implements Node {
   comments(input: CommentsInput!): CommentCollectionPayload!
   coverMedia: PublicMediaItem
   id: ID!
+  itemCount: Int!
   items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
+  operations: [Operation!]!
   title: String!
 }
 
 type PublicAlbumItem implements Node {
   id: ID!
   mediaItem: PublicMediaItem!
+  operations: [Operation!]!
   orderIndex: String!
-  viewerOperations: [ViewerOperation!]!
 }
 
 input PublicAlbumItemCollectionInput {
@@ -556,6 +552,7 @@ input PublicAlbumItemCollectionInput {
 type PublicAlbumItemCollectionPayload {
   nodes: [PublicAlbumItem!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type PublicAlbumItemConnection {
@@ -574,11 +571,11 @@ type PublicMediaItem implements Node {
   id: ID!
   kind: MediaKind!
   mimeType: String!
+  operations: [Operation!]!
   reactionCounts: ReactionCounts!
   status: MediaItemStatus!
   tags: [String!]!
   title: String
-  viewerOperations: [ViewerOperation!]!
   width: Int
 }
 
@@ -735,8 +732,7 @@ type UploadInstructions {
 
 interface ViewableItem implements Node {
   id: ID!
-  viewerIsOwner: Boolean!
-  viewerOperations: [ViewerOperation!]!
+  operations: [Operation!]!
 }
 
 type Viewer {
@@ -764,17 +760,6 @@ input ViewerAlbumsInput {
 
 input ViewerMediaItemsInput {
   collectionInfo: MediaItemCollectionInput!
-}
-
-enum ViewerOperation {
-  ADD_ITEMS
-  COMMENT
-  DELETE_ALBUM
-  DOWNLOAD
-  EDIT_COVER
-  EDIT_DETAILS
-  GRANT_AUTHORIZATION
-  REMOVE_ITEMS
 }
 
 type ViewerReaction {

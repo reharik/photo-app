@@ -17,16 +17,16 @@ From `useMultiSelectGallery.ts`:
 
 ```ts
 actions
-  .filter((x) => selectedItems.some((y) => y.viewerOperations?.includes(x.operation)))
+  .filter((x) => selectedItems.some((y) => y.operations?.includes(x.operation)))
   .map((x) => ({ ...x, label: x.label ?? x.operation.display }));
 ```
 
 Permission check pattern:
 
 ```ts
-viewerOperations.includes(ViewerOperation.comment); // YES
-viewerOperations.includes('COMMENT'); // NO
-viewerOperations.some((op) => op.value === 'COMMENT'); // NO
+operations.includes(Operation.comment); // YES
+operations.includes('COMMENT'); // NO
+operations.some((op) => op.value === 'COMMENT'); // NO
 ```
 
 ## View Models — Summary and Detail
@@ -58,7 +58,7 @@ export function mapMediaItemToSummaryVM(mediaItem: MediaItemSummaryFragment): Me
     status: mediaItem.status,
     title: mediaItem.title ?? mediaItem.originalFileName ?? '',
     createdAt: mediaItem.createdAt,
-    viewerOperations: mediaItem.viewerOperations ?? [],
+    operations: mediaItem.operations ?? [],
     viewerIsOwner: mediaItem.viewerIsOwner,
   };
 }
@@ -71,7 +71,7 @@ export type GalleryThumbnailItem = {
   id: string;
   title?: string;
   thumbnailUrl: string;
-  viewerOperations: ViewerOperation[];
+  operations: Operation[];
 };
 
 type Props = { item: GalleryThumbnailItem; onClick: () => void };

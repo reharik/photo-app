@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { formatDateOnly, formatTakenDisplay } from '../../domain/formatters/mediaItemMetaFormat';
@@ -54,8 +54,8 @@ export const MediaItemDetailPanel = forwardRef<
   if (mediaItem == null) {
     return null;
   }
-  const canEdit = mediaItem.viewerOperations.includes(ViewerOperation.editDetails);
-  const canComment = mediaItem.viewerOperations.includes(ViewerOperation.comment);
+  const canEdit = mediaItem.operations.includes(Operation.editDetails);
+  const canComment = mediaItem.operations.includes(Operation.comment);
   const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
     <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>
       <RowFieldLabel>{label}</RowFieldLabel>

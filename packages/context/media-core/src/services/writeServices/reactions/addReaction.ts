@@ -8,7 +8,7 @@ import { MediaItemRepository } from '../../../repositories/domainRepositories/me
 import { ReactionRepository } from '../../../repositories/domainRepositories/reactionRepository';
 import type { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import type { EntityId, WriteResult } from '../../../types/types';
-import type { ValidateViewerOperationService } from '../../readServices/mediaGrantService';
+import type { ValidateOperationService } from '../../readServices/mediaGrantService';
 import { DBReactionCounts } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
@@ -29,7 +29,7 @@ type AddReactionDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
   commentReadRepository: CommentReadRepository;
   commentRepository: CommentRepository;
-  validateViewerOperationService: ValidateViewerOperationService;
+  validateOperationService: ValidateOperationService;
   reactionRepository: ReactionRepository;
   mediaItemRepository: MediaItemRepository;
   database: Knex;

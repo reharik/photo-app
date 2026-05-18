@@ -48,7 +48,7 @@ export const build__CreatePublicLinkForAlbum = ({
     const album = loadedAlbum.value;
     const member = album.getAlbumMember(input.viewerId);
     if (!member || member.role() !== AlbumMemberRole.owner) {
-      return fail(AppErrorCollection.album.MemberNotAllowedToGrantAuthorization);
+      return fail(AppErrorCollection.album.NotAllowedToGrantAuthorizationForAlbum);
     }
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashToken(token);

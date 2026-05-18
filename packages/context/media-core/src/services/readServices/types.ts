@@ -6,25 +6,21 @@ import {
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
+  Operation,
   ReactionEmoji,
   SharePermission,
   SortDir,
-  ViewerOperation,
 } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../types';
 
-export type AlbumListProjection = {
-  nodes: AlbumProjection[];
-  pageInfo: PageInfo;
-};
-
-export type AlbumItemListProjection = {
-  nodes: AlbumItemProjection[];
-  pageInfo: PageInfo;
+export type PagedList<T> = {
+  nodes: T[];
+  totalCount: number;
 };
 
 export type AlbumProjection = {
   id: string;
+  itemCount: number;
   viewerMemberRole?: AlbumMemberRole;
   title: string;
   description?: string;
@@ -32,6 +28,7 @@ export type AlbumProjection = {
   coverMedia?: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  operations: Operation[];
 };
 
 export type AlbumItemProjection = {
@@ -41,6 +38,7 @@ export type AlbumItemProjection = {
   createdAt: Date;
   updatedAt: Date;
   mediaItem: MediaItemProjection;
+  operations: Operation[];
 };
 
 export type NamespacedMediaItemRow = {
@@ -59,7 +57,7 @@ export type NamespacedMediaItemRow = {
   mediaItemTakenAt?: Date;
   mediaItemCreatedAt: Date;
   mediaItemUpdatedAt: Date;
-  mediaItemReactionCounts: ReactionCounts;
+  mediaItemReactionCounts: DBReactionCounts;
 };
 
 export type AlbumWithCoverRow = {
@@ -69,6 +67,7 @@ export type AlbumWithCoverRow = {
   createdAt: Date;
   updatedAt: Date;
   viewerMemberRole?: AlbumMemberRole;
+  itemCount: number;
 } & NamespacedMediaItemRow;
 
 export type AlbumItemWithMediaRow = {
@@ -118,12 +117,7 @@ export type ReactionCounts = {
   byEmoji: ReactionCount[];
 };
 
-export type MediaItemListProjection = {
-  nodes: MediaItemProjection[];
-  pageInfo: PageInfo;
-};
-
-export interface MediaItemRow {
+export interface DBMediaItemRow {
   id: EntityId;
   ownerId: EntityId;
   kind: MediaKind;
@@ -139,50 +133,24 @@ export interface MediaItemRow {
   takenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
-  reactionCounts: ReactionCounts;
-  viewerReactions: ViewerReaction[];
-}
-export type DBMediaItemRow = Omit<MediaItemRow, 'reactionCounts'> & {
   reactionCounts: DBReactionCounts;
-};
-export type DBReactionCounts = { total: number; byEmoji: { emoji: string; count: number }[] };
-export interface MediaItemProjection extends MediaItemRow {
-  tags: string[];
+}
+export type MediaItemProjection = Omit<DBMediaItemRow, 'reactionCounts'> & MediaItemChildren;
+
+export type MediaItemChildren = {
   reactionCounts: ReactionCounts;
   viewerReactions: ViewerReaction[];
-}
+  tags: string[];
+  operations: Operation[];
+};
+
+export type DBReactionCounts = { total: number; byEmoji: { emoji: string; count: number }[] };
 
 export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy> {
   pageInfo: PageInfo;
   sortBy: MediaItemSortBy;
   sortDir: SortDir;
 }
-
-export interface HasId {
-  id: EntityId;
-}
-
-export type UnDecoratedItem<T extends HasId> = T;
-
-export type DecoratedItem<T extends HasId> = T & {
-  viewerIsOwner: boolean;
-  viewerOperations: ViewerOperation[];
-};
-
-export type UnDecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
-  mediaItem: UnDecoratedItem<U>;
-};
-
-export type DecoratedNestedMediaItem<T extends HasId, U extends HasId> = T & {
-  viewerIsOwner: boolean;
-  viewerOperations: ViewerOperation[];
-  mediaItem: DecoratedItem<U>;
-};
-
-export type PublicAlbumItemListProjection = {
-  nodes: PublicAlbumItemProjection[];
-  pageInfo: PageInfo;
-};
 
 export interface PublicAlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy> {
   pageInfo: PageInfo;
@@ -192,6 +160,7 @@ export interface PublicAlbumItemCollectionInfo extends CollectionInfo<AlbumItemS
 
 export type PublicAlbumProjection = {
   id: string;
+  itemCount: number;
   viewerMemberRole?: AlbumMemberRole;
   title: string;
   description?: string;
@@ -199,6 +168,7 @@ export type PublicAlbumProjection = {
   coverMedia?: PublicMediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  operations: Operation[];
 };
 
 export type PublicAlbumItemProjection = {
@@ -210,7 +180,7 @@ export type PublicAlbumItemProjection = {
   mediaItem: PublicMediaItemProjection;
 };
 
-export interface PublicMediaItemRow {
+export interface DBPublicMediaItemRow {
   id: EntityId;
   kind: MediaKind;
   status: MediaItemStatus;
@@ -219,12 +189,11 @@ export interface PublicMediaItemRow {
   width?: number;
   height?: number;
   durationSeconds?: number;
-  reactionCounts: ReactionCounts;
+  reactionCounts: DBReactionCounts;
 }
 
-export interface PublicMediaItemProjection extends PublicMediaItemRow {
-  tags: string[];
-}
+export type PublicMediaItemProjection = Omit<DBPublicMediaItemRow, 'reactionCounts'> &
+  MediaItemChildren;
 
 export type CommentRow = {
   id: EntityId;
@@ -240,6 +209,7 @@ export type CommentRow = {
   deletedAt?: Date;
   totalCount: number;
   reactionCounts: ReactionCounts;
+  viewerReactions: ViewerReaction[];
 };
 export type CommentGraph = CommentRow & {
   replies: CommentRow[];

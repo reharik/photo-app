@@ -5,39 +5,34 @@ import { standardizeCollectionInput } from '../standardizeInput';
 
 const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
   PublicAlbum: {
-    coverMedia: publicResolver(async (album, _args, ctx) => {
+    coverMedia: publicResolver((album) => {
       // Album ( parent ) always get coverMedia on query. If that stops
       // being the case we need to add the query here.
-      if (!album.coverMedia) {
-        return undefined;
-      }
-      return ctx.publicReadServices.applyPublicAuthorizationService.toPublicItem(album.coverMedia);
+      return album.coverMedia;
     }),
     items: publicResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<AlbumItemSortBy>(input.collectionInfo);
 
-      const albumItems = await ctx.publicReadServices.publicAlbumReadService.getViewableAlbumItems({
-        albumId: album.id,
-        collectionInfo,
-      });
+      const albumItemsResult =
+        await ctx.publicReadServices.publicAlbumReadService.getViewableAlbumItems({
+          albumId: album.id,
+          collectionInfo,
+        });
 
-      const decoratedAlbumItems =
-        await ctx.publicReadServices.applyPublicAuthorizationService.toPublicNestedItems(
-          albumItems.nodes,
-        );
-
-      return {
-        nodes: decoratedAlbumItems,
-        pageInfo: albumItems.pageInfo,
-      };
+      return { ...albumItemsResult, pageInfo: collectionInfo.pageInfo };
     }),
     comments: authenticatedResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
-      return ctx.agnosticReadServices.commentReadService.listComments({
+      const nodes = await ctx.agnosticReadServices.commentReadService.listComments({
         targetType: CommentTargetType.album,
         targetId: parent.id,
         collectionInfo,
       });
+      return {
+        nodes,
+        pageInfo: collectionInfo.pageInfo,
+        totalCount: nodes.length,
+      };
     }),
   },
 };

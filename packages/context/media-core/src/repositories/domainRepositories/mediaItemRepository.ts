@@ -159,10 +159,14 @@ export const build__MediaItemRepository = ({
       }
 
       if (authorizations.length > 0) {
-        const authorizationRows = authorizations.map((authorization) => ({
-          ...authorization,
-          mediaItemId: record.id,
-        }));
+        const authorizationRows = authorizations.map((authorization) => {
+          const { publicLinkId, ...rowWithoutPublicLink } = authorization;
+          return {
+            ...rowWithoutPublicLink,
+            mediaItemId: record.id,
+            ...(publicLinkId != null ? { shareLinkId: publicLinkId } : {}),
+          };
+        });
         await trx('access_grant')
           .insert(authorizationRows)
           .onConflict(['media_item_id', 'granted_to_user'])

@@ -1,5 +1,5 @@
 import { AppErrorCollection, MediaItemStatus } from '@packages/contracts';
-import { EntityId, MediaItemRow } from '../..';
+import { DBMediaItemRow, EntityId } from '../..';
 import { fail, ok } from '../../domain/utilities/writeResponse';
 
 export const ensureMediaItemOwnedByViewer = (ownerId: EntityId, viewerId: EntityId) =>
@@ -7,7 +7,7 @@ export const ensureMediaItemOwnedByViewer = (ownerId: EntityId, viewerId: Entity
     ? ok(undefined)
     : fail(AppErrorCollection.mediaItem.MediaItemNotOwnedByViewer);
 
-export const ensureMediaItemInReadyState = (mediaItem: MediaItemRow) =>
+export const ensureMediaItemInReadyState = (mediaItem: DBMediaItemRow) =>
   mediaItem.status === MediaItemStatus.ready
     ? ok(undefined)
     : fail(AppErrorCollection.mediaItem.MediaItemNotReady);

@@ -2,7 +2,7 @@ query ViewerAlbumDetail($albumId: ID!) {
   viewer {
     id
     album(id: $albumId) {
-      ...AlbumSummary
+      ...AlbumSummaryWithItems
     }
   }
 }

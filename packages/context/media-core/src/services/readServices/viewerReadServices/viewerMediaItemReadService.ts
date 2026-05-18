@@ -9,13 +9,15 @@ import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import {
   AuthorizationProjection,
   MediaItemCollectionInfo,
-  MediaItemListProjection,
   MediaItemProjection,
-  MediaItemRow,
+  PagedList,
 } from '../types';
+import { EnrichMediaItems } from './enrichMediaItems';
 
 export interface ViewerMediaItemReadService {
-  listMediaItems: (collectionInfo: MediaItemCollectionInfo) => Promise<MediaItemListProjection>;
+  listMediaItems: (
+    collectionInfo: MediaItemCollectionInfo,
+  ) => Promise<PagedList<MediaItemProjection>>;
   getMediaItemForViewer: (args: {
     mediaItemId: EntityId;
   }) => Promise<MediaItemProjection | undefined>;
@@ -31,76 +33,63 @@ type ViewerMediaItemReadServiceFactoryDeps = {
   reactionReadRepository: ReactionReadRepository;
   mediaStorage: MediaStorage;
   readReactionService: ReadReactionService;
+  reactionTargetType: ReactionTargetType;
+  enrichMediaItems: EnrichMediaItems;
 };
 
 export const build__ViewerMediaItemReadServiceFactory = ({
   mediaItemReadRepository,
   authorizationReadRepository,
-  readReactionService,
+  enrichMediaItems,
 }: ViewerMediaItemReadServiceFactoryDeps): ViewerMediaItemReadServiceFactory => {
   return ({ viewerId }: { viewerId: string }) => {
-    const withTags = async (rows: MediaItemRow[]): Promise<MediaItemProjection[]> => {
-      const ids = rows.map((r) => r.id);
-      const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        mediaItemIds: ids,
+    const listMediaItems = async (
+      collectionInfo: MediaItemCollectionInfo,
+    ): Promise<PagedList<MediaItemProjection>> => {
+      const dbMediaItemsResult = await mediaItemReadRepository.listForViewer({
+        viewerId,
+        collectionInfo,
       });
-      return rows.map((r) => ({ ...r, tags: tagMap.get(r.id) ?? [] }));
+
+      return {
+        nodes: await enrichMediaItems.enrich(viewerId, dbMediaItemsResult.nodes),
+        totalCount: dbMediaItemsResult.totalCount,
+      };
     };
+    const getMediaItemForViewer = async ({
+      mediaItemId,
+    }: {
+      mediaItemId: EntityId;
+    }): Promise<MediaItemProjection | undefined> => {
+      const row = await mediaItemReadRepository.getForViewer({ mediaItemId, viewerId });
+      if (!row) {
+        return undefined;
+      }
+      const node = await enrichMediaItems.enrich(viewerId, [row]);
 
-    return {
-      listMediaItems: async (
-        collectionInfo: MediaItemCollectionInfo,
-      ): Promise<MediaItemListProjection> => {
-        const dbMediaItems = await mediaItemReadRepository.listForViewer({
-          viewerId,
-          collectionInfo,
-        });
-        const mediaItems = await readReactionService.withViewerReactions(
-          dbMediaItems,
-          ReactionTargetType.mediaItem,
-          viewerId,
-        );
-        const nodes = await withTags(mediaItems);
-        return {
-          nodes,
-          pageInfo: collectionInfo.pageInfo,
-        };
-      },
-      getMediaItemForViewer: async ({
+      return node[0];
+    };
+    const listGrantedAuthorizationsForOwnedMediaItem = async (
+      mediaItemId: EntityId,
+    ): Promise<AuthorizationProjection[]> => {
+      const rows = await authorizationReadRepository.getGrantedAuthorizationsForOwnedMediaItem({
         mediaItemId,
-      }: {
-        mediaItemId: EntityId;
-      }): Promise<MediaItemProjection | undefined> => {
-        const row = await mediaItemReadRepository.getForViewer({ mediaItemId, viewerId });
-        if (!row) {
-          return undefined;
-        }
-        const mediaItem = await readReactionService.withViewerReactions(
-          [row],
-          ReactionTargetType.mediaItem,
-          viewerId,
-        );
-
-        const [projection] = await withTags(mediaItem);
-        return projection;
-      },
-      listGrantedAuthorizationsForOwnedMediaItem: async (
-        mediaItemId: EntityId,
-      ): Promise<AuthorizationProjection[]> => {
-        const rows = await authorizationReadRepository.getGrantedAuthorizationsForOwnedMediaItem({
-          mediaItemId,
-          ownerId: viewerId,
-        });
-        return rows.map((row) => ({
-          id: row.id,
-          grantedToUserId: row.grantedToUser,
-          permission: row.permission,
-          label: row.description,
-          expiresAt: row.expiresAt,
-          revokedAt: row.revokedAt,
-          createdAt: row.createdAt,
-        }));
-      },
+        ownerId: viewerId,
+      });
+      return rows.map((row) => ({
+        id: row.id,
+        grantedToUserId: row.grantedToUser,
+        permission: row.permission,
+        label: row.description,
+        expiresAt: row.expiresAt,
+        revokedAt: row.revokedAt,
+        createdAt: row.createdAt,
+      }));
+    };
+    return {
+      listMediaItems,
+      getMediaItemForViewer,
+      listGrantedAuthorizationsForOwnedMediaItem,
     };
   };
 };

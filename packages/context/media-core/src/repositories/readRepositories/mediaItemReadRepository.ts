@@ -1,8 +1,13 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { DBMediaItemRow, MediaItemCollectionInfo } from '../../services/readServices/types';
+import {
+  DBMediaItemRow,
+  MediaItemCollectionInfo,
+  PagedList,
+} from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
+import { toPagedResult } from '../repositoryHelpers';
 
 export type MediaItemReadRepository = {
   /** Loads by id only (no ownership filter). Used for authz after access rules are applied. */
@@ -28,8 +33,13 @@ export type MediaItemReadRepository = {
   listForViewer(args: {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
-  }): Promise<DBMediaItemRow[]>;
-  listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<Map<EntityId, string[]>>;
+  }): Promise<PagedList<DBMediaItemRow>>;
+  listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<
+    {
+      mediaItemId: EntityId;
+      label: string;
+    }[]
+  >;
 };
 
 type MediaItemReadRepositoryDeps = { database: Knex };
@@ -124,14 +134,15 @@ export const build__MediaItemReadRepository = ({
   }: {
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
-  }): Promise<DBMediaItemRow[]> => {
-    const rows = await withEnumRevival(
-      database<DBMediaItemRow>('mediaItem')
+  }): Promise<PagedList<DBMediaItemRow>> => {
+    const rows = (await withEnumRevival(
+      database('mediaItem')
         .where({ ownerId: viewerId })
         .andWhere('status', MediaItemStatus.ready.value)
         .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
         .orderBy('id', 'asc') // tie-breaker
-        .select<DBMediaItemRow[]>(...DBmediaItemRowFields)
+        .select<(DBMediaItemRow & { totalCount: number })[]>(...DBmediaItemRowFields)
+        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
         .limit(collectionInfo.pageInfo.limit + 1)
         .offset(collectionInfo.pageInfo.offset),
       {
@@ -139,20 +150,24 @@ export const build__MediaItemReadRepository = ({
         status: MediaItemStatus,
       },
       { strict: true },
-    );
-    return rows;
+    )) as (DBMediaItemRow & { totalCount: number })[];
+    return toPagedResult(rows);
   },
   listTagsForMediaItemIds: async ({
     mediaItemIds,
   }: {
     mediaItemIds: EntityId[];
-  }): Promise<Map<EntityId, string[]>> => {
-    const result = new Map<EntityId, string[]>();
+  }): Promise<
+    {
+      mediaItemId: EntityId;
+      label: string;
+    }[]
+  > => {
     if (mediaItemIds.length === 0) {
-      return result;
+      return [];
     }
 
-    const rows = await database('media_item_tag')
+    return database('media_item_tag')
       .join('mediaItem', 'mediaItemTag.mediaItemId', 'mediaItem.id')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
       .whereIn('mediaItemTag.mediaItemId', mediaItemIds)
@@ -161,16 +176,5 @@ export const build__MediaItemReadRepository = ({
       >('mediaItemTag.mediaItemId', 'userTag.label')
       .orderBy('mediaItemTag.mediaItemId', 'asc')
       .orderBy('userTag.label', 'asc');
-
-    for (const id of mediaItemIds) {
-      result.set(id, []);
-    }
-    for (const row of rows) {
-      const list = result.get(row.mediaItemId);
-      if (list) {
-        list.push(row.label);
-      }
-    }
-    return result;
   },
 });

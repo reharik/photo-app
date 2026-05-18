@@ -42,6 +42,7 @@ export const SharedWithMeSection = ({
         />
         <SelectableGallery
           nodes={sharedWithMeMediaItems}
+          mediaIdSelector={(item) => item.mediaItem.id}
           multiSelectProps={noopSelect}
           emptyState={
             <EmptyState

@@ -1,4 +1,4 @@
-import { AppErrorCollection, ViewerOperation } from '@packages/contracts';
+import { AppErrorCollection, Operation } from '@packages/contracts';
 import { fail, ok } from '../..';
 import { AlbumMemberReadRepository } from '../../repositories/readRepositories/albumMemberReadRepository';
 import { GrantReadRepository } from '../../repositories/readRepositories/grantReadRepository';
@@ -15,21 +15,21 @@ export type AuthorizeAlbumCommentInput = {
   viewerId?: string;
 };
 
-export type ValidateViewerOperationService = {
+export type ValidateOperationService = {
   authorizeMediaComment: (input: AuthorizeMediaCommentInput) => Promise<WriteResult<void>>;
   authorizeAlbumComment: (input: AuthorizeAlbumCommentInput) => Promise<WriteResult<void>>;
 };
 
-type ValidateViewerOperationServiceDeps = {
+type ValidateOperationServiceDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
   grantReadRepository: GrantReadRepository;
   albumMemberReadRepository: AlbumMemberReadRepository;
 };
-export const build__ValidateViewerOperationService = ({
+export const build__ValidateOperationService = ({
   mediaItemReadRepository,
   grantReadRepository,
   albumMemberReadRepository,
-}: ValidateViewerOperationServiceDeps): ValidateViewerOperationService => ({
+}: ValidateOperationServiceDeps): ValidateOperationService => ({
   authorizeMediaComment: async (input: AuthorizeMediaCommentInput): Promise<WriteResult<void>> => {
     const { mediaItemId, viewerId } = input;
     if (!viewerId) {
@@ -52,7 +52,7 @@ export const build__ValidateViewerOperationService = ({
     const granted = await grantReadRepository.hasActiveGrantPermission({
       mediaItemId,
       viewerId,
-      permission: ViewerOperation.comment,
+      permission: Operation.comment,
     });
 
     if (granted) {
@@ -72,14 +72,14 @@ export const build__ValidateViewerOperationService = ({
       viewerId,
     });
 
-    if (albumMember && albumMember.role.can(ViewerOperation.comment)) {
+    if (albumMember && albumMember.role.can(Operation.comment)) {
       return ok(undefined);
     }
 
     const granted = await grantReadRepository.hasActiveAccessGrantPermission({
       albumId,
       viewerId,
-      permission: ViewerOperation.comment,
+      permission: Operation.comment,
     });
 
     if (granted) {

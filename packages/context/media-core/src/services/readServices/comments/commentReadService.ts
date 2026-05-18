@@ -1,5 +1,10 @@
 import { CommentTargetType, ReactionTargetType } from '@packages/contracts';
-import { CommentReadRepository } from '../../../repositories/readRepositories/commentReadRepository';
+import { groupByMapping } from '@packages/infrastructure';
+import {
+  CommentReadRepository,
+  DBCommentRow,
+} from '../../../repositories/readRepositories/commentReadRepository';
+import { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
 import { EntityId, PageInfo } from '../../../types/types';
 import { ReadReactionService } from '../readReactionService';
 import { AgnosticReadServiceBase } from '../readServiceBaseType';
@@ -12,6 +17,7 @@ export interface CommentReadService extends AgnosticReadServiceBase {
 type CommentReadServiceDeps = {
   commentReadRepository: CommentReadRepository;
   readReactionService: ReadReactionService;
+  reactionReadRepository: ReactionReadRepository;
 };
 
 type ListCommentsProps = {
@@ -24,7 +30,42 @@ type ListCommentsProps = {
 export const build__CommentReadService = ({
   commentReadRepository,
   readReactionService,
+  reactionReadRepository,
 }: CommentReadServiceDeps): CommentReadService => {
+  const enrichViewerComments = async (
+    rows: DBCommentRow[],
+    viewerId: EntityId,
+  ): Promise<CommentRow[]> => {
+    // Viewer Reactions
+    const viewerReactionRows = await reactionReadRepository.viewerReactionsForTargets({
+      viewerId,
+      targetType: ReactionTargetType.mediaItem,
+      targetIds: rows.map((r) => r.id),
+    });
+    const viewerReactionMap = groupByMapping(
+      viewerReactionRows,
+      (r) => r.targetId,
+      (r) => ({ id: r.id, emoji: r.emoji }),
+    );
+    const reactionCounts = readReactionService.withReactions(rows);
+
+    return rows.map((r) => ({
+      ...r,
+      reactionCounts: reactionCounts.get(r.id)?.reactionCounts ?? { total: 0, byEmoji: [] },
+      viewerReactions: viewerReactionMap.get(r.id) ?? [],
+    }));
+  };
+
+  const enrichComments = (rows: DBCommentRow[]): CommentRow[] => {
+    const reactionMap = readReactionService.withReactions(rows);
+
+    return rows.map((r) => ({
+      ...r,
+      reactionCounts: reactionMap.get(r.id)?.reactionCounts ?? { total: 0, byEmoji: [] },
+      viewerReactions: [],
+    }));
+  };
+
   return {
     listComments: async ({
       targetType,
@@ -38,8 +79,8 @@ export const build__CommentReadService = ({
         collectionInfo,
       });
       const enrichedNodes = viewerId
-        ? await readReactionService.withViewerReactions(nodes, ReactionTargetType.comment, viewerId)
-        : readReactionService.withReactions(nodes);
+        ? await enrichViewerComments(nodes, viewerId)
+        : enrichComments(nodes);
 
       const byId: Record<EntityId, CommentGraph> = {};
       for (const node of enrichedNodes) {

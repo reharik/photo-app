@@ -17,6 +17,8 @@ export type AuthorizationRecord = {
   id: string;
   grantedToUser?: string;
   publicLinkId?: string;
+  /** `access_grant.share_link_id` as returned by Knex (stringcase); not set on newly serialized rows. */
+  shareLinkId?: string;
   grantedBy: EntityId;
   permission: SharePermission;
   label?: string;
@@ -56,7 +58,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
     const asset = new Authorization(record.id, record.createdBy, {
       permission: record.permission,
       grantedToUser: record.grantedToUser,
-      publicLinkId: record.publicLinkId,
+      publicLinkId: record.publicLinkId ?? record.shareLinkId,
       grantedBy: record.grantedBy,
       label: record.label,
       expiresAt: record.expiresAt,

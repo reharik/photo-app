@@ -1,18 +1,15 @@
 fragment ViewableAlbum on Album {
-  viewerIsOwner
-  viewerOperations
+  operations
 }
 
 fragment ViewableAlbumItem on AlbumItem {
-  viewerIsOwner
-  viewerOperations
+  operations
 }
 
 fragment ViewableMediaItem on MediaItem {
-  viewerIsOwner
-  viewerOperations
+  operations
 }
 
 fragment PublicViewableMediaItem on PublicMediaItem {
-  viewerOperations
+  operations
 }

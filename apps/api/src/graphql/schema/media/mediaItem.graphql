@@ -15,14 +15,13 @@ type MediaItem implements ViewableItem & Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   authorizations: [AuthorizationType]
-  viewerOperations: [ViewerOperation!]!
-  viewerIsOwner: Boolean!
+  operations: [Operation!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
   reactionCounts: ReactionCounts!
-  viewerReactions: [ViewerReaction!]!
+  viewerReactions: [ViewerReaction!]
 }
 
-enum ViewerOperation {
+enum Operation {
   GRANT_AUTHORIZATION
   EDIT_DETAILS
   ADD_ITEMS

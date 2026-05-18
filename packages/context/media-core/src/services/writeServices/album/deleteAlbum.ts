@@ -1,4 +1,4 @@
-import { AppErrorCollection, ViewerOperation } from '@packages/contracts';
+import { AppErrorCollection, Operation } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -26,8 +26,8 @@ export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): Delete
     if (!member) {
       return fail(AppErrorCollection.album.UserIsNotMember);
     }
-    if (!member.role().can(ViewerOperation.deleteAlbum)) {
-      return fail(ViewerOperation.deleteAlbum.deniedError);
+    if (!member.role().can(Operation.deleteAlbum)) {
+      return fail(Operation.deleteAlbum.deniedError);
     }
 
     await albumRepository.delete(album);

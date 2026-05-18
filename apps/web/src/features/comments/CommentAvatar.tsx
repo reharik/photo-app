@@ -44,7 +44,7 @@ export const CommentAvatar = ({ comment, size = 32 }: Props): JSX.Element => {
         alt={displayName}
         $size={size}
         onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = 'none';
+          e.currentTarget.style.display = 'none';
         }}
       />
     );

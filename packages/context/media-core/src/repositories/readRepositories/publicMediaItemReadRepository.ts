@@ -1,10 +1,10 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { PublicMediaItemRow } from '../../services/readServices/types';
+import { DBPublicMediaItemRow } from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
 
-const publicMediaItemRowFields = [
+const DBPublicMediaItemRowFields = [
   'media_item.id',
   'media_item.kind',
   'media_item.status',
@@ -13,7 +13,7 @@ const publicMediaItemRowFields = [
   'media_item.width',
   'media_item.height',
   'media_item.duration_seconds',
-  'media_item.reaction_count',
+  'media_item.reaction_counts',
 ];
 
 type PublicMediaItemReadRepositoryDeps = { database: Knex };
@@ -25,7 +25,7 @@ export type PublicMediaItemReadRepository = {
   }: {
     mediaItemId: EntityId;
     publicLinkId: EntityId;
-  }) => Promise<PublicMediaItemRow | undefined>;
+  }) => Promise<DBPublicMediaItemRow | undefined>;
 };
 
 export const build__PublicMediaItemReadRepository = ({
@@ -37,7 +37,7 @@ export const build__PublicMediaItemReadRepository = ({
   }: {
     mediaItemId: EntityId;
     publicLinkId: EntityId;
-  }): Promise<PublicMediaItemRow | undefined> => {
+  }): Promise<DBPublicMediaItemRow | undefined> => {
     const mediaItem = await withEnumRevival(
       database('mediaItem')
         .join('grant', 'mediaItem.id', 'grant.mediaItemId')
@@ -52,7 +52,7 @@ export const build__PublicMediaItemReadRepository = ({
           );
         })
         .where('mediaItem.id', mediaItemId)
-        .first<PublicMediaItemRow>(...publicMediaItemRowFields),
+        .first<DBPublicMediaItemRow>(...DBPublicMediaItemRowFields),
       {
         kind: MediaKind,
         status: MediaItemStatus,

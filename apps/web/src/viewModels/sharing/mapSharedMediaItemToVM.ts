@@ -9,8 +9,7 @@ const mapSharedMediaItemToVM = (
 ): SharedWithMedMediaItemVM => ({
   ...node,
   mediaItem: node.mediaItem,
-  viewerOperations: node.mediaItem.viewerOperations ?? [],
-  viewerIsOwner: false,
+  operations: node.mediaItem.operations ?? [],
 });
 
 type SharedWithMedMediaItemsSlice = NonNullable<

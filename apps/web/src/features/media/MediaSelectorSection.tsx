@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import styled from 'styled-components';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { MediaItemSummaryVM } from '../../viewModels/';
@@ -20,7 +20,7 @@ export const MediaSelectorSection = ({
 }: MediaSelectorSectionProps) => {
   const selectableActions = [
     {
-      operation: ViewerOperation.addItems,
+      operation: Operation.addItems,
       label: 'Add to album',
       onAction: () => onAddToAlbum(Array.from(selectedIds)),
     },

@@ -1,5 +1,5 @@
 import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
-import { JSX, useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   AddReactionDocument,
   type AddReactionMutation,
@@ -15,7 +15,7 @@ type Props = {
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
   canReact?: boolean;
-  onRefetch?: () => Promise<void>;
+  onRefetch?: () => void;
 };
 
 export const ReactionsForMediaItemContainer = ({
@@ -24,7 +24,7 @@ export const ReactionsForMediaItemContainer = ({
   viewerReactions,
   canReact,
   onRefetch,
-}: Props): JSX.Element => {
+}: Props) => {
   const toggleMutation = useAppMutationState();
 
   const handleToggle = useCallback(async (): Promise<void> => {
@@ -47,7 +47,7 @@ export const ReactionsForMediaItemContainer = ({
         (data: RemoveReactionMutation) => data.removeReaction,
       );
       if (result.success) {
-        await onRefetch();
+        onRefetch();
       }
     } else {
       const result = await toggleMutation.execute(
@@ -64,10 +64,14 @@ export const ReactionsForMediaItemContainer = ({
         (data: AddReactionMutation) => data.addReaction,
       );
       if (result.success) {
-        await onRefetch();
+        onRefetch();
       }
     }
   }, [mediaItemId, onRefetch, toggleMutation, viewerReactions]);
+  const hasHeartReaction = reactionCounts.byEmoji?.find((r) => r.emoji === ReactionEmoji.heart);
+  if (!canReact && !hasHeartReaction) {
+    return <div style={{ height: '34px' }}>&nbsp;</div>;
+  }
 
   return (
     <ReactionButton

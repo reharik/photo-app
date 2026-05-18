@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
@@ -42,6 +42,7 @@ type AlbumSectionProps = {
   };
   retrieveAlbumItems: () => void;
   submitAddAlbumCover: (selectedAlbumItemId: string) => void;
+  reloadData: () => void;
 };
 
 export const AlbumSection = ({
@@ -51,6 +52,7 @@ export const AlbumSection = ({
   removeAlbumItemState,
   shareState,
   submitAddAlbumCover,
+  reloadData,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
@@ -61,12 +63,12 @@ export const AlbumSection = ({
 
   const selectableActions = [
     {
-      operation: ViewerOperation.grantAuthorization,
+      operation: Operation.grantAlbumAuthorization,
       label: 'Share',
       onAction: () => shareState.setShareItemsOpen(true),
     },
     {
-      operation: ViewerOperation.removeItems,
+      operation: Operation.removeItems,
       label: 'Remove from album',
       onAction: () => removeAlbumItemState.setRemoveItemOpen(true),
     },
@@ -102,8 +104,8 @@ export const AlbumSection = ({
         <BackLink to="/albums">← Albums</BackLink>
         <Title>{album?.title ?? 'Album'}</Title>
         <HeaderActions>
-          {album.viewerIsOwner && (
-            <>
+          <>
+            {album.operations.includes(Operation.grantAlbumAuthorization) && (
               <SecondaryButton
                 type="button"
                 disabled={!album}
@@ -113,6 +115,8 @@ export const AlbumSection = ({
               >
                 Share album
               </SecondaryButton>
+            )}
+            {album.operations.includes(Operation.addItems) && (
               <PrimaryButton
                 type="button"
                 disabled={!album}
@@ -122,8 +126,8 @@ export const AlbumSection = ({
               >
                 Add items to Album
               </PrimaryButton>
-            </>
-          )}
+            )}
+          </>
         </HeaderActions>
       </>
     );
@@ -147,6 +151,7 @@ export const AlbumSection = ({
         />
         <SelectableGallery
           nodes={albumItems}
+          mediaIdSelector={(x) => x.mediaItem.id}
           multiSelectProps={multiSelectProps}
           embedInParentScroll
           selectableActions={selectableActions.map((x) => x.operation)}
@@ -167,7 +172,13 @@ export const AlbumSection = ({
               }
             />
           }
-          renderItem={({ item }) => <AlbumMediaTile item={item} />}
+          renderItem={({ item, orderedMediaIds }) => (
+            <AlbumMediaTile
+              item={item}
+              mediaGalleryIds={orderedMediaIds}
+              onReactionsRefetch={reloadData}
+            />
+          )}
         />
       </AlbumBodyScroll>
       {removeAlbumItemState.removeItemOpen && (

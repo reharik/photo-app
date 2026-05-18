@@ -1,5 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import {
@@ -25,7 +25,7 @@ import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 
 type RecentMediaSectionProps = {
   nodes: MediaItemSummaryVM[];
-  reloadData: () => Promise<void>;
+  reloadData: () => void;
 };
 
 export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProps) => {
@@ -60,17 +60,17 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
   );
   const selectableActions = [
     {
-      operation: ViewerOperation.grantAuthorization,
+      operation: Operation.grantMediaItemAlbumAuthorization,
       label: 'Share',
       onAction: () => setShareMediaOpen(true),
     },
     {
-      operation: ViewerOperation.addItems,
+      operation: Operation.addItems,
       label: 'Add to album',
       onAction: () => setAddToAlbumOpen(true),
     },
     {
-      operation: ViewerOperation.removeItems,
+      operation: Operation.removeItems,
       label: 'Delete from library',
       onAction: () => setDeleteMediaOpen(true),
     },

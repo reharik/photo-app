@@ -34,6 +34,7 @@ export const ShareRecipientInput = ({
       items={suggestions}
       value={selectedSuggestion}
       onChange={handleChange}
+      onInputValueChange={onChange}
       getKey={(suggestion) => suggestion.userId}
       getLabel={(suggestion) => suggestion.handle}
       allowCustomValue

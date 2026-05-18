@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { Knex } from 'knex';
 
 export type HasActiveGrantInput = {
@@ -10,13 +10,13 @@ export type HasActiveGrantInput = {
 export type HasActiveGrantPermissionInput = {
   mediaItemId: string;
   viewerId: string;
-  permission: ViewerOperation;
+  permission: Operation;
 };
 
 export type HasActiveAccessGrantPermissionInput = {
   albumId: string;
   viewerId: string;
-  permission: ViewerOperation;
+  permission: Operation;
 };
 
 export type GrantReadRepository = {

@@ -1,9 +1,9 @@
 import { DateTime } from 'luxon';
-import { MediaItemProjection, NamespacedMediaItemRow } from './types';
+import { DBMediaItemRow, NamespacedMediaItemRow } from './types';
 
-export const mapMediaItemRowToProjection = (
+export const mapMediaItemRowToDBMediaItemRow = (
   mediaItem: NamespacedMediaItemRow,
-): Omit<MediaItemProjection, 'tags'> => {
+): DBMediaItemRow => {
   const id = mediaItem.mediaItemId ?? '';
   return {
     id,
@@ -22,6 +22,5 @@ export const mapMediaItemRowToProjection = (
     createdAt: mediaItem.mediaItemCreatedAt ?? DateTime.now(),
     updatedAt: mediaItem.mediaItemUpdatedAt ?? DateTime.now(),
     reactionCounts: mediaItem.mediaItemReactionCounts,
-    viewerReactions: [],
   };
 };

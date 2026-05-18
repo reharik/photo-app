@@ -1,7 +1,7 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
-import type { MediaItemRow } from '../../services/readServices/types';
+import type { DBMediaItemRow } from '../../services/readServices/types';
 import { EntityId, WriteResult } from '../../types/types';
 import { ensureMemberCanEditAlbum } from './albumguard';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from './mediaItemGuard';
@@ -11,7 +11,7 @@ import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from './med
  */
 export const tryAppendOneMediaToAlbum = (
   album: Album,
-  mediaItem: MediaItemRow,
+  mediaItem: DBMediaItemRow,
   mediaItemId: EntityId,
   viewerId: EntityId,
 ): WriteResult<AlbumItem> => {
@@ -19,7 +19,7 @@ export const tryAppendOneMediaToAlbum = (
   if (!r1.success) {
     return r1;
   }
-  const r2 = ensureMemberCanEditAlbum(album, ViewerOperation.addItems, viewerId);
+  const r2 = ensureMemberCanEditAlbum(album, Operation.addItems, viewerId);
   if (!r2.success) {
     return r2;
   }

@@ -88,10 +88,14 @@ export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): Album
         );
       }
       if (authorizations.length > 0) {
-        const authorizationRows = authorizations.map((authorization) => ({
-          ...authorization,
-          albumId: record.id,
-        }));
+        const authorizationRows = authorizations.map((authorization) => {
+          const { publicLinkId, ...rowWithoutPublicLink } = authorization;
+          return {
+            ...rowWithoutPublicLink,
+            albumId: record.id,
+            ...(publicLinkId != null ? { shareLinkId: publicLinkId } : {}),
+          };
+        });
         await trx('access_grant')
           .insert(authorizationRows)
           .onConflict(['album_id', 'granted_to_user'])

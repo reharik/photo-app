@@ -44,7 +44,7 @@ export const GrantShareForm = ({
   onClose,
 }: GrantShareFormProps) => {
   const [handle, setHandle] = useState('');
-  const [permission, setPermission] = useState<SharePermission>(SharePermission.view);
+  const [permission] = useState<SharePermission>(SharePermission.view);
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState<DateTime | undefined>();
   const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);

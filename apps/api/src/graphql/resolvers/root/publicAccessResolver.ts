@@ -24,7 +24,7 @@ const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
       if (!album) {
         throw new Error('Public album not found for provided access token');
       }
-      return ctx.publicReadServices.applyPublicAuthorizationService.toAlbum(album);
+      return album;
     }),
     mediaItem: publicResolver(async (_, args, ctx) => {
       const mediaItem = await ctx.publicReadServices.publicMediaItemReadService.getPublicMediaItem({
@@ -33,7 +33,7 @@ const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
       if (!mediaItem) {
         throw new Error('Public media item not found for provided access token');
       }
-      return ctx.publicReadServices.applyPublicAuthorizationService.toPublicItem(mediaItem);
+      return mediaItem;
     }),
   },
 };

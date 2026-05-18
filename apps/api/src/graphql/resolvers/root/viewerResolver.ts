@@ -19,54 +19,38 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
       const albumsRows =
         (await ctx.readServices.viewerAlbumReadService.listAlbums(collectionInfo)) || [];
 
-      const authorizedAlbums = await ctx.readServices.applyAuthorizationService.toAlbums(
-        albumsRows.nodes,
-      );
-
       return {
-        nodes: authorizedAlbums,
-        pageInfo: albumsRows.pageInfo,
+        nodes: albumsRows.nodes,
+        pageInfo: collectionInfo.pageInfo,
+        totalCount: albumsRows.totalCount,
       };
     }),
     album: authenticatedResolver(async (_parent, { id }, ctx) => {
-      const album = await ctx.readServices.viewerAlbumReadService.getAlbum(id);
-      if (!album) {
-        return undefined;
-      }
-      const authorizedAlbum = await ctx.readServices.applyAuthorizationService.toAlbum(album);
-
-      return authorizedAlbum;
+      return ctx.readServices.viewerAlbumReadService.getAlbum(id);
     }),
     mediaItem: authenticatedResolver(async (_parent, { id }, ctx) => {
-      const item = await ctx.readServices.viewerMediaItemReadService.getMediaItemForViewer({
+      return await ctx.readServices.viewerMediaItemReadService.getMediaItemForViewer({
         mediaItemId: id,
       });
-      if (!item) {
-        return undefined;
-      }
-      return ctx.readServices.applyAuthorizationService.toItem(item);
     }),
 
     mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<MediaItemSortBy>(input.collectionInfo);
-      const mediaItems =
+      const mediaItemsResult =
         await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo);
 
-      const authorizedItems = await ctx.readServices.applyAuthorizationService.toItems(
-        mediaItems.nodes,
-      );
+      // be sure and update pageInfo when we have a paged list
       return {
-        nodes: authorizedItems,
-        pageInfo: mediaItems.pageInfo,
+        nodes: mediaItemsResult.nodes,
+        totalCount: mediaItemsResult.totalCount,
+        pageInfo: collectionInfo.pageInfo,
       };
     }),
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerSharedContactsReadService.getShareContacts();
     }),
     sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
-      const { mediaItems } =
-        await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
-      return await ctx.readServices.applyAuthorizationService.toNestedItems(mediaItems);
+      return await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
     }),
   },
 };

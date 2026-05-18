@@ -16,7 +16,7 @@ type MediaSelectionToolbarProps = {
 /**
  * Actions for media-oriented grids (recent media, album detail, picker).
  * Each action is shown only when the corresponding callback is provided (callers gate with
- * `canEveryItemDo` and `viewerOperations` from the API).
+ * `canEveryItemDo` and `operations` from the API).
  */
 export const MediaSelectionToolbar = ({
   onShare,

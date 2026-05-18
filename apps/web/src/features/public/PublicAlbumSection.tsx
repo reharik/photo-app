@@ -59,6 +59,7 @@ export const PublicAlbumSection = ({ album, albumItems }: PublicAlbumSectionProp
         />
         <SelectableGallery
           nodes={albumItems}
+          mediaIdSelector={(x) => x.mediaItem.id}
           multiSelectProps={multiSelectProps}
           embedInParentScroll
           emptyState={
@@ -67,7 +68,9 @@ export const PublicAlbumSection = ({ album, albumItems }: PublicAlbumSectionProp
               text="Start choosing media items to include to build your gallery"
             />
           }
-          renderItem={({ item }) => <PublicAlbumMediaTile item={item} />}
+          renderItem={({ item, orderedMediaIds }) => (
+            <PublicAlbumMediaTile item={item} mediaGalleryIds={orderedMediaIds} />
+          )}
         />
       </AlbumBodyScroll>
     </Container>

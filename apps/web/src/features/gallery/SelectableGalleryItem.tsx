@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import styled from 'styled-components';
 import { SelectionThumbOverlay } from './SelectionCornerCheck';
 import { SelectionToggleControl } from './SelectionToggleControl';
@@ -12,8 +12,7 @@ interface SelectableGalleryItemProps {
   children: React.ReactNode;
   /** `shared`: viewer is not the owner (e.g. album shared with them). */
   selectable?: boolean;
-  selectableActions?: ViewerOperation[];
-  viewerIsOwner: boolean;
+  selectableActions?: Operation[];
 }
 
 export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
@@ -23,11 +22,11 @@ export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
   onToggle,
   children,
   selectableActions = [],
-  viewerIsOwner,
 }: SelectableGalleryItemProps) => {
   return (
     <Item>
-      <MediaThumb $frameVariant={viewerIsOwner} data-selectable-thumb="">
+      {/* TODO: fix boarder for shared items */}
+      <MediaThumb $frameVariant={false} data-selectable-thumb="">
         <ThumbClickCapture onClickCapture={onModifierClick}>
           <SelectionThumbOverlay visible={selectable && selectableActions.length > 0} />
           {children}

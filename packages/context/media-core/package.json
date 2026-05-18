@@ -21,6 +21,7 @@
     "@aws-sdk/client-s3": "^3.1028.0",
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
     "@packages/contracts": "0.1.0",
+    "@packages/infrastructure": "0.1.0",
     "@reharik/smart-enum": "^0.4.1",
     "@reharik/smart-enum-knex": "^0.0.3",
     "knex": "^3.1.0"

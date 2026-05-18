@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client/react';
-import { useCallback } from 'react';
 import { RecentMediaSection } from '../features/media/RecentMediaSection';
 import { ViewerRecentMediaDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
@@ -9,13 +8,12 @@ export const HomeScreen = () => {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
-  const { refetch } = query;
 
-  const reloadData = useCallback(async (): Promise<void> => {
-    await refetch();
-  }, [refetch]);
-
-  const { data: nodes, content } = getQueryRenderState({
+  const {
+    data: nodes,
+    content,
+    refetch,
+  } = getQueryRenderState({
     query,
     select: (data) => data.viewer?.mediaItems.nodes ?? [],
   });
@@ -24,5 +22,5 @@ export const HomeScreen = () => {
     return content;
   }
 
-  return <RecentMediaSection nodes={nodes} reloadData={reloadData} />;
+  return <RecentMediaSection nodes={nodes} reloadData={refetch} />;
 };

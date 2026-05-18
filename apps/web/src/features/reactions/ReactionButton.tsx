@@ -22,15 +22,22 @@ export const ReactionButton = ({
   onToggle,
 }: Props): JSX.Element => {
   const hasReaction = viewerReactions?.some((r) => r.emoji === emoji) ?? false;
-  const icon = emoji.hasReaction(hasReaction);
+  // here we set the icon to reacted ( filled ) if you can't click on it, otherwise
+  // it would look like a reaction button that should be able to be clicked.
+  const icon = canReact ? emoji.hasReaction(hasReaction) : emoji.reacted;
   const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
+  const ariaLabel = !canReact
+    ? `${emojiCount} ${emoji.display}s`
+    : hasReaction
+      ? 'Add reaction'
+      : 'Reaction already added';
   return (
     <Root>
       <Button
         type="button"
         $reacted={hasReaction}
         disabled={!canReact}
-        aria-label={hasReaction ? 'Remove reaction' : 'Add reaction'}
+        aria-label={ariaLabel}
         aria-pressed={hasReaction}
         onClick={canReact ? onToggle : undefined}
       >

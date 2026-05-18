@@ -4,19 +4,37 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
+import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
 
-export const AlbumMediaTile = ({ item }: { item: MinimalAlbumItemSummaryVM }) => {
+export const AlbumMediaTile = ({
+  item,
+  mediaGalleryIds,
+  onReactionsRefetch,
+}: {
+  item: MinimalAlbumItemSummaryVM;
+  mediaGalleryIds: string[];
+  onReactionsRefetch: () => void;
+}) => {
   const mediaItem = item.mediaItem;
   const url = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
   return (
     <>
-      <ThumbLink to={`/media/${mediaItem.id}`}>
+      <ThumbLink to={`/media/${mediaItem.id}`} state={{ mediaGalleryIds }}>
         {mediaItem.kind === MediaKind.photo ? (
           <ThumbImage src={url} alt={mediaItem.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}
       </ThumbLink>
+      <ReactionsStrip onClick={(e) => e.stopPropagation()}>
+        <ReactionsForMediaItemContainer
+          mediaItemId={item.mediaItem.id}
+          reactionCounts={item.mediaItem.reactionCounts}
+          viewerReactions={item.mediaItem.viewerReactions}
+          canReact
+          onRefetch={onReactionsRefetch}
+        />
+      </ReactionsStrip>
       <CaptionLink to={`/media/${mediaItem.id}`}>
         <MediaInfo>
           <MediaTitle>{mediaItem.title?.trim() ?? ''}</MediaTitle>
@@ -73,4 +91,12 @@ const MediaTitle = styled.div`
 const MediaMeta = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
+`;
+
+const ReactionsStrip = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)} 0;
+  min-height: 0;
 `;

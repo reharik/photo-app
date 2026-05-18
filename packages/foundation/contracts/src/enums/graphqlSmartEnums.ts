@@ -9,8 +9,8 @@ import { enumeration, type Enumeration } from '@reharik/smart-enum';
 
 import { AlbumMemberRole } from './albumMemberRole';
 import { ErrorCategory } from './ContractError';
+import { Operation } from './operation';
 import { ReactionEmoji } from './reactionEmojis';
-import { ViewerOperation } from './viewerOperations';
 
 const albumItemSortByInput = {
   createdAt: { column: 'created_at' },
@@ -106,9 +106,9 @@ export const enumRegistry = {
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
+  Operation,
   ReactionEmoji,
   ReactionTargetType,
   SharePermission,
   SortDir,
-  ViewerOperation,
 } as const;

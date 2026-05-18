@@ -12,10 +12,13 @@
     "strict": true,
     "paths": {
       "@packages/contracts": ["packages/foundation/contracts/dist/src/index.d.ts"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"]
+      "@packages/infrastructure": ["packages/foundation/infrastructure/dist/src/index.d.ts"]
     }
   },
-  "references": [{ "path": "../../foundation/contracts" }],
+  "references": [
+    { "path": "../../foundation/contracts" },
+    { "path": "../../foundation/infrastructure" }
+  ],
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules", "src/tests/**"]
 }

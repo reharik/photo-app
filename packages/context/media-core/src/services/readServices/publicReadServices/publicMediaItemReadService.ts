@@ -1,8 +1,8 @@
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
 import { PublicMediaItemReadRepository } from '../../../repositories/readRepositories/publicMediaItemReadRepository';
 import { EntityId } from '../../../types/types';
 import { PublicReadServiceFactoryBase } from '../readServiceBaseType';
-import { PublicMediaItemProjection, PublicMediaItemRow } from '../types';
+import { PublicMediaItemProjection } from '../types';
+import { EnrichMediaItems } from '../viewerReadServices/enrichMediaItems';
 
 export interface PublicMediaItemReadService {
   getPublicMediaItem: (args: {
@@ -16,21 +16,14 @@ export interface PublicMediaItemReadServiceFactory extends PublicReadServiceFact
 
 type PublicMediaItemReadServiceFactoryDeps = {
   publicMediaItemReadRepository: PublicMediaItemReadRepository;
-  mediaItemReadRepository: MediaItemReadRepository;
+  enrichMediaItems: EnrichMediaItems;
 };
 
 export const build__PublicMediaItemReadServiceFactory = ({
   publicMediaItemReadRepository,
-  mediaItemReadRepository,
+  enrichMediaItems,
 }: PublicMediaItemReadServiceFactoryDeps): PublicMediaItemReadServiceFactory => {
   return ({ publicLinkId }: { publicLinkId: string }) => {
-    const withTags = async (row: PublicMediaItemRow): Promise<PublicMediaItemProjection> => {
-      const tagMap = await mediaItemReadRepository.listTagsForMediaItemIds({
-        mediaItemIds: [row.id],
-      });
-      return { ...row, tags: tagMap.get(row.id) ?? [] };
-    };
-
     return {
       getPublicMediaItem: async ({
         mediaItemId,
@@ -44,8 +37,8 @@ export const build__PublicMediaItemReadServiceFactory = ({
         if (!row) {
           return undefined;
         }
-        const projection = await withTags(row);
-        return projection;
+        const projection = await enrichMediaItems.enrichPublic(publicLinkId, [row]);
+        return projection[0];
       },
     };
   };

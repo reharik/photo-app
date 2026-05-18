@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -27,7 +27,7 @@ export const build__UnsetCoverMedia = ({
       return r1;
     }
     const album = r1.value;
-    const r2 = ensureMemberCanEditAlbum(album, ViewerOperation.editCover, viewerId);
+    const r2 = ensureMemberCanEditAlbum(album, Operation.editCover, viewerId);
     if (!r2.success) {
       return r2;
     }

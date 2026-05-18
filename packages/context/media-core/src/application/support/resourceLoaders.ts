@@ -2,12 +2,11 @@ import { AppErrorCollection } from '@packages/contracts';
 import {
   Album,
   AlbumRepository,
+  DBMediaItemRow,
   EntityId,
   MediaItem,
   MediaItemReadRepository,
   MediaItemRepository,
-  MediaItemRow,
-  ReadReactionService,
   User,
   UserRepository,
   WriteResult,
@@ -26,26 +25,21 @@ export const loadRequiredReadOnlyMediaItem = async (
   mediaItemId: EntityId,
   viewerId: EntityId,
   mediaItemReadRepository: MediaItemReadRepository,
-  readReactionService: ReadReactionService,
-): Promise<WriteResult<MediaItemRow>> => {
+): Promise<WriteResult<DBMediaItemRow>> => {
   const mediaItem = await mediaItemReadRepository.getForViewer({ mediaItemId, viewerId });
   if (!mediaItem) {
     return fail(AppErrorCollection.mediaItem.MediaItemNotFound);
   }
-  const mediaItemWithReactions = readReactionService.withReactions([mediaItem]);
-  return ok(mediaItemWithReactions[0]);
+
+  return ok(mediaItem);
 };
 export const loadRequiredReadOnlyMediaItems = async (
   mediaItemIds: EntityId[],
   viewerId: EntityId,
   mediaItemReadRepository: MediaItemReadRepository,
-  readReactionService: ReadReactionService,
-): Promise<WriteResult<MediaItemRow[]>> => {
+): Promise<WriteResult<DBMediaItemRow[]>> => {
   const mediaItems = await mediaItemReadRepository.getManyForViewer({ mediaItemIds, viewerId });
-  const mediaItemsWithReactions = readReactionService.withReactions(mediaItems);
-  return mediaItemsWithReactions.length > 0
-    ? ok(mediaItemsWithReactions)
-    : fail(AppErrorCollection.mediaItem.MediaItemsNotFound);
+  return ok(mediaItems);
 };
 
 export const loadRequiredMediaItem = async (

@@ -64,6 +64,5 @@ enum ErrorCategory {
 
 interface ViewableItem implements Node {
   id: ID!
-  viewerIsOwner: Boolean!
-  viewerOperations: [ViewerOperation!]!
+  operations: [Operation!]!
 }

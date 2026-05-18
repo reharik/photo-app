@@ -1,7 +1,7 @@
 fragment PublicAlbumItemSummary on PublicAlbumItem {
   id
   orderIndex
-  viewerOperations
+  operations
   mediaItem {
     ...PublicMediaItemSummary
   }

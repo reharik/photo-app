@@ -1,20 +1,18 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { useMemo } from 'react';
 import { useMultiSelectIds } from './useMultiSelectIds';
 
 export type GalleryConfigItems = {
-  operation: ViewerOperation;
+  operation: Operation;
   label?: string;
   onAction: () => void;
 };
 
-type MultiSelectGalleryProps<T extends { id: string; viewerOperations?: ViewerOperation[] }> = {
+type MultiSelectGalleryProps<T extends { id: string; operations?: Operation[] }> = {
   nodes: T[];
   actions: GalleryConfigItems[];
 };
-export const useMultiSelectGallery = <
-  T extends { id: string; viewerOperations?: ViewerOperation[] },
->({
+export const useMultiSelectGallery = <T extends { id: string; operations?: Operation[] }>({
   nodes,
   actions,
 }: MultiSelectGalleryProps<T>) => {
@@ -26,7 +24,7 @@ export const useMultiSelectGallery = <
 
   const availableActions = useMemo(() => {
     return actions
-      .filter((x) => selectedItems.some((y) => y.viewerOperations?.includes(x.operation)))
+      .filter((x) => selectedItems.some((y) => y.operations?.includes(x.operation)))
       .map((x) => ({ ...x, label: x.label ?? x.operation.display }));
   }, [actions, selectedItems]);
 

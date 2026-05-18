@@ -3,7 +3,7 @@ import { Comment, fail, ok } from '../../../domain';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/userReadRepository';
 import { EntityId, WriteResult } from '../../../types/types';
-import { ValidateViewerOperationService } from '../../readServices/mediaGrantService';
+import { ValidateOperationService } from '../../readServices/mediaGrantService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -32,16 +32,16 @@ export interface AddComment extends WriteServiceBase {
 type AddCommentDeps = {
   commentRepository: CommentRepository;
   userReadRepository: UserReadRepository;
-  validateViewerOperationService: ValidateViewerOperationService;
+  validateOperationService: ValidateOperationService;
 };
 
 export const build__AddComment = ({
   commentRepository,
   userReadRepository,
-  validateViewerOperationService,
+  validateOperationService,
 }: AddCommentDeps): AddComment => {
   return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
-    const result = await validateViewerOperationService.authorizeMediaComment({
+    const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
       viewerId: command.authorId,
     });

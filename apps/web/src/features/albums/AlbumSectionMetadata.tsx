@@ -1,11 +1,11 @@
-import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
 import { DateTime } from 'luxon';
 import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { AppModal } from '../../ui/AppModal';
-import { MediaItemSummaryVM } from '../../viewModels/';
+import { MediaItemSummaryVM, ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
 import { SingleSelectionTile } from '../gallery/tiles/SingleSelectionTile';
 
@@ -24,7 +24,7 @@ export type MinimalAlbumSummaryVM = {
   coverMedia?: MinimalMediaItemSummaryVM;
   itemCount: number;
   updatedAt?: DateTime;
-  viewerIsOwner?: boolean;
+  operations: Operation[];
 };
 
 export type MinimalMediaItemSummaryVM = {
@@ -33,6 +33,8 @@ export type MinimalMediaItemSummaryVM = {
   kind: MediaKind;
   createdAt?: DateTime;
   status?: MediaItemStatus;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions?: ViewerReactionVM[];
 };
 
 export type MinimalAlbumItemSummaryVM = {
@@ -40,7 +42,7 @@ export type MinimalAlbumItemSummaryVM = {
   mediaItem: MinimalMediaItemSummaryVM;
   orderIndex: string;
   updatedAt?: DateTime;
-  viewerIsOwner?: boolean;
+  operations: Operation[];
 };
 
 export const AlbumSectionMetadata = ({
@@ -64,7 +66,7 @@ export const AlbumSectionMetadata = ({
         📷
       </CoverPlaceholder>
     );
-    return album.viewerIsOwner ? (
+    return album.operations.includes(Operation.editCover) ? (
       <CoverUploadButton type="button" onClick={() => setAddCoverItemOpen(true)}>
         {cover}
       </CoverUploadButton>

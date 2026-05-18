@@ -7,8 +7,13 @@ import {
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { AlbumItemWithMediaRow, AlbumWithCoverRow } from '../../services/readServices/types';
+import {
+  AlbumItemWithMediaRow,
+  AlbumWithCoverRow,
+  PagedList,
+} from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
+import { toPagedResult } from '../repositoryHelpers';
 
 export type AlbumReadRepository = {
   listByViewerId: ({
@@ -17,7 +22,7 @@ export type AlbumReadRepository = {
   }: {
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
-  }) => Promise<AlbumWithCoverRow[]>;
+  }) => Promise<PagedList<AlbumWithCoverRow>>;
   getAlbumForViewer: ({
     albumId,
     viewerId,
@@ -33,7 +38,7 @@ export type AlbumReadRepository = {
     albumId: string;
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<AlbumItemWithMediaRow[]>;
+  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
   findAlbumIdsReferencingMediaItem: ({
     mediaItemId,
   }: {
@@ -55,7 +60,7 @@ export type AlbumReadRepository = {
     albumId: string;
     publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<AlbumItemWithMediaRow[]>;
+  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
 };
 
 const mediaItemSelectColumns = [
@@ -75,7 +80,6 @@ const mediaItemSelectColumns = [
   'mediaItem.createdAt as mediaItemCreatedAt',
   'mediaItem.updatedAt as mediaItemUpdatedAt',
   'mediaItem.reactionCounts as mediaItemReactionCounts',
-  'mediaItem.viewerReactions as mediaItemViewerReactions',
 ];
 
 const albumWithCoverSelectColumns = [
@@ -152,23 +156,32 @@ export const build__AlbumReadRepository = ({
   }: {
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
-  }): Promise<AlbumWithCoverRow[]> => {
-    return withEnumRevival(
-      database<AlbumWithCoverRow>('album')
+  }): Promise<PagedList<AlbumWithCoverRow>> => {
+    const rows = (await withEnumRevival(
+      database('album')
         .leftJoin('albumMember', (join) => {
           join
             .on('albumMember.albumId', 'album.id')
             .on('albumMember.userId', database.raw('?', [viewerId]));
         })
         .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .leftJoin(
+          database('album_item')
+            .select('album_id')
+            .count('* as item_count')
+            .groupBy('album_id')
+            .as('item_counts'),
+          'item_counts.album_id',
+          'album.id',
+        )
         .select(...albumWithCoverSelectColumns)
-        .where((b) => {
-          whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
-        })
+        .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
+        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
+        .where((b) => whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b))
         .andWhere('album.isPublicLinkAlbum', false)
         .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
-        .orderBy('album.id', 'asc') // tie-breaker (unqualified `id` / `created_at` are ambiguous with joined mediaItem)
-        .limit(collectionInfo.pageInfo.limit + 1)
+        .orderBy('album.id', 'asc')
+        .limit(collectionInfo.pageInfo.limit)
         .offset(collectionInfo.pageInfo.offset),
       {
         mediaItemKind: MediaKind,
@@ -176,7 +189,8 @@ export const build__AlbumReadRepository = ({
         viewerMemberRole: AlbumMemberRole,
       },
       { strict: true },
-    );
+    )) as (AlbumWithCoverRow & { totalCount: number })[];
+    return toPagedResult(rows);
   },
 
   getAlbumForViewer: async ({
@@ -194,6 +208,12 @@ export const build__AlbumReadRepository = ({
             .on('albumMember.userId', database.raw('?', [viewerId]));
         })
         .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .select(
+          database('album_item')
+            .count('* as item_count')
+            .where('album_item.album_id', albumId)
+            .as('itemCount'),
+        )
         .select(...albumWithCoverSelectColumns)
         .where('album.id', albumId)
         .andWhere((b) => {
@@ -216,9 +236,9 @@ export const build__AlbumReadRepository = ({
     albumId: string;
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }): Promise<AlbumItemWithMediaRow[]> => {
-    return withEnumRevival(
-      database<AlbumItemWithMediaRow>('albumItem')
+  }): Promise<PagedList<AlbumItemWithMediaRow>> => {
+    const rows = (await withEnumRevival(
+      database('albumItem')
         .innerJoin('album', 'albumItem.albumId', 'album.id')
         .leftJoin('albumMember', (join) => {
           join
@@ -226,19 +246,20 @@ export const build__AlbumReadRepository = ({
             .on('albumMember.userId', database.raw('?', [viewerId]));
         })
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
-        .leftJoin('grant', (join) => {
-          join
-            .on('grant.mediaItemId', 'albumItem.mediaItemId')
-            .on('grant.grantedToUser', database.raw('?', [viewerId]));
-        })
         .where('album.id', albumId)
         .andWhere('mediaItem.status', 'READY')
         .andWhere((b) => {
-          b.where('albumMember.userId', viewerId).orWhereNotNull('grant.id');
+          b.where('albumMember.userId', viewerId).orWhereExists(function () {
+            this.select('*')
+              .from('grant')
+              .whereRaw('?? = ??', ['grant.mediaItemId', 'albumItem.mediaItemId'])
+              .whereRaw('?? = ?', ['grant.grantedToUser', viewerId]);
+          });
         })
-        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
+        .select(...albumItemWithMediaSelectColumns)
+        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
         .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
-        .orderBy('albumItem.id', 'asc') // tie-breaker
+        .orderBy('albumItem.id', 'asc')
         .limit(collectionInfo.pageInfo.limit + 1)
         .offset(collectionInfo.pageInfo.offset),
       {
@@ -246,7 +267,8 @@ export const build__AlbumReadRepository = ({
         mediaItemStatus: MediaItemStatus,
       },
       { strict: true },
-    );
+    )) as (AlbumItemWithMediaRow & { totalCount: number })[];
+    return toPagedResult(rows);
   },
   findAlbumIdsReferencingMediaItem: async ({
     mediaItemId,
@@ -270,6 +292,12 @@ export const build__AlbumReadRepository = ({
     return withEnumRevival(
       database<AlbumWithCoverRow>('album')
         .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+        .select(
+          database('album_item')
+            .count('* as item_count')
+            .where('album_item.album_id', albumId)
+            .as('itemCount'),
+        )
         .where('album.id', albumId)
         .where((b) => {
           whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
@@ -292,16 +320,18 @@ export const build__AlbumReadRepository = ({
     albumId: string;
     publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }): Promise<AlbumItemWithMediaRow[]> => {
-    return withEnumRevival(
-      database<AlbumItemWithMediaRow>('albumItem')
+  }): Promise<PagedList<AlbumItemWithMediaRow>> => {
+    const rows = (await withEnumRevival(
+      database('albumItem')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('albumItem.albumId', albumId)
         .where('mediaItem.status', MediaItemStatus.ready.value)
         .where((b) => {
           whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
         })
-        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns)
+        .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
+          ...albumItemWithMediaSelectColumns,
+        )
         .orderBy('albumItem.orderIndex', 'asc')
         .orderBy('albumItem.id', 'asc')
         .limit(collectionInfo.pageInfo.limit + 1)
@@ -311,6 +341,8 @@ export const build__AlbumReadRepository = ({
         mediaItemStatus: MediaItemStatus,
       },
       { strict: true },
-    );
+    )) as (AlbumItemWithMediaRow & { totalCount: number })[];
+
+    return toPagedResult(rows);
   },
 });

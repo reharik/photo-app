@@ -6,9 +6,9 @@ type Album implements ViewableItem & Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
-  viewerOperations: [ViewerOperation!]!
-  viewerIsOwner: Boolean!
+  operations: [Operation!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  itemCount: Int!
 }
 
 input ViewerAlbumItemsInput {
@@ -23,6 +23,7 @@ input AlbumItemCollectionInput {
 
 type AlbumItemCollectionPayload {
   nodes: [AlbumItem!]!
+  totalCount: Int!
   pageInfo: PageInfo!
 }
 
@@ -43,8 +44,7 @@ enum AlbumMemberRole {
 type AlbumItem implements ViewableItem & Node {
   id: ID!
   mediaItem: MediaItem!
-  viewerOperations: [ViewerOperation!]!
-  viewerIsOwner: Boolean!
+  operations: [Operation!]!
   orderIndex: String!
   createdAt: DateTime!
   updatedAt: DateTime!

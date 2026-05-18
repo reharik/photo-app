@@ -19,7 +19,7 @@ const parseNextBatchFromAggregateRow = (row: unknown): number => {
   if (typeof row !== 'object' || row === null || !('nextBatch' in row)) {
     return Number.NaN;
   }
-  const value = (row as { nextBatch: unknown }).nextBatch;
+  const value = row.nextBatch;
   if (typeof value === 'number') {
     return value;
   }
@@ -30,8 +30,8 @@ const parseNextBatchFromAggregateRow = (row: unknown): number => {
 };
 
 const resolveMigrationFilenames = (): string[] => {
-  const directory = knexConfig.migrations.directory;
-  const extension = knexConfig.migrations.extension;
+  const directory = knexConfig.migrations?.directory;
+  const extension = knexConfig.migrations?.extension;
   if (typeof directory !== 'string' || typeof extension !== 'string') {
     throw new Error('knexConfig.migrations.directory and extension must be set.');
   }
@@ -75,7 +75,7 @@ const ensureMigrationInfrastructure = async (
 };
 
 const baselineKnexMigrations = async (): Promise<void> => {
-  const migrateTable = knexConfig.migrations.tableName ?? 'knex_migrations';
+  const migrateTable = knexConfig.migrations?.tableName ?? 'knex_migrations';
   const lockTable = `${migrateTable}_lock`;
   const filenames = resolveMigrationFilenames();
 

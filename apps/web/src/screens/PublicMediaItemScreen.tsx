@@ -26,7 +26,6 @@ export const PublicMediaItemScreen = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const galleryIds = (location.state as MediaItemLocationState | undefined)?.mediaGalleryIds;
-
   const query = useQuery(PublicMediaItemDetailDocument, {
     variables: { mediaItemId: mediaId ?? '' },
     skip: !mediaId,

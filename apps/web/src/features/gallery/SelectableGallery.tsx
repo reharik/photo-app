@@ -1,4 +1,4 @@
-import { ViewerOperation } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
 import { ViewableItemVM } from '../../viewModels';
@@ -17,6 +17,7 @@ const DEFAULT_GRID_GAP_SPACING_STEP_MOBILE = 2;
 
 type SelectableGalleryProps<T extends { id: string }> = {
   nodes: T[];
+  mediaIdSelector?: (item: T) => string;
   multiSelectProps: MultiSelectProps;
   /** Shown when `nodes` is empty; ignored if omitted. */
   emptyState?: React.ReactNode;
@@ -39,11 +40,12 @@ type SelectableGalleryProps<T extends { id: string }> = {
   }) => React.ReactNode;
   /** When set, non-owner / shared items can use a dashed frame (see `SelectableGalleryItem`). */
   selectable?: boolean;
-  selectableActions?: ViewerOperation[];
+  selectableActions?: Operation[];
 };
 
 export const SelectableGallery = <T extends ViewableItemVM>({
   nodes,
+  mediaIdSelector = (item: T) => item.id,
   multiSelectProps,
   emptyState,
   embedInParentScroll = false,
@@ -55,7 +57,7 @@ export const SelectableGallery = <T extends ViewableItemVM>({
   selectable = true,
   selectableActions = [],
 }: SelectableGalleryProps<T>) => {
-  const orderedMediaIds = useMemo(() => nodes.map((n) => n.id), [nodes]);
+  const orderedMediaIds = useMemo(() => nodes.map(mediaIdSelector), [nodes, mediaIdSelector]);
 
   if (nodes.length === 0) {
     if (emptyState == null) {
@@ -75,7 +77,7 @@ export const SelectableGallery = <T extends ViewableItemVM>({
       $gapStepMobile={gridGapSpacingStepMobile}
     >
       {nodes.map((item, index) => {
-        const hasActions = selectableActions.some((x) => item.viewerOperations?.includes(x));
+        const hasActions = selectableActions.some((x) => item.operations?.includes(x));
 
         return (
           <SelectableGalleryItem
@@ -85,7 +87,6 @@ export const SelectableGallery = <T extends ViewableItemVM>({
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}
             onModifierClick={(event) => multiSelectProps.handleModifierClick(event, item.id, index)}
             selectableActions={selectableActions}
-            viewerIsOwner={item.viewerIsOwner}
             // Generic `T` + callback triggers no-unsafe-assignment despite explicit return type.
           >
             {renderItem({

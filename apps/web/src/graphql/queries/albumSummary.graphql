@@ -3,10 +3,15 @@ fragment AlbumSummary on Album {
   title
   createdAt
   updatedAt
+  itemCount
   ...ViewableAlbum
   coverMedia {
     ...MediaItemSummary
   }
+}
+
+fragment AlbumSummaryWithItems on Album {
+  ...AlbumSummary
   items(
     input: {
       collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }

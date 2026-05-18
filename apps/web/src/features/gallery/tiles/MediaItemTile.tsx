@@ -13,10 +13,9 @@ export const MediaItemTile = ({
 }: {
   item: MediaItemSummaryVM;
   mediaGalleryIds: string[];
-  onReactionsRefetch?: () => Promise<void>;
+  onReactionsRefetch?: () => void;
 }) => {
   const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
-  const refetchReactions = onReactionsRefetch ?? (async (): Promise<void> => {});
 
   return (
     <TileColumn>
@@ -33,7 +32,7 @@ export const MediaItemTile = ({
           reactionCounts={item.reactionCounts}
           viewerReactions={item.viewerReactions}
           canReact
-          onRefetch={refetchReactions}
+          onRefetch={onReactionsRefetch}
         />
       </ReactionsStrip>
       <CaptionLink to={`/media/${item.id}`}>

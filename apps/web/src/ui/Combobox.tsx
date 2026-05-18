@@ -77,6 +77,8 @@ export const Combobox = <T,>({
       : null;
 
   const comboboxItems: ComboboxOption<T>[] = [
+    // lies
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     ...filteredItems.map((item) => ({ kind: 'item', item }) as ComboboxOption<T>),
     ...(customOption ? [customOption] : []),
   ];

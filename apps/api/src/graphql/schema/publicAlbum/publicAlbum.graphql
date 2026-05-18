@@ -4,6 +4,8 @@ type PublicAlbum implements Node {
   coverMedia: PublicMediaItem
   items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  itemCount: Int!
+  operations: [Operation!]!
 }
 
 input PublicAlbumItemsInput {
@@ -12,6 +14,7 @@ input PublicAlbumItemsInput {
 
 type PublicAlbumItemCollectionPayload {
   nodes: [PublicAlbumItem!]!
+  totalCount: Int!
   pageInfo: PageInfo!
 }
 
@@ -19,7 +22,7 @@ type PublicAlbumItem implements Node {
   id: ID!
   orderIndex: String!
   mediaItem: PublicMediaItem!
-  viewerOperations: [ViewerOperation!]!
+  operations: [Operation!]!
 }
 
 input PublicAlbumItemCollectionInput {
