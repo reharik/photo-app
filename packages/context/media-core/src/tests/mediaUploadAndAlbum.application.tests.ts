@@ -18,7 +18,7 @@ import { MediaItem } from '../domain/MediaItem/MediaItem';
 import type { MediaProcessingJobRepository } from '../domain/MediaProcessingJob/MediaProcessingJobRepository';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
-import type { MediaItemRow } from '../services/readServices/types';
+import type { DBMediaItemRow } from '../services/readServices/types';
 import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem';
 import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
 import { build__CreateAlbum } from '../services/writeServices/album/createAlbum';
@@ -146,7 +146,7 @@ const createTrackingMediaStorage = (
   };
 };
 
-const projectionFromAggregate = (item: MediaItem): MediaItemRow => {
+const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
   const p = item.toPersistence();
   return {
     id: item.id(),
@@ -164,6 +164,7 @@ const projectionFromAggregate = (item: MediaItem): MediaItemRow => {
     takenAt: p.takenAt,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
+    reactionCounts: { total: 0, byEmoji: [] },
   };
 };
 
@@ -438,7 +439,7 @@ describe('Album integration (application services)', () => {
     it('should fail with media not ready', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
 
       const createAlbum = build__CreateAlbum({ albumRepository });
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
@@ -494,7 +495,7 @@ describe('Album integration (application services)', () => {
       const viewerOnlyId = TEST_VIEWER_ONLY_ID;
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
       const createAlbum = build__CreateAlbum({ albumRepository });
@@ -593,7 +594,7 @@ describe('Album integration (application services)', () => {
     it('should persist the album item', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
       const createAlbum = build__CreateAlbum({ albumRepository });
@@ -691,7 +692,7 @@ describe('Album integration (application services)', () => {
     it('should reject the duplicate when the aggregate disallows it', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
       const createAlbum = build__CreateAlbum({ albumRepository });
@@ -846,7 +847,7 @@ describe('Album integration (application services)', () => {
     it('should create a new album and add two items in a single save', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
       const createUpload = build__CreateMediaItemUpload({
@@ -873,7 +874,7 @@ describe('Album integration (application services)', () => {
           }) =>
             mediaItemIds
               .map((id) => projectionFromReadRepo.get(id))
-              .filter((r): r is MediaItemRow => r != null),
+              .filter((r): r is DBMediaItemRow => r != null),
         } as never,
       });
 
@@ -952,7 +953,7 @@ describe('Album integration (application services)', () => {
     it('should add a single item when the same id appears twice in the input', async () => {
       const albumRepository = createInMemoryAlbumRepository();
       const mediaItemRepository = createInMemoryMediaItemRepository();
-      const projectionFromReadRepo = new Map<string, MediaItemRow>();
+      const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
       const createAlbum = build__CreateAlbum({ albumRepository });
@@ -1035,7 +1036,7 @@ describe('Album integration (application services)', () => {
           }) =>
             mediaItemIds
               .map((id) => projectionFromReadRepo.get(id))
-              .filter((r): r is MediaItemRow => r != null),
+              .filter((r): r is DBMediaItemRow => r != null),
         } as never,
       });
 

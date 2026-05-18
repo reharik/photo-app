@@ -8,23 +8,40 @@ import {
   type AlbumItemWithMediaRow,
   type AlbumReadRepository,
   type AlbumWithCoverRow,
+  type EnrichMediaItems,
+  type PagedList,
 } from '@packages/media-core';
 
 describe('ViewerAlbumReadService (collection paging)', () => {
   const viewerId = 'viewer-paging-1';
   const albumId = 'album-paging-1';
 
-  const noopMediaItemReadRepository = {
-    listTagsForMediaItemIds: async (): Promise<Map<string, string[]>> => new Map(),
+  const noopEnrichMediaItems: EnrichMediaItems = {
+    enrich: async (_viewerId, rows) =>
+      rows.map((r) => ({
+        ...r,
+        tags: [],
+        viewerReactions: [],
+        reactionCounts: { total: 0, byEmoji: [] },
+        operations: [],
+      })),
+    enrichPublic: async (_publicLinkId, rows) =>
+      rows.map((r) => ({
+        ...r,
+        tags: [],
+        viewerReactions: [],
+        reactionCounts: { total: 0, byEmoji: [] },
+        operations: [],
+      })),
   };
 
   describe('When listAlbums is called with no collectionInfo fields', () => {
-    it('should pass default paging and sort to the repository and echo pageInfo in the projection', async () => {
+    it('should pass default paging and sort to the repository and return nodes plus totalCount', async () => {
       const listByViewerId = jest.fn(
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [],
+        }): Promise<PagedList<AlbumWithCoverRow>> => ({ nodes: [], totalCount: 0 }),
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,
@@ -32,7 +49,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
-        mediaItemReadRepository: noopMediaItemReadRepository,
+        enrichMediaItems: noopEnrichMediaItems,
       } as never);
       const service = factory({ viewerId });
 
@@ -44,18 +61,18 @@ describe('ViewerAlbumReadService (collection paging)', () => {
           collectionInfo: {},
         }),
       );
-      expect(result.pageInfo).toBeUndefined();
       expect(result.nodes).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
   });
 
   describe('When listAlbums is called with explicit paging', () => {
-    it('should forward resolved pageInfo and sort options to the repository', async () => {
+    it('should forward resolved pageInfo and sort options to the repository and return nodes plus totalCount', async () => {
       const listByViewerId = jest.fn(
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [],
+        }): Promise<PagedList<AlbumWithCoverRow>> => ({ nodes: [], totalCount: 0 }),
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,
@@ -63,7 +80,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
-        mediaItemReadRepository: noopMediaItemReadRepository,
+        enrichMediaItems: noopEnrichMediaItems,
       } as never);
       const service = factory({ viewerId });
 
@@ -79,7 +96,8 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         viewerId,
         collectionInfo: gqlCollection,
       });
-      expect(result.pageInfo).toEqual(gqlCollection.pageInfo);
+      expect(result.nodes).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
   });
 
@@ -92,6 +110,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
       const albumWithoutCover = {
         id: 'album-no-cover',
         title: 'No Cover',
+        itemCount: 0,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-02'),
         mediaItemId: null,
@@ -114,7 +133,10 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         async (_params: {
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumSortBy>;
-        }): Promise<AlbumWithCoverRow[]> => [albumWithoutCover],
+        }): Promise<PagedList<AlbumWithCoverRow>> => ({
+          nodes: [albumWithoutCover],
+          totalCount: 1,
+        }),
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'listByViewerId'> = {
         listByViewerId,
@@ -122,7 +144,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
-        mediaItemReadRepository: noopMediaItemReadRepository,
+        enrichMediaItems: noopEnrichMediaItems,
       } as never);
       const service = factory({ viewerId });
 
@@ -140,13 +162,13 @@ describe('ViewerAlbumReadService (collection paging)', () => {
   });
 
   describe('When getViewableAlbumItems is called with no collectionInfo fields', () => {
-    it('should pass default paging and sort to the repository and echo pageInfo in the projection', async () => {
+    it('should pass default paging and sort to the repository and return nodes plus totalCount', async () => {
       const getViewableAlbumItemsForViewer = jest.fn(
         async (_params: {
           albumId: string;
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
-        }): Promise<AlbumItemWithMediaRow[]> => [],
+        }): Promise<PagedList<AlbumItemWithMediaRow>> => ({ nodes: [], totalCount: 0 }),
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
         getViewableAlbumItemsForViewer,
@@ -154,7 +176,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
-        mediaItemReadRepository: noopMediaItemReadRepository,
+        enrichMediaItems: noopEnrichMediaItems,
       } as never);
       const service = factory({ viewerId });
 
@@ -170,19 +192,19 @@ describe('ViewerAlbumReadService (collection paging)', () => {
           collectionInfo: {},
         }),
       );
-      expect(result.pageInfo).toBeUndefined();
       expect(result.nodes).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
   });
 
   describe('When getViewableAlbumItems is called with explicit paging', () => {
-    it('should forward resolved pageInfo and sort options to the repository', async () => {
+    it('should forward resolved pageInfo and sort options to the repository and return nodes plus totalCount', async () => {
       const getViewableAlbumItemsForViewer = jest.fn(
         async (_params: {
           albumId: string;
           viewerId: string;
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
-        }): Promise<AlbumItemWithMediaRow[]> => [],
+        }): Promise<PagedList<AlbumItemWithMediaRow>> => ({ nodes: [], totalCount: 0 }),
       );
       const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
         getViewableAlbumItemsForViewer,
@@ -190,7 +212,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const factory = build__ViewerAlbumReadServiceFactory({
         albumReadRepository,
-        mediaItemReadRepository: noopMediaItemReadRepository,
+        enrichMediaItems: noopEnrichMediaItems,
       } as never);
       const service = factory({ viewerId });
 
@@ -210,7 +232,8 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         viewerId,
         collectionInfo: gqlCollection,
       });
-      expect(result.pageInfo).toEqual(gqlCollection.pageInfo);
+      expect(result.nodes).toEqual([]);
+      expect(result.totalCount).toBe(0);
     });
   });
 });
