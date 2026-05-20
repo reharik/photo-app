@@ -6,28 +6,32 @@ import { fail, ok } from '../utilities/writeResponse';
 export type AuthorizationProps = {
   grantedToUser?: EntityId;
   publicLinkId?: EntityId;
-  permission: SharePermission;
+  permissions: SharePermission[];
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
 };
 
-export type AuthorizationRecord = {
+export type RawAuthorizationRecord = {
   id: string;
   grantedToUser?: string;
   publicLinkId?: string;
   /** `access_grant.share_link_id` as returned by Knex (stringcase); not set on newly serialized rows. */
   shareLinkId?: string;
   grantedBy: EntityId;
-  permission: SharePermission;
+  permissions: string;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
 } & AuditRecord;
 
+export type AuthorizationRecord = Omit<RawAuthorizationRecord, 'permissions'> & {
+  permissions: SharePermission[];
+};
+
 export type CreateAuthorizationInput = {
-  permission: SharePermission;
+  permissions: SharePermission[];
   publicLinkId?: EntityId;
   grantedToUser?: EntityId;
   grantedBy: EntityId;
@@ -45,7 +49,10 @@ export class Authorization extends Entity<AuthorizationRecord> {
 
   static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
     return new Authorization(crypto.randomUUID(), actorId, {
-      permission: input.permission,
+      //TODO:  FOR NOW WE ARE JUST GRANTING ALL PERMISSIONS
+      // WE WILL EVENTUALLY ADD PERMS INTO THE FORM
+
+      permissions: [SharePermission.download, SharePermission.comment],
       grantedToUser: input.grantedToUser,
       publicLinkId: input.publicLinkId,
       grantedBy: actorId,
@@ -56,7 +63,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
 
   static rehydrate(record: AuthorizationRecord): Authorization {
     const asset = new Authorization(record.id, record.createdBy, {
-      permission: record.permission,
+      permissions: record.permissions,
       grantedToUser: record.grantedToUser,
       publicLinkId: record.publicLinkId ?? record.shareLinkId,
       grantedBy: record.grantedBy,
@@ -73,8 +80,8 @@ export class Authorization extends Entity<AuthorizationRecord> {
   publicLinkId(): EntityId | undefined {
     return this.props.publicLinkId;
   }
-  permission(): SharePermission {
-    return this.props.permission;
+  permissions(): SharePermission[] {
+    return this.props.permissions;
   }
   label(): string | undefined {
     return this.props.label;
@@ -111,5 +118,11 @@ export class Authorization extends Entity<AuthorizationRecord> {
   }
   revokedAt(): Date | undefined {
     return this.props.revokedAt;
+  }
+  override persistenceState(): Record<string, unknown> {
+    return {
+      ...super.persistenceState(),
+      permissions: this.props.permissions.map((x) => x.value).join(','),
+    };
   }
 }

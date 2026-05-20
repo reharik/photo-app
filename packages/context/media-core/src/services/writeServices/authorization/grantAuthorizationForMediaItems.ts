@@ -72,7 +72,7 @@ export const build__GrantAuthorizationForMediaItems = ({
   return async (
     input: GrantUserAuthorizationForMediaItemsCommand,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
-    const { viewerId, permission, grantedToHandle, label, expiresAt } = input;
+    const { viewerId, permissions, grantedToHandle, label, expiresAt } = input;
     const dedupedIds = dedupePreserveOrder(input.mediaItemIds);
 
     if (dedupedIds.length === 0) {
@@ -110,7 +110,7 @@ export const build__GrantAuthorizationForMediaItems = ({
     const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
     for (const mediaItem of mediaItems) {
       const result = mediaItem.grantAuthorization(
-        permission,
+        permissions,
         viewerId,
         grantedToUserId,
         label,

@@ -1,4 +1,3 @@
-import { Operation } from '@packages/contracts';
 import styled from 'styled-components';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { MediaItemSummaryVM } from '../../viewModels/';
@@ -20,7 +19,6 @@ export const MediaSelectorSection = ({
 }: MediaSelectorSectionProps) => {
   const selectableActions = [
     {
-      operation: Operation.addItems,
       label: 'Add to album',
       onAction: () => onAddToAlbum(Array.from(selectedIds)),
     },
@@ -49,7 +47,7 @@ export const MediaSelectorSection = ({
         gridMinColumnWidthPxMobile={112}
         gridGapSpacingStep={1}
         gridGapSpacingStepMobile={2}
-        selectableActions={selectableActions.map((x) => x.operation)}
+        selectableActions={selectableActions}
       />
     </Container>
   );

@@ -20,7 +20,7 @@ export type EnrichMediaItems = {
   ) => Promise<PublicMediaItemProjection[]>;
 };
 
-export const build_EnrichMediaItems = ({
+export const build__EnrichMediaItems = ({
   mediaItemReadRepository,
   reactionReadRepository,
   readReactionService,

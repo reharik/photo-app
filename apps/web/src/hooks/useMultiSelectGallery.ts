@@ -2,15 +2,15 @@ import { Operation } from '@packages/contracts';
 import { useMemo } from 'react';
 import { useMultiSelectIds } from './useMultiSelectIds';
 
-export type GalleryConfigItems = {
-  operation: Operation;
+export type GalleryActionItems = {
+  operation?: Operation;
   label?: string;
   onAction: () => void;
 };
 
 type MultiSelectGalleryProps<T extends { id: string; operations?: Operation[] }> = {
   nodes: T[];
-  actions: GalleryConfigItems[];
+  actions: GalleryActionItems[];
 };
 export const useMultiSelectGallery = <T extends { id: string; operations?: Operation[] }>({
   nodes,
@@ -24,8 +24,10 @@ export const useMultiSelectGallery = <T extends { id: string; operations?: Opera
 
   const availableActions = useMemo(() => {
     return actions
-      .filter((x) => selectedItems.some((y) => y.operations?.includes(x.operation)))
-      .map((x) => ({ ...x, label: x.label ?? x.operation.display }));
+      .filter((x) =>
+        selectedItems.some((y) => x.operation == null || y.operations?.includes(x.operation)),
+      )
+      .map((x) => ({ ...x, label: x.label ?? x.operation?.display ?? '' }));
   }, [actions, selectedItems]);
 
   return {

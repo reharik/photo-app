@@ -1,10 +1,10 @@
 import styled from 'styled-components';
-import { GalleryConfigItems } from '../../hooks/useMultiSelectGallery';
+import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 
 type SelectableGallerySelectionBarProps = {
   count: number;
   onClear: () => void;
-  availableActions: GalleryConfigItems[];
+  availableActions: GalleryActionItems[];
 };
 
 /**
@@ -27,7 +27,11 @@ export const SelectableGallerySelectionBar = ({
       </BarLeft>
       <ActionGroup>
         {availableActions.map((action) => (
-          <ToolbarAction key={action.operation.key} type="button" onClick={action.onAction}>
+          <ToolbarAction
+            key={action.operation?.key ?? action.label ?? ''}
+            type="button"
+            onClick={action.onAction}
+          >
             {action.label}
           </ToolbarAction>
         ))}

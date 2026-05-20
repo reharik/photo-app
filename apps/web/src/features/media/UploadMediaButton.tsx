@@ -86,6 +86,7 @@ export const UploadMediaButton = ({
         type="file"
         multiple={multiple}
         accept="image/*,video/*,image/heic,image/heif,.heic,.heif"
+        data-testid="upload-media-input"
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />

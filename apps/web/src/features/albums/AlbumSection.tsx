@@ -1,6 +1,5 @@
 import { Operation } from '@packages/contracts';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
@@ -10,7 +9,6 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
 import { SelectableGallery } from '../gallery/SelectableGallery';
-import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { AlbumMediaTile } from '../gallery/tiles/AlbumMediaTile';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
@@ -34,11 +32,13 @@ type AlbumSectionProps = {
     submitRemoveFromAlbum: (selectedAlbumItemIds: string[]) => void;
     removeFromAlbumMutation: UseAppMutationStateResult;
   };
-  shareState: {
+  modalState: {
     shareAlbumOpen: boolean;
     setShareAlbumOpen: (open: boolean) => void;
     shareItemsOpen: boolean;
     setShareItemsOpen: (open: boolean) => void;
+    addCoverItemOpen: boolean;
+    setAddCoverItemOpen: (open: boolean) => void;
   };
   retrieveAlbumItems: () => void;
   submitAddAlbumCover: (selectedAlbumItemId: string) => void;
@@ -50,7 +50,7 @@ export const AlbumSection = ({
   albumItems,
   addAlbumItemState,
   removeAlbumItemState,
-  shareState,
+  modalState,
   submitAddAlbumCover,
   reloadData,
 }: AlbumSectionProps) => {
@@ -65,7 +65,7 @@ export const AlbumSection = ({
     {
       operation: Operation.grantAlbumAuthorization,
       label: 'Share',
-      onAction: () => shareState.setShareItemsOpen(true),
+      onAction: () => modalState.setShareItemsOpen(true),
     },
     {
       operation: Operation.removeItems,
@@ -97,64 +97,56 @@ export const AlbumSection = ({
     }
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
   }, []);
+  const albumHeaderActions = (
+    <HeaderActions>
+      {album.operations.includes(Operation.grantAlbumAuthorization) && (
+        <SecondaryButton
+          type="button"
+          disabled={!album}
+          onClick={() => {
+            modalState.setShareAlbumOpen(true);
+          }}
+        >
+          Share album
+        </SecondaryButton>
+      )}
+      {album.operations.includes(Operation.addItems) && (
+        <PrimaryButton
+          type="button"
+          disabled={!album}
+          onClick={() => {
+            addAlbumItemState.setAddItemOpen(true);
+          }}
+        >
+          Add items to Album
+        </PrimaryButton>
+      )}
+    </HeaderActions>
+  );
 
-  const renderHeader = () => {
-    return (
-      <>
-        <BackLink to="/albums">← Albums</BackLink>
-        <Title>{album?.title ?? 'Album'}</Title>
-        <HeaderActions>
-          <>
-            {album.operations.includes(Operation.grantAlbumAuthorization) && (
-              <SecondaryButton
-                type="button"
-                disabled={!album}
-                onClick={() => {
-                  shareState.setShareAlbumOpen(true);
-                }}
-              >
-                Share album
-              </SecondaryButton>
-            )}
-            {album.operations.includes(Operation.addItems) && (
-              <PrimaryButton
-                type="button"
-                disabled={!album}
-                onClick={() => {
-                  addAlbumItemState.setAddItemOpen(true);
-                }}
-              >
-                Add items to Album
-              </PrimaryButton>
-            )}
-          </>
-        </HeaderActions>
-      </>
-    );
-  };
   return (
     <Container>
       {toastMessage ? <Toast message={toastMessage} onDismiss={dismissAlbumToast} /> : null}
-      <SelectableGalleryHeader
+      <AlbumSectionMetadata
+        headerActions={albumHeaderActions}
         selectionCount={selectionCount}
-        clearSelection={clearSelection}
-        availableActions={availableActions}
-        Header={renderHeader}
+        onClearSelection={clearSelection}
+        selectionActions={availableActions}
+        count={albumItems.length}
+        album={album}
+        metaCompact={metaCompact}
+        albumItems={albumItems}
+        onSelectCover={submitAddAlbumCover}
+        addCoverItemOpen={modalState.addCoverItemOpen}
+        setAddCoverItemOpen={modalState.setAddCoverItemOpen}
       />
       <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
-        <AlbumSectionMetadata
-          count={albumItems.length}
-          album={album}
-          metaCompact={metaCompact}
-          albumItems={albumItems}
-          onSelectCover={submitAddAlbumCover}
-        />
         <SelectableGallery
           nodes={albumItems}
           mediaIdSelector={(x) => x.mediaItem.id}
           multiSelectProps={multiSelectProps}
           embedInParentScroll
-          selectableActions={selectableActions.map((x) => x.operation)}
+          selectableActions={selectableActions}
           emptyState={
             <EmptyState
               title="No album items yet"
@@ -186,7 +178,10 @@ export const AlbumSection = ({
           onClose={() => removeAlbumItemState.setRemoveItemOpen(false)}
           isSubmitting={removeAlbumItemState.removeFromAlbumMutation.isLoading}
           mutationErrors={removeAlbumItemState.removeFromAlbumMutation.errors}
-          onConfirm={() => removeAlbumItemState.submitRemoveFromAlbum(selectedIds)}
+          onConfirm={() => {
+            removeAlbumItemState.submitRemoveFromAlbum(selectedIds);
+            clearSelection();
+          }}
           title="Remove from album?"
           body={
             selectionCount === 1
@@ -197,21 +192,21 @@ export const AlbumSection = ({
           confirmingLabel="Removing..."
         />
       )}
-      {shareState.shareAlbumOpen && (
+      {modalState.shareAlbumOpen && (
         <GrantAlbumShareModal
           albumId={album.id}
           onSuccessToast={(message) => setToastMessage(message)}
           onErrorToast={(message) => setToastMessage(message)}
-          onClose={() => shareState.setShareAlbumOpen(false)}
+          onClose={() => modalState.setShareAlbumOpen(false)}
         />
       )}
-      {shareState.shareItemsOpen && (
+      {modalState.shareItemsOpen && (
         <GrantMediaItemShareModal
           mediaItemIds={selectedMediaItemIds}
           onSuccessToast={(message) => setToastMessage(message)}
           onErrorToast={(message) => setToastMessage(message)}
           onClose={() => {
-            shareState.setShareItemsOpen(false);
+            modalState.setShareItemsOpen(false);
             clearSelection();
           }}
         />
@@ -270,31 +265,6 @@ const Container = styled.div`
   flex-direction: column;
 `;
 
-const BackLink = styled(Link)`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background: transparent;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-size: 14px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.bodyRaised};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-`;
-
-const Title = styled.h1`
-  font-size: 24px;
-  font-weight: 500;
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-  color: ${({ theme }) => theme.color.bodyText};
-`;
-
 const HeaderActions = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(2)};
@@ -348,11 +318,13 @@ const AlbumBodyScroll = styled.div`
   min-width: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0 ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(6)};
+  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(6)}
+    ${({ theme }) => theme.spacing(6)};
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: 0 ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(3)};
+    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)}
+      ${({ theme }) => theme.spacing(3)};
   }
 `;
 

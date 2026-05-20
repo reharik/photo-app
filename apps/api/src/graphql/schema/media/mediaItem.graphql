@@ -22,7 +22,8 @@ type MediaItem implements ViewableItem & Node {
 }
 
 enum Operation {
-  GRANT_AUTHORIZATION
+  GRANT_ALBUM_AUTHORIZATION
+  GRANT_MEDIA_ITEM_ALBUM_AUTHORIZATION
   EDIT_DETAILS
   ADD_ITEMS
   REMOVE_ITEMS
@@ -30,6 +31,8 @@ enum Operation {
   DELETE_ALBUM
   DOWNLOAD
   COMMENT
+  DELETE_MEDIA_ITEM
+  EDIT_MEDIA_ITEM
 }
 
 enum MediaKind {

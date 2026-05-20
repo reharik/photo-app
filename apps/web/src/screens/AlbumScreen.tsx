@@ -23,6 +23,7 @@ export const AlbumScreen = () => {
   const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
   const [shareAlbumOpen, setShareAlbumOpen] = useState(false);
   const [shareItemsOpen, setShareItemsOpen] = useState(false);
+  const [addCoverItemOpen, setAddCoverItemOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const addToAlbumMutation = useAppMutationState();
   const removeFromAlbumMutation = useAppMutationState();
@@ -150,11 +151,13 @@ export const AlbumScreen = () => {
     submitRemoveFromAlbum: submitRemoveFromAlbum,
     removeFromAlbumMutation: removeFromAlbumMutation,
   };
-  const shareState = {
+  const modalState = {
     shareAlbumOpen,
     setShareAlbumOpen,
     shareItemsOpen,
     setShareItemsOpen,
+    addCoverItemOpen,
+    setAddCoverItemOpen,
   };
   return (
     <Container>
@@ -165,7 +168,7 @@ export const AlbumScreen = () => {
           albumItems={albumItems}
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
-          shareState={shareState}
+          modalState={modalState}
           retrieveAlbumItems={query.refetch}
           submitAddAlbumCover={submitAddAlbumCover}
           reloadData={refetch}

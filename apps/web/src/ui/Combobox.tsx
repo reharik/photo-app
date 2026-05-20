@@ -45,6 +45,7 @@ export const Combobox = <T,>({
   );
   const inputId = React.useId();
   const hasError = Boolean(error);
+  const suppressInputValueChangeRef = React.useRef(false);
 
   React.useEffect(() => {
     if (!value) {
@@ -77,7 +78,6 @@ export const Combobox = <T,>({
       : null;
 
   const comboboxItems: ComboboxOption<T>[] = [
-    // lies
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     ...filteredItems.map((item) => ({ kind: 'item', item }) as ComboboxOption<T>),
     ...(customOption ? [customOption] : []),
@@ -106,6 +106,10 @@ export const Combobox = <T,>({
     onInputValueChange: ({ inputValue: nextInputValue }) => {
       const value = nextInputValue ?? '';
       setInputValue(value);
+      if (suppressInputValueChangeRef.current) {
+        suppressInputValueChangeRef.current = false;
+        return;
+      }
       onInputValueChange?.(value);
     },
     onSelectedItemChange: ({ selectedItem: nextSelectedItem }) => {
@@ -113,6 +117,7 @@ export const Combobox = <T,>({
         return;
       }
 
+      suppressInputValueChangeRef.current = true;
       setSelectedItem(nextSelectedItem);
       if (nextSelectedItem.kind === 'item') {
         const labelValue = getLabel(nextSelectedItem.item);
@@ -127,24 +132,43 @@ export const Combobox = <T,>({
 
   const showEmpty = isOpen && comboboxItems.length === 0;
 
+  const inputProps = getInputProps({
+    id: inputId,
+    disabled,
+    placeholder,
+    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.key === 'Tab' && highlightedIndex >= 0) {
+        selectItem(comboboxItems[highlightedIndex] ?? null);
+        closeMenu();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (highlightedIndex >= 0 && comboboxItems[highlightedIndex] != null) {
+          selectItem(comboboxItems[highlightedIndex]);
+          closeMenu();
+          return;
+        }
+        if (customOption != null) {
+          selectItem(customOption);
+          closeMenu();
+        }
+      }
+    },
+    autoComplete: 'off',
+    name: 'new-password',
+  });
+
   return (
     <FieldWrapper>
       {label ? <LabelWrapper htmlFor={inputId}>{label}</LabelWrapper> : null}
       <InputWrap>
         <InputField
-          {...getInputProps({
-            id: inputId,
-            disabled,
-            placeholder,
-            onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-              if (event.key === 'Tab' && highlightedIndex >= 0) {
-                selectItem(comboboxItems[highlightedIndex] ?? null);
-                closeMenu();
-              }
-            },
-            autoComplete: 'off',
-            name: 'new-password',
-          })}
+          {...inputProps}
+          onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
+            inputProps.onBlur?.(event);
+            closeMenu();
+          }}
           $hasError={hasError}
           aria-invalid={hasError}
         />

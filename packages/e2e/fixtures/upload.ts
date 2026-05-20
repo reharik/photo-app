@@ -1,0 +1,143 @@
+import { expect, type BrowserContext, type Page } from '@playwright/test';
+import { copyFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loginViaUi } from './auth';
+import { E2E_ASSETS_DIR, grabTestImages } from './testAssets';
+import type { TestUser } from './users';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/** Committed 1×1 JPEG; default source when no asset is specified. */
+export const SAMPLE_IMAGE_PATH = join(E2E_ASSETS_DIR, 'sample.jpg');
+
+export { E2E_ASSETS_DIR, grabTestImages } from './testAssets';
+export type { GrabTestImagesResult } from './testAssets';
+
+/** Upload + backend processing can be slow in local/docker environments. */
+export const UPLOAD_TIMEOUT_MS = 120_000;
+
+export type UploadedMediaItem = {
+  id: string;
+};
+
+export type CreateTestImageFileOptions = {
+  /** Asset file name under {@link E2E_ASSETS_DIR}. Defaults to `sample.jpg`. */
+  sourceAssetName?: string;
+};
+
+/**
+ * Copies an asset image to a temp path with the given file name so
+ * the upload queue and grid can be correlated by `originalFileName`.
+ */
+export const createTestImageFile = (
+  fileName: string,
+  options: CreateTestImageFileOptions = {},
+): string => {
+  const sourceAssetName = options.sourceAssetName ?? 'sample.jpg';
+  const dir = mkdtempSync(join(tmpdir(), 'photoapp-e2e-'));
+  const dest = join(dir, fileName);
+  copyFileSync(join(E2E_ASSETS_DIR, sourceAssetName), dest);
+  return dest;
+};
+
+/** Returns media item ids currently shown in the recent-media grid. */
+export const getMediaTileIds = async (page: Page): Promise<string[]> => {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-testid^="media-tile-"]'))
+      .map((el) => el.getAttribute('data-testid'))
+      .filter((id): id is string => id != null && id.startsWith('media-tile-'))
+      .map((id) => id.slice('media-tile-'.length)),
+  );
+};
+
+const uploadMediaButton = (page: Page) =>
+  page.getByRole('button', { name: 'Upload Media' }).first();
+
+export const expectRecentMediaPage = async (page: Page): Promise<void> => {
+  await expect(page.getByText('Recent Media')).toBeVisible();
+  await expect(uploadMediaButton(page)).toBeVisible();
+};
+
+/**
+ * Signs in, opens the recent-media screen, and waits until the shell is ready.
+ * Auth uses the API (fast setup); the screen under test is always the UI.
+ */
+export const loginAndOpenRecentMedia = async (
+  page: Page,
+  context: BrowserContext,
+  user: TestUser,
+): Promise<void> => {
+  await loginViaUi(page, user);
+  await page.goto('/media');
+  await expectRecentMediaPage(page);
+};
+
+/**
+ * Uploads one or more files through the Recent Media "Upload Media" control
+ * and waits until each new item appears as a grid tile.
+ */
+export const uploadMediaViaUi = async (
+  page: Page,
+  filePaths: string | string[],
+): Promise<UploadedMediaItem[]> => {
+  const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+  if (paths.length === 0) {
+    return [];
+  }
+
+  const idsBefore = new Set(await getMediaTileIds(page));
+
+  await page.getByTestId('upload-media-input').first().setInputFiles(paths);
+
+  await expect(page.getByRole('button', { name: 'Uploading…' }).first()).toBeVisible({
+    timeout: 10_000,
+  });
+  await expect(uploadMediaButton(page)).toBeVisible({
+    timeout: UPLOAD_TIMEOUT_MS,
+  });
+
+  await expect
+    .poll(
+      async () => {
+        const idsAfter = await getMediaTileIds(page);
+        return idsAfter.filter((id) => !idsBefore.has(id)).length;
+      },
+      { timeout: UPLOAD_TIMEOUT_MS },
+    )
+    .toBe(paths.length);
+
+  const newIds = (await getMediaTileIds(page)).filter((id) => !idsBefore.has(id));
+  return newIds.map((id) => ({ id }));
+};
+
+/**
+ * Login → recent media → upload. This is the standard arrange step for owner tests.
+ */
+export const loginAndUploadMedia = async (
+  page: Page,
+  context: BrowserContext,
+  user: TestUser,
+  fileNames: string[],
+): Promise<UploadedMediaItem[]> => {
+  await loginAndOpenRecentMedia(page, context, user);
+  const paths = fileNames.map((name) => createTestImageFile(name));
+  return uploadMediaViaUi(page, paths);
+};
+
+/**
+ * Login → recent media → upload `count` randomly chosen asset images
+ * named `{assetStem}-{uniqueSuffix}{ext}`.
+ */
+export const loginAndUploadRandomAssets = async (
+  page: Page,
+  context: BrowserContext,
+  user: TestUser,
+  count: number,
+  uniqueSuffix: string,
+): Promise<UploadedMediaItem[]> => {
+  await loginAndOpenRecentMedia(page, context, user);
+  const { paths } = grabTestImages(count, uniqueSuffix);
+  return uploadMediaViaUi(page, paths);
+};

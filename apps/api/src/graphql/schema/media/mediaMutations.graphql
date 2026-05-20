@@ -117,7 +117,7 @@ type FinalizeMediaUploadPayload {
 
 input GrantUserAuthorizationsForMediaItemsInput {
   mediaItemIds: [ID!]!
-  permission: SharePermission!
+  permissions: [SharePermission!]!
   grantedToUserId: ID
   grantedToHandle: String
   label: String

@@ -39,7 +39,7 @@ export const build__CommentReadService = ({
     // Viewer Reactions
     const viewerReactionRows = await reactionReadRepository.viewerReactionsForTargets({
       viewerId,
-      targetType: ReactionTargetType.mediaItem,
+      targetType: ReactionTargetType.comment,
       targetIds: rows.map((r) => r.id),
     });
     const viewerReactionMap = groupByMapping(

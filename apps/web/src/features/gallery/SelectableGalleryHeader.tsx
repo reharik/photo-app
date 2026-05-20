@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { GalleryConfigItems } from '../../hooks/useMultiSelectGallery';
+import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { SelectableGallerySelectionBar } from './SelectableGallerySelectionBar';
 interface SelectableGalleryHeaderProps {
   selectionCount: number;
@@ -7,7 +7,7 @@ interface SelectableGalleryHeaderProps {
   Header: React.ComponentType;
   vPaddingUnits?: number;
   hPaddingUnits?: number;
-  availableActions: GalleryConfigItems[];
+  availableActions: GalleryActionItems[];
 }
 
 export const SelectableGalleryHeader = ({

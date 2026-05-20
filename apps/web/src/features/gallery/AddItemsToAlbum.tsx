@@ -82,6 +82,7 @@ export const AddItemsToAlbum = ({
             const trimmed = value.trim();
             if (!trimmed) {
               setNewAlbumTitle(null);
+              setSelectedAlbumId(null);
               return;
             }
             setSelectedAlbumId(null);

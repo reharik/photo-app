@@ -12,7 +12,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       const command: GrantUserAuthorizationForMediaItemsCommand = {
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
-        permission: args.input.permission,
+        permissions: args.input.permissions,
         grantedToUserId: args.input.grantedToUserId ?? undefined,
         grantedToHandle: args.input.grantedToHandle ?? undefined,
         label: args.input.label ?? undefined,

@@ -1,6 +1,6 @@
-import { Operation } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
+import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { ViewableItemVM } from '../../viewModels';
 import { SelectableGalleryItem } from './SelectableGalleryItem';
 
@@ -40,7 +40,7 @@ type SelectableGalleryProps<T extends { id: string }> = {
   }) => React.ReactNode;
   /** When set, non-owner / shared items can use a dashed frame (see `SelectableGalleryItem`). */
   selectable?: boolean;
-  selectableActions?: Operation[];
+  selectableActions?: GalleryActionItems[];
 };
 
 export const SelectableGallery = <T extends ViewableItemVM>({
@@ -77,11 +77,14 @@ export const SelectableGallery = <T extends ViewableItemVM>({
       $gapStepMobile={gridGapSpacingStepMobile}
     >
       {nodes.map((item, index) => {
-        const hasActions = selectableActions.some((x) => item.operations?.includes(x));
+        const hasActions = selectableActions.some(
+          (x) => x.operation == null || item.operations?.includes(x.operation),
+        );
 
         return (
           <SelectableGalleryItem
             key={item.id}
+            itemId={mediaIdSelector(item)}
             selectable={selectable && hasActions}
             isSelected={multiSelectProps.isSelected(item.id)}
             onToggle={() => multiSelectProps.toggleSelectAt(item.id, index)}

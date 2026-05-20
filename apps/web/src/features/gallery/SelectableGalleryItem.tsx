@@ -1,21 +1,23 @@
-import { Operation } from '@packages/contracts';
 import styled from 'styled-components';
+import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { SelectionThumbOverlay } from './SelectionCornerCheck';
 import { SelectionToggleControl } from './SelectionToggleControl';
 
 export type GalleryItemFrameVariant = 'default' | 'shared';
 
 interface SelectableGalleryItemProps {
+  itemId: string;
   isSelected: boolean;
   onToggle: () => void;
   onModifierClick: (event: React.MouseEvent) => void;
   children: React.ReactNode;
   /** `shared`: viewer is not the owner (e.g. album shared with them). */
   selectable?: boolean;
-  selectableActions?: Operation[];
+  selectableActions?: GalleryActionItems[];
 }
 
 export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
+  itemId,
   selectable = true,
   isSelected,
   onModifierClick,
@@ -24,7 +26,7 @@ export const SelectableGalleryItem: React.FC<SelectableGalleryItemProps> = ({
   selectableActions = [],
 }: SelectableGalleryItemProps) => {
   return (
-    <Item>
+    <Item data-testid={`media-tile-${itemId}`}>
       {/* TODO: fix boarder for shared items */}
       <MediaThumb $frameVariant={false} data-selectable-thumb="">
         <ThumbClickCapture onClickCapture={onModifierClick}>

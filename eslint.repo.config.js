@@ -21,6 +21,9 @@ const repoIgnores = ['**/_typia/**', '**/dist/**', '**/graphqlSmartEnums.ts'];
 /**
  * Test-only file globs. Kept in sync: main config ignores these; `eslint.test.config.js` lints them.
  * Include `src/tests` paths so helpers like `testViewerIds.ts` are test-linted without `*.tests.*` in the name.
+ *
+ * Playwright e2e tests use `*.spec.ts` but have no `eslint.test.config.js`; un-ignore them here so
+ * `@typescript-eslint/no-floating-promises` catches un-awaited `expect(...)` matchers.
  */
 export const testFileIgnorePatterns = [
   '**/*.tests.ts',
@@ -30,6 +33,8 @@ export const testFileIgnorePatterns = [
   '**/*.spec.ts',
   '**/*.spec.tsx',
   '**/src/tests/**',
+  '!packages/e2e/**/*.spec.ts',
+  '!packages/e2e/**/*.spec.tsx',
 ];
 
 export const testFileLintPatterns = [

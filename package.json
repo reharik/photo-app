@@ -48,6 +48,10 @@
     "seed:dev-admin": "npm run seed:dev-admin --workspace=@app/api",
     "test": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --all",
     "test:ci": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --all -- --runInBand",
+    "test:e2e": "npm run test --workspace=@packages/e2e",
+    "test:e2e:show-trace": "npm run test:show-trace --workspace=@packages/e2e",
+    "test:e2e:trace": "npm run test:trace --workspace=@packages/e2e",
+    "test:e2e:ui": "npm run test:ui --workspace=@packages/e2e",
     "test:integration": "NODE_OPTIONS='--experimental-vm-modules' nx run api:test-integration",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --all -- --watch"
   },

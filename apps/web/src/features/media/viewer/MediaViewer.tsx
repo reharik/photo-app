@@ -129,7 +129,7 @@ export const MediaViewer = ({
   );
 
   return (
-    <ViewerRoot>
+    <ViewerRoot aria-label="Media viewer">
       <ViewerShell>
         {!showNavControls ? (
           <MediaViewerSingle

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { GalleryConfigItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
+import { GalleryActionItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMedMediaItemVM } from '../../viewModels/';
 import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
@@ -25,7 +25,7 @@ export const SharedWithMeSection = ({
   sharedWithMeMediaItems,
   onReactionsRefetch,
 }: SharedWithMeSectionProps) => {
-  const selectableActions: GalleryConfigItems[] = [];
+  const selectableActions: GalleryActionItems[] = [];
 
   const { clearSelection, selectionCount } = useMultiSelectGallery({
     nodes: sharedWithMeMediaItems,

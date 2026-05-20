@@ -53,7 +53,7 @@ export const CommentRow = ({
 
   if (comment.isDeleted) {
     return (
-      <Root>
+      <Root data-testid="comment-row">
         <DeletedAvatarPlaceholder $size={avatarSize} aria-hidden />
         <Content>
           <DeletedCommentPlaceholder />
@@ -63,7 +63,7 @@ export const CommentRow = ({
   }
 
   const inner = (
-    <Root>
+    <Root data-testid="comment-row">
       <CommentAvatar
         comment={{ displayName: comment.displayName, displayAvatarUrl: comment.displayAvatarUrl }}
         size={avatarSize}

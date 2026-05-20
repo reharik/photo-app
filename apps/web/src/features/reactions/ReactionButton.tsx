@@ -28,13 +28,14 @@ export const ReactionButton = ({
   const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
   const ariaLabel = !canReact
     ? `${emojiCount} ${emoji.display}s`
-    : hasReaction
-      ? 'Add reaction'
-      : 'Reaction already added';
+    : !hasReaction
+      ? `Add ${emoji.display}`
+      : `Remove ${emoji.display}`;
   return (
     <Root>
       <Button
         type="button"
+        name={emoji.display}
         $reacted={hasReaction}
         disabled={!canReact}
         aria-label={ariaLabel}
@@ -44,7 +45,7 @@ export const ReactionButton = ({
         {/* when this become generic, we'll use the prop value */}
         <Icon aria-hidden>{icon}</Icon>
       </Button>
-      {emojiCount > 0 ? <Count>{emojiCount}</Count> : null}
+      {emojiCount > 0 ? <Count aria-label="Reaction count">{emojiCount}</Count> : null}
     </Root>
   );
 };

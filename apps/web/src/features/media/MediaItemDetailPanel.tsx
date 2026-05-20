@@ -54,7 +54,7 @@ export const MediaItemDetailPanel = forwardRef<
   if (mediaItem == null) {
     return null;
   }
-  const canEdit = mediaItem.operations.includes(Operation.editDetails);
+  const canEdit = mediaItem.operations.includes(Operation.editMediaItem);
   const canComment = mediaItem.operations.includes(Operation.comment);
   const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
     <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>

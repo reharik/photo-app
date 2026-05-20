@@ -3,7 +3,13 @@ schema {
   mutation: Mutation
 }
 
-directive @enumMeta(description: String, display: String, props: [EnumMetaPropInput!], shortDisplay: String, sortOrder: Int) on ENUM_VALUE
+directive @enumMeta(
+  description: String
+  display: String
+  props: [EnumMetaPropInput!]
+  shortDisplay: String
+  sortOrder: Int
+) on ENUM_VALUE
 
 input AddCommentInput {
   body: String!
@@ -101,8 +107,8 @@ type AlbumItemCollectionPayload {
 }
 
 enum AlbumItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  ORDER_INDEX @enumMeta(props: [{name: "column", value: "order_index"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  ORDER_INDEX @enumMeta(props: [{ name: "column", value: "order_index" }])
 }
 
 enum AlbumMemberRole {
@@ -112,8 +118,8 @@ enum AlbumMemberRole {
 }
 
 enum AlbumSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
-  TITLE @enumMeta(props: [{name: "column", value: "title"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
 }
 
 type AuthorizationType {
@@ -122,7 +128,7 @@ type AuthorizationType {
   grantedToUserId: ID
   id: ID!
   label: String
-  permission: SharePermission!
+  permissions: [SharePermission!]!
   revokedAt: DateTime
 }
 
@@ -372,7 +378,7 @@ input GrantUserAuthorizationsForMediaItemsInput {
   grantedToUserId: ID
   label: String
   mediaItemIds: [ID!]!
-  permission: SharePermission!
+  permissions: [SharePermission!]!
 }
 
 type MediaAsset implements Node {
@@ -437,7 +443,7 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{name: "column", value: "created_at"}])
+  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
 }
 
 enum MediaItemStatus {
@@ -458,7 +464,9 @@ enum MediaKind {
 type Mutation {
   AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
-  DeleteAlbumItemsFromAlbum(input: DeleteAlbumItemsFromAlbumInput!): DeleteAlbumItemsFromAlbumResponse!
+  DeleteAlbumItemsFromAlbum(
+    input: DeleteAlbumItemsFromAlbumInput!
+  ): DeleteAlbumItemsFromAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   SetCoverMedia(input: SetCoverMediaInput!): SetCoverMediaResponse!
   UnsetCoverMedia(input: UnsetCoverMediaInput!): UnsetCoverMediaResponse!
@@ -467,15 +475,21 @@ type Mutation {
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
   createMediaUpload(input: CreateMediaUploadInput!): CreateMediaUploadResponse!
   createPublicLinkForAlbum(input: CreatePublicLinkForAlbumInput!): CreatePublicLinkResponse!
-  createPublicLinkForMediaItems(input: CreatePublicLinkForMediaItemsInput!): CreatePublicLinkResponse!
+  createPublicLinkForMediaItems(
+    input: CreatePublicLinkForMediaItemsInput!
+  ): CreatePublicLinkResponse!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   deleteComment(input: DeleteCommentInput!): CommentMutationResponse!
   deleteMediaItem(input: DeleteMediaItemInput!): DeleteMediaItemResponse!
   deleteMediaItems(input: DeleteMediaItemsInput!): DeleteMediaItemsResponse!
   editComment(input: EditCommentInput!): CommentMutationResponse!
   finalizeMediaUpload(input: FinalizeMediaUploadInput!): FinalizeMediaUploadResponse!
-  grantUserAuthorizationForAlbum(input: GrantUserAuthorizationForAlbumInput!): GrantUserAuthorizationResult!
-  grantUserAuthorizationsForMediaItems(input: GrantUserAuthorizationsForMediaItemsInput!): GrantUserAuthorizationResult!
+  grantUserAuthorizationForAlbum(
+    input: GrantUserAuthorizationForAlbumInput!
+  ): GrantUserAuthorizationResult!
+  grantUserAuthorizationsForMediaItems(
+    input: GrantUserAuthorizationsForMediaItemsInput!
+  ): GrantUserAuthorizationResult!
   removeReaction(input: RemoveReactionInput!): ReactionMutationResponse!
   updateMediaItemDetails(input: UpdateMediaItemDetailsInput!): UpdateMediaItemDetailsResponse!
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
@@ -486,7 +500,9 @@ input NewAlbumInAddMediaItemsInput {
   title: String!
 }
 
-"""Implemented by all entities that have an id."""
+"""
+Implemented by all entities that have an id.
+"""
 interface Node {
   id: ID!
 }
@@ -495,14 +511,19 @@ enum Operation {
   ADD_ITEMS
   COMMENT
   DELETE_ALBUM
+  DELETE_MEDIA_ITEM
   DOWNLOAD
   EDIT_COVER
   EDIT_DETAILS
-  GRANT_AUTHORIZATION
+  EDIT_MEDIA_ITEM
+  GRANT_ALBUM_AUTHORIZATION
+  GRANT_MEDIA_ITEM_ALBUM_AUTHORIZATION
   REMOVE_ITEMS
 }
 
-"""Cursor-free paging window (offset-based). Used on output types."""
+"""
+Cursor-free paging window (offset-based). Used on output types.
+"""
 type PageInfo {
   limit: Int!
   offset: Int!

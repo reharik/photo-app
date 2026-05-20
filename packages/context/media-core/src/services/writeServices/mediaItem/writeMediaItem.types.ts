@@ -82,7 +82,7 @@ export type GrantUserAuthorizationResult = {
 export type GrantUserAuthorizationForMediaItemsCommand = {
   viewerId: EntityId;
   mediaItemIds: EntityId[];
-  permission: SharePermission;
+  permissions: SharePermission[];
   grantedToUserId?: EntityId;
   grantedToHandle?: string;
   label?: string;

@@ -7,7 +7,7 @@ enum SharePermission {
 type AuthorizationType {
   id: ID!
   grantedToUserId: ID
-  permission: SharePermission!
+  permissions: [SharePermission!]!
   label: String
   expiresAt: DateTime
   revokedAt: DateTime

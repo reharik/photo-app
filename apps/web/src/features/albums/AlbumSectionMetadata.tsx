@@ -1,9 +1,9 @@
 import { MediaAssetKind, MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
 import { DateTime } from 'luxon';
-import { useState } from 'react';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
+import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { MediaItemSummaryVM, ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
@@ -15,7 +15,13 @@ type AlbumSectionMetadataProps = {
   metaCompact: boolean;
   albumItems: MinimalAlbumItemSummaryVM[];
   onSelectCover?: (mediaId: string) => void;
+  addCoverItemOpen: boolean;
+  setAddCoverItemOpen: (open: boolean) => void;
   isPublic?: boolean;
+  headerActions?: React.ReactNode;
+  selectionCount?: number;
+  onClearSelection?: () => void;
+  selectionActions?: GalleryActionItems[];
 };
 
 export type MinimalAlbumSummaryVM = {
@@ -52,8 +58,15 @@ export const AlbumSectionMetadata = ({
   albumItems,
   onSelectCover,
   isPublic,
+  headerActions,
+  selectionCount = 0,
+  onClearSelection,
+  selectionActions = [],
+  addCoverItemOpen,
+  setAddCoverItemOpen,
 }: AlbumSectionMetadataProps) => {
-  const [addCoverItemOpen, setAddCoverItemOpen] = useState(false);
+  const isSelecting = selectionCount > 0;
+  const selectionLabel = selectionCount === 1 ? '1 selected' : `${selectionCount} selected`;
   const coverMediaUrl = album.coverMedia
     ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
     : undefined;
@@ -77,31 +90,64 @@ export const AlbumSectionMetadata = ({
   return (
     <>
       <AlbumMeta $compact={metaCompact}>
-        <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
-        <AlbumInfo $compact={metaCompact}>
-          {metaCompact ? (
-            <AlbumCompactSummary>
-              {`${count} media items ${album.updatedAt ? `· Updated ${album.updatedAt.isValid ? album.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}` : ''}`}
-            </AlbumCompactSummary>
+        <AlbumMetaContent>
+          <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
+          <AlbumInfo $compact={metaCompact}>
+            {metaCompact ? (
+              <AlbumCompactSummary>
+                {`${count} media items ${album.updatedAt ? `· Updated ${album.updatedAt.isValid ? album.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}` : ''}`}
+              </AlbumCompactSummary>
+            ) : (
+              <>
+                <AlbumTitle>{album.title}</AlbumTitle>
+                <AlbumStats>
+                  <Stat>{count} media items</Stat>
+                </AlbumStats>
+                {album.updatedAt && (
+                  <AlbumDescription>
+                    Updated{' '}
+                    {localizeDate(
+                      album.updatedAt.isValid
+                        ? album.updatedAt.toLocaleString(DateTime.DATE_MED)
+                        : '',
+                    )}
+                  </AlbumDescription>
+                )}
+              </>
+            )}
+          </AlbumInfo>
+        </AlbumMetaContent>
+        <HeaderTrailing>
+          {isSelecting ? (
+            <TrailingColumn>
+              <SelectionActionGroup>
+                {selectionActions.map((action) => (
+                  <HeaderActionButton
+                    key={action.operation?.key ?? action.label ?? ''}
+                    type="button"
+                    onClick={action.onAction}
+                  >
+                    {action.label}
+                  </HeaderActionButton>
+                ))}
+              </SelectionActionGroup>
+              <SelectionRow>
+                {onClearSelection != null ? (
+                  <ClearSelectionButton
+                    type="button"
+                    onClick={onClearSelection}
+                    aria-label="Clear selection"
+                  >
+                    ✕
+                  </ClearSelectionButton>
+                ) : null}
+                <SelectionCount>{selectionLabel}</SelectionCount>
+              </SelectionRow>
+            </TrailingColumn>
           ) : (
-            <>
-              <AlbumTitle>{album.title}</AlbumTitle>
-              <AlbumStats>
-                <Stat>{count} media items</Stat>
-              </AlbumStats>
-              {album.updatedAt && (
-                <AlbumDescription>
-                  Updated{' '}
-                  {localizeDate(
-                    album.updatedAt.isValid
-                      ? album.updatedAt.toLocaleString(DateTime.DATE_MED)
-                      : '',
-                  )}
-                </AlbumDescription>
-              )}
-            </>
+            headerActions
           )}
-        </AlbumInfo>
+        </HeaderTrailing>
       </AlbumMeta>
       {addCoverItemOpen && (
         <AppModal
@@ -131,7 +177,10 @@ export const AlbumSectionMetadata = ({
               renderItem={({ item }) => (
                 <SingleSelectionTile
                   item={item.mediaItem as MediaItemSummaryVM}
-                  onSelect={() => onSelectCover?.(item.id)}
+                  onSelect={() => {
+                    onSelectCover?.(item.id);
+                    setAddCoverItemOpen(false);
+                  }}
                 />
               )}
             />
@@ -143,16 +192,16 @@ export const AlbumSectionMetadata = ({
 };
 
 const AlbumMeta = styled.div<{ $compact: boolean }>`
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex-shrink: 0;
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   gap: ${({ theme, $compact }) => theme.spacing($compact ? 2 : 3)};
-  margin-bottom: ${({ theme, $compact }) => theme.spacing($compact ? 3 : 4)};
   padding: ${({ theme, $compact }) =>
-    $compact ? `${theme.spacing(2)} 0` : `${theme.spacing(3)} 0 ${theme.spacing(2)}`};
+    $compact
+      ? `${theme.spacing(2)} ${theme.spacing(6)}`
+      : `${theme.spacing(4)} ${theme.spacing(6)} ${theme.spacing(3)}`};
   background: ${({ theme }) => theme.color.body};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   max-width: 1400px;
@@ -162,10 +211,13 @@ const AlbumMeta = styled.div<{ $compact: boolean }>`
   box-sizing: border-box;
   transition:
     gap 180ms ease,
-    padding 180ms ease,
-    margin-bottom 180ms ease;
+    padding 180ms ease;
 
   @media (max-width: 768px) {
+    padding: ${({ theme, $compact }) =>
+      $compact
+        ? `${theme.spacing(2)} ${theme.spacing(3)}`
+        : `${theme.spacing(3)} ${theme.spacing(3)} ${theme.spacing(2)}`};
     flex-direction: ${({ $compact }) => ($compact ? 'row' : 'column')};
     align-items: ${({ $compact }) => ($compact ? 'center' : 'stretch')};
   }
@@ -178,7 +230,7 @@ const AlbumCover = styled.div<{ $compact: boolean }>`
   border-radius: ${({ theme, $compact }) =>
     $compact ? theme.borderRadius.md : theme.borderRadius.lg};
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: center;
   overflow: hidden;
 
@@ -295,5 +347,116 @@ const AddAlbumCoverModalClose = styled.button`
 
   &:hover {
     border-color: ${({ theme }) => theme.color.primaryButtonBg};
+  }
+`;
+
+const AlbumMetaContent = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(3)};
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+`;
+
+const HeaderTrailing = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  align-self: flex-start;
+`;
+
+const TrailingColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const SelectionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const SelectionCount = styled.span`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.color.bodyText};
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+`;
+
+const ClearSelectionButton = styled.button`
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  background: ${({ theme }) => theme.color.bodyRaised};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.body};
+    border-color: ${({ theme }) => theme.color.primaryButtonBg};
+    color: ${({ theme }) => theme.color.bodyText};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 768px) {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+`;
+
+const SelectionActionGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-wrap: wrap;
+  justify-content: flex-start;
+`;
+
+const HeaderActionButton = styled.button`
+  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
+  font-size: 14px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.color.bodyText};
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.color.primaryButtonBg};
+    color: ${({ theme }) => theme.color.bodyText};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
   }
 `;

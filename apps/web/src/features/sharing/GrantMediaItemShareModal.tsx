@@ -8,6 +8,7 @@ import {
   GrantUserAuthorizationsForMediaItemsInput,
   GrantUserAuthorizationsForMediaItemsMutation,
   ShareContactType,
+  SharePermission,
   ViewerShareContactsDocument,
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../hooks/useAppMutation';
@@ -55,11 +56,11 @@ export const GrantMediaItemShareModal = ({
     }
 
     const grantedToHandle = values.handle.length > 0 ? values.handle : undefined;
-    const permission = values.permission;
-
+    // const permissions = values.permissions;
+    co;
     const input: GrantUserAuthorizationsForMediaItemsInput = {
       mediaItemIds,
-      permission,
+      permissions: [SharePermission.download, SharePermission.comment],
       grantedToHandle,
       label: values.label,
       expiresAt: values.expiresAt,

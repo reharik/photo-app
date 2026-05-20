@@ -434,6 +434,20 @@ const contractErrorInput = {
     area: ErrorArea.reaction,
     retryable: false,
   },
+  NotAllowedToDeleteMediaItem: {
+    code: 'NOT_ALLOWED_TO_DELETE_MEDIA_ITEM',
+    display: 'Not allowed to delete media item',
+    category: ErrorCategory.auth,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  NotAllowedToEditMediaItem: {
+    code: 'NOT_ALLOWED_TO_EDIT_MEDIA_ITEM',
+    display: 'Not allowed to edit media item',
+    category: ErrorCategory.auth,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

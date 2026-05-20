@@ -93,6 +93,7 @@ export const LoggedOutScreen = () => {
                 label="Email"
                 type="email"
                 value={email}
+                data-testid="login-email"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
@@ -101,6 +102,7 @@ export const LoggedOutScreen = () => {
                 label={isSignup ? 'Password (at least 8 characters)' : 'Password'}
                 type="password"
                 value={password}
+                data-testid="login-password"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                 required
                 minLength={isSignup ? 8 : undefined}

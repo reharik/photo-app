@@ -4,7 +4,7 @@ mutation grantUserAuthorizationsForMediaItems($input: GrantUserAuthorizationsFor
       authorizations {
         id
         grantedToUserId
-        permission
+        permissions
         label
         expiresAt
         createdAt
@@ -22,7 +22,7 @@ mutation GrantUserAuthorizationForAlbum($input: GrantUserAuthorizationForAlbumIn
       authorizations {
         id
         grantedToUserId
-        permission
+        permissions
         label
         expiresAt
         createdAt

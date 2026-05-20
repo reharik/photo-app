@@ -2,7 +2,7 @@ import { CommentTargetType } from '@packages/contracts';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
-const EDIT_GRACE_WINDOW_MS = 5000;
+const EDIT_GRACE_WINDOW_MS = 12000;
 
 const mediaItemResolvers: Resolvers = {
   MediaItem: {

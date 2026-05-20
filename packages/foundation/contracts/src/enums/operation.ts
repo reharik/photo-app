@@ -39,6 +39,14 @@ const input = {
     deniedError: ContractError.MemberNotAllowedToComment,
     subjectType: SubjectType.mediaItem,
   },
+  deleteMediaItem: {
+    deniedError: ContractError.NotAllowedToDeleteMediaItem,
+    subjectType: SubjectType.mediaItem,
+  },
+  editMediaItem: {
+    deniedError: ContractError.NotAllowedToEditMediaItem,
+    subjectType: SubjectType.mediaItem,
+  },
 } as const;
 
 export type Operation = Enumeration<typeof Operation>;

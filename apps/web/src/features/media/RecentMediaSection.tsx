@@ -65,12 +65,11 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       onAction: () => setShareMediaOpen(true),
     },
     {
-      operation: Operation.addItems,
       label: 'Add to album',
       onAction: () => setAddToAlbumOpen(true),
     },
     {
-      operation: Operation.removeItems,
+      operation: Operation.deleteMediaItem,
       label: 'Delete from library',
       onAction: () => setDeleteMediaOpen(true),
     },
@@ -150,7 +149,7 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       <SelectableGallery
         nodes={nodes}
         multiSelectProps={multiSelectProps}
-        selectableActions={selectableActions.map((x) => x.operation)}
+        selectableActions={selectableActions}
         emptyState={
           <EmptyState
             title="No media yet"

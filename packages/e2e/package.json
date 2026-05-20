@@ -1,0 +1,25 @@
+{
+  "name": "@packages/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "End-to-end Playwright tests for the photoapp web client. Runs against a locally-running api + web.",
+  "type": "module",
+  "scripts": {
+    "report": "playwright show-report",
+    "test": "playwright test",
+    "test:debug": "PWDEBUG=1 playwright test",
+    "test:headed": "playwright test --headed",
+    "test:last-failed": "playwright test --last-failed",
+    "test:show-trace": "playwright show-trace",
+    "test:trace": "playwright test mediaViewer/commentsFullCycle.spec.ts --trace on ",
+    "test:ui": "playwright test --ui",
+    "test:verbose": "playwright test --reporter=list --reporter=./reporters/verboseFailuresReporter.ts --reporter=html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^24.9.1",
+    "knex": "^3.1.0",
+    "pg": "^8.20.0",
+    "typescript": "^5.9.2"
+  }
+}

@@ -17,6 +17,8 @@ const input = {
       Operation.download,
       Operation.comment,
       Operation.grantMediaItemAlbumAuthorization,
+      Operation.deleteMediaItem,
+      Operation.editMediaItem,
     ],
   },
 } as const;

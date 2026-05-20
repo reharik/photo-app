@@ -246,7 +246,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return this.#authorizations;
   }
   grantAuthorization(
-    permission: SharePermission,
+    permissions: SharePermission[],
     actorId: ActorId,
     grantedToUserId?: EntityId,
     label?: string,
@@ -266,7 +266,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     if (!existingAuthorization) {
       const authorization = Authorization.create(
         {
-          permission,
+          permissions,
           grantedToUser: grantedToUserId,
           publicLinkId: undefined,
           grantedBy: actorId,
