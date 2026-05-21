@@ -9,6 +9,14 @@
         "command": "node -e \"try { require('child_process').execSync('ts-patch install', {stdio: 'ignore'}); } catch(e) {}\""
       }
     },
+    "sync-schema": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/src/graphql/generated/schema.graphql"],
+      "options": {
+        "command": "mkdir -p src/graphql/generated && cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql",
+        "cwd": "{projectRoot}"
+      }
+    },
     "codegen": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/src/graphql/generated/types.ts"],
@@ -20,7 +28,7 @@
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "contracts:build"],
+      "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",
@@ -30,7 +38,7 @@
     "build:production": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "contracts:build", "codegen"],
+      "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema", "codegen"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",
