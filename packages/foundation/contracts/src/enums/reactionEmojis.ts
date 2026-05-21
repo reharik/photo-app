@@ -1,16 +1,10 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-const icons = {
-  heart: {
-    reacted: '♥', // U+2665 — filled, takes CSS color
-    notReacted: '♡', // U+2661 — outline, takes CSS color
-  },
-};
 const input = {
   heart: {
-    ...icons.heart,
-    hasReaction: (hasReaction: boolean) => {
-      return hasReaction ? icons.heart.reacted : icons.heart.notReacted;
-    },
+    // this much match the icon name in the icon library (lucide-react) and those icons
+    // use kebab-case.  I could transform the key to kebab-case, but for now
+    // I'll just name it explicitly.
+    iconName: 'heart',
   },
 };
 export type ReactionEmoji = Enumeration<typeof ReactionEmoji>;

@@ -53,7 +53,7 @@ done
 
 PROJECT_NAME="${PROJECT_NAME:-${APP_NAME}-prod}"
 COMPOSE_DIR="${COMPOSE_DIR:-/opt/${APP_NAME}/compose}"
-API_HOST_PORT="${API_HOST_PORT:-3000}"
+API_HOST_PORT="${API_HOST_PORT:-3002}"
 
 log() { printf '[reset-photo-app] %s\n' "$*"; }
 

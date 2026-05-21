@@ -1,4 +1,6 @@
 import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import type { IconName } from 'lucide-react/dynamic';
+import { DynamicIcon } from 'lucide-react/dynamic';
 import { JSX } from 'react';
 import styled from 'styled-components';
 
@@ -22,9 +24,6 @@ export const ReactionButton = ({
   onToggle,
 }: Props): JSX.Element => {
   const hasReaction = viewerReactions?.some((r) => r.emoji === emoji) ?? false;
-  // here we set the icon to reacted ( filled ) if you can't click on it, otherwise
-  // it would look like a reaction button that should be able to be clicked.
-  const icon = canReact ? emoji.hasReaction(hasReaction) : emoji.reacted;
   const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
   const ariaLabel = !canReact
     ? `${emojiCount} ${emoji.display}s`
@@ -42,8 +41,7 @@ export const ReactionButton = ({
         aria-pressed={hasReaction}
         onClick={canReact ? onToggle : undefined}
       >
-        {/* when this become generic, we'll use the prop value */}
-        <Icon aria-hidden>{icon}</Icon>
+        <ReactionIcon aria-hidden name={emoji.iconName as IconName} $reacted={hasReaction} />
       </Button>
       {emojiCount > 0 ? <Count aria-label="Reaction count">{emojiCount}</Count> : null}
     </Root>
@@ -87,10 +85,11 @@ const Button = styled.button<{ $reacted: boolean }>`
   }
 `;
 
-const Icon = styled.span`
+const ReactionIcon = styled(DynamicIcon)<{ $reacted: boolean }>`
+  width: ${({ theme }) => theme.fontSize._21};
+  height: ${({ theme }) => theme.fontSize._21};
   color: ${({ theme }) => theme.color.red_darker};
-
-  font-size: ${({ theme }) => theme.fontSize._32};
+  fill: ${({ $reacted }) => ($reacted ? 'currentColor' : 'none')};
 `;
 
 const Count = styled.span`
