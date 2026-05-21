@@ -87,6 +87,40 @@ describe('build__RunMediaWorkerLoop', () => {
   });
 
   describe('When jobs stay idle', () => {
+    it('should log a debug message on each idle poll', async () => {
+      const processNextMediaDeletionJob = jest.fn().mockResolvedValue('idle');
+      const processNextMediaImageJob = jest.fn().mockResolvedValue('idle');
+      const logger = {
+        info: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn(),
+        debug: jest.fn(),
+        http: jest.fn(),
+        verbose: jest.fn(),
+      };
+
+      const loop = build__RunMediaWorkerLoop({
+        config: { mediaWorkerPollIntervalMs: 100 } as IocGeneratedCradle['config'],
+        logger,
+        processNextMediaDeletionJob,
+        processNextMediaImageJob,
+      } as IocGeneratedCradle);
+
+      const done = loop.start();
+      for (let i = 0; i < 8; i++) {
+        await Promise.resolve();
+      }
+
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Media worker poll: no jobs available',
+        expect.objectContaining({ idleCycles: 1 }),
+      );
+
+      loop.stop();
+      await jest.runOnlyPendingTimersAsync();
+      await done;
+    });
+
     it('should poll on the configured interval until stopped', async () => {
       const processNextMediaDeletionJob = jest.fn().mockResolvedValue('idle');
       const processNextMediaImageJob = jest.fn().mockResolvedValue('idle');

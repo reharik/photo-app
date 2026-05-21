@@ -43,6 +43,7 @@ describe('build__ProcessNextMediaDeletionJob', () => {
     const deleteItem = jest.fn().mockResolvedValue(undefined);
 
     return {
+      config: { s3Bucket: 'test-bucket' } as IocGeneratedCradle['config'],
       logger: {
         info: jest.fn(),
         error: jest.fn(),

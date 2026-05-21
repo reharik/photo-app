@@ -29,6 +29,12 @@ export const build__ProcessNextMediaImageJob = ({
       return 'idle';
     }
 
+    logger.info('Media image processing job claimed', {
+      jobId: job.id,
+      mediaItemId: job.mediaItemId,
+      attemptCount: job.attemptCount,
+    });
+
     const actorId = job.createdBy;
 
     const finishSucceeded = async (): Promise<void> => {
@@ -42,21 +48,39 @@ export const build__ProcessNextMediaImageJob = ({
     try {
       const mediaItem = await mediaItemRepository.getById(job.mediaItemId);
       if (!mediaItem) {
+        logger.warn('Media image job failed: media item not found', {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+        });
         await finishFailed('Media item not found');
         return 'processed';
       }
 
       if (mediaItem.status() === MediaItemStatus.ready) {
+        logger.info('Media image job skipped: item already ready', {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+        });
         await finishSucceeded();
         return 'processed';
       }
 
       if (mediaItem.kind() !== MediaKind.photo) {
+        logger.warn('Media image job failed: unsupported media kind', {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          kind: mediaItem.kind().value,
+        });
         await finishFailed('Only photo media is supported for image processing');
         return 'processed';
       }
 
       if (mediaItem.status() !== MediaItemStatus.processing) {
+        logger.warn('Media image job failed: item not in processing status', {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          status: mediaItem.status().value,
+        });
         await finishFailed(`Media item not processable (status: ${mediaItem.status().value})`);
         return 'processed';
       }
@@ -64,14 +88,39 @@ export const build__ProcessNextMediaImageJob = ({
       const ownerId = mediaItem.ownerId();
       const baseKey = buildMediaItemBaseStorageKey(ownerId, mediaItem.id());
       const originalKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.original);
+      logger.info('S3 GetObject (original)', {
+        bucket: config.s3Bucket,
+        key: originalKey,
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+      });
       const streamResult = await mediaStorage.getObjectStream(originalKey);
       if (!streamResult) {
+        logger.warn('Media image job failed: original object missing in S3', {
+          bucket: config.s3Bucket,
+          key: originalKey,
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+        });
         await finishFailed('Original object not found in storage');
         return 'processed';
       }
 
       const originalBuffer = await readStreamToBuffer(streamResult.body);
+      logger.info('Original object downloaded from S3', {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+        byteLength: originalBuffer.length,
+        mimeType: streamResult.mimeType,
+      });
       const derivatives = await generateImageDerivatives(originalBuffer);
+      logger.info('Image derivatives generated', {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+        displayBytes: derivatives.display.buffer.length,
+        thumbnailBytes: derivatives.thumbnail.buffer.length,
+        hasReplacementOriginal: Boolean(derivatives.replacementOriginal),
+      });
 
       const displayKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.display);
       const thumbnailKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail);
@@ -159,13 +208,26 @@ export const build__ProcessNextMediaImageJob = ({
 
       await mediaItemRepository.save(mediaItem);
       await finishSucceeded();
+      logger.info('Media image processing job succeeded', {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+      });
       return 'processed';
     } catch (e) {
       const message = serializeError(e);
       if (e instanceof Error) {
-        logger.error('Media image processing failed', e);
+        logger.error('Media image processing failed', e, {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          attemptCount: job.attemptCount,
+        });
       } else {
-        logger.error('Media image processing failed', { err: String(e) });
+        logger.error('Media image processing failed', {
+          err: String(e),
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          attemptCount: job.attemptCount,
+        });
       }
       await finishFailed(message);
       return 'processed';

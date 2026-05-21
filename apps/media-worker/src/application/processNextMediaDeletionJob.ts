@@ -23,6 +23,7 @@ const retryBackoffMs = (attemptCount: number): number => {
 };
 
 export const build__ProcessNextMediaDeletionJob = ({
+  config,
   mediaDeletionJobRepository,
   mediaItemRepository,
   mediaStorage,
@@ -33,6 +34,13 @@ export const build__ProcessNextMediaDeletionJob = ({
     if (!job) {
       return 'idle';
     }
+
+    logger.info('Media deletion job claimed', {
+      jobId: job.id,
+      mediaItemId: job.mediaItemId,
+      storageKey: job.storageKey,
+      attemptCount: job.attemptCount,
+    });
 
     const actorId = job.createdBy;
 
@@ -59,28 +67,66 @@ export const build__ProcessNextMediaDeletionJob = ({
       const kinds = [MediaAssetKind.original, MediaAssetKind.display, MediaAssetKind.thumbnail];
       for (const kind of kinds) {
         const objectKey = buildMediaAssetStorageKey(baseKey, kind);
+        logger.info('S3 DeleteObject', {
+          bucket: config.s3Bucket,
+          key: objectKey,
+          jobId: job.id,
+        });
         await mediaStorage.deleteObject(objectKey);
       }
 
       const mediaItem = await mediaItemRepository.getById(job.mediaItemId);
       if (mediaItem) {
         await mediaItemRepository.delete(mediaItem);
+        logger.info('Media item row deleted', {
+          mediaItemId: job.mediaItemId,
+          jobId: job.id,
+        });
+      } else {
+        logger.warn('Media item row not found during deletion; storage objects removed', {
+          mediaItemId: job.mediaItemId,
+          jobId: job.id,
+        });
       }
 
       await finishSucceeded();
+      logger.info('Media deletion job succeeded', { jobId: job.id, mediaItemId: job.mediaItemId });
       return 'processed';
     } catch (e) {
       const message = serializeError(e);
       if (e instanceof Error) {
-        logger.error('Media deletion job failed', e);
+        logger.error('Media deletion job failed', e, {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          storageKey: job.storageKey,
+          attemptCount: job.attemptCount,
+        });
       } else {
-        logger.error('Media deletion job failed', { err: String(e) });
+        logger.error('Media deletion job failed', {
+          err: String(e),
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          storageKey: job.storageKey,
+          attemptCount: job.attemptCount,
+        });
       }
 
       if (job.attemptCount >= MAX_MEDIA_DELETION_JOB_ATTEMPTS) {
         await finishFailedTerminal(message);
+        logger.error('Media deletion job marked failed (terminal)', {
+          jobId: job.id,
+          attemptCount: job.attemptCount,
+          message,
+        });
       } else {
+        const delay = retryBackoffMs(job.attemptCount);
         await finishRetry(message);
+        logger.warn('Media deletion job scheduled for retry', {
+          jobId: job.id,
+          attemptCount: job.attemptCount,
+          retryDelayMs: delay,
+          message,
+        });
       }
       return 'processed';
     }

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 
 import { setDefaultSerializationMode } from '@reharik/smart-enum';
+import { logMediaWorkerStartup } from './application/logMediaWorkerStartup';
 import { destroyWorkerContainer, initializeWorkerContainer } from './container';
 setDefaultSerializationMode('value');
 
@@ -10,7 +11,11 @@ const bootstrap = async (): Promise<void> => {
 
   const container = initializeWorkerContainer();
   const logger = container.resolve('logger');
+  const config = container.resolve('config');
+  const database = container.resolve('database');
   const runMediaWorkerLoop = container.resolve('runMediaWorkerLoop');
+
+  await logMediaWorkerStartup({ config, logger, database });
 
   let shuttingDown = false;
   const workerPromise = runMediaWorkerLoop.start();

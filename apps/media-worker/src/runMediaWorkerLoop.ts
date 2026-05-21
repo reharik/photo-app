@@ -10,6 +10,9 @@ export type RunMediaWorkerLoop = {
   stop: () => void;
 };
 
+/** Log an idle heartbeat at info roughly every 30s at the default 2s poll interval. */
+const IDLE_HEARTBEAT_EVERY_CYCLES = 15;
+
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
@@ -25,6 +28,7 @@ export const build__RunMediaWorkerLoop = ({
     }
     running = true;
     stopRequested = false;
+    let idleCycles = 0;
     logger.info('Media worker started', {
       pollIntervalMs: config.mediaWorkerPollIntervalMs,
     });
@@ -33,12 +37,27 @@ export const build__RunMediaWorkerLoop = ({
       try {
         const deletionOutcome = await processNextMediaDeletionJob();
         if (deletionOutcome === 'processed') {
+          idleCycles = 0;
           continue;
         }
         const imageOutcome = await processNextMediaImageJob();
-        if (imageOutcome === 'idle') {
-          await sleep(config.mediaWorkerPollIntervalMs);
+        if (imageOutcome === 'processed') {
+          idleCycles = 0;
+          continue;
         }
+
+        idleCycles += 1;
+        logger.debug('Media worker poll: no jobs available', {
+          idleCycles,
+          pollIntervalMs: config.mediaWorkerPollIntervalMs,
+        });
+        if (idleCycles % IDLE_HEARTBEAT_EVERY_CYCLES === 0) {
+          logger.info('Media worker heartbeat: waiting for jobs', {
+            idleCycles,
+            pollIntervalMs: config.mediaWorkerPollIntervalMs,
+          });
+        }
+        await sleep(config.mediaWorkerPollIntervalMs);
       } catch (e) {
         if (e instanceof Error) {
           logger.error('Media worker loop error', e);
