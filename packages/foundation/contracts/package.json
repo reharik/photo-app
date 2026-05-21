@@ -18,7 +18,7 @@
     "gen:graphql:enums": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.4.2",
+    "@reharik/smart-enum": "^0.4.3",
     "typia": "^9.7.2"
   },
   "devDependencies": {

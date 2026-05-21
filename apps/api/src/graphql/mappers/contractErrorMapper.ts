@@ -5,6 +5,6 @@ export const toContractErrorPayload = (error: ContractError): GraphqlContractErr
   code: error.code,
   message: error.display,
   field: undefined,
-  category: error.category.value,
+  category: error.category,
   retryable: error.retryable,
 });

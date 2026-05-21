@@ -182,10 +182,22 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
     echo "  env_args=${ENV_ARGS[*]}"
   fi
 
-  if docker compose version >/dev/null 2>&1; then
-    sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d --force-recreate --remove-orphans
+  RECREATE_SERVICES=()
+  for service in ${CHANGED_SERVICE_NAMES}; do
+    RECREATE_SERVICES+=("${service}")
+  done
+
+  if (( ${#RECREATE_SERVICES[@]} == 0 )); then
+    echo "No changed backend services; skipping docker compose recreate"
   else
-    sudo -E docker-compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d --force-recreate --remove-orphans
+    echo "Recreating compose services: ${RECREATE_SERVICES[*]}"
+    if docker compose version >/dev/null 2>&1; then
+      sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d \
+        --force-recreate --no-deps "${RECREATE_SERVICES[@]}"
+    else
+      sudo -E docker-compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d \
+        --force-recreate --no-deps "${RECREATE_SERVICES[@]}"
+    fi
   fi
 else
   echo "Skipping docker compose (DEPLOY_BACKEND=false): static/artifact deploy only; no container recreate."

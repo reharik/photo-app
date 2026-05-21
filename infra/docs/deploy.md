@@ -6,8 +6,24 @@ Generic deploy flow used by app repos that use cannibal-infra. App-specific deta
 
 1. **CI** runs on push/PR (lint, test, build).
 2. **CD** triggers on push to main (or manual dispatch):
-   - **Backend**: Build Docker image → upload to S3 → run SSM command on EC2 to download and run deploy script → run migrations → verify health.
+   - **Backend**: Build Docker image(s) → upload to S3 → run SSM command on EC2 to download and run deploy script → run migrations → verify health.
    - **Frontend**: Build static assets → upload to S3 → run SSM to download to EC2 → update Caddy (or shared proxy) and reload.
+
+### Path-based deploy (photo-app)
+
+`infra/scripts/deploy/detect-changed-deploy-targets.sh` maps changed files to deploy targets:
+
+| Paths | Effect |
+| --- | --- |
+| `apps/web/**` | Frontend deploy only (backend build/deploy skipped) |
+| `apps/api/**` | API image build + container recreate |
+| `apps/media-worker/**` | Worker image build + container recreate |
+| `packages/context/media-core/**`, `packages/foundation/**` | Both API and worker |
+| `package.json`, `package-lock.json`, `infra/docker/**` | All backend services |
+
+On EC2, only services listed in `CHANGED_SERVICE_NAMES` are force-recreated (`docker compose up --no-deps`), so an API-only deploy does not restart the media-worker container.
+
+Manual **workflow_dispatch** can set **force_full_backend** to rebuild every backend image regardless of paths.
 3. **Shared proxy** (optional): One Caddy container can serve multiple apps on the same EC2 (different domains/paths). Scripts in `scripts/remote/` support this (e.g. `setup-shared-proxy.sh`, `deploy-shared-caddyfile.sh`).
 
 ## Key scripts (under `infra/scripts/` when consumed)

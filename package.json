@@ -57,7 +57,7 @@
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --all -- --watch"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.4.2",
+    "@reharik/smart-enum": "^0.4.3",
     "knip": "^6.4.1"
   },
   "devDependencies": {

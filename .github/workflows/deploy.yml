@@ -14,6 +14,10 @@ on:
         description: Deploy frontend
         type: boolean
         default: true
+      force_full_backend:
+        description: Build all backend images (ignore path-based skip)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,9 +25,10 @@ permissions:
 
 jobs:
   deploy:
-    uses: reharik/cannibal-infra/.github/workflows/deploy-ec2.yml@main
+    uses: ./infra/.github/workflows/deploy-ec2.yml
     with:
       deploy_backend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_backend }}
       deploy_frontend: ${{ github.event_name != 'workflow_dispatch' || inputs.deploy_frontend }}
+      force_full_backend: ${{ github.event_name == 'workflow_dispatch' && inputs.force_full_backend }}
       app_config_path: infra.app.config.json
     secrets: inherit

@@ -11,6 +11,10 @@ on:
         required: false
         type: boolean
         default: true
+      force_full_backend:
+        required: false
+        type: boolean
+        default: false
       app_config_path:
         required: false
         type: string
@@ -29,7 +33,7 @@ concurrency:
 
 jobs:
   discover:
-    if: ${{ inputs.deploy_backend }}
+    if: ${{ inputs.deploy_backend || inputs.deploy_frontend }}
     runs-on: ubuntu-latest
     outputs:
       app_name: ${{ steps.discover.outputs.app_name }}
@@ -38,6 +42,8 @@ jobs:
       env_name: ${{ steps.discover.outputs.env_name }}
       build_matrix: ${{ steps.discover.outputs.build_matrix }}
       changed_service_names: ${{ steps.discover.outputs.changed_service_names }}
+      should_build_backend: ${{ steps.discover.outputs.should_build_backend }}
+      should_deploy_backend: ${{ steps.discover.outputs.should_deploy_backend }}
       short_sha: ${{ steps.short_sha.outputs.short_sha }}
       frontend_changed: ${{ steps.discover.outputs.frontend_changed }}
     steps:
@@ -76,20 +82,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          BUILD_MATRIX="$(
-            jq -cn \
-              --arg apiPath "${DOCKER_APP_WORKSPACE_PATH}" \
-              --arg workersJson "${DOCKER_WORKERS_JSON}" '
-                [
-                  { "name": "api", "workspacePath": $apiPath }
-                ] + ($workersJson | fromjson | map({
-                  "name": .name,
-                  "workspacePath": .workspacePath
-                }))
-              '
-          )"
+          chmod +x infra/scripts/deploy/detect-changed-deploy-targets.sh
+          BASE_SHA="${{ github.event.before }}"
+          HEAD_SHA="${GITHUB_SHA}"
+          FORCE_FULL_BACKEND="${{ inputs.force_full_backend }}"
+          DEPLOY_BACKEND="${{ inputs.deploy_backend }}"
+          DEPLOY_FRONTEND="${{ inputs.deploy_frontend }}"
+          export BASE_SHA HEAD_SHA FORCE_FULL_BACKEND DEPLOY_BACKEND DEPLOY_FRONTEND
+          export DOCKER_APP_WORKSPACE_PATH DOCKER_WORKERS_JSON
 
-          CHANGED_SERVICE_NAMES="$(jq -r '.[].name' <<<"$BUILD_MATRIX" | paste -sd ' ' -)"
+          eval "$(infra/scripts/deploy/detect-changed-deploy-targets.sh "${{ inputs.app_config_path }}")"
 
           echo "app_name=${APP_NAME}" >> "$GITHUB_OUTPUT"
           echo "aws_region=${AWS_REGION}" >> "$GITHUB_OUTPUT"
@@ -97,7 +99,9 @@ jobs:
           echo "env_name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
           echo "build_matrix=${BUILD_MATRIX}" >> "$GITHUB_OUTPUT"
           echo "changed_service_names=${CHANGED_SERVICE_NAMES}" >> "$GITHUB_OUTPUT"
-          echo "frontend_changed=${{ inputs.deploy_frontend }}" >> "$GITHUB_OUTPUT"
+          echo "should_build_backend=${SHOULD_BUILD_BACKEND}" >> "$GITHUB_OUTPUT"
+          echo "should_deploy_backend=${SHOULD_DEPLOY_BACKEND}" >> "$GITHUB_OUTPUT"
+          echo "frontend_changed=${FRONTEND_CHANGED}" >> "$GITHUB_OUTPUT"
       - name: Generate worker compose overlay
         shell: bash
         run: |
@@ -111,7 +115,7 @@ jobs:
           path: workers.generated.yml
 
   build:
-    if: ${{ inputs.deploy_backend }}
+    if: ${{ inputs.deploy_backend && needs.discover.outputs.should_build_backend == 'true' }}
     needs: discover
     runs-on: ubuntu-latest
     strategy:
@@ -166,8 +170,8 @@ jobs:
           tags: |
             ${{ env.APP_NAME }}-${{ matrix.service.name }}:${{ env.SHORT_SHA }}
           load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
           provenance: false
 
       - name: Save image tarball
@@ -189,7 +193,7 @@ jobs:
             --region "${AWS_REGION}"
 
   deploy:
-    if: ${{ inputs.deploy_backend }}
+    if: ${{ inputs.deploy_backend && needs.discover.outputs.should_deploy_backend == 'true' }}
     needs:
       - discover
       - build
@@ -259,7 +263,7 @@ jobs:
           ssm_run "Deploy backend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"
 
   deploy_frontend:
-    if: ${{ inputs.deploy_frontend }}
+    if: ${{ inputs.deploy_frontend && needs.discover.outputs.frontend_changed == 'true' }}
     runs-on: ubuntu-latest
     needs: discover
     steps:
