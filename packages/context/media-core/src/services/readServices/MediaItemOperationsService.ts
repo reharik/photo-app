@@ -1,5 +1,5 @@
 import { Operation, OperationCatalog } from '@packages/contracts';
-import { AuthorizationReadRepository } from '../../repositories/readRepositories/authorizationReadRepository';
+import { AuthorizationReadRepository } from '../../repositories/readRepositories/types';
 import { EntityId } from '../../types';
 import { DBMediaItemRow, DBPublicMediaItemRow } from './types';
 

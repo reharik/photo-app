@@ -12,7 +12,6 @@ const errorCategoryInput = [
 export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
   input: errorCategoryInput,
-  serializeAs: 'value',
 });
 
 const errorAreaInput = [

@@ -11,7 +11,7 @@ import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
+import { ShareContactRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
 import {
@@ -23,7 +23,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
   id: authorization.id(),
   grantedToUserId: authorization.grantedToUser(),
-  permission: authorization.permission(),
+  operations: authorization.operations(),
   label: authorization.label(),
   expiresAt: authorization.expiresAt(),
   revokedAt: authorization.revokedAt(),
@@ -72,7 +72,7 @@ export const build__GrantAuthorizationForMediaItems = ({
   return async (
     input: GrantUserAuthorizationForMediaItemsCommand,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
-    const { viewerId, permissions, grantedToHandle, label, expiresAt } = input;
+    const { viewerId, operations, grantedToHandle, label, expiresAt } = input;
     const dedupedIds = dedupePreserveOrder(input.mediaItemIds);
 
     if (dedupedIds.length === 0) {
@@ -110,7 +110,7 @@ export const build__GrantAuthorizationForMediaItems = ({
     const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
     for (const mediaItem of mediaItems) {
       const result = mediaItem.grantAuthorization(
-        permissions,
+        operations,
         viewerId,
         grantedToUserId,
         label,
@@ -137,6 +137,7 @@ export const build__GrantAuthorizationForMediaItems = ({
             mediaItemId: mediaItem.id(),
             accessGrantId: authorization.id(),
             grantedToUser: grantedToUserId,
+            operations: authorization.operations(),
             createdAt: new Date(),
           },
           { trx },

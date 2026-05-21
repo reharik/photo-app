@@ -7,7 +7,7 @@ import {
 import { Album } from '../../../domain/Album/Album';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddMediaItemsToAlbumCommand, AddMediaItemsToAlbumResult } from './writeAlbum.types';

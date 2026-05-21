@@ -21,4 +21,5 @@ export * from './readRepositories/publicMediaItemReadRepository';
 export * from './readRepositories/reactionReadRepository';
 export * from './readRepositories/shareContactRepository';
 export * from './readRepositories/sharedWithMeReadRepository';
+export * from './readRepositories/types';
 export * from './readRepositories/userReadRepository';

@@ -1,5 +1,5 @@
 import { indexByUnique } from '@packages/infrastructure';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
+import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
 import { PublicReadServiceFactoryBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {

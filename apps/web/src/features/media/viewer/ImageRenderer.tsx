@@ -1,13 +1,15 @@
 import styled from 'styled-components';
 
 export type ImageRendererProps = {
+  id: string;
   src: string;
   alt: string;
 };
 
-export const ImageRenderer = ({ src, alt }: ImageRendererProps) => {
+export const ImageRenderer = ({ id, src, alt }: ImageRendererProps) => {
   return (
     <StyledImg
+      data-testid={id}
       src={src}
       alt={alt}
       draggable={false}

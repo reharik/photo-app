@@ -1,6 +1,5 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 import {
   DBMediaItemRow,
   MediaItemCollectionInfo,
@@ -8,41 +7,7 @@ import {
 } from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
 import { toPagedResult } from '../repositoryHelpers';
-
-export type MediaItemReadRepository = {
-  /** Loads by id only (no ownership filter). Used for authz after access rules are applied. */
-  getByIdForAuthorization: ({
-    mediaItemId,
-  }: {
-    mediaItemId: EntityId;
-  }) => Promise<DBMediaItemRow | undefined>;
-  getForViewer: ({
-    mediaItemId,
-    viewerId,
-  }: {
-    mediaItemId: EntityId;
-    viewerId: EntityId;
-  }) => Promise<DBMediaItemRow | undefined>;
-  getManyForViewer: ({
-    mediaItemIds,
-    viewerId,
-  }: {
-    mediaItemIds: EntityId[];
-    viewerId: EntityId;
-  }) => Promise<DBMediaItemRow[]>;
-  listForViewer(args: {
-    viewerId: EntityId;
-    collectionInfo: MediaItemCollectionInfo;
-  }): Promise<PagedList<DBMediaItemRow>>;
-  listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<
-    {
-      mediaItemId: EntityId;
-      label: string;
-    }[]
-  >;
-};
-
-type MediaItemReadRepositoryDeps = { database: Knex };
+import type { MediaItemReadRepository, MediaItemTagRow, ReadRepositoryDeps } from './types';
 
 const DBmediaItemRowFields = [
   'media_item.id',
@@ -67,7 +32,7 @@ const DBmediaItemRowFields = [
 
 export const build__MediaItemReadRepository = ({
   database,
-}: MediaItemReadRepositoryDeps): MediaItemReadRepository => ({
+}: ReadRepositoryDeps): MediaItemReadRepository => ({
   getByIdForAuthorization: async ({
     mediaItemId,
   }: {
@@ -157,12 +122,7 @@ export const build__MediaItemReadRepository = ({
     mediaItemIds,
   }: {
     mediaItemIds: EntityId[];
-  }): Promise<
-    {
-      mediaItemId: EntityId;
-      label: string;
-    }[]
-  > => {
+  }): Promise<MediaItemTagRow[]> => {
     if (mediaItemIds.length === 0) {
       return [];
     }
@@ -171,9 +131,7 @@ export const build__MediaItemReadRepository = ({
       .join('mediaItem', 'mediaItemTag.mediaItemId', 'mediaItem.id')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
       .whereIn('mediaItemTag.mediaItemId', mediaItemIds)
-      .select<
-        { mediaItemId: EntityId; label: string }[]
-      >('mediaItemTag.mediaItemId', 'userTag.label')
+      .select<MediaItemTagRow[]>('mediaItemTag.mediaItemId', 'userTag.label')
       .orderBy('mediaItemTag.mediaItemId', 'asc')
       .orderBy('userTag.label', 'asc');
   },

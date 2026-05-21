@@ -117,7 +117,7 @@ input DeleteAlbumItemsFromAlbumInput {
 }
 input GrantUserAuthorizationForAlbumInput {
   albumId: ID!
-  permission: SharePermission!
+  operations: [Operation!]!
   grantedToUserId: ID
   grantedToHandle: String
   label: String

@@ -1,35 +1,14 @@
-import { Operation } from '@packages/contracts';
-import { Knex } from 'knex';
-
-export type HasActiveGrantInput = {
-  mediaItemId: string;
-  viewerId?: string;
-  tokenHash?: string;
-};
-
-export type HasActiveGrantPermissionInput = {
-  mediaItemId: string;
-  viewerId: string;
-  permission: Operation;
-};
-
-export type HasActiveAccessGrantPermissionInput = {
-  albumId: string;
-  viewerId: string;
-  permission: Operation;
-};
-
-export type GrantReadRepository = {
-  hasActiveGrant: (input: HasActiveGrantInput) => Promise<boolean>;
-  hasActiveGrantPermission: (input: HasActiveGrantPermissionInput) => Promise<boolean>;
-  hasActiveAccessGrantPermission: (input: HasActiveAccessGrantPermissionInput) => Promise<boolean>;
-};
-
-type GrantReadRepositoryDeps = { database: Knex };
+import type {
+  GrantReadRepository,
+  HasActiveAccessGrantPermissionInput,
+  HasActiveGrantInput,
+  HasActiveGrantPermissionInput,
+  ReadRepositoryDeps,
+} from './types';
 
 export const build__GrantReadRepository = ({
   database,
-}: GrantReadRepositoryDeps): GrantReadRepository => ({
+}: ReadRepositoryDeps): GrantReadRepository => ({
   hasActiveGrant: (input: HasActiveGrantInput): Promise<boolean> => {
     if (input.viewerId) {
       return database('grant')
@@ -46,9 +25,10 @@ export const build__GrantReadRepository = ({
   },
   hasActiveGrantPermission: (input: HasActiveGrantPermissionInput): Promise<boolean> => {
     return database('grant')
-      .where('media_item_id', input.mediaItemId)
-      .where('granted_to_user', input.viewerId)
-      .whereRaw(`',' || permissions || ',' LIKE ?`, [`%,${input.permission.value},%`])
+      .join('access_grant as ag', 'ag.id', 'grant.access_grant_id')
+      .where('grant.media_item_id', input.mediaItemId)
+      .where('grant.granted_to_user', input.viewerId)
+      .whereRaw('? = ANY(COALESCE("grant".operations, ag.operations))', [input.operation.value])
       .first();
   },
   hasActiveAccessGrantPermission: (
@@ -62,7 +42,7 @@ export const build__GrantReadRepository = ({
       .andWhere((expiry) => {
         expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', database.fn.now());
       })
-      .andWhereRaw(`',' || permissions || ',' LIKE ?`, [`%,${input.permission.value},%`])
+      .andWhereRaw('? = ANY(COALESCE("grant".operations, ag.operations))', [input.operation.value])
       .first();
   },
 });

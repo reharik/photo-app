@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
 
-import { SharePermission } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { DateTime } from 'luxon';
 import { ShareContactType } from '../../graphql/generated/types';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
@@ -13,7 +13,7 @@ import { ShareTokenResult } from './ShareTokenResult';
 
 export type GrantShareFormValues = {
   handle: string;
-  permission: SharePermission;
+  operations: Operation[];
   label?: string;
   expiresAt?: DateTime;
 };
@@ -44,7 +44,7 @@ export const GrantShareForm = ({
   onClose,
 }: GrantShareFormProps) => {
   const [handle, setHandle] = useState('');
-  const [permission] = useState<SharePermission>(SharePermission.view);
+  const [operations] = useState<Operation[]>([]);
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState<DateTime | undefined>();
   const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
@@ -58,7 +58,7 @@ export const GrantShareForm = ({
 
   const formValues = (): GrantShareFormValues => ({
     handle: handle.trim(),
-    permission,
+    operations,
     label: trimmedOrUndefined(label),
     expiresAt: expiresAt,
   });
@@ -111,7 +111,7 @@ export const GrantShareForm = ({
           suggestions={suggestions}
           disabled={isLoading}
         />
-        {/* <SharePermissionSelect value={permission} onChange={setPermission} disabled={isLoading} /> */}
+        {/* <SharePermissionSelect value={operations} onChange={setPermission} disabled={isLoading} /> */}
         <FormInput
           label="Label (optional)"
           placeholder="e.g. Family album"

@@ -1,27 +1,10 @@
 import { AlbumMemberRole } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
-
-type AlbumMemberRow = {
-  id: string;
-  role: AlbumMemberRole;
-};
-
-export type AlbumMemberReadRepository = {
-  getMemberByUserId: ({
-    albumId,
-    viewerId,
-  }: {
-    albumId: string;
-    viewerId: string;
-  }) => Promise<AlbumMemberRow | undefined>;
-};
-
-type AlbumMemberReadRepositoryDeps = { database: Knex };
+import type { AlbumMemberReadRepository, AlbumMemberRow, ReadRepositoryDeps } from './types';
 
 export const build__AlbumMemberReadRepository = ({
   database,
-}: AlbumMemberReadRepositoryDeps): AlbumMemberReadRepository => ({
+}: ReadRepositoryDeps): AlbumMemberReadRepository => ({
   getMemberByUserId: async ({
     albumId,
     viewerId,

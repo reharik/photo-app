@@ -1,6 +1,6 @@
 import { indexByUnique } from '@packages/infrastructure';
 import { EnrichMediaItems } from '../..';
-import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/sharedWithMeReadRepository';
+import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/types';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';

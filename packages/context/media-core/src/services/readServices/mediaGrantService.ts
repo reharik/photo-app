@@ -1,8 +1,10 @@
 import { AppErrorCollection, Operation } from '@packages/contracts';
 import { fail, ok } from '../..';
-import { AlbumMemberReadRepository } from '../../repositories/readRepositories/albumMemberReadRepository';
-import { GrantReadRepository } from '../../repositories/readRepositories/grantReadRepository';
-import { MediaItemReadRepository } from '../../repositories/readRepositories/mediaItemReadRepository';
+import {
+  AlbumMemberReadRepository,
+  GrantReadRepository,
+  MediaItemReadRepository,
+} from '../../repositories/readRepositories/types';
 import { WriteResult } from '../../types/types';
 
 export type AuthorizeMediaCommentInput = {
@@ -52,7 +54,7 @@ export const build__ValidateOperationService = ({
     const granted = await grantReadRepository.hasActiveGrantPermission({
       mediaItemId,
       viewerId,
-      permission: Operation.comment,
+      operation: Operation.comment,
     });
 
     if (granted) {
@@ -79,7 +81,7 @@ export const build__ValidateOperationService = ({
     const granted = await grantReadRepository.hasActiveAccessGrantPermission({
       albumId,
       viewerId,
-      permission: Operation.comment,
+      operation: Operation.comment,
     });
 
     if (granted) {

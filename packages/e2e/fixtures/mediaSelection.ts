@@ -161,3 +161,19 @@ export const toggleReaction = async (
   await tile.hover();
   await tile.getByRole('button', { name: reaction }).click();
 };
+
+export const expectMediaItemLoaded = async (page: Page, id: string) => {
+  const img = page.getByTestId(id);
+  await expect(img).toBeVisible();
+
+  await expect
+    .poll(async () => {
+      const state = await img.evaluate((el: HTMLImageElement) => ({
+        complete: el.complete,
+        naturalWidth: el.naturalWidth,
+        src: el.currentSrc || el.src,
+      }));
+      return state.complete && state.naturalWidth > 0;
+    })
+    .toBe(true);
+};

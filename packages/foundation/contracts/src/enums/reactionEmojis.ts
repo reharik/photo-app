@@ -16,5 +16,4 @@ const input = {
 export type ReactionEmoji = Enumeration<typeof ReactionEmoji>;
 export const ReactionEmoji = enumeration<typeof input>('ReactionEmoji', {
   input: input,
-  serializeAs: 'value',
 });

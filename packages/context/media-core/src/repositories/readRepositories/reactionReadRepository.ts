@@ -1,28 +1,11 @@
 import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
-
-export type ReactionReadRepository = {
-  countForTarget: (args: { targetType: ReactionTargetType; targetId: EntityId }) => Promise<number>;
-  viewerReactionsForTargets: (args: {
-    viewerId: EntityId;
-    targetType: ReactionTargetType;
-    targetIds: EntityId[];
-  }) => Promise<DbReactionRow[]>;
-};
-
-type ReactionReadRepositoryDeps = { database: Knex };
-
-export type DbReactionRow = {
-  id: EntityId;
-  targetId: EntityId;
-  emoji: ReactionEmoji;
-};
+import type { DbReactionRow, ReactionReadRepository, ReadRepositoryDeps } from './types';
 
 export const build__ReactionReadRepository = ({
   database,
-}: ReactionReadRepositoryDeps): ReactionReadRepository => ({
+}: ReadRepositoryDeps): ReactionReadRepository => ({
   countForTarget: async ({
     targetType,
     targetId,

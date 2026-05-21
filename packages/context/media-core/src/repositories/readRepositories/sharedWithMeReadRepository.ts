@@ -1,8 +1,12 @@
 import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { NamespacedMediaItemRow } from '../../services/readServices/types';
-import type { EntityId } from '../../types/types';
+import type {
+  ReadRepositoryDeps,
+  SharedAlbumRow,
+  SharedWithMedMediaItemRow,
+  SharedWithMeReadRepository,
+} from './types';
 
 const mediaItemSelectColumns = [
   'mediaItem.id as mediaItemId',
@@ -38,30 +42,6 @@ const accessGrantFieldSelect = [
   'accessGrant.grantedBy as sharedBy',
 ];
 
-export type SharedWithMedMediaItemRow = NamespacedMediaItemRow & {
-  id: string;
-  sharedBy: EntityId;
-  sharedAt: Date;
-};
-
-export type SharedAlbumRow = {
-  id: string;
-  albumId: string;
-  albumTitle: string;
-  albumCreatedAt: Date;
-  albumUpdatedAt: Date;
-  viewerMemberRole?: AlbumMemberRole;
-  sharedBy: EntityId;
-  sharedAt: Date;
-} & NamespacedMediaItemRow; // cover item
-
-export type SharedWithMeReadRepository = {
-  getMediaItemsSharedWithMe: (viewerId: string) => Promise<SharedWithMedMediaItemRow[]>;
-  getAlbumsSharedWithMe: (viewerId: string) => Promise<SharedAlbumRow[]>;
-};
-
-type SharedWithMeReadRepositoryDeps = { database: Knex };
-
 const applyActiveUserGrant = <TRecord extends object, TResult>(
   q: Knex.QueryBuilder<TRecord, TResult>,
   { database, viewerId }: { database: Knex; viewerId: string },
@@ -80,7 +60,7 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
 
 export const build__SharedWithMeReadRepository = ({
   database,
-}: SharedWithMeReadRepositoryDeps): SharedWithMeReadRepository => ({
+}: ReadRepositoryDeps): SharedWithMeReadRepository => ({
   getMediaItemsSharedWithMe: async (viewerId: string): Promise<SharedWithMedMediaItemRow[]> => {
     return applyActiveUserGrant(
       withEnumRevival(

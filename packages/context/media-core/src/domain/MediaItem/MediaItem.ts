@@ -3,7 +3,7 @@
  * Encapsulates metadata; can appear in multiple albums via AlbumItem.
  */
 
-import type { MediaAssetKind, SharePermission } from '@packages/contracts';
+import type { MediaAssetKind, Operation } from '@packages/contracts';
 import {
   AppErrorCollection,
   CommentTargetType,
@@ -246,7 +246,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return this.#authorizations;
   }
   grantAuthorization(
-    permissions: SharePermission[],
+    operations: Operation[],
     actorId: ActorId,
     grantedToUserId?: EntityId,
     label?: string,
@@ -266,7 +266,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     if (!existingAuthorization) {
       const authorization = Authorization.create(
         {
-          permissions,
+          operations,
           grantedToUser: grantedToUserId,
           publicLinkId: undefined,
           grantedBy: actorId,

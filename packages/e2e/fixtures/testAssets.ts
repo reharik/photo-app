@@ -18,7 +18,7 @@ export const listE2eAssetImages = (): string[] => {
 
 const pickRandom = <T>(items: readonly T[]): T => {
   const index = Math.floor(Math.random() * items.length);
-  return items[index]!;
+  return items[index];
 };
 
 /**
@@ -28,9 +28,7 @@ const pickRandom = <T>(items: readonly T[]): T => {
 export const pickRandomE2eAssetImages = (count: number): string[] => {
   const available = listE2eAssetImages();
   if (available.length === 0) {
-    throw new Error(
-      `No image assets in ${E2E_ASSETS_DIR}. Add .jpg, .png, or other image files.`,
-    );
+    throw new Error(`No image assets in ${E2E_ASSETS_DIR}. Add .jpg, .png, or other image files.`);
   }
   if (count <= 0) {
     return [];
@@ -61,30 +59,25 @@ const allocateUniqueFileName = (
   return `${stem}-${seen + 1}${ext}`;
 };
 
-export type GrabTestImagesResult = {
-  fileNames: string[];
-  paths: string[];
-};
+export type GrabTestImagesResult = { fileName: string; path: string };
 
 /**
  * Randomly selects `count` images from the assets folder, copies each to a temp
  * directory, and names uploads `{originalStem}-{uniqueSuffix}{ext}`.
  * Duplicate names in one batch get `-2`, `-3`, … appended before the extension.
  */
-export const grabTestImages = (count: number, uniqueSuffix: string): GrabTestImagesResult => {
+export const grabTestImages = (count: number, uniqueSuffix: string): GrabTestImagesResult[] => {
   const picked = pickRandomE2eAssetImages(count);
   const dir = mkdtempSync(join(tmpdir(), 'photoapp-e2e-'));
   const usedBaseNames = new Map<string, number>();
-  const fileNames: string[] = [];
-  const paths: string[] = [];
+  const result: { fileName: string; path: string }[] = [];
 
   for (const assetFileName of picked) {
     const fileName = allocateUniqueFileName(assetFileName, uniqueSuffix, usedBaseNames);
     const dest = join(dir, fileName);
     copyFileSync(join(E2E_ASSETS_DIR, assetFileName), dest);
-    fileNames.push(fileName);
-    paths.push(dest);
+    result.push({ fileName, path: dest });
   }
 
-  return { fileNames, paths };
+  return result;
 };

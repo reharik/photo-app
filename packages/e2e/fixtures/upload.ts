@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loginViaUi } from './auth';
-import { E2E_ASSETS_DIR, grabTestImages } from './testAssets';
+import { E2E_ASSETS_DIR, grabTestImages, GrabTestImagesResult } from './testAssets';
 import type { TestUser } from './users';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -80,13 +80,14 @@ export const loginAndOpenRecentMedia = async (
  */
 export const uploadMediaViaUi = async (
   page: Page,
-  filePaths: string | string[],
-): Promise<UploadedMediaItem[]> => {
-  const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
-  if (paths.length === 0) {
+  testImages: GrabTestImagesResult | GrabTestImagesResult[],
+): Promise<{ id: string; fileName: string }[]> => {
+  const images = Array.isArray(testImages) ? testImages : [testImages];
+  if (images.length === 0) {
     return [];
   }
 
+  const paths = images.map((image) => image.path);
   const idsBefore = new Set(await getMediaTileIds(page));
 
   await page.getByTestId('upload-media-input').first().setInputFiles(paths);
@@ -106,10 +107,14 @@ export const uploadMediaViaUi = async (
       },
       { timeout: UPLOAD_TIMEOUT_MS },
     )
-    .toBe(paths.length);
+    .toBe(images.length);
 
   const newIds = (await getMediaTileIds(page)).filter((id) => !idsBefore.has(id));
-  return newIds.map((id) => ({ id }));
+  // Upload queue runs one file at a time; recent media sorts newest-first in the grid.
+  return [...newIds].reverse().map((id, index) => ({
+    id,
+    fileName: images[index].fileName,
+  }));
 };
 
 /**
@@ -120,10 +125,13 @@ export const loginAndUploadMedia = async (
   context: BrowserContext,
   user: TestUser,
   fileNames: string[],
-): Promise<UploadedMediaItem[]> => {
+): Promise<{ id: string; fileName: string }[]> => {
   await loginAndOpenRecentMedia(page, context, user);
-  const paths = fileNames.map((name) => createTestImageFile(name));
-  return uploadMediaViaUi(page, paths);
+  const images = fileNames.map((fileName) => ({
+    fileName,
+    path: createTestImageFile(fileName),
+  }));
+  return uploadMediaViaUi(page, images);
 };
 
 /**
@@ -138,6 +146,6 @@ export const loginAndUploadRandomAssets = async (
   uniqueSuffix: string,
 ): Promise<UploadedMediaItem[]> => {
   await loginAndOpenRecentMedia(page, context, user);
-  const { paths } = grabTestImages(count, uniqueSuffix);
-  return uploadMediaViaUi(page, paths);
+  const items = grabTestImages(count, uniqueSuffix);
+  return uploadMediaViaUi(page, items);
 };

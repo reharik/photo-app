@@ -1,5 +1,5 @@
 import { Operation } from '@packages/contracts';
 
-export const hasPermission = (operations: Operation[], permission: Operation) => {
-  return operations.includes(permission);
+export const hasPermission = (operations: Operation[], operation: Operation) => {
+  return operations.includes(operation);
 };

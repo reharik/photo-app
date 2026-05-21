@@ -1,4 +1,4 @@
-import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
+import { AuthorizationReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { AuthorizationProjection } from '../types';
@@ -37,7 +37,7 @@ export const build__viewerAuthorizationsReadServiceFactory = ({
         return rows.map((row) => ({
           id: row.id,
           grantedToUserId: row.grantedToUser,
-          permission: row.permission,
+          operations: row.operations,
           label: row.description,
           expiresAt: row.expiresAt,
           revokedAt: row.revokedAt,
@@ -56,7 +56,7 @@ export const build__viewerAuthorizationsReadServiceFactory = ({
         return rows.map((row) => ({
           id: row.id,
           grantedToUserId: row.grantedToUser,
-          permission: row.permission,
+          operations: row.operations,
           label: row.description,
           expiresAt: row.expiresAt,
           revokedAt: row.revokedAt,

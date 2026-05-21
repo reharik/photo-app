@@ -21,7 +21,7 @@ export const MediaItemTile = ({
     <TileColumn>
       <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
         {item.kind === MediaKind.photo ? (
-          <ThumbImage src={url} alt={item.title?.trim() ?? ''} />
+          <ThumbImage src={url} data-testid={item.id} alt={item.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
         )}

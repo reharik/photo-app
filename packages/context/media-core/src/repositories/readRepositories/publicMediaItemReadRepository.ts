@@ -1,8 +1,10 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 import { DBPublicMediaItemRow } from '../../services/readServices/types';
-import { EntityId } from '../../types/types';
+import type { EntityId } from '../../types/types';
+import type { PublicMediaItemReadRepository, ReadRepositoryDeps } from './types';
+
+export type { PublicMediaItemReadRepository } from './types';
 
 const DBPublicMediaItemRowFields = [
   'media_item.id',
@@ -16,21 +18,9 @@ const DBPublicMediaItemRowFields = [
   'media_item.reaction_counts',
 ];
 
-type PublicMediaItemReadRepositoryDeps = { database: Knex };
-
-export type PublicMediaItemReadRepository = {
-  getPublicMediaItem: ({
-    mediaItemId,
-    publicLinkId,
-  }: {
-    mediaItemId: EntityId;
-    publicLinkId: EntityId;
-  }) => Promise<DBPublicMediaItemRow | undefined>;
-};
-
 export const build__PublicMediaItemReadRepository = ({
   database,
-}: PublicMediaItemReadRepositoryDeps): PublicMediaItemReadRepository => ({
+}: ReadRepositoryDeps): PublicMediaItemReadRepository => ({
   getPublicMediaItem: async ({
     mediaItemId,
     publicLinkId,

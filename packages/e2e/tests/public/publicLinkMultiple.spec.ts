@@ -1,10 +1,7 @@
-import { selectMediaItems } from '../fixtures/mediaSelection';
-import {
-  expectMediaTileVisible,
-  expectPublicMediaDetailUrl,
-} from '../fixtures/navigation';
-import { loginAndUploadMedia } from '../fixtures/upload';
-import { expect, test } from '../fixtures/test';
+import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSelection';
+import { expectPublicMediaDetailUrl } from '../../fixtures/navigation';
+import { expect, test } from '../../fixtures/test';
+import { setup } from '../../routines/setup';
 
 /**
  * Scenario 4 — Create a public link for SEVERAL media items.
@@ -14,25 +11,14 @@ test.describe('Create a public link for multiple media items', () => {
     test('should show the public album grid, allow prev/next navigation in detail, and stay read-only', async ({
       userA,
       anonPage,
-      uniqueSuffix,
+      grabTestImages,
     }) => {
-      const uploaded = await loginAndUploadMedia(
-        userA.page,
-        userA.context,
-        userA.user,
-        [
-          `e2e-pub-multi-one-${uniqueSuffix}.jpg`,
-          `e2e-pub-multi-two-${uniqueSuffix}.jpg`,
-          `e2e-pub-multi-three-${uniqueSuffix}.jpg`,
-        ],
-      );
-      const [one, two, three] = uploaded;
+      const [a, b, c] = await setup(grabTestImages, userA, 3);
 
-      const selection = await selectMediaItems(
-        userA.page,
-        [one.id, two.id, three.id],
-        { expectActions: ['Share'] },
-      );
+      const selection = await selectMediaItems(userA.page, [a.id, b.id, c.id], {
+        expectActions: ['Share', 'Add to album', 'Delete from library'],
+      });
+      await expect(selection.toolbar).toContainText('3 selected');
       await selection.clickAction('Share');
 
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share 3 photos' });
@@ -43,23 +29,23 @@ test.describe('Create a public link for multiple media items', () => {
 
       await anonPage.goto(shareUrl);
 
-      await expectMediaTileVisible(anonPage, one.id);
-      await expectMediaTileVisible(anonPage, two.id);
-      await expectMediaTileVisible(anonPage, three.id);
+      await expectMediaItemLoaded(anonPage, a.id);
+      await expectMediaItemLoaded(anonPage, b.id);
+      await expectMediaItemLoaded(anonPage, c.id);
 
-      const tileOne = anonPage.getByTestId(`media-tile-${one.id}`);
+      const tileOne = anonPage.getByTestId(`media-tile-${a.id}`);
       await tileOne.getByRole('link').first().click();
-      await expectPublicMediaDetailUrl(anonPage, one.id);
+      await expectPublicMediaDetailUrl(anonPage, a.id);
 
       const nextBtn = anonPage.getByRole('button', { name: 'Next image' });
       const prevBtn = anonPage.getByRole('button', { name: 'Previous image' });
 
       await nextBtn.click();
-      await expectPublicMediaDetailUrl(anonPage, two.id);
+      await expectPublicMediaDetailUrl(anonPage, b.id);
       await nextBtn.click();
-      await expectPublicMediaDetailUrl(anonPage, three.id);
+      await expectPublicMediaDetailUrl(anonPage, c.id);
       await prevBtn.click();
-      await expectPublicMediaDetailUrl(anonPage, two.id);
+      await expectPublicMediaDetailUrl(anonPage, b.id);
 
       await expect(anonPage.getByLabel('Add a comment…')).toHaveCount(0);
       await expect(anonPage.getByLabel('Add a reply')).toHaveCount(0);

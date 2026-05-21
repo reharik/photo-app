@@ -75,6 +75,7 @@ export const build__CreatePublicLinkForAlbum = ({
           id: crypto.randomUUID(),
           mediaItemId: x,
           accessGrantId: authorizationId,
+          operations: authorization.operations(),
           createdAt: now,
         };
       });

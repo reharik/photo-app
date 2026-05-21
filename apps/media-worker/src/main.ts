@@ -1,7 +1,10 @@
 import dotenv from 'dotenv';
 
+import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import { destroyWorkerContainer, initializeWorkerContainer } from './container';
+setDefaultSerializationMode('value');
 
+// then the rest of your app bootstrap
 const bootstrap = async (): Promise<void> => {
   dotenv.config();
 

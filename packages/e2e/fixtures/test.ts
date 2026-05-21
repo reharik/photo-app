@@ -26,7 +26,7 @@ type Fixtures = {
    * Picks random images from `fixtures/assets`, copies them to temp paths named
    * `{stem}-{uniqueSuffix}{ext}`, and returns paths ready for upload.
    */
-  grabTestImages: (count: number) => GrabTestImagesResult;
+  grabTestImages: (count: number) => GrabTestImagesResult[];
 };
 
 const makeSession = async (browser: Browser, user: TestUser): Promise<UserSession> => {

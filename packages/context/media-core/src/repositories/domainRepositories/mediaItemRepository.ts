@@ -4,13 +4,13 @@ import {
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
-  SharePermission,
+  Operation,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { DBReactionCounts } from '../..';
 import { buildMediaItemBaseStorageKey } from '../../application/media/MediaStorage';
-import { RawAuthorizationRecord } from '../../domain/Authorization/Authorization';
+import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
@@ -72,13 +72,13 @@ export const build__MediaItemRepository = ({
       { strict: true },
     );
 
-    const rawAuthorizationRows = await database<RawAuthorizationRecord>('access_grant')
-      .where({ mediaItemId: id })
-      .orderBy('createdAt', 'asc');
-    const authorizationRows = rawAuthorizationRows.map((r) => ({
-      ...r,
-      permissions: r.permissions.split(',').map((p) => SharePermission.fromValue(p)),
-    }));
+    const authorizationRows = await withEnumRevival(
+      database<AuthorizationRecord>('access_grant')
+        .where({ mediaItemId: id })
+        .orderBy('createdAt', 'asc'),
+      { operations: Operation },
+      { strict: true },
+    );
 
     const tagLabelRows = await database('mediaItemTag')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')

@@ -1,7 +1,9 @@
 import { ReactionTargetType } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
-import { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
+import {
+  MediaItemReadRepository,
+  ReactionReadRepository,
+} from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types';
 import { MediaItemOperationsService } from '../MediaItemOperationsService';
 import { ReadReactionService } from '../readReactionService';

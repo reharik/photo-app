@@ -1,4 +1,4 @@
-import { AppErrorCollection, SharePermission } from '@packages/contracts';
+import { AppErrorCollection, Operation } from '@packages/contracts';
 import { ActorId, EntityId, WriteResult } from '../../types/types';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { AuditRecord, ChildEntities, Entity } from '../Entity';
@@ -22,7 +22,7 @@ export type PublicLinkRecord = {
 } & AuditRecord;
 
 export type CreatePublicLinkInput = {
-  permission: SharePermission;
+  operations: Operation[];
   linkToken: string;
   grantedBy: EntityId;
   label?: string;
@@ -47,7 +47,7 @@ export class PublicLink extends Entity<PublicLinkRecord> {
   static create(input: CreatePublicLinkInput, actorId: ActorId): PublicLink {
     const authorization = Authorization.create(
       {
-        permission: input.permission,
+        operations: input.operations,
         grantedBy: actorId,
         label: input.label,
         expiresAt: input.expiresAt,

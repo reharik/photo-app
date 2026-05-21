@@ -1,7 +1,7 @@
 import {
   PublicAccessReadRepository,
   PublicAccessRow,
-} from '../../../repositories/readRepositories/publicAccessReadRepository';
+} from '../../../repositories/readRepositories/types';
 import { AgnosticReadServiceBase } from '../readServiceBaseType';
 
 export interface PublicAccessReadService extends AgnosticReadServiceBase {

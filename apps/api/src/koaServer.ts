@@ -1,9 +1,12 @@
 import cors from '@koa/cors';
+import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import http from 'http';
 import Koa, { Context } from 'koa';
 import { koaBody } from 'koa-body';
 import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+setDefaultSerializationMode('value');
 
+// then the rest of your app bootstrap
 export type KoaServer = http.Server;
 
 export const build__KoaServer = ({

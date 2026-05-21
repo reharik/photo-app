@@ -1,7 +1,7 @@
 import { AppErrorCollection, CommentTargetType } from '@packages/contracts';
 import { Comment, fail, ok } from '../../../domain';
 import { CommentRepository } from '../../../repositories';
-import { UserReadRepository } from '../../../repositories/readRepositories/userReadRepository';
+import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { ValidateOperationService } from '../../readServices/mediaGrantService';
 import { WriteServiceBase } from '../writeServiceBaseType';

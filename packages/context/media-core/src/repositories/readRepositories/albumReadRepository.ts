@@ -14,54 +14,7 @@ import {
 } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
 import { toPagedResult } from '../repositoryHelpers';
-
-export type AlbumReadRepository = {
-  listByViewerId: ({
-    viewerId,
-    collectionInfo,
-  }: {
-    viewerId: string;
-    collectionInfo: CollectionInfo<AlbumSortBy>;
-  }) => Promise<PagedList<AlbumWithCoverRow>>;
-  getAlbumForViewer: ({
-    albumId,
-    viewerId,
-  }: {
-    albumId: string;
-    viewerId: string;
-  }) => Promise<AlbumWithCoverRow | undefined>;
-  getViewableAlbumItemsForViewer: ({
-    albumId,
-    viewerId,
-    collectionInfo,
-  }: {
-    albumId: string;
-    viewerId: string;
-    collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
-  findAlbumIdsReferencingMediaItem: ({
-    mediaItemId,
-  }: {
-    mediaItemId: string;
-  }) => Promise<{ id: string }[]>;
-  getAlbumForShareLink: ({
-    albumId,
-    publicLinkId,
-  }: {
-    albumId: string;
-    publicLinkId: string;
-  }) => Promise<AlbumWithCoverRow | undefined>;
-  /** Album items for public share-link viewing (no membership check). READY media only. */
-  listAlbumItemsForShareLink: ({
-    albumId,
-    publicLinkId,
-    collectionInfo,
-  }: {
-    albumId: string;
-    publicLinkId: string;
-    collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
-};
+import type { AlbumIdRow, AlbumReadRepository, ReadRepositoryDeps } from './types';
 
 const mediaItemSelectColumns = [
   'mediaItem.id as mediaItemId',
@@ -107,8 +60,6 @@ const albumItemWithMediaSelectColumns = [
   ...mediaItemSelectColumns,
 ];
 
-type AlbumReadRepositoryDeps = { database: Knex };
-
 const whereAlbumViewableByMemberOrAlbumGrant =
   (db: Knex, viewerId: string) =>
   (w: {
@@ -149,7 +100,7 @@ const whereActiveShareLinkGrant =
 
 export const build__AlbumReadRepository = ({
   database,
-}: AlbumReadRepositoryDeps): AlbumReadRepository => ({
+}: ReadRepositoryDeps): AlbumReadRepository => ({
   listByViewerId: async ({
     viewerId,
     collectionInfo,
@@ -274,8 +225,8 @@ export const build__AlbumReadRepository = ({
     mediaItemId,
   }: {
     mediaItemId: string;
-  }): Promise<{ id: string }[]> => {
-    return database<{ id: string }>('album')
+  }): Promise<AlbumIdRow[]> => {
+    return database<AlbumIdRow>('album')
       .leftJoin('albumItem', 'albumItem.albumId', 'album.id')
       .where('albumItem.mediaItemId', mediaItemId)
       .orWhere('album.coverMediaId', mediaItemId)

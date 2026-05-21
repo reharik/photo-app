@@ -1,4 +1,4 @@
-import { AlbumMemberRole, SharePermission } from '@packages/contracts';
+import { AlbumMemberRole, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
@@ -44,12 +44,12 @@ export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): Album
       database<AuthorizationRecord>('access_grant')
         .where({ albumId: id })
         .orderBy('createdAt', 'asc'),
-      { permission: SharePermission },
+      { operation: Operation },
       { strict: true },
     );
     const publicLinkRows = await withEnumRevival(
       database<PublicLinkRecord>('share_link').where({ albumId: id }).orderBy('createdAt', 'asc'),
-      { permission: SharePermission },
+      { operation: Operation },
       { strict: true },
     );
 

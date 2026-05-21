@@ -1,7 +1,7 @@
-import { selectMediaItems } from '../fixtures/mediaSelection';
-import { expectPublicMediaDetailUrl } from '../fixtures/navigation';
-import { loginAndUploadMedia } from '../fixtures/upload';
-import { expect, test } from '../fixtures/test';
+import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSelection';
+import { expectPublicMediaDetailUrl } from '../../fixtures/navigation';
+import { expect, test } from '../../fixtures/test';
+import { setup } from '../../routines/setup';
 
 /**
  * Scenario 3 — Create a public link for ONE media item.
@@ -11,30 +11,27 @@ test.describe('Create a public link for a single media item', () => {
     test('should show the public detail view as read-only, with no react toggle and no comment composer', async ({
       userA,
       anonPage,
-      uniqueSuffix,
+      grabTestImages,
     }) => {
-      const fileName = `e2e-public-single-${uniqueSuffix}.jpg`;
-      const [item] = await loginAndUploadMedia(
-        userA.page,
-        userA.context,
-        userA.user,
-        [fileName],
-      );
+      const [a] = await setup(grabTestImages, userA, 1);
 
-      const selection = await selectMediaItems(userA.page, [item.id], {
-        expectActions: ['Share'],
+      const selection = await selectMediaItems(userA.page, [a.id], {
+        expectActions: ['Share', 'Add to album', 'Delete from library'],
       });
+      await expect(selection.toolbar).toContainText('1 selected');
       await selection.clickAction('Share');
 
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share photo' });
-      await expect(shareDialog).toBeVisible();
+
       await shareDialog.getByRole('button', { name: 'Create shareable link' }).click();
 
       const shareUrl = await shareDialog.getByLabel('Share URL').inputValue();
       expect(shareUrl).toMatch(/\/shared\/[A-Za-z0-9_-]+$/);
 
       await anonPage.goto(shareUrl);
-      await expectPublicMediaDetailUrl(anonPage, item.id);
+      await expectPublicMediaDetailUrl(anonPage, a.id);
+
+      await expectMediaItemLoaded(anonPage, a.id);
 
       await expect(anonPage.getByRole('textbox', { name: 'Title' })).toHaveCount(0);
       await expect(anonPage.getByRole('button', { name: 'Save' })).toHaveCount(0);

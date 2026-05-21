@@ -1,4 +1,4 @@
-import { MediaItemStatus, MediaKind, SharePermission } from '@packages/contracts';
+import { MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
@@ -82,7 +82,7 @@ export type GrantUserAuthorizationResult = {
 export type GrantUserAuthorizationForMediaItemsCommand = {
   viewerId: EntityId;
   mediaItemIds: EntityId[];
-  permissions: SharePermission[];
+  operations: Operation[];
   grantedToUserId?: EntityId;
   grantedToHandle?: string;
   label?: string;

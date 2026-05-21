@@ -15,8 +15,8 @@ type AlbumSectionMetadataProps = {
   metaCompact: boolean;
   albumItems: MinimalAlbumItemSummaryVM[];
   onSelectCover?: (mediaId: string) => void;
-  addCoverItemOpen: boolean;
-  setAddCoverItemOpen: (open: boolean) => void;
+  addCoverItemOpen?: boolean;
+  setAddCoverItemOpen?: (open: boolean) => void;
   isPublic?: boolean;
   headerActions?: React.ReactNode;
   selectionCount?: number;
@@ -62,8 +62,8 @@ export const AlbumSectionMetadata = ({
   selectionCount = 0,
   onClearSelection,
   selectionActions = [],
-  addCoverItemOpen,
-  setAddCoverItemOpen,
+  addCoverItemOpen = false,
+  setAddCoverItemOpen = () => {},
 }: AlbumSectionMetadataProps) => {
   const isSelecting = selectionCount > 0;
   const selectionLabel = selectionCount === 1 ? '1 selected' : `${selectionCount} selected`;
@@ -73,7 +73,11 @@ export const AlbumSectionMetadata = ({
 
   const renderCover = () => {
     const cover = album.coverMedia ? (
-      <CoverImage src={coverMediaUrl} alt={album.coverMedia?.kind.display ?? ''} />
+      <CoverImage
+        src={coverMediaUrl}
+        data-testid={album.coverMedia.id}
+        alt={album.coverMedia?.kind.display ?? ''}
+      />
     ) : (
       <CoverPlaceholder aria-hidden $compact={metaCompact}>
         📷

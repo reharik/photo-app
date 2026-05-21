@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { ImageRenderer } from './ImageRenderer';
 
 export type MediaRendererProps = {
+  id: string;
   kind: MediaKind;
   mimeType: string;
   displayUrl: string;
@@ -23,9 +24,9 @@ const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
   return mimeType.startsWith('video/');
 };
 
-export const MediaRenderer = ({ kind, mimeType, displayUrl, imageAlt }: MediaRendererProps) => {
+export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: MediaRendererProps) => {
   if (isPhotoLike(kind, mimeType)) {
-    return <ImageRenderer src={displayUrl} alt={imageAlt} />;
+    return <ImageRenderer id={id} src={displayUrl} alt={imageAlt} />;
   }
 
   if (isVideoLike(kind, mimeType)) {

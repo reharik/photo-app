@@ -107,6 +107,7 @@ export const MediaViewer = ({
         resetZoomRef={resetZoomRef}
       >
         <MediaRenderer
+          id={mediaItemId}
           kind={kind}
           mimeType={mimeType}
           displayUrl={displayUrl}

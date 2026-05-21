@@ -1,4 +1,4 @@
-enum SharePermission {
+enum Operation {
   VIEW
   DOWNLOAD
   COMMENT
@@ -7,7 +7,7 @@ enum SharePermission {
 type AuthorizationType {
   id: ID!
   grantedToUserId: ID
-  permissions: [SharePermission!]!
+  operations: [Operation!]!
   label: String
   expiresAt: DateTime
   revokedAt: DateTime

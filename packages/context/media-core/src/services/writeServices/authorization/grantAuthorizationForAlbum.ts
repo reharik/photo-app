@@ -6,7 +6,7 @@ import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { ShareContactRepository } from '../../../repositories/readRepositories/shareContactRepository';
+import { ShareContactRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
 import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
@@ -16,7 +16,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
   id: authorization.id(),
   grantedToUserId: authorization.grantedToUser(),
-  permission: authorization.permission(),
+  operations: authorization.operations(),
   label: authorization.label(),
   expiresAt: authorization.expiresAt(),
   revokedAt: authorization.revokedAt(),
@@ -48,7 +48,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
   return async (
     input: GrantUserAuthorizationForAlbumCommand,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
-    const { viewerId, albumId, permission, grantedToHandle, label, expiresAt } = input;
+    const { viewerId, albumId, operations, grantedToHandle, label, expiresAt } = input;
     let { grantedToUserId } = input;
 
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
@@ -76,7 +76,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
     }
 
     const result = album.grantAuthorization(
-      permission,
+      operations,
       viewerId,
       grantedToUserId,
       label,
@@ -101,6 +101,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
             mediaItemId,
             accessGrantId: authorizationId,
             grantedToUser: grantedToUserId,
+            operations: authorization.operations(),
             createdAt: now,
           },
           { trx },

@@ -1,4 +1,4 @@
-import { AlbumMemberRole, AppErrorCollection, SharePermission } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, Operation } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
@@ -189,7 +189,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return this.#authorizations;
   }
   grantAuthorization(
-    permission: SharePermission,
+    operations: Operation[],
     actorId: ActorId,
     grantedToUserId?: EntityId,
     label?: string,
@@ -215,7 +215,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (!existingAuthorization) {
       const authorization = Authorization.create(
         {
-          permission,
+          operations,
           grantedToUser: grantedToUserId,
           publicLinkId: undefined,
           grantedBy: actorId,
@@ -269,7 +269,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     actorId: ActorId,
     token: string,
     expiresAt?: Date,
-    permission?: SharePermission,
+    operations?: Operation[],
     publicLinkId?: EntityId,
   ): WriteResult<PublicLink> {
     if (!publicLinkId && !token) {
@@ -279,7 +279,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (!publicLink) {
       const publicLink = PublicLink.create(
         {
-          permission: permission ?? SharePermission.view,
+          operations: operations ?? [],
           linkToken: token,
           grantedBy: actorId,
           label: undefined,

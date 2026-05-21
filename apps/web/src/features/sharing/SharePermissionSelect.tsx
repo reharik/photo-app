@@ -1,9 +1,9 @@
-import { SharePermission } from '@packages/contracts';
+import { Operation } from '@packages/contracts';
 import { Select } from '../../ui/Select';
 
 type SharePermissionSelectProps = {
-  value: SharePermission;
-  onChange: (value: SharePermission) => void;
+  value: Operation;
+  onChange: (value: Operation) => void;
   disabled?: boolean;
 };
 
@@ -12,13 +12,13 @@ export const SharePermissionSelect = ({
   onChange,
   disabled,
 }: SharePermissionSelectProps) => {
-  const options = SharePermission.items();
+  const options = Operation.items();
 
   return (
     <Select
       items={options}
       value={value}
-      label="Permission"
+      label="Operation"
       disabled={disabled}
       onChange={onChange}
       getKey={(item) => item.value}

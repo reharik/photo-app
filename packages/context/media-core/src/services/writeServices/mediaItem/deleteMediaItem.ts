@@ -6,7 +6,7 @@ import { loadRequiredMediaItem } from '../../../application/support/resourceLoad
 import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
+import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';

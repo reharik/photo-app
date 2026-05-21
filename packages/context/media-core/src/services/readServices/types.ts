@@ -8,7 +8,6 @@ import {
   MediaKind,
   Operation,
   ReactionEmoji,
-  SharePermission,
   SortDir,
 } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../types';
@@ -93,7 +92,7 @@ export interface AlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy>
 export type AuthorizationProjection = {
   id: EntityId;
   grantedToUserId?: EntityId;
-  permission: SharePermission;
+  operations: Operation[];
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;

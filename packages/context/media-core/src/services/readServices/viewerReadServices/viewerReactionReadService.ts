@@ -1,7 +1,7 @@
 import { ReactionTargetType } from '@packages/contracts';
 import type { Knex } from 'knex';
 
-import type { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
+import type { ReactionReadRepository } from '../../../repositories/readRepositories/types';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { ViewerReaction } from '../types';

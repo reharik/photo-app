@@ -1,8 +1,10 @@
 import { ReactionTargetType } from '@packages/contracts';
 import { MediaStorage } from '../../../application/media/MediaStorage';
-import { AuthorizationReadRepository } from '../../../repositories/readRepositories/authorizationReadRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
-import { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
+import {
+  AuthorizationReadRepository,
+  MediaItemReadRepository,
+  ReactionReadRepository,
+} from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
 import { ReadReactionService } from '../readReactionService';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
@@ -79,7 +81,7 @@ export const build__ViewerMediaItemReadServiceFactory = ({
       return rows.map((row) => ({
         id: row.id,
         grantedToUserId: row.grantedToUser,
-        permission: row.permission,
+        operations: row.operations,
         label: row.description,
         expiresAt: row.expiresAt,
         revokedAt: row.revokedAt,

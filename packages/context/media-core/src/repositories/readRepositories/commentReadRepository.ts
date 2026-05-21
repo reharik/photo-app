@@ -1,23 +1,7 @@
 import { CommentTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
-import { CommentRow } from '../../services/readServices/types';
 import type { EntityId, PageInfo } from '../../types/types';
-
-export type DBCommentRow = Omit<CommentRow, 'reactionCounts'> & {
-  reactionCounts: { total: number; byEmoji: { emoji: string; count: number }[] };
-};
-
-export type CommentReadRepository = {
-  getCommentsForTarget: (args: {
-    targetType: CommentTargetType;
-    targetId: EntityId;
-    collectionInfo: { pageInfo: PageInfo };
-  }) => Promise<DBCommentRow[]>;
-  getByIdForAuthorization: (args: { commentId: EntityId }) => Promise<DBCommentRow | undefined>;
-};
-
-type CommentReadRepositoryDeps = { database: Knex };
+import type { CommentReadRepository, DBCommentRow, ReadRepositoryDeps } from './types';
 
 const commentSelectColumns = [
   'id',
@@ -36,7 +20,7 @@ const commentSelectColumns = [
 
 export const build__CommentReadRepository = ({
   database,
-}: CommentReadRepositoryDeps): CommentReadRepository => ({
+}: ReadRepositoryDeps): CommentReadRepository => ({
   getCommentsForTarget: async ({
     targetType,
     targetId,

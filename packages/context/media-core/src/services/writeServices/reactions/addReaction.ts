@@ -6,7 +6,7 @@ import { CommentReadRepository } from '../../../repositories';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { ReactionRepository } from '../../../repositories/domainRepositories/reactionRepository';
-import type { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import type { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import type { EntityId, WriteResult } from '../../../types/types';
 import type { ValidateOperationService } from '../../readServices/mediaGrantService';
 import { DBReactionCounts } from '../../readServices/types';

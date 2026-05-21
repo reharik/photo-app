@@ -1,7 +1,7 @@
 import {
   ShareContactRepository,
   ShareContactSuggestion,
-} from '../../../repositories/readRepositories/shareContactRepository';
+} from '../../../repositories/readRepositories/types';
 import type { EntityId } from '../../../types/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 

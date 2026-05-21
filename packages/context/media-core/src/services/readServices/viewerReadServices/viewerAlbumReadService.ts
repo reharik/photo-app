@@ -1,7 +1,7 @@
 import { AlbumMemberRole, OperationCatalog } from '@packages/contracts';
 import { indexByUnique } from '@packages/infrastructure';
 import { StandardEnumItem } from '@reharik/smart-enum';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
+import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {

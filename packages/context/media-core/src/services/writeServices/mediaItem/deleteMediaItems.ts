@@ -6,8 +6,10 @@ import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/albumReadRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import {
+  AlbumReadRepository,
+  MediaItemReadRepository,
+} from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';

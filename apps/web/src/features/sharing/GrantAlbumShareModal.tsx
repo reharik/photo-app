@@ -50,7 +50,7 @@ export const GrantAlbumShareModal = ({
   const handleSubmit = async (values: GrantShareFormValues): Promise<void> => {
     const input: GrantUserAuthorizationForAlbumInput = {
       albumId,
-      permission: values.permission,
+      operations: values.operations,
       grantedToHandle: values.handle.length > 0 ? values.handle : undefined,
       label: values.label,
       expiresAt: values.expiresAt,

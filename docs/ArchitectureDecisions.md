@@ -94,7 +94,7 @@
 
 **Rationale:** Clean separation: `access_grant` = the reason you have access (lifecycle envelope), grants = the per-item specifics. Different sharing actions create different `access_grant`s with independent lifecycles.
 
-**Alternatives:** Flat permission rows without a grouping container — rejected, no way to atomically revoke a sharing action.
+**Alternatives:** Flat operaton rows without a grouping container — rejected, no way to atomically revoke a sharing action.
 
 ---
 
@@ -130,7 +130,7 @@
 
 **Rationale:** Authorization decisions need business context (ownership, role, album membership). Infrastructure-level auth can't express "can this user share this specific item given their relationship to it." Explicit beats implicit.
 
-**Alternatives:** Rhino Security style framework with permission/group/ranking tables — rejected, massive overkill and obscures business logic in data.
+**Alternatives:** Rhino Security style framework with operaton/group/ranking tables — rejected, massive overkill and obscures business logic in data.
 
 ---
 
@@ -146,7 +146,7 @@
 
 ---
 
-## #013 · Authorization — Share permission rules
+## #013 · Authorization — Share operaton rules
 
 **Status:** decided · **Date:** 2026-04-29
 
@@ -154,7 +154,7 @@
 
 **Rationale:** Simple, defensible, no unbounded sharing chains. The implicit consent on contributions keeps the model from getting tangled.
 
-**Alternatives:** Allow resharing — rejected, creates unbounded chains. Allow contributors to share — rejected, complicates permission model.
+**Alternatives:** Allow resharing — rejected, creates unbounded chains. Allow contributors to share — rejected, complicates operaton model.
 
 ---
 
@@ -210,7 +210,7 @@
 
 **Status:** decided · **Date:** 2026-04-29
 
-**Decision:** Google Photos shared albums support comments, likes, and collaboration — but only for authenticated Google account holders. Anonymous link viewers can look but not interact. This validates album-only sharing with permission-gated features.
+**Decision:** Google Photos shared albums support comments, likes, and collaboration — but only for authenticated Google account holders. Anonymous link viewers can look but not interact. This validates album-only sharing with operaton-gated features.
 
 **Rationale:** Confirmed that the industry standard is: album is the shared object, auth boundary controls what you can do. Comments/likes are a future capability added to `grant.permissions`, not a v1 concern.
 
@@ -222,7 +222,7 @@
 
 **Status:** decided · **Date:** 2026-04-29
 
-**Decision:** Don't build comments in zeta. Build the sharing and permissions model correctly. Comments become a permission added to `grant.permissions` later. The model doesn't change either way.
+**Decision:** Don't build comments in zeta. Build the sharing and permissions model correctly. Comments become a operaton added to `grant.permissions` later. The model doesn't change either way.
 
 **Rationale:** Product decision (option A: view-only peasants vs option B: grandma comments) doesn't need to be made yet. The grant permissions CSV supports both futures.
 
@@ -234,11 +234,11 @@
 
 **Status:** decided · **Date:** 2026-04-30
 
-**Decision:** When an album is shared, the share permissions apply uniformly to all items. Contributors don't get per-item permission overrides. Contributing to an album is implicit consent for the owner to control how it's shared.
+**Decision:** When an album is shared, the share permissions apply uniformly to all items. Contributors don't get per-item operaton overrides. Contributing to an album is implicit consent for the owner to control how it's shared.
 
 **Rationale:** Per-item contributor overrides would be a significant complexity jump (override logic, UI for contributors to set per-item permissions, conflict resolution between contributor intent and owner intent). The grant permissions structure supports per-item permissions if we ever need it — the UI and override logic would be the new work, not the schema.
 
-**Alternatives:** Contributors retain per-item permission control — deferred, not rejected. Revisit if contributors actually complain. The data model supports it without changes.
+**Alternatives:** Contributors retain per-item operaton control — deferred, not rejected. Revisit if contributors actually complain. The data model supports it without changes.
 
 ---
 
@@ -260,7 +260,7 @@
 
 **Decision:** `resolveAlbumOperations(album, viewer)` and `resolveItemOperations(item, viewer)` both return `Operation[]`. Album ops come from ownership + membership role. Item ops come from ownership + album membership + grant permissions. Different sources, same shape, same consumer.
 
-**Rationale:** The consumer (kebab menu, toolbar) doesn't care where the permission came from. Centralizing resolution into two functions keeps the complexity contained instead of scattered across resolvers and services.
+**Rationale:** The consumer (kebab menu, toolbar) doesn't care where the operaton came from. Centralizing resolution into two functions keeps the complexity contained instead of scattered across resolvers and services.
 
 **Alternatives:** Unified resolution function — rejected, album and item operations have different source logic. Per-source resolution — rejected, pushes complexity to the consumer.
 

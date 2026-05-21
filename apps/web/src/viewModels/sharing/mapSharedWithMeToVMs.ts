@@ -1,4 +1,4 @@
-// import { SharePermission } from '@packages/contracts';
+// import { Operation } from '@packages/contracts';
 // import {
 //   SharedAlbumFragment,
 //   SharedWithMedMediaItemFragment,
@@ -15,13 +15,13 @@
 
 // const mapNodeToSharedWithMedMediaItemVM = (node: SharedWithMedMediaItemFragment): SharedWithMedMediaItemVM => ({
 //   ...node,
-//   permission: SharePermission.fromValue(node.permission),
+//   operation: Operation.fromValue(node.operation),
 //   mediaItem: mapMediaItemToSummaryVM(node.mediaItem),
 // });
 
 // const mapNodeToSharedAlbumVM = (node: SharedAlbumFragment): SharedAlbumVM => ({
 //   ...node,
-//   permission: SharePermission.fromValue(node.permission),
+//   operation: Operation.fromValue(node.operation),
 //   album: mapAlbumToSummaryVM(node.album),
 // });
 

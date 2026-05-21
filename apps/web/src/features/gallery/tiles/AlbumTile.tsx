@@ -12,7 +12,7 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
     <>
       <ThumbLink to={`/albums/${item.id}`}>
         {url ? (
-          <ThumbImage src={url} alt={item.title.trim()} />
+          <ThumbImage src={url} data-testid={item.coverMedia?.id} alt={item.title.trim()} />
         ) : (
           <ThumbIcon aria-hidden>{'🖼️'}</ThumbIcon>
         )}

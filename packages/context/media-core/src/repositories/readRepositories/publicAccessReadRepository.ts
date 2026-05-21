@@ -1,35 +1,21 @@
-import type { Knex } from 'knex';
-
-export type PublicAccessRow = {
-  id: string;
-  albumId: string;
-  linkToken: string;
-  grantedBy: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-};
-
-export type PublicAccessReadRepository = {
-  getPublicAccessIdByHashedToken: (
-    tokenHash: string,
-  ) => Promise<{ publicAccessId: string } | undefined>;
-  getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
-  canAccessMediaWithLink: (input: { tokenHash: string; mediaItemId: string }) => Promise<boolean>;
-};
-
-type PublicAccessReadRepositoryDeps = { database: Knex };
+import type {
+  PublicAccessIdRow,
+  PublicAccessReadRepository,
+  PublicAccessRow,
+  ReadRepositoryDeps,
+} from './types';
 
 export const build__PublicAccessReadRepository = ({
   database,
-}: PublicAccessReadRepositoryDeps): PublicAccessReadRepository => ({
+}: ReadRepositoryDeps): PublicAccessReadRepository => ({
   getPublicAccessIdByHashedToken: async (tokenHash: string) => {
-    const publicAccess = await database<{ publicAccessId: string }>('shareLink')
+    const publicAccess = await database<PublicAccessIdRow>('shareLink')
       .where('shareLink.linkToken', tokenHash)
       .whereNull('shareLink.revokedAt')
       .where((b) => {
         b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
       })
-      .first<{ publicAccessId: string }>('id as publicAccessId');
+      .first<PublicAccessIdRow>('id as publicAccessId');
     if (!publicAccess) {
       return undefined;
     }

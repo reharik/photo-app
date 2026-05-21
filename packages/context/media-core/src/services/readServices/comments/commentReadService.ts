@@ -3,8 +3,8 @@ import { groupByMapping } from '@packages/infrastructure';
 import {
   CommentReadRepository,
   DBCommentRow,
-} from '../../../repositories/readRepositories/commentReadRepository';
-import { ReactionReadRepository } from '../../../repositories/readRepositories/reactionReadRepository';
+  ReactionReadRepository,
+} from '../../../repositories/readRepositories/types';
 import { EntityId, PageInfo } from '../../../types/types';
 import { ReadReactionService } from '../readReactionService';
 import { AgnosticReadServiceBase } from '../readServiceBaseType';

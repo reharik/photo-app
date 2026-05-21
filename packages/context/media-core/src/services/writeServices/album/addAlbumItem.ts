@@ -5,7 +5,7 @@ import {
 } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/mediaItemReadRepository';
+import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
