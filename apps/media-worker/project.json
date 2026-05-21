@@ -18,10 +18,22 @@
         "cwd": "{projectRoot}"
       }
     },
+    "prepare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "nx run media-worker:clean",
+          "nx run-many -t build -p contracts infrastructure media-core --parallel=3",
+          "nx run media-worker:gen:container"
+        ],
+        "parallel": false,
+        "cwd": "{workspaceRoot}"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["clean", "gen:container"],
+      "dependsOn": ["prepare"],
       "options": {
         "command": "vite build --config vite.config.mjs",
         "cwd": "{projectRoot}"
