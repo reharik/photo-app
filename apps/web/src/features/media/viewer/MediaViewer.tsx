@@ -20,7 +20,7 @@ export type MediaViewerProps = {
   mimeType: string;
   displayUrl: string;
   imageAlt: string;
-  mediaItemId?: string;
+  mediaItemId: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
   canReact?: boolean;
