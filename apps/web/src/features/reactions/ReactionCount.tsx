@@ -1,4 +1,5 @@
 import { ReactionEmoji } from '@packages/contracts';
+import { DynamicIcon, IconName } from 'lucide-react/dynamic';
 import { JSX } from 'react';
 import styled from 'styled-components';
 import { ReactionCountsVM } from '../../viewModels/';
@@ -11,11 +12,10 @@ type Props = {
 export const ReactionCount = ({ emoji, reactionCounts }: Props): JSX.Element => {
   const count = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
   return (
-    <Root>
-      <Icon aria-hidden>{emoji.hasReaction(count > 0)}</Icon>
+    <>
+      <ReactionIcon aria-hidden name={emoji.iconName as IconName} $reacted={count > 0} />
       {count > 0 ? <Count>{count}</Count> : null}
-    </Root>
-  );
+    </
 };
 
 const Root = styled.span`
@@ -26,9 +26,11 @@ const Root = styled.span`
   color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;
 
-const Icon = styled.span`
-  font-size: 13px;
-  line-height: 1;
+const ReactionIcon = styled(DynamicIcon)<{ $reacted: boolean }>`
+  width: ${({ theme }) => theme.fontSize._21};
+  height: ${({ theme }) => theme.fontSize._21};
+  color: ${({ theme }) => theme.color.red_darker};
+  fill: ${({ $reacted }) => ($reacted ? 'currentColor' : 'none')};
 `;
 
 const Count = styled.span`
