@@ -5,6 +5,88 @@ on:
   pull_request: {}
 
 jobs:
-  ci:
-    uses: reharik/cannibal-infra/.github/workflows/ci.yml@main
-    secrets: inherit
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+      - run: npm ci
+      - run: npm run check:deps
+      - run: npm run check:policy
+      - name: Generate container types
+        run: npm run gen:container
+      - run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+      - run: npm ci
+      - name: Generate container types
+        run: npm run gen:container
+      - run: npm run test:ci
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+      - run: npm ci
+      - name: Generate container types
+        run: npm run gen:container
+      - run: npm run build
+      - name: Build production frontend
+        run: npm run build:web
+        env:
+          VITE_API: ${{ secrets.VITE_API || 'https://api.example.com/api' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            apps/api/dist
+            apps/web/dist
+            dist
+          retention-days: 1
