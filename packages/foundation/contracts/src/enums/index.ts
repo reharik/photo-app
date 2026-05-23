@@ -7,6 +7,7 @@ export * from './FrontendError';
 export * from './albumMemberRole';
 export * from './frontendUploadStatus';
 export * from './frontendUploadStep';
+export * from './graphqlSmartEnums';
 export * from './notificationKind';
 export * from './operation';
 export * from './operationCatalog';

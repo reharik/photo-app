@@ -28,8 +28,6 @@ apps/api/src/graphql/generated/types.generated.ts
 
 apps/web/src/graphql/generated/*
 
-# Contracts smart-enum codegen (downstream of api:schema-gen; do not commit)
-packages/foundation/contracts/src/enums/graphqlSmartEnums.ts
 
 # Private keys and certificates
 *.pem

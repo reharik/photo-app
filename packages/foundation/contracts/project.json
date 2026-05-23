@@ -12,6 +12,7 @@
     },
     "barrels": {
       "executor": "nx:run-commands",
+      "dependsOn": ["codegen"],
       "cache": false,
       "options": {
         "cwd": "{projectRoot}",

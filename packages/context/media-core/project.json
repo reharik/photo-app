@@ -20,7 +20,7 @@
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["barrels", "^build"],
+      "dependsOn": ["^build"],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"
