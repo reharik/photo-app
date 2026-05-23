@@ -6,7 +6,6 @@ import type {
 import { MediaDeletionJobStatus } from '@packages/media-core';
 import type { Knex } from 'knex';
 import { DatabaseError } from 'pg';
-import type { AppCradle } from '../../generated/ioc-composed.js';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface MediaDeletionJobRepository extends DomainMediaDeletionJobRepository {}
@@ -22,9 +21,13 @@ const truncateError = (message: string, maxLen: number): string => {
   return `${message.slice(0, maxLen - 3)}...`;
 };
 
+type MediaDeletionJobRepositoryDeps = {
+  database: Knex;
+};
+
 export const build__MediaDeletionJobRepository = ({
   database,
-}: AppCradle): MediaDeletionJobRepository => {
+}: MediaDeletionJobRepositoryDeps): MediaDeletionJobRepository => {
   const enqueueIfNoneActive = async (input: {
     mediaItemId: EntityId;
     storageKey: string;

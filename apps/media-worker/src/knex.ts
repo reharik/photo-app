@@ -1,4 +1,8 @@
 import knex, { type Knex } from 'knex';
-import type { AppCradle } from './generated/ioc-composed.js';
+import type { KnexConfig } from './knexfile.js';
 
-export const build__Database = ({ knexConfig }: AppCradle): Knex => knex(knexConfig);
+type DatabaseDeps = {
+  knexConfig: KnexConfig;
+};
+
+export const build__Database = ({ knexConfig }: DatabaseDeps): Knex => knex(knexConfig);

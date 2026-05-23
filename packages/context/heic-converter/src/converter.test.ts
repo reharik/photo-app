@@ -1,9 +1,9 @@
+import { describe, expect, it } from '@jest/globals';
 import { createReadStream } from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
-import { describe, expect, it } from '@jest/globals';
 
 import { convertHeicToJpeg, isHeic } from './converter.js';
 import { ConversionError } from './errors.js';

@@ -1,10 +1,16 @@
-import { hashToken } from '@packages/media-core';
+import type { Logger } from '@packages/infrastructure';
+import { hashToken, type PublicAccessReadService } from '@packages/media-core';
 import type { Context, Next } from 'koa';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+
 export type TokenHandshakeMiddleware = (ctx: Context, next: Next) => Promise<void>;
 
+type TokenHandshakeMiddlewareDeps = {
+  publicAccessReadService: PublicAccessReadService;
+  logger: Logger;
+};
+
 export const build__TokenHandshakeMiddleware =
-  ({ publicAccessReadService, logger }: AppCradle): TokenHandshakeMiddleware =>
+  ({ publicAccessReadService, logger }: TokenHandshakeMiddlewareDeps): TokenHandshakeMiddleware =>
   async (ctx: Context, next: Next) => {
     const body = ctx.request.body as { token: string };
     const token = body.token;

@@ -7,16 +7,10 @@
         "data": {
           "root": "packages/foundation/infrastructure",
           "name": "infrastructure",
-          "tags": [
-            "npm:private",
-            "layer:foundation",
-            "scope:shared"
-          ],
+          "tags": ["npm:private", "layer:foundation", "scope:shared"],
           "metadata": {
             "targetGroups": {
-              "NPM Scripts": [
-                "dev"
-              ]
+              "NPM Scripts": ["dev"]
             },
             "js": {
               "packageName": "@packages/infrastructure",
@@ -45,9 +39,7 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
+              "outputs": ["{projectRoot}/dist"],
               "options": {
                 "outputPath": "packages/foundation/infrastructure/dist",
                 "tsConfig": "packages/foundation/infrastructure/tsconfig.json",
@@ -56,13 +48,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ],
-              "dependsOn": [
-                "^build"
-              ]
+              "inputs": ["prod", "^prod"],
+              "dependsOn": ["^build"]
             },
             "lint": {
               "executor": "nx:run-commands",
@@ -84,16 +71,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "packages/foundation/infrastructure/jest.config.js",
                 "passWithNoTests": true
@@ -101,10 +83,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -137,10 +116,7 @@
           ],
           "metadata": {
             "targetGroups": {
-              "NPM Scripts": [
-                "convert",
-                "test:watch"
-              ]
+              "NPM Scripts": ["convert", "test:watch"]
             },
             "description": "Standalone HEIC to JPEG conversion module for Node.js and AWS Lambda",
             "js": {
@@ -192,13 +168,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ],
-              "dependsOn": [
-                "^build"
-              ]
+              "inputs": ["prod", "^prod"],
+              "dependsOn": ["^build"]
             },
             "lint": {
               "executor": "nx:run-commands",
@@ -209,10 +180,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "nx:run-commands",
@@ -223,13 +191,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ],
-              "outputs": [
-                "{projectRoot}/coverage"
-              ]
+              "inputs": ["default", "^default"],
+              "outputs": ["{projectRoot}/coverage"]
             }
           },
           "projectType": "library",
@@ -243,11 +206,7 @@
         "data": {
           "root": "packages/context/notifications",
           "name": "notifications",
-          "tags": [
-            "npm:private",
-            "layer:context",
-            "scope:notifications"
-          ],
+          "tags": ["npm:private", "layer:context", "scope:notifications"],
           "metadata": {
             "targetGroups": {},
             "js": {
@@ -265,9 +224,7 @@
           "targets": {
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
+              "outputs": ["{projectRoot}/dist"],
               "options": {
                 "outputPath": "packages/context/notifications/dist",
                 "tsConfig": "packages/context/notifications/tsconfig.json",
@@ -276,13 +233,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ],
-              "dependsOn": [
-                "^build"
-              ]
+              "inputs": ["prod", "^prod"],
+              "dependsOn": ["^build"]
             },
             "lint": {
               "executor": "nx:run-commands",
@@ -304,16 +256,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "packages/context/notifications/jest.config.js",
                 "passWithNoTests": true
@@ -321,10 +268,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -346,17 +290,10 @@
         "data": {
           "root": "packages/foundation/contracts",
           "name": "contracts",
-          "tags": [
-            "npm:private",
-            "layer:foundation",
-            "scope:shared"
-          ],
+          "tags": ["npm:private", "layer:foundation", "scope:shared"],
           "metadata": {
             "targetGroups": {
-              "NPM Scripts": [
-                "dev",
-                "gen:graphql:enums"
-              ]
+              "NPM Scripts": ["dev", "gen:graphql:enums"]
             },
             "js": {
               "packageName": "@packages/contracts",
@@ -407,9 +344,7 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
+              "outputs": ["{projectRoot}/dist"],
               "options": {
                 "outputPath": "packages/foundation/contracts/dist",
                 "tsConfig": "packages/foundation/contracts/tsconfig.json",
@@ -418,13 +353,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ],
-              "dependsOn": [
-                "^build"
-              ]
+              "inputs": ["prod", "^prod"],
+              "dependsOn": ["^build"]
             },
             "lint": {
               "executor": "nx:run-commands",
@@ -446,16 +376,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "packages/foundation/contracts/jest.config.js",
                 "passWithNoTests": true
@@ -463,10 +388,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -488,16 +410,10 @@
         "data": {
           "root": "packages/context/media-core",
           "name": "media-core",
-          "tags": [
-            "npm:private",
-            "layer:context",
-            "scope:media"
-          ],
+          "tags": ["npm:private", "layer:context", "scope:media"],
           "metadata": {
             "targetGroups": {
-              "NPM Scripts": [
-                "dev"
-              ]
+              "NPM Scripts": ["dev"]
             },
             "js": {
               "packageName": "@packages/media-core",
@@ -536,13 +452,8 @@
             },
             "build": {
               "executor": "@nx/js:tsc",
-              "dependsOn": [
-                "barrels",
-                "contracts:build"
-              ],
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
+              "dependsOn": ["barrels", "contracts:build"],
+              "outputs": ["{projectRoot}/dist"],
               "options": {
                 "outputPath": "packages/context/media-core/dist",
                 "tsConfig": "packages/context/media-core/tsconfig.json",
@@ -551,10 +462,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ]
+              "inputs": ["prod", "^prod"]
             },
             "lint": {
               "executor": "nx:run-commands",
@@ -576,16 +484,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "packages/context/media-core/jest.config.js",
                 "passWithNoTests": false
@@ -593,10 +496,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -618,10 +518,7 @@
         "data": {
           "root": "apps/media-worker",
           "name": "media-worker",
-          "tags": [
-            "npm:private",
-            "type:app"
-          ],
+          "tags": ["npm:private", "type:app"],
           "metadata": {
             "targetGroups": {
               "NPM Scripts": [
@@ -736,10 +633,7 @@
             },
             "gen:container": {
               "executor": "nx:run-commands",
-              "dependsOn": [
-                "media-core:barrels",
-                "contracts:barrels"
-              ],
+              "dependsOn": ["media-core:barrels", "contracts:barrels"],
               "options": {
                 "command": "ioc generate",
                 "cwd": "apps/media-worker"
@@ -749,13 +643,8 @@
             },
             "build": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
-              "dependsOn": [
-                "^build",
-                "gen:container"
-              ],
+              "outputs": ["{projectRoot}/dist"],
+              "dependsOn": ["^build", "gen:container"],
               "options": {
                 "command": "vite build --config vite.config.mjs",
                 "cwd": "apps/media-worker"
@@ -770,33 +659,23 @@
               },
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ]
+              "inputs": ["prod", "^prod"]
             },
             "lint": {
               "executor": "@nx/eslint:lint",
               "options": {
-                "lintFilePatterns": [
-                  "apps/media-worker/**/*.{ts,tsx,js,mjs,cjs}"
-                ],
+                "lintFilePatterns": ["apps/media-worker/**/*.{ts,tsx,js,mjs,cjs}"],
                 "forceColor": true,
                 "fix": false
               },
               "configurations": {},
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests",
                 "cwd": "apps/media-worker"
@@ -808,10 +687,7 @@
               },
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -833,9 +709,7 @@
         "data": {
           "root": "packages/e2e",
           "name": "@packages/e2e",
-          "tags": [
-            "npm:private"
-          ],
+          "tags": ["npm:private"],
           "metadata": {
             "targetGroups": {
               "NPM Scripts": [
@@ -881,13 +755,8 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ],
-              "outputs": [
-                "{projectRoot}/coverage"
-              ]
+              "inputs": ["default", "^default"],
+              "outputs": ["{projectRoot}/coverage"]
             },
             "test:debug": {
               "executor": "nx:run-script",
@@ -983,10 +852,7 @@
         "data": {
           "root": "apps/api",
           "name": "api",
-          "tags": [
-            "npm:private",
-            "type:app"
-          ],
+          "tags": ["npm:private", "type:app"],
           "metadata": {
             "targetGroups": {
               "NPM Scripts": [
@@ -1240,14 +1106,9 @@
             },
             "build:knexfile": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{projectRoot}/dist/db"
-              ],
+              "outputs": ["{projectRoot}/dist/db"],
               "options": {
-                "commands": [
-                  "mkdir -p dist/db",
-                  "npx tsc -p tsconfig.db.json"
-                ],
+                "commands": ["mkdir -p dist/db", "npx tsc -p tsconfig.db.json"],
                 "parallel": false,
                 "cwd": "apps/api"
               },
@@ -1256,12 +1117,8 @@
             },
             "build": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
-              "dependsOn": [
-                "prepare"
-              ],
+              "outputs": ["{projectRoot}/dist"],
+              "dependsOn": ["prepare"],
               "options": {
                 "command": "vite build --config vite.config.mjs && mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/ && mkdir -p dist/db && npx tsc -p tsconfig.db.json",
                 "cwd": "apps/api"
@@ -1276,10 +1133,7 @@
               },
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ]
+              "inputs": ["prod", "^prod"]
             },
             "serve": {
               "executor": "@nx/js:node",
@@ -1294,10 +1148,7 @@
             "serve:with-contracts": {
               "executor": "nx:run-commands",
               "options": {
-                "commands": [
-                  "npm run dev --workspace=@packages/contracts",
-                  "nx run api:serve"
-                ],
+                "commands": ["npm run dev --workspace=@packages/contracts", "nx run api:serve"],
                 "parallel": true
               },
               "configurations": {},
@@ -1323,16 +1174,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests",
                 "cwd": "apps/api"
@@ -1344,16 +1190,11 @@
               },
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test-integration": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.integration.config.js --runInBand --passWithNoTests",
                 "cwd": "apps/api"
@@ -1372,10 +1213,7 @@
             "gen:graphql": {
               "executor": "nx:run-commands",
               "options": {
-                "commands": [
-                  "graphql-codegen",
-                  "nx run contracts:gen:graphql:enums"
-                ],
+                "commands": ["graphql-codegen", "nx run contracts:gen:graphql:enums"],
                 "parallel": false,
                 "cwd": "apps/api"
               },
@@ -1384,11 +1222,7 @@
             },
             "gen:container": {
               "executor": "nx:run-commands",
-              "dependsOn": [
-                "media-core:barrels",
-                "contracts:barrels",
-                "gen:graphql"
-              ],
+              "dependsOn": ["media-core:barrels", "contracts:barrels", "gen:graphql"],
               "options": {
                 "command": "ioc generate",
                 "cwd": "apps/api"
@@ -1423,16 +1257,10 @@
         "data": {
           "root": "apps/web",
           "name": "web",
-          "tags": [
-            "npm:private",
-            "type:app"
-          ],
+          "tags": ["npm:private", "type:app"],
           "metadata": {
             "targetGroups": {
-              "NPM Scripts": [
-                "prebuild",
-                "dev"
-              ]
+              "NPM Scripts": ["prebuild", "dev"]
             },
             "js": {
               "packageName": "@app/web",
@@ -1474,9 +1302,7 @@
             },
             "sync-schema": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{projectRoot}/src/graphql/generated/schema.graphql"
-              ],
+              "outputs": ["{projectRoot}/src/graphql/generated/schema.graphql"],
               "options": {
                 "command": "mkdir -p src/graphql/generated && cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql",
                 "cwd": "apps/web"
@@ -1486,9 +1312,7 @@
             },
             "codegen": {
               "executor": "nx:run-commands",
-              "outputs": [
-                "{projectRoot}/src/graphql/generated/types.ts"
-              ],
+              "outputs": ["{projectRoot}/src/graphql/generated/types.ts"],
               "options": {
                 "command": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
                 "cwd": "apps/web"
@@ -1498,14 +1322,8 @@
             },
             "build": {
               "executor": "@nx/vite:build",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
-              "dependsOn": [
-                "ts-patch:install",
-                "contracts:build",
-                "sync-schema"
-              ],
+              "outputs": ["{projectRoot}/dist"],
+              "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema"],
               "options": {
                 "outputPath": "apps/web/dist",
                 "configFile": "apps/web/vite.config.js",
@@ -1514,22 +1332,12 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ]
+              "inputs": ["prod", "^prod"]
             },
             "build:production": {
               "executor": "@nx/vite:build",
-              "outputs": [
-                "{projectRoot}/dist"
-              ],
-              "dependsOn": [
-                "ts-patch:install",
-                "contracts:build",
-                "sync-schema",
-                "codegen"
-              ],
+              "outputs": ["{projectRoot}/dist"],
+              "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema", "codegen"],
               "options": {
                 "outputPath": "apps/web/dist",
                 "configFile": "apps/web/vite.config.js",
@@ -1580,16 +1388,11 @@
               },
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "test": {
               "executor": "@nx/jest:jest",
-              "outputs": [
-                "{workspaceRoot}/coverage/{projectRoot}"
-              ],
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
               "options": {
                 "jestConfig": "apps/web/jest.config.js",
                 "passWithNoTests": true
@@ -1597,10 +1400,7 @@
               "configurations": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",
@@ -1622,9 +1422,7 @@
         "data": {
           "root": ".",
           "name": "root",
-          "tags": [
-            "npm:private"
-          ],
+          "tags": ["npm:private"],
           "metadata": {
             "targetGroups": {
               "NPM Scripts": [
@@ -2162,13 +1960,8 @@
               "options": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "prod",
-                "^prod"
-              ],
-              "dependsOn": [
-                "^build"
-              ]
+              "inputs": ["prod", "^prod"],
+              "dependsOn": ["^build"]
             },
             "test": {
               "executor": "nx:noop",
@@ -2176,13 +1969,8 @@
               "options": {},
               "parallelism": true,
               "cache": true,
-              "inputs": [
-                "default",
-                "^default"
-              ],
-              "outputs": [
-                "{projectRoot}/coverage"
-              ]
+              "inputs": ["default", "^default"],
+              "outputs": ["{projectRoot}/coverage"]
             },
             "lint": {
               "executor": "nx:noop",
@@ -2190,10 +1978,7 @@
               "options": {},
               "parallelism": true,
               "cache": false,
-              "inputs": [
-                "default",
-                "^default"
-              ]
+              "inputs": ["default", "^default"]
             },
             "format": {
               "executor": "nx:run-commands",

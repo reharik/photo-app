@@ -1,10 +1,17 @@
+import type { MediaStorage } from '@packages/media-core';
 import type { Context } from 'koa';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+
 export type MediaServeController = {
   getMedia: (ctx: Context) => Promise<void>;
 };
 
-export const build__MediaServeController = (_deps: AppCradle): MediaServeController => ({
+type MediaServeControllerDeps = {
+  mediaStorage: MediaStorage;
+};
+
+export const build__MediaServeController = (
+  _deps: MediaServeControllerDeps,
+): MediaServeController => ({
   getMedia: async (ctx: Context): Promise<void> => {
     if (!ctx.state.authorizedMediaPath) {
       ctx.throw(500, 'Media authorization state missing');

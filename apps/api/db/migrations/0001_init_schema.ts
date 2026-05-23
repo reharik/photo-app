@@ -266,27 +266,12 @@ export const up = async (knex: Knex): Promise<void> => {
   await knex.schema.createTable('share_link', (table) => {
     table.uuid('id').primary();
     table.text('link_token').notNullable().unique();
-    table
-      .uuid('album_id')
-      .nullable()
-      .references('id')
-      .inTable('album')
-      .onDelete('CASCADE');
+    table.uuid('album_id').nullable().references('id').inTable('album').onDelete('CASCADE');
     table.index(['album_id']);
     table.uuid('created_by').notNullable().references('id').inTable('user').onDelete('CASCADE');
-    table
-      .uuid('granted_by')
-      .notNullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('CASCADE');
+    table.uuid('granted_by').notNullable().references('id').inTable('user').onDelete('CASCADE');
     table.index(['granted_by']);
-    table
-      .uuid('updated_by')
-      .notNullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('CASCADE');
+    table.uuid('updated_by').notNullable().references('id').inTable('user').onDelete('CASCADE');
     table.timestamp('expires_at', { useTz: false }).nullable();
     table.timestamp('revoked_at', { useTz: false }).nullable();
     table.timestamp('created_at', { useTz: false }).notNullable().defaultTo(knex.fn.now());

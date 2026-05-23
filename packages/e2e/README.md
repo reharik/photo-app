@@ -6,14 +6,14 @@ Playwright end-to-end tests for the photo app. This package is a **test runner**
 
 Bring up the stack **before** running tests. Playwright does not start services for you.
 
-| Requirement | Default / notes |
-|-------------|-----------------|
-| **Web** | `http://localhost:5173` — `npm run dev:web` |
-| **API** | `http://localhost:3001` — `npm run dev:api` |
-| **media-worker** | Background image processing for uploads — `npm run dev:worker` (or equivalent) |
-| **Postgres** | Same database as the API (`apps/api/.env`; e2e reads that file via `fixtures/env.ts`) |
-| **Seed data** | `apps/api/db/seeds/01_user.ts` — run `npm run db:seed:local --workspace=@app/api` if users are missing |
-| **Object storage** | Whatever the API is configured for (S3 or local); uploads in tests go through the UI |
+| Requirement        | Default / notes                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| **Web**            | `http://localhost:5173` — `npm run dev:web`                                                            |
+| **API**            | `http://localhost:3001` — `npm run dev:api`                                                            |
+| **media-worker**   | Background image processing for uploads — `npm run dev:worker` (or equivalent)                         |
+| **Postgres**       | Same database as the API (`apps/api/.env`; e2e reads that file via `fixtures/env.ts`)                  |
+| **Seed data**      | `apps/api/db/seeds/01_user.ts` — run `npm run db:seed:local --workspace=@app/api` if users are missing |
+| **Object storage** | Whatever the API is configured for (S3 or local); uploads in tests go through the UI                   |
 
 Override URLs and DB settings with `E2E_WEB_BASE_URL`, `E2E_API_BASE_URL`, and the same `POSTGRES_*` keys the API uses.
 
@@ -37,15 +37,15 @@ npm run test:e2e
 
 ## Running tests
 
-| Command | Purpose |
-|---------|---------|
-| `npm run test:e2e` | Full suite (headless) |
-| `npm run test:e2e:headed` | Headed browser |
-| `npm run test:e2e:ui` | Playwright UI mode |
-| `npm run test:e2e:trace` | Record traces for all tests |
-| `npm run test:e2e:show-trace` | Open last trace viewer |
-| `npm run typecheck:e2e` | `tsc --noEmit` for fixtures and specs |
-| `npm run lint:e2e` | ESLint for this package |
+| Command                       | Purpose                               |
+| ----------------------------- | ------------------------------------- |
+| `npm run test:e2e`            | Full suite (headless)                 |
+| `npm run test:e2e:headed`     | Headed browser                        |
+| `npm run test:e2e:ui`         | Playwright UI mode                    |
+| `npm run test:e2e:trace`      | Record traces for all tests           |
+| `npm run test:e2e:show-trace` | Open last trace viewer                |
+| `npm run typecheck:e2e`       | `tsc --noEmit` for fixtures and specs |
+| `npm run lint:e2e`            | ESLint for this package               |
 
 Optional targets from the package directory: `nx run e2e:test:debug`, `nx run e2e:test:last-failed`, `nx run e2e:report`.
 

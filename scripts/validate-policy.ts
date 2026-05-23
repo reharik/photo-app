@@ -40,8 +40,7 @@ const warn = (rule: string, violations: string[]): CheckResult => ({
   warningOnly: true,
 });
 
-const readJson = <T>(filePath: string): T =>
-  JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+const readJson = <T>(filePath: string): T => JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
 
 /** tsconfig.json allows comments and trailing commas */
 const readTsConfigJson = <T>(filePath: string): T => {
@@ -217,7 +216,9 @@ const checkBuildScriptsThin = (): CheckResult => {
     const label = rel(pkgJsonPath);
 
     if (/&&|;|\|/.test(trimmed)) {
-      violations.push(`${label}: build script contains shell composition: ${JSON.stringify(build)}`);
+      violations.push(
+        `${label}: build script contains shell composition: ${JSON.stringify(build)}`,
+      );
       continue;
     }
     if (/rimraf/i.test(trimmed)) {
@@ -259,7 +260,9 @@ const checkBuildScriptsTargetCorrectPackage = (): CheckResult => {
     const scriptTarget = buildMatch?.[1] ?? runMatch?.[1];
 
     if (!scriptTarget) {
-      violations.push(`${label}: could not parse nx project from build script ${JSON.stringify(build)}`);
+      violations.push(
+        `${label}: could not parse nx project from build script ${JSON.stringify(build)}`,
+      );
       continue;
     }
     if (scriptTarget !== nxName) {
@@ -286,9 +289,7 @@ const resolveTsConfigPath = (fromFile: string, extendsValue: string): string => 
   const base = path.dirname(fromFile);
   const candidate = path.resolve(base, extendsValue);
   const withJson =
-    candidate.endsWith('.json') || fileExists(candidate)
-      ? candidate
-      : `${candidate}.json`;
+    candidate.endsWith('.json') || fileExists(candidate) ? candidate : `${candidate}.json`;
   return withJson;
 };
 
@@ -375,7 +376,9 @@ const checkLibraryTsconfigExtendsAndOutDir = (): CheckResult => {
     const local = chain[0]?.compilerOptions;
     const outDir = local?.outDir;
     if (outDir !== './dist') {
-      violations.push(`${label}: compilerOptions.outDir must be "./dist" (got ${JSON.stringify(outDir)})`);
+      violations.push(
+        `${label}: compilerOptions.outDir must be "./dist" (got ${JSON.stringify(outDir)})`,
+      );
     }
   }
 
@@ -479,7 +482,10 @@ const checkNoAppRelativePackageImports = (): CheckResult => {
       continue;
     }
 
-    for (const filePath of findFiles(srcDir, (name) => name.endsWith('.ts') || name.endsWith('.tsx'))) {
+    for (const filePath of findFiles(
+      srcDir,
+      (name) => name.endsWith('.ts') || name.endsWith('.tsx'),
+    )) {
       const content = readText(filePath);
       for (const pattern of patterns) {
         if (pattern.test(content)) {
@@ -533,7 +539,12 @@ const checkAppTsconfigNoPackagesSourcePaths = (): CheckResult => {
 const checkInternalDepsAreWildcard = (): CheckResult => {
   const rule = '9. All @packages/* dependencies use "*"';
   const violations: string[] = [];
-  const depFields = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'] as const;
+  const depFields = [
+    'dependencies',
+    'devDependencies',
+    'peerDependencies',
+    'optionalDependencies',
+  ] as const;
 
   for (const pkgJsonPath of listWorkspacePackageJsons()) {
     const pkg = readJson<Record<string, Record<string, string>>>(pkgJsonPath);
@@ -587,7 +598,10 @@ const gitChangedFiles = (): Set<string> => {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   }).trim();
-  const names = [...(tracked ? tracked.split('\n') : []), ...(untracked ? untracked.split('\n') : [])];
+  const names = [
+    ...(tracked ? tracked.split('\n') : []),
+    ...(untracked ? untracked.split('\n') : []),
+  ];
   return new Set(names);
 };
 
@@ -724,9 +738,7 @@ const checkGeneratedPathsGitignored = (): CheckResult => {
   for (const generatedPath of GENERATED_PATHS) {
     const sample =
       SAMPLE_FILES_PER_PATH[generatedPath] ??
-      (generatedPath.endsWith('/')
-        ? `${generatedPath}.gitkeep-check`
-        : generatedPath);
+      (generatedPath.endsWith('/') ? `${generatedPath}.gitkeep-check` : generatedPath);
 
     if (!isGitIgnored(sample)) {
       violations.push(
@@ -787,7 +799,9 @@ const checkTestRunnerPackageShape = (): CheckResult => {
 const checkTestScriptsExcludeTestRunner = (): CheckResult => {
   const rule = '17. test:all and test:ci exclude tag:scope:test-runner';
   const violations: string[] = [];
-  const rootPkg = readJson<{ scripts?: Record<string, string> }>(path.join(REPO_ROOT, 'package.json'));
+  const rootPkg = readJson<{ scripts?: Record<string, string> }>(
+    path.join(REPO_ROOT, 'package.json'),
+  );
   const requiredFlag = '--exclude=tag:scope:test-runner';
 
   for (const scriptName of ['test:all', 'test:ci'] as const) {

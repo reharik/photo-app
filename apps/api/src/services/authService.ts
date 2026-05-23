@@ -4,11 +4,14 @@ import {
   type SignupInput,
   type User,
 } from '@packages/contracts';
+import type { Logger } from '@packages/infrastructure';
 import { hashToken } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import type { Knex } from 'knex';
 import { randomUUID } from 'node:crypto';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+
+import type { Config } from '../config.js';
 
 export type SanitizedUser = Omit<User, 'passwordHash'>;
 
@@ -47,7 +50,13 @@ const splitDisplayName = (fullName: string): { firstName: string; lastName: stri
   return { firstName, lastName };
 };
 
-export const build__AuthService = ({ database, logger, config }: AppCradle): AuthService => ({
+type AuthServiceDeps = {
+  database: Knex;
+  logger: Logger;
+  config: Config;
+};
+
+export const build__AuthService = ({ database, logger, config }: AuthServiceDeps): AuthService => ({
   login: async (credentials: LoginInput) => {
     const { email, password } = credentials;
 

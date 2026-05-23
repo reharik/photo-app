@@ -1,11 +1,18 @@
 import Router from '@koa/router';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+
+import type { AuthController } from '../controllers/authController.js';
 import { requireAuth } from '../middleware/routeGuards';
+import type { TokenHandshakeMiddleware } from '../middleware/tokenHandshakeMiddleware.js';
+
+type AuthRouterDeps = {
+  authController: AuthController;
+  tokenHandshakeMiddleware: TokenHandshakeMiddleware;
+};
 
 export const build__Router = ({
   authController,
   tokenHandshakeMiddleware,
-}: AppCradle): Router => {
+}: AuthRouterDeps): Router => {
   const router = new Router({ prefix: '/auth' });
 
   // Public routes

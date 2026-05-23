@@ -28,7 +28,7 @@
     "test": "nx test infrastructure"
   },
   "dependencies": {
-    "ioc-manifest": "^1.0.0",
+    "ioc-manifest": "^1.0.1",
     "winston": "^3.15.0"
   },
   "devDependencies": {

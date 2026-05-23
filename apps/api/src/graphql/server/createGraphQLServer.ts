@@ -1,6 +1,8 @@
 import { createYoga } from 'graphql-yoga';
 import Koa from 'koa';
-import type { AppCradle } from '../../di/generated/ioc-composed.js';
+
+import type { Config } from '../../config.js';
+import type { GraphQLContextFactory } from '../context/types.js';
 import { schema } from '../schema';
 
 /**
@@ -23,7 +25,12 @@ interface GraphQLServerDeps {
   yogaApp: YogaApp;
 }
 
-export const build__YogaApp = ({ graphQLContextFactory, config }: AppCradle): YogaApp => {
+type YogaAppDeps = {
+  graphQLContextFactory: GraphQLContextFactory;
+  config: Config;
+};
+
+export const build__YogaApp = ({ graphQLContextFactory, config }: YogaAppDeps): YogaApp => {
   return createYoga<Koa.ParameterizedContext>({
     schema,
     graphqlEndpoint: config.graphqlHttpPath,

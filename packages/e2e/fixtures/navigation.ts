@@ -23,19 +23,14 @@ export const expectMediaTileVisible = async (
     throw new Error(
       `Media tile [data-testid="media-tile-${mediaItemId}"] not found. ` +
         `URL: ${page.url()}.` +
-        (title != null && title.length > 0
-          ? ` Title "${title}" visible: ${titleVisible}.`
-          : '') +
+        (title != null && title.length > 0 ? ` Title "${title}" visible: ${titleVisible}.` : '') +
         ' Confirm upload finished and the item appears on Recent Media.',
     );
   }
 };
 
 /** Opens an owned media detail screen and waits for the comments composer. */
-export const gotoOwnerMediaDetail = async (
-  page: Page,
-  mediaItemId: string,
-): Promise<void> => {
+export const gotoOwnerMediaDetail = async (page: Page, mediaItemId: string): Promise<void> => {
   await page.goto(`/media/${mediaItemId}`);
   await expect(page).toHaveURL(new RegExp(`/media/${mediaItemId}(\\?.*)?$`));
 

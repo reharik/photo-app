@@ -12,9 +12,7 @@ import { ensureTestViewerUsers } from './ensureTestViewerUsers';
 import { createExecuteGraphQL } from './executeGQL';
 import { createIntegrationTestMediaStorage } from './integrationTestMediaStorage';
 
-const registerTestKnexForGlobalTeardown = (
-  container: AwilixContainer<AppCradle>,
-): void => {
+const registerTestKnexForGlobalTeardown = (container: AwilixContainer<AppCradle>): void => {
   if (process.env.NODE_ENV !== 'test') {
     return;
   }
@@ -35,11 +33,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
   const container = createContainer<AppCradle>({
     injectionMode: 'PROXY',
   });
-  registerIocFromManifest(
-    container,
-    composedManifests,
-    composedRegistrationOverrides,
-  );
+  registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
   container.register({
     mediaStorage: asValue(integrationTestMediaStorage),
   });

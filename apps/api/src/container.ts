@@ -17,11 +17,7 @@ const initializeContainer = (): AwilixContainer<AppCradle> => {
     injectionMode: 'PROXY',
   });
 
-  registerIocFromManifest(
-    _container,
-    composedManifests,
-    composedRegistrationOverrides,
-  );
+  registerIocFromManifest(_container, composedManifests, composedRegistrationOverrides);
 
   container = _container;
   return container;

@@ -1,12 +1,19 @@
-import { hashToken } from '@packages/media-core';
+import type { Logger } from '@packages/infrastructure';
+import { hashToken, type PublicAccessReadService } from '@packages/media-core';
 import type { Context, Next } from 'koa';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+
+import type { AuthService } from '../services/authService.js';
 
 export type AuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 export type OptionalAuthMiddleware = AuthMiddleware;
 
+type AuthMiddlewareDeps = {
+  authService: AuthService;
+  logger: Logger;
+};
+
 export const build__AuthMiddleware =
-  ({ authService, logger }: AppCradle): AuthMiddleware =>
+  ({ authService, logger }: AuthMiddlewareDeps): AuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const authHeader = ctx.get('Authorization');
 
@@ -40,8 +47,13 @@ export const build__AuthMiddleware =
     await next();
   };
 
+type OptionalAuthMiddlewareDeps = {
+  authService: AuthService;
+  publicAccessReadService: PublicAccessReadService;
+};
+
 export const build__OptionalAuthMiddleware =
-  ({ authService, publicAccessReadService }: AppCradle): OptionalAuthMiddleware =>
+  ({ authService, publicAccessReadService }: OptionalAuthMiddlewareDeps): OptionalAuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.cookies.get('token');
     ctx.isLoggedIn = false;

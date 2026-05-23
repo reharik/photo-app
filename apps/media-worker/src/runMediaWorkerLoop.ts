@@ -1,4 +1,8 @@
-import type { AppCradle } from './generated/ioc-composed.js';
+import type { Logger } from '@packages/infrastructure';
+
+import type { ProcessNextMediaDeletionJob } from './application/processNextMediaDeletionJob.js';
+import type { ProcessNextMediaImageJob } from './application/processNextMediaImageJob.js';
+import type { Config } from './config.js';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -13,12 +17,19 @@ export type RunMediaWorkerLoop = {
 /** Log an idle heartbeat at info roughly every 30s at the default 2s poll interval. */
 const IDLE_HEARTBEAT_EVERY_CYCLES = 15;
 
+type RunMediaWorkerLoopDeps = {
+  config: Config;
+  logger: Logger;
+  processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
+  processNextMediaImageJob: ProcessNextMediaImageJob;
+};
+
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
   processNextMediaDeletionJob,
   processNextMediaImageJob,
-}: AppCradle): RunMediaWorkerLoop => {
+}: RunMediaWorkerLoopDeps): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
 

@@ -1,10 +1,4 @@
-import type {
-  FullConfig,
-  Reporter,
-  Suite,
-  TestCase,
-  TestResult,
-} from '@playwright/test/reporter';
+import type { FullConfig, Reporter, Suite, TestCase, TestResult } from '@playwright/test/reporter';
 
 /**
  * Prints the full test title and error as soon as a test fails or times out.
@@ -48,9 +42,7 @@ export default class VerboseFailuresReporter implements Reporter {
       lines.push('', '(no error message captured)');
     }
 
-    const attachments = result.attachments.filter(
-      (a) => a.path != null && a.path.length > 0,
-    );
+    const attachments = result.attachments.filter((a) => a.path != null && a.path.length > 0);
     if (attachments.length > 0) {
       lines.push('', 'Artifacts:');
       for (const attachment of attachments) {

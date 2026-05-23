@@ -3,14 +3,14 @@
  */
 
 export * from './AggregateRoot';
-export * from './Entity';
 export * from './Album/Album';
 export * from './Album/AlbumItem';
-export * from './Album/AlbumMember';
 export * from './Album/albumItemOrder';
+export * from './Album/AlbumMember';
 export * from './Authorization/Authorization';
 export * from './Authorization/grantAuthorizationValidation';
 export * from './Comment/Comment';
+export * from './Entity';
 export * from './MediaDeletionJob/MediaDeletionJobRepository';
 export * from './MediaDeletionJob/mediaDeletionJobStatus';
 export * from './MediaItem/MediaAsset';

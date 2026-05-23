@@ -41,7 +41,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.1",
     "concurrently": "^9.2.1",
-    "ioc-manifest": "^1.0.0",
+    "ioc-manifest": "^1.0.1",
     "jest": "30.4.1",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"

@@ -309,7 +309,9 @@ const isReadableStream = (value: unknown): value is Readable => {
 };
 
 const isWritableStream = (value: unknown): value is Writable => {
-  return typeof value === 'object' && value !== null && typeof (value as Writable).write === 'function';
+  return (
+    typeof value === 'object' && value !== null && typeof (value as Writable).write === 'function'
+  );
 };
 
 export const __internal = {

@@ -8,13 +8,13 @@ Read-only inventory. No `package.json` version fixes applied.
 
 ## 1. syncpack install details
 
-| Item | Value |
-|------|--------|
-| **Package** | `syncpack` |
-| **Version** | `15.3.1` (latest stable at install time) |
-| **Pin style** | Exact (`"syncpack": "15.3.1"`) — no `^` |
-| **Location** | Root `devDependencies` in `/home/reharik/Development/photoapp/package.json` |
-| **Config file** | `.syncpackrc.json` (repo root) |
+| Item            | Value                                                                       |
+| --------------- | --------------------------------------------------------------------------- |
+| **Package**     | `syncpack`                                                                  |
+| **Version**     | `15.3.1` (latest stable at install time)                                    |
+| **Pin style**   | Exact (`"syncpack": "15.3.1"`) — no `^`                                     |
+| **Location**    | Root `devDependencies` in `/home/reharik/Development/photoapp/package.json` |
+| **Config file** | `.syncpackrc.json` (repo root)                                              |
 
 ### Why `.syncpackrc.json` (not `syncpack.config.js`)
 
@@ -73,16 +73,16 @@ Command: `npx syncpack lint` (with `.syncpackrc.json` present)
 
 ### External version drift (actionable)
 
-| Dependency | Declarations | Highest in workspace |
-|------------|--------------|----------------------|
-| `@jest/globals` | Root: `30.4.1` (exact); media-core: `^30.1.2` | `30.4.1` |
+| Dependency      | Declarations                                  | Highest in workspace |
+| --------------- | --------------------------------------------- | -------------------- |
+| `@jest/globals` | Root: `30.4.1` (exact); media-core: `^30.1.2` | `30.4.1`             |
 
 No other cross-package **numeric** version mismatches were reported.
 
 ### Non-drift noise (config follow-up in Step 2)
 
-| Issue | Packages | Notes |
-|-------|----------|-------|
+| Issue                | Packages                                                        | Notes                                                                                                                                                                                                                                                                                                       |
+| -------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VERSION_IS_MISSING` | `photo-app` (root), `@app/api`, `@app/web`, `@app/media-worker` | Private apps/root omit `.version`; syncpack v7+ treats `local` type by default. Fix: add `versionGroups` entry ignoring `dependencyTypes: ["local"]` (per [migrate v14](https://syncpack.dev/guide/migrate-v14/#workspace-dependency-syncing-enabled-by-default)), **not** by adding fake versions to apps. |
 
 ---
@@ -91,13 +91,13 @@ No other cross-package **numeric** version mismatches were reported.
 
 ### `@jest/globals`
 
-| Field | Value |
-|-------|--------|
-| **Target version** | `30.4.1` (highest semver; matches root, `jest`, `jest-environment-jsdom`) |
-| **Packages to change** | `packages/context/media-core/package.json` only |
-| **Proposed specifier** | `30.4.1` (exact, matching root) **or** `^30.4.1` if you want to preserve caret style — numeric target is `30.4.1` either way |
-| **Concerns** | Low risk. Jest 30.4.x already used at root; media-core is one minor behind on the globals package only. Aligning completes the Jest 30.4 set already used by `jest` / `jest-environment-jsdom`. |
-| **Discussion needed?** | No |
+| Field                  | Value                                                                                                                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Target version**     | `30.4.1` (highest semver; matches root, `jest`, `jest-environment-jsdom`)                                                                                                                       |
+| **Packages to change** | `packages/context/media-core/package.json` only                                                                                                                                                 |
+| **Proposed specifier** | `30.4.1` (exact, matching root) **or** `^30.4.1` if you want to preserve caret style — numeric target is `30.4.1` either way                                                                    |
+| **Concerns**           | Low risk. Jest 30.4.x already used at root; media-core is one minor behind on the globals package only. Aligning completes the Jest 30.4 set already used by `jest` / `jest-environment-jsdom`. |
+| **Discussion needed?** | No                                                                                                                                                                                              |
 
 **Step 2 autofix:** `npx syncpack fix --dependencies '@jest/globals'` should apply the same change after local-version ignore is configured.
 
@@ -119,11 +119,11 @@ No other cross-package **numeric** version mismatches were reported.
 
 ### `@aws-sdk/client-s3` (Phase 4d)
 
-| Package | Declares `@aws-sdk/client-s3`? |
-|---------|-------------------------------|
-| `packages/context/heic-converter` | **No** (Lambda path removed) |
-| `packages/context/media-core` | `^3.1028.0` |
-| `apps/media-worker` | `^3.1028.0` |
+| Package                           | Declares `@aws-sdk/client-s3`? |
+| --------------------------------- | ------------------------------ |
+| `packages/context/heic-converter` | **No** (Lambda path removed)   |
+| `packages/context/media-core`     | `^3.1028.0`                    |
+| `apps/media-worker`               | `^3.1028.0`                    |
 
 **Clean** — two declarations, same version. No action.
 
@@ -163,13 +163,13 @@ Not external dep drift. Recommended Step 2 config addition:
 
 syncpack Highest Semver compares **resolved version numbers**, not range operator style. Examples that are **aligned numerically** but stylistically mixed:
 
-| Dependency | Pattern | Location |
-|------------|---------|----------|
-| `@nx/esbuild`, `@nx/js`, `@nx/react`, `@nx/vite`, `nx` | exact `21.4.1` | root only |
-| `@nx/eslint`, `@nx/eslint-plugin`, `@nx/jest` | `^21.4.1` | root only |
-| `jest`, `jest-environment-jsdom`, `@jest/globals` (root) | exact `30.4.1` | root |
-| `jest` | exact `30.4.1` | media-core |
-| `heic-converter` deps | exact pins (`exifr`, `heic-convert`, `pino`) | intentional pins in one package |
+| Dependency                                               | Pattern                                      | Location                        |
+| -------------------------------------------------------- | -------------------------------------------- | ------------------------------- |
+| `@nx/esbuild`, `@nx/js`, `@nx/react`, `@nx/vite`, `nx`   | exact `21.4.1`                               | root only                       |
+| `@nx/eslint`, `@nx/eslint-plugin`, `@nx/jest`            | `^21.4.1`                                    | root only                       |
+| `jest`, `jest-environment-jsdom`, `@jest/globals` (root) | exact `30.4.1`                               | root                            |
+| `jest`                                                   | exact `30.4.1`                               | media-core                      |
+| `heic-converter` deps                                    | exact pins (`exifr`, `heic-convert`, `pino`) | intentional pins in one package |
 
 **Not blocking** for Step 2 unless you add `semverGroups` to enforce uniform `^` vs exact per dependency class.
 
@@ -201,10 +201,10 @@ Multi-instance deps scanned (2+ declarations) — all numerically consistent exc
 
 ## 8. Files touched in Step 1
 
-| File | Change |
-|------|--------|
-| `package.json` | Added `syncpack@15.3.1` to `devDependencies` |
-| `package-lock.json` | Updated by `npm install` |
-| `.syncpackrc.json` | **Created** |
+| File                | Change                                       |
+| ------------------- | -------------------------------------------- |
+| `package.json`      | Added `syncpack@15.3.1` to `devDependencies` |
+| `package-lock.json` | Updated by `npm install`                     |
+| `.syncpackrc.json`  | **Created**                                  |
 
 No workspace package versions were modified.

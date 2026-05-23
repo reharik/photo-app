@@ -1,13 +1,35 @@
 import cors from '@koa/cors';
+import type { Logger } from '@packages/infrastructure';
 import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import http from 'http';
+import type { Knex } from 'knex';
 import Koa, { Context } from 'koa';
 import { koaBody } from 'koa-body';
-import type { AppCradle } from './di/generated/ioc-composed.js';
+
+import type { Config } from './config.js';
+import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
+import type { AuthMiddleware } from './middleware/authMiddleware.js';
+import type { ErrorHandler } from './middleware/errorHandler.js';
+import type { RequestLogger } from './middleware/requestLogger.js';
+import type { RootRouter } from './routes/apiRouter.js';
+import type { MediaPublicRouter } from './routes/mediaPublicRouter.js';
+
 setDefaultSerializationMode('value');
 
 // then the rest of your app bootstrap
 export type KoaServer = http.Server;
+
+type KoaServerDeps = {
+  mediaPublicRouter: MediaPublicRouter;
+  rootRouter: RootRouter;
+  authMiddleware: AuthMiddleware;
+  logger: Logger;
+  graphQLServer: GraphQLServer;
+  errorHandler: ErrorHandler;
+  requestLogger: RequestLogger;
+  database: Knex;
+  config: Config;
+};
 
 export const build__KoaServer = ({
   mediaPublicRouter,
@@ -20,7 +42,7 @@ export const build__KoaServer = ({
   requestLogger,
   database,
   config,
-}: AppCradle): KoaServer => {
+}: KoaServerDeps): KoaServer => {
   const app = new Koa();
   app.proxy = config.trustProxy;
   app.context.db = database;

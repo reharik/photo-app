@@ -68,8 +68,10 @@ const lookup = (key: string, fallback: string): string => {
 };
 
 const webBaseUrl = lookup('E2E_WEB_BASE_URL', 'http://localhost:5173').replace(/\/$/, '');
-const apiBaseUrl = lookup('E2E_API_BASE_URL', `http://localhost:${lookup('API_PORT', '3001')}`)
-  .replace(/\/$/, '');
+const apiBaseUrl = lookup(
+  'E2E_API_BASE_URL',
+  `http://localhost:${lookup('API_PORT', '3001')}`,
+).replace(/\/$/, '');
 
 export const env: Env = {
   webBaseUrl,

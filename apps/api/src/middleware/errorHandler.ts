@@ -1,10 +1,14 @@
+import type { Logger } from '@packages/infrastructure';
 import { Context, HttpError, Next } from 'koa';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type ErrorHandler = (ctx: Context, next: Next) => Promise<void>;
 
+type ErrorHandlerDeps = {
+  logger: Logger;
+};
+
 export const build__ErrorHandler =
-  ({ logger }: AppCradle): ErrorHandler =>
+  ({ logger }: ErrorHandlerDeps): ErrorHandler =>
   async (ctx: Context, next: Next) => {
     try {
       await next();

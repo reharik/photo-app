@@ -1,10 +1,19 @@
-import type { AppCradle } from './di/generated/ioc-composed.js';
+import type { Logger } from '@packages/infrastructure';
+
+import type { Config } from './config.js';
+import type { KoaServer } from './koaServer.js';
 
 export interface Server {
   start(): Promise<void>;
 }
 
-export const build__Server = ({ koaServer, config, logger }: AppCradle): Server => {
+type ServerDeps = {
+  koaServer: KoaServer;
+  config: Config;
+  logger: Logger;
+};
+
+export const build__Server = ({ koaServer, config, logger }: ServerDeps): Server => {
   return {
     async start() {
       await new Promise<void>((resolve) => {
