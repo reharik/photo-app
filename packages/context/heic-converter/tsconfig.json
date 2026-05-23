@@ -14,12 +14,5 @@
     "isolatedModules": true
   },
   "include": ["src/**/*", "types/**/*.d.ts"],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "src/**/*.test.ts",
-    "jest.config.js",
-    "eslint.config.js",
-    "eslint.test.config.js"
-  ]
+  "exclude": ["dist", "node_modules", "jest.config.js", "eslint.config.js", "eslint.test.config.js"]
 }

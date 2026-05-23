@@ -1,4 +1,4 @@
-import type { FullConfig, Reporter, Suite, TestCase, TestResult } from '@playwright/test/reporter';
+import type { FullConfig, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 
 /**
  * Prints the full test title and error as soon as a test fails or times out.
@@ -8,7 +8,7 @@ import type { FullConfig, Reporter, Suite, TestCase, TestResult } from '@playwri
 export default class VerboseFailuresReporter implements Reporter {
   #rootDir = '';
 
-  onBegin(config: FullConfig, _suite: Suite): void {
+  onBegin(config: FullConfig): void {
     this.#rootDir = config.rootDir;
   }
 

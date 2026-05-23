@@ -85,21 +85,6 @@ const finalizeMediaUploadMutation = `
   }
 `;
 
-const addMediaToAlbumMutation = `
-  mutation AddMediaItemToAlbum($albumId: ID!, $mediaItemId: ID!) {
-    AddMediaItemToAlbum(input: { albumId: $albumId, mediaItemId: $mediaItemId }) {
-      data {
-        albumId
-        albumItemId
-      }
-      errors {
-        code
-        message
-      }
-    }
-  }
-`;
-
 const deleteAlbumItemsFromAlbumMutation = `
   mutation DeleteAlbumItemsFromAlbum($input: DeleteAlbumItemsFromAlbumInput!) {
     DeleteAlbumItemsFromAlbum(input: $input) {

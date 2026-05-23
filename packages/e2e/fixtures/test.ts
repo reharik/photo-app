@@ -37,6 +37,7 @@ const makeSession = async (browser: Browser, user: TestUser): Promise<UserSessio
 };
 
 export const test = base.extend<Fixtures>({
+  // eslint-disable-next-line no-empty-pattern
   uniqueSuffix: async ({}, use, testInfo) => {
     await use(`${Date.now().toString(36)}-${testInfo.workerIndex}`);
   },

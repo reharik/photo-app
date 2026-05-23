@@ -20,7 +20,9 @@ RUN npx ts-patch install
 ENV NODE_OPTIONS='--import tsx'
 
 ARG APP_NAME
-RUN npx nx build "${APP_NAME}"
+RUN rm -rf .nx/cache node_modules/.cache
+RUN npx nx build "${APP_NAME}" --skip-nx-cache --verbose
+# RUN npx nx build "${APP_NAME}"
 
 # Vite does not emit shell scripts or IoC sources into dist; copy when present (api, media-worker).
 RUN if [ -f "apps/${APP_NAME}/src/scripts/serverStartUpProd.sh" ]; then \

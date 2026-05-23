@@ -1,13 +1,10 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { copyFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { loginViaUi } from './auth';
 import { E2E_ASSETS_DIR, grabTestImages, GrabTestImagesResult } from './testAssets';
 import type { TestUser } from './users';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** Committed 1×1 JPEG; default source when no asset is specified. */
 export const SAMPLE_IMAGE_PATH = join(E2E_ASSETS_DIR, 'sample.jpg');
