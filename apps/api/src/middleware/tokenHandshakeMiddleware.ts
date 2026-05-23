@@ -1,10 +1,10 @@
 import { hashToken } from '@packages/media-core';
 import type { Context, Next } from 'koa';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 export type TokenHandshakeMiddleware = (ctx: Context, next: Next) => Promise<void>;
 
 export const build__TokenHandshakeMiddleware =
-  ({ publicAccessReadService, logger }: IocGeneratedCradle): TokenHandshakeMiddleware =>
+  ({ publicAccessReadService, logger }: AppCradle): TokenHandshakeMiddleware =>
   async (ctx: Context, next: Next) => {
     const body = ctx.request.body as { token: string };
     const token = body.token;

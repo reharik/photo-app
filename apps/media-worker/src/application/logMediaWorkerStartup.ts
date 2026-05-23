@@ -20,9 +20,7 @@ export const logMediaWorkerStartup = async ({
   logger: Logger;
   database: Knex;
 }): Promise<void> => {
-  const explicitCredentialsConfigured = Boolean(
-    config.awsAccessKeyId && config.awsSecretAccessKey,
-  );
+  const explicitCredentialsConfigured = Boolean(config.awsAccessKeyId && config.awsSecretAccessKey);
 
   logger.info('Media worker configuration', {
     nodeEnv: config.nodeEnv,

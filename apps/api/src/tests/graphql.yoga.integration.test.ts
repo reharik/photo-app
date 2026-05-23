@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import type { AwilixContainer } from 'awilix';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -31,7 +31,7 @@ const expectGraphQLMutationRejectedForAuth = (
 
 describe('GraphQL', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<IocGeneratedCradle>;
+  let container: AwilixContainer<AppCradle>;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
   beforeAll(async () => {

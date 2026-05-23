@@ -7,11 +7,10 @@ services:
   api:
     build:
       context: .
-      dockerfile: infra/docker/api/Dockerfile
+      dockerfile: infra/docker/Dockerfile
       target: dev
       args:
-        NODE_VERSION: '22'
-        APP_WORKSPACE_PATH: 'apps/api'
+        APP_NAME: api
     ports:
       - '3001:3001'
     env_file:
@@ -21,7 +20,6 @@ services:
       db:
         condition: service_healthy
     environment:
-      APP_WORKSPACE_PATH: apps/api
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
       API_PORT: '3001'
@@ -38,18 +36,16 @@ services:
   media-worker:
     build:
       context: .
-      dockerfile: infra/docker/api/Dockerfile
+      dockerfile: infra/docker/Dockerfile
       target: dev
       args:
-        NODE_VERSION: '22'
-        APP_WORKSPACE_PATH: 'apps/media-worker'
+        APP_NAME: media-worker
     env_file:
       - ./apps/media-worker/.env
     depends_on: !override
       db:
         condition: service_healthy
     environment:
-      APP_WORKSPACE_PATH: apps/media-worker
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
       AWS_ENDPOINT: ''

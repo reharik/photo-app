@@ -1,7 +1,6 @@
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,7 +11,6 @@ export default defineConfig(({ mode }) => {
   return {
     root: __dirname, // api
     cacheDir: '../node_modules/.vite/api',
-    plugins: [tsconfigPaths()],
     build: {
       outDir: 'dist',
       // Nx runs clean before vite; migrations/seeds are compiled to dist/db after vite (project.json).

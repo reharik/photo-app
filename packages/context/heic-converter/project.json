@@ -3,27 +3,71 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
-    "build": {
+    "clean": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "{projectRoot}",
-        "command": "npm run build"
+        "command": "npx rimraf dist"
+      }
+    },
+    "barrels": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx barrelsby --config barrelsby.json"
+      }
+    },
+    "build": {
+      "executor": "@nx/js:tsc",
+      "dependsOn": ["clean", "barrels", "^build"],
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "outputPath": "{projectRoot}/dist",
+        "tsConfig": "{projectRoot}/tsconfig.json",
+        "main": "{projectRoot}/src/index.ts"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc -w -p tsconfig.json"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "{projectRoot}",
-        "command": "npm run lint"
+        "commands": [
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/src/**/*.{ts,tsx,js,jsx}\"",
+          "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"{projectRoot}/src/**/*.test.ts\" \"{projectRoot}/src/**/*.tests.ts\" \"{projectRoot}/src/**/*.spec.ts\""
+        ],
+        "parallel": false
+      },
+      "configurations": {
+        "fix": {
+          "commands": [
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/src/**/*.{ts,tsx,js,jsx}\"",
+            "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"{projectRoot}/src/**/*.test.ts\" \"{projectRoot}/src/**/*.tests.ts\" \"{projectRoot}/src/**/*.spec.ts\""
+          ],
+          "parallel": false
+        }
       }
     },
     "test": {
       "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "cwd": "{projectRoot}",
-        "command": "npm test"
+        "command": "NODE_OPTIONS='--experimental-vm-modules' npx jest --config jest.config.js --passWithNoTests"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prettier --write {projectRoot}/src/**/*.{ts,tsx,js,jsx,json}"
       }
     }
   },
-  "tags": ["layer:context", "scope:media"]
+  "tags": ["layer:context", "scope:media", "scope:packages"]
 }

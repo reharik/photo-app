@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import type { Config } from '../config';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__KnexConfig } from '../knexfile';
 
 describe('build__KnexConfig', () => {
@@ -23,7 +23,7 @@ describe('build__KnexConfig', () => {
         mediaWorkerPollIntervalMs: 2000,
       };
 
-      const knexConfig = build__KnexConfig({ config } as IocGeneratedCradle);
+      const knexConfig = build__KnexConfig({ config } as AppCradle);
 
       expect(knexConfig.client).toBe('pg');
       expect(knexConfig.connection).toEqual(

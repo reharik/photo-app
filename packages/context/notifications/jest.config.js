@@ -15,6 +15,7 @@ export default {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'mjs'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^@packages/notifications$': '<rootDir>/src/index.ts',
   },
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: [],

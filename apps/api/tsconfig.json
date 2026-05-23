@@ -4,13 +4,8 @@
     "outDir": "./dist",
     "noEmit": true,
     "allowJs": true,
-    "baseUrl": "../..",
-    "paths": {
-      "@packages/contracts": ["packages/foundation/contracts/src/index.ts"],
-      "@packages/heic-converter": ["packages/context/heic-converter"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"],
-      "@packages/media-core": ["packages/context/media-core/src/index.ts"]
-    },
+    "baseUrl": ".",
+    "paths": {},
     "types": ["jest", "vite/client"],
     "plugins": [
       {
@@ -22,10 +17,12 @@
     "strict": true,
     "isolatedModules": true
   },
-  "include": [
-    "src/**/*.ts",
-    "db/**/*.ts",
-    "../../packages/context/media-core/src/infrastructure/repositories/repoOptions.ts"
-  ],
-  "exclude": ["jest.*", "dist", "node_modules", "src/_original/**"]
+  "include": ["src/**/*.ts", "db/**/*.ts"],
+  "exclude": [
+    "jest.*",
+    "dist",
+    "node_modules",
+    "src/_original/**",
+    "../../**/dist/**" // <-- catches packages/*/dist anywhere up the tree
+  ]
 }

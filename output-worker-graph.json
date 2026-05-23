@@ -1,0 +1,2854 @@
+{
+  "graph": {
+    "nodes": {
+      "infrastructure": {
+        "name": "infrastructure",
+        "type": "lib",
+        "data": {
+          "root": "packages/foundation/infrastructure",
+          "name": "infrastructure",
+          "tags": [
+            "npm:private",
+            "layer:foundation",
+            "scope:shared"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@packages/infrastructure",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/foundation/infrastructure",
+                "command": "npx rimraf dist"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/foundation/infrastructure",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": [
+                "clean",
+                "barrels",
+                "^build"
+              ],
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "options": {
+                "outputPath": "packages/foundation/infrastructure/dist",
+                "tsConfig": "packages/foundation/infrastructure/tsconfig.json",
+                "main": "packages/foundation/infrastructure/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/foundation/infrastructure",
+                "command": "tsc -w -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/foundation/infrastructure/eslint.config.js \"packages/foundation/infrastructure/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/foundation/infrastructure/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/foundation/infrastructure/**/*.tests.ts\" \"packages/foundation/infrastructure/**/*.tests.tsx\" \"packages/foundation/infrastructure/**/*.test.ts\" \"packages/foundation/infrastructure/**/*.test.tsx\" \"packages/foundation/infrastructure/**/*.spec.ts\" \"packages/foundation/infrastructure/**/*.spec.tsx\" \"packages/foundation/infrastructure/src/tests/**/*.ts\" \"packages/foundation/infrastructure/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/foundation/infrastructure/eslint.config.js --fix \"packages/foundation/infrastructure/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/foundation/infrastructure/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/foundation/infrastructure/**/*.tests.ts\" \"packages/foundation/infrastructure/**/*.tests.tsx\" \"packages/foundation/infrastructure/**/*.test.ts\" \"packages/foundation/infrastructure/**/*.test.tsx\" \"packages/foundation/infrastructure/**/*.spec.ts\" \"packages/foundation/infrastructure/**/*.spec.tsx\" \"packages/foundation/infrastructure/src/tests/**/*.ts\" \"packages/foundation/infrastructure/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "jestConfig": "packages/foundation/infrastructure/jest.config.js",
+                "passWithNoTests": true
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/foundation/infrastructure/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "heic-converter": {
+        "name": "heic-converter",
+        "type": "lib",
+        "data": {
+          "root": "packages/context/heic-converter",
+          "name": "heic-converter",
+          "tags": [
+            "npm:private",
+            "layer:context",
+            "scope:media"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "description": "HEIC/HEIF to JPEG conversion for Node.js consumers",
+            "js": {
+              "packageName": "@packages/heic-converter",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/heic-converter",
+                "command": "npx rimraf dist"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/context/heic-converter",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": [
+                "clean",
+                "barrels",
+                "^build"
+              ],
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "options": {
+                "outputPath": "packages/context/heic-converter/dist",
+                "tsConfig": "packages/context/heic-converter/tsconfig.json",
+                "main": "packages/context/heic-converter/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/heic-converter",
+                "command": "tsc -w -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/context/heic-converter/eslint.config.js \"packages/context/heic-converter/src/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/context/heic-converter/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/context/heic-converter/src/**/*.test.ts\" \"packages/context/heic-converter/src/**/*.tests.ts\" \"packages/context/heic-converter/src/**/*.spec.ts\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/context/heic-converter/eslint.config.js --fix \"packages/context/heic-converter/src/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/context/heic-converter/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/context/heic-converter/src/**/*.test.ts\" \"packages/context/heic-converter/src/**/*.tests.ts\" \"packages/context/heic-converter/src/**/*.spec.ts\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "cwd": "packages/context/heic-converter",
+                "command": "NODE_OPTIONS='--experimental-vm-modules' npx jest --config jest.config.js --passWithNoTests"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/context/heic-converter/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "notifications": {
+        "name": "notifications",
+        "type": "lib",
+        "data": {
+          "root": "packages/context/notifications",
+          "name": "notifications",
+          "tags": [
+            "npm:private",
+            "layer:context",
+            "scope:notifications"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@packages/notifications",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/notifications",
+                "command": "npx rimraf dist"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/context/notifications",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": [
+                "clean",
+                "barrels",
+                "^build"
+              ],
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "options": {
+                "outputPath": "packages/context/notifications/dist",
+                "tsConfig": "packages/context/notifications/tsconfig.json",
+                "main": "packages/context/notifications/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/notifications",
+                "command": "tsc -w -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/context/notifications/eslint.config.js \"packages/context/notifications/src/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/context/notifications/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/context/notifications/src/**/*.tests.ts\" \"packages/context/notifications/src/**/*.tests.tsx\" \"packages/context/notifications/src/**/*.test.ts\" \"packages/context/notifications/src/**/*.test.tsx\" \"packages/context/notifications/src/**/*.spec.ts\" \"packages/context/notifications/src/**/*.spec.tsx\" \"packages/context/notifications/src/tests/**/*.ts\" \"packages/context/notifications/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/context/notifications/eslint.config.js --fix \"packages/context/notifications/src/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/context/notifications/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/context/notifications/src/**/*.tests.ts\" \"packages/context/notifications/src/**/*.tests.tsx\" \"packages/context/notifications/src/**/*.test.ts\" \"packages/context/notifications/src/**/*.test.tsx\" \"packages/context/notifications/src/**/*.spec.ts\" \"packages/context/notifications/src/**/*.spec.tsx\" \"packages/context/notifications/src/tests/**/*.ts\" \"packages/context/notifications/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "jestConfig": "packages/context/notifications/jest.config.js",
+                "passWithNoTests": true
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/context/notifications/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "contracts": {
+        "name": "contracts",
+        "type": "lib",
+        "data": {
+          "root": "packages/foundation/contracts",
+          "name": "contracts",
+          "tags": [
+            "npm:private",
+            "layer:foundation",
+            "scope:shared"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@packages/contracts",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/foundation/contracts",
+                "command": "npx rimraf dist"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/foundation/contracts",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "codegen": {
+              "executor": "nx:run-commands",
+              "dependsOn": [
+                "api:schema-gen"
+              ],
+              "outputs": [
+                "{projectRoot}/src/enums/graphqlSmartEnums.ts"
+              ],
+              "options": {
+                "cwd": "packages/foundation/contracts",
+                "commands": [
+                  "test -f ../../../apps/api/src/graphql/generated/schema.graphql || (echo \"Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run 'npm run schema-gen:api' first, or ensure contracts:codegen depends on api:schema-gen in project.json (it does, but nx may have silently skipped it).\" && exit 1)",
+                  "graphql-codegen --config codegen.yml",
+                  "npx prettier --write src/enums/graphqlSmartEnums.ts"
+                ],
+                "parallel": false
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": [
+                "clean",
+                "barrels",
+                "codegen",
+                "^build"
+              ],
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "options": {
+                "outputPath": "packages/foundation/contracts/dist",
+                "tsConfig": "packages/foundation/contracts/tsconfig.json",
+                "main": "packages/foundation/contracts/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/foundation/contracts",
+                "command": "tsc -w -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/foundation/contracts/eslint.config.js \"packages/foundation/contracts/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/foundation/contracts/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/foundation/contracts/**/*.tests.ts\" \"packages/foundation/contracts/**/*.tests.tsx\" \"packages/foundation/contracts/**/*.test.ts\" \"packages/foundation/contracts/**/*.test.tsx\" \"packages/foundation/contracts/**/*.spec.ts\" \"packages/foundation/contracts/**/*.spec.tsx\" \"packages/foundation/contracts/src/tests/**/*.ts\" \"packages/foundation/contracts/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/foundation/contracts/eslint.config.js --fix \"packages/foundation/contracts/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/foundation/contracts/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/foundation/contracts/**/*.tests.ts\" \"packages/foundation/contracts/**/*.tests.tsx\" \"packages/foundation/contracts/**/*.test.ts\" \"packages/foundation/contracts/**/*.test.tsx\" \"packages/foundation/contracts/**/*.spec.ts\" \"packages/foundation/contracts/**/*.spec.tsx\" \"packages/foundation/contracts/src/tests/**/*.ts\" \"packages/foundation/contracts/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "jestConfig": "packages/foundation/contracts/jest.config.js",
+                "passWithNoTests": true
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/foundation/contracts/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "media-core": {
+        "name": "media-core",
+        "type": "lib",
+        "data": {
+          "root": "packages/context/media-core",
+          "name": "media-core",
+          "tags": [
+            "npm:private",
+            "layer:context",
+            "scope:media"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "js": {
+              "packageName": "@packages/media-core",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/media-core",
+                "command": "npx rimraf dist"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/context/media-core",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": [
+                "clean",
+                "barrels",
+                "^build"
+              ],
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "options": {
+                "outputPath": "packages/context/media-core/dist",
+                "tsConfig": "packages/context/media-core/tsconfig.json",
+                "main": "packages/context/media-core/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/context/media-core",
+                "command": "tsc -w -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/context/media-core/eslint.config.js \"packages/context/media-core/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/context/media-core/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/context/media-core/**/*.tests.ts\" \"packages/context/media-core/**/*.tests.tsx\" \"packages/context/media-core/**/*.test.ts\" \"packages/context/media-core/**/*.test.tsx\" \"packages/context/media-core/**/*.spec.ts\" \"packages/context/media-core/**/*.spec.tsx\" \"packages/context/media-core/src/tests/**/*.ts\" \"packages/context/media-core/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/context/media-core/eslint.config.js --fix \"packages/context/media-core/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/context/media-core/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/context/media-core/**/*.tests.ts\" \"packages/context/media-core/**/*.tests.tsx\" \"packages/context/media-core/**/*.test.ts\" \"packages/context/media-core/**/*.test.tsx\" \"packages/context/media-core/**/*.spec.ts\" \"packages/context/media-core/**/*.spec.tsx\" \"packages/context/media-core/src/tests/**/*.ts\" \"packages/context/media-core/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "jestConfig": "packages/context/media-core/jest.config.js",
+                "passWithNoTests": false,
+                "env": {
+                  "NODE_OPTIONS": "--experimental-vm-modules"
+                }
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/context/media-core/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "media-worker": {
+        "name": "media-worker",
+        "type": "app",
+        "data": {
+          "root": "apps/media-worker",
+          "name": "media-worker",
+          "tags": [
+            "npm:private",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "build:dev",
+                "build:prod",
+                "dev",
+                "ioc:bundles",
+                "ioc:inspect",
+                "ioc:inspect:discovery",
+                "start"
+              ]
+            },
+            "description": "Background media processing worker",
+            "js": {
+              "packageName": "@app/media-worker",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "build:dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:dev"
+              },
+              "metadata": {
+                "scriptContent": "nx build media-worker --configuration=development",
+                "runCommand": "npm run build:dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:prod": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:prod"
+              },
+              "metadata": {
+                "scriptContent": "nx build media-worker --configuration=production",
+                "runCommand": "npm run build:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev"
+              },
+              "metadata": {
+                "scriptContent": "tsx watch src/main.ts",
+                "runCommand": "npm run dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:bundles": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:bundles"
+              },
+              "metadata": {
+                "scriptContent": "ioc bundles",
+                "runCommand": "npm run ioc:bundles"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect"
+              },
+              "metadata": {
+                "scriptContent": "ioc inspect",
+                "runCommand": "npm run ioc:inspect"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect:discovery": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect:discovery"
+              },
+              "metadata": {
+                "scriptContent": "ioc inspect --discovery",
+                "runCommand": "npm run ioc:inspect:discovery"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "start"
+              },
+              "metadata": {
+                "scriptContent": "node dist/index.js",
+                "runCommand": "npm run start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "npx rimraf dist",
+                "cwd": "apps/media-worker"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:container": {
+              "executor": "nx:run-commands",
+              "dependsOn": [
+                "media-core:barrels",
+                "contracts:barrels"
+              ],
+              "options": {
+                "command": "ioc generate",
+                "cwd": "apps/media-worker"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "dependsOn": [
+                "^build",
+                "gen:container"
+              ],
+              "options": {
+                "command": "vite build --config vite.config.mjs",
+                "cwd": "apps/media-worker"
+              },
+              "configurations": {
+                "development": {
+                  "command": "vite build --config vite.config.mjs --mode development"
+                },
+                "production": {
+                  "command": "vite build --config vite.config.mjs --mode production"
+                }
+              },
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "lint": {
+              "executor": "@nx/eslint:lint",
+              "options": {
+                "lintFilePatterns": [
+                  "apps/media-worker/**/*.{ts,tsx,js,mjs,cjs}"
+                ],
+                "forceColor": true,
+                "fix": false
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests",
+                "cwd": "apps/media-worker"
+              },
+              "configurations": {
+                "runInBand": {
+                  "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --detectOpenHandles --passWithNoTests"
+                }
+              },
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write apps/media-worker/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "application",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "e2e": {
+        "name": "e2e",
+        "type": "lib",
+        "data": {
+          "root": "packages/e2e",
+          "name": "e2e",
+          "tags": [
+            "npm:private",
+            "scope:test-runner"
+          ],
+          "metadata": {
+            "targetGroups": {},
+            "description": "End-to-end Playwright tests for the photoapp web client. Runs against a locally-running stack.",
+            "js": {
+              "packageName": "@packages/e2e",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "test": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright test"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "inputs": [
+                "default",
+                "^default"
+              ],
+              "outputs": [
+                "{projectRoot}/coverage"
+              ]
+            },
+            "test:headed": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright test --headed"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:ui": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright test --ui"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:trace": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright test --trace on"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:show-trace": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright show-trace"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:debug": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "PWDEBUG=1 playwright test"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:last-failed": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright test --last-failed"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "report": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "playwright show-report"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "typecheck": {
+              "executor": "nx:run-commands",
+              "options": {
+                "cwd": "packages/e2e",
+                "command": "tsc --noEmit -p tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/e2e/eslint.config.js \"packages/e2e/fixtures/**/*.{ts,tsx}\" \"packages/e2e/routines/**/*.{ts,tsx}\" \"packages/e2e/reporters/**/*.{ts,tsx}\" \"packages/e2e/playwright.config.ts\"",
+                  "npx eslint --config packages/e2e/eslint.config.js \"packages/e2e/tests/**/*.spec.ts\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/e2e/eslint.config.js --fix \"packages/e2e/fixtures/**/*.{ts,tsx}\" \"packages/e2e/routines/**/*.{ts,tsx}\" \"packages/e2e/reporters/**/*.{ts,tsx}\" \"packages/e2e/playwright.config.ts\"",
+                    "npx eslint --config packages/e2e/eslint.config.js --fix \"packages/e2e/tests/**/*.spec.ts\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}",
+          "implicitDependencies": []
+        }
+      },
+      "api": {
+        "name": "api",
+        "type": "app",
+        "data": {
+          "root": "apps/api",
+          "name": "api",
+          "tags": [
+            "npm:private",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "build:dev",
+                "build:prod",
+                "db:baseline:migrations",
+                "db:migrate:local",
+                "db:migrate:prod",
+                "db:seed:local",
+                "ioc:bundles",
+                "ioc:inspect",
+                "ioc:inspect:discovery",
+                "seed:dev-admin",
+                "seed:dev-admin:clean",
+                "start",
+                "start:dev"
+              ]
+            },
+            "description": "PhotoApp API",
+            "js": {
+              "packageName": "@app/api",
+              "packageMain": "dist/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "build:dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:dev"
+              },
+              "metadata": {
+                "scriptContent": "nx build api --configuration=development",
+                "runCommand": "npm run build:dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:prod": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:prod"
+              },
+              "metadata": {
+                "scriptContent": "nx build api --configuration=production",
+                "runCommand": "npm run build:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:baseline:migrations": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:baseline:migrations"
+              },
+              "metadata": {
+                "scriptContent": "tsx src/localScripts/baselineKnexMigrations.ts",
+                "runCommand": "npm run db:baseline:migrations"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate:local": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:migrate:local"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:db:migrate",
+                "runCommand": "npm run db:migrate:local"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate:prod": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:migrate:prod"
+              },
+              "metadata": {
+                "scriptContent": "knex --knexfile dist/knexfile.js migrate:latest",
+                "runCommand": "npm run db:migrate:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:seed:local": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:seed:local"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:db:seed",
+                "runCommand": "npm run db:seed:local"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:bundles": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:bundles"
+              },
+              "metadata": {
+                "scriptContent": "ioc bundles",
+                "runCommand": "npm run ioc:bundles"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect"
+              },
+              "metadata": {
+                "scriptContent": "ioc inspect",
+                "runCommand": "npm run ioc:inspect"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect:discovery": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect:discovery"
+              },
+              "metadata": {
+                "scriptContent": "ioc inspect --discovery",
+                "runCommand": "npm run ioc:inspect:discovery"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "seed:dev-admin": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "seed:dev-admin"
+              },
+              "metadata": {
+                "scriptContent": "tsx src/localScripts/seedDevAdmin.ts",
+                "runCommand": "npm run seed:dev-admin"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "seed:dev-admin:clean": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "seed:dev-admin:clean"
+              },
+              "metadata": {
+                "scriptContent": "tsx src/localScripts/cleanDevAdmin.ts",
+                "runCommand": "npm run seed:dev-admin:clean"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "start"
+              },
+              "metadata": {
+                "scriptContent": "node dist/index.js",
+                "runCommand": "npm run start"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "start:dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "start:dev"
+              },
+              "metadata": {
+                "scriptContent": "node --enable-source-maps dist/index.js",
+                "runCommand": "npm run start:dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ts-patch:install": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "node -e \"try { require('child_process').execSync('ts-patch install', {stdio: 'ignore'}); } catch(e) {}\""
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "npx rimraf dist",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "schema-gen": {
+              "executor": "nx:run-commands",
+              "inputs": [
+                "{projectRoot}/src/graphql/schema/**/*.graphql",
+                "{projectRoot}/codegen.yml"
+              ],
+              "outputs": [
+                "{projectRoot}/src/graphql/generated/schema.graphql",
+                "{projectRoot}/src/graphql/generated/types.generated.ts"
+              ],
+              "options": {
+                "cwd": "apps/api",
+                "commands": [
+                  "graphql-codegen --config codegen.yml",
+                  "npx prettier --write src/graphql/generated/schema.graphql src/graphql/generated/types.generated.ts"
+                ],
+                "parallel": false
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:container": {
+              "executor": "nx:run-commands",
+              "dependsOn": [
+                "contracts:build",
+                "infrastructure:build",
+                "media-core:barrels",
+                "media-core:clean"
+              ],
+              "options": {
+                "command": "ioc generate",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:vite": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "dependsOn": [
+                "gen:container",
+                "ts-patch:install"
+              ],
+              "options": {
+                "commands": [
+                  "nx run media-core:build --skip-nx-cache",
+                  "vite build --config vite.config.mjs"
+                ],
+                "parallel": false,
+                "cwd": "apps/api"
+              },
+              "configurations": {
+                "development": {
+                  "command": "vite build --config vite.config.mjs --mode development"
+                },
+                "production": {
+                  "command": "vite build --config vite.config.mjs --mode production"
+                }
+              },
+              "parallelism": true
+            },
+            "build:graphql-static": {
+              "executor": "nx:run-commands",
+              "dependsOn": [
+                "build:vite"
+              ],
+              "options": {
+                "command": "mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:db": {
+              "executor": "nx:run-commands",
+              "dependsOn": [
+                "build:vite"
+              ],
+              "outputs": [
+                "{projectRoot}/dist/db"
+              ],
+              "options": {
+                "commands": [
+                  "mkdir -p dist/db",
+                  "npx tsc -p tsconfig.db.json"
+                ],
+                "parallel": false,
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "dependsOn": [
+                "build:vite",
+                "build:graphql-static",
+                "build:db"
+              ],
+              "options": {
+                "command": "echo 'api build complete'",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "typecheck": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "tsc --noEmit -p tsconfig.json",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "nodemon",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "serve": {
+              "executor": "@nx/js:node",
+              "options": {
+                "buildTarget": "api:build:development",
+                "watch": true
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": false
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config apps/api/eslint.config.js \"apps/api/**/*.{ts,tsx,js,mjs,cjs}\"",
+                  "npx eslint --config apps/api/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"apps/api/**/*.tests.ts\" \"apps/api/**/*.tests.tsx\" \"apps/api/**/*.test.ts\" \"apps/api/**/*.test.tsx\" \"apps/api/**/*.spec.ts\" \"apps/api/**/*.spec.tsx\" \"apps/api/src/tests/**/*.ts\" \"apps/api/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config apps/api/eslint.config.js --fix \"apps/api/**/*.{ts,tsx,js,mjs,cjs}\"",
+                    "npx eslint --config apps/api/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"apps/api/**/*.tests.ts\" \"apps/api/**/*.tests.tsx\" \"apps/api/**/*.test.ts\" \"apps/api/**/*.test.tsx\" \"apps/api/**/*.spec.ts\" \"apps/api/**/*.spec.tsx\" \"apps/api/src/tests/**/*.ts\" \"apps/api/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests",
+                "cwd": "apps/api"
+              },
+              "configurations": {
+                "runInBand": {
+                  "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --detectOpenHandles --passWithNoTests"
+                }
+              },
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test-integration": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.integration.config.js --runInBand --passWithNoTests",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write apps/api/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:latest",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:seed": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts seed:run",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:make": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:make",
+                "cwd": "apps/api"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "application",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "web": {
+        "name": "web",
+        "type": "app",
+        "data": {
+          "root": "apps/web",
+          "name": "web",
+          "tags": [
+            "npm:private",
+            "type:app"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "prebuild",
+                "dev"
+              ]
+            },
+            "js": {
+              "packageName": "@app/web",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "prebuild": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "prebuild"
+              },
+              "metadata": {
+                "scriptContent": "cp ../api/src/graphql/generated/schema.graphql ./src/graphql/generated/schema.graphql",
+                "runCommand": "npm run prebuild"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev"
+              },
+              "metadata": {
+                "scriptContent": "nx serve",
+                "runCommand": "npm run dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ts-patch:install": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "node -e \"try { require('child_process').execSync('ts-patch install', {stdio: 'ignore'}); } catch(e) {}\""
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "sync-schema": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{projectRoot}/src/graphql/generated/schema.graphql"
+              ],
+              "options": {
+                "command": "mkdir -p src/graphql/generated && cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql",
+                "cwd": "apps/web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "codegen": {
+              "executor": "nx:run-commands",
+              "outputs": [
+                "{projectRoot}/src/graphql/generated/types.ts"
+              ],
+              "options": {
+                "command": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
+                "cwd": "apps/web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/vite:build",
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "dependsOn": [
+                "ts-patch:install",
+                "contracts:build",
+                "sync-schema"
+              ],
+              "options": {
+                "outputPath": "apps/web/dist",
+                "configFile": "apps/web/vite.config.js",
+                "tsConfig": "apps/web/tsconfig.json"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ]
+            },
+            "build:production": {
+              "executor": "@nx/vite:build",
+              "outputs": [
+                "{projectRoot}/dist"
+              ],
+              "dependsOn": [
+                "ts-patch:install",
+                "contracts:build",
+                "sync-schema",
+                "codegen"
+              ],
+              "options": {
+                "outputPath": "apps/web/dist",
+                "configFile": "apps/web/vite.config.js",
+                "tsConfig": "apps/web/tsconfig.json",
+                "mode": "production"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "serve": {
+              "executor": "@nx/vite:dev-server",
+              "options": {
+                "buildTarget": "web:build",
+                "port": 5173
+              },
+              "configurations": {},
+              "parallelism": true,
+              "continuous": true,
+              "cache": false
+            },
+            "preview": {
+              "executor": "@nx/vite:preview-server",
+              "options": {
+                "buildTarget": "web:build",
+                "port": 4173
+              },
+              "configurations": {},
+              "parallelism": true,
+              "continuous": true
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config apps/web/eslint.config.js \"apps/web/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config apps/web/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"apps/web/**/*.tests.ts\" \"apps/web/**/*.tests.tsx\" \"apps/web/**/*.test.ts\" \"apps/web/**/*.test.tsx\" \"apps/web/**/*.spec.ts\" \"apps/web/**/*.spec.tsx\" \"apps/web/src/tests/**/*.ts\" \"apps/web/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config apps/web/eslint.config.js --fix \"apps/web/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config apps/web/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"apps/web/**/*.tests.ts\" \"apps/web/**/*.tests.tsx\" \"apps/web/**/*.test.ts\" \"apps/web/**/*.test.tsx\" \"apps/web/**/*.spec.ts\" \"apps/web/**/*.spec.tsx\" \"apps/web/src/tests/**/*.ts\" \"apps/web/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": [
+                "{workspaceRoot}/coverage/{projectRoot}"
+              ],
+              "options": {
+                "jestConfig": "apps/web/jest.config.js",
+                "passWithNoTests": true
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write apps/web/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "application",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
+      "root": {
+        "name": "root",
+        "type": "app",
+        "data": {
+          "root": ".",
+          "name": "root",
+          "tags": [
+            "npm:private"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "barrels",
+                "barrels:contracts",
+                "barrels:infrastructure",
+                "barrels:media-core",
+                "barrels:heic-converter",
+                "barrels:notifications",
+                "build:contracts",
+                "build:infrastructure",
+                "build:media-core",
+                "build:heic-converter",
+                "build:notifications",
+                "build:api",
+                "build:clean",
+                "build:web:production",
+                "clean:contracts",
+                "clean:infrastructure",
+                "clean:media-core",
+                "clean:heic-converter",
+                "clean:notifications",
+                "clean:api",
+                "codegen:contracts",
+                "dance",
+                "db:baseline:migrations",
+                "db:migrate",
+                "db:seed",
+                "db:make",
+                "db:migrate:local",
+                "db:migrate:prod",
+                "db:seed:prod",
+                "deps:ioc-manifest",
+                "dev:api",
+                "dev:contracts",
+                "dev:infrastructure",
+                "dev:media-core",
+                "dev:heic-converter",
+                "dev:notifications",
+                "dev:web",
+                "eslint",
+                "gen:all",
+                "gen:container",
+                "gen:enums",
+                "gen:gql",
+                "gen:gql:be",
+                "gen:gql:fe",
+                "gen:ioc",
+                "graph",
+                "ioc:inspect",
+                "ioc:inspect:discovery",
+                "knip",
+                "knip:api",
+                "knip:media-core",
+                "knip:web",
+                "knip:worker",
+                "lint:e2e",
+                "lint:fix",
+                "nuke",
+                "nuke:lite",
+                "nx",
+                "schema-gen:api",
+                "seed:dev-admin",
+                "test:all",
+                "test:contracts",
+                "test:infrastructure",
+                "test:media-core",
+                "test:heic-converter",
+                "test:notifications",
+                "test:api",
+                "test:ci",
+                "test:e2e",
+                "test:e2e:headed",
+                "test:e2e:show-trace",
+                "test:e2e:trace",
+                "test:e2e:ui",
+                "typecheck:api",
+                "typecheck:e2e",
+                "test:integration",
+                "test:watch"
+              ]
+            },
+            "js": {
+              "packageName": "photo-app",
+              "isInPackageManagerWorkspaces": false
+            }
+          },
+          "targets": {
+            "barrels": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels"
+              },
+              "metadata": {
+                "scriptContent": "npm run barrels --workspace=@packages/media-core && npm run barrels --workspace=@packages/contracts",
+                "runCommand": "npm run barrels"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx barrels contracts",
+                "runCommand": "npm run barrels:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels:infrastructure": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels:infrastructure"
+              },
+              "metadata": {
+                "scriptContent": "nx barrels infrastructure",
+                "runCommand": "npm run barrels:infrastructure"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels:media-core"
+              },
+              "metadata": {
+                "scriptContent": "nx barrels media-core",
+                "runCommand": "npm run barrels:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels:heic-converter": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels:heic-converter"
+              },
+              "metadata": {
+                "scriptContent": "nx barrels heic-converter",
+                "runCommand": "npm run barrels:heic-converter"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels:notifications": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "barrels:notifications"
+              },
+              "metadata": {
+                "scriptContent": "nx barrels notifications",
+                "runCommand": "npm run barrels:notifications"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx build contracts",
+                "runCommand": "npm run build:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:infrastructure": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:infrastructure"
+              },
+              "metadata": {
+                "scriptContent": "nx build infrastructure",
+                "runCommand": "npm run build:infrastructure"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:media-core"
+              },
+              "metadata": {
+                "scriptContent": "nx build media-core",
+                "runCommand": "npm run build:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:heic-converter": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:heic-converter"
+              },
+              "metadata": {
+                "scriptContent": "nx build heic-converter",
+                "runCommand": "npm run build:heic-converter"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:notifications": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:notifications"
+              },
+              "metadata": {
+                "scriptContent": "nx build notifications",
+                "runCommand": "npm run build:notifications"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:api"
+              },
+              "metadata": {
+                "scriptContent": "nx build api",
+                "runCommand": "npm run build:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:clean": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:clean"
+              },
+              "metadata": {
+                "scriptContent": "nx reset && nx run-many -t build",
+                "runCommand": "npm run build:clean"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build:web:production": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build:web:production"
+              },
+              "metadata": {
+                "scriptContent": "nx run web:build:production",
+                "runCommand": "npm run build:web:production"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx clean contracts",
+                "runCommand": "npm run clean:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:infrastructure": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:infrastructure"
+              },
+              "metadata": {
+                "scriptContent": "nx clean infrastructure",
+                "runCommand": "npm run clean:infrastructure"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:media-core"
+              },
+              "metadata": {
+                "scriptContent": "nx clean media-core",
+                "runCommand": "npm run clean:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:heic-converter": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:heic-converter"
+              },
+              "metadata": {
+                "scriptContent": "nx clean heic-converter",
+                "runCommand": "npm run clean:heic-converter"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:notifications": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:notifications"
+              },
+              "metadata": {
+                "scriptContent": "nx clean notifications",
+                "runCommand": "npm run clean:notifications"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "clean:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "clean:api"
+              },
+              "metadata": {
+                "scriptContent": "nx clean api",
+                "runCommand": "npm run clean:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "codegen:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "codegen:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx codegen contracts",
+                "runCommand": "npm run codegen:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dance": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dance"
+              },
+              "metadata": {
+                "scriptContent": "npm run format && npm run gen:all && npm run build && npm run lint && npm run test",
+                "runCommand": "npm run dance"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:baseline:migrations": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:baseline:migrations"
+              },
+              "metadata": {
+                "scriptContent": "npm run db:baseline:migrations --workspace=@app/api",
+                "runCommand": "npm run db:baseline:migrations"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:migrate"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:db:migrate",
+                "runCommand": "npm run db:migrate"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:seed": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:seed"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:db:seed",
+                "runCommand": "npm run db:seed"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:make": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:make"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:db:make",
+                "runCommand": "npm run db:make"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate:local": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:migrate:local"
+              },
+              "metadata": {
+                "scriptContent": "npm run db:migrate:local --workspace=@app/api",
+                "runCommand": "npm run db:migrate:local"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:migrate:prod": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:migrate:prod"
+              },
+              "metadata": {
+                "scriptContent": "docker compose -f docker-compose.yml exec -T api npm run db:migrate:local --workspace=@app/api",
+                "runCommand": "npm run db:migrate:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "db:seed:prod": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "db:seed:prod"
+              },
+              "metadata": {
+                "scriptContent": "docker compose -f docker-compose.yml exec -T api npm run db:seed:local --workspace=@app/api",
+                "runCommand": "npm run db:seed:prod"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "deps:ioc-manifest": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "deps:ioc-manifest"
+              },
+              "metadata": {
+                "scriptContent": "npm update ioc-manifest",
+                "runCommand": "npm run deps:ioc-manifest"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:api"
+              },
+              "metadata": {
+                "scriptContent": "nx dev api",
+                "runCommand": "npm run dev:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx dev contracts",
+                "runCommand": "npm run dev:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:infrastructure": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:infrastructure"
+              },
+              "metadata": {
+                "scriptContent": "nx dev infrastructure",
+                "runCommand": "npm run dev:infrastructure"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:media-core"
+              },
+              "metadata": {
+                "scriptContent": "nx dev media-core",
+                "runCommand": "npm run dev:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:heic-converter": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:heic-converter"
+              },
+              "metadata": {
+                "scriptContent": "nx dev heic-converter",
+                "runCommand": "npm run dev:heic-converter"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:notifications": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:notifications"
+              },
+              "metadata": {
+                "scriptContent": "nx dev notifications",
+                "runCommand": "npm run dev:notifications"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "dev:web": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev:web"
+              },
+              "metadata": {
+                "scriptContent": "nx run web:serve",
+                "runCommand": "npm run dev:web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "eslint": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "eslint"
+              },
+              "metadata": {
+                "scriptContent": "npm run lint",
+                "runCommand": "npm run eslint"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:all": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:all"
+              },
+              "metadata": {
+                "scriptContent": "npm run gen:ioc; npm run gen:gql; npm run gen:enums",
+                "runCommand": "npm run gen:all"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:container": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:container"
+              },
+              "metadata": {
+                "scriptContent": "npm run gen:all",
+                "runCommand": "npm run gen:container"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:enums": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:enums"
+              },
+              "metadata": {
+                "scriptContent": "nx codegen contracts",
+                "runCommand": "npm run gen:enums"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:gql": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:gql"
+              },
+              "metadata": {
+                "scriptContent": "npm run gen:graphql --workspace=@app/api; npm run codegen --workspace=@app/web",
+                "runCommand": "npm run gen:gql"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:gql:be": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:gql:be"
+              },
+              "metadata": {
+                "scriptContent": "npm run gen:graphql --workspace=@app/api",
+                "runCommand": "npm run gen:gql:be"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:gql:fe": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:gql:fe"
+              },
+              "metadata": {
+                "scriptContent": "npm run codegen --workspace=@app/web",
+                "runCommand": "npm run gen:gql:fe"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "gen:ioc": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "gen:ioc"
+              },
+              "metadata": {
+                "scriptContent": "nx run api:gen:container && nx run media-worker:gen:container",
+                "runCommand": "npm run gen:ioc"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "graph": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "graph"
+              },
+              "metadata": {
+                "scriptContent": "nx graph",
+                "runCommand": "npm run graph"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect"
+              },
+              "metadata": {
+                "scriptContent": "npm run ioc:inspect --workspace=@app/api && npm run ioc:inspect --workspace=@app/media-worker",
+                "runCommand": "npm run ioc:inspect"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "ioc:inspect:discovery": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "ioc:inspect:discovery"
+              },
+              "metadata": {
+                "scriptContent": "npm run ioc:inspect:discovery --workspace=@app/api && npm run ioc:inspect:discovery --workspace=@app/media-worker",
+                "runCommand": "npm run ioc:inspect:discovery"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "knip": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "knip"
+              },
+              "metadata": {
+                "scriptContent": "NX_DAEMON=false knip",
+                "runCommand": "npm run knip"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "knip:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "knip:api"
+              },
+              "metadata": {
+                "scriptContent": "NX_DAEMON=false knip --workspace apps/api",
+                "runCommand": "npm run knip:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "knip:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "knip:media-core"
+              },
+              "metadata": {
+                "scriptContent": "NX_DAEMON=false knip --workspace packages/context/media-core",
+                "runCommand": "npm run knip:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "knip:web": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "knip:web"
+              },
+              "metadata": {
+                "scriptContent": "NX_DAEMON=false knip --workspace apps/web",
+                "runCommand": "npm run knip:web"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "knip:worker": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "knip:worker"
+              },
+              "metadata": {
+                "scriptContent": "NX_DAEMON=false knip --workspace apps/media-worker",
+                "runCommand": "npm run knip:worker"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint:e2e": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "lint:e2e"
+              },
+              "metadata": {
+                "scriptContent": "nx lint e2e",
+                "runCommand": "npm run lint:e2e"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "lint:fix": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "lint:fix"
+              },
+              "metadata": {
+                "scriptContent": "nx run-many -t lint --projects=api,web,contracts,media-core,heic-converter,infrastructure,media-worker,notifications,e2e --configuration=fix",
+                "runCommand": "npm run lint:fix"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nuke": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "nuke"
+              },
+              "metadata": {
+                "scriptContent": "rimraf node_modules api/node_modules web/node_modules contracts/node_modules api/dist web/dist contracts/dist dist .nx/cache && npm install && npm run build:clean && npm run lint && npm run test",
+                "runCommand": "npm run nuke"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nuke:lite": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "nuke:lite"
+              },
+              "metadata": {
+                "scriptContent": "rimraf api/dist web/dist contracts/dist dist .nx/cache && npm run build:clean && npm run lint && npm run test",
+                "runCommand": "npm run nuke:lite"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "nx"
+              },
+              "metadata": {
+                "scriptContent": "nx",
+                "runCommand": "npm run nx"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "schema-gen:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "schema-gen:api"
+              },
+              "metadata": {
+                "scriptContent": "nx schema-gen api",
+                "runCommand": "npm run schema-gen:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "seed:dev-admin": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "seed:dev-admin"
+              },
+              "metadata": {
+                "scriptContent": "npm run seed:dev-admin --workspace=@app/api",
+                "runCommand": "npm run seed:dev-admin"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:all": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:all"
+              },
+              "metadata": {
+                "scriptContent": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --exclude=tag:scope:test-runner",
+                "runCommand": "npm run test:all"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:contracts": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:contracts"
+              },
+              "metadata": {
+                "scriptContent": "nx test contracts",
+                "runCommand": "npm run test:contracts"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:infrastructure": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:infrastructure"
+              },
+              "metadata": {
+                "scriptContent": "nx test infrastructure",
+                "runCommand": "npm run test:infrastructure"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:media-core": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:media-core"
+              },
+              "metadata": {
+                "scriptContent": "nx test media-core",
+                "runCommand": "npm run test:media-core"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:heic-converter": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:heic-converter"
+              },
+              "metadata": {
+                "scriptContent": "nx test heic-converter",
+                "runCommand": "npm run test:heic-converter"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:notifications": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:notifications"
+              },
+              "metadata": {
+                "scriptContent": "nx test notifications",
+                "runCommand": "npm run test:notifications"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:api"
+              },
+              "metadata": {
+                "scriptContent": "nx test api",
+                "runCommand": "npm run test:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:ci": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:ci"
+              },
+              "metadata": {
+                "scriptContent": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --exclude=tag:scope:test-runner -- --runInBand",
+                "runCommand": "npm run test:ci"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:e2e"
+              },
+              "metadata": {
+                "scriptContent": "nx test e2e",
+                "runCommand": "npm run test:e2e"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e:headed": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:e2e:headed"
+              },
+              "metadata": {
+                "scriptContent": "nx run e2e:test:headed",
+                "runCommand": "npm run test:e2e:headed"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e:show-trace": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:e2e:show-trace"
+              },
+              "metadata": {
+                "scriptContent": "nx run e2e:test:show-trace",
+                "runCommand": "npm run test:e2e:show-trace"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e:trace": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:e2e:trace"
+              },
+              "metadata": {
+                "scriptContent": "nx run e2e:test:trace",
+                "runCommand": "npm run test:e2e:trace"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:e2e:ui": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:e2e:ui"
+              },
+              "metadata": {
+                "scriptContent": "nx run e2e:test:ui",
+                "runCommand": "npm run test:e2e:ui"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "typecheck:api": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "typecheck:api"
+              },
+              "metadata": {
+                "scriptContent": "nx typecheck api",
+                "runCommand": "npm run typecheck:api"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "typecheck:e2e": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "typecheck:e2e"
+              },
+              "metadata": {
+                "scriptContent": "nx typecheck e2e",
+                "runCommand": "npm run typecheck:e2e"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:integration": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:integration"
+              },
+              "metadata": {
+                "scriptContent": "NODE_OPTIONS='--experimental-vm-modules' nx run api:test-integration",
+                "runCommand": "npm run test:integration"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "test:watch": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test:watch"
+              },
+              "metadata": {
+                "scriptContent": "NODE_OPTIONS='--experimental-vm-modules' nx run-many -t test --all -- --watch",
+                "runCommand": "npm run test:watch"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "nx:noop",
+              "configurations": {},
+              "options": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "prod",
+                "^prod"
+              ],
+              "dependsOn": [
+                "^build"
+              ]
+            },
+            "test": {
+              "executor": "nx:noop",
+              "configurations": {},
+              "options": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": [
+                "default",
+                "^default"
+              ],
+              "outputs": [
+                "{projectRoot}/coverage"
+              ]
+            },
+            "lint": {
+              "executor": "nx:noop",
+              "configurations": {},
+              "options": {},
+              "parallelism": true,
+              "cache": false,
+              "inputs": [
+                "default",
+                "^default"
+              ]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write ."
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "format:check": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --check ."
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "implicitDependencies": []
+        }
+      }
+    },
+    "dependencies": {
+      "infrastructure": [],
+      "heic-converter": [],
+      "notifications": [],
+      "contracts": [],
+      "media-core": [
+        {
+          "source": "media-core",
+          "target": "contracts",
+          "type": "static"
+        },
+        {
+          "source": "media-core",
+          "target": "infrastructure",
+          "type": "static"
+        }
+      ],
+      "media-worker": [
+        {
+          "source": "media-worker",
+          "target": "contracts",
+          "type": "static"
+        },
+        {
+          "source": "media-worker",
+          "target": "heic-converter",
+          "type": "static"
+        },
+        {
+          "source": "media-worker",
+          "target": "infrastructure",
+          "type": "static"
+        },
+        {
+          "source": "media-worker",
+          "target": "media-core",
+          "type": "static"
+        }
+      ],
+      "e2e": [],
+      "api": [
+        {
+          "source": "api",
+          "target": "contracts",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "infrastructure",
+          "type": "static"
+        },
+        {
+          "source": "api",
+          "target": "media-core",
+          "type": "static"
+        }
+      ],
+      "web": [
+        {
+          "source": "web",
+          "target": "contracts",
+          "type": "static"
+        }
+      ],
+      "root": []
+    }
+  }
+}

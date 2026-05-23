@@ -2,11 +2,11 @@ import type { StripFactory } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type { Knex } from 'knex';
 import type Koa from 'koa';
-import { IocGeneratedTypes } from '../../di/generated/ioc-registry.types';
+import type { AppCradle } from '../../di/generated/ioc-composed.js';
 
-export type ReadServices = StripFactory<IocGeneratedTypes['readServiceFactories']>;
-export type PublicReadServices = StripFactory<IocGeneratedTypes['publicReadServiceFactories']>;
-export type AgnosticReadServices = IocGeneratedTypes['agnosticReadServices'];
+export type ReadServices = StripFactory<AppCradle['readServiceFactories']>;
+export type PublicReadServices = StripFactory<AppCradle['publicReadServiceFactories']>;
+export type AgnosticReadServices = AppCradle['agnosticReadServices'];
 
 export type GraphQLContextViewer = {
   id: string;
@@ -24,7 +24,7 @@ type GraphQLContextShared = {
 export type AuthenticatedGraphQLContext = GraphQLContextShared & {
   kind: 'authenticated';
   viewer: GraphQLContextViewer;
-  writeServices: IocGeneratedTypes['writeServices'];
+  writeServices: AppCradle['writeServices'];
   readServices: ReadServices;
 };
 

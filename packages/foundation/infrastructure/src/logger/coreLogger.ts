@@ -28,6 +28,14 @@ export type Logger = {
   debug: (message: string, meta?: unknown) => void;
 };
 
+export type LoggerConfig = {
+  logJsonFilePath: string;
+  logLevel: string;
+};
+export type LoggerDeps = {
+  config: LoggerConfig;
+};
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 };
@@ -101,6 +109,12 @@ const createJsonFormat = () =>
   );
 
 let appLogger: WinstonLogger;
+
+export const build__Logger = ({ config }: LoggerDeps): Logger =>
+  coreLogger({
+    logJsonFilePath: config.logJsonFilePath,
+    logLevel: config.logLevel,
+  });
 
 export const coreLogger = ({
   logJsonFilePath,

@@ -3,7 +3,7 @@ import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import http from 'http';
 import Koa, { Context } from 'koa';
 import { koaBody } from 'koa-body';
-import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+import type { AppCradle } from './di/generated/ioc-composed.js';
 setDefaultSerializationMode('value');
 
 // then the rest of your app bootstrap
@@ -20,7 +20,7 @@ export const build__KoaServer = ({
   requestLogger,
   database,
   config,
-}: IocGeneratedCradle): KoaServer => {
+}: AppCradle): KoaServer => {
   const app = new Koa();
   app.proxy = config.trustProxy;
   app.context.db = database;

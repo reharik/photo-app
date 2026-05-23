@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { MediaDeletionJobStatus } from '@packages/media-core';
 import { DatabaseError } from 'pg';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__MediaDeletionJobRepository } from '../repositories/domainRepositories/mediaDeletionJobRepository';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -22,7 +22,7 @@ describe('build__MediaDeletionJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaDeletionJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaDeletionJobRepository({ database } as AppCradle);
         await repo.enqueueIfNoneActive({
           mediaItemId: 'mid-1',
           storageKey: 'media/u1/m1',
@@ -56,7 +56,7 @@ describe('build__MediaDeletionJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaDeletionJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaDeletionJobRepository({ database } as AppCradle);
         await expect(
           repo.enqueueIfNoneActive({
             mediaItemId: 'mid-1',
@@ -84,7 +84,7 @@ describe('build__MediaDeletionJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaDeletionJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaDeletionJobRepository({ database } as AppCradle);
         const when = new Date('2026-01-15T12:00:00.000Z');
         await repo.markPendingRetry('job-1', ACTOR_ID, 'transient', when);
 

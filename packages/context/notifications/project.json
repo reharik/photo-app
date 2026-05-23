@@ -1,31 +1,54 @@
 {
   "name": "notifications",
   "projectType": "library",
-  "sourceRoot": "{projectRoot}",
+  "sourceRoot": "{projectRoot}/src",
   "targets": {
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx rimraf dist"
+      }
+    },
+    "barrels": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx barrelsby --config barrelsby.json"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["clean", "barrels", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
         "tsConfig": "{projectRoot}/tsconfig.json",
-        "main": "{projectRoot}/index.ts"
+        "main": "{projectRoot}/src/index.ts"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc -w -p tsconfig.json"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/**/*.{ts,tsx,js,jsx}\"",
-          "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"{projectRoot}/**/*.tests.ts\" \"{projectRoot}/**/*.tests.tsx\" \"{projectRoot}/**/*.test.ts\" \"{projectRoot}/**/*.test.tsx\" \"{projectRoot}/**/*.spec.ts\" \"{projectRoot}/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/src/**/*.{ts,tsx,js,jsx}\"",
+          "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"{projectRoot}/src/**/*.tests.ts\" \"{projectRoot}/src/**/*.tests.tsx\" \"{projectRoot}/src/**/*.test.ts\" \"{projectRoot}/src/**/*.test.tsx\" \"{projectRoot}/src/**/*.spec.ts\" \"{projectRoot}/src/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
         ],
         "parallel": false
       },
       "configurations": {
         "fix": {
           "commands": [
-            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/**/*.{ts,tsx,js,jsx}\"",
-            "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"{projectRoot}/**/*.tests.ts\" \"{projectRoot}/**/*.tests.tsx\" \"{projectRoot}/**/*.test.ts\" \"{projectRoot}/**/*.test.tsx\" \"{projectRoot}/**/*.spec.ts\" \"{projectRoot}/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/src/**/*.{ts,tsx,js,jsx}\"",
+            "npx eslint --config {projectRoot}/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"{projectRoot}/src/**/*.tests.ts\" \"{projectRoot}/src/**/*.tests.tsx\" \"{projectRoot}/src/**/*.test.ts\" \"{projectRoot}/src/**/*.test.tsx\" \"{projectRoot}/src/**/*.spec.ts\" \"{projectRoot}/src/**/*.spec.tsx\" \"{projectRoot}/src/tests/**/*.ts\" \"{projectRoot}/src/tests/**/*.tsx\""
           ],
           "parallel": false
         }
@@ -42,9 +65,9 @@
     "format": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "prettier --write \"{projectRoot}/**/*.{ts,tsx,js,jsx,json}\""
+        "command": "prettier --write {projectRoot}/src/**/*.{ts,tsx,js,jsx,json}"
       }
     }
   },
-  "tags": ["layer:context", "scope:notifications"]
+  "tags": ["layer:context", "scope:notifications", "scope:packages"]
 }

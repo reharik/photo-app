@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__MediaStorage } from '../infrastructure/media/mediaStorage';
 
 describe('build__MediaStorage', () => {
@@ -12,8 +12,8 @@ describe('build__MediaStorage', () => {
           awsRegion: 'us-east-1',
           s3UploadUrlTtlSeconds: 900,
           s3DownloadUrlTtlSeconds: 900,
-        } as IocGeneratedCradle['config'],
-      } as IocGeneratedCradle);
+        } as AppCradle['config'],
+      } as AppCradle);
 
       expect(typeof storage.getObjectStream).toBe('function');
       expect(typeof storage.writeObject).toBe('function');

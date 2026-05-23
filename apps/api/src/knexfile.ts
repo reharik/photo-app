@@ -4,7 +4,7 @@ import knexStringcase from 'knex-stringcase';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { build__Config, type Config } from './config';
-import type { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+import type { AppCradle } from './di/generated/ioc-composed.js';
 import { configurePostgresTypes } from './infrastructure/database/configurePostgresTypes';
 
 // knex-stringcase runs its pipeline as: optional postProcessResponse → camelCase keys → appPostProcessResponse.
@@ -65,7 +65,7 @@ const createKnexConfig = (config: Config): KnexConfig => {
   };
 };
 
-export const build__KnexConfig = ({ config }: IocGeneratedCradle): KnexConfig => {
+export const build__KnexConfig = ({ config }: AppCradle): KnexConfig => {
   return createKnexConfig(config);
 };
 

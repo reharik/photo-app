@@ -1,7 +1,6 @@
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -10,9 +9,8 @@ export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
 
   return {
-    root: __dirname, // api
+    root: __dirname,
     cacheDir: '../node_modules/.vite/media-worker',
-    plugins: [tsconfigPaths()],
     build: {
       outDir: 'dist',
       emptyOutDir: true,
@@ -87,7 +85,8 @@ export default defineConfig(({ mode }) => {
           if (/^node:/.test(id)) {
             return true;
           }
-          // Bundle all @packages/* into dist (one rule; no per-library Vite files under packages/).
+          // Bundle monorepo workspaces so production Docker only needs app dist + npm deps (no
+          // per-package COPY in the Dockerfile).
           if (id.startsWith('@app/') || id.startsWith('@packages/')) {
             return false;
           }

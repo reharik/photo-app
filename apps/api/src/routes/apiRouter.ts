@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type RootRouter = Router;
 const mountRouter = (parent: Router, child: Router) => {
@@ -7,7 +7,7 @@ const mountRouter = (parent: Router, child: Router) => {
   parent.use(child.allowedMethods());
 };
 
-export const build__ApiRoutes = ({ router: authRouter }: IocGeneratedCradle): RootRouter => {
+export const build__ApiRoutes = ({ router: authRouter }: AppCradle): RootRouter => {
   const apiRouter = new Router({ prefix: '/api' });
   mountRouter(apiRouter, authRouter);
   return apiRouter;

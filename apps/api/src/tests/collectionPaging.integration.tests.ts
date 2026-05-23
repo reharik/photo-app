@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumSortBy, SortDir } from '@packages/contracts';
+import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { AlbumReadRepository } from '@packages/media-core';
+import type { AlbumItemCollectionInfo, AlbumReadRepository } from '@packages/media-core';
 import { buildMediaItemBaseStorageKey, CollectionInfo } from '@packages/media-core';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
@@ -15,7 +15,7 @@ import { TEST_VIEWER_1_ID } from './testViewerIds';
 describe('AlbumReadRepository (Knex collection paging)', () => {
   const viewerId = TEST_VIEWER_1_ID;
 
-  let container: AwilixContainer<IocGeneratedCradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let albumReadRepository: AlbumReadRepository;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
@@ -99,6 +99,15 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
     });
   };
 
+  const buildAlbumItemCollectionInfo = (
+    partial: Partial<CollectionInfo<AlbumItemSortBy>>,
+  ): AlbumItemCollectionInfo => {
+    return {
+      pageInfo: partial.pageInfo ?? { limit: 10, offset: 0 },
+      sortBy: partial.sortBy ?? AlbumItemSortBy.createdAt,
+      sortDir: partial.sortDir ?? SortDir.asc,
+    };
+  };
   const buildCollectionInfo = (
     partial: Partial<CollectionInfo<AlbumSortBy>>,
   ): CollectionInfo<AlbumSortBy> => {
@@ -108,7 +117,6 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
       sortDir: partial.sortDir ?? SortDir.asc,
     };
   };
-
   beforeAll(async () => {
     const setup = await setupGraphqlIntegrationTests();
     container = setup.container;
@@ -149,7 +157,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         }),
       });
 
-      expect(page.map((r) => r.title)).toEqual(['paging-a', 'paging-b', 'paging-c']);
+      expect(page.nodes.map((r) => r.title)).toEqual(['paging-a', 'paging-b', 'paging-c']);
     });
   });
 
@@ -181,7 +189,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         }),
       });
 
-      expect(page.map((r) => r.title)).toEqual(['paging-c', 'paging-m', 'paging-z']);
+      expect(page.nodes.map((r) => r.title)).toEqual(['paging-c', 'paging-m', 'paging-z']);
     });
   });
 
@@ -211,7 +219,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         }),
       });
 
-      expect(page.map((r) => r.title)).toEqual(['t-new', 't-mid', 't-old']);
+      expect(page.nodes.map((r) => r.title)).toEqual(['t-new', 't-mid', 't-old']);
     });
   });
 
@@ -263,29 +271,29 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         updatedAt: tLate,
       });
 
-      const firstWindow = await albumReadRepository.getAlbumItemsForViewer({
+      const firstWindow = await albumReadRepository.getViewableAlbumItemsForViewer({
         albumId,
         viewerId,
-        collectionInfo: buildCollectionInfo({
+        collectionInfo: buildAlbumItemCollectionInfo({
           pageInfo: { limit: 1, offset: 0 },
           sortBy: AlbumSortBy.createdAt,
           sortDir: SortDir.asc,
         }),
       });
 
-      expect(firstWindow.map((r) => r.id)).toEqual([item1, item2]);
+      expect(firstWindow.nodes.map((r) => r.id)).toEqual([item1, item2]);
 
-      const secondWindow = await albumReadRepository.getAlbumItemsForViewer({
+      const secondWindow = await albumReadRepository.getViewableAlbumItemsForViewer({
         albumId,
         viewerId,
-        collectionInfo: buildCollectionInfo({
+        collectionInfo: buildAlbumItemCollectionInfo({
           pageInfo: { limit: 1, offset: 1 },
           sortBy: AlbumSortBy.createdAt,
           sortDir: SortDir.asc,
         }),
       });
 
-      expect(secondWindow.map((r) => r.id)).toEqual([item2, item3]);
+      expect(secondWindow.nodes.map((r) => r.id)).toEqual([item2, item3]);
     });
   });
 });

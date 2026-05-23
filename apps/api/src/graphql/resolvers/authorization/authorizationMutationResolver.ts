@@ -40,7 +40,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       const command: GrantUserAuthorizationForAlbumCommand = {
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
-        operation: args.input.operation,
+        operations: args.input.operations,
         grantedToUserId: args.input.grantedToUserId ?? undefined,
         grantedToHandle: args.input.grantedToHandle ?? undefined,
         label: args.input.label ?? undefined,

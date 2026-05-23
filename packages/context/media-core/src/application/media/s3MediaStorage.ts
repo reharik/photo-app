@@ -77,23 +77,34 @@ const isMissingOrInvisibleHeadError = (error: unknown): boolean => {
   return isMissingObjectError(error) || error.$metadata.httpStatusCode === 403;
 };
 
-export const s3MediaStorage = ({
-  bucket,
-  region,
-  uploadUrlTtlSeconds = 900,
-  downloadUrlTtlSeconds = 900,
-}: S3MediaStorageInput): MediaStorage => {
-  const client = new S3Client({ region: region });
+export type MediaStorageConfig = {
+  s3Bucket: string;
+  awsRegion: string;
+  s3UploadUrlTtlSeconds: number;
+  s3DownloadUrlTtlSeconds: number;
+};
+
+export type MediaStorageDeps = {
+  config: MediaStorageConfig;
+};
+export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage => {
+  const {
+    s3Bucket,
+    awsRegion,
+    s3UploadUrlTtlSeconds = 900,
+    s3DownloadUrlTtlSeconds = 900,
+  } = config;
+  const client = new S3Client({ region: awsRegion });
 
   const getUploadTarget = async (input: UploadTargetRequest): Promise<UploadTarget> => {
     const command = new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: s3Bucket,
       Key: input.storageKey,
       ContentType: input.mimeType,
     });
 
     const url = await getSignedUrl(client, command, {
-      expiresIn: uploadUrlTtlSeconds,
+      expiresIn: s3UploadUrlTtlSeconds,
     });
 
     return {
@@ -109,7 +120,7 @@ export const s3MediaStorage = ({
     mimeType?: string;
   }): Promise<void> => {
     const commandInput: PutObjectCommandInput = {
-      Bucket: bucket,
+      Bucket: s3Bucket,
       Key: input.storageKey,
       Body: input.body,
     };
@@ -126,7 +137,7 @@ export const s3MediaStorage = ({
     try {
       await client.send(
         new DeleteObjectCommand({
-          Bucket: bucket,
+          Bucket: s3Bucket,
           Key: storageKey,
         }),
       );
@@ -144,7 +155,7 @@ export const s3MediaStorage = ({
     try {
       const result = await client.send(
         new HeadObjectCommand({
-          Bucket: bucket,
+          Bucket: s3Bucket,
           Key: storageKey,
         }),
       );
@@ -176,12 +187,12 @@ export const s3MediaStorage = ({
     expiresInSeconds?: number;
   }): Promise<string> => {
     const command = new GetObjectCommand({
-      Bucket: bucket,
+      Bucket: s3Bucket,
       Key: input.storageKey,
     });
 
     return getSignedUrl(client, command, {
-      expiresIn: input.expiresInSeconds ?? downloadUrlTtlSeconds,
+      expiresIn: input.expiresInSeconds ?? s3DownloadUrlTtlSeconds,
     });
   };
 
@@ -191,7 +202,7 @@ export const s3MediaStorage = ({
     try {
       const result = await client.send(
         new GetObjectCommand({
-          Bucket: bucket,
+          Bucket: s3Bucket,
           Key: storageKey,
         }),
       );
@@ -225,7 +236,7 @@ export const s3MediaStorage = ({
     try {
       const result = await client.send(
         new GetObjectCommand({
-          Bucket: bucket,
+          Bucket: s3Bucket,
           Key: storageKey,
           Range: `bytes=0-${maxBytes - 1}`,
         }),

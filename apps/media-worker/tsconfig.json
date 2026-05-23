@@ -4,18 +4,13 @@
     "outDir": "./dist",
     "noEmit": true,
     "allowJs": true,
-    "baseUrl": "../..",
-    "paths": {
-      "@packages/contracts": ["packages/foundation/contracts/src/index.ts"],
-      "@packages/heic-converter": ["packages/context/heic-converter"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"],
-      "@packages/media-core": ["packages/context/media-core/src/index.ts"]
-    },
+    "baseUrl": ".",
+    "paths": {},
     "skipLibCheck": true,
     "strictNullChecks": true,
     "strict": true,
     "isolatedModules": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "src/tests/**", "**/*.tests.ts"]
 }

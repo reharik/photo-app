@@ -43,6 +43,10 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run check:deps
+
+      - run: npm run check:policy
+
       - name: Generate container types
         if: ${{ inputs.run_gen_container }}
         run: npm run gen:container
@@ -116,7 +120,7 @@ jobs:
       - run: npm run build
 
       - name: Build production frontend
-        run: npm run build:web:production
+        run: npm run build:web
         env:
           VITE_API: ${{ secrets.VITE_API || inputs.vite_api_default }}
 

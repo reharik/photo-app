@@ -7,7 +7,7 @@ import {
 } from '@packages/media-core';
 
 import { build__ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 
 const ACTOR_ID = '11111111-1111-4111-8111-111111111111';
 const JOB_ID = '22222222-2222-4222-8222-222222222222';
@@ -27,15 +27,15 @@ const createUploadedPhoto = (): MediaItem => {
 describe('build__ProcessNextMediaDeletionJob', () => {
   const createCradle = (
     overrides: Partial<{
-      claimNextAvailableJob: IocGeneratedCradle['mediaDeletionJobRepository']['claimNextAvailableJob'];
-      getById: IocGeneratedCradle['mediaItemRepository']['getById'];
-      deleteObject: IocGeneratedCradle['mediaStorage']['deleteObject'];
-      deleteItem: IocGeneratedCradle['mediaItemRepository']['delete'];
-      markSucceeded: IocGeneratedCradle['mediaDeletionJobRepository']['markSucceeded'];
-      markFailed: IocGeneratedCradle['mediaDeletionJobRepository']['markFailed'];
-      markPendingRetry: IocGeneratedCradle['mediaDeletionJobRepository']['markPendingRetry'];
+      claimNextAvailableJob: AppCradle['mediaDeletionJobRepository']['claimNextAvailableJob'];
+      getById: AppCradle['mediaItemRepository']['getById'];
+      deleteObject: AppCradle['mediaStorage']['deleteObject'];
+      deleteItem: AppCradle['mediaItemRepository']['delete'];
+      markSucceeded: AppCradle['mediaDeletionJobRepository']['markSucceeded'];
+      markFailed: AppCradle['mediaDeletionJobRepository']['markFailed'];
+      markPendingRetry: AppCradle['mediaDeletionJobRepository']['markPendingRetry'];
     }>,
-  ): IocGeneratedCradle => {
+  ): AppCradle => {
     const markSucceeded = jest.fn().mockResolvedValue(undefined);
     const markFailed = jest.fn().mockResolvedValue(undefined);
     const markPendingRetry = jest.fn().mockResolvedValue(undefined);
@@ -43,7 +43,7 @@ describe('build__ProcessNextMediaDeletionJob', () => {
     const deleteItem = jest.fn().mockResolvedValue(undefined);
 
     return {
-      config: { s3Bucket: 'test-bucket' } as IocGeneratedCradle['config'],
+      config: { s3Bucket: 'test-bucket' } as AppCradle['config'],
       logger: {
         info: jest.fn(),
         error: jest.fn(),
@@ -64,11 +64,11 @@ describe('build__ProcessNextMediaDeletionJob', () => {
         getById: overrides.getById ?? jest.fn(),
         save: jest.fn(),
         delete: overrides.deleteItem ?? deleteItem,
-      } as IocGeneratedCradle['mediaItemRepository'],
+      } as AppCradle['mediaItemRepository'],
       mediaStorage: {
         deleteObject: overrides.deleteObject ?? deleteObject,
-      } as IocGeneratedCradle['mediaStorage'],
-    } as IocGeneratedCradle;
+      } as AppCradle['mediaStorage'],
+    } as AppCradle;
   };
 
   describe('When there is no available job', () => {

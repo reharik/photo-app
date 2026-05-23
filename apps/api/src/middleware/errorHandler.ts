@@ -1,10 +1,10 @@
 import { Context, HttpError, Next } from 'koa';
-import { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type ErrorHandler = (ctx: Context, next: Next) => Promise<void>;
 
 export const build__ErrorHandler =
-  ({ logger }: IocGeneratedCradle): ErrorHandler =>
+  ({ logger }: AppCradle): ErrorHandler =>
   async (ctx: Context, next: Next) => {
     try {
       await next();

@@ -1,9 +1,15 @@
 {
-  "source": [
-    "package.json",
-    "apps/*/package.json",
-    "packages/**/package.json",
-    "!**/dist/**",
-    "!**/node_modules/**"
+  "$schema": "./node_modules/syncpack/schema.json",
+  "versionGroups": [
+    {
+      "label": "Ignore workspace-internal @packages/* (npm * protocol per Monorepo §0.2)",
+      "dependencies": ["@packages/**"],
+      "isIgnored": true
+    },
+    {
+      "label": "Ignore .version on local/workspace packages (apps, root)",
+      "dependencyTypes": ["local"],
+      "isIgnored": true
+    }
   ]
 }

@@ -4,6 +4,8 @@
     "jsx": "react-jsx",
     "outDir": "./dist",
     "noEmit": true,
+    "baseUrl": ".",
+    "paths": {},
     "types": ["vite/client", "jest", "node", "typia"],
     "plugins": [
       {

@@ -1,4 +1,4 @@
-schema: ../api/src/graphql/generated/schema.graphql
+schema: src/graphql/generated/schema.graphql
 documents:
   - 'src/graphql/**/*.graphql'
 generates:

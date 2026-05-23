@@ -1,0 +1,8 @@
+{
+  "directory": ["./src/channels"],
+  "location": "top",
+  "structure": "flat",
+  "exclude": [".*/tests/.*", "\\.tests\\.ts$", "\\.test\\.ts$", "\\.spec\\.ts$", "index.ts"],
+  "singleQuotes": true,
+  "delete": true
+}

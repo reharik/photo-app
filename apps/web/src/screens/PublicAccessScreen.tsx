@@ -29,7 +29,13 @@ export const PublicAccessScreen = () => {
     ]);
   }, [auth, token]);
 
+  if (error != undefined) {
+    return <p role="alert">{error}</p>;
+  }
+
   if (isAuthenticated) {
     return <PublicAlbumScreen />;
   }
+
+  return null;
 };

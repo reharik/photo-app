@@ -161,12 +161,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infra/docker/api/Dockerfile
-          target: production
+          file: infra/docker/Dockerfile
+          target: runtime-node
           platforms: linux/arm64
           build-args: |
-            NODE_VERSION=${{ env.DOCKER_NODE_VERSION }}
-            APP_WORKSPACE_PATH=${{ matrix.service.workspacePath }}
+            APP_NAME=${{ matrix.service.name }}
           tags: |
             ${{ env.APP_NAME }}-${{ matrix.service.name }}:${{ env.SHORT_SHA }}
           load: true
@@ -302,7 +301,7 @@ jobs:
         run: npm ci
 
       - name: Build frontend
-        run: npm run build:web:production
+        run: npm run build:web
         env:
           VITE_API: /api
 
@@ -315,7 +314,7 @@ jobs:
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
-    with:
+        with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: GitHubActions-Deploy-Frontend
           aws-region: ${{ env.AWS_REGION }}

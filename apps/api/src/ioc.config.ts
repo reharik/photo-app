@@ -2,14 +2,7 @@ import { defineIocConfig } from 'ioc-manifest';
 
 export default defineIocConfig({
   discovery: {
-    scanDirs: [
-      { path: 'src', importMode: 'subpath' },
-      {
-        path: '../../packages/context/media-core',
-        importPrefix: '@packages/media-core',
-        importMode: 'root',
-      },
-    ],
+    scanDirs: 'src',
     generatedDir: 'src/di/generated',
     includes: ['**/*.{ts,tsx}'],
     excludes: [
@@ -23,13 +16,8 @@ export default defineIocConfig({
       '**/node_modules/**',
     ],
     factoryPrefix: 'build__',
-    workspacePackageImportBases: [
-      {
-        root: 'packages/foundation/infrastructure/src',
-        importBase: '@packages/infrastructure',
-      },
-    ],
   },
+  composedManifests: ['@packages/media-core', '@packages/infrastructure'],
   registrations: {
     Knex: {
       $contract: { accessKey: 'database' },
@@ -38,24 +26,6 @@ export default defineIocConfig({
       // Keep strict middleware under a distinct key so `authMiddleware` (contract default slot) aliases to optional.
       authMiddleware: { name: 'strictAuthMiddleware' },
       optionalAuthMiddleware: { default: true },
-    },
-  },
-  groups: {
-    publicReadServiceFactories: {
-      kind: 'object',
-      baseType: 'PublicReadServiceFactoryBase',
-    },
-    readServiceFactories: {
-      kind: 'object',
-      baseType: 'ReadServiceFactoryBase',
-    },
-    writeServices: {
-      kind: 'object',
-      baseType: 'WriteServiceBase',
-    },
-    agnosticReadServices: {
-      kind: 'object',
-      baseType: 'AgnosticReadServiceBase',
     },
   },
 });

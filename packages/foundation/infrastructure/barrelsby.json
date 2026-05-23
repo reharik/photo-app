@@ -1,0 +1,8 @@
+{
+  "directory": ["./src/logger", "./src/utilities"],
+  "location": "top",
+  "structure": "flat",
+  "exclude": [".*/tests/.*", "\\.tests\\.ts$", "\\.test\\.ts$", "\\.spec\\.ts$"],
+  "singleQuotes": true,
+  "delete": true
+}

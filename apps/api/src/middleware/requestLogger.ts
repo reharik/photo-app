@@ -1,10 +1,10 @@
 import { Context, Next } from 'koa';
-import { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type RequestLogger = (ctx: Context, next: Next) => Promise<void>;
 
 export const build__RequestLogger =
-  ({ logger }: IocGeneratedCradle): RequestLogger =>
+  ({ logger }: AppCradle): RequestLogger =>
   async (ctx: Context, next: Next) => {
     const startTime = Date.now();
 

@@ -4,13 +4,11 @@
     "composite": false,
     "noEmit": true,
     "types": ["jest", "node"],
-    "baseUrl": "../../..",
+    "baseUrl": ".",
     "paths": {
-      "@packages/contracts": ["packages/foundation/contracts/src/index.ts"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"],
-      "@packages/notifications": ["packages/context/notifications/index.ts"]
+      "@packages/notifications": ["src/index.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "jest.config.js"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.config.js"],
   "exclude": ["dist", "node_modules"]
 }

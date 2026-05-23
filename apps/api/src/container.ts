@@ -1,26 +1,33 @@
 import { AwilixContainer, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
-import { iocManifest } from './di/generated/ioc-manifest';
-import type { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+import {
+  composedManifests,
+  composedRegistrationOverrides,
+  type AppCradle,
+} from './di/generated/ioc-composed.js';
 
-let container: AwilixContainer<IocGeneratedCradle> | undefined;
+let container: AwilixContainer<AppCradle> | undefined;
 
-const initializeContainer = (): AwilixContainer<IocGeneratedCradle> => {
+const initializeContainer = (): AwilixContainer<AppCradle> => {
   if (container) {
     return container;
   }
 
-  const _container = createContainer<IocGeneratedCradle>({
+  const _container = createContainer<AppCradle>({
     injectionMode: 'PROXY',
   });
 
-  registerIocFromManifest(_container, iocManifest);
+  registerIocFromManifest(
+    _container,
+    composedManifests,
+    composedRegistrationOverrides,
+  );
 
   container = _container;
   return container;
 };
 
-const getContainer = (): AwilixContainer<IocGeneratedCradle> => {
+const getContainer = (): AwilixContainer<AppCradle> => {
   if (!container) {
     throw new Error(
       '[ioc] container has not been initialized yet. Call initializeContainer() first.',

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__RunMediaWorkerLoop } from '../runMediaWorkerLoop';
 
 describe('build__RunMediaWorkerLoop', () => {
@@ -29,11 +29,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 10_000 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 10_000 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const done = loop.start();
       for (let i = 0; i < 12; i++) {
@@ -66,11 +66,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 10_000 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 10_000 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const done = loop.start();
       for (let i = 0; i < 12; i++) {
@@ -100,11 +100,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 100 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 100 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const done = loop.start();
       for (let i = 0; i < 8; i++) {
@@ -134,11 +134,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 100 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 100 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const done = loop.start();
       await Promise.resolve();
@@ -178,11 +178,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 50 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 50 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const done = loop.start();
       await Promise.resolve();
@@ -215,11 +215,11 @@ describe('build__RunMediaWorkerLoop', () => {
       };
 
       const loop = build__RunMediaWorkerLoop({
-        config: { mediaWorkerPollIntervalMs: 10 } as IocGeneratedCradle['config'],
+        config: { mediaWorkerPollIntervalMs: 10 } as AppCradle['config'],
         logger,
         processNextMediaDeletionJob,
         processNextMediaImageJob,
-      } as IocGeneratedCradle);
+      } as AppCradle);
 
       const first = loop.start();
       loop.start();

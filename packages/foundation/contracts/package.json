@@ -12,13 +12,15 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "scripts": {
-    "barrels": "barrelsby --config barrelsby.json",
-    "build": "rimraf dist && nx build contracts",
-    "dev": "tsc -w -p tsconfig.json",
-    "gen:graphql:enums": "graphql-codegen --config codegen.yml && npx prettier --write src/enums/graphqlSmartEnums.ts"
+    "barrels": "nx barrels contracts",
+    "build": "nx build contracts",
+    "codegen": "nx codegen contracts",
+    "dev": "nx dev contracts",
+    "lint": "nx lint contracts",
+    "test": "nx test contracts"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.4.3",
+    "@reharik/smart-enum": "^0.4.6",
     "typia": "^9.7.2"
   },
   "devDependencies": {
@@ -29,7 +31,6 @@
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.2.1",
     "graphql": "^16.13.1",
-    "rimraf": "^6.0.1",
     "typescript": "^5.9.2"
   }
 }

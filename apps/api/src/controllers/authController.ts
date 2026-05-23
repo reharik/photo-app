@@ -1,6 +1,6 @@
 import { type User } from '@packages/contracts';
 import type { Context } from 'koa';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import { AppCradle } from 'src/di/generated/ioc-composed';
 
 export interface AuthController {
   login: (ctx: Context) => Promise<Context>;
@@ -10,10 +10,7 @@ export interface AuthController {
   publicAccess: (ctx: Context) => Context;
 }
 
-export const build__AuthController = ({
-  authService,
-  logger,
-}: IocGeneratedCradle): AuthController => ({
+export const build__AuthController = ({ authService, logger }: AppCradle): AuthController => ({
   login: async (ctx: Context): Promise<Context> => {
     const { email, password } = ctx.request.body as {
       email: string;

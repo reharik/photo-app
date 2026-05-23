@@ -1,24 +1,17 @@
 {
-  "extends": "../../../tsconfig.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
     "composite": true,
     "noEmit": false,
     "skipLibCheck": true,
     "strictNullChecks": true,
-    "strict": true,
-    "paths": {
-      "@packages/contracts": ["packages/foundation/contracts/dist/src/index.d.ts"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/dist/src/index.d.ts"]
-    }
+    "strict": true
   },
-  "references": [
-    { "path": "../../foundation/contracts" },
-    { "path": "../../foundation/infrastructure" }
-  ],
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "src/tests/**"]
 }

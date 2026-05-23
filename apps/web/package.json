@@ -3,17 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prebuild": "cp ../api/src/graphql/generated/schema.graphql ./src/graphql/generated/schema.graphql",
     "build": "nx build web",
-    "codegen": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
-    "dev": "nx serve",
-    "lint": "nx eslint:lint",
+    "clean": "nx clean web",
+    "codegen": "nx codegen web",
+    "dev": "nx dev web",
+    "lint": "nx lint web",
     "preview": "nx preview web",
-    "serve": "nx serve web"
+    "test": "nx test web",
+    "typecheck": "nx typecheck web"
   },
   "dependencies": {
     "@apollo/client": "^4.1.6",
-    "@packages/contracts": "0.1.0",
+    "@packages/contracts": "*",
     "@radix-ui/react-select": "^2.2.6",
     "@tanstack/react-query": "^5.71.1",
     "apollo-link-scalars": "^5.1.0",
@@ -51,7 +52,6 @@
     "globals": "^15.15.0",
     "ts-patch": "^3.3.0",
     "typescript": "^5.9.2",
-    "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite": "^6.3.5"
   }
 }

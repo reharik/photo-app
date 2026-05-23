@@ -1,0 +1,98 @@
+{
+  "name": "e2e",
+  "projectType": "library",
+  "sourceRoot": "{projectRoot}",
+  "tags": ["scope:test-runner"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test"
+      }
+    },
+    "test:headed": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test --headed"
+      }
+    },
+    "test:ui": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test --ui"
+      }
+    },
+    "test:trace": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test --trace on"
+      }
+    },
+    "test:show-trace": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright show-trace"
+      }
+    },
+    "test:debug": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "PWDEBUG=1 playwright test"
+      }
+    },
+    "test:last-failed": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright test --last-failed"
+      }
+    },
+    "report": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "playwright show-report"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc --noEmit -p tsconfig.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/playwright.config.ts\"",
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/tests/**/*.spec.ts\""
+        ],
+        "parallel": false
+      },
+      "configurations": {
+        "fix": {
+          "commands": [
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/playwright.config.ts\"",
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/tests/**/*.spec.ts\""
+          ],
+          "parallel": false
+        }
+      }
+    }
+  }
+}

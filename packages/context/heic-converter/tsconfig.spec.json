@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "types": ["jest", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@packages/heic-converter": ["src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "jest.config.js"],
+  "exclude": ["dist", "node_modules"]
+}

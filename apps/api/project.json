@@ -16,8 +16,58 @@
         "cwd": "{projectRoot}"
       }
     },
-    "build:knexfile": {
+    "schema-gen": {
       "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/src/graphql/schema/**/*.graphql", "{projectRoot}/codegen.yml"],
+      "outputs": [
+        "{projectRoot}/src/graphql/generated/schema.graphql",
+        "{projectRoot}/src/graphql/generated/types.generated.ts"
+      ],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "graphql-codegen --config codegen.yml",
+          "npx prettier --write src/graphql/generated/schema.graphql src/graphql/generated/types.generated.ts"
+        ],
+        "parallel": false
+      }
+    },
+    "gen:container": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {
+        "command": "ioc generate",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "build:vite": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "dependsOn": ["gen:container", "ts-patch:install", "^build"],
+      "options": {
+        "command": "vite build --config vite.config.mjs",
+        "cwd": "{projectRoot}"
+      },
+      "configurations": {
+        "development": {
+          "command": "vite build --config vite.config.mjs --mode development"
+        },
+        "production": {
+          "command": "vite build --config vite.config.mjs --mode production"
+        }
+      }
+    },
+    "build:graphql-static": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build:vite"],
+      "options": {
+        "command": "mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "build:db": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build:vite"],
       "outputs": ["{projectRoot}/dist/db"],
       "options": {
         "commands": ["mkdir -p dist/db", "npx tsc -p tsconfig.db.json"],
@@ -28,18 +78,25 @@
     "build": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["prepare"],
+      "dependsOn": ["build:vite", "build:graphql-static", "build:db"],
       "options": {
-        "command": "vite build --config vite.config.mjs && mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/ && mkdir -p dist/db && npx tsc -p tsconfig.db.json",
+        "command": "echo 'api build complete'",
         "cwd": "{projectRoot}"
-      },
-      "configurations": {
-        "development": {
-          "command": "vite build --config vite.config.mjs --mode development && mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/ && mkdir -p dist/db && npx tsc -p tsconfig.db.json"
-        },
-        "production": {
-          "command": "vite build --config vite.config.mjs --mode production && mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/ && mkdir -p dist/db && npx tsc -p tsconfig.db.json"
-        }
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build", "schema-gen"],
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.json",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nodemon",
+        "cwd": "{projectRoot}"
       }
     },
     "serve": {
@@ -47,13 +104,6 @@
       "options": {
         "buildTarget": "api:build:development",
         "watch": true
-      }
-    },
-    "serve:with-contracts": {
-      "executor": "nx:run-commands",
-      "options": {
-        "commands": ["npm run dev --workspace=@packages/contracts", "nx run api:serve"],
-        "parallel": true
       }
     },
     "lint": {
@@ -102,36 +152,27 @@
         "command": "prettier --write {projectRoot}/src/**/*.{ts,tsx,js,jsx,json}"
       }
     },
-    "gen:graphql": {
+    "db:migrate": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": ["graphql-codegen", "nx run contracts:gen:graphql:enums"],
-        "parallel": false,
+        "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:latest",
         "cwd": "{projectRoot}"
       }
     },
-    "gen:container": {
+    "db:seed": {
       "executor": "nx:run-commands",
-      "dependsOn": ["media-core:barrels", "contracts:barrels", "gen:graphql"],
       "options": {
-        "command": "ioc generate",
+        "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts seed:run",
         "cwd": "{projectRoot}"
       }
     },
-    "prepare": {
+    "db:make": {
       "executor": "nx:run-commands",
       "options": {
-        "commands": [
-          "nx run api:ts-patch:install",
-          "nx run api:clean",
-          "nx run-many -t build -p contracts infrastructure media-core --parallel=3",
-          "nx run api:gen:container"
-        ],
-        "parallel": false,
-        "cwd": "{workspaceRoot}"
+        "command": "NODE_OPTIONS=--import=tsx npx knex --knexfile src/knexfile.ts migrate:make",
+        "cwd": "{projectRoot}"
       }
     }
   },
-
-  "tags": ["type:app"]
+  "tags": ["type:app", "scope:apps"]
 }

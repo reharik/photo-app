@@ -2,7 +2,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { MediaProcessingJobStatus } from '@packages/media-core';
 import { DatabaseError } from 'pg';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__MediaProcessingJobRepository } from '../repositories/domainRepositories/mediaProcessingJobRepository';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -22,7 +22,7 @@ describe('build__MediaProcessingJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         await repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID });
 
         expect(inserts).toHaveLength(1);
@@ -51,7 +51,7 @@ describe('build__MediaProcessingJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         await expect(
           repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
         ).resolves.toBeUndefined();
@@ -67,7 +67,7 @@ describe('build__MediaProcessingJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         await expect(
           repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
         ).rejects.toThrow('connection refused');
@@ -91,7 +91,7 @@ describe('build__MediaProcessingJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         await repo.markSucceeded('job-1', ACTOR_ID);
 
         expect(updates[0]).toEqual(
@@ -120,7 +120,7 @@ describe('build__MediaProcessingJobRepository', () => {
           { fn: { now: () => 'NOW()' } },
         );
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         const longMessage = 'x'.repeat(9000);
         await repo.markFailed('job-1', ACTOR_ID, longMessage);
 
@@ -162,7 +162,7 @@ describe('build__MediaProcessingJobRepository', () => {
           transaction: jest.fn(async (cb: (t: typeof trx) => Promise<unknown>) => cb(trx)),
         });
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         const result = await repo.claimNextAvailableJob();
         expect(result).toBeUndefined();
       });
@@ -220,7 +220,7 @@ describe('build__MediaProcessingJobRepository', () => {
           transaction: jest.fn(async (cb: (t: typeof trx) => Promise<unknown>) => cb(trx)),
         });
 
-        const repo = build__MediaProcessingJobRepository({ database } as IocGeneratedCradle);
+        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
         const result = await repo.claimNextAvailableJob();
 
         expect(result).toEqual(updatedRow);

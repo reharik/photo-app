@@ -4,7 +4,7 @@ import { MediaItem } from '@packages/media-core';
 import { Readable } from 'node:stream';
 
 import { build__ProcessNextMediaImageJob } from '../application/processNextMediaImageJob';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../generated/ioc-composed.js';
 
 const MINIMAL_PNG_1X1 = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
@@ -32,19 +32,19 @@ const createUploadedPhoto = (): MediaItem => {
 describe('build__ProcessNextMediaImageJob', () => {
   const baseConfig = {
     s3Bucket: 'test-bucket',
-  } as IocGeneratedCradle['config'];
+  } as AppCradle['config'];
 
   const createCradle = (
     overrides: Partial<{
-      claimNextAvailableJob: IocGeneratedCradle['mediaProcessingJobRepository']['claimNextAvailableJob'];
-      getById: IocGeneratedCradle['mediaItemRepository']['getById'];
-      getObjectStream: IocGeneratedCradle['mediaStorage']['getObjectStream'];
-      writeObject: IocGeneratedCradle['mediaStorage']['writeObject'];
-      save: IocGeneratedCradle['mediaItemRepository']['save'];
-      markSucceeded: IocGeneratedCradle['mediaProcessingJobRepository']['markSucceeded'];
-      markFailed: IocGeneratedCradle['mediaProcessingJobRepository']['markFailed'];
+      claimNextAvailableJob: AppCradle['mediaProcessingJobRepository']['claimNextAvailableJob'];
+      getById: AppCradle['mediaItemRepository']['getById'];
+      getObjectStream: AppCradle['mediaStorage']['getObjectStream'];
+      writeObject: AppCradle['mediaStorage']['writeObject'];
+      save: AppCradle['mediaItemRepository']['save'];
+      markSucceeded: AppCradle['mediaProcessingJobRepository']['markSucceeded'];
+      markFailed: AppCradle['mediaProcessingJobRepository']['markFailed'];
     }>,
-  ): IocGeneratedCradle => {
+  ): AppCradle => {
     const markSucceeded = jest.fn().mockResolvedValue(undefined);
     const markFailed = jest.fn().mockResolvedValue(undefined);
     const save = jest.fn().mockResolvedValue(undefined);
@@ -70,12 +70,12 @@ describe('build__ProcessNextMediaImageJob', () => {
       mediaItemRepository: {
         getById: overrides.getById ?? jest.fn(),
         save: overrides.save ?? save,
-      } as IocGeneratedCradle['mediaItemRepository'],
+      } as AppCradle['mediaItemRepository'],
       mediaStorage: {
         getObjectStream: overrides.getObjectStream ?? jest.fn(),
         writeObject: overrides.writeObject ?? writeObject,
-      } as IocGeneratedCradle['mediaStorage'],
-    } as IocGeneratedCradle;
+      } as AppCradle['mediaStorage'],
+    } as AppCradle;
   };
 
   describe('When there is no available job', () => {

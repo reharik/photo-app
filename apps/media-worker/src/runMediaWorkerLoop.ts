@@ -1,4 +1,4 @@
-import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+import type { AppCradle } from './generated/ioc-composed.js';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -18,7 +18,7 @@ export const build__RunMediaWorkerLoop = ({
   logger,
   processNextMediaDeletionJob,
   processNextMediaImageJob,
-}: IocGeneratedCradle): RunMediaWorkerLoop => {
+}: AppCradle): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
 

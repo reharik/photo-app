@@ -3,6 +3,13 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx rimraf dist"
+      }
+    },
     "barrels": {
       "executor": "nx:run-commands",
       "cache": false,
@@ -11,13 +18,35 @@
         "command": "npx barrelsby --config barrelsby.json"
       }
     },
+    "codegen": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["api:schema-gen"],
+      "outputs": ["{projectRoot}/src/enums/graphqlSmartEnums.ts"],
+      "options": {
+        "cwd": "{projectRoot}",
+        "commands": [
+          "test -f ../../../apps/api/src/graphql/generated/schema.graphql || (echo \"Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run 'npm run schema-gen:api' first, or ensure contracts:codegen depends on api:schema-gen in project.json (it does, but nx may have silently skipped it).\" && exit 1)",
+          "graphql-codegen --config codegen.yml",
+          "npx prettier --write src/enums/graphqlSmartEnums.ts"
+        ],
+        "parallel": false
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["clean", "barrels", "codegen", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
         "tsConfig": "{projectRoot}/tsconfig.json",
         "main": "{projectRoot}/src/index.ts"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc -w -p tsconfig.json"
       }
     },
     "lint": {
@@ -54,5 +83,5 @@
       }
     }
   },
-  "tags": ["layer:foundation", "scope:shared"]
+  "tags": ["layer:foundation", "scope:shared", "scope:packages"]
 }

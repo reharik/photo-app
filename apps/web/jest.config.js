@@ -13,6 +13,9 @@ export default {
     },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs'],
+  moduleNameMapper: {
+    '^@packages/contracts$': '<rootDir>/../../packages/foundation/contracts/src/index.ts',
+  },
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: [],
   testMatch: ['**/src/tests/**/*.tests.ts', '**/src/tests/**/*.tests.tsx'],

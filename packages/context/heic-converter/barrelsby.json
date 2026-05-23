@@ -1,0 +1,8 @@
+{
+  "directory": [],
+  "location": "top",
+  "structure": "flat",
+  "exclude": ["\\.test\\.ts$", "\\.tests\\.ts$", "\\.spec\\.ts$", "^index\\.ts$"],
+  "singleQuotes": true,
+  "delete": true
+}

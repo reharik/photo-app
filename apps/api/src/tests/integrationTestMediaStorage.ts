@@ -70,10 +70,10 @@ export const createIntegrationTestMediaStorage = (): IntegrationTestMediaStorage
 
   const getObjectMetadata = async (
     storageKey: string,
-  ): Promise<MediaStorageObjectMetadata | null> => {
+  ): Promise<MediaStorageObjectMetadata | undefined> => {
     const o = objects.get(storageKey);
     if (!o) {
-      return null;
+      return undefined;
     }
     const size = o.body !== undefined ? o.body.length : o.size;
     return { size, mimeType: o.mimeType };
@@ -88,10 +88,12 @@ export const createIntegrationTestMediaStorage = (): IntegrationTestMediaStorage
     return `https://integration-test.invalid/object?key=${encodeURIComponent(input.storageKey)}`;
   };
 
-  const getObjectStream = async (storageKey: string): Promise<MediaStorageStreamResult | null> => {
+  const getObjectStream = async (
+    storageKey: string,
+  ): Promise<MediaStorageStreamResult | undefined> => {
     const object = objects.get(storageKey);
     if (!object?.body) {
-      return null;
+      return undefined;
     }
     return {
       body: Readable.from(object.body),
@@ -99,10 +101,13 @@ export const createIntegrationTestMediaStorage = (): IntegrationTestMediaStorage
     };
   };
 
-  const getObjectBuffer = async (storageKey: string, maxBytes: number): Promise<Buffer | null> => {
+  const getObjectBuffer = async (
+    storageKey: string,
+    maxBytes: number,
+  ): Promise<Buffer | undefined> => {
     const object = objects.get(storageKey);
     if (!object?.body) {
-      return null;
+      return undefined;
     }
     return object.body.subarray(0, Math.min(object.body.length, maxBytes));
   };

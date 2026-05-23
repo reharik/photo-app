@@ -14,11 +14,13 @@ export type MediaItemOperationsService = {
   ) => Promise<Map<string, Operation[]>>;
 };
 
+type MediaItemOperationsServiceDeps = {
+  authorizationReadRepository: AuthorizationReadRepository;
+};
+
 export const build__MediaItemOperationsService = ({
   authorizationReadRepository,
-}: {
-  authorizationReadRepository: AuthorizationReadRepository;
-}): MediaItemOperationsService => {
+}: MediaItemOperationsServiceDeps): MediaItemOperationsService => {
   /**
    * Returns a decorated entry for every input item. Items the viewer has no
    * access to will have empty `operations` and `viewerIsOwner: false`.

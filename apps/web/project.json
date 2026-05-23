@@ -9,36 +9,53 @@
         "command": "node -e \"try { require('child_process').execSync('ts-patch install', {stdio: 'ignore'}); } catch(e) {}\""
       }
     },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": ["npx rimraf dist", "npx rimraf src/graphql/generated"],
+        "parallel": false,
+        "cwd": "{projectRoot}"
+      }
+    },
     "sync-schema": {
       "executor": "nx:run-commands",
+      "dependsOn": ["api:schema-gen"],
       "outputs": ["{projectRoot}/src/graphql/generated/schema.graphql"],
       "options": {
-        "command": "mkdir -p src/graphql/generated && cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql",
+        "commands": [
+          "test -f ../api/src/graphql/generated/schema.graphql || (echo 'ERROR: Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run npm run schema-gen:api first.' && exit 1)",
+          "mkdir -p src/graphql/generated",
+          "cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql"
+        ],
+        "parallel": false,
         "cwd": "{projectRoot}"
       }
     },
     "codegen": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/src/graphql/generated/types.ts"],
+      "dependsOn": ["sync-schema", "contracts:build"],
+      "inputs": [
+        "{projectRoot}/codegen.yml",
+        "{projectRoot}/src/graphql/**/*.graphql",
+        "{projectRoot}/src/graphql/generated/schema.graphql"
+      ],
+      "outputs": [
+        "{projectRoot}/src/graphql/generated/types.ts",
+        "{projectRoot}/src/graphql/generated/graphql-smart-enum-type-policies.ts"
+      ],
       "options": {
-        "command": "graphql-codegen --config codegen.yml && npx prettier --write src/graphql/generated/types.ts",
+        "commands": [
+          "graphql-codegen --config codegen.yml",
+          "npx prettier --write src/graphql/generated/types.ts src/graphql/generated/graphql-smart-enum-type-policies.ts"
+        ],
+        "parallel": false,
         "cwd": "{projectRoot}"
       }
     },
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema"],
-      "options": {
-        "outputPath": "apps/web/dist",
-        "configFile": "{projectRoot}/vite.config.js",
-        "tsConfig": "{projectRoot}/tsconfig.json"
-      }
-    },
-    "build:production": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "contracts:build", "sync-schema", "codegen"],
+      "dependsOn": ["ts-patch:install", "codegen"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",
@@ -46,8 +63,9 @@
         "mode": "production"
       }
     },
-    "serve": {
+    "dev": {
       "executor": "@nx/vite:dev-server",
+      "dependsOn": ["codegen"],
       "options": {
         "buildTarget": "web:build",
         "port": 5173
@@ -58,6 +76,14 @@
       "options": {
         "buildTarget": "web:build",
         "port": 4173
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["contracts:build", "codegen"],
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.json",
+        "cwd": "{projectRoot}"
       }
     },
     "lint": {
@@ -94,5 +120,5 @@
       }
     }
   },
-  "tags": ["type:app"]
+  "tags": ["type:app", "scope:apps"]
 }

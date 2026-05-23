@@ -20,6 +20,7 @@ export default {
     '^@packages/contracts$': '<rootDir>/../../packages/foundation/contracts/src/index.ts',
     '^@packages/infrastructure$': '<rootDir>/../../packages/foundation/infrastructure/src/index.ts',
     '^@packages/media-core$': '<rootDir>/../../packages/context/media-core/src/index.ts',
+    '^@packages/heic-converter$': '<rootDir>/../../packages/context/heic-converter/src/index.ts',
   },
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: ['<rootDir>/src/tests/setup.ts'],

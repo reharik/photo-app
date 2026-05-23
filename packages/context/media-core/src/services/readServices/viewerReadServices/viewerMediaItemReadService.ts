@@ -1,12 +1,8 @@
-import { ReactionTargetType } from '@packages/contracts';
-import { MediaStorage } from '../../../application/media/MediaStorage';
 import {
   AuthorizationReadRepository,
   MediaItemReadRepository,
-  ReactionReadRepository,
 } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
-import { ReadReactionService } from '../readReactionService';
 import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import {
   AuthorizationProjection,
@@ -32,10 +28,6 @@ export interface ViewerMediaItemReadServiceFactory extends ReadServiceFactoryBas
 type ViewerMediaItemReadServiceFactoryDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
   authorizationReadRepository: AuthorizationReadRepository;
-  reactionReadRepository: ReactionReadRepository;
-  mediaStorage: MediaStorage;
-  readReactionService: ReadReactionService;
-  reactionTargetType: ReactionTargetType;
   enrichMediaItems: EnrichMediaItems;
 };
 

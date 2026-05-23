@@ -60,7 +60,7 @@ npm run dev:web   # Web only
 npm run build
 
 # Build for production
-npm run build:web:production
+npm run build:web
 ```
 
 ### Testing

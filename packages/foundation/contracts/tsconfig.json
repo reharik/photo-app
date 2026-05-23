@@ -1,11 +1,11 @@
 {
-  "extends": "../../../tsconfig.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "rootDir": ".",
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
     "composite": true,
     "noEmit": false,
     "plugins": [
@@ -17,6 +17,6 @@
     "strictNullChecks": true,
     "strict": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "src/_typia"]
 }

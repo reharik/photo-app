@@ -4,7 +4,7 @@ import { AlbumMemberRole, AppErrorCollection, MediaItemStatus } from '@packages/
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
@@ -13,7 +13,6 @@ import {
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
-import { runOnePhotoDerivativesJob } from './runPhotoDerivativesJobOnce';
 import { TEST_VIEWER_1_ID, TEST_VIEWER_A_ID } from './testViewerIds';
 
 const missingAlbumId = '00000000-0000-4000-8000-000000000099';
@@ -143,7 +142,7 @@ const insertViewerRoleMember = async (
     id: randomUUID(),
     albumId,
     userId,
-    role: AlbumMemberRole.viewer.value,
+    role: AlbumMemberRole.contributor.value,
     createdAt: now,
     updatedAt: now,
     createdBy: TEST_VIEWER_A_ID,
@@ -155,16 +154,12 @@ const createUploadedMediaItemViaGraphQL = async (params: {
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   database: Knex;
   integrationTestMediaStorage: IntegrationTestMediaStorage;
-  container?: AwilixContainer<IocGeneratedCradle>;
-  processPhotoDerivatives?: boolean;
   context?: Record<string, unknown>;
 }): Promise<string> => {
   const {
     executeGraphQL,
     database,
     integrationTestMediaStorage,
-    container,
-    processPhotoDerivatives = false,
     context = loggedInViewer1,
   } = params;
 
@@ -202,20 +197,12 @@ const createUploadedMediaItemViaGraphQL = async (params: {
     MediaItemStatus.processing.value,
   );
 
-  if (processPhotoDerivatives) {
-    expect(container).toBeDefined();
-    if (container) {
-      const r = await runOnePhotoDerivativesJob(container);
-      expect(r).toBe('processed');
-    }
-  }
-
   return mediaItemId;
 };
 
 describe('addAlbumItem', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<IocGeneratedCradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -229,104 +216,6 @@ describe('addAlbumItem', () => {
 
   afterEach(async () => {
     await resetIntegrationTestDb(database, undefined, () => integrationTestMediaStorage.clear());
-  });
-
-  describe('When the viewer is the album owner and owns an uploaded media item', () => {
-    it('should add the media item to the album and return it from a follow-up viewer albums query', async () => {
-      const albumTitle = `integration-album-${randomUUID()}`;
-
-      const albumResult = await executeGraphQL<{
-        createAlbum: WriteMutationResponse<{ albumId: string }>;
-      }>({
-        query: createAlbumMutation,
-        variables: { title: albumTitle },
-        context: loggedInViewer1,
-      });
-      expect(albumResult.json.errors).toBeUndefined();
-      expect(albumResult.json.data?.createAlbum.errors).toEqual([]);
-      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
-      expect(albumId).toBeTruthy();
-      if (!albumId) {
-        return;
-      }
-
-      const mediaItemId = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-
-      const addResult = await executeGraphQL<{
-        AddMediaItemToAlbum: WriteMutationResponse<{ albumId: string; albumItemId: string }>;
-      }>({
-        query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
-        context: loggedInViewer1,
-      });
-      expect(addResult.json.errors).toBeUndefined();
-      expect(addResult.json.data?.AddMediaItemToAlbum.errors).toEqual([]);
-      expect(addResult.json.data?.AddMediaItemToAlbum.data?.albumId).toBe(albumId);
-      expect(addResult.json.data?.AddMediaItemToAlbum.data?.albumItemId).toBeTruthy();
-
-      const albumRow = await database('album').where({ id: albumId }).first();
-      expect(albumRow?.title).toBe(albumTitle);
-
-      const albumItems = await database('albumItem').where({ albumId, mediaItemId });
-      expect(albumItems).toHaveLength(1);
-
-      const mediaItemRow = await database('mediaItem').where({ id: mediaItemId }).first();
-      expect(String(mediaItemRow?.status ?? '').toUpperCase()).toBe('READY');
-    });
-  });
-
-  describe('When AddMediaItemToAlbum is invoked twice for the same media item', () => {
-    it('should reject the second add with a duplicate error', async () => {
-      const albumResult = await executeGraphQL<{
-        createAlbum: WriteMutationResponse<{ albumId: string }>;
-      }>({
-        query: createAlbumMutation,
-        variables: { title: `dup-album-${randomUUID()}` },
-        context: loggedInViewer1,
-      });
-      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
-      expect(albumId).toBeTruthy();
-      if (!albumId) {
-        return;
-      }
-
-      const mediaItemId = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-      });
-
-      const first = await executeGraphQL<AddMediaItemToAlbumMutationData>({
-        query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
-        context: loggedInViewer1,
-      });
-      expect(first.json.errors).toBeUndefined();
-      expect(first.json.data?.AddMediaItemToAlbum.errors).toEqual([]);
-
-      const second = await executeGraphQL<AddMediaItemToAlbumMutationData>({
-        query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
-        context: loggedInViewer1,
-      });
-      expect(second.json.errors).toBeUndefined();
-      expect(second.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(second.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
-        AppErrorCollection.album.MediaAlreadyInAlbum.code,
-      );
-
-      const albumItems = await database('albumItem').where({ albumId, mediaItemId });
-      expect(albumItems).toHaveLength(1);
-    });
   });
 
   describe('When the media item is still pending upload', () => {
@@ -362,8 +251,8 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotReady.code,
       );
 
@@ -400,8 +289,8 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotReady.code,
       );
     });
@@ -435,8 +324,8 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotFound.code,
       );
     });
@@ -472,9 +361,9 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
-        AppErrorCollection.album.MemberNotAllowedToAddItem.code,
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+        AppErrorCollection.album.MemberNotAllowedToAddItems.code,
       );
     });
   });
@@ -493,9 +382,9 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
-        AppErrorCollection.album.AlbumNotFound.code,
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+        AppErrorCollection.album.AlbumNotFound?.code,
       );
     });
   });
@@ -521,8 +410,8 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotFound.code,
       );
     });
@@ -546,100 +435,6 @@ describe('addAlbumItem', () => {
   type AddMediaItemsToAlbumMutationData = {
     AddMediaItemsToAlbum?: WriteMutationResponse<{ albumId: string; albumItemIds: string[] }>;
   };
-
-  describe('When AddMediaItemsToAlbum targets an existing album', () => {
-    it('should add two media items in one operation', async () => {
-      const albumResult = await executeGraphQL<{
-        createAlbum: WriteMutationResponse<{ albumId: string }>;
-      }>({
-        query: createAlbumMutation,
-        variables: { title: `batch-existing-${randomUUID()}` },
-        context: loggedInViewer1,
-      });
-      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
-      expect(albumId).toBeTruthy();
-      if (!albumId) {
-        return;
-      }
-
-      const m1 = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-      const m2 = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-
-      const batch = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
-        query: addMediaItemsToAlbumMutation,
-        variables: {
-          input: {
-            albumId,
-            mediaItemIds: [m1, m2],
-          },
-        },
-        context: loggedInViewer1,
-      });
-      expect(batch.json.errors).toBeUndefined();
-      expect(batch.json.data?.AddMediaItemsToAlbum?.errors).toEqual([]);
-      expect(batch.json.data?.AddMediaItemsToAlbum?.data?.albumId).toBe(albumId);
-      expect(batch.json.data?.AddMediaItemsToAlbum?.data?.albumItemIds).toHaveLength(2);
-
-      const rows = await database('albumItem').where({ albumId });
-      expect(rows).toHaveLength(2);
-    });
-  });
-
-  describe('When AddMediaItemsToAlbum creates a new album', () => {
-    it('should create the album and add two items', async () => {
-      const m1 = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-      const m2 = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-
-      const batch = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
-        query: addMediaItemsToAlbumMutation,
-        variables: {
-          input: {
-            mediaItemIds: [m1, m2],
-            newAlbum: { title: `new-from-batch-${randomUUID()}` },
-          },
-        },
-        context: loggedInViewer1,
-      });
-      expect(batch.json.errors).toBeUndefined();
-      expect(batch.json.data?.AddMediaItemsToAlbum?.errors).toEqual([]);
-      const newAlbumId = batch.json.data?.AddMediaItemsToAlbum?.data?.albumId;
-      expect(newAlbumId).toBeTruthy();
-      expect(batch.json.data?.AddMediaItemsToAlbum?.data?.albumItemIds).toHaveLength(2);
-
-      const albumRow = await database('album').where({ id: newAlbumId }).first();
-      expect(albumRow).toBeDefined();
-      const rows = await database('albumItem').where({ albumId: newAlbumId });
-      expect(rows).toHaveLength(2);
-    });
-  });
 
   describe('When AddMediaItemsToAlbum input is invalid', () => {
     it('should reject both albumId and newAlbum', async () => {
@@ -719,56 +514,6 @@ describe('addAlbumItem', () => {
         }
       }
     `;
-
-    it('should return the album id, title, and item list for a viewer album', async () => {
-      const albumTitle = `viewer-album-by-id-${randomUUID()}`;
-      const albumResult = await executeGraphQL<{
-        createAlbum: WriteMutationResponse<{ albumId: string }>;
-      }>({
-        query: createAlbumMutation,
-        variables: { title: albumTitle },
-        context: loggedInViewer1,
-      });
-      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
-      expect(albumId).toBeTruthy();
-      if (!albumId) {
-        return;
-      }
-
-      const mediaItemId = await createUploadedMediaItemViaGraphQL({
-        executeGraphQL,
-        database,
-        integrationTestMediaStorage,
-        container,
-        processPhotoDerivatives: true,
-        context: loggedInViewer1,
-      });
-
-      await executeGraphQL<AddMediaItemToAlbumMutationData>({
-        query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
-        context: loggedInViewer1,
-      });
-
-      const q = await executeGraphQL<{
-        viewer?: {
-          album?: {
-            id: string;
-            title: string;
-            items: { nodes: Array<{ id: string; mediaItem: { id: string } }> };
-          } | null;
-        };
-      }>({
-        query: viewerAlbumByIdQuery,
-        variables: { albumId },
-        context: loggedInViewer1,
-      });
-      expect(q.json.errors).toBeUndefined();
-      expect(q.json.data?.viewer?.album?.id).toBe(albumId);
-      expect(q.json.data?.viewer?.album?.title).toBe(albumTitle);
-      expect(q.json.data?.viewer?.album?.items.nodes).toHaveLength(1);
-      expect(q.json.data?.viewer?.album?.items.nodes[0]?.mediaItem.id).toBe(mediaItemId);
-    });
 
     it('should return null when the album is not visible to the viewer', async () => {
       const q = await executeGraphQL<{

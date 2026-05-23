@@ -1,10 +1,10 @@
-import { IocGeneratedCradle } from './di/generated/ioc-registry.types';
+import type { AppCradle } from './di/generated/ioc-composed.js';
 
 export interface Server {
   start(): Promise<void>;
 }
 
-export const build__Server = ({ koaServer, config, logger }: IocGeneratedCradle): Server => {
+export const build__Server = ({ koaServer, config, logger }: AppCradle): Server => {
   return {
     async start() {
       await new Promise<void>((resolve) => {

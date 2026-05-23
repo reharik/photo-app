@@ -8,7 +8,7 @@ import { hashToken } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
-import { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type SanitizedUser = Omit<User, 'passwordHash'>;
 
@@ -47,11 +47,7 @@ const splitDisplayName = (fullName: string): { firstName: string; lastName: stri
   return { firstName, lastName };
 };
 
-export const build__AuthService = ({
-  database,
-  logger,
-  config,
-}: IocGeneratedCradle): AuthService => ({
+export const build__AuthService = ({ database, logger, config }: AppCradle): AuthService => ({
   login: async (credentials: LoginInput) => {
     const { email, password } = credentials;
 

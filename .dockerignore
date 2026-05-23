@@ -1,55 +1,25 @@
-# Exclude everything by default
-*
-
-# Monorepo roots (Dockerfile COPY / build args pick which app is built)
-!package.json
-!package-lock.json
-!apps/
-# Workspace packages (packages/*, packages/*/* — e.g. context/media-core, foundation/contracts)
-!packages/
-!nx.json
-!tsconfig.json
-!jest.preset.js
-# nx.json extends ./infra/config/nx/nx.json; tsconfig extends infra/config/tsconfig (need parents un-excluded)
-!infra
-infra/*
-!infra/config
-infra/config/*
-!infra/config/nx
-!infra/config/nx/**
-!infra/config/tsconfig
-!infra/config/tsconfig/**
-# Staging image copies infra/config/eslint/eslint-shared.js
-!infra/config/eslint
-!infra/config/eslint/**
-
-# Exclude unnecessary files from included directories (any app under apps/)
-apps/**/dist/
-apps/**/node_modules/
-apps/**/.env
-apps/**/*.log
-apps/**/coverage/
-
-packages/**/**/dist/
-packages/**/**/node_modules/
-packages/**/**/eslint-config/
-
-# Optional: exclude apps not needed for this image (smaller context for API-only builds).
-# Keep apps/web/package.json so the deps-* stages can resolve the full workspace set
-# (npm ci --workspaces needs every workspace's package.json present).
-apps/web/
-!apps/web/package.json
-
-# Exclude development files
-.git/
+# Git and local tooling
+.git
 .gitignore
-README.md
-Makefile
-docker-compose*.yml
-Dockerfile*
-.dockerignore
+**/.nx/cache
+**/.cache
 
-
+# Rebuilt inside the image
 **/node_modules
 **/dist
-**/.cache
+
+# Dev artifacts
+**/coverage
+**/*.log
+**/.env
+**/.env.*
+
+# Not needed for app image builds
+docs/
+packages/e2e/playwright-report/
+output.json
+output-worker-graph.json
+
+# Compose/Makefile are not part of the build context payload
+docker-compose/
+Makefile

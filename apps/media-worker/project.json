@@ -12,16 +12,16 @@
     },
     "gen:container": {
       "executor": "nx:run-commands",
-      "dependsOn": ["media-core:barrels", "contracts:barrels"],
+      "dependsOn": ["^build"],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"
       }
     },
-    "build": {
+    "build:vite": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["^build", "gen:container"],
+      "dependsOn": ["gen:container", "heic-converter:build", "^build"],
       "options": {
         "command": "vite build --config vite.config.mjs",
         "cwd": "{projectRoot}"
@@ -33,6 +33,30 @@
         "production": {
           "command": "vite build --config vite.config.mjs --mode production"
         }
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "dependsOn": ["build:vite"],
+      "options": {
+        "command": "echo 'media-worker build complete'",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build", "gen:container"],
+      "options": {
+        "command": "tsc --noEmit -p tsconfig.json",
+        "cwd": "{projectRoot}"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "nodemon",
+        "cwd": "{projectRoot}"
       }
     },
     "lint": {
@@ -63,5 +87,5 @@
       }
     }
   },
-  "tags": ["type:app"]
+  "tags": ["type:app", "scope:apps"]
 }

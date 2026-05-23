@@ -24,7 +24,7 @@ export const resolvePreferredAssetKind = (
   assets: AssetStatusSource[],
   requestedKind: MediaAssetKind,
 ): MediaAssetKind => {
-  if (requestedKind === MediaAssetKind.original) {
+  if (requestedKind.equals(MediaAssetKind.original)) {
     return MediaAssetKind.original;
   }
   return hasReadyAssetKind(assets, requestedKind) ? requestedKind : MediaAssetKind.original;
@@ -48,6 +48,6 @@ export const resolveMediaAssetUrl = async (input: {
     url,
     storageKey,
     resolvedKind,
-    fallbackToOriginal: resolvedKind !== input.requestedKind,
+    fallbackToOriginal: !resolvedKind.equals(input.requestedKind),
   };
 };

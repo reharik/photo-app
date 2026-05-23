@@ -2,12 +2,12 @@ import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
 import { buildMediaAssetStorageKey, hashToken } from '@packages/media-core';
 import jwt from 'jsonwebtoken';
 import type { Context, Next } from 'koa';
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 
 export type MediaAuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
 
 export const build__MediaAuthMiddleware =
-  ({ mediaGrantService, config }: IocGeneratedCradle): MediaAuthMiddleware =>
+  ({ mediaGrantService, config }: AppCradle): MediaAuthMiddleware =>
   async (ctx: Context, next: Next): Promise<void> => {
     // Extract viewer identity from JWT — local verify, no DB hit
     const token = ctx.cookies.get('token');

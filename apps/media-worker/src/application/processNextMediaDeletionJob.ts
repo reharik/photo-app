@@ -1,7 +1,13 @@
 import { MediaAssetKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey } from '@packages/media-core';
+import type { Logger } from '@packages/infrastructure';
+import {
+  buildMediaAssetStorageKey,
+  type MediaItemRepository,
+  type MediaStorage,
+} from '@packages/media-core';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { Config } from '../config.js';
+import type { MediaDeletionJobRepository } from '../repositories/domainRepositories/mediaDeletionJobRepository.js';
 
 export type ProcessNextMediaDeletionJobResult = 'processed' | 'idle';
 
@@ -22,13 +28,21 @@ const retryBackoffMs = (attemptCount: number): number => {
   return Math.min(60_000, 250 * 2 ** capped);
 };
 
+type ProcessNextMediaDeletionJobDeps = {
+  config: Config;
+  mediaDeletionJobRepository: MediaDeletionJobRepository;
+  mediaItemRepository: MediaItemRepository;
+  mediaStorage: MediaStorage;
+  logger: Logger;
+};
+
 export const build__ProcessNextMediaDeletionJob = ({
   config,
   mediaDeletionJobRepository,
   mediaItemRepository,
   mediaStorage,
   logger,
-}: IocGeneratedCradle): ProcessNextMediaDeletionJob => {
+}: ProcessNextMediaDeletionJobDeps): ProcessNextMediaDeletionJob => {
   return async (): Promise<ProcessNextMediaDeletionJobResult> => {
     const job = await mediaDeletionJobRepository.claimNextAvailableJob();
     if (!job) {

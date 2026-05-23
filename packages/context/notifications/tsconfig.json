@@ -1,17 +1,15 @@
 {
-  "extends": "../../../tsconfig.json",
+  "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "rootDir": ".",
     "outDir": "./dist",
     "types": ["node"],
     "lib": ["ES2022"],
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
     "composite": true,
     "noEmit": false,
     "skipLibCheck": true,
@@ -19,6 +17,6 @@
     "strict": true,
     "isolatedModules": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "jest.config.js", "eslint.config.js", "eslint.test.config.js"]
 }

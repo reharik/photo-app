@@ -1,6 +1,6 @@
 import { User } from '@packages/contracts';
 import { Knex } from 'knex';
-import type { IocGeneratedCradle } from '../../di/generated/ioc-registry.types';
+import type { AppCradle } from '../../di/generated/ioc-composed.js';
 import {
   AuthenticatedGraphQLContext,
   GraphQLContextFactory,
@@ -11,24 +11,24 @@ import {
 } from './types';
 
 type ContextDeps = {
-  publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
-  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
-  writeServices: IocGeneratedCradle['writeServices'];
-  readServiceFactories: IocGeneratedCradle['readServiceFactories'];
+  publicReadServiceFactories: AppCradle['publicReadServiceFactories'];
+  agnosticReadServices: AppCradle['agnosticReadServices'];
+  writeServices: AppCradle['writeServices'];
+  readServiceFactories: AppCradle['readServiceFactories'];
   database: Knex;
 };
 type PublicContextDeps = {
-  publicReadServiceFactories: IocGeneratedCradle['publicReadServiceFactories'];
-  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
+  publicReadServiceFactories: AppCradle['publicReadServiceFactories'];
+  agnosticReadServices: AppCradle['agnosticReadServices'];
   database: Knex;
   publicLinkId: string;
 };
 type AuthenticatedContextDeps = {
   user: User;
-  readServiceFactories: IocGeneratedCradle['readServiceFactories'];
+  readServiceFactories: AppCradle['readServiceFactories'];
   database: Knex;
-  writeServices: IocGeneratedCradle['writeServices'];
-  agnosticReadServices: IocGeneratedCradle['agnosticReadServices'];
+  writeServices: AppCradle['writeServices'];
+  agnosticReadServices: AppCradle['agnosticReadServices'];
 };
 
 export const build__CreateGraphQLContext = ({

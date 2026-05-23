@@ -4,7 +4,7 @@ import { buildMediaItemBaseStorageKey, hashToken } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -37,7 +37,7 @@ const shareLinkQuery = `
 describe('shareLink query', () => {
   const viewerId = TEST_VIEWER_1_ID;
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<IocGeneratedCradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 

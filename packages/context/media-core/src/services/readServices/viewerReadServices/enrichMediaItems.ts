@@ -22,17 +22,19 @@ export type EnrichMediaItems = {
   ) => Promise<PublicMediaItemProjection[]>;
 };
 
+type EnrichMediaItemsDeps = {
+  mediaItemReadRepository: MediaItemReadRepository;
+  reactionReadRepository: ReactionReadRepository;
+  readReactionService: ReadReactionService;
+  mediaItemOperationsService: MediaItemOperationsService;
+};
+
 export const build__EnrichMediaItems = ({
   mediaItemReadRepository,
   reactionReadRepository,
   readReactionService,
   mediaItemOperationsService,
-}: {
-  mediaItemReadRepository: MediaItemReadRepository;
-  reactionReadRepository: ReactionReadRepository;
-  readReactionService: ReadReactionService;
-  mediaItemOperationsService: MediaItemOperationsService;
-}): EnrichMediaItems => ({
+}: EnrichMediaItemsDeps): EnrichMediaItems => ({
   enrich: async (viewerId: EntityId, rows: DBMediaItemRow[]): Promise<MediaItemProjection[]> => {
     // Tags
     const tags = await mediaItemReadRepository.listTagsForMediaItemIds({

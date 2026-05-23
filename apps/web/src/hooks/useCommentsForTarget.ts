@@ -30,11 +30,12 @@ export const useCommentsForTarget = ({
   isPublicAccess,
 }: Props): UseCommentsForTargetResult => {
   const skipViewerMediaItem =
-    isPublicAccess || targetType !== CommentTargetType.mediaItem || !targetId;
-  const skipViewerAlbum = isPublicAccess || targetType !== CommentTargetType.album || !targetId;
+    isPublicAccess || !targetType.equals(CommentTargetType.mediaItem) || !targetId;
+  const skipViewerAlbum =
+    isPublicAccess || !targetType.equals(CommentTargetType.album) || !targetId;
   const skipPublicMediaItem =
-    !isPublicAccess || targetType !== CommentTargetType.mediaItem || !targetId;
-  const skipPublicAlbum = !isPublicAccess || targetType !== CommentTargetType.album;
+    !isPublicAccess || !targetType.equals(CommentTargetType.mediaItem) || !targetId;
+  const skipPublicAlbum = !isPublicAccess || !targetType.equals(CommentTargetType.album);
 
   const viewerMediaItemQuery = useQuery(CommentsForViewerMediaItemDocument, {
     variables: { mediaItemId: targetId, limit: PAGE_SIZE, offset: 0 },

@@ -1,7 +1,14 @@
 import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packages/media-core';
+import type { Logger } from '@packages/infrastructure';
+import {
+  buildMediaAssetStorageKey,
+  buildMediaItemBaseStorageKey,
+  type MediaItemRepository,
+  type MediaStorage,
+} from '@packages/media-core';
 
-import type { IocGeneratedCradle } from '../di/generated/ioc-registry.types';
+import type { Config } from '../config.js';
+import type { MediaProcessingJobRepository } from '../repositories/domainRepositories/mediaProcessingJobRepository.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator';
 import { readStreamToBuffer } from './readStreamToBuffer';
 
@@ -16,13 +23,21 @@ const serializeError = (e: unknown): string => {
   return String(e);
 };
 
+type ProcessNextMediaImageJobDeps = {
+  config: Config;
+  mediaProcessingJobRepository: MediaProcessingJobRepository;
+  mediaItemRepository: MediaItemRepository;
+  mediaStorage: MediaStorage;
+  logger: Logger;
+};
+
 export const build__ProcessNextMediaImageJob = ({
   config,
   mediaProcessingJobRepository,
   mediaItemRepository,
   mediaStorage,
   logger,
-}: IocGeneratedCradle): ProcessNextMediaImageJob => {
+}: ProcessNextMediaImageJobDeps): ProcessNextMediaImageJob => {
   return async (): Promise<ProcessNextMediaImageJobResult> => {
     const job = await mediaProcessingJobRepository.claimNextAvailableJob();
     if (!job) {

@@ -3,13 +3,44 @@
   "projectType": "library",
   "sourceRoot": "{projectRoot}/src",
   "targets": {
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx rimraf dist"
+      }
+    },
+    "barrels": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "npx barrelsby --config barrelsby.json"
+      }
+    },
+    "gen:container": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["barrels"],
+      "options": {
+        "command": "ioc generate",
+        "cwd": "{projectRoot}"
+      }
+    },
     "build": {
       "executor": "@nx/js:tsc",
+      "dependsOn": ["barrels", "gen:container", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
         "tsConfig": "{projectRoot}/tsconfig.json",
         "main": "{projectRoot}/src/index.ts"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "{projectRoot}",
+        "command": "tsc -w -p tsconfig.json"
       }
     },
     "lint": {
@@ -46,5 +77,5 @@
       }
     }
   },
-  "tags": ["layer:foundation", "scope:shared"]
+  "tags": ["layer:foundation", "scope:shared", "scope:packages"]
 }

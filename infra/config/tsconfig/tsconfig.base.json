@@ -1,5 +1,5 @@
 {
-  "references": [{ "path": "apps/api" }, { "path": "apps/web" }, { "path": "packages/contracts" }],
+  "references": [{ "path": "apps/api" }, { "path": "apps/web" }, { "path": "packages/context/contracts" }],
 
   "compilerOptions": {
     "module": "ESNext",
