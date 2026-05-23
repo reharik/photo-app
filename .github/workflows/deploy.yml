@@ -298,8 +298,8 @@ jobs:
         run: npm ci
 
       - name: Generate container types
-        run: npm run gen:container
-      
+        run: npm run codegen:web
+        
       - name: Build frontend
         run: npm run build:web
         env:
