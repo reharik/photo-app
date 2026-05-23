@@ -46,6 +46,7 @@ export const build__CreateGraphQLContext = ({
   ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
     const user = initialContext.state?.user;
     const publicAccessId = initialContext.state?.publicAccessId;
+
     if (initialContext.state?.isLoggedIn && user) {
       return buildAuthenticatedContext({
         user,

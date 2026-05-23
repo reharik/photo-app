@@ -15,7 +15,7 @@ export type RunMediaWorkerLoop = {
 };
 
 /** Log an idle heartbeat at info roughly every 30s at the default 2s poll interval. */
-const IDLE_HEARTBEAT_EVERY_CYCLES = 15;
+const IDLE_HEARTBEAT_EVERY_CYCLES = 225;
 
 type RunMediaWorkerLoopDeps = {
   config: Config;
@@ -58,10 +58,6 @@ export const build__RunMediaWorkerLoop = ({
         }
 
         idleCycles += 1;
-        logger.debug('Media worker poll: no jobs available', {
-          idleCycles,
-          pollIntervalMs: config.mediaWorkerPollIntervalMs,
-        });
         if (idleCycles % IDLE_HEARTBEAT_EVERY_CYCLES === 0) {
           logger.info('Media worker heartbeat: waiting for jobs', {
             idleCycles,

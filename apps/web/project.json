@@ -65,7 +65,7 @@
     },
     "dev": {
       "executor": "@nx/vite:dev-server",
-      "dependsOn": ["codegen"],
+      "dependsOn": [],
       "options": {
         "buildTarget": "web:build",
         "port": 5173
