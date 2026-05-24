@@ -115,7 +115,7 @@ jobs:
   build:
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_build_backend == 'true' }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
@@ -161,7 +161,6 @@ jobs:
           context: .
           file: infra/docker/Dockerfile
           target: runtime-node
-          platforms: linux/arm64
           build-args: |
             SERVICE_NAME=${{ matrix.service.name }}
           tags: |
