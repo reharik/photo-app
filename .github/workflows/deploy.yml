@@ -163,7 +163,7 @@ jobs:
           target: runtime-node
           platforms: linux/arm64
           build-args: |
-            APP_NAME=${{ matrix.service.name }}
+            SERVICE_NAME=${{ matrix.service.name }}
           tags: |
             ${{ env.APP_NAME }}-${{ matrix.service.name }}:${{ env.SHORT_SHA }}
           load: true

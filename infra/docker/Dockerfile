@@ -91,8 +91,8 @@ CMD ["nginx", "-g", "daemon off;"]
 # === Dev (docker compose: source mounted over apps/ and packages/) ===
 FROM node:20-slim AS dev
 WORKDIR /app
-ARG APP_NAME
-ENV APP_NAME=${APP_NAME}
+ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
 RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
 COPY --from=manifests /manifests/ ./
 RUN --mount=type=cache,target=/root/.npm \
@@ -102,4 +102,4 @@ COPY infra infra
 COPY packages packages
 COPY apps apps
 EXPOSE 3000
-CMD ["sh", "-c", "sh apps/${APP_NAME}/src/scripts/serverStartUpDev.sh"]
+CMD ["sh", "-c", "sh apps/${SERVICE_NAME}/src/scripts/serverStartUpDev.sh"]
