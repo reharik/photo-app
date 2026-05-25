@@ -10,6 +10,11 @@ import { stampAudit } from '../../domain/utilities/stampAudit';
 import { diffCollectionById } from '../../infrastructure/repositories/diffCollectionById';
 import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import { EntityId } from '../../types/types';
+import {
+  publicLinkSelectColumns,
+  PublicLinkWithAuthorizationRaw,
+  publicLinkWithAuthorizationRawToPublicLink,
+} from './albumRepositoryMappings';
 
 export type AlbumRepository = {
   getById: (id: EntityId, options?: RepoOptions) => Promise<Album | undefined>;
@@ -48,15 +53,24 @@ export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): Album
       { strict: true },
     );
     const publicLinkRows = await withEnumRevival(
-      database<PublicLinkRecord>('share_link').where({ albumId: id }).orderBy('createdAt', 'asc'),
+      database('share_link')
+        .innerJoin('access_grant', 'share_link.id', 'access_grant.share_link_id')
+        .select<PublicLinkWithAuthorizationRaw[]>(...publicLinkSelectColumns)
+        .where({ albumId: id })
+        .orderBy('createdAt', 'asc'),
       { operation: Operation },
       { strict: true },
     );
-
+    console.log(`************publicLinkRows************`);
+    console.log(publicLinkRows);
+    console.log(`********END publicLinkRows************`);
+    const publicLinks = publicLinkRows.map((row) =>
+      publicLinkWithAuthorizationRawToPublicLink(row),
+    );
     albumRow.items = itemRows;
     albumRow.members = memberRows;
     albumRow.authorizations = authorizationRows;
-    albumRow.publicLinks = publicLinkRows;
+    albumRow.publicLinks = publicLinks;
 
     return Album.rehydrate(albumRow);
   };

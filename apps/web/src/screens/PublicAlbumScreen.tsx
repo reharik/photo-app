@@ -16,6 +16,7 @@ export const PublicAlbumScreen = () => {
   const query = useQuery(PublicAlbumViewDocument, {
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   const { data, content } = getQueryRenderState({

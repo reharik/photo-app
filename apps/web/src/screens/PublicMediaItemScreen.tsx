@@ -31,6 +31,7 @@ export const PublicMediaItemScreen = () => {
     skip: !mediaId,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   const { data: mediaItem, content } = getQueryRenderState({

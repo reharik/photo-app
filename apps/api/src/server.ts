@@ -5,6 +5,7 @@ import type { KoaServer } from './koaServer.js';
 
 export interface Server {
   start(): Promise<void>;
+  close(resolve: (value: unknown) => void): Promise<void>;
 }
 
 type ServerDeps = {

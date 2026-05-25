@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
+import { EmptyState } from '../../ui/EmptyState';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
@@ -48,6 +49,7 @@ export const MediaSelectorSection = ({
         gridGapSpacingStep={1}
         gridGapSpacingStepMobile={2}
         selectableActions={selectableActions}
+        emptyState={<EmptyState title="No media items to add" text="No media items to add" />}
       />
     </Container>
   );

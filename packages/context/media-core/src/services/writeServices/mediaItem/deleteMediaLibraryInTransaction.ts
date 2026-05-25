@@ -17,6 +17,11 @@ export type DeleteMediaLibraryInTransactionDeps = {
  * Removes the given aggregates from every album that references them, then deletes the `media_item` rows.
  * Runs in a single DB transaction. Caller must have already verified existence and viewer ownership.
  */
+
+/**
+ * This is a strange one it's kind of a repository but it calls several other repositories
+ * and acts across several domains.
+ */
 export const deleteViewerOwnedMediaItemsFromLibraryInTransaction = async ({
   viewerId,
   mediaItems,

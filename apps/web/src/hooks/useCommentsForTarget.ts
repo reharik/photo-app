@@ -42,6 +42,7 @@ export const useCommentsForTarget = ({
     skip: skipViewerMediaItem,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   const viewerAlbumQuery = useQuery(CommentsForViewerAlbumDocument, {
@@ -49,6 +50,7 @@ export const useCommentsForTarget = ({
     skip: skipViewerAlbum,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   const publicMediaItemQuery = useQuery(CommentsForPublicMediaItemDocument, {
@@ -63,6 +65,7 @@ export const useCommentsForTarget = ({
     skip: skipPublicAlbum,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   if (!skipViewerMediaItem) {

@@ -18,6 +18,7 @@ export const PublicCommentsForMediaItemContainer = ({
     variables: { mediaItemId, limit: PAGE_SIZE, offset: 0 },
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
+    context: { accessMode: 'public' },
   });
 
   const { data, content } = getQueryRenderState({

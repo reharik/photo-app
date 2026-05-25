@@ -221,36 +221,29 @@ export const AlbumSection = ({
             addAlbumItemState.setAddItemOpen(false);
           }}
         >
-          {addAlbumItemState.pickerMediaItems ? (
-            <MediaSelectorSection
-              onAddToAlbum={addAlbumItemState.submitAddToAlbum}
-              onClose={() => {
-                clearSelection();
-                addAlbumItemState.setAddItemOpen(false);
-              }}
-              header={
-                <AddAlbumItemModalHeader>
-                  <AddAlbumItemModalTitle id="add-album-item-modal-title">
-                    Add album item
-                  </AddAlbumItemModalTitle>
-                  <AddAlbumItemModalClose
-                    type="button"
-                    onClick={() => {
-                      addAlbumItemState.setAddItemOpen(false);
-                    }}
-                  >
-                    Close
-                  </AddAlbumItemModalClose>
-                </AddAlbumItemModalHeader>
-              }
-              nodes={addAlbumItemState.pickerMediaItems}
-            />
-          ) : (
-            <EmptyState
-              title="No media yet"
-              text="Upload your first media to start building your album"
-            />
-          )}
+          <MediaSelectorSection
+            onAddToAlbum={addAlbumItemState.submitAddToAlbum}
+            onClose={() => {
+              clearSelection();
+              addAlbumItemState.setAddItemOpen(false);
+            }}
+            header={
+              <AddAlbumItemModalHeader>
+                <AddAlbumItemModalTitle id="add-album-item-modal-title">
+                  Add album item
+                </AddAlbumItemModalTitle>
+                <AddAlbumItemModalClose
+                  type="button"
+                  onClick={() => {
+                    addAlbumItemState.setAddItemOpen(false);
+                  }}
+                >
+                  Close
+                </AddAlbumItemModalClose>
+              </AddAlbumItemModalHeader>
+            }
+            nodes={addAlbumItemState.pickerMediaItems}
+          />
         </AppModal>
       )}
     </Container>

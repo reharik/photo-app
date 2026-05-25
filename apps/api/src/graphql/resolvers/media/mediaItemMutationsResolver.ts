@@ -73,7 +73,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
       });
-
       return writeResultToPayload(result);
     }),
     updateMediaItemDetails: authenticatedResolver(

@@ -44,9 +44,22 @@ export const build__CreateGraphQLContext = ({
   return (
     initialContext: GraphQLInitialContext,
   ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
+    const accessMode = initialContext.request.headers.get('X-Access-Mode') ?? undefined;
     const user = initialContext.state?.user;
     const publicAccessId = initialContext.state?.publicAccessId;
 
+    if (accessMode === 'public') {
+      if (!publicAccessId) {
+        throw new Error('Public access not found');
+      }
+      return buildPublicContext({
+        publicReadServiceFactories,
+        database,
+        // Rename/map here for clarity down the line
+        publicLinkId: publicAccessId,
+        agnosticReadServices,
+      });
+    }
     if (initialContext.state?.isLoggedIn && user) {
       return buildAuthenticatedContext({
         user,
@@ -56,16 +69,7 @@ export const build__CreateGraphQLContext = ({
         agnosticReadServices,
       });
     }
-    if (!publicAccessId) {
-      throw new Error('Public access not found');
-    }
-    return buildPublicContext({
-      publicReadServiceFactories,
-      database,
-      // Rename/map here for clarity down the line
-      publicLinkId: publicAccessId,
-      agnosticReadServices,
-    });
+    throw new Error('Invalid access mode');
   };
 };
 

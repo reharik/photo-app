@@ -4,6 +4,7 @@
 
 export * from './repositoryHelpers';
 export * from './domainRepositories/albumRepository';
+export * from './domainRepositories/albumRepositoryMappings';
 export * from './domainRepositories/commentRepository';
 export * from './domainRepositories/grantRepository';
 export * from './domainRepositories/mediaItemRepository';

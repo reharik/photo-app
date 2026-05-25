@@ -1,4 +1,5 @@
 import { ApolloClient, ApolloLink, HttpLink, InMemoryCache } from '@apollo/client';
+import { SetContextLink } from '@apollo/client/link/context';
 import { enumRegistry } from '@packages/contracts';
 import { patchSchemaEnumSerializers } from '@reharik/smart-enum/graphql';
 import { withScalars } from 'apollo-link-scalars';
@@ -27,8 +28,21 @@ const httpLink = new HttpLink({
   credentials: 'include',
 });
 
+type AccessMode = 'public' | 'authenticated';
+const accessModeLink = new SetContextLink((prevContext) => {
+  const headers = (prevContext.headers as Record<string, string> | undefined) ?? {};
+  const accessMode = prevContext.accessMode as AccessMode | undefined;
+
+  return {
+    headers: {
+      ...headers,
+      ...(accessMode === 'public' ? { 'X-Access-Mode': 'public' } : {}),
+    },
+  };
+});
+
 export const apolloClient = new ApolloClient({
-  link: ApolloLink.from([scalarLink, httpLink]),
+  link: ApolloLink.from([scalarLink, accessModeLink, httpLink]),
   cache: new InMemoryCache({
     typePolicies: {
       ...smartEnumTypePolicies,

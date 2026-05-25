@@ -41,13 +41,11 @@ export const build__YogaApp = ({ graphQLContextFactory, config }: YogaAppDeps): 
 export const build__GraphQLServer = ({ yogaApp }: GraphQLServerDeps): GraphQLServer => {
   return async (ctx: Koa.ParameterizedContext) => {
     const response = await yogaApp.handleNodeRequestAndResponse(ctx.request, ctx.res, ctx);
-
     ctx.status = response.status;
 
     for (const [key, value] of response.headers.entries()) {
       ctx.set(key, value);
     }
-
     ctx.body = response.body;
   };
 };
