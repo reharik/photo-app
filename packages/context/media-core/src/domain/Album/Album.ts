@@ -275,8 +275,10 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (!publicLinkId && !token) {
       return fail(AppErrorCollection.authorization.PublicLinkMustHaveTokenOrId);
     }
+
     const publicLink = this.#publicLinks.find((x) => x.id() === publicLinkId);
     if (!publicLink) {
+      // creating a new public link creates a new authorization/access_grant
       const publicLink = PublicLink.create(
         {
           operations: operations ?? [],

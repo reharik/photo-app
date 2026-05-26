@@ -56,14 +56,12 @@ export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): Album
       database('share_link')
         .innerJoin('access_grant', 'share_link.id', 'access_grant.share_link_id')
         .select<PublicLinkWithAuthorizationRaw[]>(...publicLinkSelectColumns)
-        .where({ albumId: id })
-        .orderBy('createdAt', 'asc'),
+        .where({ 'share_link.albumId': id })
+        .orderBy('share_link.createdAt', 'asc'),
       { operation: Operation },
       { strict: true },
     );
-    console.log(`************publicLinkRows************`);
-    console.log(publicLinkRows);
-    console.log(`********END publicLinkRows************`);
+
     const publicLinks = publicLinkRows.map((row) =>
       publicLinkWithAuthorizationRawToPublicLink(row),
     );
@@ -110,10 +108,7 @@ export const build__AlbumRepository = ({ database }: AlbumRepositoryDeps): Album
             ...(publicLinkId != null ? { shareLinkId: publicLinkId } : {}),
           };
         });
-        await trx('access_grant')
-          .insert(authorizationRows)
-          .onConflict(['album_id', 'granted_to_user'])
-          .merge();
+        await trx('access_grant').insert(authorizationRows).onConflict(['id']).merge();
       }
       if (publicLinks.length > 0) {
         const linkRows: Omit<PublicLinkRecord, 'authorization'>[] = [];

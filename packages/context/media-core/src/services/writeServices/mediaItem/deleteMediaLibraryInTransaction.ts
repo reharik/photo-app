@@ -49,6 +49,7 @@ export const deleteViewerOwnedMediaItemsFromLibraryInTransaction = async ({
       if (!album) {
         continue;
       }
+
       for (const mediaItemId of mediaItemIds) {
         album.removeMediaItemFromAlbum(mediaItemId, viewerId);
       }

@@ -6,14 +6,17 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
+      "development": "./src/index.ts",
       "default": "./dist/src/index.js"
     },
     "./iocManifest": {
       "types": "./dist/src/generated/ioc-manifest.js",
+      "development": "./src/generated/ioc-manifest.js",
       "default": "./dist/src/generated/ioc-manifest.js"
     },
     "./iocTypes": {
       "types": "./dist/src/generated/ioc-registry.types.js",
+      "development": "./src/generated/ioc-registry.types.js",
       "default": "./dist/src/generated/ioc-registry.types.js"
     }
   },
