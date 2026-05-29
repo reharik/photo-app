@@ -1,6 +1,6 @@
 import { Operation } from '@packages/contracts';
 import { AuthorizationRecord } from 'src/domain/Authorization/Authorization';
-import { PublicLinkRecord } from 'src/domain/PublicLink/PublicLink';
+import { PublicLinkChildRecords, PublicLinkRecord } from '../../domain/PublicLink/PublicLink';
 
 export type PublicLinkWithAuthorizationRaw = {
   id: string;
@@ -17,6 +17,7 @@ export type PublicLinkWithAuthorizationRaw = {
 
 export type AuthorizationRaw = {
   authorizationId: string;
+  authorizationAlbumId?: string;
   authorizationGrantedToUser?: string;
   authorizationGrantedBy: string;
   authorizationOperations: Operation[];
@@ -35,6 +36,7 @@ export const authorizationSelectColumns = [
   'accessGrant.grantedBy as authorizationGrantedBy',
   'accessGrant.operations as authorizationOperations',
   'accessGrant.label as authorizationLabel',
+  'accessGrant.albumId as authorizationAlbumId',
   'accessGrant.expiresAt as authorizationExpiresAt',
   'accessGrant.revokedAt as authorizationRevokedAt',
   'accessGrant.createdAt as authorizationCreatedAt',
@@ -66,6 +68,7 @@ export const authorizationRawToAuthorizationRecord = (
     grantedBy: row.authorizationGrantedBy,
     operations: row.authorizationOperations,
     label: row.authorizationLabel,
+    albumId: row.authorizationAlbumId,
     expiresAt: row.authorizationExpiresAt,
     revokedAt: row.authorizationRevokedAt,
     createdAt: row.authorizationCreatedAt,
@@ -77,18 +80,22 @@ export const authorizationRawToAuthorizationRecord = (
 
 export const publicLinkWithAuthorizationRawToPublicLink = (
   row: PublicLinkWithAuthorizationRaw,
-): PublicLinkRecord => {
+): { publicLink: PublicLinkRecord; publicLinkChildRecords: PublicLinkChildRecords } => {
   return {
-    id: row.id,
-    albumId: row.albumId,
-    linkToken: row.linkToken,
-    grantedBy: row.grantedBy,
-    expiresAt: row.expiresAt,
-    revokedAt: row.revokedAt,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    createdBy: row.createdBy,
-    updatedBy: row.updatedBy,
-    authorization: authorizationRawToAuthorizationRecord(row),
+    publicLink: {
+      id: row.id,
+      albumId: row.albumId,
+      linkToken: row.linkToken,
+      grantedBy: row.grantedBy,
+      expiresAt: row.expiresAt,
+      revokedAt: row.revokedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdBy: row.createdBy,
+      updatedBy: row.updatedBy,
+    },
+    publicLinkChildRecords: {
+      authorization: authorizationRawToAuthorizationRecord(row),
+    },
   };
 };

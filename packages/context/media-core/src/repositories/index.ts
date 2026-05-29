@@ -3,6 +3,11 @@
  */
 
 export * from './repositoryHelpers';
+export * from './MediaDeletionJob/MediaDeletionJobRepository';
+export * from './MediaDeletionJob/mediaDeletionJobStatus';
+export * from './MediaProcessingJob/MediaProcessingJobRepository';
+export * from './MediaProcessingJob/mediaProcessingJobStatus';
+export * from './domainRepositories/AggregateRepo';
 export * from './domainRepositories/albumRepository';
 export * from './domainRepositories/albumRepositoryMappings';
 export * from './domainRepositories/commentRepository';

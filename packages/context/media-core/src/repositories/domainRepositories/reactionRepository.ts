@@ -9,7 +9,7 @@ type ReactionRepositoryDeps = { database: Knex };
 
 export type ReactionRepository = {
   getById: (id: EntityId) => Promise<Reaction | undefined>;
-  save: (reaction: Reaction, options?: RepoOptions) => Promise<void>;
+  save: (reaction: Reaction, trx: Knex.Transaction) => Promise<void>;
   delete: (reaction: Reaction, options?: RepoOptions) => Promise<boolean>;
 };
 
@@ -25,14 +25,12 @@ export const build__ReactionRepository = ({
     return reaction ? Reaction.rehydrate(reaction) : undefined;
   },
 
-  save: async (reaction: Reaction, options?: RepoOptions): Promise<void> => {
+  save: async (reaction: Reaction, trx: Knex.Transaction): Promise<void> => {
     const record = reaction.toPersistence();
-    await runInTransaction(database, options, async (trx) => {
-      await trx('reaction')
-        .insert(record)
-        .onConflict(['target_type', 'target_id', 'user_id', 'emoji'])
-        .ignore();
-    });
+    await trx('reaction')
+      .insert(record)
+      .onConflict(['target_type', 'target_id', 'user_id', 'emoji'])
+      .ignore();
   },
 
   delete: async (reaction: Reaction, options?: RepoOptions): Promise<boolean> => {

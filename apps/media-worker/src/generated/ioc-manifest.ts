@@ -131,7 +131,7 @@ export const iocManifest = {
         moduleIndex: 1,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['Config', 'MediaProcessingJobRepository'],
+        dependencyContractNames: ['Config', 'Knex', 'MediaProcessingJobRepository'],
       },
     },
     RunMediaWorkerLoop: {

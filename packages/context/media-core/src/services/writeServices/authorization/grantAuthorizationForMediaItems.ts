@@ -1,5 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
-import { Knex } from 'knex';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import {
   ensureUserExists,
@@ -55,7 +55,7 @@ type GrantAuthorizationForMediaItemsDeps = {
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
-  database: Knex;
+  createTransaction: CreateTransaction;
 };
 
 /**
@@ -67,7 +67,7 @@ export const build__GrantAuthorizationForMediaItems = ({
   userRepository,
   grantRepository,
   shareContactRepository,
-  database,
+  createTransaction,
 }: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
   return async (
     input: GrantUserAuthorizationForMediaItemsCommand,
@@ -127,9 +127,9 @@ export const build__GrantAuthorizationForMediaItems = ({
         ? await userRepository.getById(viewerId)
         : undefined;
 
-    await database.transaction(async (trx) => {
+    await createTransaction(async (trx) => {
       for (const { mediaItem, authorization } of grants) {
-        await mediaItemRepository.save(mediaItem, { trx });
+        await mediaItemRepository.save(mediaItem, trx);
 
         await grantRepository.createGrant(
           {
@@ -140,7 +140,7 @@ export const build__GrantAuthorizationForMediaItems = ({
             operations: authorization.operations(),
             createdAt: new Date(),
           },
-          { trx },
+          trx,
         );
       }
 
@@ -150,12 +150,15 @@ export const build__GrantAuthorizationForMediaItems = ({
           viewerId,
           grantedToUserId,
           grantedToHandleResolved,
-          { trx },
+          trx,
         );
         if (owner) {
-          await shareContactRepository.upsertContact(grantedToUserId, viewerId, owner.handle(), {
+          await shareContactRepository.upsertContact(
+            grantedToUserId,
+            viewerId,
+            owner.handle(),
             trx,
-          });
+          );
         }
       }
     });

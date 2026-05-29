@@ -16,7 +16,6 @@ export const MediaItemTile = ({
   onReactionsRefetch?: () => void;
 }) => {
   const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
-
   return (
     <TileColumn>
       <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>

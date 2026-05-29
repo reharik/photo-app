@@ -1,4 +1,5 @@
 import { Operation } from '@packages/contracts';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -13,10 +14,12 @@ export interface ReorderAlbumItems extends WriteServiceBase {
 
 type ReorderAlbumItemsDeps = {
   albumRepository: AlbumRepository;
+  createTransaction: CreateTransaction;
 };
 
 export const build__ReorderAlbumItems = ({
   albumRepository,
+  createTransaction,
 }: ReorderAlbumItemsDeps): ReorderAlbumItems => {
   return async (input: ReorderAlbumItemsCommand): Promise<WriteResult<ReorderAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
@@ -37,7 +40,7 @@ export const build__ReorderAlbumItems = ({
       return r3;
     }
 
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

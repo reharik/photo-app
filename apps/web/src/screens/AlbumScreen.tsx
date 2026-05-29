@@ -32,8 +32,8 @@ export const AlbumScreen = () => {
   const query = useQuery(ViewerAlbumDetailDocument, {
     variables: { albumId: albumId ?? '' },
     skip: !albumId,
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
   });
 
   const mediaItemsForPickerQuery = useQuery(ViewerRecentMediaDocument, {

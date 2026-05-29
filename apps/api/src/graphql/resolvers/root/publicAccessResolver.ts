@@ -18,6 +18,9 @@ const publicAccessResolver: Pick<Resolvers, 'Query' | 'PublicAccess'> = {
   },
   PublicAccess: {
     album: publicResolver(async (publicAccess, args, ctx) => {
+      console.log(`************publicAccess.albumId************`);
+      console.log(publicAccess.albumId);
+      console.log(`********END publicAccess.albumId************`);
       const album = await ctx.publicReadServices.publicAlbumReadService.getAlbum(
         publicAccess.albumId,
       );

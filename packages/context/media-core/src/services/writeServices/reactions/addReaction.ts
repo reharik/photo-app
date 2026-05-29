@@ -76,7 +76,7 @@ export const build__AddReaction = ({
 
     const reaction = Reaction.create({ targetType, targetId, userId: viewer.userId, emoji });
     await database.transaction(async (trx) => {
-      await reactionRepository.save(reaction, { trx });
+      await reactionRepository.save(reaction, trx);
       if (targetType === ReactionTargetType.mediaItem) {
         await mediaItemRepository.updateReactionCounts(targetId, updatedReactionCount, { trx });
       } else if (targetType === ReactionTargetType.comment) {

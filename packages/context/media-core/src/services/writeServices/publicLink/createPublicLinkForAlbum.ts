@@ -1,6 +1,6 @@
 import { AlbumMemberRole, AppErrorCollection } from '@packages/contracts';
 import crypto from 'crypto';
-import { Knex } from 'knex';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { hashToken } from '../../../application';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
@@ -29,13 +29,13 @@ export interface CreatePublicLinkForAlbum extends WriteServiceBase {
 
 type CreatePublicLinkForAlbumDeps = {
   albumRepository: AlbumRepository;
-  database: Knex;
+  createTransaction: CreateTransaction;
   grantRepository: GrantRepository;
 };
 
 export const build__CreatePublicLinkForAlbum = ({
   albumRepository,
-  database,
+  createTransaction,
   grantRepository,
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
@@ -66,8 +66,8 @@ export const build__CreatePublicLinkForAlbum = ({
     const mediaItemIds = album.getMediaItemIds();
 
     // this is outside of the AR because grants are a side-effect projection maintained by the write services.
-    await database.transaction(async (trx) => {
-      await albumRepository.save(album, input.viewerId, { trx });
+    await createTransaction(async (trx) => {
+      await albumRepository.save(album, trx);
 
       const now = new Date();
       const grants: GrantRecord[] = mediaItemIds.map((x) => {
@@ -79,7 +79,7 @@ export const build__CreatePublicLinkForAlbum = ({
           createdAt: now,
         };
       });
-      await grantRepository.createGrants(grants, { trx });
+      await grantRepository.createGrants(grants, trx);
     });
     // TODO: create share_link row with hashed token, create album-level access_grant, and wire grant table population.
     return ok({ token });

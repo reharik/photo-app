@@ -5,21 +5,20 @@ import { AuditRecord, ChildEntities, Entity } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 
 export type PublicLinkProps = {
+  albumId: EntityId;
   grantedBy: EntityId;
   linkToken: string;
   expiresAt?: Date;
   revokedAt?: Date;
 };
 
-export type PublicLinkRecord = {
+export type PublicLinkRecord = PublicLinkProps & {
   id: string;
-  albumId: EntityId;
-  linkToken: string;
-  grantedBy: EntityId;
-  expiresAt?: Date;
-  revokedAt?: Date;
-  authorization: AuthorizationRecord;
 } & AuditRecord;
+
+export type PublicLinkChildRecords = {
+  authorization: AuthorizationRecord;
+};
 
 export type CreatePublicLinkInput = {
   operations: Operation[];
@@ -27,19 +26,21 @@ export type CreatePublicLinkInput = {
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
+  albumId: EntityId;
 };
 
 export class PublicLink extends Entity<PublicLinkRecord> {
   protected props: PublicLinkProps;
   #authorization: Authorization;
+  #removedAuthorization: Authorization[] | [] = [];
 
   private constructor(
-    id: EntityId,
     actorId: ActorId,
     props: PublicLinkProps,
     authorization: Authorization,
+    id?: EntityId,
   ) {
-    super(id, actorId);
+    super(id, actorId, 'share_link');
     this.props = props;
     this.#authorization = authorization;
   }
@@ -51,36 +52,39 @@ export class PublicLink extends Entity<PublicLinkRecord> {
         grantedBy: actorId,
         label: input.label,
         expiresAt: input.expiresAt,
+        albumId: input.albumId,
       },
       actorId,
     );
     const publicLink = new PublicLink(
-      crypto.randomUUID(),
       actorId,
       {
         linkToken: input.linkToken,
         grantedBy: actorId,
         expiresAt: input.expiresAt,
+        albumId: input.albumId,
       },
       authorization,
     );
+    authorization.setPublicLinkId(publicLink.id());
 
     return publicLink;
   }
 
-  static rehydrate(record: PublicLinkRecord): PublicLink {
-    const authorization = Authorization.rehydrate(record.authorization);
+  static rehydrate(record: PublicLinkRecord, childRecords: PublicLinkChildRecords): PublicLink {
+    const authorization = Authorization.rehydrate(childRecords.authorization);
 
     const publicLink = new PublicLink(
-      record.id,
       record.createdBy,
       {
+        albumId: record.albumId,
         linkToken: record.linkToken,
         expiresAt: record.expiresAt,
         revokedAt: record.revokedAt,
         grantedBy: record.createdBy,
       },
       authorization,
+      record.id,
     );
     publicLink.rehydrateAudit(record);
     return publicLink;
@@ -127,16 +131,10 @@ export class PublicLink extends Entity<PublicLinkRecord> {
   authorization(): Authorization {
     return this.#authorization;
   }
-  public override persistenceState(): Record<string, unknown> {
-    return {
-      ...super.persistenceState(),
-      authorization: this.#authorization,
-    };
-  }
 
-  protected childEntities(): ChildEntities {
+  childEntities(): ChildEntities {
     return {
-      authorization: this.#authorization,
+      authorization: { upsert: [this.#authorization], removed: this.#removedAuthorization },
     };
   }
 }

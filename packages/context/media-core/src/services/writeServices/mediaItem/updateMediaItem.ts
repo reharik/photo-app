@@ -1,4 +1,5 @@
 import { ContractError } from '@packages/contracts';
+import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
@@ -17,10 +18,12 @@ export interface UpdateMediaItem extends WriteServiceBase {
 
 type UpdateMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
+  database: Knex;
 };
 
 export const build__UpdateMediaItem = ({
   mediaItemRepository,
+  database,
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (
     input: UpdateMediaItemDetailsCommand,
@@ -53,7 +56,7 @@ export const build__UpdateMediaItem = ({
     if (!updateResult.success) {
       return updateResult;
     }
-    await mediaItemRepository.save(mediaItem);
+    await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
 
     return ok({
       mediaItemId: mediaItem.id(),

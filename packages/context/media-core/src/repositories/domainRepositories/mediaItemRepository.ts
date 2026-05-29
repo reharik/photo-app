@@ -9,28 +9,32 @@ import {
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { DBReactionCounts } from '../..';
-import { buildMediaItemBaseStorageKey } from '../../application/media/MediaStorage';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
-import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
-import { mediaItemTagLabelKey } from '../../domain/MediaItem/MediaItemTag';
 import {
-  type DbExecutor,
+  MediaItem,
+  MediaItemTagRecord,
+  type MediaItemRecord,
+} from '../../domain/MediaItem/MediaItem';
+import {
   RepoOptions,
   runInTransaction,
+  type DbExecutor,
 } from '../../infrastructure/repositories/runInTransaction';
 import type { EntityId } from '../../types/types';
+import { persist } from './AggregateRepo';
 
 export type MediaItemRepository = {
   getById: (id: EntityId) => Promise<MediaItem | undefined>;
-  save: (mediaItem: MediaItem, options?: RepoOptions) => Promise<void>;
+  save: (mediaItem: MediaItem, trx: Knex.Transaction) => Promise<void>;
   delete: (mediaItem: MediaItem, options?: RepoOptions) => Promise<void>;
   updateReactionCounts(
     mediaItemId: EntityId,
     reactionCounts: DBReactionCounts,
     options?: RepoOptions,
   ): Promise<void>;
+  ensureUserTagId: (trx: DbExecutor, userTag: UserTagRow) => Promise<EntityId>;
 };
 
 type MediaItemRepositoryDeps = { database: Knex };
@@ -39,7 +43,10 @@ type UserTagRow = {
   id: EntityId;
   userId: EntityId;
   label: string;
-  labelKey: string;
+  createdBy: EntityId;
+  createdAt: Date;
+  updatedBy: EntityId;
+  updatedAt: Date;
 };
 
 export const build__MediaItemRepository = ({
@@ -80,122 +87,35 @@ export const build__MediaItemRepository = ({
       { strict: true },
     );
 
-    const tagLabelRows = await database('mediaItemTag')
+    const tagRows = await database('mediaItemTag')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
       .where('mediaItemTag.mediaItemId', id)
-      .select<{ label: string }[]>('userTag.label')
+      .select<
+        MediaItemTagRecord[]
+      >(['mediaItemTag.id', 'mediaItemTag.mediaItemId', 'userTag.id as userTagId', 'mediaItemTag.createdBy', 'mediaItemTag.createdAt', 'mediaItemTag.updatedBy', 'mediaItemTag.updatedAt', 'userTag.label'])
       .orderBy('userTag.label', 'asc');
 
-    mediaItemRow.comments = commentRows;
-    mediaItemRow.assets = assetRows;
-    mediaItemRow.authorizations = authorizationRows;
-    mediaItemRow.tags = tagLabelRows.map((r) => r.label);
-    return MediaItem.rehydrate(mediaItemRow);
+    const childRecords = {
+      comments: commentRows,
+      assets: assetRows,
+      authorizations: authorizationRows,
+      tags: tagRows,
+    };
+
+    return MediaItem.rehydrate(mediaItemRow, childRecords);
   };
 
-  const ensureUserTagId = async (
-    trx: DbExecutor,
-    { userId, label, actorId }: { userId: EntityId; label: string; actorId: EntityId },
-  ): Promise<EntityId> => {
-    const labelKey = mediaItemTagLabelKey(label);
-    const existing = await trx<UserTagRow>('userTag').where({ userId, labelKey }).first();
-    if (existing) {
-      return existing.id;
-    }
-    const id = crypto.randomUUID();
-    const now = new Date();
-    try {
-      await trx('userTag').insert({
-        id,
-        userId,
-        label,
-        labelKey,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: actorId,
-        updatedBy: actorId,
-      });
-      return id;
-    } catch (err: unknown) {
-      const retry = await trx<UserTagRow>('userTag').where({ userId, labelKey }).first();
-      if (retry) {
-        return retry.id;
-      }
-      throw err;
-    }
+  const ensureUserTagId = async (trx: DbExecutor, userTag: UserTagRow): Promise<EntityId> => {
+    const [row] = await trx('user_tag')
+      .insert(userTag)
+      .onConflict(['userId', 'label'])
+      .merge({ updatedAt: new Date() })
+      .returning<{ id: EntityId }[]>('id');
+    return row.id;
   };
 
-  const save = async (mediaItem: MediaItem, options?: RepoOptions): Promise<void> => {
-    await runInTransaction(database, options, async (trx) => {
-      const record = mediaItem.toPersistence();
-      const { comments, assets, authorizations, tags: tagLabels, ...mediaItemRow } = record;
-      const rowForDb = {
-        ...mediaItemRow,
-        storageKey: buildMediaItemBaseStorageKey(record.ownerId, record.id),
-      };
-
-      const existing = await trx<MediaItemRecord>('mediaItem').where({ id: record.id }).first();
-
-      if (existing) {
-        await trx<MediaItemRecord>('mediaItem').where({ id: record.id }).update(rowForDb);
-      } else {
-        await trx('mediaItem').insert(rowForDb);
-      }
-
-      await trx('comment')
-        .where({ targetType: CommentTargetType.mediaItem, targetId: record.id })
-        .delete();
-
-      if (comments.length > 0) {
-        await trx('comment').insert(comments);
-      }
-
-      if (assets.length > 0) {
-        const assetRows = assets.map((asset) => ({
-          ...asset,
-          mediaItemId: record.id,
-        }));
-        await trx('mediaAsset').insert(assetRows).onConflict(['media_item_id', 'kind']).merge();
-      }
-
-      if (authorizations.length > 0) {
-        const authorizationRows = authorizations.map((authorization) => {
-          const { publicLinkId, ...rowWithoutPublicLink } = authorization;
-          return {
-            ...rowWithoutPublicLink,
-            mediaItemId: record.id,
-            ...(publicLinkId != null ? { shareLinkId: publicLinkId } : {}),
-          };
-        });
-        await trx('access_grant')
-          .insert(authorizationRows)
-          .onConflict(['media_item_id', 'granted_to_user'])
-          .merge();
-      }
-
-      await trx('mediaItemTag').where({ mediaItemId: record.id }).delete();
-
-      const ownerId = record.ownerId;
-      const actorId = record.updatedBy;
-      const now = new Date();
-
-      for (const label of tagLabels) {
-        const userTagId = await ensureUserTagId(trx, {
-          userId: ownerId,
-          label,
-          actorId,
-        });
-        await trx('mediaItemTag').insert({
-          id: crypto.randomUUID(),
-          mediaItemId: record.id,
-          userTagId,
-          createdAt: now,
-          updatedAt: now,
-          createdBy: actorId,
-          updatedBy: actorId,
-        });
-      }
-    });
+  const save = async (mediaItem: MediaItem, trx: Knex.Transaction): Promise<void> => {
+    await persist(trx, mediaItem);
   };
 
   const deleteMediaItem = async (
@@ -221,5 +141,6 @@ export const build__MediaItemRepository = ({
     save,
     delete: deleteMediaItem,
     updateReactionCounts,
+    ensureUserTagId,
   };
 };

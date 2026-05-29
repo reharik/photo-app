@@ -1,4 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
@@ -19,6 +20,7 @@ export interface AddMediaItemsToAlbum extends WriteServiceBase {
 type AddMediaItemsToAlbumDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  createTransaction: CreateTransaction;
 };
 
 const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
@@ -37,6 +39,7 @@ const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
 export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
+  createTransaction,
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {
   return async (
     input: AddMediaItemsToAlbumCommand,
@@ -89,7 +92,7 @@ export const build__AddMediaItemsToAlbum = ({
       albumItemIds.push(append.value.id());
     }
 
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

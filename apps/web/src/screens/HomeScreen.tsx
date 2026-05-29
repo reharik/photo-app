@@ -5,8 +5,8 @@ import { getQueryRenderState } from '../hooks/getQueryRenderState';
 
 export const HomeScreen = () => {
   const query = useQuery(ViewerRecentMediaDocument, {
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
   });
 
   const {

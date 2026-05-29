@@ -52,9 +52,13 @@ export const build__PublicAlbumReadServiceFactory = ({
     return {
       getAlbum: async (albumId: string): Promise<PublicAlbumProjection | undefined> => {
         const row = await albumReadRepository.getAlbumForShareLink({ albumId, publicLinkId });
+        console.log(`************row************`);
+        console.log(row);
+        console.log(`********END row************`);
         if (!row) {
           return undefined;
         }
+
         const coverMedia = buildCover(row);
 
         return {

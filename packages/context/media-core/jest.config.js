@@ -2,9 +2,11 @@ export default {
   displayName: 'media-core',
   preset: '../../../infra/config/jest/jest.preset.cjs',
   testEnvironment: 'node',
+  maxWorkers: 1,
+  forceExit: true,
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
-    '^.+\\.(ts|js|mjs)$': [
+    '^.+\\.(ts|tsx|js|mjs)$': [
       'ts-jest',
       {
         useESM: true,

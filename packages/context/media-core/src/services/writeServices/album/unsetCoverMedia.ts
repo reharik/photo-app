@@ -1,9 +1,9 @@
 import { Operation } from '@packages/contracts';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { UnsetCoverMediaCommand, UnsetCoverMediaResult } from './writeAlbum.types';
@@ -14,11 +14,12 @@ export interface UnsetCoverMedia extends WriteServiceBase {
 
 type UnsetCoverMediaDeps = {
   albumRepository: AlbumRepository;
-  mediaItemReadRepository: MediaItemReadRepository;
+  createTransaction: CreateTransaction;
 };
 
 export const build__UnsetCoverMedia = ({
   albumRepository,
+  createTransaction,
 }: UnsetCoverMediaDeps): UnsetCoverMedia => {
   return async (input: UnsetCoverMediaCommand): Promise<WriteResult<UnsetCoverMediaResult>> => {
     const { viewerId, albumId } = input;
@@ -36,7 +37,7 @@ export const build__UnsetCoverMedia = ({
     if (!r3.success) {
       return r3;
     }
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

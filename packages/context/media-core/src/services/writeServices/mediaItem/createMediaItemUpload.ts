@@ -1,4 +1,5 @@
 import { MediaAssetKind } from '@packages/contracts';
+import { Knex } from 'knex';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -29,11 +30,13 @@ const sanitizeOriginalFileName = (value: string | undefined): string | undefined
 type CreateMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
+  database: Knex;
 };
 
 export const build__CreateMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
+  database,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (input: CreateMediaUploadCommand): Promise<WriteResult<CreateMediaUploadResult>> => {
     const { viewerId, kind, mimeType, originalFileName } = input;
@@ -58,7 +61,7 @@ export const build__CreateMediaItemUpload = ({
       mimeType,
     });
 
-    await mediaItemRepository.save(mediaItem);
+    await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
 
     return ok({
       mediaItemId: mediaItem.id(),

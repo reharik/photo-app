@@ -1,4 +1,5 @@
 import { AppErrorCollection, Operation } from '@packages/contracts';
+import { Knex } from 'knex';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -12,10 +13,12 @@ export interface DeleteAlbumItems extends WriteServiceBase {
 
 type DeleteAlbumItemsDeps = {
   albumRepository: AlbumRepository;
+  database: Knex;
 };
 
 export const build__DeleteAlbumItems = ({
   albumRepository,
+  database,
 }: DeleteAlbumItemsDeps): DeleteAlbumItems => {
   return async (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
@@ -39,7 +42,9 @@ export const build__DeleteAlbumItems = ({
     if (!deleteResult.success) {
       return deleteResult;
     }
-    await albumRepository.save(album, viewerId);
+    await database.transaction(async (trx) => {
+      await albumRepository.save(album, trx);
+    });
     return ok({ albumId: album.id(), albumItemIds });
   };
 };

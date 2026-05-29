@@ -12,16 +12,15 @@ import {
   MediaItemStatus,
   MediaKind,
 } from '@packages/contracts';
+import { MediaItemTag } from '../../services/writeServices/mediaItem/writeMediaItem.types';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import { Comment, CommentRecord } from '../Comment/Comment';
-import type { AuditRecord, ChildEntities } from '../Entity';
+import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
-import { normalizeMediaItemTagLabels } from './MediaItemTag';
-
 interface AssetMetadata {
   kind: MediaAssetKind;
   mimeType?: string;
@@ -30,41 +29,38 @@ interface AssetMetadata {
   height?: number;
 }
 
-export type MediaItemProps = {
+export type MediaItemTagRecord = {
+  id: string;
+  mediaItemId: EntityId;
+  userTagId: EntityId;
+  label: string;
+  createdBy: EntityId;
+  createdAt: Date;
+  updatedBy: EntityId;
+  updatedAt: Date;
+};
+
+export type MediaItemProps = Omit<
+  CreateMediaItemInput,
+  'status' | 'title' | 'description' | 'takenAt'
+> & {
   ownerId: EntityId;
-  kind: MediaKind;
   status: MediaItemStatus;
-  mimeType: string;
-  sizeBytes?: number;
-  width?: number;
-  height?: number;
-  durationSeconds?: number;
-  originalFileName?: string;
   title?: string | null;
   description?: string | null;
   takenAt?: Date | null;
 };
 
-export type MediaItemRecord = {
+export type MediaItemRecord = MediaItemProps & {
   id: EntityId;
-  ownerId: EntityId;
-  kind: MediaKind;
-  status: MediaItemStatus;
-  mimeType: string;
-  sizeBytes?: number;
-  width?: number;
-  height?: number;
-  durationSeconds?: number;
-  originalFileName?: string;
-  title?: string;
-  description?: string;
-  takenAt?: Date;
+} & AuditRecord;
+
+export type MediaItemChildRecords = {
   comments: CommentRecord[];
   assets: MediaAssetRecord[];
-  /** Normalized display labels (mapped to `user_tag` + `media_item_tag` in persistence). */
-  tags: string[];
+  tags: MediaItemTagRecord[];
   authorizations: AuthorizationRecord[];
-} & AuditRecord;
+};
 
 export type CreateMediaItemInput = {
   kind: MediaKind;
@@ -84,11 +80,16 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
   #comments: Comment[] = [];
   #assets: MediaAsset[] = [];
-  #tags: string[] = [];
   #authorizations: Authorization[] = [];
+  #removedComments: Comment[] = [];
+  #removedAssets: MediaAsset[] = [];
+  #removedAuthorizations: Authorization[] = [];
+  #tags: MediaItemTag[] = [];
+  #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
+  #addedTags: Omit<MediaItemTag, 'label'>[] = [];
 
-  private constructor(id: EntityId, actorId: ActorId, props: MediaItemProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: MediaItemProps, id?: EntityId) {
+    super(id, actorId, 'media_item');
     this.props = {
       ...props,
     };
@@ -96,8 +97,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   }
 
   static create(input: CreateMediaItemInput, actorId: ActorId): MediaItem {
-    const mediaItemId = crypto.randomUUID();
-    return new MediaItem(mediaItemId, actorId, {
+    return new MediaItem(actorId, {
       ...input,
       sizeBytes: input.sizeBytes ?? 0,
       status: MediaItemStatus.pending,
@@ -105,15 +105,14 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     });
   }
 
-  static rehydrate(record: MediaItemRecord): MediaItem {
-    const mediaItem = new MediaItem(record.id, record.createdBy, record);
+  static rehydrate(record: MediaItemRecord, childRecords: MediaItemChildRecords): MediaItem {
+    const mediaItem = new MediaItem(record.createdBy, record, record.id);
 
     mediaItem.rehydrateAudit(record);
-    mediaItem.#comments = record.comments.map((r) => Comment.rehydrate(r));
-    mediaItem.#assets = record.assets.map((r) => MediaAsset.rehydrate(r));
-    mediaItem.#authorizations = record.authorizations.map((r) => Authorization.rehydrate(r));
-    mediaItem.#tags = [...(record.tags ?? [])];
-
+    mediaItem.#comments = childRecords.comments.map((r) => Comment.rehydrate(r));
+    mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
+    mediaItem.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
+    mediaItem.#tags = [...(childRecords.tags ?? [])];
     return mediaItem;
   }
 
@@ -154,6 +153,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
         {
           kind,
           mimeType,
+          mediaItemId: this.id(),
         },
         this.props.ownerId,
       ),
@@ -173,17 +173,27 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  replaceTags(rawLabels: string[], actorId: ActorId): WriteResult {
-    const normalized = normalizeMediaItemTagLabels(rawLabels);
-    if (normalized === null) {
-      return fail(ContractError.InvalidMediaItemTags);
-    }
-    this.#tags = [...normalized.labels];
-    this.touch(actorId);
+  addTags(tags: MediaItemTag[]): WriteResult {
+    const newTags = tags.map((tag) => ({
+      ...tag,
+      id: crypto.randomUUID(),
+    }));
+
+    this.#tags = [...this.#tags, ...newTags];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this.#addedTags = [...this.#addedTags, ...newTags.map(({ label, ...rest }) => rest)];
     return ok(undefined);
   }
 
-  tags(): readonly string[] {
+  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): WriteResult {
+    this.#tags = this.#tags.filter(
+      (t) => !tagIds.some((removeTag) => removeTag.userTagId === t.userTagId),
+    );
+    this.#removedTags = [...this.#removedTags, ...tagIds];
+    return ok(undefined);
+  }
+
+  tags(): readonly MediaItemTag[] {
     return this.#tags;
   }
 
@@ -272,6 +282,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
           grantedBy: actorId,
           label,
           expiresAt,
+          mediaItemId: this.id(),
         },
         actorId,
       );
@@ -361,21 +372,22 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  public override persistenceState(): Record<string, unknown> {
+  childEntities(): ChildEntities {
     return {
-      ...super.persistenceState(),
-      tags: this.#tags,
-      authorizations: this.#authorizations,
-      comments: this.#comments,
-      assets: this.#assets,
+      comments: { upsert: this.#comments, removed: this.#removedComments },
+      assets: { upsert: this.#assets, removed: this.#removedAssets },
+      authorizations: { upsert: this.#authorizations, removed: this.#removedAuthorizations },
     };
   }
 
-  protected childEntities(): ChildEntities {
+  VOs(): Record<string, VOCollection> {
     return {
-      comments: this.#comments,
-      assets: this.#assets,
-      authorizations: this.#authorizations,
+      tags: {
+        upsert: this.#addedTags,
+        removed: this.#removedTags,
+        conflictKeys: ['mediaItemId', 'userTagId'],
+        tableName: 'media_item_tag',
+      },
     };
   }
 }

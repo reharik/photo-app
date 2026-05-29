@@ -1,4 +1,4 @@
-import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
 import type {
   ReadRepositoryDeps,
@@ -14,19 +14,17 @@ export const build__ShareContactRepository = ({
     userId: EntityId,
     contactUserId: EntityId,
     handle: string,
-    options: RepoOptions,
+    trx: Knex.Transaction,
   ): Promise<void> => {
-    await runInTransaction(database, options, async (trx) => {
-      await trx<ShareContactRow>('shareContact')
-        .insert({
-          userId,
-          contactUserId,
-          handle,
-          lastSharedAt: new Date(),
-        })
-        .onConflict(['user_id', 'contact_user_id'])
-        .merge(['handle', 'lastSharedAt']);
-    });
+    await trx<ShareContactRow>('shareContact')
+      .insert({
+        userId,
+        contactUserId,
+        handle,
+        lastSharedAt: new Date(),
+      })
+      .onConflict(['user_id', 'contact_user_id'])
+      .merge(['handle', 'lastSharedAt']);
   },
 
   getShareSuggestions: async (userId: EntityId): Promise<ShareContactSuggestion[]> => {

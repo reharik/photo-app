@@ -7,6 +7,7 @@ import type { ActorId, EntityId } from '../../types/types';
 import { Entity, type AuditRecord } from '../Entity';
 
 export type MediaAssetProps = {
+  mediaItemId: EntityId;
   kind: MediaAssetKind;
   mimeType: string;
   width?: number;
@@ -17,6 +18,7 @@ export type MediaAssetProps = {
 
 export type MediaAssetRecord = {
   id: EntityId;
+  mediaItemId: EntityId;
   kind: MediaAssetKind;
   mimeType: string;
   width?: number;
@@ -26,6 +28,7 @@ export type MediaAssetRecord = {
 } & AuditRecord;
 
 export type CreateMediaAssetInput = {
+  mediaItemId: EntityId;
   kind: MediaAssetKind;
   mimeType: string;
 };
@@ -33,28 +36,34 @@ export type CreateMediaAssetInput = {
 export class MediaAsset extends Entity<MediaAssetRecord> {
   protected props: MediaAssetProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: MediaAssetProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: MediaAssetProps, id?: EntityId) {
+    super(id, actorId, 'media_asset');
     this.props = props;
   }
 
   static create(input: CreateMediaAssetInput, actorId: ActorId): MediaAsset {
-    return new MediaAsset(crypto.randomUUID(), actorId, {
+    return new MediaAsset(actorId, {
       kind: input.kind,
       mimeType: input.mimeType,
       status: MediaAssetStatus.pending,
+      mediaItemId: input.mediaItemId,
     });
   }
 
   static rehydrate(record: MediaAssetRecord): MediaAsset {
-    const asset = new MediaAsset(record.id, record.createdBy, {
-      kind: record.kind,
-      mimeType: record.mimeType,
-      width: record.width,
-      height: record.height,
-      fileSizeBytes: record.fileSizeBytes,
-      status: record.status,
-    });
+    const asset = new MediaAsset(
+      record.createdBy,
+      {
+        mediaItemId: record.mediaItemId,
+        kind: record.kind,
+        mimeType: record.mimeType,
+        width: record.width,
+        height: record.height,
+        fileSizeBytes: record.fileSizeBytes,
+        status: record.status,
+      },
+      record.id,
+    );
     asset.rehydrateAudit(record);
     return asset;
   }

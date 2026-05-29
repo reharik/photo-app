@@ -8,10 +8,16 @@ describe('ioc.config', () => {
       expect(iocConfig).toEqual(
         expect.objectContaining({
           discovery: expect.objectContaining({
-            scanDirs: expect.any(Array),
-            generatedDir: expect.any(String),
+            scanDirs: 'src',
+            generatedDir: 'src/generated',
+            factoryPrefix: 'build__',
           }),
-          registrations: expect.any(Object),
+          composedManifests: ['@packages/media-core', '@packages/infrastructure'],
+          registrations: {
+            Knex: {
+              $contract: { accessKey: 'database' },
+            },
+          },
         }),
       );
     });

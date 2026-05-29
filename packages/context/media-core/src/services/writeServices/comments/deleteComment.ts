@@ -1,4 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
+import { Knex } from 'knex';
 import { fail, ok } from '../../../domain';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { EntityId, WriteResult } from '../../../types/types';
@@ -13,9 +14,12 @@ export interface DeleteComment extends WriteServiceBase {
   (command: DeleteCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
 }
 
-type DeleteCommentDeps = { commentRepository: CommentRepository };
+type DeleteCommentDeps = { commentRepository: CommentRepository; database: Knex };
 
-export const build__DeleteComment = ({ commentRepository }: DeleteCommentDeps): DeleteComment => {
+export const build__DeleteComment = ({
+  commentRepository,
+  database,
+}: DeleteCommentDeps): DeleteComment => {
   return async (command: DeleteCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
     const comment = await commentRepository.getById(command.commentId);
     if (!comment) {
@@ -25,7 +29,9 @@ export const build__DeleteComment = ({ commentRepository }: DeleteCommentDeps): 
       return fail(AppErrorCollection.comment.CanNotDeleteComment);
     }
     comment.markDeleted(command.authorId);
-    await commentRepository.save(comment);
+    await database.transaction(async (trx) => {
+      await commentRepository.save(comment, trx);
+    });
     return ok({ entityId: comment.id() });
   };
 };

@@ -1,10 +1,11 @@
 import { AppErrorCollection, MediaAssetKind, MediaKind } from '@packages/contracts';
+import { Knex } from 'knex';
+import { MediaProcessingJobRepository } from 'src/repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
-import type { MediaProcessingJobRepository } from '../../../domain/MediaProcessingJob/MediaProcessingJobRepository';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import type { WriteResult } from '../../../types/types';
@@ -22,12 +23,14 @@ type FinalizeMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
+  database: Knex;
 };
 
 export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,
+  database,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
@@ -71,7 +74,9 @@ export const build__FinalizeMediaItemUpload = ({
       return finalized;
     }
 
-    await mediaItemRepository.save(mediaItem);
+    await database.transaction(async (trx) => {
+      await mediaItemRepository.save(mediaItem, trx);
+    });
 
     if (mediaItem.kind() === MediaKind.photo) {
       await mediaProcessingJobRepository.enqueueIfNoneActive({

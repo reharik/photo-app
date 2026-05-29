@@ -63,15 +63,29 @@ export type UpdateMediaItemDetailsResult = {
   takenAt?: Date;
 };
 
+export type MediaItemTag = {
+  id?: string;
+  mediaItemId: EntityId;
+  userTagId: EntityId;
+  label: string;
+  createdBy: EntityId;
+  createdAt: Date;
+  updatedBy: EntityId;
+  updatedAt: Date;
+};
+
+export type MediaItemTagInput = Omit<MediaItemTag, 'userTagId'> & {
+  userTagId?: EntityId;
+};
+
 export type UpdateMediaItemTagsCommand = {
   viewerId: EntityId;
   mediaItemId: EntityId;
-  tags: string[];
+  tags: MediaItemTagInput[];
 };
 
 export type UpdateMediaItemTagsResult = {
   mediaItemId: EntityId;
-  tags: string[];
 };
 
 export type GrantUserAuthorizationResult = {

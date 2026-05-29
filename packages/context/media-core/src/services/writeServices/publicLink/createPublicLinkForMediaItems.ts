@@ -1,4 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
+import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
@@ -24,6 +25,7 @@ type CreatePublicLinkForMediaItemsDeps = {
   mediaItemRepository: MediaItemRepository;
   albumRepository: AlbumRepository;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
+  database: Knex;
 };
 
 const dedupePreserveOrder = (ids: EntityId[]): EntityId[] => {
@@ -43,6 +45,7 @@ export const build__CreatePublicLinkForMediaItems = ({
   mediaItemRepository,
   albumRepository,
   createPublicLinkForAlbum,
+  database,
 }: CreatePublicLinkForMediaItemsDeps): CreatePublicLinkForMediaItems => {
   return async (
     input: CreatePublicLinkForMediaItemsCommand,
@@ -76,7 +79,7 @@ export const build__CreatePublicLinkForMediaItems = ({
     mediaItemIds.forEach((x) => {
       album.addItem(x, input.viewerId);
     });
-    await albumRepository.save(album, input.viewerId);
+    await database.transaction(async (trx) => await albumRepository.save(album, trx));
     const publicLinkResult = await createPublicLinkForAlbum({
       viewerId: input.viewerId,
       albumId: album.id(),

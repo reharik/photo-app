@@ -23,8 +23,8 @@ export type ReactionRecord = {
 export class Reaction extends AggregateRoot<ReactionRecord> {
   protected props: ReactionProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: ReactionProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: ReactionProps, id?: EntityId) {
+    super(id, actorId, 'reaction');
     this.props = { ...props };
   }
 
@@ -34,7 +34,7 @@ export class Reaction extends AggregateRoot<ReactionRecord> {
     userId: EntityId;
     emoji: ReactionEmoji;
   }): Reaction {
-    return new Reaction(crypto.randomUUID(), input.userId, {
+    return new Reaction(input.userId, {
       targetType: input.targetType,
       targetId: input.targetId,
       userId: input.userId,
@@ -44,7 +44,7 @@ export class Reaction extends AggregateRoot<ReactionRecord> {
 
   static rehydrate(record: ReactionRecord): Reaction {
     const { id, createdAt, updatedAt, createdBy, updatedBy, ...props } = record;
-    const reaction = new Reaction(id, createdBy, props);
+    const reaction = new Reaction(createdBy, props, id);
     reaction.rehydrateAudit({ createdAt, updatedAt, createdBy, updatedBy });
     return reaction;
   }

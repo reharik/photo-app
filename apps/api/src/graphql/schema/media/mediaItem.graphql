@@ -11,7 +11,7 @@ type MediaItem implements ViewableItem & Node {
   title: String
   description: String
   takenAt: DateTime
-  tags: [String!]!
+  tags: [Tag!]!
   createdAt: DateTime!
   updatedAt: DateTime!
   authorizations: [AuthorizationType]
@@ -19,6 +19,12 @@ type MediaItem implements ViewableItem & Node {
   comments(input: CommentsInput!): CommentCollectionPayload!
   reactionCounts: ReactionCounts!
   viewerReactions: [ViewerReaction!]
+}
+
+type Tag {
+  id: ID!
+  label: String!
+  userTagId: ID
 }
 
 enum Operation {

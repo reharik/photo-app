@@ -17,3 +17,17 @@ export const runInTransaction = async <R>(
 
   return database.transaction(async (trx) => fn(trx));
 };
+
+export interface CreateTransaction {
+  <R>(fn: (db: Knex.Transaction) => Promise<R>): Promise<R>;
+}
+
+type CreateTransactionDeps = {
+  database: Knex;
+};
+
+export const build__CreateTransaction =
+  ({ database }: CreateTransactionDeps): CreateTransaction =>
+  async <R>(fn: (db: Knex.Transaction) => Promise<R>): Promise<R> => {
+    return database.transaction(async (trx) => fn(trx));
+  };

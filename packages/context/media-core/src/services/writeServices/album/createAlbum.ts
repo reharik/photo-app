@@ -1,3 +1,4 @@
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { Album } from '../../../domain/Album/Album';
 import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -11,9 +12,13 @@ export interface CreateAlbum extends WriteServiceBase {
 
 type CreateAlbumDeps = {
   albumRepository: AlbumRepository;
+  createTransaction: CreateTransaction;
 };
 
-export const build__CreateAlbum = ({ albumRepository }: CreateAlbumDeps): CreateAlbum => {
+export const build__CreateAlbum = ({
+  albumRepository,
+  createTransaction,
+}: CreateAlbumDeps): CreateAlbum => {
   return async (input: CreateAlbumCommand): Promise<WriteResult<CreateAlbumResult>> => {
     const { viewerId, title } = input;
     const album = Album.create(
@@ -23,7 +28,7 @@ export const build__CreateAlbum = ({ albumRepository }: CreateAlbumDeps): Create
       viewerId,
     );
 
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

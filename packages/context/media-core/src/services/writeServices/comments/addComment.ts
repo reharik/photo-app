@@ -1,4 +1,5 @@
 import { AppErrorCollection, CommentTargetType } from '@packages/contracts';
+import { Knex } from 'knex';
 import { Comment, fail, ok } from '../../../domain';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
@@ -33,12 +34,14 @@ type AddCommentDeps = {
   commentRepository: CommentRepository;
   userReadRepository: UserReadRepository;
   validateOperationService: ValidateOperationService;
+  database: Knex;
 };
 
 export const build__AddComment = ({
   commentRepository,
   userReadRepository,
   validateOperationService,
+  database,
 }: AddCommentDeps): AddComment => {
   return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
@@ -73,7 +76,9 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      await commentRepository.save(comment);
+      await database.transaction(async (trx) => {
+        await commentRepository.save(comment, trx);
+      });
       return ok({ entityId: comment.id() });
     } else {
       // TODO: Look up viewer's display_name and avatar_url from the user table and
@@ -88,7 +93,9 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      await commentRepository.save(comment);
+      await database.transaction(async (trx) => {
+        await commentRepository.save(comment, trx);
+      });
       return ok({ entityId: comment.id() });
     }
   };

@@ -191,8 +191,8 @@ describe('Album (domain)', () => {
       const id3 = c.value.id();
       const r = album.reorderItems([id3, id1, id2], ownerId);
       expect(r.success).toBe(true);
-      const items = album.toPersistence().items as { id: string; orderIndex: string }[];
-      const byId = new Map(items.map((it) => [it.id, it.orderIndex]));
+      const items = album.childEntities().items.upsert;
+      const byId = new Map(items.map((it) => [it.id(), String(it.orderIndex())]));
       expect(byId.get(id3)! < byId.get(id1)!).toBe(true);
       expect(byId.get(id1)! < byId.get(id2)!).toBe(true);
     });
@@ -212,7 +212,7 @@ describe('Album (domain)', () => {
 
       const removed = album.removeMediaItemFromAlbum(mediaId, ownerId);
       expect(removed.success).toBe(true);
-      expect(album.toPersistence().items).toHaveLength(0);
+      expect(album.childEntities().items.upsert).toHaveLength(0);
       expect(album.coverMediaId()).toBeUndefined();
     });
   });
@@ -231,7 +231,7 @@ describe('Album (domain)', () => {
 
       const removed = album.removeMediaItemFromAlbum('remove-me', ownerId);
       expect(removed.success).toBe(true);
-      expect(album.toPersistence().items).toHaveLength(1);
+      expect(album.childEntities().items.upsert).toHaveLength(1);
       expect(album.coverMediaId()).toBe('keep-cover');
     });
   });
@@ -242,10 +242,10 @@ describe('Album (domain)', () => {
       const add = album.addItem('only-one', ownerId);
       expect(add.success).toBe(true);
 
-      const beforeItems = album.toPersistence().items.length;
+      const beforeItems = album.childEntities().items.upsert.length;
       const removed = album.removeMediaItemFromAlbum('not-present', ownerId);
       expect(removed.success).toBe(true);
-      expect(album.toPersistence().items).toHaveLength(beforeItems);
+      expect(album.childEntities().items.upsert).toHaveLength(beforeItems);
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   MediaKind,
 } from '@packages/contracts';
 import { Readable } from 'node:stream';
+import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage';
 import {
   buildMediaAssetStorageKey,
@@ -15,17 +16,22 @@ import {
 import { Album } from '../domain/Album/Album';
 import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
 import { MediaItem } from '../domain/MediaItem/MediaItem';
-import type { MediaProcessingJobRepository } from '../domain/MediaProcessingJob/MediaProcessingJobRepository';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
+import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import type { DBMediaItemRow } from '../services/readServices/types';
-import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem';
-import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum';
-import { build__CreateAlbum } from '../services/writeServices/album/createAlbum';
-import { build__CreateMediaItemUpload } from '../services/writeServices/mediaItem/createMediaItemUpload';
-import { build__FinalizeMediaItemUpload } from '../services/writeServices/mediaItem/finalizeMediaItemUpload';
 import { EntityId } from '../types/types';
 import { TEST_VIEWER_A_ID, TEST_VIEWER_B_ID, TEST_VIEWER_ONLY_ID } from './testViewerIds';
+import {
+  albumActiveItems,
+  createAddAlbumItemService,
+  createAddMediaItemsToAlbumService,
+  createAlbumService,
+  createFinalizeService,
+  createUploadService,
+  createWriteTestHarness,
+  testTrx,
+} from './writeServiceTestHarness';
 
 /** 1×1 PNG — used so finalize can read width/height from uploaded bytes. */
 const MINIMAL_PNG_1X1 = Buffer.from([
@@ -38,14 +44,10 @@ const MINIMAL_PNG_1X1 = Buffer.from([
 
 type ObjectState = { size: number; mimeType?: string; body?: Buffer };
 
-const findAssetRecord = (item: MediaItem, kind: MediaAssetKind): MediaAssetRecord | undefined =>
-  item.toPersistence().assets.find((a: MediaAssetRecord) => {
-    const k = a.kind as unknown;
-    if (typeof k === 'string') {
-      return k === kind.value;
-    }
-    return (k as { value: string }).value === kind.value;
-  });
+const findAssetRecord = (item: MediaItem, kind: MediaAssetKind): MediaAssetRecord | undefined => {
+  const asset = item.childEntities().assets.upsert.find((a) => a.kind().value === kind.value);
+  return asset?.toPersistence();
+};
 
 const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository => ({
   enqueueIfNoneActive: async () => {},
@@ -73,7 +75,7 @@ const createInMemoryMediaItemRepository = (): MediaItemRepository => {
   const byId = new Map<string, MediaItem>();
   return {
     getById: async (id: string) => byId.get(id),
-    save: async (item: MediaItem) => {
+    save: async (item: MediaItem, _trx: Knex.Transaction) => {
       byId.set(item.id(), item);
     },
     delete: async (item: MediaItem) => {
@@ -87,7 +89,7 @@ const createInMemoryAlbumRepository = (): AlbumRepository => {
   const byId = new Map<string, Album>();
   return {
     getById: async (id: string) => byId.get(id),
-    save: async (album: Album) => {
+    save: async (album: Album, _trx: Knex.Transaction) => {
       byId.set(album.id(), album);
     },
     delete: async (album: Album) => {
@@ -169,6 +171,7 @@ const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
 };
 
 describe('Media upload pipeline (application services)', () => {
+  const harness = createWriteTestHarness();
   const viewerA = TEST_VIEWER_A_ID;
   const viewerB = TEST_VIEWER_B_ID;
   const serverUrl = 'http://localhost:3999';
@@ -177,10 +180,7 @@ describe('Media upload pipeline (application services)', () => {
     it('should persist a pending media item and return upload instructions', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = build__CreateMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-      });
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
 
       const result = await createUpload({
         viewerId: viewerA,
@@ -213,15 +213,13 @@ describe('Media upload pipeline (application services)', () => {
     it('should transition the item to processing and return confirmed size and mime type', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const created = await createUpload({
         viewerId: viewerA,
@@ -279,15 +277,13 @@ describe('Media upload pipeline (application services)', () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
       const jobRepository = createTrackingMediaProcessingJobRepository();
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: jobRepository,
-      });
+        jobRepository,
+      );
 
       const created = await createUpload({
         viewerId: viewerA,
@@ -330,15 +326,13 @@ describe('Media upload pipeline (application services)', () => {
     it('should fail and leave the media item pending', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const created = await createUpload({
         viewerId: viewerA,
@@ -365,15 +359,13 @@ describe('Media upload pipeline (application services)', () => {
     it('should fail with not owned by viewer', async () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const mediaStorage = createTrackingMediaStorage(serverUrl);
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const created = await createUpload({
         viewerId: viewerA,
@@ -419,12 +411,13 @@ describe('Media upload pipeline (application services)', () => {
 });
 
 describe('Album integration (application services)', () => {
+  const harness = createWriteTestHarness();
   const viewerId = TEST_VIEWER_A_ID;
 
   describe('When createAlbum runs', () => {
     it('should persist a new album and return its id', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const result = await createAlbum({ viewerId, title: 'Summer' });
       expect(result.success).toBe(true);
       if (!result.success) {
@@ -441,17 +434,18 @@ describe('Album integration (application services)', () => {
       const mediaItemRepository = createInMemoryMediaItemRepository();
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
 
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(
+        harness,
         mediaItemRepository,
-        mediaStorage: createTrackingMediaStorage('http://localhost:0'),
-      });
+        createTrackingMediaStorage('http://localhost:0'),
+      );
       const mediaResult = await createUpload({
         viewerId,
         kind: MediaKind.photo,
@@ -467,13 +461,10 @@ describe('Album integration (application services)', () => {
       }
       projectionFromReadRepo.set(item.id(), projectionFromAggregate(item));
 
-      const addAlbumItem = build__AddAlbumItem({
-        albumRepository,
-        mediaItemReadRepository: {
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-        } as never,
-      });
+      const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
+      } as never);
 
       const add = await addAlbumItem({
         viewerId,
@@ -498,7 +489,7 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const albumResult = await createAlbum({ viewerId: ownerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
@@ -511,17 +502,15 @@ describe('Album integration (application services)', () => {
       }
       const memberResult = album.addMember(viewerOnlyId, AlbumMemberRole.contributor, ownerId);
       expect(memberResult.success).toBe(true);
-      await albumRepository.save(album, ownerId);
+      await albumRepository.save(album, testTrx);
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const mediaResult = await createUpload({
         viewerId: viewerOnlyId,
@@ -565,20 +554,17 @@ describe('Album integration (application services)', () => {
         viewerOnlyId,
       );
       expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize);
+      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = build__AddAlbumItem({
-        albumRepository,
-        mediaItemReadRepository: {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-        },
+      const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
       } as never);
 
       const add = await addAlbumItem({
@@ -597,22 +583,20 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const mediaResult = await createUpload({
         viewerId,
@@ -656,21 +640,18 @@ describe('Album integration (application services)', () => {
         viewerId,
       );
       expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize);
+      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = build__AddAlbumItem({
-        albumRepository,
-        mediaItemReadRepository: {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-        } as never,
-      });
+      const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
+      } as never);
 
       const add = await addAlbumItem({
         viewerId,
@@ -683,8 +664,7 @@ describe('Album integration (application services)', () => {
       }
 
       const album = await albumRepository.getById(albumResult.value.albumId);
-      const persisted = album?.toPersistence();
-      expect(persisted?.items?.length).toBe(1);
+      expect(album ? albumActiveItems(album).length : 0).toBe(1);
     });
   });
 
@@ -695,22 +675,20 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const mediaResult = await createUpload({
         viewerId,
@@ -750,21 +728,18 @@ describe('Album integration (application services)', () => {
         viewerId,
       );
       expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize);
+      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addAlbumItem = build__AddAlbumItem({
-        albumRepository,
-        mediaItemReadRepository: {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-        } as never,
-      });
+      const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
+      } as never);
 
       const first = await addAlbumItem({
         viewerId,
@@ -789,10 +764,9 @@ describe('Album integration (application services)', () => {
   describe('When addMediaItemsToAlbum is called', () => {
     it('should reject when both albumId and newAlbum are provided', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = build__AddMediaItemsToAlbum({
-        albumRepository,
-        mediaItemReadRepository: { getForViewer: async () => undefined } as never,
-      });
+      const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
+        getForViewer: async () => undefined,
+      } as never);
 
       const result = await addMany({
         viewerId,
@@ -809,10 +783,9 @@ describe('Album integration (application services)', () => {
 
     it('should reject when neither albumId nor newAlbum is provided', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = build__AddMediaItemsToAlbum({
-        albumRepository,
-        mediaItemReadRepository: { getForViewer: async () => undefined } as never,
-      });
+      const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
+        getForViewer: async () => undefined,
+      } as never);
 
       const result = await addMany({
         viewerId,
@@ -827,10 +800,9 @@ describe('Album integration (application services)', () => {
 
     it('should reject an empty list after deduplication', async () => {
       const albumRepository = createInMemoryAlbumRepository();
-      const addMany = build__AddMediaItemsToAlbum({
-        albumRepository,
-        mediaItemReadRepository: { getForViewer: async () => undefined } as never,
-      });
+      const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
+        getForViewer: async () => undefined,
+      } as never);
 
       const result = await addMany({
         viewerId,
@@ -850,33 +822,28 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
-      const addMany = build__AddMediaItemsToAlbum({
-        albumRepository,
-        mediaItemReadRepository: {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-          getManyForViewer: async ({
-            mediaItemIds,
-          }: {
-            mediaItemIds: EntityId[];
-            viewerId: EntityId;
-          }) =>
-            mediaItemIds
-              .map((id) => projectionFromReadRepo.get(id))
-              .filter((r): r is DBMediaItemRow => r != null),
-        } as never,
-      });
+      const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
+        getManyForViewer: async ({
+          mediaItemIds,
+        }: {
+          mediaItemIds: EntityId[];
+          viewerId: EntityId;
+        }) =>
+          mediaItemIds
+            .map((id) => projectionFromReadRepo.get(id))
+            .filter((r): r is DBMediaItemRow => r != null),
+      } as never);
 
       const ids: string[] = [];
       for (let i = 0; i < 2; i += 1) {
@@ -922,7 +889,7 @@ describe('Album integration (application services)', () => {
           viewerId,
         );
         expect(rm.success).toBe(true);
-        await mediaItemRepository.save(afterFin);
+        await mediaItemRepository.save(afterFin, testTrx);
         const readyItem = await mediaItemRepository.getById(item.id());
         if (!readyItem) {
           return;
@@ -947,7 +914,7 @@ describe('Album integration (application services)', () => {
       if (!reloaded) {
         return;
       }
-      expect(reloaded.toPersistence().items).toHaveLength(2);
+      expect(albumActiveItems(reloaded)).toHaveLength(2);
     });
 
     it('should add a single item when the same id appears twice in the input', async () => {
@@ -956,22 +923,20 @@ describe('Album integration (application services)', () => {
       const projectionFromReadRepo = new Map<string, DBMediaItemRow>();
       const mediaStorage = createTrackingMediaStorage('http://localhost:0');
 
-      const createAlbum = build__CreateAlbum({ albumRepository });
+      const createAlbum = createAlbumService(harness, albumRepository);
       const albumResult = await createAlbum({ viewerId, title: 'Summer' });
       expect(albumResult.success).toBe(true);
       if (!albumResult.success) {
         return;
       }
 
-      const createUpload = build__CreateMediaItemUpload({
+      const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
+      const finalize = createFinalizeService(
+        harness,
         mediaItemRepository,
         mediaStorage,
-      });
-      const finalize = build__FinalizeMediaItemUpload({
-        mediaItemRepository,
-        mediaStorage,
-        mediaProcessingJobRepository: createNoopMediaProcessingJobRepository(),
-      });
+        createNoopMediaProcessingJobRepository(),
+      );
 
       const mediaResult = await createUpload({
         viewerId,
@@ -1015,30 +980,27 @@ describe('Album integration (application services)', () => {
         viewerId,
       );
       expect(rm.success).toBe(true);
-      await mediaItemRepository.save(afterFin);
+      await mediaItemRepository.save(afterFin, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
       projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
 
-      const addMany = build__AddMediaItemsToAlbum({
-        albumRepository,
-        mediaItemReadRepository: {
-          // eslint-disable-next-line @typescript-eslint/require-await
-          getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
-            projectionFromReadRepo.get(mediaItemId),
-          getManyForViewer: async ({
-            mediaItemIds,
-          }: {
-            mediaItemIds: EntityId[];
-            viewerId: EntityId;
-          }) =>
-            mediaItemIds
-              .map((id) => projectionFromReadRepo.get(id))
-              .filter((r): r is DBMediaItemRow => r != null),
-        } as never,
-      });
+      const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        getForViewer: async ({ mediaItemId }: { mediaItemId: EntityId }) =>
+          projectionFromReadRepo.get(mediaItemId),
+        getManyForViewer: async ({
+          mediaItemIds,
+        }: {
+          mediaItemIds: EntityId[];
+          viewerId: EntityId;
+        }) =>
+          mediaItemIds
+            .map((id) => projectionFromReadRepo.get(id))
+            .filter((r): r is DBMediaItemRow => r != null),
+      } as never);
 
       const result = await addMany({
         viewerId,
@@ -1051,7 +1013,7 @@ describe('Album integration (application services)', () => {
       }
       expect(result.value.albumItemIds).toHaveLength(1);
       const album = await albumRepository.getById(albumResult.value.albumId);
-      expect(album?.toPersistence().items).toHaveLength(1);
+      expect(album ? albumActiveItems(album).length : 0).toBe(1);
     });
   });
 });

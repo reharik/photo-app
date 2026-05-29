@@ -7,6 +7,7 @@ import {
   type MediaStorage,
 } from '@packages/media-core';
 
+import { Knex } from 'knex';
 import type { Config } from '../config.js';
 import type { MediaProcessingJobRepository } from '../repositories/domainRepositories/mediaProcessingJobRepository.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator';
@@ -28,6 +29,7 @@ type ProcessNextMediaImageJobDeps = {
   mediaProcessingJobRepository: MediaProcessingJobRepository;
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
+  database: Knex;
   logger: Logger;
 };
 
@@ -36,6 +38,7 @@ export const build__ProcessNextMediaImageJob = ({
   mediaProcessingJobRepository,
   mediaItemRepository,
   mediaStorage,
+  database,
   logger,
 }: ProcessNextMediaImageJobDeps): ProcessNextMediaImageJob => {
   return async (): Promise<ProcessNextMediaImageJobResult> => {
@@ -221,7 +224,7 @@ export const build__ProcessNextMediaImageJob = ({
         return 'processed';
       }
 
-      await mediaItemRepository.save(mediaItem);
+      await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
       await finishSucceeded();
       logger.info('Media image processing job succeeded', {
         jobId: job.id,

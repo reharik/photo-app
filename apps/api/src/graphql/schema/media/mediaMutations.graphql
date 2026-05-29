@@ -44,7 +44,12 @@ input UpdateMediaItemDetailsInput {
 
 input UpdateMediaItemTagsInput {
   mediaItemId: ID!
-  tags: [String!]!
+  tags: [TagInput!]!
+}
+
+input TagInput {
+  label: String!
+  userTagId: ID
 }
 
 type DeleteMediaItemResponse {
@@ -84,7 +89,7 @@ type UpdateMediaItemTagsResponse {
 
 type UpdateMediaItemTagsPayload {
   mediaItemId: ID!
-  tags: [String!]!
+  tags: [Tag!]!
 }
 
 type CreateMediaUploadResponse {

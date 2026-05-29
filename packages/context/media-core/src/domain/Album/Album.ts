@@ -4,18 +4,15 @@ import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import type { AuditRecord, ChildEntities } from '../Entity';
-import { PublicLink, PublicLinkRecord } from '../PublicLink/PublicLink';
+import { PublicLink, PublicLinkChildRecords, PublicLinkRecord } from '../PublicLink/PublicLink';
 import { reorderAlbumItems } from '../utilities/reorderAlbumItems';
 import { fail, ok } from '../utilities/writeResponse';
-import type { AlbumItemRecord } from './AlbumItem';
-import { AlbumItem } from './AlbumItem';
+import { AlbumItem, AlbumItemRecord } from './AlbumItem';
 import { ALBUM_ITEM_ORDER_GAP, ALBUM_ITEM_ORDER_INITIAL } from './albumItemOrder';
 import { AlbumMember, AlbumMemberRecord } from './AlbumMember';
 
-export type AlbumProps = {
-  title: string;
-  coverMediaId?: EntityId;
-  isPublicLinkAlbum?: boolean;
+export type AlbumProps = CreateAlbumInput & {
+  coverMediaId?: EntityId | null;
 };
 
 export type CreateAlbumInput = {
@@ -23,16 +20,14 @@ export type CreateAlbumInput = {
   isPublicLinkAlbum?: boolean;
 };
 
-export type AlbumRecord = {
-  id: EntityId;
-  title: string;
-  coverMediaId?: EntityId | null;
+export type AlbumRecord = AlbumProps & { id: EntityId } & AuditRecord;
+
+export type AlbumChildRecords = {
   items: AlbumItemRecord[];
   members: AlbumMemberRecord[];
   authorizations: AuthorizationRecord[];
-  publicLinks: PublicLinkRecord[];
-  isPublicLinkAlbum?: boolean;
-} & AuditRecord;
+  publicLinks: { publicLink: PublicLinkRecord; publicLinkChildRecords: PublicLinkChildRecords }[];
+};
 
 export class Album extends AggregateRoot<AlbumRecord> {
   protected props: AlbumProps;
@@ -41,34 +36,46 @@ export class Album extends AggregateRoot<AlbumRecord> {
   #members: AlbumMember[] = [];
   #authorizations: Authorization[] = [];
   #publicLinks: PublicLink[] = [];
+  #removedItems: AlbumItem[] = [];
+  #removedMembers: AlbumMember[] = [];
+  #removedAuthorizations: Authorization[] = [];
+  #removedPublicLinks: PublicLink[] = [];
 
-  private constructor(id: EntityId, actorId: ActorId, props: AlbumProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: AlbumProps, id?: EntityId) {
+    super(id, actorId, 'album');
     this.props = props;
   }
 
   static create(input: CreateAlbumInput, actorId: ActorId): Album {
-    const album = new Album(crypto.randomUUID(), actorId, {
+    const album = new Album(actorId, {
       title: input.title,
       isPublicLinkAlbum: input.isPublicLinkAlbum,
     });
-    const member = AlbumMember.create({ userId: actorId, role: AlbumMemberRole.owner }, actorId);
+    const member = AlbumMember.create(
+      { userId: actorId, role: AlbumMemberRole.owner, albumId: album.id() },
+      actorId,
+    );
     album.#members.push(member);
     return album;
   }
 
-  static rehydrate(record: AlbumRecord): Album {
-    const album = new Album(record.id, record.createdBy, {
-      title: record.title,
-      coverMediaId: record.coverMediaId ?? undefined,
-    });
+  static rehydrate(record: AlbumRecord, childRecords: AlbumChildRecords): Album {
+    const album = new Album(
+      record.createdBy,
+      {
+        title: record.title,
+        coverMediaId: record.coverMediaId ?? undefined,
+      },
+      record.id,
+    );
 
     album.rehydrateAudit(record);
-
-    album.#items = record.items.map((r) => AlbumItem.rehydrate(r));
-    album.#members = record.members.map((r) => AlbumMember.rehydrate(r));
-    album.#authorizations = record.authorizations.map((r) => Authorization.rehydrate(r));
-    album.#publicLinks = record.publicLinks.map((r) => PublicLink.rehydrate(r));
+    album.#items = childRecords.items.map((r) => AlbumItem.rehydrate(r));
+    album.#members = childRecords.members.map((r) => AlbumMember.rehydrate(r));
+    album.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
+    album.#publicLinks = childRecords.publicLinks.map((r) =>
+      PublicLink.rehydrate(r.publicLink, r.publicLinkChildRecords),
+    );
     return album;
   }
 
@@ -92,7 +99,10 @@ export class Album extends AggregateRoot<AlbumRecord> {
     }
     // TODO: check various invariants when they exist e.g. is album mutable
 
-    const albumItem = AlbumItem.create({ mediaItemId, orderIndex: this.nextOrderIndex() }, actorId);
+    const albumItem = AlbumItem.create(
+      { mediaItemId, orderIndex: this.nextOrderIndex(), albumId: this.id() },
+      actorId,
+    );
     this.#items.push(albumItem);
     this.touch(actorId);
     return ok(albumItem);
@@ -113,13 +123,15 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (this.#members.some((m) => m.userId() === userId)) {
       return fail(AppErrorCollection.album.UserAlreadyMember);
     }
-    this.#members.push(AlbumMember.create({ userId, role }, actorId));
+    this.#members.push(AlbumMember.create({ userId, role, albumId: this.id() }, actorId));
     this.touch(actorId);
     return ok(undefined);
   }
+
   coverMediaId(): EntityId | undefined {
-    return this.props.coverMediaId;
+    return this.props.coverMediaId ?? undefined;
   }
+
   /* Currently the rule is that album cover must be a reference to a 
   media item that is part of the album.  This is an easier implementation for now. 
   If we decide to open that up there are two ways to do it.  We could add a 
@@ -139,7 +151,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   }
 
   unsetCoverMedia(actorId: ActorId): WriteResult {
-    this.props.coverMediaId = undefined;
+    this.props.coverMediaId = null;
     this.touch(actorId);
     return ok(undefined);
   }
@@ -150,13 +162,13 @@ export class Album extends AggregateRoot<AlbumRecord> {
    */
   removeMediaItemFromAlbum(mediaItemId: EntityId, actorId: ActorId): WriteResult {
     // TODO: check various invariants when they exist e.g. is album mutable
-    const removedAnyItem = this.#items.some((i) => i.mediaItemId() === mediaItemId);
+    this.#removedItems = this.#items.filter((i) => i.mediaItemId() === mediaItemId);
     this.#items = this.#items.filter((i) => i.mediaItemId() !== mediaItemId);
     const coverWasThisMedia = this.props.coverMediaId === mediaItemId;
     if (coverWasThisMedia) {
-      this.props.coverMediaId = undefined;
+      this.props.coverMediaId = null;
     }
-    if (removedAnyItem || coverWasThisMedia) {
+    if (coverWasThisMedia) {
       this.touch(actorId);
     }
     return ok(undefined);
@@ -172,6 +184,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return fail(AppErrorCollection.album.MediaItemNotInAlbum);
     }
     this.#items = this.#items.filter((i) => !albumItemIds.includes(i.id()));
+    this.#removedItems = [...this.#removedItems, ...found];
     this.touch(actorId);
     return ok(undefined);
   }
@@ -221,6 +234,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
           grantedBy: actorId,
           label,
           expiresAt,
+          albumId: this.id(),
         },
         actorId,
       );
@@ -286,6 +300,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
           grantedBy: actorId,
           label: undefined,
           expiresAt,
+          albumId: this.id(),
         },
         actorId,
       );
@@ -317,21 +332,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  public override persistenceState(): Record<string, unknown> {
+  childEntities(): ChildEntities {
     return {
-      ...super.persistenceState(),
-      authorizations: this.#authorizations,
-      members: this.#members,
-      publicLinks: this.#publicLinks,
-    };
-  }
-
-  protected childEntities(): ChildEntities {
-    return {
-      items: this.#items,
-      members: this.#members,
-      authorizations: this.#authorizations,
-      publicLinks: this.#publicLinks,
+      items: { upsert: this.#items, removed: this.#removedItems },
+      members: { upsert: this.#members, removed: this.#removedMembers },
+      authorizations: { upsert: this.#authorizations, removed: this.#removedAuthorizations },
+      publicLinks: { upsert: this.#publicLinks, removed: this.#removedPublicLinks },
     };
   }
 }

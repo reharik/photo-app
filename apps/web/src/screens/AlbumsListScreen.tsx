@@ -16,8 +16,8 @@ export const AlbumsListScreen = () => {
   const { isLoading, errors, execute } = useAppMutationState();
 
   const query = useQuery(ViewerAlbumsDocument, {
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
   });
 
   const { data: albums, content } = getQueryRenderState({

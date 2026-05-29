@@ -1,5 +1,5 @@
 import { Operation } from '@packages/contracts';
-import { Knex } from 'knex';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
@@ -35,7 +35,7 @@ type GrantUserAuthorizationForAlbumDeps = {
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
-  database: Knex;
+  createTransaction: CreateTransaction;
 };
 
 export const build__GrantUserAuthorizationForAlbum = ({
@@ -43,7 +43,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
   userRepository,
   grantRepository,
   shareContactRepository,
-  database,
+  createTransaction,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
   return async (
     input: GrantUserAuthorizationForAlbumCommand,
@@ -90,8 +90,8 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const authorizationId = authorization.id();
     const mediaItemIds = album.getMediaItemIds();
 
-    await database.transaction(async (trx) => {
-      await albumRepository.save(album, viewerId, { trx });
+    await createTransaction(async (trx) => {
+      await albumRepository.save(album, trx);
 
       const now = new Date();
       for (const mediaItemId of mediaItemIds) {
@@ -104,7 +104,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
             operations: authorization.operations(),
             createdAt: now,
           },
-          { trx },
+          trx,
         );
       }
 
@@ -113,13 +113,16 @@ export const build__GrantUserAuthorizationForAlbum = ({
           viewerId,
           grantedToUserId,
           grantedToHandleResolved,
-          { trx },
+          trx,
         );
         const owner = await userRepository.getById(viewerId);
         if (owner) {
-          await shareContactRepository.upsertContact(grantedToUserId, viewerId, owner.handle(), {
+          await shareContactRepository.upsertContact(
+            grantedToUserId,
+            viewerId,
+            owner.handle(),
             trx,
-          });
+          );
         }
       }
     });

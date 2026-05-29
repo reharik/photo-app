@@ -14,8 +14,8 @@ export const PublicAlbumScreen = () => {
   const [showSaveToast, setShowSaveToast] = useState(false);
 
   const query = useQuery(PublicAlbumViewDocument, {
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
     context: { accessMode: 'public' },
   });
 

@@ -1,9 +1,9 @@
 import { Operation } from '@packages/contracts';
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { SetCoverMediaCommand, SetCoverMediaResult } from './writeAlbum.types';
@@ -14,10 +14,13 @@ export interface SetCoverMedia extends WriteServiceBase {
 
 type SetCoverMediaDeps = {
   albumRepository: AlbumRepository;
-  mediaItemReadRepository: MediaItemReadRepository;
+  createTransaction: CreateTransaction;
 };
 
-export const build__SetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): SetCoverMedia => {
+export const build__SetCoverMedia = ({
+  albumRepository,
+  createTransaction,
+}: SetCoverMediaDeps): SetCoverMedia => {
   return async (input: SetCoverMediaCommand): Promise<WriteResult<SetCoverMediaResult>> => {
     const { viewerId, albumId, albumItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
@@ -35,7 +38,7 @@ export const build__SetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): Se
     if (!r3.success) {
       return r3;
     }
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

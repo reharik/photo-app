@@ -45,30 +45,33 @@ export type CreateCommentInput = {
 export class Comment extends AggregateRoot<CommentRecord> {
   protected props: CommentProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: CommentProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: CommentProps, id?: EntityId) {
+    super(id, actorId, 'comment');
     this.props = { ...props };
   }
 
   static create(input: CreateCommentInput, actorId: ActorId): Comment {
-    return new Comment(crypto.randomUUID(), actorId, { ...input });
+    return new Comment(actorId, { ...input });
   }
 
   static rehydrate(record: CommentRecord): Comment {
     const { id, createdAt, updatedAt, createdBy, updatedBy, ...rest } = record;
-    const comment = new Comment(id, createdBy, {
-      targetType: rest.targetType,
-      targetId: rest.targetId,
-      parentCommentId: rest.parentCommentId,
-      authorId: rest.authorId,
-      body: rest.body,
-      displayName: rest.displayName,
-      displayAvatarUrl: rest.displayAvatarUrl,
-      deletedAt: rest.deletedAt,
-    });
+    const comment = new Comment(
+      createdBy,
+      {
+        targetType: rest.targetType,
+        targetId: rest.targetId,
+        parentCommentId: rest.parentCommentId,
+        authorId: rest.authorId,
+        body: rest.body,
+        displayName: rest.displayName,
+        displayAvatarUrl: rest.displayAvatarUrl,
+        deletedAt: rest.deletedAt,
+      },
+      id,
+    );
 
     comment.rehydrateAudit({ createdAt, updatedAt, createdBy, updatedBy });
-
     return comment;
   }
 

@@ -9,7 +9,6 @@ import {
   User,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
-import type { RepoOptions } from '../../infrastructure/repositories/runInTransaction';
 import {
   AlbumItemWithMediaRow,
   AlbumWithCoverRow,
@@ -197,7 +196,7 @@ export type ShareContactRepository = {
     userId: EntityId,
     contactUserId: EntityId,
     handle: string,
-    options: RepoOptions,
+    trx: Knex.Transaction,
   ) => Promise<void>;
   getShareSuggestions: (userId: EntityId) => Promise<ShareContactSuggestion[]>;
 };

@@ -8,8 +8,8 @@ import { mapSharedMediaItemsToVMs } from '../viewModels/sharing/mapSharedMediaIt
 
 export const SharedWithMeScreen = () => {
   const query = useQuery(ViewerSharedWithMedMediaItemsDocument, {
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
   });
 
   const onReactionsRefetch = useCallback(async (): Promise<void> => {

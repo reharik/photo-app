@@ -29,7 +29,7 @@ export type Logger = {
 };
 
 export type LoggerConfig = {
-  logJsonFilePath: string;
+  logJsonFilePath?: string;
   logLevel: string;
 };
 export type LoggerDeps = {

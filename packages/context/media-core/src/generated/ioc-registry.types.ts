@@ -4,7 +4,7 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
-import type { MediaProcessingJobRepository } from '../domain/MediaProcessingJob/MediaProcessingJobRepository.js';
+import type { CreateTransaction } from '../infrastructure/repositories/runInTransaction.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
 import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
@@ -12,6 +12,7 @@ import type { MediaItemRepository } from '../repositories/domainRepositories/med
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
 import type { ReactionRepository } from '../repositories/domainRepositories/reactionRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
+import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
 import type {
   AlbumMemberReadRepository,
   AlbumReadRepository,
@@ -85,6 +86,7 @@ export interface IocGeneratedCradle {
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
   createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
+  createTransaction: CreateTransaction;
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteComment: DeleteComment;

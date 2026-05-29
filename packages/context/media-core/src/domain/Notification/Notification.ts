@@ -35,20 +35,19 @@ export type CreateNotificationInput = {
 export class Notification extends AggregateRoot<NotificationRecord> {
   protected props: NotificationProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: NotificationProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: NotificationProps, id?: EntityId) {
+    super(id, actorId, 'notification');
     this.props = props;
   }
 
   static create(input: CreateNotificationInput, actorId: ActorId): Notification {
-    return new Notification(crypto.randomUUID(), actorId, input);
+    return new Notification(actorId, input);
   }
 
   static rehydrate(record: NotificationRecord): Notification {
-    const notification = new Notification(record.id, record.createdBy, record);
+    const notification = new Notification(record.createdBy, record, record.id);
 
     notification.rehydrateAudit(record);
-
     return notification;
   }
 

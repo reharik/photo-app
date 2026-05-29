@@ -1,3 +1,4 @@
+import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
@@ -17,11 +18,13 @@ export interface AddAlbumItem extends WriteServiceBase {
 type AddAlbumItemDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  createTransaction: CreateTransaction;
 };
 
 export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
+  createTransaction,
 }: AddAlbumItemDeps): AddAlbumItem => {
   return async (input: AddAlbumItemCommand): Promise<WriteResult<AddAlbumItemResult>> => {
     const { viewerId, albumId, mediaItemId } = input;
@@ -41,7 +44,7 @@ export const build__AddAlbumItem = ({
       return r3;
     }
     const albumItem = r3.value;
-    await albumRepository.save(album, viewerId);
+    await createTransaction(async (trx) => await albumRepository.save(album, trx));
 
     return ok({
       albumId: album.id(),

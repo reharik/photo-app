@@ -4,6 +4,8 @@ import { AuditRecord, Entity } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 
 export type AuthorizationProps = {
+  mediaItemId?: EntityId;
+  albumId?: EntityId;
   grantedToUser?: EntityId;
   publicLinkId?: EntityId;
   operations: Operation[];
@@ -15,9 +17,10 @@ export type AuthorizationProps = {
 
 export type AuthorizationRecord = {
   id: string;
+  mediaItemId?: string;
+  albumId?: string;
   grantedToUser?: string;
   publicLinkId?: string;
-  /** `access_grant.share_link_id` as returned by Knex (stringcase); not set on newly serialized rows. */
   shareLinkId?: string;
   grantedBy: EntityId;
   operations: Operation[];
@@ -33,18 +36,20 @@ export type CreateAuthorizationInput = {
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
+  mediaItemId?: EntityId;
+  albumId?: EntityId;
 };
 
 export class Authorization extends Entity<AuthorizationRecord> {
   protected props: AuthorizationProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: AuthorizationProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: AuthorizationProps, id?: EntityId) {
+    super(id, actorId, 'access_grant');
     this.props = props;
   }
 
   static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
-    return new Authorization(crypto.randomUUID(), actorId, {
+    return new Authorization(actorId, {
       //TODO:  FOR NOW WE ARE JUST GRANTING ALL PERMISSIONS
       // WE WILL EVENTUALLY ADD PERMS INTO THE FORM
 
@@ -54,19 +59,27 @@ export class Authorization extends Entity<AuthorizationRecord> {
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
+      mediaItemId: input.mediaItemId,
+      albumId: input.albumId,
     });
   }
 
   static rehydrate(record: AuthorizationRecord): Authorization {
-    const asset = new Authorization(record.id, record.createdBy, {
-      operations: record.operations,
-      grantedToUser: record.grantedToUser,
-      publicLinkId: record.publicLinkId ?? record.shareLinkId,
-      grantedBy: record.grantedBy,
-      label: record.label,
-      expiresAt: record.expiresAt,
-      revokedAt: record.revokedAt,
-    });
+    const asset = new Authorization(
+      record.createdBy,
+      {
+        operations: record.operations,
+        grantedToUser: record.grantedToUser,
+        publicLinkId: record.publicLinkId ?? record.shareLinkId,
+        grantedBy: record.grantedBy,
+        label: record.label,
+        expiresAt: record.expiresAt,
+        revokedAt: record.revokedAt,
+        mediaItemId: record.mediaItemId,
+        albumId: record.albumId,
+      },
+      record.id,
+    );
     asset.rehydrateAudit(record);
     return asset;
   }
@@ -75,6 +88,10 @@ export class Authorization extends Entity<AuthorizationRecord> {
   }
   publicLinkId(): EntityId | undefined {
     return this.props.publicLinkId;
+  }
+  // This is so we can set the id after creating the public link
+  setPublicLinkId(publicLinkId: EntityId): void {
+    this.props.publicLinkId = publicLinkId;
   }
   operations(): Operation[] {
     return this.props.operations;
@@ -115,10 +132,20 @@ export class Authorization extends Entity<AuthorizationRecord> {
   revokedAt(): Date | undefined {
     return this.props.revokedAt;
   }
-  // override persistenceState(): Record<string, unknown> {
-  //   return {
-  //     ...super.persistenceState(),
-  //     operations: this.props.operations.map((x) => x.value).join(','),
-  //   };
-  // }
+
+  toPersistence(): AuthorizationRecord {
+    return {
+      id: this.id(),
+      mediaItemId: this.props.mediaItemId,
+      albumId: this.props.albumId,
+      grantedToUser: this.props.grantedToUser,
+      shareLinkId: this.props.publicLinkId,
+      grantedBy: this.props.grantedBy,
+      operations: this.props.operations,
+      label: this.props.label,
+      expiresAt: this.props.expiresAt,
+      revokedAt: this.props.revokedAt,
+      ...this.exportAudit(),
+    };
+  }
 }

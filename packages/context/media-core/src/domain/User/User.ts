@@ -50,18 +50,17 @@ export type CreateUserInput = {
 export class User extends AggregateRoot<UserRecord> {
   protected props: UserProps;
 
-  private constructor(id: EntityId, actorId: ActorId, props: UserProps) {
-    super(id, actorId);
+  private constructor(actorId: ActorId, props: UserProps, id?: EntityId) {
+    super(id, actorId, 'user');
     this.props = props;
   }
 
   static create(input: CreateUserInput, actorId: ActorId): User {
-    return new User(crypto.randomUUID(), actorId, input);
+    return new User(actorId, input);
   }
 
   static rehydrate(record: UserRecord): User {
-    const user = new User(record.id, record.createdBy, record);
-
+    const user = new User(record.createdBy, record, record.id);
     user.rehydrateAudit(record);
 
     return user;
