@@ -303,11 +303,7 @@ export const iocManifest = {
         moduleIndex: 35,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: [
-          'AlbumRepository',
-          'CreateTransaction',
-          'MediaItemReadRepository',
-        ],
+        dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository', 'RunInTransaction'],
       },
     },
     AddComment: {
@@ -323,9 +319,11 @@ export const iocManifest = {
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
+          'AddReaction',
           'CommentRepository',
           'UserReadRepository',
           'ValidateOperationService',
+          'WithTransaction',
         ],
       },
     },
@@ -341,11 +339,7 @@ export const iocManifest = {
         moduleIndex: 36,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: [
-          'AlbumRepository',
-          'CreateTransaction',
-          'MediaItemReadRepository',
-        ],
+        dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository', 'RunInTransaction'],
       },
     },
     AddReaction: {
@@ -366,6 +360,7 @@ export const iocManifest = {
           'MediaItemReadRepository',
           'MediaItemRepository',
           'ReactionRepository',
+          'RunInTransaction',
         ],
       },
     },
@@ -409,6 +404,7 @@ export const iocManifest = {
         moduleIndex: 2,
         default: true,
         discoveredBy: 'naming',
+        dependencyContractNames: ['RunInTransaction'],
       },
     },
     AuthorizationReadRepository: {
@@ -470,6 +466,7 @@ export const iocManifest = {
         moduleIndex: 3,
         default: true,
         discoveredBy: 'naming',
+        dependencyContractNames: ['RunInTransaction'],
       },
     },
     CreateAlbum: {
@@ -484,7 +481,7 @@ export const iocManifest = {
         moduleIndex: 37,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'CreateTransaction'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
       },
     },
     CreateMediaUpload: {
@@ -499,7 +496,7 @@ export const iocManifest = {
         moduleIndex: 48,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['MediaItemRepository', 'MediaStorage'],
+        dependencyContractNames: ['MediaItemRepository', 'MediaStorage', 'RunInTransaction'],
       },
     },
     CreatePublicLinkForAlbum: {
@@ -514,7 +511,7 @@ export const iocManifest = {
         moduleIndex: 54,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'CreateTransaction', 'GrantRepository'],
+        dependencyContractNames: ['AlbumRepository', 'GrantRepository', 'RunInTransaction'],
       },
     },
     CreatePublicLinkForMediaItems: {
@@ -533,21 +530,8 @@ export const iocManifest = {
           'AlbumRepository',
           'CreatePublicLinkForAlbum',
           'MediaItemRepository',
+          'RunInTransaction',
         ],
-      },
-    },
-    CreateTransaction: {
-      createTransaction: {
-        exportName: 'build__CreateTransaction',
-        registrationKey: 'createTransaction',
-        modulePath: 'infrastructure/repositories/runInTransaction.ts',
-        relImport: '../infrastructure/repositories/runInTransaction.js',
-        contractName: 'CreateTransaction',
-        implementationName: 'createTransaction',
-        lifetime: 'singleton',
-        moduleIndex: 1,
-        default: true,
-        discoveredBy: 'naming',
       },
     },
     DeleteAlbum: {
@@ -562,7 +546,7 @@ export const iocManifest = {
         moduleIndex: 38,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
       },
     },
     DeleteAlbumItems: {
@@ -577,7 +561,7 @@ export const iocManifest = {
         moduleIndex: 39,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
       },
     },
     DeleteComment: {
@@ -592,7 +576,7 @@ export const iocManifest = {
         moduleIndex: 46,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['CommentRepository'],
+        dependencyContractNames: ['CommentRepository', 'RunInTransaction'],
       },
     },
     DeleteMediaItem: {
@@ -612,6 +596,7 @@ export const iocManifest = {
           'AlbumRepository',
           'MediaItemRepository',
           'MediaStorage',
+          'RunInTransaction',
         ],
       },
     },
@@ -633,6 +618,7 @@ export const iocManifest = {
           'MediaItemReadRepository',
           'MediaItemRepository',
           'MediaStorage',
+          'RunInTransaction',
         ],
       },
     },
@@ -648,7 +634,7 @@ export const iocManifest = {
         moduleIndex: 47,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['CommentRepository'],
+        dependencyContractNames: ['CommentRepository', 'RunInTransaction'],
       },
     },
     EnrichMediaItems: {
@@ -683,7 +669,7 @@ export const iocManifest = {
         moduleIndex: 51,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['MediaItemRepository', 'MediaStorage'],
+        dependencyContractNames: ['MediaItemRepository', 'MediaStorage', 'RunInTransaction'],
       },
     },
     GrantAuthorizationForMediaItems: {
@@ -699,9 +685,9 @@ export const iocManifest = {
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
-          'CreateTransaction',
           'GrantRepository',
           'MediaItemRepository',
+          'RunInTransaction',
           'ShareContactRepository',
           'UserRepository',
         ],
@@ -749,8 +735,8 @@ export const iocManifest = {
         discoveredBy: 'naming',
         dependencyContractNames: [
           'AlbumRepository',
-          'CreateTransaction',
           'GrantRepository',
+          'RunInTransaction',
           'ShareContactRepository',
           'UserRepository',
         ],
@@ -797,6 +783,7 @@ export const iocManifest = {
         moduleIndex: 5,
         default: true,
         discoveredBy: 'naming',
+        dependencyContractNames: ['RunInTransaction'],
       },
     },
     MediaStorage: {
@@ -926,6 +913,7 @@ export const iocManifest = {
         moduleIndex: 7,
         default: true,
         discoveredBy: 'naming',
+        dependencyContractNames: ['RunInTransaction'],
       },
     },
     ReadReactionService: {
@@ -960,6 +948,7 @@ export const iocManifest = {
           'MediaItemReadRepository',
           'MediaItemRepository',
           'ReactionRepository',
+          'RunInTransaction',
         ],
       },
     },
@@ -975,7 +964,21 @@ export const iocManifest = {
         moduleIndex: 40,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'CreateTransaction'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
+      },
+    },
+    RunInTransaction: {
+      runInTransaction: {
+        exportName: 'build__runInTransaction',
+        registrationKey: 'runInTransaction',
+        modulePath: 'infrastructure/repositories/runInTransaction.ts',
+        relImport: '../infrastructure/repositories/runInTransaction.js',
+        contractName: 'RunInTransaction',
+        implementationName: 'runInTransaction',
+        lifetime: 'singleton',
+        moduleIndex: 1,
+        default: true,
+        discoveredBy: 'naming',
       },
     },
     SetCoverMedia: {
@@ -990,7 +993,7 @@ export const iocManifest = {
         moduleIndex: 41,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'CreateTransaction'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
       },
     },
     ShareContactRepository: {
@@ -1033,7 +1036,7 @@ export const iocManifest = {
         moduleIndex: 42,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'CreateTransaction'],
+        dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
       },
     },
     UpdateMediaItem: {
@@ -1048,7 +1051,7 @@ export const iocManifest = {
         moduleIndex: 52,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['MediaItemRepository'],
+        dependencyContractNames: ['MediaItemRepository', 'RunInTransaction'],
       },
     },
     UpdateMediaItemTags: {
@@ -1063,7 +1066,7 @@ export const iocManifest = {
         moduleIndex: 53,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['MediaItemRepository'],
+        dependencyContractNames: ['MediaItemRepository', 'RunInTransaction'],
       },
     },
     UserReadRepository: {
@@ -1207,6 +1210,21 @@ export const iocManifest = {
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['EnrichMediaItems', 'SharedWithMeReadRepository'],
+      },
+    },
+    WithTransaction: {
+      withTransaction: {
+        exportName: 'build__withTransaction',
+        registrationKey: 'withTransaction',
+        modulePath: 'infrastructure/repositories/runInTransaction.ts',
+        relImport: '../infrastructure/repositories/runInTransaction.js',
+        contractName: 'WithTransaction',
+        implementationName: 'withTransaction',
+        lifetime: 'singleton',
+        moduleIndex: 1,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['RunInTransaction'],
       },
     },
   },

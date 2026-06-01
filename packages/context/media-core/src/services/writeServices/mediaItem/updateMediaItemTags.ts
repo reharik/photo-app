@@ -1,4 +1,5 @@
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -13,22 +14,26 @@ import {
 } from './writeMediaItem.types';
 
 export interface UpdateMediaItemTags extends WriteServiceBase {
-  (input: UpdateMediaItemTagsCommand): Promise<WriteResult<UpdateMediaItemTagsResult>>;
+  (
+    input: UpdateMediaItemTagsCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<UpdateMediaItemTagsResult>>;
 }
 
 type UpdateMediaItemTagsDeps = {
   mediaItemRepository: MediaItemRepository;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 const normalizeLabel = (label: string): string => label.trim().toLowerCase();
 
 export const build__UpdateMediaItemTags = ({
   mediaItemRepository,
-  database,
+  runInTransaction,
 }: UpdateMediaItemTagsDeps): UpdateMediaItemTags => {
   return async (
     input: UpdateMediaItemTagsCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<UpdateMediaItemTagsResult>> => {
     const { viewerId, mediaItemId, tags } = input;
 
@@ -43,7 +48,7 @@ export const build__UpdateMediaItemTags = ({
       return ensureResult;
     }
 
-    await database.transaction(async (trx) => {
+    await runInTransaction(trx, async (db) => {
       // --- Phase 1: distill the incoming batch, then resolve every tag to a userTagId ---
 
       // Dedup by normalized label, preferring an entry that already has a userTagId.
@@ -63,15 +68,18 @@ export const build__UpdateMediaItemTags = ({
 
         if (userTagId == null) {
           const normalized = normalizeLabel(tag.label);
-          userTagId = await mediaItemRepository.ensureUserTagId(trx, {
-            id: crypto.randomUUID(),
-            userId: viewerId,
-            label: normalized,
-            createdBy: viewerId,
-            createdAt: new Date(),
-            updatedBy: viewerId,
-            updatedAt: new Date(),
-          });
+          userTagId = await mediaItemRepository.ensureUserTagId(
+            {
+              id: crypto.randomUUID(),
+              userId: viewerId,
+              label: normalized,
+              createdBy: viewerId,
+              createdAt: new Date(),
+              updatedBy: viewerId,
+              updatedAt: new Date(),
+            },
+            db,
+          );
         }
 
         desiredTags.push({
@@ -104,7 +112,9 @@ export const build__UpdateMediaItemTags = ({
         mediaItem.removeTags(toRemove);
       }
 
-      await mediaItemRepository.save(mediaItem, trx);
+      await runInTransaction(trx, async (db) => {
+        await mediaItemRepository.save(mediaItem, db);
+      });
     });
     return ok({
       mediaItemId: mediaItem.id(),

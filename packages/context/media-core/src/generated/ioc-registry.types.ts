@@ -4,7 +4,10 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
-import type { CreateTransaction } from '../infrastructure/repositories/runInTransaction.js';
+import type {
+  RunInTransaction,
+  WithTransaction,
+} from '../infrastructure/repositories/runInTransaction.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
 import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
@@ -86,7 +89,6 @@ export interface IocGeneratedCradle {
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
   createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
-  createTransaction: CreateTransaction;
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteComment: DeleteComment;
@@ -126,6 +128,7 @@ export interface IocGeneratedCradle {
   };
   removeReaction: RemoveReaction;
   reorderAlbumItems: ReorderAlbumItems;
+  runInTransaction: RunInTransaction;
   setCoverMedia: SetCoverMedia;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
@@ -141,6 +144,7 @@ export interface IocGeneratedCradle {
   viewerReactionReadServiceFactory: ViewerReactionReadServiceFactory;
   viewerSharedContactsReadServiceFactory: ViewerSharedContactsReadServiceFactory;
   viewerSharedWithMeMediaItemReadServiceFactory: ViewerSharedWithMeMediaItemReadServiceFactory;
+  withTransaction: WithTransaction;
   writeServices: {
     addAlbumItem: AddAlbumItem;
     addComment: AddComment;

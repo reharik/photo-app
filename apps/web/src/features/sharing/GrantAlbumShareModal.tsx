@@ -38,10 +38,9 @@ export const GrantAlbumShareModal = ({
   const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
 
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
-    fetchPolicy: 'cache-first',
-    nextFetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
   });
-
   const suggestions: ShareContactType[] = useMemo(
     () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],

@@ -1,4 +1,6 @@
 import { AppErrorCollection, Operation } from '@packages/contracts';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -12,10 +14,17 @@ export interface DeleteAlbum extends WriteServiceBase {
 
 type DeleteAlbumDeps = {
   albumRepository: AlbumRepository;
+  runInTransaction: RunInTransaction;
 };
 
-export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): DeleteAlbum => {
-  return async (input: DeleteAlbumCommand): Promise<WriteResult<DeleteAlbumResult>> => {
+export const build__DeleteAlbum = ({
+  albumRepository,
+  runInTransaction,
+}: DeleteAlbumDeps): DeleteAlbum => {
+  return async (
+    input: DeleteAlbumCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<DeleteAlbumResult>> => {
     const { viewerId, albumId } = input;
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
@@ -30,7 +39,7 @@ export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): Delete
       return fail(Operation.deleteAlbum.deniedError);
     }
 
-    await albumRepository.delete(album);
+    await runInTransaction(trx, async (db) => await albumRepository.delete(album, db));
     return ok({ albumId: album.id() });
   };
 };

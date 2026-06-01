@@ -1,5 +1,6 @@
 import { Operation } from '@packages/contracts';
-import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -14,14 +15,17 @@ export interface ReorderAlbumItems extends WriteServiceBase {
 
 type ReorderAlbumItemsDeps = {
   albumRepository: AlbumRepository;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__ReorderAlbumItems = ({
   albumRepository,
-  createTransaction,
+  runInTransaction,
 }: ReorderAlbumItemsDeps): ReorderAlbumItems => {
-  return async (input: ReorderAlbumItemsCommand): Promise<WriteResult<ReorderAlbumItemsResult>> => {
+  return async (
+    input: ReorderAlbumItemsCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<ReorderAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
 
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
@@ -40,7 +44,7 @@ export const build__ReorderAlbumItems = ({
       return r3;
     }
 
-    await createTransaction(async (trx) => await albumRepository.save(album, trx));
+    await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
 
     return ok({
       albumId: album.id(),

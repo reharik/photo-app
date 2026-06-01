@@ -2,25 +2,29 @@ import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import { Reaction, ReactionRecord } from '../../domain/Reaction/Reaction';
-import { RepoOptions, runInTransaction } from '../../infrastructure/repositories/runInTransaction';
+import { RunInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import type { EntityId } from '../../types/types';
 
-type ReactionRepositoryDeps = { database: Knex };
+type ReactionRepositoryDeps = { runInTransaction: RunInTransaction };
 
 export type ReactionRepository = {
   getById: (id: EntityId) => Promise<Reaction | undefined>;
   save: (reaction: Reaction, trx: Knex.Transaction) => Promise<void>;
-  delete: (reaction: Reaction, options?: RepoOptions) => Promise<boolean>;
+  delete: (reaction: Reaction, trx: Knex.Transaction) => Promise<boolean>;
 };
 
 export const build__ReactionRepository = ({
-  database,
+  runInTransaction,
 }: ReactionRepositoryDeps): ReactionRepository => ({
-  getById: async (id: EntityId): Promise<Reaction | undefined> => {
-    const reaction = await withEnumRevival(
-      database<ReactionRecord>('reaction').where({ id }).first(),
-      { targetType: ReactionTargetType, emoji: ReactionEmoji },
-      { strict: true },
+  getById: async (id: EntityId, trx?: Knex.Transaction): Promise<Reaction | undefined> => {
+    const reaction = await runInTransaction(
+      trx,
+      async (db) =>
+        await withEnumRevival(
+          db<ReactionRecord>('reaction').where({ id }).first(),
+          { targetType: ReactionTargetType, emoji: ReactionEmoji },
+          { strict: true },
+        ),
     );
     return reaction ? Reaction.rehydrate(reaction) : undefined;
   },
@@ -33,10 +37,8 @@ export const build__ReactionRepository = ({
       .ignore();
   },
 
-  delete: async (reaction: Reaction, options?: RepoOptions): Promise<boolean> => {
-    return runInTransaction(database, options, async (trx) => {
-      const deleted = await trx('reaction').where({ id: reaction.id() }).delete();
-      return deleted > 0;
-    });
+  delete: async (reaction: Reaction, trx: Knex.Transaction): Promise<boolean> => {
+    const deleted = await trx('reaction').where({ id: reaction.id() }).delete();
+    return deleted > 0;
   },
 });

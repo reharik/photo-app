@@ -1,10 +1,10 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaKind, ReactionTargetType } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaSwipeNavigation } from '../../../hooks/useMediaSwipeNavigation';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
-import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
+import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 import { MediaRenderer } from './MediaRenderer';
 import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobileNav } from './MediaViewerMobileNav';
@@ -119,8 +119,9 @@ export const MediaViewer = ({
 
   const belowMediaSlot = (
     <ViewerBelowMediaSlot>
-      <ReactionsForMediaItemContainer
-        mediaItemId={mediaItemId}
+      <ReactionsContainer
+        targetId={mediaItemId}
+        targetType={ReactionTargetType.mediaItem}
         reactionCounts={reactionCounts}
         viewerReactions={viewerReactions}
         canReact={canReact}

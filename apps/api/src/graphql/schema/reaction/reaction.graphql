@@ -5,6 +5,7 @@ enum ReactionTargetType {
 
 enum ReactionEmoji {
   HEART
+  COMMENT
 }
 
 type ReactionCounts {

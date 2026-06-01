@@ -1,5 +1,6 @@
 import { Operation } from '@packages/contracts';
-import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
@@ -14,14 +15,17 @@ export interface UnsetCoverMedia extends WriteServiceBase {
 
 type UnsetCoverMediaDeps = {
   albumRepository: AlbumRepository;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__UnsetCoverMedia = ({
   albumRepository,
-  createTransaction,
+  runInTransaction,
 }: UnsetCoverMediaDeps): UnsetCoverMedia => {
-  return async (input: UnsetCoverMediaCommand): Promise<WriteResult<UnsetCoverMediaResult>> => {
+  return async (
+    input: UnsetCoverMediaCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<UnsetCoverMediaResult>> => {
     const { viewerId, albumId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {
@@ -37,7 +41,7 @@ export const build__UnsetCoverMedia = ({
     if (!r3.success) {
       return r3;
     }
-    await createTransaction(async (trx) => await albumRepository.save(album, trx));
+    await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
 
     return ok({
       albumId: album.id(),

@@ -1,6 +1,7 @@
 import { AlbumMemberRole, AppErrorCollection } from '@packages/contracts';
 import crypto from 'crypto';
-import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { hashToken } from '../../../application';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
@@ -24,22 +25,26 @@ export type CreatePublicLinkResponse = {
 };
 
 export interface CreatePublicLinkForAlbum extends WriteServiceBase {
-  (input: CreatePublicLinkForAlbumCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (
+    input: CreatePublicLinkForAlbumCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForAlbumDeps = {
   albumRepository: AlbumRepository;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
   grantRepository: GrantRepository;
 };
 
 export const build__CreatePublicLinkForAlbum = ({
   albumRepository,
-  createTransaction,
+  runInTransaction,
   grantRepository,
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
     input: CreatePublicLinkForAlbumCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<CreatePublicLinkResponse>> => {
     const loadedAlbum = await loadRequiredAlbum(input.albumId, albumRepository);
     if (!loadedAlbum.success) {
@@ -66,8 +71,8 @@ export const build__CreatePublicLinkForAlbum = ({
     const mediaItemIds = album.getMediaItemIds();
 
     // this is outside of the AR because grants are a side-effect projection maintained by the write services.
-    await createTransaction(async (trx) => {
-      await albumRepository.save(album, trx);
+    await runInTransaction(trx, async (db) => {
+      await albumRepository.save(album, db);
 
       const now = new Date();
       const grants: GrantRecord[] = mediaItemIds.map((x) => {
@@ -79,7 +84,7 @@ export const build__CreatePublicLinkForAlbum = ({
           createdAt: now,
         };
       });
-      await grantRepository.createGrants(grants, trx);
+      await grantRepository.createGrants(grants, db);
     });
     // TODO: create share_link row with hashed token, create album-level access_grant, and wire grant table population.
     return ok({ token });

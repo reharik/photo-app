@@ -1,5 +1,6 @@
 import { AppErrorCollection, ReactionTargetType } from '@packages/contracts';
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { fail, ok } from '../../../domain';
 import {
   CommentReadRepository,
@@ -22,7 +23,10 @@ export type RemoveReactionCommand = {
 export type RemoveReactionResult = { targetType: ReactionTargetType; targetId: EntityId };
 
 export interface RemoveReaction extends WriteServiceBase {
-  (command: RemoveReactionCommand): Promise<WriteResult<RemoveReactionResult>>;
+  (
+    command: RemoveReactionCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<RemoveReactionResult>>;
 }
 
 type RemoveReactionDeps = {
@@ -31,7 +35,7 @@ type RemoveReactionDeps = {
   commentRepository: CommentRepository;
   mediaItemReadRepository: MediaItemReadRepository;
   commentReadRepository: CommentReadRepository;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__RemoveReaction = ({
@@ -40,9 +44,12 @@ export const build__RemoveReaction = ({
   mediaItemReadRepository,
   commentReadRepository,
   commentRepository,
-  database,
+  runInTransaction,
 }: RemoveReactionDeps): RemoveReaction => {
-  return async (command: RemoveReactionCommand): Promise<WriteResult<RemoveReactionResult>> => {
+  return async (
+    command: RemoveReactionCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<RemoveReactionResult>> => {
     const reaction = await reactionRepository.getById(command.id);
     if (!reaction) {
       return fail(AppErrorCollection.reaction.ReactionNotFound);
@@ -74,16 +81,16 @@ export const build__RemoveReaction = ({
       existingCount.count--;
     }
 
-    await database.transaction(async (trx) => {
-      await reactionRepository.delete(reaction, { trx });
+    await runInTransaction(trx, async (db) => {
+      await reactionRepository.delete(reaction, db);
       if (reaction.targetType() === ReactionTargetType.mediaItem) {
-        await mediaItemRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, {
-          trx,
-        });
+        await mediaItemRepository.updateReactionCounts(
+          reaction.targetId(),
+          updatedReactionCount,
+          db,
+        );
       } else if (reaction.targetType() === ReactionTargetType.comment) {
-        await commentRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, {
-          trx,
-        });
+        await commentRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, db);
       }
     });
 

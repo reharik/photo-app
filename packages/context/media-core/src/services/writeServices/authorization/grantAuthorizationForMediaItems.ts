@@ -1,5 +1,6 @@
 import { AppErrorCollection } from '@packages/contracts';
-import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import {
   ensureUserExists,
@@ -55,7 +56,7 @@ type GrantAuthorizationForMediaItemsDeps = {
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
 };
 
 /**
@@ -67,10 +68,11 @@ export const build__GrantAuthorizationForMediaItems = ({
   userRepository,
   grantRepository,
   shareContactRepository,
-  createTransaction,
+  runInTransaction,
 }: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
   return async (
     input: GrantUserAuthorizationForMediaItemsCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, operations, grantedToHandle, label, expiresAt } = input;
     const dedupedIds = dedupePreserveOrder(input.mediaItemIds);
@@ -127,9 +129,9 @@ export const build__GrantAuthorizationForMediaItems = ({
         ? await userRepository.getById(viewerId)
         : undefined;
 
-    await createTransaction(async (trx) => {
+    await runInTransaction(trx, async (db) => {
       for (const { mediaItem, authorization } of grants) {
-        await mediaItemRepository.save(mediaItem, trx);
+        await mediaItemRepository.save(mediaItem, db);
 
         await grantRepository.createGrant(
           {
@@ -140,7 +142,7 @@ export const build__GrantAuthorizationForMediaItems = ({
             operations: authorization.operations(),
             createdAt: new Date(),
           },
-          trx,
+          db,
         );
       }
 
@@ -150,15 +152,10 @@ export const build__GrantAuthorizationForMediaItems = ({
           viewerId,
           grantedToUserId,
           grantedToHandleResolved,
-          trx,
+          db,
         );
         if (owner) {
-          await shareContactRepository.upsertContact(
-            grantedToUserId,
-            viewerId,
-            owner.handle(),
-            trx,
-          );
+          await shareContactRepository.upsertContact(grantedToUserId, viewerId, owner.handle(), db);
         }
       }
     });

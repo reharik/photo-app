@@ -1,5 +1,6 @@
 import { AppErrorCollection, MediaAssetKind, MediaKind } from '@packages/contracts';
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { MediaProcessingJobRepository } from 'src/repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import {
   buildMediaAssetStorageKey,
@@ -23,17 +24,18 @@ type FinalizeMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,
-  database,
+  runInTransaction,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<FinalizeMediaItemUploadResult>> => {
     const { viewerId, mediaItemId } = input;
     const mediaItem = await mediaItemRepository.getById(mediaItemId);
@@ -74,8 +76,8 @@ export const build__FinalizeMediaItemUpload = ({
       return finalized;
     }
 
-    await database.transaction(async (trx) => {
-      await mediaItemRepository.save(mediaItem, trx);
+    await runInTransaction(trx, async (db) => {
+      await mediaItemRepository.save(mediaItem, db);
     });
 
     if (mediaItem.kind() === MediaKind.photo) {

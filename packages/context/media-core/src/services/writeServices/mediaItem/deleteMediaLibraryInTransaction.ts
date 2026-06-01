@@ -10,7 +10,7 @@ export type DeleteMediaLibraryInTransactionDeps = {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   mediaItemRepository: MediaItemRepository;
-  database: Knex;
+  trx: Knex.Transaction;
 };
 
 /**
@@ -28,7 +28,7 @@ export const deleteViewerOwnedMediaItemsFromLibraryInTransaction = async ({
   albumReadRepository,
   albumRepository,
   mediaItemRepository,
-  database,
+  trx,
 }: DeleteMediaLibraryInTransactionDeps & {
   viewerId: EntityId;
   mediaItems: MediaItem[];
@@ -43,21 +43,19 @@ export const deleteViewerOwnedMediaItemsFromLibraryInTransaction = async ({
     }
   }
 
-  await database.transaction(async (trx) => {
-    for (const albumId of albumIds) {
-      const album = await albumRepository.getById(albumId, { trx });
-      if (!album) {
-        continue;
-      }
-
-      for (const mediaItemId of mediaItemIds) {
-        album.removeMediaItemFromAlbum(mediaItemId, viewerId);
-      }
-      await albumRepository.save(album, trx);
+  for (const albumId of albumIds) {
+    const album = await albumRepository.getById(albumId, trx);
+    if (!album) {
+      continue;
     }
 
-    for (const item of mediaItems) {
-      await mediaItemRepository.delete(item, { trx });
+    for (const mediaItemId of mediaItemIds) {
+      album.removeMediaItemFromAlbum(mediaItemId, viewerId);
     }
-  });
+    await albumRepository.save(album, trx);
+  }
+
+  for (const item of mediaItems) {
+    await mediaItemRepository.delete(item, trx);
+  }
 };

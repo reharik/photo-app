@@ -1,10 +1,20 @@
-import { AppErrorCollection, CommentTargetType } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  CommentTargetType,
+  ReactionEmoji,
+  ReactionTargetType,
+} from '@packages/contracts';
 import { Knex } from 'knex';
 import { Comment, fail, ok } from '../../../domain';
+import {
+  unwrapOrThrow,
+  WithTransaction,
+} from '../../../infrastructure/repositories/runInTransaction';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { ValidateOperationService } from '../../readServices/mediaGrantService';
+import { AddReaction } from '../reactions/addReaction';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -34,16 +44,21 @@ type AddCommentDeps = {
   commentRepository: CommentRepository;
   userReadRepository: UserReadRepository;
   validateOperationService: ValidateOperationService;
-  database: Knex;
+  addReaction: AddReaction;
+  withTransaction: WithTransaction;
 };
 
 export const build__AddComment = ({
   commentRepository,
   userReadRepository,
   validateOperationService,
-  database,
+  addReaction,
+  withTransaction,
 }: AddCommentDeps): AddComment => {
-  return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (
+    command: AddCommentCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
       viewerId: command.authorId,
@@ -76,10 +91,20 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      await database.transaction(async (trx) => {
-        await commentRepository.save(comment, trx);
+      return await withTransaction(trx, async (db) => {
+        await commentRepository.save(comment, db);
+        const result = await addReaction(
+          {
+            targetType: ReactionTargetType.mediaItem,
+            targetId: command.targetId,
+            emoji: ReactionEmoji.comment,
+            viewer: { userId: command.authorId },
+          },
+          db,
+        );
+        unwrapOrThrow(result);
+        return ok({ entityId: comment.id() });
       });
-      return ok({ entityId: comment.id() });
     } else {
       // TODO: Look up viewer's display_name and avatar_url from the user table and
       //   snapshot them into the row (denormalized — do not join through user on reads).
@@ -93,10 +118,20 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      await database.transaction(async (trx) => {
-        await commentRepository.save(comment, trx);
+      return await withTransaction(trx, async (db) => {
+        await commentRepository.save(comment, db);
+        const result = await addReaction(
+          {
+            targetType: ReactionTargetType.mediaItem,
+            targetId: command.targetId,
+            emoji: ReactionEmoji.comment,
+            viewer: { userId: command.authorId },
+          },
+          db,
+        );
+        unwrapOrThrow(result);
+        return ok({ entityId: comment.id() });
       });
-      return ok({ entityId: comment.id() });
     }
   };
 };

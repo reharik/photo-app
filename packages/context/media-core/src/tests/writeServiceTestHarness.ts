@@ -3,8 +3,8 @@ import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { Album } from '../domain/Album/Album.js';
 import {
-  build__CreateTransaction,
-  type CreateTransaction,
+  build__RunInTransaction,
+  type RunInTransaction,
 } from '../infrastructure/repositories/runInTransaction.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
@@ -26,14 +26,14 @@ export const createTestDatabase = (): Knex => {
 
 export type WriteTestHarness = {
   database: Knex;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
 };
 
 export const createWriteTestHarness = (): WriteTestHarness => {
   const database = createTestDatabase();
   return {
     database,
-    createTransaction: build__CreateTransaction({ database }),
+    runInTransaction: build__RunInTransaction({ database }),
   };
 };
 
@@ -66,7 +66,7 @@ export const createFinalizeService = (
 export const createAlbumService = (harness: WriteTestHarness, albumRepository: AlbumRepository) =>
   build__CreateAlbum({
     albumRepository,
-    createTransaction: harness.createTransaction,
+    runInTransaction: harness.runInTransaction,
   });
 
 export const createAddAlbumItemService = (
@@ -77,7 +77,7 @@ export const createAddAlbumItemService = (
   build__AddAlbumItem({
     albumRepository,
     mediaItemReadRepository,
-    createTransaction: harness.createTransaction,
+    runInTransaction: harness.runInTransaction,
   });
 
 export const createAddMediaItemsToAlbumService = (
@@ -88,5 +88,5 @@ export const createAddMediaItemsToAlbumService = (
   build__AddMediaItemsToAlbum({
     albumRepository,
     mediaItemReadRepository,
-    createTransaction: harness.createTransaction,
+    runInTransaction: harness.runInTransaction,
   });

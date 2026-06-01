@@ -1,5 +1,6 @@
 import { ContractError } from '@packages/contracts';
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
@@ -13,20 +14,24 @@ import {
 } from './writeMediaItem.types';
 
 export interface UpdateMediaItem extends WriteServiceBase {
-  (input: UpdateMediaItemDetailsCommand): Promise<WriteResult<UpdateMediaItemDetailsResult>>;
+  (
+    input: UpdateMediaItemDetailsCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<UpdateMediaItemDetailsResult>>;
 }
 
 type UpdateMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__UpdateMediaItem = ({
   mediaItemRepository,
-  database,
+  runInTransaction,
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (
     input: UpdateMediaItemDetailsCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<UpdateMediaItemDetailsResult>> => {
     const { viewerId, mediaItemId, takenAt } = input;
 
@@ -56,7 +61,7 @@ export const build__UpdateMediaItem = ({
     if (!updateResult.success) {
       return updateResult;
     }
-    await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
+    await runInTransaction(trx, async (db) => await mediaItemRepository.save(mediaItem, db));
 
     return ok({
       mediaItemId: mediaItem.id(),

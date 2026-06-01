@@ -1,5 +1,6 @@
 import { Operation } from '@packages/contracts';
-import { CreateTransaction } from 'src/infrastructure/repositories/runInTransaction';
+import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
@@ -35,7 +36,7 @@ type GrantUserAuthorizationForAlbumDeps = {
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
-  createTransaction: CreateTransaction;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__GrantUserAuthorizationForAlbum = ({
@@ -43,10 +44,11 @@ export const build__GrantUserAuthorizationForAlbum = ({
   userRepository,
   grantRepository,
   shareContactRepository,
-  createTransaction,
+  runInTransaction,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
   return async (
     input: GrantUserAuthorizationForAlbumCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, albumId, operations, grantedToHandle, label, expiresAt } = input;
     let { grantedToUserId } = input;
@@ -90,8 +92,8 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const authorizationId = authorization.id();
     const mediaItemIds = album.getMediaItemIds();
 
-    await createTransaction(async (trx) => {
-      await albumRepository.save(album, trx);
+    await runInTransaction(trx, async (db) => {
+      await albumRepository.save(album, db);
 
       const now = new Date();
       for (const mediaItemId of mediaItemIds) {
@@ -104,7 +106,7 @@ export const build__GrantUserAuthorizationForAlbum = ({
             operations: authorization.operations(),
             createdAt: now,
           },
-          trx,
+          db,
         );
       }
 
@@ -113,16 +115,11 @@ export const build__GrantUserAuthorizationForAlbum = ({
           viewerId,
           grantedToUserId,
           grantedToHandleResolved,
-          trx,
+          db,
         );
         const owner = await userRepository.getById(viewerId);
         if (owner) {
-          await shareContactRepository.upsertContact(
-            grantedToUserId,
-            viewerId,
-            owner.handle(),
-            trx,
-          );
+          await shareContactRepository.upsertContact(grantedToUserId, viewerId, owner.handle(), db);
         }
       }
     });

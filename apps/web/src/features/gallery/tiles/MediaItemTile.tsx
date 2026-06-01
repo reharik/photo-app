@@ -1,10 +1,10 @@
-import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind, ReactionTargetType } from '@packages/contracts';
 import { DateTime } from 'luxon';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import { ReactionsForMediaItemContainer } from '../../../features/reactions/ReactionsForMediaItemContainer';
 import { MediaItemSummaryVM } from '../../../viewModels/';
+import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 
 export const MediaItemTile = ({
   item,
@@ -26,8 +26,9 @@ export const MediaItemTile = ({
         )}
       </ThumbLink>
       <ReactionsStrip onClick={(e) => e.stopPropagation()}>
-        <ReactionsForMediaItemContainer
-          mediaItemId={item.id}
+        <ReactionsContainer
+          targetId={item.id}
+          targetType={ReactionTargetType.mediaItem}
           reactionCounts={item.reactionCounts}
           viewerReactions={item.viewerReactions}
           canReact

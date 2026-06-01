@@ -1,5 +1,6 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
@@ -18,14 +19,17 @@ export type CreatePublicLinkForMediaItemsCommand = {
 };
 
 export interface CreatePublicLinkForMediaItems extends WriteServiceBase {
-  (input: CreatePublicLinkForMediaItemsCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (
+    input: CreatePublicLinkForMediaItemsCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForMediaItemsDeps = {
   mediaItemRepository: MediaItemRepository;
   albumRepository: AlbumRepository;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 const dedupePreserveOrder = (ids: EntityId[]): EntityId[] => {
@@ -45,10 +49,11 @@ export const build__CreatePublicLinkForMediaItems = ({
   mediaItemRepository,
   albumRepository,
   createPublicLinkForAlbum,
-  database,
+  runInTransaction,
 }: CreatePublicLinkForMediaItemsDeps): CreatePublicLinkForMediaItems => {
   return async (
     input: CreatePublicLinkForMediaItemsCommand,
+    trx?: Knex.Transaction,
   ): Promise<WriteResult<CreatePublicLinkResponse>> => {
     const mediaItemIds = dedupePreserveOrder(input.mediaItemIds);
     if (mediaItemIds.length === 0) {
@@ -79,13 +84,16 @@ export const build__CreatePublicLinkForMediaItems = ({
     mediaItemIds.forEach((x) => {
       album.addItem(x, input.viewerId);
     });
-    await database.transaction(async (trx) => await albumRepository.save(album, trx));
-    const publicLinkResult = await createPublicLinkForAlbum({
-      viewerId: input.viewerId,
-      albumId: album.id(),
-      name: input.name,
-      expiresAt: input.expiresAt,
-    });
+    await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
+    const publicLinkResult = await createPublicLinkForAlbum(
+      {
+        viewerId: input.viewerId,
+        albumId: album.id(),
+        name: input.name,
+        expiresAt: input.expiresAt,
+      },
+      trx,
+    );
     if (!publicLinkResult.success) {
       return publicLinkResult;
     }

@@ -2,6 +2,7 @@ import { AppErrorCollection, ReactionEmoji, ReactionTargetType } from '@packages
 import { Knex } from 'knex';
 import { fail, ok } from '../../../domain';
 import { Reaction } from '../../../domain/Reaction/Reaction';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { CommentReadRepository } from '../../../repositories';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -22,7 +23,7 @@ export type AddReactionCommand = {
 export type AddReactionResult = { targetType: ReactionTargetType; targetId: EntityId };
 
 export interface AddReaction extends WriteServiceBase {
-  (command: AddReactionCommand): Promise<WriteResult<AddReactionResult>>;
+  (command: AddReactionCommand, trx?: Knex.Transaction): Promise<WriteResult<AddReactionResult>>;
 }
 
 type AddReactionDeps = {
@@ -32,18 +33,21 @@ type AddReactionDeps = {
   validateOperationService: ValidateOperationService;
   reactionRepository: ReactionRepository;
   mediaItemRepository: MediaItemRepository;
-  database: Knex;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__AddReaction = ({
   mediaItemReadRepository,
   commentReadRepository,
   commentRepository,
-  database,
+  runInTransaction,
   reactionRepository,
   mediaItemRepository,
 }: AddReactionDeps): AddReaction => {
-  return async (command: AddReactionCommand): Promise<WriteResult<AddReactionResult>> => {
+  return async (
+    command: AddReactionCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<AddReactionResult>> => {
     const { targetType, targetId, emoji, viewer } = command;
 
     let updatedReactionCount: DBReactionCounts;
@@ -75,12 +79,12 @@ export const build__AddReaction = ({
     }
 
     const reaction = Reaction.create({ targetType, targetId, userId: viewer.userId, emoji });
-    await database.transaction(async (trx) => {
-      await reactionRepository.save(reaction, trx);
+    await runInTransaction(trx, async (db) => {
+      await reactionRepository.save(reaction, db);
       if (targetType === ReactionTargetType.mediaItem) {
-        await mediaItemRepository.updateReactionCounts(targetId, updatedReactionCount, { trx });
+        await mediaItemRepository.updateReactionCounts(targetId, updatedReactionCount, db);
       } else if (targetType === ReactionTargetType.comment) {
-        await commentRepository.updateReactionCounts(targetId, updatedReactionCount, { trx });
+        await commentRepository.updateReactionCounts(targetId, updatedReactionCount, db);
       }
     });
 

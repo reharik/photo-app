@@ -1,10 +1,10 @@
-import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind, ReactionTargetType } from '@packages/contracts';
 import { DateTime } from 'luxon';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
-import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
+import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 
 export const AlbumMediaTile = ({
   item,
@@ -27,8 +27,9 @@ export const AlbumMediaTile = ({
         )}
       </ThumbLink>
       <ReactionsStrip onClick={(e) => e.stopPropagation()}>
-        <ReactionsForMediaItemContainer
-          mediaItemId={item.mediaItem.id}
+        <ReactionsContainer
+          targetId={item.mediaItem.id}
+          targetType={ReactionTargetType.mediaItem}
           reactionCounts={item.mediaItem.reactionCounts}
           viewerReactions={item.mediaItem.viewerReactions}
           canReact

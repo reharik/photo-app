@@ -4,6 +4,7 @@ import { DynamicIcon } from 'lucide-react/dynamic';
 import { JSX } from 'react';
 import styled from 'styled-components';
 
+import { theme } from '../../styles/theme';
 import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 
 type Props = {
@@ -30,18 +31,27 @@ export const ReactionButton = ({
     : !hasReaction
       ? `Add ${emoji.display}`
       : `Remove ${emoji.display}`;
+  console.log(`************emoji.************`);
+  console.log(emoji.fillColor);
+  console.log(`********END emoji.************`);
   return (
     <Root>
       <Button
         type="button"
         name={emoji.display}
         $reacted={hasReaction}
+        $fillColor={emoji.fillColor}
         disabled={!canReact}
         aria-label={ariaLabel}
         aria-pressed={hasReaction}
         onClick={canReact ? onToggle : undefined}
       >
-        <ReactionIcon aria-hidden name={emoji.iconName as IconName} $reacted={hasReaction} />
+        <ReactionIcon
+          aria-hidden
+          name={emoji.iconName as IconName}
+          $reacted={hasReaction}
+          $fillColor={emoji.fillColor}
+        />
       </Button>
       {emojiCount > 0 ? <Count aria-label="Reaction count">{emojiCount}</Count> : null}
     </Root>
@@ -54,7 +64,7 @@ const Root = styled.span`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-const Button = styled.button<{ $reacted: boolean }>`
+const Button = styled.button<{ $reacted: boolean; $fillColor: string }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -85,10 +95,10 @@ const Button = styled.button<{ $reacted: boolean }>`
   }
 `;
 
-const ReactionIcon = styled(DynamicIcon)<{ $reacted: boolean }>`
+const ReactionIcon = styled(DynamicIcon)<{ $reacted: boolean; $fillColor: string }>`
   width: ${({ theme }) => theme.fontSize._21};
   height: ${({ theme }) => theme.fontSize._21};
-  color: ${({ theme }) => theme.color.red_darker};
+  color: ${({ $fillColor }) => theme.color[$fillColor as keyof typeof theme.color]};
   fill: ${({ $reacted }) => ($reacted ? 'currentColor' : 'none')};
 `;
 

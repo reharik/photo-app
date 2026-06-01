@@ -5,6 +5,11 @@ const input = {
     // use kebab-case.  I could transform the key to kebab-case, but for now
     // I'll just name it explicitly.
     iconName: 'heart',
+    fillColor: 'red_darker',
+  },
+  comment: {
+    iconName: 'message-circle-more',
+    fillColor: 'blue_darker',
   },
 };
 export type ReactionEmoji = Enumeration<typeof ReactionEmoji>;

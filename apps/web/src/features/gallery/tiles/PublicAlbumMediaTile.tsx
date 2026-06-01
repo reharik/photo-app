@@ -1,10 +1,10 @@
-import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind, ReactionTargetType } from '@packages/contracts';
 import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { MinimalAlbumItemSummaryVM } from '../../albums/AlbumSectionMetadata';
 
-import { ReactionsForMediaItemContainer } from '../../reactions/ReactionsForMediaItemContainer';
+import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 export const PublicAlbumMediaTile = ({
   item,
   mediaGalleryIds,
@@ -26,8 +26,9 @@ export const PublicAlbumMediaTile = ({
         )}
       </ThumbLink>
       <ReactionsStrip>
-        <ReactionsForMediaItemContainer
-          mediaItemId={item.mediaItem.id}
+        <ReactionsContainer
+          targetId={item.mediaItem.id}
+          targetType={ReactionTargetType.mediaItem}
           reactionCounts={item.mediaItem.reactionCounts}
           viewerReactions={item.mediaItem.viewerReactions}
           canReact={false}

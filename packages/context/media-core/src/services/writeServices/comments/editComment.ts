@@ -1,5 +1,6 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
+import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { fail, ok } from '../../../domain';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { EntityId, WriteResult } from '../../../types/types';
@@ -15,13 +16,16 @@ export interface EditComment extends WriteServiceBase {
   (command: EditCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
 }
 
-type EditCommentDeps = { commentRepository: CommentRepository; database: Knex };
+type EditCommentDeps = { commentRepository: CommentRepository; runInTransaction: RunInTransaction };
 
 export const build__EditComment = ({
   commentRepository,
-  database,
+  runInTransaction,
 }: EditCommentDeps): EditComment => {
-  return async (command: EditCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (
+    command: EditCommentCommand,
+    trx?: Knex.Transaction,
+  ): Promise<WriteResult<{ entityId: EntityId }>> => {
     const comment = await commentRepository.getById(command.commentId);
     if (!comment) {
       return fail(AppErrorCollection.comment.CommentNotFound);
@@ -30,8 +34,8 @@ export const build__EditComment = ({
       return fail(AppErrorCollection.comment.CommentNotFound);
     }
     comment.editBody(command.body, command.authorId);
-    await database.transaction(async (trx) => {
-      await commentRepository.save(comment, trx);
+    await runInTransaction(trx, async (db) => {
+      await commentRepository.save(comment, db);
     });
     return ok({ entityId: comment.id() });
   };

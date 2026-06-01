@@ -1,4 +1,5 @@
-import { type JSX, type KeyboardEvent, useRef, useState } from 'react';
+import { type JSX, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 const COMMENT_MAX_LENGTH = 500;
@@ -18,6 +19,12 @@ export const CommentComposer = ({
   const [body, setBody] = useState('');
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash === '#comment') {
+      textareaRef.current?.focus();
+    }
+  }, [hash]);
 
   const trimmed = body.trim();
   const canSubmit = trimmed.length > 0 && trimmed.length <= COMMENT_MAX_LENGTH && !isLoading;

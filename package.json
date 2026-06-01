@@ -33,6 +33,7 @@
     "clean:dist": "nx reset && nx run-many --target=clean --all",
     "codegen:all": "nx run-many --target=codegen --all",
     "codegen:contracts": "nx codegen contracts",
+    "codegen:enums": "nx run contracts:codegen",
     "codegen:ioc:api": "nx run api:gen:container",
     "codegen:ioc:worker": "nx run media-worker:gen:container",
     "codegen:web": "nx codegen web",

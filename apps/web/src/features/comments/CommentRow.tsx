@@ -1,9 +1,10 @@
+import { ReactionTargetType } from '@packages/contracts';
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
-import { PublicReactionsForCommentContainer } from '../../features/reactions/PublicReactionsForCommentContainer';
-import { ReactionsForCommentContainer } from '../../features/reactions/ReactionsForCommentContainer';
 import { useViewer } from '../../hooks/useViewer';
 import { CommentReplyVM, CommentRootVM } from '../../viewModels/';
+import { PublicReactionsContainer } from '../reactions/PublicReactionsContainer';
+import { ReactionsContainer } from '../reactions/ReactionsContainer';
 import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
@@ -95,15 +96,16 @@ export const CommentRow = ({
           onCancelEdit={onEditComment ? () => setIsEditing(false) : undefined}
         />
         {onRefetchComments ? (
-          <ReactionsForCommentContainer
-            commentId={comment.id}
+          <ReactionsContainer
+            targetId={comment.id}
+            targetType={ReactionTargetType.comment}
             reactionCounts={comment.reactionCounts}
             viewerReactions={comment.viewerReactions}
             canReact
             onRefetch={onRefetchComments}
           />
         ) : (
-          <PublicReactionsForCommentContainer reactionCounts={comment.reactionCounts} />
+          <PublicReactionsContainer reactionCounts={comment.reactionCounts} />
         )}
       </Content>
     </Root>
