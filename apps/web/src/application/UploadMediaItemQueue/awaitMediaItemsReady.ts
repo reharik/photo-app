@@ -54,7 +54,7 @@ const waitUntilMediaItemReadyOrTimeout = (
           'data' in result && result.data != null
             ? result.data.viewer?.mediaItem?.status
             : undefined;
-        if (status === MediaItemStatus.ready) {
+        if (status != null && status.equals(MediaItemStatus.ready)) {
           if (!readyNotified && onItemReady !== undefined) {
             readyNotified = true;
             onItemReady(mediaItemId);

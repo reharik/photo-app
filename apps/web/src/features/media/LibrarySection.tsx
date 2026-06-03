@@ -12,7 +12,6 @@ import {
 } from '../../graphql/generated/types';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
@@ -96,8 +95,6 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
       void reloadData();
     }
   }, [items, reloadData]);
-
-  const { sentinelRef, scrollRootRef } = useInfiniteScroll({ ...paging, rootMargin: '600px' });
 
   const submitDeleteMedia = async (): Promise<void> => {
     const result = await executeDelete(

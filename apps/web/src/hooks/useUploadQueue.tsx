@@ -5,10 +5,10 @@ import { FrontendUploadStatus } from '@packages/contracts';
 import {
   initialUploadQueueState,
   uploadQueueReducer,
-} from '../domain/media/mediaUploadQueueReducer';
-import { UploadWorkflowEvent } from '../domain/media/mediaUploadTypes';
-import { mediaUploadWorkflow } from '../domain/media/mediaUploadWorkflow';
-import { workflowEventToQueueAction } from '../domain/media/workflowEventToQueueAction';
+} from '../application/UploadMediaItemQueue/mediaUploadQueueReducer';
+import { UploadWorkflowEvent } from '../application/UploadMediaItemQueue/mediaUploadTypes';
+import { mediaUploadWorkflow } from '../application/UploadMediaItemQueue/mediaUploadWorkflow';
+import { workflowEventToQueueAction } from '../application/UploadMediaItemQueue/workflowEventToQueueAction';
 
 export const useUploadQueue = (client: ApolloClient) => {
   const [state, dispatch] = useReducer(uploadQueueReducer, initialUploadQueueState);
@@ -39,10 +39,10 @@ export const useUploadQueue = (client: ApolloClient) => {
     () =>
       state.items.some(
         (item) =>
-          item.status === FrontendUploadStatus.queued ||
-          item.status === FrontendUploadStatus.creating ||
-          item.status === FrontendUploadStatus.uploading ||
-          item.status === FrontendUploadStatus.finalizing,
+          item.status.equals(FrontendUploadStatus.queued) ||
+          item.status.equals(FrontendUploadStatus.creating) ||
+          item.status.equals(FrontendUploadStatus.uploading) ||
+          item.status.equals(FrontendUploadStatus.finalizing),
       ),
     [state.items],
   );
@@ -66,7 +66,7 @@ export const useUploadQueue = (client: ApolloClient) => {
       return;
     }
 
-    const nextItem = state.items.find((item) => item.status === FrontendUploadStatus.queued);
+    const nextItem = state.items.find((item) => item.status.equals(FrontendUploadStatus.queued));
     if (!nextItem) {
       return;
     }

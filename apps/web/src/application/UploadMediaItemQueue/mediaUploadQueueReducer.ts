@@ -75,7 +75,7 @@ export const uploadQueueReducer: React.Reducer<UploadQueueState, UploadQueueActi
     case 'clearCompleted': {
       return {
         ...state,
-        items: state.items.filter((item) => item.status !== FrontendUploadStatus.complete),
+        items: state.items.filter((item) => !item.status.equals(FrontendUploadStatus.complete)),
       };
     }
 
