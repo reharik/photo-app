@@ -16,7 +16,9 @@ import {
 } from '../graphql/generated/types';
 
 export type AlbumItemSummaryVM = AlbumItemSummaryFragment;
-export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'>;
+export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'> & {
+  itemCount: number;
+};
 export type CommentReplyVM = CommentFieldsFragment;
 export type CommentRootVM = CommentDetailFieldsFragment;
 
@@ -25,7 +27,9 @@ export type MediaItemDetailVM = MediaItemDetailFragment;
 export type PublicMediaItemSummaryVM = PublicMediaItemSummaryFragment;
 export type PublicMediaItemDetailVM = PublicMediaItemSummaryFragment;
 export type PublicAlbumItemSummaryVM = PublicAlbumItemSummaryFragment;
-export type PublicAlbumSummaryVM = PublicAlbumSummaryFragment & { itemCount: number };
+export type PublicAlbumSummaryVM = Omit<PublicAlbumSummaryFragment, 'items'> & {
+  itemCount: number;
+};
 
 export type ReactionCountsVM = ReactionCountsFragment;
 export type EmojiCountVM = EmojiCountFragment;

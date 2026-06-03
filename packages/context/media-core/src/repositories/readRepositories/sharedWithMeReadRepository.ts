@@ -1,6 +1,8 @@
 import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
+import { EntityId, PagedList, SharedWithMeMediaItemCollectionInfo, toPagedResult } from '../..';
+import { SharedWithMeAlbumCollectionInfo } from '../../services/readServices/types';
 import type {
   ReadRepositoryDeps,
   SharedAlbumRow,
@@ -61,46 +63,72 @@ const applyActiveUserGrant = <TRecord extends object, TResult>(
 export const build__SharedWithMeReadRepository = ({
   database,
 }: ReadRepositoryDeps): SharedWithMeReadRepository => ({
-  getMediaItemsSharedWithMe: async (viewerId: string): Promise<SharedWithMedMediaItemRow[]> => {
-    return applyActiveUserGrant(
-      withEnumRevival(
-        database('accessGrant')
-          .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
-          .whereNotNull('accessGrant.mediaItemId')
-          .orderBy('accessGrant.createdAt', 'desc')
-          .select<SharedWithMedMediaItemRow[]>(
-            ...accessGrantFieldSelect,
-            ...mediaItemSelectColumns,
-          ),
-        { mediaItemKind: MediaKind, mediaItemStatus: MediaItemStatus },
-        { strict: true },
-      ),
-      { database, viewerId },
-    );
+  getMediaItemsSharedWithMe: async ({
+    viewerId,
+    collectionInfo,
+  }: {
+    viewerId: EntityId;
+    collectionInfo: SharedWithMeMediaItemCollectionInfo;
+  }): Promise<PagedList<SharedWithMedMediaItemRow>> => {
+    const baseQuery = database('accessGrant')
+      .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
+      .whereNotNull('accessGrant.mediaItemId')
+      .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
+      .orderBy('id', 'asc')
+      .select(...accessGrantFieldSelect, ...mediaItemSelectColumns)
+      .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
+      .limit(collectionInfo.pageInfo.limit + 1)
+      .offset(collectionInfo.pageInfo.offset);
+
+    const grantedQuery = applyActiveUserGrant(baseQuery, { database, viewerId });
+
+    const rows = (await withEnumRevival(
+      grantedQuery,
+      { mediaItemKind: MediaKind, mediaItemStatus: MediaItemStatus },
+      { strict: true },
+    )) as (SharedWithMedMediaItemRow & { totalCount: number })[];
+
+    return toPagedResult(rows);
   },
-  getAlbumsSharedWithMe: async (viewerId: string) => {
-    return applyActiveUserGrant(
-      withEnumRevival(
-        database<SharedAlbumRow>('accessGrant')
-          .innerJoin('album', 'album.id', 'accessGrant.albumId')
-          .leftJoin('albumMember', (join) => {
-            join
-              .on('albumMember.albumId', 'album.id')
-              .on('albumMember.userId', database.raw('?', [viewerId]));
-          })
-          .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-          .whereNotNull('accessGrant.albumId')
-          .andWhere('album.isPublicLinkAlbum', false)
-          .orderBy('accessGrant.createdAt', 'desc')
-          .select<SharedAlbumRow[]>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns),
-        {
-          mediaItemKind: MediaKind,
-          mediaItemStatus: MediaItemStatus,
-          viewerMemberRole: AlbumMemberRole,
-        },
-        { strict: true },
-      ),
-      { database, viewerId },
-    );
+  getAlbumsSharedWithMe: async ({
+    viewerId,
+    collectionInfo,
+  }: {
+    viewerId: EntityId;
+    collectionInfo: SharedWithMeAlbumCollectionInfo;
+  }): Promise<PagedList<SharedAlbumRow>> => {
+    const baseQuery = database<SharedAlbumRow>('accessGrant')
+      .innerJoin('album', 'album.id', 'accessGrant.albumId')
+      .leftJoin('albumMember', (join) => {
+        join
+          .on('albumMember.albumId', 'album.id')
+          .on('albumMember.userId', database.raw('?', [viewerId]));
+      })
+      .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+      .whereNotNull('accessGrant.albumId')
+      .andWhere('album.isPublicLinkAlbum', false)
+      .orderBy('accessGrant.createdAt', 'desc')
+      .select<(SharedAlbumRow & { totalCount: number })[]>(
+        ...accessGrantFieldSelect,
+        ...albumWithCoverSelectColumns,
+      )
+      .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
+      .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
+      .limit(collectionInfo.pageInfo.limit + 1)
+      .offset(collectionInfo.pageInfo.offset);
+
+    const grantedQuery = applyActiveUserGrant(baseQuery, { database, viewerId });
+
+    const rows = (await withEnumRevival(
+      grantedQuery,
+      {
+        mediaItemKind: MediaKind,
+        mediaItemStatus: MediaItemStatus,
+        viewerMemberRole: AlbumMemberRole,
+      },
+      { strict: true },
+    )) as (SharedAlbumRow & { totalCount: number })[];
+
+    return toPagedResult(rows);
   },
 });

@@ -38,6 +38,7 @@ import * as ioc_services_readServices_viewerReadServices_viewerAuthorizationsRea
 import * as ioc_services_readServices_viewerReadServices_viewerMediaItemReadService from '../services/readServices/viewerReadServices/viewerMediaItemReadService.js';
 import * as ioc_services_readServices_viewerReadServices_viewerReactionReadService from '../services/readServices/viewerReadServices/viewerReactionReadService.js';
 import * as ioc_services_readServices_viewerReadServices_viewerSharedContactsReadService from '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js';
+import * as ioc_services_readServices_viewerReadServices_viewerSharedWithMeAlbumReadService from '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js';
 import * as ioc_services_readServices_viewerReadServices_viewerSharedWithMeMediaItemReadService from '../services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.js';
 import * as ioc_services_writeServices_album_addAlbumItem from '../services/writeServices/album/addAlbumItem.js';
 import * as ioc_services_writeServices_album_addMediaItemsToAlbum from '../services/writeServices/album/addMediaItemsToAlbum.js';
@@ -118,6 +119,10 @@ type IocManifestGroupRoots = {
       readonly viewerSharedContactsReadServiceFactory: {
         readonly contractName: 'ViewerSharedContactsReadServiceFactory';
         readonly registrationKey: 'viewerSharedContactsReadServiceFactory';
+      };
+      readonly viewerSharedWithMeAlbumReadServiceFactory: {
+        readonly contractName: 'ViewerSharedWithMeAlbumReadServiceFactory';
+        readonly registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory';
       };
       readonly viewerSharedWithMeMediaItemReadServiceFactory: {
         readonly contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory';
@@ -264,6 +269,7 @@ export const iocManifest = {
     ioc_services_readServices_viewerReadServices_viewerMediaItemReadService,
     ioc_services_readServices_viewerReadServices_viewerReactionReadService,
     ioc_services_readServices_viewerReadServices_viewerSharedContactsReadService,
+    ioc_services_readServices_viewerReadServices_viewerSharedWithMeAlbumReadService,
     ioc_services_readServices_viewerReadServices_viewerSharedWithMeMediaItemReadService,
     ioc_services_writeServices_album_addAlbumItem,
     ioc_services_writeServices_album_addMediaItemsToAlbum,
@@ -300,7 +306,7 @@ export const iocManifest = {
         contractName: 'AddAlbumItem',
         implementationName: 'addAlbumItem',
         lifetime: 'singleton',
-        moduleIndex: 35,
+        moduleIndex: 36,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository', 'RunInTransaction'],
@@ -315,7 +321,7 @@ export const iocManifest = {
         contractName: 'AddComment',
         implementationName: 'addComment',
         lifetime: 'singleton',
-        moduleIndex: 45,
+        moduleIndex: 46,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -336,7 +342,7 @@ export const iocManifest = {
         contractName: 'AddMediaItemsToAlbum',
         implementationName: 'addMediaItemsToAlbum',
         lifetime: 'singleton',
-        moduleIndex: 36,
+        moduleIndex: 37,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'MediaItemReadRepository', 'RunInTransaction'],
@@ -351,7 +357,7 @@ export const iocManifest = {
         contractName: 'AddReaction',
         implementationName: 'addReaction',
         lifetime: 'singleton',
-        moduleIndex: 56,
+        moduleIndex: 57,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -478,7 +484,7 @@ export const iocManifest = {
         contractName: 'CreateAlbum',
         implementationName: 'createAlbum',
         lifetime: 'singleton',
-        moduleIndex: 37,
+        moduleIndex: 38,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -493,10 +499,15 @@ export const iocManifest = {
         contractName: 'CreateMediaUpload',
         implementationName: 'createMediaItemUpload',
         lifetime: 'singleton',
-        moduleIndex: 48,
+        moduleIndex: 49,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['MediaItemRepository', 'MediaStorage', 'RunInTransaction'],
+        dependencyContractNames: [
+          'AlbumRepository',
+          'MediaItemRepository',
+          'MediaStorage',
+          'RunInTransaction',
+        ],
       },
     },
     CreatePublicLinkForAlbum: {
@@ -508,7 +519,7 @@ export const iocManifest = {
         contractName: 'CreatePublicLinkForAlbum',
         implementationName: 'createPublicLinkForAlbum',
         lifetime: 'singleton',
-        moduleIndex: 54,
+        moduleIndex: 55,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'GrantRepository', 'RunInTransaction'],
@@ -523,7 +534,7 @@ export const iocManifest = {
         contractName: 'CreatePublicLinkForMediaItems',
         implementationName: 'createPublicLinkForMediaItems',
         lifetime: 'singleton',
-        moduleIndex: 55,
+        moduleIndex: 56,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -543,7 +554,7 @@ export const iocManifest = {
         contractName: 'DeleteAlbum',
         implementationName: 'deleteAlbum',
         lifetime: 'singleton',
-        moduleIndex: 38,
+        moduleIndex: 39,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -558,7 +569,7 @@ export const iocManifest = {
         contractName: 'DeleteAlbumItems',
         implementationName: 'deleteAlbumItems',
         lifetime: 'singleton',
-        moduleIndex: 39,
+        moduleIndex: 40,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -573,7 +584,7 @@ export const iocManifest = {
         contractName: 'DeleteComment',
         implementationName: 'deleteComment',
         lifetime: 'singleton',
-        moduleIndex: 46,
+        moduleIndex: 47,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['CommentRepository', 'RunInTransaction'],
@@ -588,7 +599,7 @@ export const iocManifest = {
         contractName: 'DeleteMediaItem',
         implementationName: 'deleteMediaItem',
         lifetime: 'singleton',
-        moduleIndex: 49,
+        moduleIndex: 50,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -609,7 +620,7 @@ export const iocManifest = {
         contractName: 'DeleteMediaItems',
         implementationName: 'deleteMediaItems',
         lifetime: 'singleton',
-        moduleIndex: 50,
+        moduleIndex: 51,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -631,7 +642,7 @@ export const iocManifest = {
         contractName: 'EditComment',
         implementationName: 'editComment',
         lifetime: 'singleton',
-        moduleIndex: 47,
+        moduleIndex: 48,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['CommentRepository', 'RunInTransaction'],
@@ -666,7 +677,7 @@ export const iocManifest = {
         contractName: 'FinalizeMediaItemUpload',
         implementationName: 'finalizeMediaItemUpload',
         lifetime: 'singleton',
-        moduleIndex: 51,
+        moduleIndex: 52,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository', 'MediaStorage', 'RunInTransaction'],
@@ -681,7 +692,7 @@ export const iocManifest = {
         contractName: 'GrantAuthorizationForMediaItems',
         implementationName: 'grantAuthorizationForMediaItems',
         lifetime: 'singleton',
-        moduleIndex: 44,
+        moduleIndex: 45,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -730,7 +741,7 @@ export const iocManifest = {
         contractName: 'GrantUserAuthorizationForAlbum',
         implementationName: 'grantUserAuthorizationForAlbum',
         lifetime: 'singleton',
-        moduleIndex: 43,
+        moduleIndex: 44,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -939,7 +950,7 @@ export const iocManifest = {
         contractName: 'RemoveReaction',
         implementationName: 'removeReaction',
         lifetime: 'singleton',
-        moduleIndex: 57,
+        moduleIndex: 58,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -961,7 +972,7 @@ export const iocManifest = {
         contractName: 'ReorderAlbumItems',
         implementationName: 'reorderAlbumItems',
         lifetime: 'singleton',
-        moduleIndex: 40,
+        moduleIndex: 41,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -990,7 +1001,7 @@ export const iocManifest = {
         contractName: 'SetCoverMedia',
         implementationName: 'setCoverMedia',
         lifetime: 'singleton',
-        moduleIndex: 41,
+        moduleIndex: 42,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -1033,7 +1044,7 @@ export const iocManifest = {
         contractName: 'UnsetCoverMedia',
         implementationName: 'unsetCoverMedia',
         lifetime: 'singleton',
-        moduleIndex: 42,
+        moduleIndex: 43,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'RunInTransaction'],
@@ -1048,7 +1059,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItem',
         implementationName: 'updateMediaItem',
         lifetime: 'singleton',
-        moduleIndex: 52,
+        moduleIndex: 53,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository', 'RunInTransaction'],
@@ -1063,7 +1074,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItemTags',
         implementationName: 'updateMediaItemTags',
         lifetime: 'singleton',
-        moduleIndex: 53,
+        moduleIndex: 54,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository', 'RunInTransaction'],
@@ -1195,6 +1206,23 @@ export const iocManifest = {
         dependencyContractNames: ['ShareContactRepository'],
       },
     },
+    ViewerSharedWithMeAlbumReadServiceFactory: {
+      viewerSharedWithMeAlbumReadServiceFactory: {
+        exportName: 'build__ViewerSharedWithMeAlbumReadServiceFactory',
+        registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory',
+        modulePath:
+          'services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.ts',
+        relImport:
+          '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js',
+        contractName: 'ViewerSharedWithMeAlbumReadServiceFactory',
+        implementationName: 'viewerSharedWithMeAlbumReadServiceFactory',
+        lifetime: 'singleton',
+        moduleIndex: 34,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['SharedWithMeReadRepository', 'ViewerAlbumReadServiceFactory'],
+      },
+    },
     ViewerSharedWithMeMediaItemReadServiceFactory: {
       viewerSharedWithMeMediaItemReadServiceFactory: {
         exportName: 'build__ViewerSharedWithMeMediaItemReadServiceFactory',
@@ -1206,7 +1234,7 @@ export const iocManifest = {
         contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory',
         implementationName: 'viewerSharedWithMeMediaItemReadServiceFactory',
         lifetime: 'singleton',
-        moduleIndex: 34,
+        moduleIndex: 35,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['EnrichMediaItems', 'SharedWithMeReadRepository'],
@@ -1290,6 +1318,10 @@ export const iocManifest = {
       viewerSharedContactsReadServiceFactory: {
         contractName: 'ViewerSharedContactsReadServiceFactory',
         registrationKey: 'viewerSharedContactsReadServiceFactory',
+      },
+      viewerSharedWithMeAlbumReadServiceFactory: {
+        contractName: 'ViewerSharedWithMeAlbumReadServiceFactory',
+        registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory',
       },
       viewerSharedWithMeMediaItemReadServiceFactory: {
         contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory',

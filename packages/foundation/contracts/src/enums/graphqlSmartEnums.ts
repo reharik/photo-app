@@ -35,6 +35,8 @@ const mediaItemStatusInput = [
 ] as const;
 const mediaKindInput = ['photo', 'video'] as const;
 const reactionTargetTypeInput = ['comment', 'mediaItem'] as const;
+const sharedWithMeAlbumSortByInput = { sharedAt: { column: 'created_at' } } as const;
+const sharedWithMeMediaItemSortByInput = { sharedAt: { column: 'created_at' } } as const;
 const sortDirInput = ['asc', 'desc'] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
@@ -46,6 +48,8 @@ export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
 export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
 export type MediaKind = Enumeration<typeof MediaKind>;
 export type ReactionTargetType = Enumeration<typeof ReactionTargetType>;
+export type SharedWithMeAlbumSortBy = Enumeration<typeof SharedWithMeAlbumSortBy>;
+export type SharedWithMeMediaItemSortBy = Enumeration<typeof SharedWithMeMediaItemSortBy>;
 export type SortDir = Enumeration<typeof SortDir>;
 
 export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumItemSortBy', {
@@ -84,6 +88,14 @@ export const ReactionTargetType = enumeration<typeof reactionTargetTypeInput>(
   'ReactionTargetType',
   { input: reactionTargetTypeInput, serializeAs: 'value' },
 );
+export const SharedWithMeAlbumSortBy = enumeration<typeof sharedWithMeAlbumSortByInput>(
+  'SharedWithMeAlbumSortBy',
+  { input: sharedWithMeAlbumSortByInput, serializeAs: 'value' },
+);
+export const SharedWithMeMediaItemSortBy = enumeration<typeof sharedWithMeMediaItemSortByInput>(
+  'SharedWithMeMediaItemSortBy',
+  { input: sharedWithMeMediaItemSortByInput, serializeAs: 'value' },
+);
 export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
   input: sortDirInput,
   serializeAs: 'value',
@@ -103,5 +115,7 @@ export const enumRegistry = {
   Operation,
   ReactionEmoji,
   ReactionTargetType,
+  SharedWithMeAlbumSortBy,
+  SharedWithMeMediaItemSortBy,
   SortDir,
 } as const;

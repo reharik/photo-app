@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
+import { PagingState } from 'src/hooks/getPaginatedQueryRenderState';
 import styled from 'styled-components';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { PublicAlbumItemSummaryVM, PublicAlbumSummaryVM } from '../../viewModels/';
@@ -12,12 +14,19 @@ const META_COMPACT_AFTER_SCROLL_PX = 32;
 type PublicAlbumSectionProps = {
   album: PublicAlbumSummaryVM;
   albumItems: PublicAlbumItemSummaryVM[];
-  retrieveAlbumItems: () => void;
+  paging: PagingState;
+  totalCount: number;
 };
 
-export const PublicAlbumSection = ({ album, albumItems }: PublicAlbumSectionProps) => {
+export const PublicAlbumSection = ({
+  album,
+  albumItems,
+  paging,
+  totalCount,
+}: PublicAlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
+  const { sentinelRef, scrollRootRef } = useInfiniteScroll(paging);
 
   const { multiSelectProps } = useMultiSelectGallery({
     nodes: albumItems,
@@ -35,13 +44,19 @@ export const PublicAlbumSection = ({ album, albumItems }: PublicAlbumSectionProp
   return (
     <Container>
       <AlbumSectionMetadata
-        count={albumItems.length}
+        count={totalCount}
         album={album}
         metaCompact={metaCompact}
         albumItems={albumItems}
         isPublic={true}
       />
-      <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
+      <AlbumBodyScroll
+        ref={(el) => {
+          scrollRootRef.current = el;
+          albumScrollRef.current = el;
+        }}
+        onScroll={onAlbumScroll}
+      >
         <SelectableGallery
           nodes={albumItems}
           mediaIdSelector={(x) => x.mediaItem.id}
@@ -57,6 +72,7 @@ export const PublicAlbumSection = ({ album, albumItems }: PublicAlbumSectionProp
             <PublicAlbumMediaTile item={item} mediaGalleryIds={orderedMediaIds} />
           )}
         />
+        <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
     </Container>
   );

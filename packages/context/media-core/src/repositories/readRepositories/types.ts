@@ -18,6 +18,8 @@ import {
   MediaItemCollectionInfo,
   NamespacedMediaItemRow,
   PagedList,
+  SharedWithMeAlbumCollectionInfo,
+  SharedWithMeMediaItemCollectionInfo,
 } from '../../services/readServices/types';
 import type { CollectionInfo, EntityId, PageInfo } from '../../types/types';
 
@@ -211,6 +213,7 @@ export type SharedAlbumRow = {
   id: string;
   albumId: string;
   albumTitle: string;
+  albumItemCount: number;
   albumCreatedAt: Date;
   albumUpdatedAt: Date;
   viewerMemberRole?: AlbumMemberRole;
@@ -219,8 +222,20 @@ export type SharedAlbumRow = {
 } & NamespacedMediaItemRow; // cover item
 
 export type SharedWithMeReadRepository = {
-  getMediaItemsSharedWithMe: (viewerId: string) => Promise<SharedWithMedMediaItemRow[]>;
-  getAlbumsSharedWithMe: (viewerId: string) => Promise<SharedAlbumRow[]>;
+  getMediaItemsSharedWithMe: ({
+    viewerId,
+    collectionInfo,
+  }: {
+    viewerId: EntityId;
+    collectionInfo: SharedWithMeMediaItemCollectionInfo;
+  }) => Promise<PagedList<SharedWithMedMediaItemRow>>;
+  getAlbumsSharedWithMe: ({
+    viewerId,
+    collectionInfo,
+  }: {
+    viewerId: EntityId;
+    collectionInfo: SharedWithMeAlbumCollectionInfo;
+  }) => Promise<PagedList<SharedAlbumRow>>;
 };
 
 export type MediaItemTagRow = {

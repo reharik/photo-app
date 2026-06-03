@@ -1,4 +1,9 @@
-import { AlbumSortBy, MediaItemSortBy } from '@packages/contracts';
+import {
+  AlbumSortBy,
+  MediaItemSortBy,
+  SharedWithMeAlbumSortBy,
+  SharedWithMeMediaItemSortBy,
+} from '@packages/contracts';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
@@ -49,8 +54,33 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerSharedContactsReadService.getShareContacts();
     }),
-    sharedWithMeMediaItems: authenticatedResolver(async (_parent, _args, ctx) => {
-      return await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems();
+    sharedWithMeMediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
+      const collectionInfo = standardizeCollectionInput<SharedWithMeMediaItemSortBy>(
+        input.collectionInfo,
+      );
+      const mediaItemsResult =
+        await ctx.readServices.viewerSharedWithMeMediaItemReadService.getSharedWithMeMediaItems(
+          collectionInfo,
+        );
+      return {
+        nodes: mediaItemsResult.nodes,
+        totalCount: mediaItemsResult.totalCount,
+        pageInfo: collectionInfo.pageInfo,
+      };
+    }),
+    sharedWithMeAlbums: authenticatedResolver(async (_parent, { input }, ctx) => {
+      const collectionInfo = standardizeCollectionInput<SharedWithMeAlbumSortBy>(
+        input.collectionInfo,
+      );
+      const albumsRows =
+        (await ctx.readServices.viewerSharedWithMeAlbumReadService.listAlbums(collectionInfo)) ||
+        [];
+
+      return {
+        nodes: albumsRows.nodes,
+        pageInfo: collectionInfo.pageInfo,
+        totalCount: albumsRows.totalCount,
+      };
     }),
   },
 };

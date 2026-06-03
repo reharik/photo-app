@@ -283,6 +283,7 @@ export const build__AlbumReadRepository = ({
         .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
           ...albumItemWithMediaSelectColumns,
         )
+        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
         .orderBy('albumItem.orderIndex', 'asc')
         .orderBy('albumItem.id', 'asc')
         .limit(collectionInfo.pageInfo.limit + 1)

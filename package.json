@@ -36,6 +36,7 @@
     "codegen:enums": "nx run contracts:codegen",
     "codegen:ioc:api": "nx run api:gen:container",
     "codegen:ioc:worker": "nx run media-worker:gen:container",
+    "codegen:api": "nx schema-gen api",
     "codegen:web": "nx codegen web",
     "db:make": "nx run api:db:make",
     "db:migrate": "nx run api:db:migrate",

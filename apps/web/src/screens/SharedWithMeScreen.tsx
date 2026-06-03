@@ -1,13 +1,26 @@
 import { useQuery } from '@apollo/client/react';
+import { SharedWithMeMediaItemSortBy, SortDir } from '@packages/contracts';
 import { useCallback } from 'react';
 import styled from 'styled-components';
 import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
 import { ViewerSharedWithMedMediaItemsDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { mapSharedMediaItemsToVMs } from '../viewModels/sharing/mapSharedMediaItemToVM';
+import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 
 export const SharedWithMeScreen = () => {
+  const buildPageVariables = useCallback(
+    (offset: number) => ({
+      collectionInfo: {
+        pageInfo: { limit: 10, offset },
+        sortBy: SharedWithMeMediaItemSortBy.sharedAt,
+        sortDir: SortDir.desc,
+      },
+    }),
+    [],
+  );
   const query = useQuery(ViewerSharedWithMedMediaItemsDocument, {
+    variables: {
+      ...buildPageVariables(0),
+    },
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
   });
@@ -16,10 +29,20 @@ export const SharedWithMeScreen = () => {
     await query.refetch();
   }, [query]);
 
-  const { data: sharedWithMeMediaItems, content } = getQueryRenderState({
+  const {
+    data: sharedWithMeMediaItems,
+    content,
+    paging,
+  } = usePaginatedQueryRenderState({
     query,
-    select: (data) => data.viewer?.sharedWithMeMediaItems ?? [],
-    map: mapSharedMediaItemsToVMs,
+    select: (data) => ({
+      nodes: (data?.viewer?.sharedWithMeMediaItems?.nodes ?? []).map((x) => ({
+        ...x,
+        operations: [],
+      })),
+      totalCount: data?.viewer?.sharedWithMeMediaItems?.totalCount ?? 0,
+    }),
+    buildPageVariables,
   });
 
   if (!sharedWithMeMediaItems) {
@@ -29,7 +52,9 @@ export const SharedWithMeScreen = () => {
   return (
     <Container>
       <SharedWithMeSection
-        sharedWithMeMediaItems={sharedWithMeMediaItems}
+        sharedWithMeMediaItems={sharedWithMeMediaItems.nodes}
+        paging={paging}
+        totalCount={sharedWithMeMediaItems.totalCount}
         onReactionsRefetch={onReactionsRefetch}
       />
     </Container>

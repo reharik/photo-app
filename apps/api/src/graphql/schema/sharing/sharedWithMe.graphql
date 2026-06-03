@@ -11,3 +11,35 @@ type SharedWithMedMediaAlbumType implements Node {
   sharedBy: ID!
   album: Album!
 }
+
+input SharedWithMeMediaItemCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: SharedWithMeMediaItemSortBy!
+  sortDir: SortDir!
+}
+
+type SharedWithMeMediaItemCollectionPayload {
+  nodes: [SharedWithMedMediaItemType!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+enum SharedWithMeMediaItemSortBy {
+  SHARED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+}
+
+input SharedWithMeAlbumCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: SharedWithMeAlbumSortBy!
+  sortDir: SortDir!
+}
+
+type SharedWithMeAlbumCollectionPayload {
+  nodes: [SharedWithMedMediaAlbumType!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+enum SharedWithMeAlbumSortBy {
+  SHARED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+}

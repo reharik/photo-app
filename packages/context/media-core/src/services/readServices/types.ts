@@ -8,6 +8,8 @@ import {
   MediaKind,
   Operation,
   ReactionEmoji,
+  SharedWithMeAlbumSortBy,
+  SharedWithMeMediaItemSortBy,
   SortDir,
 } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../types';
@@ -86,6 +88,17 @@ export interface AlbumCollectionInfo extends CollectionInfo<AlbumSortBy> {
 export interface AlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy> {
   pageInfo: PageInfo;
   sortBy: AlbumItemSortBy;
+  sortDir: SortDir;
+}
+
+export interface SharedWithMeAlbumCollectionInfo extends CollectionInfo<SharedWithMeAlbumSortBy> {
+  pageInfo: PageInfo;
+  sortBy: SharedWithMeAlbumSortBy;
+  sortDir: SortDir;
+}
+export interface SharedWithMeMediaItemCollectionInfo extends CollectionInfo<SharedWithMeMediaItemSortBy> {
+  pageInfo: PageInfo;
+  sortBy: SharedWithMeMediaItemSortBy;
   sortDir: SortDir;
 }
 

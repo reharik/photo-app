@@ -6,11 +6,7 @@ fragment publicAlbumSummary on PublicAlbum {
     ...PublicMediaItemSummary
   }
   operations
-  items(
-    input: {
-      collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
-    }
-  ) {
+  items(input: { collectionInfo: $collectionInfo }) {
     nodes {
       ...PublicAlbumItemSummary
     }
@@ -18,5 +14,6 @@ fragment publicAlbumSummary on PublicAlbum {
       limit
       offset
     }
+    totalCount
   }
 }

@@ -20,9 +20,12 @@ export const AlbumTile = ({ item }: { item: AlbumSummaryVM }) => {
       <CaptionLink to={`/albums/${item.id}`}>
         <MediaInfo>
           <MediaTitle>{item.title.trim()}</MediaTitle>
-          <MediaMeta>
-            Updated {item.updatedAt ? item.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}
-          </MediaMeta>
+          <MediaTitleRow>
+            <MediaMeta>
+              Updated {item.updatedAt ? item.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}
+            </MediaMeta>
+            <MediaCount>{item.itemCount} items</MediaCount>
+          </MediaTitleRow>
         </MediaInfo>
       </CaptionLink>
     </>
@@ -75,4 +78,16 @@ const MediaTitle = styled.div`
 const MediaMeta = styled.div`
   font-size: 13px;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
+`;
+
+const MediaTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const MediaCount = styled.div`
+  font-size: 12px;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  margin-left: ${({ theme }) => theme.spacing(2)};
 `;

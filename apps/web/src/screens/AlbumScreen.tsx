@@ -97,7 +97,7 @@ export const AlbumScreen = () => {
 
   const album = data?.album;
   const albumItems = data?.nodes ?? [];
-
+  const totalCount = data?.totalCount ?? 0;
   if (!album || !album?.id) {
     return content;
   }
@@ -192,6 +192,7 @@ export const AlbumScreen = () => {
           album={album}
           paging={paging}
           albumItems={albumItems}
+          totalCount={totalCount}
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
           modalState={modalState}

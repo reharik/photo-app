@@ -18,6 +18,7 @@ export * from './readServices/viewerReadServices/viewerAuthorizationsReadService
 export * from './readServices/viewerReadServices/viewerMediaItemReadService';
 export * from './readServices/viewerReadServices/viewerReactionReadService';
 export * from './readServices/viewerReadServices/viewerSharedContactsReadService';
+export * from './readServices/viewerReadServices/viewerSharedWithMeAlbumReadService';
 export * from './readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService';
 export * from './writeServices/writeServiceBaseType';
 export * from './writeServices/album/addAlbumItem';

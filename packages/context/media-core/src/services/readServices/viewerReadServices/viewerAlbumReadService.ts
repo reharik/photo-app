@@ -52,8 +52,9 @@ export const build__ViewerAlbumReadServiceFactory = ({
         reactionCounts: { total: 0, byEmoji: [] },
         // This is a mediaItem, however, it is special because it is
         // actually a feature of the album that can be added and removed but nothing else.
-        operations:
-          album.viewerMemberRole === AlbumMemberRole.owner ? album.viewerMemberRole.operations : [],
+        operations: album.viewerMemberRole?.equals(AlbumMemberRole.owner)
+          ? album.viewerMemberRole.operations
+          : [],
       };
     };
 
@@ -120,9 +121,8 @@ export const build__ViewerAlbumReadServiceFactory = ({
           viewerId,
           collectionInfo,
         });
-        const dbMediaItems = albumItemsResult.nodes.map((albumItem) =>
-          mapMediaItemRowToDBMediaItemRow(albumItem),
-        );
+        // Strip the namespace off the mediaItem and create a proper DBMediaItemRow
+        const dbMediaItems = albumItemsResult.nodes.map(mapMediaItemRowToDBMediaItemRow);
         const enrichedMediaItems = indexByUnique(
           await enrichMediaItems.enrich(viewerId, dbMediaItems),
         );

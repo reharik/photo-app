@@ -1,40 +1,65 @@
 import { useQuery } from '@apollo/client/react';
-import { useState } from 'react';
+import { MediaItemSortBy, SortDir } from '@packages/contracts';
+import { useCallback, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { Toast } from '../ui/Toast';
-import { PublicAlbumItemSummaryVM } from '../viewModels';
 
 export const PublicAlbumScreen = () => {
   const { token } = useParams<{ token: string }>();
 
   const [showSaveToast, setShowSaveToast] = useState(false);
-
+  const buildPageVariables = useCallback(
+    (offset: number) => ({
+      collectionInfo: {
+        pageInfo: { limit: 10, offset },
+        sortBy: MediaItemSortBy.createdAt,
+        sortDir: SortDir.desc,
+      },
+    }),
+    [],
+  );
   const query = useQuery(PublicAlbumViewDocument, {
+    variables: {
+      ...buildPageVariables(0),
+    },
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
     context: { accessMode: 'public' },
   });
 
-  const { data, content } = getQueryRenderState({
+  const { data, content, paging } = usePaginatedQueryRenderState({
     query,
-    select: (data) => data.publicAccess?.album,
+    select: (data) => {
+      if (!data.publicAccess?.album) {
+        throw new Error('Album not found');
+      }
+
+      const { items, ...album } = data.publicAccess.album;
+      return {
+        album,
+        nodes: items?.nodes ?? [],
+        totalCount: items?.totalCount ?? 0,
+      };
+    },
+    buildPageVariables,
   });
 
   if (!data) {
     return content;
   }
 
-  const album = { ...data, itemCount: data.items.nodes.length };
-  const albumItems: PublicAlbumItemSummaryVM[] = data.items.nodes;
+  const album = data.album;
+  const albumItems = data.nodes ?? [];
+  const totalCount = data.totalCount ?? 0;
   if (!data) {
     return content;
   }
-  if (data.items.nodes.length === 1) {
-    return <Navigate to={`/shared/${token}/media/${data.items.nodes[0].mediaItem.id}`} replace />;
+  if (albumItems.length === 1) {
+    return <Navigate to={`/shared/${token}/media/${albumItems[0]?.mediaItem?.id}`} replace />;
   }
   return (
     <Container>
@@ -43,7 +68,8 @@ export const PublicAlbumScreen = () => {
         <PublicAlbumSection
           album={album}
           albumItems={albumItems}
-          retrieveAlbumItems={query.refetch}
+          paging={paging}
+          totalCount={totalCount}
         />
       )}
     </Container>

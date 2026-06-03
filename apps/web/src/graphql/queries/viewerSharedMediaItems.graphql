@@ -1,8 +1,15 @@
-query ViewerSharedWithMedMediaItems {
+query ViewerSharedWithMedMediaItems($collectionInfo: SharedWithMeMediaItemCollectionInput!) {
   viewer {
     id
-    sharedWithMeMediaItems {
-      ...SharedWithMedMediaItem
+    sharedWithMeMediaItems(input: { collectionInfo: $collectionInfo }) {
+      nodes {
+        ...SharedWithMedMediaItem
+      }
+      pageInfo {
+        limit
+        offset
+      }
+      totalCount
     }
   }
 }

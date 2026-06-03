@@ -1,8 +1,8 @@
 import { FrontendUploadStatus, Operation } from '@packages/contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { PagingState } from 'src/hooks/getPaginatedQueryRenderState';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
@@ -24,6 +24,7 @@ const META_COMPACT_AFTER_SCROLL_PX = 32;
 type AlbumSectionProps = {
   album: AlbumSummaryVM;
   albumItems: AlbumItemSummaryVM[];
+  totalCount: number;
   addAlbumItemState: {
     addItemOpen: boolean;
     setAddItemOpen: (open: boolean) => void;
@@ -53,6 +54,7 @@ type AlbumSectionProps = {
 export const AlbumSection = ({
   album,
   albumItems,
+  totalCount,
   addAlbumItemState,
   removeAlbumItemState,
   modalState,
@@ -154,7 +156,7 @@ export const AlbumSection = ({
         selectionCount={selectionCount}
         onClearSelection={clearSelection}
         selectionActions={availableActions}
-        count={albumItems.length}
+        count={totalCount}
         album={album}
         metaCompact={metaCompact}
         albumItems={albumItems}

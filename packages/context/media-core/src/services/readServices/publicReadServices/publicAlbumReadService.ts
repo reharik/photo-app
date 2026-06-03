@@ -52,9 +52,6 @@ export const build__PublicAlbumReadServiceFactory = ({
     return {
       getAlbum: async (albumId: string): Promise<PublicAlbumProjection | undefined> => {
         const row = await albumReadRepository.getAlbumForShareLink({ albumId, publicLinkId });
-        console.log(`************row************`);
-        console.log(row);
-        console.log(`********END row************`);
         if (!row) {
           return undefined;
         }
@@ -85,6 +82,7 @@ export const build__PublicAlbumReadServiceFactory = ({
           publicLinkId,
           collectionInfo,
         });
+
         const dbMediaItems = albumItemsResult.nodes.map((albumItem) =>
           mapMediaItemRowToDBMediaItemRow(albumItem),
         );

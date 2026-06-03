@@ -43,6 +43,7 @@ import type { viewerAuthorizationsReadServiceFactory } from '../services/readSer
 import type { ViewerMediaItemReadServiceFactory } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.js';
 import type { ViewerReactionReadServiceFactory } from '../services/readServices/viewerReadServices/viewerReactionReadService.js';
 import type { ViewerSharedContactsReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js';
+import type { ViewerSharedWithMeAlbumReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js';
 import type { ViewerSharedWithMeMediaItemReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.js';
 import type { AddAlbumItem } from '../services/writeServices/album/addAlbumItem.js';
 import type { AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum.js';
@@ -124,6 +125,7 @@ export interface IocGeneratedCradle {
     viewerMediaItemReadServiceFactory: ViewerMediaItemReadServiceFactory;
     viewerReactionReadServiceFactory: ViewerReactionReadServiceFactory;
     viewerSharedContactsReadServiceFactory: ViewerSharedContactsReadServiceFactory;
+    viewerSharedWithMeAlbumReadServiceFactory: ViewerSharedWithMeAlbumReadServiceFactory;
     viewerSharedWithMeMediaItemReadServiceFactory: ViewerSharedWithMeMediaItemReadServiceFactory;
   };
   removeReaction: RemoveReaction;
@@ -143,6 +145,7 @@ export interface IocGeneratedCradle {
   viewerMediaItemReadServiceFactory: ViewerMediaItemReadServiceFactory;
   viewerReactionReadServiceFactory: ViewerReactionReadServiceFactory;
   viewerSharedContactsReadServiceFactory: ViewerSharedContactsReadServiceFactory;
+  viewerSharedWithMeAlbumReadServiceFactory: ViewerSharedWithMeAlbumReadServiceFactory;
   viewerSharedWithMeMediaItemReadServiceFactory: ViewerSharedWithMeMediaItemReadServiceFactory;
   withTransaction: WithTransaction;
   writeServices: {

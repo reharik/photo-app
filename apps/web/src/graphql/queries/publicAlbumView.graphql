@@ -1,4 +1,4 @@
-query PublicAlbumView {
+query PublicAlbumView($collectionInfo: PublicAlbumItemCollectionInput!) {
   publicAccess {
     album {
       ...publicAlbumSummary

@@ -13,13 +13,13 @@ const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
     items: publicResolver(async (album, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<AlbumItemSortBy>(input.collectionInfo);
 
-      const albumItemsResult =
+      const { nodes, totalCount } =
         await ctx.publicReadServices.publicAlbumReadService.getViewableAlbumItems({
           albumId: album.id,
           collectionInfo,
         });
 
-      return { ...albumItemsResult, pageInfo: collectionInfo.pageInfo };
+      return { nodes, totalCount, pageInfo: collectionInfo.pageInfo };
     }),
     comments: authenticatedResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;

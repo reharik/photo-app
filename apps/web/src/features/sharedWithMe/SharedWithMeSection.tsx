@@ -1,7 +1,9 @@
 import styled from 'styled-components';
+import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { GalleryActionItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMedMediaItemVM } from '../../viewModels/';
+import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
@@ -18,11 +20,14 @@ const noopSelect: MultiSelectProps = {
 
 type SharedWithMeSectionProps = {
   sharedWithMeMediaItems: SharedWithMedMediaItemVM[];
+  totalCount: number;
+  paging: PagingState;
   onReactionsRefetch: () => Promise<void>;
 };
 
 export const SharedWithMeSection = ({
   sharedWithMeMediaItems,
+  paging,
   onReactionsRefetch,
 }: SharedWithMeSectionProps) => {
   const selectableActions: GalleryActionItems[] = [];
@@ -40,24 +45,26 @@ export const SharedWithMeSection = ({
           availableActions={[]}
           Header={() => <Title>Media Shared with you</Title>}
         />
-        <SelectableGallery
-          nodes={sharedWithMeMediaItems}
-          mediaIdSelector={(item) => item.mediaItem.id}
-          multiSelectProps={noopSelect}
-          emptyState={
-            <EmptyState
-              title="No shared media"
-              text="When someone shares individual photos or videos with you, they will show up here."
-            />
-          }
-          renderItem={({ item, orderedMediaIds: galleryIds }) => (
-            <MediaItemTile
-              item={item.mediaItem}
-              mediaGalleryIds={galleryIds}
-              onReactionsRefetch={onReactionsRefetch}
-            />
-          )}
-        />
+        <InfiniteScroll paging={paging} rootMargin="600px">
+          <SelectableGallery
+            nodes={sharedWithMeMediaItems}
+            mediaIdSelector={(item) => item.mediaItem.id}
+            multiSelectProps={noopSelect}
+            emptyState={
+              <EmptyState
+                title="No shared media"
+                text="When someone shares individual photos or videos with you, they will show up here."
+              />
+            }
+            renderItem={({ item, orderedMediaIds: galleryIds }) => (
+              <MediaItemTile
+                item={item.mediaItem}
+                mediaGalleryIds={galleryIds}
+                onReactionsRefetch={onReactionsRefetch}
+              />
+            )}
+          />
+        </InfiniteScroll>
       </Block>
     </Container>
   );
