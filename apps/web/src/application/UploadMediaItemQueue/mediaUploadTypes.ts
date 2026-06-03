@@ -1,12 +1,13 @@
 import { FrontendUploadStatus } from '@packages/contracts';
 
-import type { AppError } from '../errors/errorTypes';
+import type { AppError } from '../../domain/errors/errorTypes';
 
 export type UploadItem = {
   localId: string;
   file: File;
   status: FrontendUploadStatus;
   mediaItemId?: string;
+  albumId?: string;
   errors?: AppError[];
 };
 
@@ -25,6 +26,10 @@ export type EnqueuePayload = {
   files: File[];
 };
 
+export type MarkReadyPayload = {
+  mediaItemId: string;
+};
+
 type RemovePayload = {
   localId: string;
 };
@@ -40,4 +45,14 @@ export type UploadQueueAction =
   | { type: 'updateStatus'; payload: UpdateStatusPayload }
   | { type: 'remove'; payload: RemovePayload }
   | { type: 'clearCompleted' }
+  | { type: 'markReady'; payload: MarkReadyPayload }
   | { type: 'retry'; payload: { localId: string } };
+
+export type UploadQueueContextValue = {
+  items: UploadItem[];
+  enqueueFiles: (files: File[], albumId?: string) => void;
+  retryItem: (localId: string) => void;
+  removeItem: (localId: string) => void;
+  clearCompleted: () => void;
+  isUploading: boolean;
+};

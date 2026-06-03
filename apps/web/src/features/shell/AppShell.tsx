@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
 import { Navigation } from './Navigation';
 import { Profile } from './Profile';
 
@@ -66,6 +67,7 @@ export const AppShell = () => {
 
   return (
     <SCShellContainer>
+      <UploadProgressBox />
       <SCNavigation ref={navRef}>
         {isMobileShell ? (
           <>

@@ -1,3 +1,4 @@
+import { NetworkStatus, OperationVariables } from '@apollo/client';
 import type { ReactNode } from 'react';
 import { PageSpinner } from '../ui/PageSpinner';
 import { QueryErrorState } from '../ui/QueryErrorState';
@@ -13,6 +14,8 @@ export type QueryLike<TData = unknown> = {
   error?: unknown;
   data?: TData;
   refetch: () => void;
+  networkStatus: NetworkStatus;
+  fetchMore: (options: { variables: OperationVariables }) => Promise<unknown>;
 };
 
 export function getQueryRenderState<TQuery extends QueryLike, TSelected>(args: {
@@ -43,7 +46,6 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
       refetch: query.refetch,
     };
   }
-
   if (query.error) {
     return {
       data: undefined,

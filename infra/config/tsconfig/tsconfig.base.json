@@ -6,6 +6,7 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
     "moduleResolution": "bundler",
+    "customConditions": ["development"],
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

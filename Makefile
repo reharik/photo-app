@@ -14,6 +14,10 @@ COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME) \
 docker compose --project-directory $(CURDIR) $(BASE_FILES) $(DEV_FILES)
 endef
 
+docker/dev/recreate-api:
+	$(compose_dev) rm -sf api
+	$(compose_dev) up -d api
+
 docker/dev/build:
 	$(compose_dev) build --no-cache;
 

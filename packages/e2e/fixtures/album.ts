@@ -44,7 +44,7 @@ export const submitNewAlbumInAddModal = async (page: Page, albumTitle: string): 
  * a new album with `albumTitle`, and adds the selection to it.
  *
  * Works on any gallery screen that supports multi-select + "Add to album"
- * (e.g. Recent Media). Default: navigates to the new album and returns its id.
+ * (e.g. Library). Default: navigates to the new album and returns its id.
  */
 export const addMediaItemsToNewAlbum = async (
   page: Page,

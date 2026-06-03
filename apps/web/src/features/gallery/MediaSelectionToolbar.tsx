@@ -14,7 +14,7 @@ type MediaSelectionToolbarProps = {
 };
 
 /**
- * Actions for media-oriented grids (recent media, album detail, picker).
+ * Actions for media-oriented grids (library, album detail, picker).
  * Each action is shown only when the corresponding callback is provided (callers gate with
  * `canEveryItemDo` and `operations` from the API).
  */

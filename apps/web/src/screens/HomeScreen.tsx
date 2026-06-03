@@ -1,26 +1,39 @@
 import { useQuery } from '@apollo/client/react';
-import { RecentMediaSection } from '../features/media/RecentMediaSection';
-import { ViewerRecentMediaDocument } from '../graphql/generated/types';
-import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { MediaItemSortBy, SortDir } from '@packages/contracts';
+import { useCallback } from 'react';
+import { LibrarySection } from '../features/media/LibrarySection';
+import { ViewerLibraryDocument } from '../graphql/generated/types';
+import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 
 export const HomeScreen = () => {
-  const query = useQuery(ViewerRecentMediaDocument, {
+  const buildPageVariables = useCallback(
+    (offset: number) => ({
+      collectionInfo: {
+        pageInfo: { limit: 10, offset },
+        sortBy: MediaItemSortBy.createdAt,
+        sortDir: SortDir.desc,
+      },
+    }),
+    [],
+  );
+
+  const query = useQuery(ViewerLibraryDocument, {
+    variables: {
+      ...buildPageVariables(0),
+    },
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
   });
 
-  const {
-    data: nodes,
-    content,
-    refetch,
-  } = getQueryRenderState({
+  const { data, content, refetch, paging } = usePaginatedQueryRenderState({
     query,
-    select: (data) => data.viewer?.mediaItems.nodes ?? [],
+    select: (data) => data?.viewer?.mediaItems ?? { nodes: [], totalCount: 0 },
+    buildPageVariables,
   });
 
-  if (!nodes) {
+  if (!data) {
     return content;
   }
 
-  return <RecentMediaSection nodes={nodes} reloadData={refetch} />;
+  return <LibrarySection nodes={data.nodes} paging={paging} reloadData={refetch} />;
 };

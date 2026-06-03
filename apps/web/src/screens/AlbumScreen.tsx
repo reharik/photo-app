@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { AlbumSection } from '../features/albums/AlbumSection';
@@ -8,12 +8,14 @@ import {
   AddMediaItemsToAlbumMutation,
   DeleteAlbumItemsFromAlbumDocument,
   DeleteAlbumItemsFromAlbumMutation,
+  MediaItemSortBy,
   SetCoverMediaDocument,
   SetCoverMediaMutation,
+  SortDir,
   ViewerAlbumDetailDocument,
-  ViewerRecentMediaDocument,
+  ViewerLibraryDocument,
 } from '../graphql/generated/types';
-import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
 import { Toast } from '../ui/Toast';
 
@@ -29,31 +31,60 @@ export const AlbumScreen = () => {
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
 
+  const buildPageVariables = useCallback(
+    (offset: number) => ({
+      albumId: albumId ?? '',
+      collectionInfo: {
+        pageInfo: { limit: 10, offset },
+        sortBy: MediaItemSortBy.createdAt,
+        sortDir: SortDir.desc,
+      },
+    }),
+    [albumId],
+  );
+
   const query = useQuery(ViewerAlbumDetailDocument, {
-    variables: { albumId: albumId ?? '' },
+    variables: {
+      ...buildPageVariables(0),
+    },
     skip: !albumId,
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
   });
 
-  const mediaItemsForPickerQuery = useQuery(ViewerRecentMediaDocument, {
+  const { data, content, refetch, paging } = usePaginatedQueryRenderState({
+    query,
+    select: (data) => {
+      if (!data.viewer?.album) {
+        throw new Error('Album not found');
+      }
+
+      const { items, ...album } = data.viewer.album;
+      return {
+        album,
+        nodes: items?.nodes ?? [],
+        totalCount: items?.totalCount ?? 0,
+      };
+    },
+    buildPageVariables,
+  });
+
+  const mediaItemsForPickerQuery = useQuery(ViewerLibraryDocument, {
+    variables: {
+      collectionInfo: {
+        pageInfo: { limit: 10, offset: 0 },
+        sortBy: MediaItemSortBy.createdAt,
+        sortDir: SortDir.desc,
+      },
+    },
     skip: !addAlbumItemModalOpen,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const {
-    data: album,
-    content,
-    refetch,
-  } = getQueryRenderState({
-    query,
-    select: (data) => data.viewer?.album,
-  });
-
   const pickerMediaItems = useMemo(() => {
     const mediaItems = mediaItemsForPickerQuery.data?.viewer?.mediaItems.nodes;
-    const existingAlbumItems = album?.items.nodes;
+    const existingAlbumItems = data?.nodes;
 
     if (!mediaItems || !existingAlbumItems) {
       return [];
@@ -62,13 +93,14 @@ export const AlbumScreen = () => {
     return mediaItems.filter(
       (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
     );
-  }, [mediaItemsForPickerQuery.data, album]);
+  }, [mediaItemsForPickerQuery.data, data]);
 
-  if (!album) {
+  const album = data?.album;
+  const albumItems = data?.nodes ?? [];
+
+  if (!album || !album?.id) {
     return content;
   }
-
-  const albumItems = album.items.nodes ?? [];
 
   const submitAddToAlbum = async (newAlbumItemIds: string[]) => {
     const result = await addToAlbumMutation.execute(
@@ -132,13 +164,6 @@ export const AlbumScreen = () => {
     }
   };
 
-  if (!albumId || !album) {
-    return (
-      <Container>
-        <StatusMessage role="alert">Missing album id.</StatusMessage>
-      </Container>
-    );
-  }
   const addAlbumItemState = {
     addItemOpen: addAlbumItemModalOpen,
     setAddItemOpen: setAddAlbumItemModalOpen,
@@ -165,6 +190,7 @@ export const AlbumScreen = () => {
       {album && (
         <AlbumSection
           album={album}
+          paging={paging}
           albumItems={albumItems}
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
@@ -184,10 +210,4 @@ const Container = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-`;
-const StatusMessage = styled.div`
-  max-width: 560px;
-  margin: 0 auto;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 15px;
 `;

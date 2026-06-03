@@ -16,9 +16,7 @@ import {
 } from '../graphql/generated/types';
 
 export type AlbumItemSummaryVM = AlbumItemSummaryFragment;
-export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'> & {
-  itemCount: number;
-};
+export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'>;
 export type CommentReplyVM = CommentFieldsFragment;
 export type CommentRootVM = CommentDetailFieldsFragment;
 

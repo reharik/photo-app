@@ -8,6 +8,8 @@ import { DateTime } from 'luxon';
 import { config } from '../config';
 import { smartEnumTypePolicies } from './generated/graphql-smart-enum-type-policies';
 import sdl from './generated/schema.graphql?raw';
+import { mergeTypePolicies } from './mergeTypePolicies';
+import { nestedPagePagination } from './nestedPagePagination';
 
 // Build a runtime GraphQLSchema instance from the SDL.
 const schema = buildSchema(sdl);
@@ -44,44 +46,73 @@ const accessModeLink = new SetContextLink((prevContext) => {
 export const apolloClient = new ApolloClient({
   link: ApolloLink.from([scalarLink, accessModeLink, httpLink]),
   cache: new InMemoryCache({
-    typePolicies: {
-      ...smartEnumTypePolicies,
-      Query: {
-        fields: {
-          viewer: { merge: true },
+    typePolicies: mergeTypePolicies(
+      // Generated read policies that rehydrate enum string values into smart-enum
+      // instances. Applied at the root so any type with smart-enum fields is covered
+      // regardless of whether it has its own hand-written policy below.
+      smartEnumTypePolicies,
+      {
+        Query: {
+          fields: {
+            // viewer is the root of many subselections; merge so different queries
+            // compose into a single cached Viewer rather than overwriting one another.
+            viewer: { merge: true },
+          },
         },
-      },
-      Viewer: {
-        keyFields: ['id'],
-        fields: {
-          /**
-           * List queries load MediaItem entities via `mediaItems` / album items, but the detail
-           * query reads `mediaItem(id:)`. Without this, those are separate cache paths and Apollo
-           * always misses on first open even when `MediaItem:id` is already normalized.
-           */
-          mediaItem: {
-            read(existing, { args, toReference }) {
-              const id =
-                args != null &&
-                typeof args === 'object' &&
-                'id' in args &&
-                typeof (args as { id: unknown }).id === 'string'
-                  ? (args as { id: string }).id
-                  : '';
-              if (id.length === 0) {
+
+        Viewer: {
+          // Normalize Viewer by id so cache lookups by user id work consistently.
+          // If you want viewer-as-singleton semantics instead, switch to `false`.
+          keyFields: ['id'],
+          fields: {
+            // TODO: pass keyArgs reflecting any sort/filter args once those are
+            // exposed on these fields; without that, switching sort order will
+            // append rather than replace.
+            albums: nestedPagePagination(),
+            mediaItems: nestedPagePagination(),
+            sharedWithMeMediaItems: nestedPagePagination(),
+            sharedWithMeAlbums: nestedPagePagination(),
+
+            // List queries normalize MediaItem entities into the cache, but the
+            // detail field `mediaItem(id:)` has its own per-args result slot.
+            // Without this read, opening a detail view always misses on first
+            // open even when MediaItem:id is already normalized. The read returns
+            // a reference to the normalized entity, which Apollo resolves
+            // transparently. Note: only avoids a network fetch when the detail
+            // query's selection set is a subset of what the list query loaded.
+            mediaItem: {
+              read(existing, { args, toReference }) {
+                const id = (args as { id?: string } | null)?.id;
+                // trust these codegen types
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-                return existing;
-              }
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-              return existing ?? toReference({ __typename: 'MediaItem', id });
+                if (!id) return existing;
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+                return existing ?? toReference({ __typename: 'MediaItem', id });
+              },
             },
           },
         },
+        Album: {
+          keyFields: ['id'],
+          fields: {
+            items: nestedPagePagination(),
+            // and comments if applicable
+          },
+        },
+        PublicAlbum: {
+          keyFields: ['id'],
+          fields: {
+            items: nestedPagePagination(),
+            comments: nestedPagePagination(),
+          },
+        },
+
+        MediaItem: {
+          fields: {
+            comments: nestedPagePagination(),
+          },
+        },
       },
-      MediaItem: {
-        ...smartEnumTypePolicies.MediaItem,
-        keyFields: ['id'],
-      },
-    },
+    ),
   }),
 });

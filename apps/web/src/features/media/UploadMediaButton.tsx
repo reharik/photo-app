@@ -1,31 +1,25 @@
-import { useApolloClient } from '@apollo/client/react';
-import { FrontendUploadStatus } from '@packages/contracts';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import styled from 'styled-components';
+import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { type AppError } from '../../domain/errors/errorTypes';
-import { awaitMediaItemsReady } from '../../domain/media/awaitMediaItemsReady';
-import { useUploadQueue } from '../../hooks/useUploadQueue';
 
 type UploadMediaButtonProps = {
+  albumId?: string;
   setAppErrors?: (errors: AppError[]) => void;
   text?: string;
   shortText?: string;
-  onComplete: () => void;
   multiple?: boolean;
 };
 
 export const UploadMediaButton = ({
+  albumId,
   setAppErrors,
   text,
   shortText,
   multiple = true,
-  onComplete,
 }: UploadMediaButtonProps) => {
-  const client = useApolloClient();
-  const { items, enqueueFiles, clearCompleted, isUploading } = useUploadQueue(client);
+  const { enqueueFiles, isUploading } = useUploadQueue();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  /** Supersedes older in-flight backend readiness waits when uploads complete again. */
-  const backendWaitGenerationRef = useRef(0);
 
   const startUploadPick = () => {
     fileInputRef.current?.click();
@@ -39,45 +33,8 @@ export const UploadMediaButton = ({
     }
 
     setAppErrors?.([]);
-    enqueueFiles(files);
+    enqueueFiles(files, albumId);
   };
-
-  useEffect(() => {
-    if (isUploading) {
-      return;
-    }
-
-    const completedRows = items.filter(
-      (item) => item.status === FrontendUploadStatus.complete && item.mediaItemId != null,
-    );
-    if (completedRows.length === 0) {
-      return;
-    }
-
-    const ids = [
-      ...new Set(
-        completedRows.flatMap((item) => (item.mediaItemId != null ? [item.mediaItemId] : [])),
-      ),
-    ];
-    const generation = (backendWaitGenerationRef.current += 1);
-
-    void (async (): Promise<void> => {
-      let readyRefreshCount = 0;
-      await awaitMediaItemsReady(client, ids, {
-        onItemReady: () => {
-          readyRefreshCount += 1;
-          void onComplete();
-        },
-      });
-      if (backendWaitGenerationRef.current !== generation) {
-        return;
-      }
-      if (readyRefreshCount < ids.length) {
-        void onComplete();
-      }
-      clearCompleted();
-    })();
-  }, [items, isUploading, client, onComplete, clearCompleted]);
 
   return (
     <>

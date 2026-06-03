@@ -1,12 +1,12 @@
 import type { ApolloClient } from '@apollo/client';
 
 import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
+import { AppResultFailure, fail, ok, type AppResult } from '../../domain/errors/errorTypes';
+import { executeMutation } from '../../domain/graphql/executeMutation';
 import {
   CreateMediaUploadDocument,
   FinalizeMediaUploadDocument,
 } from '../../graphql/generated/types';
-import { AppResultFailure, fail, ok, type AppResult } from '../errors/errorTypes';
-import { executeMutation } from '../graphql/executeMutation';
 import type { UploadWorkflowEvent } from './mediaUploadTypes';
 import { resolveUploadFileClassification } from './resolveUploadFileClassification';
 
@@ -21,6 +21,7 @@ const buildUploadBody = (file: File, method: string): BodyInit => {
 const createMediaUpload = async (
   client: ApolloClient,
   file: File,
+  albumId?: string,
 ): Promise<
   AppResult<{
     mediaItemId: string;
@@ -48,6 +49,7 @@ const createMediaUpload = async (
           kind,
           mimeType,
           originalFileName: file.name.trim() !== '' ? file.name : undefined,
+          albumId,
         },
       },
     },
@@ -125,10 +127,11 @@ export const mediaUploadWorkflow = async (
   client: ApolloClient,
   file: File,
   onEvent: (event: UploadWorkflowEvent) => void,
+  albumId?: string,
 ): Promise<AppResult<{ mediaItemId: string }>> => {
   try {
     onEvent({ type: FUS.creating });
-    const created = await createMediaUpload(client, file);
+    const created = await createMediaUpload(client, file, albumId);
     if (!created.success) {
       onEvent({
         type: FUS.failed,

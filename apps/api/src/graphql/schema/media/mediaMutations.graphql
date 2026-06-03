@@ -14,6 +14,7 @@ input CreateMediaUploadInput {
   kind: MediaKind!
   mimeType: String!
   originalFileName: String
+  albumId: ID
 }
 
 type UploadHeader {

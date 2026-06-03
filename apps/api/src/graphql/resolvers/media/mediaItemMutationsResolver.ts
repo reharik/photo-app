@@ -19,6 +19,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         kind: args.input.kind,
         mimeType: args.input.mimeType,
         originalFileName: args.input.originalFileName ?? undefined,
+        albumId: args.input.albumId ?? undefined,
       });
 
       return {

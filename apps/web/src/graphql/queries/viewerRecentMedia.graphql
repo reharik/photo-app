@@ -1,11 +1,7 @@
-query ViewerRecentMedia {
+query ViewerLibrary($collectionInfo: MediaItemCollectionInput!) {
   viewer {
     id
-    mediaItems(
-      input: {
-        collectionInfo: { pageInfo: { limit: 10, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
-      }
-    ) {
+    mediaItems(input: { collectionInfo: $collectionInfo }) {
       nodes {
         ...MediaItemSummary
       }
@@ -13,6 +9,7 @@ query ViewerRecentMedia {
         limit
         offset
       }
+      totalCount
     }
   }
 }

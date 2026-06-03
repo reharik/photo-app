@@ -52,8 +52,8 @@ export const getMediaTileIds = async (page: Page): Promise<string[]> => {
 const uploadMediaButton = (page: Page) =>
   page.getByRole('button', { name: 'Upload Media' }).first();
 
-export const expectRecentMediaPage = async (page: Page): Promise<void> => {
-  await expect(page.getByText('Recent Media')).toBeVisible();
+export const expectLibraryPage = async (page: Page): Promise<void> => {
+  await expect(page.getByText('Library')).toBeVisible();
   await expect(uploadMediaButton(page)).toBeVisible();
 };
 
@@ -61,18 +61,18 @@ export const expectRecentMediaPage = async (page: Page): Promise<void> => {
  * Signs in, opens the recent-media screen, and waits until the shell is ready.
  * Auth uses the API (fast setup); the screen under test is always the UI.
  */
-export const loginAndOpenRecentMedia = async (
+export const loginAndOpenLibrary = async (
   page: Page,
   context: BrowserContext,
   user: TestUser,
 ): Promise<void> => {
   await loginViaUi(page, user);
   await page.goto('/media');
-  await expectRecentMediaPage(page);
+  await expectLibraryPage(page);
 };
 
 /**
- * Uploads one or more files through the Recent Media "Upload Media" control
+ * Uploads one or more files through the Library "Upload Media" control
  * and waits until each new item appears as a grid tile.
  */
 export const uploadMediaViaUi = async (
@@ -107,7 +107,7 @@ export const uploadMediaViaUi = async (
     .toBe(images.length);
 
   const newIds = (await getMediaTileIds(page)).filter((id) => !idsBefore.has(id));
-  // Upload queue runs one file at a time; recent media sorts newest-first in the grid.
+  // Upload queue runs one file at a time; library sorts newest-first in the grid.
   return [...newIds].reverse().map((id, index) => ({
     id,
     fileName: images[index].fileName,
@@ -115,7 +115,7 @@ export const uploadMediaViaUi = async (
 };
 
 /**
- * Login → recent media → upload. This is the standard arrange step for owner tests.
+ * Login → library → upload. This is the standard arrange step for owner tests.
  */
 export const loginAndUploadMedia = async (
   page: Page,
@@ -123,7 +123,7 @@ export const loginAndUploadMedia = async (
   user: TestUser,
   fileNames: string[],
 ): Promise<{ id: string; fileName: string }[]> => {
-  await loginAndOpenRecentMedia(page, context, user);
+  await loginAndOpenLibrary(page, context, user);
   const images = fileNames.map((fileName) => ({
     fileName,
     path: createTestImageFile(fileName),
@@ -132,7 +132,7 @@ export const loginAndUploadMedia = async (
 };
 
 /**
- * Login → recent media → upload `count` randomly chosen asset images
+ * Login → library → upload `count` randomly chosen asset images
  * named `{assetStem}-{uniqueSuffix}{ext}`.
  */
 export const loginAndUploadRandomAssets = async (
@@ -142,7 +142,7 @@ export const loginAndUploadRandomAssets = async (
   count: number,
   uniqueSuffix: string,
 ): Promise<UploadedMediaItem[]> => {
-  await loginAndOpenRecentMedia(page, context, user);
+  await loginAndOpenLibrary(page, context, user);
   const items = grabTestImages(count, uniqueSuffix);
   return uploadMediaViaUi(page, items);
 };

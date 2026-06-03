@@ -4,6 +4,7 @@ import prettierPlugin from "eslint-plugin-prettier";
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
+import { photoappPlugin } from "./plugin-photoapp/index.js";
 
 // Common TypeScript rules that all projects share
 export const commonTypeScriptRules = {
@@ -84,12 +85,14 @@ export const createBaseTypeScriptConfig = async (options = {}) => {
       plugins: {
         prettier: prettierPlugin,
         jest: jest.default,
+        "@photoapp": photoappPlugin,
         ...additionalPlugins,
       },
       rules: {
         ...commonTypeScriptRules,
         ...commonPrettierRules,
         ...jest.default.configs.recommended.rules,
+        "@photoapp/no-smart-enum-reference-equality": "error",
         ...additionalRules,
       },
     },

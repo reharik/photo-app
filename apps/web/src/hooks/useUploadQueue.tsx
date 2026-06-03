@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { ApolloClient } from '@apollo/client';
 import { FrontendUploadStatus } from '@packages/contracts';
@@ -13,10 +13,15 @@ import { workflowEventToQueueAction } from '../domain/media/workflowEventToQueue
 export const useUploadQueue = (client: ApolloClient) => {
   const [state, dispatch] = useReducer(uploadQueueReducer, initialUploadQueueState);
   const isProcessingRef = useRef<boolean>(false);
+  const [albumId, setAlbumId] = useState<string | undefined>(undefined);
 
-  const enqueueFiles = useCallback((files: File[]) => {
-    dispatch({ type: 'enqueue', payload: { files } });
-  }, []);
+  const enqueueFiles = useCallback(
+    (files: File[], albumId?: string) => {
+      setAlbumId(albumId);
+      dispatch({ type: 'enqueue', payload: { files } });
+    },
+    [setAlbumId],
+  );
 
   const retryItem = useCallback(
     (localId: string) => dispatch({ type: 'retry', payload: { localId } }),
@@ -68,12 +73,15 @@ export const useUploadQueue = (client: ApolloClient) => {
 
     isProcessingRef.current = true;
 
-    void mediaUploadWorkflow(client, nextItem.file, handleWorkflowEvent(nextItem.localId)).finally(
-      () => {
-        isProcessingRef.current = false;
-      },
-    );
-  }, [state.items, client, handleWorkflowEvent]);
+    void mediaUploadWorkflow(
+      client,
+      nextItem.file,
+      handleWorkflowEvent(nextItem.localId),
+      albumId,
+    ).finally(() => {
+      isProcessingRef.current = false;
+    });
+  }, [state.items, client, handleWorkflowEvent, albumId]);
 
   return {
     items: state.items,

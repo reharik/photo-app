@@ -39,6 +39,17 @@ export const uploadQueueReducer: React.Reducer<UploadQueueState, UploadQueueActi
       };
     }
 
+    case 'markReady': {
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.mediaItemId === action.payload.mediaItemId
+            ? { ...item, status: FrontendUploadStatus.ready }
+            : item,
+        ),
+      };
+    }
+
     case 'retry': {
       return {
         ...state,

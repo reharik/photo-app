@@ -21,6 +21,7 @@ export type CreateMediaUploadCommand = {
   kind: MediaKind;
   mimeType: string;
   originalFileName?: string;
+  albumId?: EntityId;
 };
 
 export type CreateMediaUploadResult = {

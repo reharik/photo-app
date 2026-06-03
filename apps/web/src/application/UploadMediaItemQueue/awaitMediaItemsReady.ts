@@ -1,4 +1,4 @@
-import type { ApolloClient } from '@apollo/client';
+import { ApolloClient } from '@apollo/client';
 
 import { MediaItemStatus } from '@packages/contracts';
 

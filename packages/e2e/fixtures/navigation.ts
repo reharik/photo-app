@@ -24,7 +24,7 @@ export const expectMediaTileVisible = async (
       `Media tile [data-testid="media-tile-${mediaItemId}"] not found. ` +
         `URL: ${page.url()}.` +
         (title != null && title.length > 0 ? ` Title "${title}" visible: ${titleVisible}.` : '') +
-        ' Confirm upload finished and the item appears on Recent Media.',
+        ' Confirm upload finished and the item appears on Library.',
     );
   }
 };

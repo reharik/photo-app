@@ -12,11 +12,7 @@ fragment AlbumSummary on Album {
 
 fragment AlbumSummaryWithItems on Album {
   ...AlbumSummary
-  items(
-    input: {
-      collectionInfo: { pageInfo: { limit: 100, offset: 0 }, sortBy: CREATED_AT, sortDir: DESC }
-    }
-  ) {
+  items(input: { collectionInfo: $collectionInfo }) {
     nodes {
       ...AlbumItemSummary
     }
@@ -24,5 +20,6 @@ fragment AlbumSummaryWithItems on Album {
       limit
       offset
     }
+    totalCount
   }
 }

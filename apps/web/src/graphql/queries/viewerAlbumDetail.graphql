@@ -1,4 +1,4 @@
-query ViewerAlbumDetail($albumId: ID!) {
+query ViewerAlbumDetail($albumId: ID!, $collectionInfo: AlbumItemCollectionInput!) {
   viewer {
     id
     album(id: $albumId) {

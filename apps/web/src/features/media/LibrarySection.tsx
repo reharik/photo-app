@@ -1,7 +1,8 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { Operation } from '@packages/contracts';
-import { useCallback, useMemo, useState } from 'react';
+import { FrontendUploadStatus, Operation } from '@packages/contracts';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
+import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
@@ -9,7 +10,9 @@ import {
   type DeleteMediaItemsMutation,
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
+import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
@@ -17,18 +20,20 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
+import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
 import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
 import { UploadMediaButton } from '../media/UploadMediaButton';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 
-type RecentMediaSectionProps = {
+type LibrarySectionProps = {
   nodes: MediaItemSummaryVM[];
   reloadData: () => void;
+  paging: PagingState;
 };
 
-export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProps) => {
+export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
   const client = useApolloClient();
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
@@ -80,6 +85,19 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
       nodes,
       actions: selectableActions,
     });
+
+  const { items } = useUploadQueue();
+
+  useEffect(() => {
+    const newlyReadyForThisAlbum = items.filter((item) =>
+      item.status.equals(FrontendUploadStatus.ready),
+    );
+    if (newlyReadyForThisAlbum.length > 0) {
+      void reloadData();
+    }
+  }, [items, reloadData]);
+
+  const { sentinelRef, scrollRootRef } = useInfiniteScroll({ ...paging, rootMargin: '600px' });
 
   const submitDeleteMedia = async (): Promise<void> => {
     const result = await executeDelete(
@@ -138,33 +156,34 @@ export const RecentMediaSection = ({ nodes, reloadData }: RecentMediaSectionProp
         availableActions={availableActions}
         Header={() => (
           <>
-            <Title>Recent Media</Title>
+            <Title>Library</Title>
             <HeaderActions>
-              <UploadMediaButton onComplete={reloadData} />
+              <UploadMediaButton />
             </HeaderActions>
           </>
         )}
       />
-
-      <SelectableGallery
-        nodes={nodes}
-        multiSelectProps={multiSelectProps}
-        selectableActions={selectableActions}
-        emptyState={
-          <EmptyState
-            title="No media yet"
-            text="Upload your first media to start building your family gallery"
-            action={<UploadMediaButton onComplete={reloadData} />}
-          />
-        }
-        renderItem={({ item, orderedMediaIds }) => (
-          <MediaItemTile
-            item={item}
-            mediaGalleryIds={orderedMediaIds}
-            onReactionsRefetch={reloadData}
-          />
-        )}
-      />
+      <InfiniteScroll paging={paging} rootMargin="600px">
+        <SelectableGallery
+          nodes={nodes}
+          multiSelectProps={multiSelectProps}
+          selectableActions={selectableActions}
+          emptyState={
+            <EmptyState
+              title="No media yet"
+              text="Upload your first media to start building your family gallery"
+              action={<UploadMediaButton />}
+            />
+          }
+          renderItem={({ item, orderedMediaIds }) => (
+            <MediaItemTile
+              item={item}
+              mediaGalleryIds={orderedMediaIds}
+              onReactionsRefetch={reloadData}
+            />
+          )}
+        />
+      </InfiniteScroll>
       {addToAlbumOpen && (
         <AppModal
           onClose={() => setAddToAlbumOpen(false)}

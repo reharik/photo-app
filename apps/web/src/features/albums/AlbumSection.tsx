@@ -1,7 +1,10 @@
-import { Operation } from '@packages/contracts';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { FrontendUploadStatus, Operation } from '@packages/contracts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { PagingState } from 'src/hooks/getPaginatedQueryRenderState';
 import styled from 'styled-components';
+import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
@@ -11,6 +14,7 @@ import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../vi
 import { SelectableGallery } from '../gallery/SelectableGallery';
 import { AlbumMediaTile } from '../gallery/tiles/AlbumMediaTile';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
+import { UploadMediaButton } from '../media/UploadMediaButton';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 import { AlbumSectionMetadata } from './AlbumSectionMetadata';
@@ -43,6 +47,7 @@ type AlbumSectionProps = {
   retrieveAlbumItems: () => void;
   submitAddAlbumCover: (selectedAlbumItemId: string) => void;
   reloadData: () => void;
+  paging: PagingState;
 };
 
 export const AlbumSection = ({
@@ -53,8 +58,10 @@ export const AlbumSection = ({
   modalState,
   submitAddAlbumCover,
   reloadData,
+  paging,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
+  const { sentinelRef, scrollRootRef } = useInfiniteScroll(paging);
   const [metaCompact, setMetaCompact] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
   const dismissAlbumToast = useCallback((): void => {
@@ -97,6 +104,18 @@ export const AlbumSection = ({
     }
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
   }, []);
+
+  const { items } = useUploadQueue();
+
+  useEffect(() => {
+    if (
+      items.some(
+        (item) => item.status.equals(FrontendUploadStatus.ready) && item.albumId === album.id,
+      )
+    )
+      void reloadData();
+  }, [items, album.id, reloadData]);
+
   const albumHeaderActions = (
     <HeaderActions>
       {album.operations.includes(Operation.grantAlbumAuthorization) && (
@@ -121,6 +140,9 @@ export const AlbumSection = ({
           Add items to Album
         </PrimaryButton>
       )}
+      {album.operations.includes(Operation.addItems) && (
+        <UploadMediaButton albumId={album.id} text="Upload items to album" />
+      )}
     </HeaderActions>
   );
 
@@ -140,7 +162,13 @@ export const AlbumSection = ({
         addCoverItemOpen={modalState.addCoverItemOpen}
         setAddCoverItemOpen={modalState.setAddCoverItemOpen}
       />
-      <AlbumBodyScroll ref={albumScrollRef} onScroll={onAlbumScroll}>
+      <AlbumBodyScroll
+        ref={(el) => {
+          scrollRootRef.current = el;
+          albumScrollRef.current = el;
+        }}
+        onScroll={onAlbumScroll}
+      >
         <SelectableGallery
           nodes={albumItems}
           mediaIdSelector={(x) => x.mediaItem.id}
@@ -172,6 +200,7 @@ export const AlbumSection = ({
             />
           )}
         />
+        <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
       {removeAlbumItemState.removeItemOpen && (
         <ConfirmationModal

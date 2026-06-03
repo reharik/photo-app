@@ -21,7 +21,7 @@ test.describe('User Library', () => {
       await expect(userA.page.getByRole('dialog', { name: 'Delete from library?' })).toBeVisible();
       await userA.page.getByRole('button', { name: 'Delete', exact: true }).click();
       await expect(userA.page.getByRole('dialog', { name: 'Delete from library?' })).toBeHidden();
-      await expect(userA.page.getByText('Recent Media')).toBeVisible();
+      await expect(userA.page.getByText('Library')).toBeVisible();
 
       await expect(mediaTile(userA.page, a.id)).toBeHidden();
       await expect(mediaTile(userA.page, b.id)).toBeHidden();

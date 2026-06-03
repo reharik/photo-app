@@ -31,9 +31,6 @@ export const ReactionButton = ({
     : !hasReaction
       ? `Add ${emoji.display}`
       : `Remove ${emoji.display}`;
-  console.log(`************emoji.************`);
-  console.log(emoji.fillColor);
-  console.log(`********END emoji.************`);
   return (
     <Root>
       <Button

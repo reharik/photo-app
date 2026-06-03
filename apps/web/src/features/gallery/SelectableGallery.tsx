@@ -68,7 +68,6 @@ export const SelectableGallery = <T extends ViewableItemVM>({
     }
     return <Content>{emptyState}</Content>;
   }
-
   const grid = (
     <GalleryContainer
       $minColumnPx={gridMinColumnWidthPx}
