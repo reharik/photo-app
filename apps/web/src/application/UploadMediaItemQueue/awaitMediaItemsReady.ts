@@ -50,11 +50,8 @@ const waitUntilMediaItemReadyOrTimeout = (
 
     const subscription = observableQuery.subscribe({
       next: (result) => {
-        const status =
-          'data' in result && result.data != null
-            ? result.data.viewer?.mediaItem?.status
-            : undefined;
-        if (status != null && status.equals(MediaItemStatus.ready)) {
+        const status = result.data?.viewer?.mediaItem?.status;
+        if (status != null && MediaItemStatus.ready.equals(status as MediaItemStatus)) {
           if (!readyNotified && onItemReady !== undefined) {
             readyNotified = true;
             onItemReady(mediaItemId);

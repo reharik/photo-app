@@ -1,4 +1,4 @@
-import OperationVariables, { NetworkStatus } from '@apollo/client';
+import { NetworkStatus, OperationVariables } from '@apollo/client';
 import { useCallback } from 'react';
 import { getQueryRenderState, QueryLike, QueryStateResult } from './getQueryRenderState';
 
@@ -16,10 +16,6 @@ type PaginatedSelected<TNode = unknown> = {
   nodes: TNode[];
   totalCount: number;
 };
-
-type CollectionInfo<TExtra = Record<string, unknown>> = {
-  pageInfo: { limit: number; offset: number };
-} & TExtra;
 
 export const usePaginatedQueryRenderState = <
   TQuery,
