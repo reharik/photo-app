@@ -24,8 +24,8 @@ export const ReactionButton = ({
   canReact,
   onToggle,
 }: Props): JSX.Element => {
-  const hasReaction = viewerReactions?.some((r) => r.emoji === emoji) ?? false;
-  const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
+  const hasReaction = viewerReactions?.some((r) => r.emoji.equals(emoji)) ?? false;
+  const emojiCount = reactionCounts.byEmoji.find((e) => e.emoji.equals(emoji))?.count ?? 0;
   const ariaLabel = !canReact
     ? `${emojiCount} ${emoji.display}s`
     : !hasReaction

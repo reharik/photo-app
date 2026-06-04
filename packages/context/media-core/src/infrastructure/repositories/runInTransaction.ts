@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { WriteResult } from 'src/types/types';
+import { WriteResult } from '../../types/types';
 
 export interface RunInTransaction {
   <T>(trx: Knex.Transaction | undefined, fn: (db: Knex.Transaction) => Promise<T>): Promise<T>;

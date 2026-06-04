@@ -1,21 +1,12 @@
 import { FrontendUploadStatus } from '@packages/contracts';
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { UploadProgressRow } from './uploadProgressRow';
-import {
-  getCollapsedSummary,
-  getUploadProgressCounts,
-} from './uploadProgressSummary';
+import { getCollapsedSummary, getUploadProgressCounts } from './uploadProgressSummary';
 
 const READY_DISMISS_MS = 2200;
 const SUCCESS_DISMISS_MS = 2600;
@@ -77,7 +68,7 @@ export const UploadProgressBox = (): ReactElement | null => {
 
   useEffect(() => {
     for (const item of items) {
-      if (item.status !== FrontendUploadStatus.ready) {
+      if (!item.status.equals(FrontendUploadStatus.ready)) {
         continue;
       }
       if (readyDismissTimersRef.current.has(item.localId)) {
@@ -92,7 +83,7 @@ export const UploadProgressBox = (): ReactElement | null => {
 
     for (const [localId, timer] of readyDismissTimersRef.current) {
       const stillReady = items.some(
-        (item) => item.localId === localId && item.status === FrontendUploadStatus.ready,
+        (item) => item.localId === localId && item.status.equals(FrontendUploadStatus.ready),
       );
       if (!stillReady) {
         clearTimeout(timer);
@@ -159,8 +150,7 @@ const UploadProgressPanel = ({
     panelPhase === 'success'
       ? getCollapsedSummary(counts, 'success', sessionHadFailure)
       : getCollapsedSummary(counts, 'active');
-  const progressPercent =
-    counts.total > 0 ? Math.round((counts.finished / counts.total) * 100) : 0;
+  const progressPercent = counts.total > 0 ? Math.round((counts.finished / counts.total) * 100) : 0;
   const showSpinner = counts.inFlight > 0 || counts.processing > 0;
   const subSummary =
     panelPhase === 'active' && counts.total > 0

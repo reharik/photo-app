@@ -8,6 +8,6 @@ export const ensureMediaItemOwnedByViewer = (ownerId: EntityId, viewerId: Entity
     : fail(AppErrorCollection.mediaItem.MediaItemNotOwnedByViewer);
 
 export const ensureMediaItemInReadyState = (mediaItem: DBMediaItemRow) =>
-  mediaItem.status === MediaItemStatus.ready
+  mediaItem.status.equals(MediaItemStatus.ready)
     ? ok(undefined)
     : fail(AppErrorCollection.mediaItem.MediaItemNotReady);

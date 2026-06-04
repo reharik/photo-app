@@ -1,7 +1,7 @@
 import { AppErrorCollection, ReactionTargetType } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { fail, ok } from '../../../domain';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import {
   CommentReadRepository,
   CommentRepository,
@@ -56,7 +56,7 @@ export const build__RemoveReaction = ({
     }
 
     let updatedReactionCount: DBReactionCounts;
-    if (reaction.targetType() === ReactionTargetType.mediaItem) {
+    if (reaction.targetType().equals(ReactionTargetType.mediaItem)) {
       const mediaItem = await mediaItemReadRepository.getByIdForAuthorization({
         mediaItemId: reaction.targetId(),
       });
@@ -83,13 +83,13 @@ export const build__RemoveReaction = ({
 
     await runInTransaction(trx, async (db) => {
       await reactionRepository.delete(reaction, db);
-      if (reaction.targetType() === ReactionTargetType.mediaItem) {
+      if (reaction.targetType().equals(ReactionTargetType.mediaItem)) {
         await mediaItemRepository.updateReactionCounts(
           reaction.targetId(),
           updatedReactionCount,
           db,
         );
-      } else if (reaction.targetType() === ReactionTargetType.comment) {
+      } else if (reaction.targetType().equals(ReactionTargetType.comment)) {
         await commentRepository.updateReactionCounts(reaction.targetId(), updatedReactionCount, db);
       }
     });

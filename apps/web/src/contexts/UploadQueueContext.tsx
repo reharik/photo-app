@@ -76,7 +76,7 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const nextItem = state.items.find((item) => item.status === FrontendUploadStatus.queued);
+    const nextItem = state.items.find((item) => item.status.equals(FrontendUploadStatus.queued));
     if (!nextItem) {
       return;
     }
@@ -100,7 +100,7 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const newlyComplete = state.items.filter(
       (item) =>
-        item.status === FrontendUploadStatus.complete &&
+        item.status.equals(FrontendUploadStatus.complete) &&
         item.mediaItemId != null &&
         !polledIdsRef.current.has(item.mediaItemId),
     );

@@ -15,10 +15,10 @@ export const FrontendUploadStatus = enumeration<typeof input>('FrontendUploadSta
 });
 
 export const isInFlightStatus = (status: FrontendUploadStatus): boolean =>
-  status === FrontendUploadStatus.queued ||
-  status === FrontendUploadStatus.creating ||
-  status === FrontendUploadStatus.uploading ||
-  status === FrontendUploadStatus.finalizing;
+  status.equals(FrontendUploadStatus.queued) ||
+  status.equals(FrontendUploadStatus.creating) ||
+  status.equals(FrontendUploadStatus.uploading) ||
+  status.equals(FrontendUploadStatus.finalizing);
 
 export const isTerminalStatus = (status: FrontendUploadStatus): boolean =>
-  status === FrontendUploadStatus.ready || status === FrontendUploadStatus.failed;
+  status.equals(FrontendUploadStatus.ready) || status.equals(FrontendUploadStatus.failed);

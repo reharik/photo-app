@@ -41,7 +41,8 @@ export const ReactionsContainer = ({
           reactionCounts.byEmoji.some((r) => r.emoji.equals(emoji) && r.count > 0),
         )
   ).filter(
-    (emoji) => !(emoji.equals(ReactionEmoji.comment) && targetType === ReactionTargetType.comment),
+    (emoji) =>
+      !(emoji.equals(ReactionEmoji.comment) && targetType.equals(ReactionTargetType.comment)),
   );
 
   return (

@@ -1,6 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
@@ -8,6 +7,7 @@ import {
 } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';

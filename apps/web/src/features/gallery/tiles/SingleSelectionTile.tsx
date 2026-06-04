@@ -15,7 +15,7 @@ export const SingleSelectionTile = ({
   const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   return (
     <ThumbFrame onClick={() => onSelect(item.id)}>
-      {item.kind === MediaKind.photo ? (
+      {item.kind.equals(MediaKind.photo) ? (
         <ThumbImage src={url} data-testid={item.id} alt={item.title?.trim() ?? ''} />
       ) : (
         <ThumbIcon aria-hidden $scale={THUMB_SCALE}>

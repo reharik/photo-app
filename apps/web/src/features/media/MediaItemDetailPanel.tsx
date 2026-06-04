@@ -1,7 +1,8 @@
 import { Operation } from '@packages/contracts';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { formatDateOnly, formatTakenDisplay } from '../../domain/formatters/mediaItemMetaFormat';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { MediaItemDetailVM } from '../../viewModels/';
 import { CommentsForViewerMediaItemContainer } from './CommentsForViewerMediaItemContainer';
 import { MediaItemDetailForm } from './MediaItemDetailForm';
@@ -17,101 +18,119 @@ export type MediaItemDetailPanelProps = {
   onSaved: () => Promise<void>;
   /** Notified synchronously when the user enters or leaves detail editing (e.g. to block gallery navigation). */
   onEditingSessionChange?: (isEditing: boolean) => void;
+  /** On narrow viewports, metadata sits between image and comments when chrome is visible. */
+  isMobileMetadataVisible?: boolean;
 };
+
+const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
 
 export const MediaItemDetailPanel = forwardRef<
   MediaItemDetailPanelHandle,
   MediaItemDetailPanelProps
->(({ mediaItem, onDismissScreen, onSaved, onEditingSessionChange }, ref) => {
-  const [isEditingDetails, setIsEditingDetails] = useState(false);
-  const onEditingSessionChangeRef = useRef(onEditingSessionChange);
-  onEditingSessionChangeRef.current = onEditingSessionChange;
+>(
+  (
+    {
+      mediaItem,
+      onDismissScreen,
+      onSaved,
+      onEditingSessionChange,
+      isMobileMetadataVisible = false,
+    },
+    ref,
+  ) => {
+    const [isEditingDetails, setIsEditingDetails] = useState(false);
+    const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_MEDIA);
+    const onEditingSessionChangeRef = useRef(onEditingSessionChange);
+    onEditingSessionChangeRef.current = onEditingSessionChange;
 
-  useEffect(() => {
-    setIsEditingDetails(false);
-    onEditingSessionChangeRef.current?.(false);
-  }, [mediaItem?.id]);
+    useEffect(() => {
+      setIsEditingDetails(false);
+      onEditingSessionChangeRef.current?.(false);
+    }, [mediaItem?.id]);
 
-  const endEditingSession = useCallback((): void => {
-    setIsEditingDetails(false);
-    onEditingSessionChangeRef.current?.(false);
-  }, []);
+    const endEditingSession = useCallback((): void => {
+      setIsEditingDetails(false);
+      onEditingSessionChangeRef.current?.(false);
+    }, []);
 
-  const openEditDetails = useCallback((): void => {
-    setIsEditingDetails(true);
-    onEditingSessionChangeRef.current?.(true);
-  }, []);
+    const openEditDetails = useCallback((): void => {
+      setIsEditingDetails(true);
+      onEditingSessionChangeRef.current?.(true);
+    }, []);
 
-  const handleCloseRequest = useCallback((): void => {
-    if (isEditingDetails) {
-      endEditingSession();
-      return;
+    const handleCloseRequest = useCallback((): void => {
+      if (isEditingDetails) {
+        endEditingSession();
+        return;
+      }
+      onDismissScreen();
+    }, [endEditingSession, isEditingDetails, onDismissScreen]);
+
+    useImperativeHandle(ref, () => ({ handleCloseRequest }), [handleCloseRequest]);
+    if (mediaItem == null) {
+      return null;
     }
-    onDismissScreen();
-  }, [endEditingSession, isEditingDetails, onDismissScreen]);
+    const canEdit = mediaItem.operations.includes(Operation.editMediaItem);
+    const canComment = mediaItem.operations.includes(Operation.comment);
+    const showDetailsSection = !isMobileLayout || isMobileMetadataVisible || isEditingDetails;
+    const commentsOnlyOnMobile = isMobileLayout && !showDetailsSection;
+    const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
+      <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>
+        <RowFieldLabel>{label}</RowFieldLabel>
+        <EditableRowValueRow>
+          <EditableValueText $multiline $muted={muted != null ? muted : !value?.trim()}>
+            {value?.trim() ? value.trim() : 'Not set'}
+          </EditableValueText>
+          {canEdit && <EditCue aria-hidden>✎</EditCue>}
+        </EditableRowValueRow>
+      </EditableRowButton>
+    );
 
-  useImperativeHandle(ref, () => ({ handleCloseRequest }), [handleCloseRequest]);
-  if (mediaItem == null) {
-    return null;
-  }
-  const canEdit = mediaItem.operations.includes(Operation.editMediaItem);
-  const canComment = mediaItem.operations.includes(Operation.comment);
-  const renderEditableRow = (label: string, value?: string, muted?: boolean) => (
-    <EditableRowButton disabled={!canEdit} type="button" onClick={openEditDetails}>
-      <RowFieldLabel>{label}</RowFieldLabel>
-      <EditableRowValueRow>
-        <EditableValueText $multiline $muted={muted != null ? muted : !value?.trim()}>
-          {value?.trim() ? value.trim() : 'Not set'}
-        </EditableValueText>
-        {canEdit && <EditCue aria-hidden>✎</EditCue>}
-      </EditableRowValueRow>
-    </EditableRowButton>
-  );
+    return (
+      <MetadataPanel>
+        <MetadataSection $hidden={!showDetailsSection}>
+          <DetailsPanelHeader>
+            <DetailsSectionTitle>Details</DetailsSectionTitle>
+            <DetailsPanelCloseButton type="button" onClick={handleCloseRequest} aria-label="Close">
+              ✕
+            </DetailsPanelCloseButton>
+          </DetailsPanelHeader>
+          <MetadataItem>
+            <MetadataLabel>File name</MetadataLabel>
+            <MetadataValue>{mediaItem.originalFileName?.trim() || '—'}</MetadataValue>
+          </MetadataItem>
 
-  return (
-    <MetadataPanel>
-      <MetadataSection>
-        <DetailsPanelHeader>
-          <DetailsSectionTitle>Details</DetailsSectionTitle>
-          <DetailsPanelCloseButton type="button" onClick={handleCloseRequest} aria-label="Close">
-            ✕
-          </DetailsPanelCloseButton>
-        </DetailsPanelHeader>
-        <MetadataItem>
-          <MetadataLabel>File name</MetadataLabel>
-          <MetadataValue>{mediaItem.originalFileName?.trim() || '—'}</MetadataValue>
-        </MetadataItem>
+          {isEditingDetails ? (
+            <MediaItemDetailForm
+              mediaItem={mediaItem}
+              onSaved={onSaved}
+              onFinishEditing={endEditingSession}
+            />
+          ) : (
+            <>
+              {renderEditableRow('Title', mediaItem.title)}
+              {renderEditableRow('Description', mediaItem.description)}
+              {renderEditableRow(
+                'Taken',
+                formatTakenDisplay(mediaItem.takenAt),
+                mediaItem.takenAt?.isValid,
+              )}
+            </>
+          )}
 
-        {isEditingDetails ? (
-          <MediaItemDetailForm
-            mediaItem={mediaItem}
-            onSaved={onSaved}
-            onFinishEditing={endEditingSession}
-          />
-        ) : (
-          <>
-            {renderEditableRow('Title', mediaItem.title)}
-            {renderEditableRow('Description', mediaItem.description)}
-            {renderEditableRow(
-              'Taken',
-              formatTakenDisplay(mediaItem.takenAt),
-              mediaItem.takenAt?.isValid,
-            )}
-          </>
-        )}
+          <MetadataItem>
+            <MetadataLabel>Date added</MetadataLabel>
+            <MetadataValue>{formatDateOnly(mediaItem.createdAt)}</MetadataValue>
+          </MetadataItem>
+        </MetadataSection>
 
-        <MetadataItem>
-          <MetadataLabel>Date added</MetadataLabel>
-          <MetadataValue>{formatDateOnly(mediaItem.createdAt)}</MetadataValue>
-        </MetadataItem>
-      </MetadataSection>
-
-      <CommentsSection>
-        <CommentsForViewerMediaItemContainer mediaItemId={mediaItem.id} canComment={canComment} />
-      </CommentsSection>
-    </MetadataPanel>
-  );
-});
+        <CommentsSection $commentsOnlyOnMobile={commentsOnlyOnMobile}>
+          <CommentsForViewerMediaItemContainer mediaItemId={mediaItem.id} canComment={canComment} />
+        </CommentsSection>
+      </MetadataPanel>
+    );
+  },
+);
 
 MediaItemDetailPanel.displayName = 'MediaItemDetailPanel';
 
@@ -140,10 +159,17 @@ const MetadataPanel = styled.aside`
   }
 `;
 
-const MetadataSection = styled.div`
+const MetadataSection = styled.div<{ $hidden?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
+
+  ${({ $hidden }) =>
+    $hidden
+      ? css`
+          display: none;
+        `
+      : undefined}
 `;
 
 const DetailsPanelHeader = styled.div`
@@ -291,11 +317,20 @@ const EditCue = styled.span`
   color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;
 
-const CommentsSection = styled.div`
+const CommentsSection = styled.div<{ $commentsOnlyOnMobile?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1)};
   padding-top: ${({ theme }) => theme.spacing(2)};
   margin-top: ${({ theme }) => theme.spacing(1)};
   border-top: 1px solid ${({ theme }) => theme.color.border};
+
+  ${({ $commentsOnlyOnMobile }) =>
+    $commentsOnlyOnMobile
+      ? css`
+          border-top: none;
+          margin-top: 0;
+          padding-top: 0;
+        `
+      : undefined}
 `;

@@ -1,5 +1,5 @@
 import { Operation } from '@packages/contracts';
-import { AuthorizationRecord } from 'src/domain/Authorization/Authorization';
+import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import { PublicLinkChildRecords, PublicLinkRecord } from '../../domain/PublicLink/PublicLink';
 
 export type PublicLinkWithAuthorizationRaw = {

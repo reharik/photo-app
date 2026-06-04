@@ -74,7 +74,7 @@ export const build__ProcessNextMediaImageJob = ({
         return 'processed';
       }
 
-      if (mediaItem.status() === MediaItemStatus.ready) {
+      if (mediaItem.status().equals(MediaItemStatus.ready)) {
         logger.info('Media image job skipped: item already ready', {
           jobId: job.id,
           mediaItemId: job.mediaItemId,
@@ -83,7 +83,7 @@ export const build__ProcessNextMediaImageJob = ({
         return 'processed';
       }
 
-      if (mediaItem.kind() !== MediaKind.photo) {
+      if (!mediaItem.kind().equals(MediaKind.photo)) {
         logger.warn('Media image job failed: unsupported media kind', {
           jobId: job.id,
           mediaItemId: job.mediaItemId,
@@ -93,7 +93,7 @@ export const build__ProcessNextMediaImageJob = ({
         return 'processed';
       }
 
-      if (mediaItem.status() !== MediaItemStatus.processing) {
+      if (!mediaItem.status().equals(MediaItemStatus.processing)) {
         logger.warn('Media image job failed: item not in processing status', {
           jobId: job.id,
           mediaItemId: job.mediaItemId,

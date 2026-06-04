@@ -19,7 +19,7 @@ export const PublicAlbumMediaTile = ({
   return (
     <>
       <ThumbLink to={`/shared/${token}/media/${mediaItem.id}`} state={{ mediaGalleryIds }}>
-        {mediaItem.kind === MediaKind.photo ? (
+        {mediaItem.kind.equals(MediaKind.photo) ? (
           <ThumbImage src={url} data-testid={mediaItem.id} alt={mediaItem.title?.trim() ?? ''} />
         ) : (
           <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>

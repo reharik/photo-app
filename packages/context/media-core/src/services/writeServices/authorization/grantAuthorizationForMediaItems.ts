@@ -1,6 +1,5 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import {
   ensureUserExists,
@@ -9,6 +8,7 @@ import {
 import { Authorization } from '../../../domain/Authorization/Authorization';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';

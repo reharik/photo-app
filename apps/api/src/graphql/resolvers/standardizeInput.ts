@@ -17,7 +17,7 @@ export const standardizeCollectionInput = <
   const limit = Math.min(input.pageInfo.limit ?? 10, 100);
   const offset = input.pageInfo.offset ?? 0;
 
-  if (input.sortBy === undefined || input.sortDir === undefined) {
+  if (input.sortBy == undefined || input.sortDir == undefined) {
     throw new Error('Invalid collection input: enum revival failed');
   }
 

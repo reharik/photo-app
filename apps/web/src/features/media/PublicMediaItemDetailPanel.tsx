@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
 import { PublicCommentsForMediaItemContainer } from './PublicCommentsForMediaItemContainer';
 
@@ -11,7 +12,11 @@ export type PublicMediaItemDetailPanelHandle = {
 export type PublicMediaItemDetailPanelProps = {
   mediaItem: PublicMediaItemSummaryVM | undefined;
   onDismissScreen: () => void;
+  /** On narrow viewports, metadata sits between image and comments when chrome is visible. */
+  isMobileMetadataVisible?: boolean;
 };
+
+const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
 
 const formatDurationSeconds = (seconds: number): string => {
   const s = Math.max(0, Math.floor(seconds));
@@ -27,7 +32,8 @@ const formatDurationSeconds = (seconds: number): string => {
 export const PublicMediaItemDetailPanel = forwardRef<
   PublicMediaItemDetailPanelHandle,
   PublicMediaItemDetailPanelProps
->(({ mediaItem, onDismissScreen }, ref) => {
+>(({ mediaItem, onDismissScreen, isMobileMetadataVisible = false }, ref) => {
+  const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_MEDIA);
   useImperativeHandle(
     ref,
     () => ({
@@ -49,10 +55,12 @@ export const PublicMediaItemDetailPanel = forwardRef<
     mediaItem.width > 0 &&
     mediaItem.height > 0;
   const hasDuration = mediaItem.durationSeconds != null && mediaItem.durationSeconds > 0;
+  const showDetailsSection = !isMobileLayout || isMobileMetadataVisible;
+  const commentsOnlyOnMobile = isMobileLayout && !showDetailsSection;
 
   return (
     <MetadataPanel>
-      <MetadataSection>
+      <MetadataSection $hidden={!showDetailsSection}>
         <DetailsPanelHeader>
           <DetailsSectionTitle>Details</DetailsSectionTitle>
           <DetailsPanelCloseButton type="button" onClick={onDismissScreen} aria-label="Close">
@@ -91,7 +99,7 @@ export const PublicMediaItemDetailPanel = forwardRef<
         ) : null}
       </MetadataSection>
 
-      <CommentsSection>
+      <CommentsSection $commentsOnlyOnMobile={commentsOnlyOnMobile}>
         <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} />
       </CommentsSection>
     </MetadataPanel>
@@ -125,10 +133,17 @@ const MetadataPanel = styled.aside`
   }
 `;
 
-const MetadataSection = styled.div`
+const MetadataSection = styled.div<{ $hidden?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(2)};
+
+  ${({ $hidden }) =>
+    $hidden
+      ? css`
+          display: none;
+        `
+      : undefined}
 `;
 
 const DetailsPanelHeader = styled.div`
@@ -239,11 +254,20 @@ const ReadOnlyValueText = styled.div<{ $muted?: boolean }>`
   font-style: ${({ $muted }) => ($muted ? 'italic' : 'normal')};
 `;
 
-const CommentsSection = styled.div`
+const CommentsSection = styled.div<{ $commentsOnlyOnMobile?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1)};
   padding-top: ${({ theme }) => theme.spacing(2)};
   margin-top: ${({ theme }) => theme.spacing(1)};
   border-top: 1px solid ${({ theme }) => theme.color.border};
+
+  ${({ $commentsOnlyOnMobile }) =>
+    $commentsOnlyOnMobile
+      ? css`
+          border-top: none;
+          margin-top: 0;
+          padding-top: 0;
+        `
+      : undefined}
 `;

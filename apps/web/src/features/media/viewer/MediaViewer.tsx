@@ -2,12 +2,12 @@ import { MediaKind, ReactionTargetType } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
-import { useMediaSwipeNavigation } from '../../../hooks/useMediaSwipeNavigation';
+import { useMobileViewerGestures } from '../../../hooks/useMobileViewerGestures';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 import { MediaRenderer } from './MediaRenderer';
 import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
-import { MediaViewerMobileNav } from './MediaViewerMobileNav';
+import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
 import { ViewerBelowMediaSlot } from './MediaViewerStyles';
 import type { NavigateDirection } from './mediaViewerTypes';
@@ -31,13 +31,18 @@ export type MediaViewerProps = {
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
   escapeConsumedRef?: MutableRefObject<(() => boolean) | null>;
+  /** Mobile layout: toggles close button, reactions, and metadata overlay visibility. */
+  mobileChrome?: {
+    visible: boolean;
+    onToggleChrome: () => void;
+  };
 };
 
 const MOBILE_NAV_MEDIA = '(max-width: 968px)';
 
 const isZoomableImage = (kind: MediaKind, mimeType: string): boolean => {
   const mt = mimeType.trim().toLowerCase();
-  if (kind === MediaKind.photo) {
+  if (kind.equals(MediaKind.photo)) {
     return true;
   }
   return mt.startsWith('image/');
@@ -58,8 +63,8 @@ export const MediaViewer = ({
   onNavigate,
   canNavigate = false,
   escapeConsumedRef,
+  mobileChrome,
 }: MediaViewerProps) => {
-  const showNavControls = canNavigate;
   const isMobileLayout = useMediaQuery(MOBILE_NAV_MEDIA);
 
   const [zoomActive, setZoomActive] = useState(false);
@@ -67,7 +72,7 @@ export const MediaViewer = ({
   const resetZoomRef = useRef<(() => void) | null>(null);
 
   const zoomLayerEnabled = isZoomableImage(kind, mimeType);
-  const swipeEnabled = isMobileLayout && showNavControls && !zoomActive;
+  const mobileGesturesEnabled = isMobileLayout && mobileChrome != null;
 
   useLayoutEffect(() => {
     zoomActiveRef.current = zoomActive;
@@ -92,10 +97,13 @@ export const MediaViewer = ({
     };
   }, [escapeConsumedRef]);
 
-  const { swipeHandlers } = useMediaSwipeNavigation({
-    enabled: swipeEnabled,
+  const { gestureHandlers } = useMobileViewerGestures({
+    enabled: mobileGesturesEnabled,
     canNavigate,
+    zoomActive,
     onNavigate,
+    onDismiss: onClose,
+    onToggleChrome: mobileChrome?.onToggleChrome ?? ((): void => undefined),
   });
 
   const media = (
@@ -130,25 +138,26 @@ export const MediaViewer = ({
     </ViewerBelowMediaSlot>
   );
 
+  const chromeVisible = mobileChrome?.visible ?? false;
+
   return (
     <ViewerRoot aria-label="Media viewer">
       <ViewerShell>
-        {!showNavControls ? (
+        {isMobileLayout && mobileChrome != null ? (
+          <MediaViewerMobile
+            media={media}
+            belowMedia={belowMediaSlot}
+            onClose={onClose}
+            chromeVisible={chromeVisible}
+            showCloseButton={showCloseButton}
+            gestureHandlers={gestureHandlers}
+          />
+        ) : !canNavigate ? (
           <MediaViewerSingle
             media={media}
             belowMedia={belowMediaSlot}
             onClose={onClose}
             showCloseButton={showCloseButton}
-          />
-        ) : isMobileLayout ? (
-          <MediaViewerMobileNav
-            media={media}
-            belowMedia={belowMediaSlot}
-            onClose={onClose}
-            onNavigate={onNavigate}
-            canNavigate={canNavigate}
-            zoomActive={zoomActive}
-            swipeHandlers={swipeHandlers}
           />
         ) : (
           <MediaViewerDesktopNav
@@ -170,6 +179,11 @@ const ViewerRoot = styled.div`
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+
+  @media (max-width: 968px) {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
 `;
 
 const ViewerShell = styled.div`
@@ -180,6 +194,12 @@ const ViewerShell = styled.div`
   justify-content: center;
   padding: ${({ theme }) => theme.spacing(2)};
   overflow: auto;
+
+  @media (max-width: 968px) {
+    flex: 0 0 auto;
+    overflow: visible;
+    align-items: stretch;
+  }
 
   @media (min-width: 969px) {
     padding: ${({ theme }) => theme.spacing(3)};

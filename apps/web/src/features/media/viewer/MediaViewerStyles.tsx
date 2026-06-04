@@ -1,9 +1,8 @@
 import styled, { css } from 'styled-components';
 
-export const StageImageCloseButton = styled.button`
+const stageImageOverlayButtonStyles = css`
   position: absolute;
   top: max(${({ theme }) => theme.spacing(2)}, env(safe-area-inset-top, 0px));
-  right: max(${({ theme }) => theme.spacing(2)}, env(safe-area-inset-right, 0px));
   z-index: 4;
   width: clamp(28px, 7vmin, 44px);
   height: clamp(28px, 7vmin, 44px);
@@ -51,6 +50,28 @@ export const StageImageCloseButton = styled.button`
   }
 `;
 
+export const StageImageCloseButton = styled.button`
+  ${stageImageOverlayButtonStyles}
+  right: max(${({ theme }) => theme.spacing(2)}, env(safe-area-inset-right, 0px));
+`;
+
+export const StageImageDetailsToggleButton = styled.button<{ $active?: boolean }>`
+  ${stageImageOverlayButtonStyles}
+  left: max(${({ theme }) => theme.spacing(2)}, env(safe-area-inset-left, 0px));
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 600;
+
+  ${({ $active }) =>
+    $active
+      ? css`
+          background: rgba(255, 255, 255, 0.22);
+          border-color: rgba(255, 255, 255, 0.45);
+          color: rgba(255, 255, 255, 1);
+        `
+      : undefined}
+`;
+
 export const ViewerCard = styled.div<{ $positionForOverlay?: boolean }>`
   display: flex;
   flex-direction: column;
@@ -77,10 +98,11 @@ export const ViewerCard = styled.div<{ $positionForOverlay?: boolean }>`
   @media (max-width: 968px) {
     padding: ${({ theme }) => theme.spacing(2)};
     gap: ${({ theme }) => theme.spacing(2)};
+    min-height: 0;
   }
 `;
 
-/** Renders beneath the zoomable media inside the viewer card (desktop / single-with-card). On mobile narrow nav, sits below the swipe/tap stage instead (see MediaViewerMobileNav). */
+/** Renders beneath the zoomable media inside the viewer card (desktop / single-with-card). On mobile, sits below the media stage (see MediaViewerMobile). */
 export const ViewerBelowMediaSlot = styled.div`
   flex-shrink: 0;
   display: flex;

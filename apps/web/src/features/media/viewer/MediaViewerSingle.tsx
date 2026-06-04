@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
 
 type MediaViewerSingleProps = {
@@ -6,7 +6,6 @@ type MediaViewerSingleProps = {
   belowMedia?: ReactNode;
   onClose: () => void;
   showCloseButton?: boolean;
-  showIfEmpty?: boolean;
 };
 
 export const MediaViewerSingle = ({

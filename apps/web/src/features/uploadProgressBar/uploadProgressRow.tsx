@@ -30,7 +30,7 @@ export const UploadProgressRow = ({
           <StatusDot $tone={statusTone(item.status)} aria-hidden />
           {label}
         </StatusLine>
-        {errorMessage != null && item.status === FrontendUploadStatus.failed ? (
+        {errorMessage != null && item.status.equals(FrontendUploadStatus.failed) ? (
           <ErrorText>{errorMessage}</ErrorText>
         ) : null}
       </RowMain>
@@ -53,17 +53,17 @@ export const UploadProgressRow = ({
 type StatusTone = 'active' | 'success' | 'error' | 'muted';
 
 const statusTone = (status: UploadItem['status']): StatusTone => {
-  if (status === FrontendUploadStatus.failed) {
+  if (status.equals(FrontendUploadStatus.failed)) {
     return 'error';
   }
-  if (status === FrontendUploadStatus.ready) {
+  if (status.equals(FrontendUploadStatus.ready)) {
     return 'success';
   }
   if (
-    status === FrontendUploadStatus.queued ||
-    status === FrontendUploadStatus.creating ||
-    status === FrontendUploadStatus.uploading ||
-    status === FrontendUploadStatus.finalizing
+    status.equals(FrontendUploadStatus.queued) ||
+    status.equals(FrontendUploadStatus.creating) ||
+    status.equals(FrontendUploadStatus.uploading) ||
+    status.equals(FrontendUploadStatus.finalizing)
   ) {
     return 'active';
   }

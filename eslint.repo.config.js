@@ -65,6 +65,19 @@ const nxModuleBoundaryBlock = {
         depConstraints: nxDepConstraints,
       },
     ],
+
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['src/*'],
+            message:
+              'Import using a relative path (e.g. "../foo") or a workspace alias (e.g. "@packages/contracts"). Do not use bare "src/" paths.',
+          },
+        ],
+      },
+    ],
   },
 };
 

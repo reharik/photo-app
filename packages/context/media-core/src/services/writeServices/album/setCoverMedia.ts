@@ -1,9 +1,9 @@
 import { Operation } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';

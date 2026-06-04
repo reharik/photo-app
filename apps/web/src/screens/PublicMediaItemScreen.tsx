@@ -1,7 +1,7 @@
 import { useQuery } from '@apollo/client/react';
 
 import { MediaAssetKind } from '@packages/contracts';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../domain/formatters/mediaItemUrlBuilder';
@@ -39,15 +39,24 @@ export const PublicMediaItemScreen = () => {
     select: (data) => data.publicAccess?.mediaItem,
   });
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
+  const [isMobileChromeVisible, setIsMobileChromeVisible] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const detailPanelRef = useRef<PublicMediaItemDetailPanelHandle>(null);
 
   /** Escape resets image zoom first (when {@link MediaViewer} reports zoom active), then closes. */
   const mediaViewerEscapeConsumedRef = useRef<(() => boolean) | null>(null);
 
+  useEffect(() => {
+    setIsMobileChromeVisible(false);
+  }, [mediaItem?.id]);
+
   const handleDismissScreen = useCallback((): void => {
     void navigate(-1);
   }, [navigate]);
+
+  const handleToggleMobileChrome = useCallback((): void => {
+    setIsMobileChromeVisible((visible) => !visible);
+  }, []);
 
   const galleryNavigation = getGalleryNavigation({
     galleryIds,
@@ -96,6 +105,10 @@ export const PublicMediaItemScreen = () => {
         onNavigate={handleMediaNavigate}
         canNavigate={galleryNavigation.enabled}
         escapeConsumedRef={mediaViewerEscapeConsumedRef}
+        mobileChrome={{
+          visible: isMobileChromeVisible,
+          onToggleChrome: handleToggleMobileChrome,
+        }}
       />
     );
   })();
@@ -121,6 +134,7 @@ export const PublicMediaItemScreen = () => {
           ref={detailPanelRef}
           mediaItem={mediaItem}
           onDismissScreen={handleDismissScreen}
+          isMobileMetadataVisible={isMobileChromeVisible}
         />
       </LayoutInner>
     </Container>
@@ -171,11 +185,9 @@ const ViewerColumn = styled.div`
   flex-direction: column;
 
   @media (max-width: 968px) {
-    /* Let the image use most of the viewport; details sit below and scroll with the page */
-    flex: 1 1 auto;
-    min-height: min(52svh, 520px);
-    max-height: min(88svh, 920px);
-    overflow: hidden;
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
     width: 100%;
   }
 `;

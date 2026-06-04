@@ -144,7 +144,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   }
 
   addAsset(kind: MediaAssetKind, mimeType: string) {
-    if (this.#assets.find((a) => a.kind() === kind)) {
+    if (this.#assets.find((a) => a.kind().equals(kind))) {
       return fail(AppErrorCollection.mediaItem.AssetKindAlreadyExists);
     }
 
@@ -162,11 +162,11 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   }
 
   updateAssetWithMetadata({ kind, sizeBytes, mimeType, width, height }: AssetMetadata) {
-    const asset = this.#assets.find((a) => a.kind() === kind);
+    const asset = this.#assets.find((a) => a.kind().equals(kind));
     if (!asset) {
       return fail(AppErrorCollection.mediaItem.AssetNotFound);
     }
-    if (asset.status() !== MediaAssetStatus.pending) {
+    if (!asset.status().equals(MediaAssetStatus.pending)) {
       return fail(AppErrorCollection.mediaItem.AssetNotPending);
     }
     asset.applyUploadedObjectMetadata({ sizeBytes, mimeType, width, height }, this.props.ownerId);
@@ -333,14 +333,14 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     kind: MediaKind,
     actorId: ActorId,
   ): WriteResult {
-    if (this.props.status !== MediaItemStatus.pending) {
+    if (!this.props.status.equals(MediaItemStatus.pending)) {
       return fail(AppErrorCollection.mediaItem.StatusNotPending);
     }
     this.props.sizeBytes = input.sizeBytes;
     if (input.mimeType !== undefined && input.mimeType.length > 0) {
       this.props.mimeType = input.mimeType;
     }
-    if (kind === MediaKind.photo) {
+    if (kind.equals(MediaKind.photo)) {
       this.props.status = MediaItemStatus.processing;
     } else {
       this.props.status = MediaItemStatus.ready;
@@ -357,7 +357,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     input: { displayWidth: number; displayHeight: number },
     actorId: ActorId,
   ): WriteResult {
-    if (this.props.status !== MediaItemStatus.processing) {
+    if (!this.props.status.equals(MediaItemStatus.processing)) {
       return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
     }
     const w = Math.round(input.displayWidth);

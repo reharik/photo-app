@@ -1,10 +1,10 @@
 import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { useNavigate } from 'react-router-dom';
-import { RemoveReactionMutation } from 'src/graphql/generated/types';
 import {
   AddReactionDocument,
   AddReactionMutation,
   RemoveReactionDocument,
+  RemoveReactionMutation,
 } from '../graphql/generated/types';
 import { ViewerReactionVM } from '../viewModels/index';
 import { UseAppMutationStateResult } from './useAppMutation';

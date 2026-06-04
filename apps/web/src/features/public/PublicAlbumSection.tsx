@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { PagingState } from 'src/hooks/getPaginatedQueryRenderState';
 import styled from 'styled-components';
+import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';

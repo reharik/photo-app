@@ -1,9 +1,9 @@
 import { Operation } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';

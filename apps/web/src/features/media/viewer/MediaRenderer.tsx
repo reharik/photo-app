@@ -11,14 +11,14 @@ export type MediaRendererProps = {
 };
 
 const isPhotoLike = (kind: MediaKind, mimeType: string): boolean => {
-  if (kind === MediaKind.photo) {
+  if (kind.equals(MediaKind.photo)) {
     return true;
   }
   return mimeType.startsWith('image/');
 };
 
 const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
-  if (kind === MediaKind.video) {
+  if (kind.equals(MediaKind.video)) {
     return true;
   }
   return mimeType.startsWith('video/');

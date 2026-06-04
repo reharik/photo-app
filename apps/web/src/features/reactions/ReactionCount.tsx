@@ -10,7 +10,7 @@ type Props = {
 };
 
 export const ReactionCount = ({ emoji, reactionCounts }: Props): JSX.Element => {
-  const count = reactionCounts.byEmoji.find((e) => e.emoji === emoji)?.count ?? 0;
+  const count = reactionCounts.byEmoji.find((e) => e.emoji.equals(emoji))?.count ?? 0;
   return (
     <Root>
       <ReactionIcon aria-hidden name={emoji.iconName as IconName} $reacted={count > 0} />

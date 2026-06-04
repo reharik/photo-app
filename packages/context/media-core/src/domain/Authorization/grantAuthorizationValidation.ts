@@ -27,7 +27,7 @@ export const grantAuthorizationValidation = <T extends Album | MediaItem>(
     if (item instanceof Album) {
       const member = item.getAlbumMember(grantedToUserId);
 
-      if (member && member.role() === AlbumMemberRole.owner) {
+      if (member && member.role().equals(AlbumMemberRole.owner)) {
         return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
       }
     } else if (item instanceof MediaItem && item.ownerId() === grantedToUserId) {

@@ -1,10 +1,10 @@
 import { AppErrorCollection } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { EntityId, WriteResult } from '../../../types/types';

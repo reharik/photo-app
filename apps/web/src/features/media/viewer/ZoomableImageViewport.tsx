@@ -15,6 +15,8 @@ import styled from 'styled-components';
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 const ZOOM_ACTIVE_EPS = 0.02;
+/** Double-tap zoom target (~2.7× with smooth scaling). */
+const DOUBLE_TAP_ZOOM_STEP = 1;
 
 export type ZoomableImageViewportProps = {
   /** When false, children are rendered without zoom behavior. */
@@ -109,7 +111,7 @@ export const ZoomableImageViewport = ({
         doubleClick={{
           disabled: false,
           mode: 'toggle',
-          step: 1,
+          step: DOUBLE_TAP_ZOOM_STEP,
           animationTime: 200,
         }}
         wheel={{
@@ -123,6 +125,7 @@ export const ZoomableImageViewport = ({
             width: 'fit-content',
             maxWidth: '100%',
             overflow: 'hidden',
+            touchAction: 'none',
           }}
           contentStyle={{
             display: 'flex',
@@ -147,9 +150,10 @@ const Viewport = styled.div<{ $grab: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: ${({ $grab }) => ($grab ? 'grab' : 'zoom-in')};
+  touch-action: none;
+  cursor: ${({ $grab }) => ($grab ? 'grab' : 'default')};
 
   &:active {
-    cursor: ${({ $grab }) => ($grab ? 'grabbing' : 'zoom-in')};
+    cursor: ${({ $grab }) => ($grab ? 'grabbing' : 'default')};
   }
 `;

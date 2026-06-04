@@ -1,14 +1,14 @@
 import { AppErrorCollection, MediaAssetKind, MediaKind } from '@packages/contracts';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
-import { MediaProcessingJobRepository } from 'src/repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
+import { MediaProcessingJobRepository } from '../../../repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import type { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
@@ -80,7 +80,7 @@ export const build__FinalizeMediaItemUpload = ({
       await mediaItemRepository.save(mediaItem, db);
     });
 
-    if (mediaItem.kind() === MediaKind.photo) {
+    if (mediaItem.kind().equals(MediaKind.photo)) {
       await mediaProcessingJobRepository.enqueueIfNoneActive({
         mediaItemId: mediaItem.id(),
         actorId: viewerId,

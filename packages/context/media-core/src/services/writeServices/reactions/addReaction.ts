@@ -51,7 +51,7 @@ export const build__AddReaction = ({
     const { targetType, targetId, emoji, viewer } = command;
 
     let updatedReactionCount: DBReactionCounts;
-    if (targetType === ReactionTargetType.mediaItem) {
+    if (targetType.equals(ReactionTargetType.mediaItem)) {
       const mediaItem = await mediaItemReadRepository.getByIdForAuthorization({
         mediaItemId: targetId,
       });
@@ -81,9 +81,9 @@ export const build__AddReaction = ({
     const reaction = Reaction.create({ targetType, targetId, userId: viewer.userId, emoji });
     await runInTransaction(trx, async (db) => {
       await reactionRepository.save(reaction, db);
-      if (targetType === ReactionTargetType.mediaItem) {
+      if (targetType.equals(ReactionTargetType.mediaItem)) {
         await mediaItemRepository.updateReactionCounts(targetId, updatedReactionCount, db);
-      } else if (targetType === ReactionTargetType.comment) {
+      } else if (targetType.equals(ReactionTargetType.comment)) {
         await commentRepository.updateReactionCounts(targetId, updatedReactionCount, db);
       }
     });

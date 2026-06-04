@@ -16,7 +16,7 @@ export const workflowEventToQueueAction = (
           localId,
           status: event.type,
           mediaItemId: 'mediaItemId' in event ? event.mediaItemId : undefined,
-          errors: event.type === FrontendUploadStatus.complete ? [] : undefined,
+          errors: event.type.equals(FrontendUploadStatus.complete) ? [] : undefined,
         },
       };
 

@@ -2,7 +2,6 @@
 Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Knex } from 'knex';
-import type { MediaProcessingJobRepository } from 'src/repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
 import type {
@@ -16,6 +15,7 @@ import type { MediaItemRepository } from '../repositories/domainRepositories/med
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
 import type { ReactionRepository } from '../repositories/domainRepositories/reactionRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
+import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
 import type {
   AlbumMemberReadRepository,
   AlbumReadRepository,

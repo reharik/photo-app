@@ -1,10 +1,10 @@
 import { AlbumMemberRole, AppErrorCollection } from '@packages/contracts';
 import crypto from 'crypto';
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { hashToken } from '../../../application';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { fail, ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import {
   GrantRecord,
@@ -52,7 +52,7 @@ export const build__CreatePublicLinkForAlbum = ({
     }
     const album = loadedAlbum.value;
     const member = album.getAlbumMember(input.viewerId);
-    if (!member || member.role() !== AlbumMemberRole.owner) {
+    if (!member || !member.role().equals(AlbumMemberRole.owner)) {
       return fail(AppErrorCollection.album.NotAllowedToGrantAuthorizationForAlbum);
     }
     const token = crypto.randomBytes(32).toString('hex');

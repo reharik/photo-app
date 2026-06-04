@@ -1,11 +1,11 @@
 import { Knex } from 'knex';
-import { RunInTransaction } from 'src/infrastructure/repositories/runInTransaction';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
   loadRequiredReadOnlyMediaItem,
 } from '../../../application/support/resourceLoaders';
 import { ok } from '../../../domain/utilities/writeResponse';
+import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { WriteResult } from '../../../types/types';
