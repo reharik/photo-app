@@ -5,18 +5,18 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
       "development": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     },
     "./iocManifest": {
+      "development": "./src/generated/ioc-manifest.ts",
       "types": "./dist/src/generated/ioc-manifest.js",
-      "development": "./src/generated/ioc-manifest.js",
       "default": "./dist/src/generated/ioc-manifest.js"
     },
     "./iocTypes": {
+      "development": "./src/generated/ioc-registry.types.ts",
       "types": "./dist/src/generated/ioc-registry.types.js",
-      "development": "./src/generated/ioc-registry.types.js",
       "default": "./dist/src/generated/ioc-registry.types.js"
     }
   },
@@ -31,7 +31,7 @@
     "test": "nx test infrastructure"
   },
   "dependencies": {
-    "ioc-manifest": "^1.0.1",
+    "ioc-manifest": "^1.2.1",
     "winston": "^3.15.0"
   },
   "devDependencies": {

@@ -18,6 +18,9 @@ export default defineIocConfig({
     factoryPrefix: 'build__',
   },
   composedManifests: ['@packages/media-core', '@packages/infrastructure'],
+  lifetimeMarkers: {
+    RequestScopeLifeCycle: 'scoped',
+  },
   registrations: {
     Knex: {
       $contract: { accessKey: 'database' },

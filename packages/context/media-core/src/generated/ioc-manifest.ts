@@ -80,53 +80,53 @@ type IocManifestGroupRoots = {
       };
     };
   };
-  readonly publicReadServiceFactories: {
+  readonly publicReadServices: {
     readonly kind: 'object';
-    readonly baseType: 'PublicReadServiceFactoryBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceFactoryBase';
+    readonly baseType: 'PublicReadServiceBase';
+    readonly baseTypeId: '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase';
     readonly members: {
-      readonly publicAlbumReadServiceFactory: {
-        readonly contractName: 'PublicAlbumReadServiceFactory';
-        readonly registrationKey: 'publicAlbumReadServiceFactory';
+      readonly publicAlbumReadService: {
+        readonly contractName: 'PublicAlbumReadService';
+        readonly registrationKey: 'publicAlbumReadService';
       };
-      readonly publicMediaItemReadServiceFactory: {
-        readonly contractName: 'PublicMediaItemReadServiceFactory';
-        readonly registrationKey: 'publicMediaItemReadServiceFactory';
+      readonly publicMediaItemReadService: {
+        readonly contractName: 'PublicMediaItemReadService';
+        readonly registrationKey: 'publicMediaItemReadService';
       };
     };
   };
-  readonly readServiceFactories: {
+  readonly readServices: {
     readonly kind: 'object';
-    readonly baseType: 'ReadServiceFactoryBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceFactoryBase';
+    readonly baseType: 'ReadServiceBase';
+    readonly baseTypeId: '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase';
     readonly members: {
-      readonly viewerAlbumReadServiceFactory: {
-        readonly contractName: 'ViewerAlbumReadServiceFactory';
-        readonly registrationKey: 'viewerAlbumReadServiceFactory';
+      readonly viewerAlbumReadService: {
+        readonly contractName: 'ViewerAlbumReadService';
+        readonly registrationKey: 'viewerAlbumReadService';
       };
-      readonly viewerAuthorizationsReadServiceFactory: {
-        readonly contractName: 'viewerAuthorizationsReadServiceFactory';
-        readonly registrationKey: 'viewerAuthorizationsReadServiceFactory';
+      readonly viewerAuthorizationsReadService: {
+        readonly contractName: 'viewerAuthorizationsReadService';
+        readonly registrationKey: 'viewerAuthorizationsReadService';
       };
-      readonly viewerMediaItemReadServiceFactory: {
-        readonly contractName: 'ViewerMediaItemReadServiceFactory';
-        readonly registrationKey: 'viewerMediaItemReadServiceFactory';
+      readonly viewerMediaItemReadService: {
+        readonly contractName: 'ViewerMediaItemReadService';
+        readonly registrationKey: 'viewerMediaItemReadService';
       };
-      readonly viewerReactionReadServiceFactory: {
-        readonly contractName: 'ViewerReactionReadServiceFactory';
-        readonly registrationKey: 'viewerReactionReadServiceFactory';
+      readonly viewerReactionReadService: {
+        readonly contractName: 'viewerReactionReadService';
+        readonly registrationKey: 'viewerReactionReadService';
       };
-      readonly viewerSharedContactsReadServiceFactory: {
-        readonly contractName: 'ViewerSharedContactsReadServiceFactory';
-        readonly registrationKey: 'viewerSharedContactsReadServiceFactory';
+      readonly viewerSharedContactsReadService: {
+        readonly contractName: 'ViewerSharedContactsReadService';
+        readonly registrationKey: 'viewerSharedContactsReadService';
       };
-      readonly viewerSharedWithMeAlbumReadServiceFactory: {
-        readonly contractName: 'ViewerSharedWithMeAlbumReadServiceFactory';
-        readonly registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory';
+      readonly viewerSharedWithMeAlbumReadService: {
+        readonly contractName: 'ViewerSharedWithMeAlbumReadService';
+        readonly registrationKey: 'viewerSharedWithMeAlbumReadService';
       };
-      readonly viewerSharedWithMeMediaItemReadServiceFactory: {
-        readonly contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory';
-        readonly registrationKey: 'viewerSharedWithMeMediaItemReadServiceFactory';
+      readonly viewerSharedWithMeMediaItemReadService: {
+        readonly contractName: 'ViewerSharedWithMeMediaItemReadService';
+        readonly registrationKey: 'viewerSharedWithMeMediaItemReadService';
       };
     };
   };
@@ -854,15 +854,15 @@ export const iocManifest = {
         dependencyContractNames: ['PublicAccessReadRepository'],
       },
     },
-    PublicAlbumReadServiceFactory: {
-      publicAlbumReadServiceFactory: {
-        exportName: 'build__PublicAlbumReadServiceFactory',
-        registrationKey: 'publicAlbumReadServiceFactory',
+    PublicAlbumReadService: {
+      publicAlbumReadService: {
+        exportName: 'build__PublicAlbumReadService',
+        registrationKey: 'publicAlbumReadService',
         modulePath: 'services/readServices/publicReadServices/publicAlbumReadService.ts',
         relImport: '../services/readServices/publicReadServices/publicAlbumReadService.js',
-        contractName: 'PublicAlbumReadServiceFactory',
-        implementationName: 'publicAlbumReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'PublicAlbumReadService',
+        implementationName: 'publicAlbumReadService',
+        lifetime: 'scoped',
         moduleIndex: 25,
         default: true,
         discoveredBy: 'naming',
@@ -883,15 +883,15 @@ export const iocManifest = {
         discoveredBy: 'naming',
       },
     },
-    PublicMediaItemReadServiceFactory: {
-      publicMediaItemReadServiceFactory: {
-        exportName: 'build__PublicMediaItemReadServiceFactory',
-        registrationKey: 'publicMediaItemReadServiceFactory',
+    PublicMediaItemReadService: {
+      publicMediaItemReadService: {
+        exportName: 'build__PublicMediaItemReadService',
+        registrationKey: 'publicMediaItemReadService',
         modulePath: 'services/readServices/publicReadServices/publicMediaItemReadService.ts',
         relImport: '../services/readServices/publicReadServices/publicMediaItemReadService.js',
-        contractName: 'PublicMediaItemReadServiceFactory',
-        implementationName: 'publicMediaItemReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'PublicMediaItemReadService',
+        implementationName: 'publicMediaItemReadService',
+        lifetime: 'scoped',
         moduleIndex: 26,
         default: true,
         discoveredBy: 'naming',
@@ -1127,45 +1127,45 @@ export const iocManifest = {
         ],
       },
     },
-    ViewerAlbumReadServiceFactory: {
-      viewerAlbumReadServiceFactory: {
-        exportName: 'build__ViewerAlbumReadServiceFactory',
-        registrationKey: 'viewerAlbumReadServiceFactory',
+    ViewerAlbumReadService: {
+      viewerAlbumReadService: {
+        exportName: 'build__ViewerAlbumReadService',
+        registrationKey: 'viewerAlbumReadService',
         modulePath: 'services/readServices/viewerReadServices/viewerAlbumReadService.ts',
         relImport: '../services/readServices/viewerReadServices/viewerAlbumReadService.js',
-        contractName: 'ViewerAlbumReadServiceFactory',
-        implementationName: 'viewerAlbumReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'ViewerAlbumReadService',
+        implementationName: 'viewerAlbumReadService',
+        lifetime: 'scoped',
         moduleIndex: 29,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumReadRepository', 'EnrichMediaItems'],
       },
     },
-    viewerAuthorizationsReadServiceFactory: {
-      viewerAuthorizationsReadServiceFactory: {
-        exportName: 'build__viewerAuthorizationsReadServiceFactory',
-        registrationKey: 'viewerAuthorizationsReadServiceFactory',
+    viewerAuthorizationsReadService: {
+      viewerAuthorizationsReadService: {
+        exportName: 'build__viewerAuthorizationsReadService',
+        registrationKey: 'viewerAuthorizationsReadService',
         modulePath: 'services/readServices/viewerReadServices/viewerAuthorizationsReadService.ts',
         relImport: '../services/readServices/viewerReadServices/viewerAuthorizationsReadService.js',
-        contractName: 'viewerAuthorizationsReadServiceFactory',
-        implementationName: 'viewerAuthorizationsReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'viewerAuthorizationsReadService',
+        implementationName: 'viewerAuthorizationsReadService',
+        lifetime: 'scoped',
         moduleIndex: 30,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AuthorizationReadRepository'],
       },
     },
-    ViewerMediaItemReadServiceFactory: {
-      viewerMediaItemReadServiceFactory: {
-        exportName: 'build__ViewerMediaItemReadServiceFactory',
-        registrationKey: 'viewerMediaItemReadServiceFactory',
+    ViewerMediaItemReadService: {
+      viewerMediaItemReadService: {
+        exportName: 'build__ViewerMediaItemReadService',
+        registrationKey: 'viewerMediaItemReadService',
         modulePath: 'services/readServices/viewerReadServices/viewerMediaItemReadService.ts',
         relImport: '../services/readServices/viewerReadServices/viewerMediaItemReadService.js',
-        contractName: 'ViewerMediaItemReadServiceFactory',
-        implementationName: 'viewerMediaItemReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'ViewerMediaItemReadService',
+        implementationName: 'viewerMediaItemReadService',
+        lifetime: 'scoped',
         moduleIndex: 31,
         default: true,
         discoveredBy: 'naming',
@@ -1176,64 +1176,64 @@ export const iocManifest = {
         ],
       },
     },
-    ViewerReactionReadServiceFactory: {
-      viewerReactionReadServiceFactory: {
-        exportName: 'build__viewerReactionReadServiceFactory',
-        registrationKey: 'viewerReactionReadServiceFactory',
+    viewerReactionReadService: {
+      viewerReactionReadService: {
+        exportName: 'build__viewerReactionReadService',
+        registrationKey: 'viewerReactionReadService',
         modulePath: 'services/readServices/viewerReadServices/viewerReactionReadService.ts',
         relImport: '../services/readServices/viewerReadServices/viewerReactionReadService.js',
-        contractName: 'ViewerReactionReadServiceFactory',
-        implementationName: 'viewerReactionReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'viewerReactionReadService',
+        implementationName: 'viewerReactionReadService',
+        lifetime: 'scoped',
         moduleIndex: 32,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['ReactionReadRepository'],
       },
     },
-    ViewerSharedContactsReadServiceFactory: {
-      viewerSharedContactsReadServiceFactory: {
-        exportName: 'build__ViewerSharedContactsReadServiceFactory',
-        registrationKey: 'viewerSharedContactsReadServiceFactory',
+    ViewerSharedContactsReadService: {
+      viewerSharedContactsReadService: {
+        exportName: 'build__ViewerSharedContactsReadService',
+        registrationKey: 'viewerSharedContactsReadService',
         modulePath: 'services/readServices/viewerReadServices/viewerSharedContactsReadService.ts',
         relImport: '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js',
-        contractName: 'ViewerSharedContactsReadServiceFactory',
-        implementationName: 'viewerSharedContactsReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'ViewerSharedContactsReadService',
+        implementationName: 'viewerSharedContactsReadService',
+        lifetime: 'scoped',
         moduleIndex: 33,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['ShareContactRepository'],
       },
     },
-    ViewerSharedWithMeAlbumReadServiceFactory: {
-      viewerSharedWithMeAlbumReadServiceFactory: {
-        exportName: 'build__ViewerSharedWithMeAlbumReadServiceFactory',
-        registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory',
+    ViewerSharedWithMeAlbumReadService: {
+      viewerSharedWithMeAlbumReadService: {
+        exportName: 'build__ViewerSharedWithMeAlbumReadService',
+        registrationKey: 'viewerSharedWithMeAlbumReadService',
         modulePath:
           'services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.ts',
         relImport:
           '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js',
-        contractName: 'ViewerSharedWithMeAlbumReadServiceFactory',
-        implementationName: 'viewerSharedWithMeAlbumReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'ViewerSharedWithMeAlbumReadService',
+        implementationName: 'viewerSharedWithMeAlbumReadService',
+        lifetime: 'scoped',
         moduleIndex: 34,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['SharedWithMeReadRepository', 'ViewerAlbumReadServiceFactory'],
+        dependencyContractNames: ['SharedWithMeReadRepository', 'ViewerAlbumReadService'],
       },
     },
-    ViewerSharedWithMeMediaItemReadServiceFactory: {
-      viewerSharedWithMeMediaItemReadServiceFactory: {
-        exportName: 'build__ViewerSharedWithMeMediaItemReadServiceFactory',
-        registrationKey: 'viewerSharedWithMeMediaItemReadServiceFactory',
+    ViewerSharedWithMeMediaItemReadService: {
+      viewerSharedWithMeMediaItemReadService: {
+        exportName: 'build__ViewerSharedWithMeMediaItemReadService',
+        registrationKey: 'viewerSharedWithMeMediaItemReadService',
         modulePath:
           'services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.ts',
         relImport:
           '../services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.js',
-        contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory',
-        implementationName: 'viewerSharedWithMeMediaItemReadServiceFactory',
-        lifetime: 'singleton',
+        contractName: 'ViewerSharedWithMeMediaItemReadService',
+        implementationName: 'viewerSharedWithMeMediaItemReadService',
+        lifetime: 'scoped',
         moduleIndex: 35,
         default: true,
         discoveredBy: 'naming',
@@ -1274,58 +1274,58 @@ export const iocManifest = {
     },
   },
 
-  // publicReadServiceFactories
-  publicReadServiceFactories: {
+  // publicReadServices
+  publicReadServices: {
     kind: 'object',
-    baseType: 'PublicReadServiceFactoryBase',
+    baseType: 'PublicReadServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceFactoryBase',
+      '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase',
     members: {
-      publicAlbumReadServiceFactory: {
-        contractName: 'PublicAlbumReadServiceFactory',
-        registrationKey: 'publicAlbumReadServiceFactory',
+      publicAlbumReadService: {
+        contractName: 'PublicAlbumReadService',
+        registrationKey: 'publicAlbumReadService',
       },
-      publicMediaItemReadServiceFactory: {
-        contractName: 'PublicMediaItemReadServiceFactory',
-        registrationKey: 'publicMediaItemReadServiceFactory',
+      publicMediaItemReadService: {
+        contractName: 'PublicMediaItemReadService',
+        registrationKey: 'publicMediaItemReadService',
       },
     },
   },
 
-  // readServiceFactories
-  readServiceFactories: {
+  // readServices
+  readServices: {
     kind: 'object',
-    baseType: 'ReadServiceFactoryBase',
+    baseType: 'ReadServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceFactoryBase',
+      '/home/reharik/Development/photoapp/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase',
     members: {
-      viewerAlbumReadServiceFactory: {
-        contractName: 'ViewerAlbumReadServiceFactory',
-        registrationKey: 'viewerAlbumReadServiceFactory',
+      viewerAlbumReadService: {
+        contractName: 'ViewerAlbumReadService',
+        registrationKey: 'viewerAlbumReadService',
       },
-      viewerAuthorizationsReadServiceFactory: {
-        contractName: 'viewerAuthorizationsReadServiceFactory',
-        registrationKey: 'viewerAuthorizationsReadServiceFactory',
+      viewerAuthorizationsReadService: {
+        contractName: 'viewerAuthorizationsReadService',
+        registrationKey: 'viewerAuthorizationsReadService',
       },
-      viewerMediaItemReadServiceFactory: {
-        contractName: 'ViewerMediaItemReadServiceFactory',
-        registrationKey: 'viewerMediaItemReadServiceFactory',
+      viewerMediaItemReadService: {
+        contractName: 'ViewerMediaItemReadService',
+        registrationKey: 'viewerMediaItemReadService',
       },
-      viewerReactionReadServiceFactory: {
-        contractName: 'ViewerReactionReadServiceFactory',
-        registrationKey: 'viewerReactionReadServiceFactory',
+      viewerReactionReadService: {
+        contractName: 'viewerReactionReadService',
+        registrationKey: 'viewerReactionReadService',
       },
-      viewerSharedContactsReadServiceFactory: {
-        contractName: 'ViewerSharedContactsReadServiceFactory',
-        registrationKey: 'viewerSharedContactsReadServiceFactory',
+      viewerSharedContactsReadService: {
+        contractName: 'ViewerSharedContactsReadService',
+        registrationKey: 'viewerSharedContactsReadService',
       },
-      viewerSharedWithMeAlbumReadServiceFactory: {
-        contractName: 'ViewerSharedWithMeAlbumReadServiceFactory',
-        registrationKey: 'viewerSharedWithMeAlbumReadServiceFactory',
+      viewerSharedWithMeAlbumReadService: {
+        contractName: 'ViewerSharedWithMeAlbumReadService',
+        registrationKey: 'viewerSharedWithMeAlbumReadService',
       },
-      viewerSharedWithMeMediaItemReadServiceFactory: {
-        contractName: 'ViewerSharedWithMeMediaItemReadServiceFactory',
-        registrationKey: 'viewerSharedWithMeMediaItemReadServiceFactory',
+      viewerSharedWithMeMediaItemReadService: {
+        contractName: 'ViewerSharedWithMeMediaItemReadService',
+        registrationKey: 'viewerSharedWithMeMediaItemReadService',
       },
     },
   },

@@ -3,56 +3,52 @@ import type { Knex } from 'knex';
 
 import type { ReactionReadRepository } from '../../../repositories/readRepositories/types';
 import type { EntityId } from '../../../types/types';
-import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import { ReadServiceBase } from '../readServiceBaseType';
 import { ViewerReaction } from '../types';
 
-export interface viewerReactionReadService extends ReadServiceFactoryBase {
+export interface viewerReactionReadService extends ReadServiceBase {
   getReactionStateForTargets: (args: {
     targetType: ReactionTargetType;
     targetIds: EntityId[];
   }) => Promise<Map<EntityId, ViewerReaction[]>>;
 }
 
-type ViewerReactionReadServiceFactoryDeps = {
+type ViewerReactionReadServiceDeps = {
   database: Knex;
   reactionReadRepository: ReactionReadRepository;
+  viewerId: string;
 };
 
-export interface ViewerReactionReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: EntityId }): viewerReactionReadService;
-}
-
-export const build__viewerReactionReadServiceFactory = ({
+export const build__viewerReactionReadService = ({
   reactionReadRepository,
-}: ViewerReactionReadServiceFactoryDeps): ViewerReactionReadServiceFactory => {
-  return ({ viewerId }: { viewerId: string }) => {
-    return {
-      getReactionStateForTargets: async ({
+  viewerId,
+}: ViewerReactionReadServiceDeps): viewerReactionReadService => {
+  return {
+    getReactionStateForTargets: async ({
+      targetType,
+      targetIds,
+    }: {
+      targetType: ReactionTargetType;
+      targetIds: EntityId[];
+    }): Promise<Map<EntityId, ViewerReaction[]>> => {
+      const result = new Map<EntityId, ViewerReaction[]>();
+      if (targetIds.length === 0) {
+        return result;
+      }
+      const rows = await reactionReadRepository.viewerReactionsForTargets({
+        viewerId,
         targetType,
         targetIds,
-      }: {
-        targetType: ReactionTargetType;
-        targetIds: EntityId[];
-      }): Promise<Map<EntityId, ViewerReaction[]>> => {
-        const result = new Map<EntityId, ViewerReaction[]>();
-        if (targetIds.length === 0) {
-          return result;
-        }
-        const rows = await reactionReadRepository.viewerReactionsForTargets({
-          viewerId,
-          targetType,
-          targetIds,
-        });
+      });
 
-        for (const id of targetIds) {
-          result.set(id, []);
-        }
-        for (const row of rows) {
-          const list = result.get(row.targetId)!;
-          list.push({ id: row.id, emoji: row.emoji });
-        }
-        return result;
-      },
-    };
+      for (const id of targetIds) {
+        result.set(id, []);
+      }
+      for (const row of rows) {
+        const list = result.get(row.targetId)!;
+        list.push({ id: row.id, emoji: row.emoji });
+      }
+      return result;
+    },
   };
 };

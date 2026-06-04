@@ -104,8 +104,8 @@ export const build__MediaItemReadRepository = ({
       database('mediaItem')
         .where({ ownerId: viewerId })
         .andWhere('status', MediaItemStatus.ready.value)
-        .orderBy(collectionInfo.sortBy.column, collectionInfo.sortDir.value)
-        .orderBy('id', 'asc') // tie-breaker
+        .orderBy(`mediaItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
+        .orderBy('mediaItem.id', 'asc') // tie-breaker
         .select<(DBMediaItemRow & { totalCount: number })[]>(...DBmediaItemRowFields)
         .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
         .limit(collectionInfo.pageInfo.limit + 1)

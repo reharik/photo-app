@@ -1,10 +1,9 @@
 /* AUTO-GENERATED. DO NOT EDIT.
 Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
+import type { Logger } from '@packages/infrastructure';
+import type { MediaItemRepository, MediaStorage } from '@packages/media-core';
 import type { Knex } from 'knex';
-import type { MediaStorage } from '../../../../packages/context/media-core/dist/src/application/media/MediaStorage';
-import type { MediaItemRepository } from '../../../../packages/context/media-core/dist/src/repositories/domainRepositories/mediaItemRepository';
-import type { Logger } from '../../../../packages/foundation/infrastructure/dist/src/logger/coreLogger';
 import type { ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob.js';
 import type { ProcessNextMediaImageJob } from '../application/processNextMediaImageJob.js';
 import type { Config } from '../config.js';

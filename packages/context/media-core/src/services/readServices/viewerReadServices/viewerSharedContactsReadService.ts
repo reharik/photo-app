@@ -2,27 +2,24 @@ import {
   ShareContactRepository,
   ShareContactSuggestion,
 } from '../../../repositories/readRepositories/types';
-import type { EntityId } from '../../../types/types';
-import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import { ReadServiceBase } from '../readServiceBaseType';
 
-export interface ViewerSharedContactsReadService {
+export interface ViewerSharedContactsReadService extends ReadServiceBase {
   getShareContacts: () => Promise<ShareContactSuggestion[]>;
 }
 
-export interface ViewerSharedContactsReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: EntityId }): ViewerSharedContactsReadService;
-}
-
-type ViewerSharedContactsReadServiceFactoryDeps = {
+type ViewerSharedContactsReadServiceDeps = {
   shareContactRepository: ShareContactRepository;
+  viewerId: string;
 };
 
-export const build__ViewerSharedContactsReadServiceFactory = ({
+export const build__ViewerSharedContactsReadService = ({
   shareContactRepository,
-}: ViewerSharedContactsReadServiceFactoryDeps): ViewerSharedContactsReadServiceFactory => {
-  return ({ viewerId }: { viewerId: EntityId }) => ({
+  viewerId,
+}: ViewerSharedContactsReadServiceDeps): ViewerSharedContactsReadService => {
+  return {
     getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
       return shareContactRepository.getShareSuggestions(viewerId);
     },
-  });
+  };
 };

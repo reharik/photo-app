@@ -17,14 +17,17 @@ export default defineIocConfig({
     ],
     factoryPrefix: 'build__',
   },
+  lifetimeMarkers: {
+    RequestScopeLifeCycle: 'scoped',
+  },
   groups: {
-    publicReadServiceFactories: {
+    publicReadServices: {
       kind: 'object',
-      baseType: 'PublicReadServiceFactoryBase',
+      baseType: 'PublicReadServiceBase',
     },
-    readServiceFactories: {
+    readServices: {
       kind: 'object',
-      baseType: 'ReadServiceFactoryBase',
+      baseType: 'ReadServiceBase',
     },
     writeServices: {
       kind: 'object',

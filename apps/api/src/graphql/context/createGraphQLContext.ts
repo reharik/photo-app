@@ -1,49 +1,29 @@
 import { User } from '@packages/contracts';
-import { Knex } from 'knex';
+import { asValue, AwilixContainer } from 'awilix';
+import { Cradle } from '../../container';
 import {
-  AgnosticReadServices,
   AuthenticatedGraphQLContext,
   GraphQLContextFactory,
   GraphQLInitialContext,
   PublicGraphQLContext,
-  PublicReadServiceFactories,
-  PublicReadServices,
-  ReadServiceFactories,
-  ReadServices,
-  WriteServices,
 } from './types';
 
 type ContextDeps = {
-  publicReadServiceFactories: PublicReadServiceFactories;
-  agnosticReadServices: AgnosticReadServices;
-  writeServices: WriteServices;
-  readServiceFactories: ReadServiceFactories;
-  database: Knex;
+  container: AwilixContainer<Cradle>;
 };
 type PublicContextDeps = {
-  publicReadServiceFactories: PublicReadServiceFactories;
-  agnosticReadServices: AgnosticReadServices;
-  database: Knex;
-  publicLinkId: string;
+  scope: AwilixContainer<Cradle>;
 };
 type AuthenticatedContextDeps = {
+  scope: AwilixContainer<Cradle>;
   user: User;
-  readServiceFactories: ReadServiceFactories;
-  database: Knex;
-  writeServices: WriteServices;
-  agnosticReadServices: AgnosticReadServices;
 };
 
-export const build__CreateGraphQLContext = ({
-  writeServices,
-  readServiceFactories,
-  publicReadServiceFactories,
-  agnosticReadServices,
-  database,
-}: ContextDeps): GraphQLContextFactory => {
+export const build__CreateGraphQLContext = ({ container }: ContextDeps): GraphQLContextFactory => {
   return (
     initialContext: GraphQLInitialContext,
   ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
+    const scope = container.createScope();
     const accessMode = initialContext.request.headers.get('X-Access-Mode') ?? undefined;
     const user = initialContext.state?.user;
     const publicAccessId = initialContext.state?.publicAccessId;
@@ -52,21 +32,16 @@ export const build__CreateGraphQLContext = ({
       if (!publicAccessId) {
         throw new Error('Public access not found');
       }
+      scope.register({ publicLinkId: asValue(publicAccessId) });
       return buildPublicContext({
-        publicReadServiceFactories,
-        database,
-        // Rename/map here for clarity down the line
-        publicLinkId: publicAccessId,
-        agnosticReadServices,
+        scope,
       });
     }
     if (initialContext.state?.isLoggedIn && user) {
+      scope.register({ viewerId: asValue(user.id) });
       return buildAuthenticatedContext({
+        scope,
         user,
-        readServiceFactories,
-        database,
-        writeServices,
-        agnosticReadServices,
       });
     }
     throw new Error('Invalid access mode');
@@ -74,11 +49,8 @@ export const build__CreateGraphQLContext = ({
 };
 
 const buildAuthenticatedContext = ({
+  scope,
   user,
-  readServiceFactories,
-  database,
-  writeServices,
-  agnosticReadServices,
 }: AuthenticatedContextDeps): AuthenticatedGraphQLContext => {
   const viewer = {
     id: user.id,
@@ -87,43 +59,27 @@ const buildAuthenticatedContext = ({
     displayName: `${user.firstName} ${user.lastName}`,
     isAuthenticated: true,
   };
-
-  type ServiceFactory = (deps: { viewerId: string }) => unknown;
-  const rs = Object.fromEntries(
-    Object.entries(readServiceFactories).map(([key, factory]) => [
-      key.replace(/Factory$/, ''),
-      (factory as ServiceFactory)({ viewerId: viewer.id }),
-    ]),
-  ) as ReadServices;
+  scope.register({ viewer: asValue(viewer) });
+  const readServices = scope.resolve('readServices');
+  const agnosticReadServices = scope.resolve('agnosticReadServices');
+  const writeServices = scope.resolve('writeServices');
 
   return {
     kind: 'authenticated',
-    database,
     viewer,
     writeServices,
-    readServices: rs,
+    readServices,
     agnosticReadServices,
   };
 };
 
-const buildPublicContext = ({
-  publicReadServiceFactories,
-  database,
-  publicLinkId,
-  agnosticReadServices,
-}: PublicContextDeps): PublicGraphQLContext => {
-  type PublicServiceFactory = (deps: { publicLinkId: string }) => unknown;
-
-  const publicReadServices = Object.fromEntries(
-    Object.entries(publicReadServiceFactories).map(([key, factory]) => [
-      key.replace(/Factory$/, ''),
-      (factory as PublicServiceFactory)({ publicLinkId }),
-    ]),
-  ) as PublicReadServices;
+const buildPublicContext = ({ scope }: PublicContextDeps): PublicGraphQLContext => {
+  const publicReadServices = scope.resolve('publicReadServices');
+  const agnosticReadServices = scope.resolve('agnosticReadServices');
+  const publicLinkId = scope.resolve('publicLinkId');
 
   return {
     kind: 'public',
-    database,
     publicReadServices,
     publicLinkId,
     agnosticReadServices,

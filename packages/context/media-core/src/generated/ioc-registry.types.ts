@@ -2,6 +2,7 @@
 Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Knex } from 'knex';
+import type { MediaProcessingJobRepository } from 'src/repositories/MediaProcessingJob/MediaProcessingJobRepository';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
 import type {
@@ -15,7 +16,6 @@ import type { MediaItemRepository } from '../repositories/domainRepositories/med
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
 import type { ReactionRepository } from '../repositories/domainRepositories/reactionRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
-import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
 import type {
   AlbumMemberReadRepository,
   AlbumReadRepository,
@@ -34,17 +34,17 @@ import type { CommentReadService } from '../services/readServices/comments/comme
 import type { ValidateOperationService } from '../services/readServices/mediaGrantService.js';
 import type { MediaItemOperationsService } from '../services/readServices/MediaItemOperationsService.js';
 import type { PublicAccessReadService } from '../services/readServices/publicReadServices/publicAccessReadService.js';
-import type { PublicAlbumReadServiceFactory } from '../services/readServices/publicReadServices/publicAlbumReadService.js';
-import type { PublicMediaItemReadServiceFactory } from '../services/readServices/publicReadServices/publicMediaItemReadService.js';
+import type { PublicAlbumReadService } from '../services/readServices/publicReadServices/publicAlbumReadService.js';
+import type { PublicMediaItemReadService } from '../services/readServices/publicReadServices/publicMediaItemReadService.js';
 import type { ReadReactionService } from '../services/readServices/readReactionService.js';
 import type { EnrichMediaItems } from '../services/readServices/viewerReadServices/enrichMediaItems.js';
-import type { ViewerAlbumReadServiceFactory } from '../services/readServices/viewerReadServices/viewerAlbumReadService.js';
-import type { viewerAuthorizationsReadServiceFactory } from '../services/readServices/viewerReadServices/viewerAuthorizationsReadService.js';
-import type { ViewerMediaItemReadServiceFactory } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.js';
-import type { ViewerReactionReadServiceFactory } from '../services/readServices/viewerReadServices/viewerReactionReadService.js';
-import type { ViewerSharedContactsReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js';
-import type { ViewerSharedWithMeAlbumReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js';
-import type { ViewerSharedWithMeMediaItemReadServiceFactory } from '../services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.js';
+import type { ViewerAlbumReadService } from '../services/readServices/viewerReadServices/viewerAlbumReadService.js';
+import type { viewerAuthorizationsReadService } from '../services/readServices/viewerReadServices/viewerAuthorizationsReadService.js';
+import type { ViewerMediaItemReadService } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.js';
+import type { viewerReactionReadService } from '../services/readServices/viewerReadServices/viewerReactionReadService.js';
+import type { ViewerSharedContactsReadService } from '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js';
+import type { ViewerSharedWithMeAlbumReadService } from '../services/readServices/viewerReadServices/viewerSharedWithMeAlbumReadService.js';
+import type { ViewerSharedWithMeMediaItemReadService } from '../services/readServices/viewerReadServices/viewerSharedWithMeMediaItemReadService.js';
 import type { AddAlbumItem } from '../services/writeServices/album/addAlbumItem.js';
 import type { AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum.js';
 import type { CreateAlbum } from '../services/writeServices/album/createAlbum.js';
@@ -109,24 +109,24 @@ export interface IocGeneratedCradle {
   notificationRepository: NotificationRepository;
   publicAccessReadRepository: PublicAccessReadRepository;
   publicAccessReadService: PublicAccessReadService;
-  publicAlbumReadServiceFactory: PublicAlbumReadServiceFactory;
+  publicAlbumReadService: PublicAlbumReadService;
   publicMediaItemReadRepository: PublicMediaItemReadRepository;
-  publicMediaItemReadServiceFactory: PublicMediaItemReadServiceFactory;
-  publicReadServiceFactories: {
-    publicAlbumReadServiceFactory: PublicAlbumReadServiceFactory;
-    publicMediaItemReadServiceFactory: PublicMediaItemReadServiceFactory;
+  publicMediaItemReadService: PublicMediaItemReadService;
+  publicReadServices: {
+    publicAlbumReadService: PublicAlbumReadService;
+    publicMediaItemReadService: PublicMediaItemReadService;
   };
   reactionReadRepository: ReactionReadRepository;
   reactionRepository: ReactionRepository;
   readReactionService: ReadReactionService;
-  readServiceFactories: {
-    viewerAlbumReadServiceFactory: ViewerAlbumReadServiceFactory;
-    viewerAuthorizationsReadServiceFactory: viewerAuthorizationsReadServiceFactory;
-    viewerMediaItemReadServiceFactory: ViewerMediaItemReadServiceFactory;
-    viewerReactionReadServiceFactory: ViewerReactionReadServiceFactory;
-    viewerSharedContactsReadServiceFactory: ViewerSharedContactsReadServiceFactory;
-    viewerSharedWithMeAlbumReadServiceFactory: ViewerSharedWithMeAlbumReadServiceFactory;
-    viewerSharedWithMeMediaItemReadServiceFactory: ViewerSharedWithMeMediaItemReadServiceFactory;
+  readServices: {
+    viewerAlbumReadService: ViewerAlbumReadService;
+    viewerAuthorizationsReadService: viewerAuthorizationsReadService;
+    viewerMediaItemReadService: ViewerMediaItemReadService;
+    viewerReactionReadService: viewerReactionReadService;
+    viewerSharedContactsReadService: ViewerSharedContactsReadService;
+    viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
+    viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   };
   removeReaction: RemoveReaction;
   reorderAlbumItems: ReorderAlbumItems;
@@ -140,13 +140,13 @@ export interface IocGeneratedCradle {
   userReadRepository: UserReadRepository;
   userRepository: UserRepository;
   validateOperationService: ValidateOperationService;
-  viewerAlbumReadServiceFactory: ViewerAlbumReadServiceFactory;
-  viewerAuthorizationsReadServiceFactory: viewerAuthorizationsReadServiceFactory;
-  viewerMediaItemReadServiceFactory: ViewerMediaItemReadServiceFactory;
-  viewerReactionReadServiceFactory: ViewerReactionReadServiceFactory;
-  viewerSharedContactsReadServiceFactory: ViewerSharedContactsReadServiceFactory;
-  viewerSharedWithMeAlbumReadServiceFactory: ViewerSharedWithMeAlbumReadServiceFactory;
-  viewerSharedWithMeMediaItemReadServiceFactory: ViewerSharedWithMeMediaItemReadServiceFactory;
+  viewerAlbumReadService: ViewerAlbumReadService;
+  viewerAuthorizationsReadService: viewerAuthorizationsReadService;
+  viewerMediaItemReadService: ViewerMediaItemReadService;
+  viewerReactionReadService: viewerReactionReadService;
+  viewerSharedContactsReadService: ViewerSharedContactsReadService;
+  viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
+  viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   withTransaction: WithTransaction;
   writeServices: {
     addAlbumItem: AddAlbumItem;
@@ -179,4 +179,6 @@ export interface IocExternals {
   config: MediaStorageConfig;
   database: Knex;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
+  publicLinkId: string;
+  viewerId: string;
 }

@@ -1,8 +1,6 @@
 import { indexByUnique } from '@packages/infrastructure';
-import { EnrichMediaItems } from '../..';
+import { EnrichMediaItems, ReadServiceBase } from '../..';
 import { SharedWithMeReadRepository } from '../../../repositories/readRepositories/types';
-import type { EntityId } from '../../../types/types';
-import { ReadServiceFactoryBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {
   PagedList,
@@ -10,26 +8,24 @@ import {
   SharedWithMeMediaItemCollectionInfo,
 } from '../types';
 
-export interface ViewerSharedWithMeMediaItemReadService {
+export interface ViewerSharedWithMeMediaItemReadService extends ReadServiceBase {
   getSharedWithMeMediaItems: (
     collectionInfo: SharedWithMeMediaItemCollectionInfo,
   ) => Promise<PagedList<SharedWithMeItemProjection>>;
 }
 
-export interface ViewerSharedWithMeMediaItemReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: EntityId }): ViewerSharedWithMeMediaItemReadService;
-}
-
-type ViewerSharedWithMeMediaItemReadServiceFactoryDeps = {
+type ViewerSharedWithMeMediaItemReadServiceDeps = {
   sharedWithMeReadRepository: SharedWithMeReadRepository;
   enrichMediaItems: EnrichMediaItems;
+  viewerId: string;
 };
 
-export const build__ViewerSharedWithMeMediaItemReadServiceFactory = ({
+export const build__ViewerSharedWithMeMediaItemReadService = ({
   sharedWithMeReadRepository,
   enrichMediaItems,
-}: ViewerSharedWithMeMediaItemReadServiceFactoryDeps): ViewerSharedWithMeMediaItemReadServiceFactory => {
-  return ({ viewerId }: { viewerId: EntityId }) => ({
+  viewerId,
+}: ViewerSharedWithMeMediaItemReadServiceDeps): ViewerSharedWithMeMediaItemReadService => {
+  return {
     getSharedWithMeMediaItems: async (collectionInfo: SharedWithMeMediaItemCollectionInfo) => {
       const rows = await sharedWithMeReadRepository.getMediaItemsSharedWithMe({
         viewerId,
@@ -50,5 +46,5 @@ export const build__ViewerSharedWithMeMediaItemReadServiceFactory = ({
         totalCount: rows.totalCount,
       };
     },
-  });
+  };
 };

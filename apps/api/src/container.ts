@@ -1,36 +1,23 @@
-import { AwilixContainer, createContainer } from 'awilix';
+import { EntityId } from '@packages/media-core';
+import { asValue, AwilixContainer, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
 import {
   composedManifests,
   composedRegistrationOverrides,
   type AppCradle,
 } from './di/generated/ioc-composed.js';
+import { GraphQLContextViewer } from './graphql/context/types';
 
-let container: AwilixContainer<AppCradle> | undefined;
-
-const initializeContainer = (): AwilixContainer<AppCradle> => {
-  if (container) {
-    return container;
-  }
-
-  const _container = createContainer<AppCradle>({
-    injectionMode: 'PROXY',
-  });
-
-  registerIocFromManifest(_container, composedManifests, composedRegistrationOverrides);
-
-  container = _container;
-  return container;
+export type Cradle = AppCradle & {
+  container: AwilixContainer<AppCradle>;
+  viewerId: EntityId;
+  viewer: GraphQLContextViewer;
+  publicLinkId: EntityId;
 };
 
-const getContainer = (): AwilixContainer<AppCradle> => {
-  if (!container) {
-    throw new Error(
-      '[ioc] container has not been initialized yet. Call initializeContainer() first.',
-    );
-  }
-
+export const createAppContainer = (): AwilixContainer<Cradle> => {
+  const container = createContainer<Cradle>({ injectionMode: 'PROXY' });
+  registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
+  container.register({ container: asValue(container) });
   return container;
 };
-
-export { getContainer, initializeContainer };

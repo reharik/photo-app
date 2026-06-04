@@ -3,7 +3,7 @@ import {
   SharedAlbumRow,
   SharedWithMeReadRepository,
 } from '../../../repositories/readRepositories/types';
-import { ReadServiceFactoryBase } from '../readServiceBaseType';
+import { ReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {
   AlbumItemCollectionInfo,
@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { ViewerAlbumReadService } from './viewerAlbumReadService';
 
-export interface ViewerSharedWithMeAlbumReadService {
+export interface ViewerSharedWithMeAlbumReadService extends ReadServiceBase {
   listAlbums: (
     collectionInfo: SharedWithMeAlbumCollectionInfo,
   ) => Promise<PagedList<AlbumProjection>>;
@@ -26,72 +26,68 @@ export interface ViewerSharedWithMeAlbumReadService {
   }) => Promise<PagedList<AlbumItemProjection>>;
 }
 
-export interface ViewerSharedWithMeAlbumReadServiceFactory extends ReadServiceFactoryBase {
-  (args: { viewerId: string }): ViewerSharedWithMeAlbumReadService;
-}
-
-type ViewerSharedWithMeAlbumReadServiceFactoryDeps = {
+type ViewerSharedWithMeAlbumReadServiceDeps = {
   sharedWithMeReadRepository: SharedWithMeReadRepository;
   viewerAlbumReadService: ViewerAlbumReadService;
+  viewerId: string;
 };
 
-export const build__ViewerSharedWithMeAlbumReadServiceFactory = ({
+export const build__ViewerSharedWithMeAlbumReadService = ({
   sharedWithMeReadRepository,
   viewerAlbumReadService,
-}: ViewerSharedWithMeAlbumReadServiceFactoryDeps): ViewerSharedWithMeAlbumReadServiceFactory => {
-  return ({ viewerId }: { viewerId: string }) => {
-    const buildCover = (album: SharedAlbumRow) => {
-      if (album.mediaItemId == null) {
-        return undefined;
-      }
-      const cover = mapMediaItemRowToDBMediaItemRow(album);
-      return {
-        ...cover,
-        tags: [],
-        viewerReactions: [],
-        reactionCounts: { total: 0, byEmoji: [] },
-        // This is a mediaItem, however, it is special because it is
-        // actually a feature of the album that can be added and removed but nothing else.
-        operations: album.viewerMemberRole?.equals(AlbumMemberRole.owner)
-          ? album.viewerMemberRole.operations
-          : [],
-      };
-    };
-
+  viewerId,
+}: ViewerSharedWithMeAlbumReadServiceDeps): ViewerSharedWithMeAlbumReadService => {
+  const buildCover = (album: SharedAlbumRow) => {
+    if (album.mediaItemId == null) {
+      return undefined;
+    }
+    const cover = mapMediaItemRowToDBMediaItemRow(album);
     return {
-      listAlbums: async (
-        collectionInfo: SharedWithMeAlbumCollectionInfo,
-      ): Promise<PagedList<AlbumProjection>> => {
-        const albumsResult = await sharedWithMeReadRepository.getAlbumsSharedWithMe({
-          viewerId,
-          collectionInfo,
-        });
-        const coversMap = new Map<string, MediaItemProjection>();
-        for (const album of albumsResult.nodes.filter((a) => a.mediaItemId != null)) {
-          const cover = buildCover(album);
-          if (cover) {
-            coversMap.set(album.id, cover);
-          }
-        }
-        const nodes = albumsResult.nodes.map((album) => ({
-          id: album.albumId,
-          title: album.albumTitle,
-          itemCount: album.albumItemCount,
-          createdAt: album.albumCreatedAt,
-          updatedAt: album.albumUpdatedAt,
-          viewerMemberRole: album.viewerMemberRole,
-          coverMedia: coversMap.get(album.id),
-          operations: album.viewerMemberRole?.operations ?? [],
-        }));
-
-        return {
-          nodes,
-          totalCount: albumsResult.totalCount,
-        };
-      },
-
-      getAlbum: viewerAlbumReadService.getAlbum,
-      getViewableAlbumItems: viewerAlbumReadService.getViewableAlbumItems,
+      ...cover,
+      tags: [],
+      viewerReactions: [],
+      reactionCounts: { total: 0, byEmoji: [] },
+      // This is a mediaItem, however, it is special because it is
+      // actually a feature of the album that can be added and removed but nothing else.
+      operations: album.viewerMemberRole?.equals(AlbumMemberRole.owner)
+        ? album.viewerMemberRole.operations
+        : [],
     };
+  };
+
+  return {
+    listAlbums: async (
+      collectionInfo: SharedWithMeAlbumCollectionInfo,
+    ): Promise<PagedList<AlbumProjection>> => {
+      const albumsResult = await sharedWithMeReadRepository.getAlbumsSharedWithMe({
+        viewerId,
+        collectionInfo,
+      });
+      const coversMap = new Map<string, MediaItemProjection>();
+      for (const album of albumsResult.nodes.filter((a) => a.mediaItemId != null)) {
+        const cover = buildCover(album);
+        if (cover) {
+          coversMap.set(album.id, cover);
+        }
+      }
+      const nodes = albumsResult.nodes.map((album) => ({
+        id: album.albumId,
+        title: album.albumTitle,
+        itemCount: album.albumItemCount,
+        createdAt: album.albumCreatedAt,
+        updatedAt: album.albumUpdatedAt,
+        viewerMemberRole: album.viewerMemberRole,
+        coverMedia: coversMap.get(album.id),
+        operations: album.viewerMemberRole?.operations ?? [],
+      }));
+
+      return {
+        nodes,
+        totalCount: albumsResult.totalCount,
+      };
+    },
+
+    getAlbum: viewerAlbumReadService.getAlbum,
+    getViewableAlbumItems: viewerAlbumReadService.getViewableAlbumItems,
   };
 };

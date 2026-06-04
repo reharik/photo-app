@@ -1,7 +1,7 @@
 import { Logger } from '@packages/infrastructure';
 import dotenv from 'dotenv';
 import type { Knex } from 'knex';
-import { initializeContainer } from './container';
+import { createAppContainer } from './container';
 import type { Server } from './server';
 
 const attachGlobalHandlers = (database: Knex, logger: Logger, server: Server) => {
@@ -54,7 +54,7 @@ const attachGlobalHandlers = (database: Knex, logger: Logger, server: Server) =>
 const bootstrap = async () => {
   dotenv.config();
 
-  const container = initializeContainer();
+  const container = createAppContainer();
 
   const database = container.resolve<Knex>('database');
   const logger = container.resolve<Logger>('logger');
