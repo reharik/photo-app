@@ -2,6 +2,7 @@ import { MediaKind, ReactionTargetType } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
+import { useMediaViewerKeyboard } from '../../../hooks/useMediaViewerKeyboard';
 import { useMobileViewerGestures } from '../../../hooks/useMobileViewerGestures';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 import { ReactionsContainer } from '../../reactions/ReactionsContainer';
@@ -11,6 +12,7 @@ import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
 import { ViewerBelowMediaSlot } from './MediaViewerStyles';
 import type { NavigateDirection } from './mediaViewerTypes';
+import { useMediaViewerSlideTransition } from './useMediaViewerSlideTransition';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
 export type { NavigateDirection } from './mediaViewerTypes';
@@ -97,32 +99,46 @@ export const MediaViewer = ({
     };
   }, [escapeConsumedRef]);
 
+  const { requestNavigate, SlideTransitionWrap } = useMediaViewerSlideTransition({
+    contentKey: displayUrl,
+    canNavigate,
+    onNavigate,
+  });
+
+  useMediaViewerKeyboard({
+    onNavigate: requestNavigate,
+    escapeConsumedRef,
+    onEscape: onClose,
+  });
+
   const { gestureHandlers } = useMobileViewerGestures({
     enabled: mobileGesturesEnabled,
     canNavigate,
     zoomActive,
-    onNavigate,
+    onNavigate: requestNavigate,
     onDismiss: onClose,
     onToggleChrome: mobileChrome?.onToggleChrome ?? ((): void => undefined),
   });
 
   const media = (
-    <MediaChrome>
-      <ZoomableImageViewport
-        key={displayUrl}
-        enabled={zoomLayerEnabled}
-        onZoomActiveChange={setZoomActive}
-        resetZoomRef={resetZoomRef}
-      >
-        <MediaRenderer
-          id={mediaItemId}
-          kind={kind}
-          mimeType={mimeType}
-          displayUrl={displayUrl}
-          imageAlt={imageAlt}
-        />
-      </ZoomableImageViewport>
-    </MediaChrome>
+    <SlideTransitionWrap>
+      <MediaChrome>
+        <ZoomableImageViewport
+          key={displayUrl}
+          enabled={zoomLayerEnabled}
+          onZoomActiveChange={setZoomActive}
+          resetZoomRef={resetZoomRef}
+        >
+          <MediaRenderer
+            id={mediaItemId}
+            kind={kind}
+            mimeType={mimeType}
+            displayUrl={displayUrl}
+            imageAlt={imageAlt}
+          />
+        </ZoomableImageViewport>
+      </MediaChrome>
+    </SlideTransitionWrap>
   );
 
   const belowMediaSlot = (
@@ -164,7 +180,7 @@ export const MediaViewer = ({
             media={media}
             belowMedia={belowMediaSlot}
             onClose={onClose}
-            onNavigate={onNavigate}
+            onNavigate={requestNavigate}
             canNavigate={canNavigate}
           />
         )}

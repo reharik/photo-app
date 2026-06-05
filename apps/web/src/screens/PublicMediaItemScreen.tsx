@@ -14,7 +14,6 @@ import { MediaViewer } from '../features/media/viewer/MediaViewer';
 import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
 import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { useMediaViewerKeyboard } from '../hooks/useMediaViewerKeyboard';
 import { Toast } from '../ui/Toast';
 
 export type MediaItemLocationState = {
@@ -112,13 +111,6 @@ export const PublicMediaItemScreen = () => {
       />
     );
   })();
-
-  useMediaViewerKeyboard({
-    enabled: Boolean(mediaId),
-    escapeConsumedRef: mediaViewerEscapeConsumedRef,
-    onEscape: handleDismissScreen,
-    onNavigate: handleMediaNavigate,
-  });
 
   if (!mediaItem) {
     return content;
