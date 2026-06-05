@@ -74,7 +74,7 @@ const Modal = styled.div`
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   padding: ${({ theme }) => theme.spacing(4)};
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: ${({ theme }) => theme.boxShadow.md};
 `;
 
 const ModalTitle = styled.h2`

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
+import { ShellUserAvatar } from './ShellUserAvatar';
 
 export type ProfileProps = {
   displayName: string;
@@ -16,7 +17,7 @@ export const Profile = (props: ProfileProps) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  const handleLogout = async (): Promise<void> => {
     await logout();
     await navigate('/', { replace: true });
   };
@@ -29,12 +30,13 @@ export const Profile = (props: ProfileProps) => {
           aria-expanded={mobileMenuOpen}
           aria-haspopup="true"
           aria-controls="app-shell-profile-menu"
+          aria-label={displayName}
           id="app-shell-profile-trigger"
           onClick={() => {
             onMobileMenuToggle?.();
           }}
         >
-          <MobileProfileName title={displayName}>{displayName}</MobileProfileName>
+          <ShellUserAvatar displayName={displayName} size={32} />
           <ChevronIcon aria-hidden $open={mobileMenuOpen}>
             ▾
           </ChevronIcon>
@@ -61,12 +63,37 @@ export const Profile = (props: ProfileProps) => {
   }
 
   return (
-    <StyledProfile>
-      <StyledUserInfo>{displayName}</StyledUserInfo>
-      <StyledLogoutButton type="button" onClick={() => void handleLogout()}>
-        Sign Out
-      </StyledLogoutButton>
-    </StyledProfile>
+    <DesktopProfileRoot>
+      <ProfileMenuTrigger
+        type="button"
+        aria-haspopup="true"
+        aria-controls="app-shell-profile-menu-desktop"
+        aria-label={displayName}
+        id="app-shell-profile-trigger-desktop"
+        onClick={() => {
+          onMobileMenuToggle?.();
+        }}
+      >
+        <ShellUserAvatar displayName={displayName} size={32} />
+      </ProfileMenuTrigger>
+      {mobileMenuOpen ? (
+        <ProfileDropdown
+          id="app-shell-profile-menu-desktop"
+          role="menu"
+          aria-labelledby="app-shell-profile-trigger-desktop"
+        >
+          <SignOutMenuItem
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              void handleLogout();
+            }}
+          >
+            Sign out
+          </SignOutMenuItem>
+        </ProfileDropdown>
+      ) : null}
+    </DesktopProfileRoot>
   );
 };
 
@@ -75,28 +102,25 @@ const MobileProfileRoot = styled.div`
   flex-shrink: 0;
 `;
 
+const DesktopProfileRoot = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
 const ProfileMenuTrigger = styled.button`
   display: inline-flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing(0.75)};
-  max-width: min(140px, 36vw);
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1)};
-  border: 1px solid ${({ theme }) => theme.color.border};
+  padding: ${({ theme }) => theme.spacing(0.5)};
+  border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
-  background: ${({ theme }) => theme.color.body};
-  color: ${({ theme }) => theme.color.bodyText};
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
+  background: transparent;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
+  transition: background 0.15s ease;
 
   &:hover {
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-    background: ${({ theme }) => theme.color.bodyRaised};
+    background: ${({ theme }) => theme.color.body};
   }
 
   &:focus-visible {
@@ -105,19 +129,11 @@ const ProfileMenuTrigger = styled.button`
   }
 `;
 
-const MobileProfileName = styled.span`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: left;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-`;
-
 const ChevronIcon = styled.span<{ $open: boolean }>`
   flex-shrink: 0;
   font-size: 9px;
   line-height: 1;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
   transform: rotate(${({ $open }) => ($open ? '180deg' : '0')});
   transition: transform 0.15s ease;
 `;
@@ -132,9 +148,7 @@ const ProfileDropdown = styled.div`
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.md};
   background: ${({ theme }) => theme.color.bodyRaised};
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: ${({ theme }) => theme.boxShadow.md};
   z-index: 40;
 `;
 
@@ -162,51 +176,5 @@ const SignOutMenuItem = styled.button`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 0;
-  }
-`;
-
-const StyledProfile = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(3)};
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    gap: ${({ theme }) => theme.spacing(1.5)};
-  }
-`;
-const StyledUserInfo = styled.div`
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 14px;
-
-  @media (max-width: 768px) {
-    max-width: min(120px, 28vw);
-    font-size: 12px;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;
-
-const StyledLogoutButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background: transparent;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 14px;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  transition: all 0.2s ease;
-  white-space: nowrap;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.body};
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  @media (max-width: 768px) {
-    padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1.5)};
-    font-size: 12px;
   }
 `;

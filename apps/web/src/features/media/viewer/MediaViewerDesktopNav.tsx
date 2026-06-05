@@ -87,6 +87,7 @@ const DesktopMediaStage = styled.div`
 `;
 
 /** Google Photos–style floating chevrons on the image */
+/* White on image overlay — not theme page chrome. */
 const DesktopNavOverlayButton = styled.button<{ $side: 'start' | 'end' }>`
   position: absolute;
   top: 50%;

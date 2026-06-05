@@ -23,9 +23,10 @@ test.describe('Share individual items with an existing user', () => {
       const [a, b, c] = await setup(grabTestImages, userA, 3);
 
       const selection = await selectMediaItems(userA.page, [a.id, b.id], {
-        expectActions: ['Share', 'Add to album', 'Delete from library'],
+        toolbarVariant: 'library',
+        expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 selected');
+      await expect(selection.toolbar).toContainText('2 photos selected');
       await selection.clickAction('Share');
 
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 photos' });

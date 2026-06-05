@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
-import { Navigation } from './Navigation';
+import { Navigation, type NavigationLinkItem } from './Navigation';
 import { Profile } from './Profile';
 
 const MOBILE_SHELL = '(max-width: 768px)';
 
-const NAV_LINKS = [
-  { label: 'Media', to: '/media' },
+const NAV_LINKS: NavigationLinkItem[] = [
+  { label: 'Recent', to: '/media', activePaths: ['/', '/media'] },
   { label: 'Albums', to: '/albums' },
-  { label: 'Shared with you', to: '/shared-with-me' },
-] as const;
+  { label: 'Shared', to: '/shared-with-me' },
+];
 
 type OpenMenu = null | 'nav' | 'profile';
 
@@ -80,18 +81,21 @@ export const AppShell = () => {
                   id="app-shell-nav-trigger"
                   onClick={toggleNavMenu}
                 >
-                  Family Media
+                  <Wordmark>Harik family</Wordmark>
                   <TitleChevron aria-hidden $open={openMenu === 'nav'}>
                     ▾
                   </TitleChevron>
                 </MobileAppTitleButton>
               </MobileNavLeading>
-              <Profile
-                displayName={viewer.displayName}
-                variant="mobile"
-                mobileMenuOpen={openMenu === 'profile'}
-                onMobileMenuToggle={toggleProfileMenu}
-              />
+              <NavActions>
+                <UploadMediaIconButton />
+                <Profile
+                  displayName={viewer.displayName}
+                  variant="mobile"
+                  mobileMenuOpen={openMenu === 'profile'}
+                  onMobileMenuToggle={toggleProfileMenu}
+                />
+              </NavActions>
             </SCNavContent>
             {openMenu === 'nav' ? (
               <MobileNavPanel
@@ -100,7 +104,7 @@ export const AppShell = () => {
                 aria-labelledby="app-shell-nav-trigger"
               >
                 <Navigation
-                  links={[...NAV_LINKS]}
+                  links={NAV_LINKS}
                   variant="stacked"
                   onLinkClick={() => {
                     setOpenMenu(null);
@@ -112,10 +116,19 @@ export const AppShell = () => {
         ) : (
           <SCNavContent>
             <SCAppNavigation>
-              <SCAppTitle to="/">Family Media</SCAppTitle>
-              <Navigation links={[...NAV_LINKS]} variant="inline" />
+              <WordmarkLink to="/">Harik family</WordmarkLink>
+              <Navigation links={NAV_LINKS} variant="inline" />
             </SCAppNavigation>
-            <Profile displayName={viewer.displayName} variant="desktop" />
+            <NavActions>
+              {/* Search affordance deferred — see Zeta search PR */}
+              <UploadMediaIconButton />
+              <Profile
+                displayName={viewer.displayName}
+                variant="desktop"
+                mobileMenuOpen={openMenu === 'profile'}
+                onMobileMenuToggle={toggleProfileMenu}
+              />
+            </NavActions>
           </SCNavContent>
         )}
       </SCNavigation>
@@ -168,6 +181,36 @@ const MobileNavLeading = styled.div`
   flex: 1;
 `;
 
+const NavActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
+  flex-shrink: 0;
+`;
+
+const wordmarkCss = css`
+  font-family: ${({ theme }) => theme.font.serif};
+  font-size: ${({ theme }) => theme.fontSize._17};
+  font-weight: ${({ theme }) => theme.weight.regular};
+  color: ${({ theme }) => theme.color.bodyText};
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+`;
+
+const Wordmark = styled.span`
+  ${wordmarkCss}
+`;
+
+const WordmarkLink = styled(Link)`
+  ${wordmarkCss}
+  text-decoration: none;
+  flex-shrink: 0;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.bodyText};
+  }
+`;
+
 const MobileAppTitleButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -177,13 +220,9 @@ const MobileAppTitleButton = styled.button`
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   background: transparent;
-  color: ${({ theme }) => theme.color.bodyText};
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: -0.25px;
-  line-height: 1.2;
   cursor: pointer;
   transition: background 0.15s ease;
+  min-width: 0;
 
   &:hover {
     background: ${({ theme }) => theme.color.body};
@@ -199,7 +238,7 @@ const TitleChevron = styled.span<{ $open: boolean }>`
   flex-shrink: 0;
   font-size: 10px;
   line-height: 1;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
   transform: rotate(${({ $open }) => ($open ? '180deg' : '0')});
   transition: transform 0.15s ease;
 `;
@@ -219,24 +258,6 @@ const SCAppNavigation = styled.div`
 
   @media (max-width: 768px) {
     gap: ${({ theme }) => theme.spacing(2)};
-  }
-`;
-
-const SCAppTitle = styled(Link)`
-  font-size: 18px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-  text-decoration: none;
-  letter-spacing: -0.5px;
-  flex-shrink: 0;
-
-  &:hover {
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 15px;
-    letter-spacing: -0.25px;
   }
 `;
 

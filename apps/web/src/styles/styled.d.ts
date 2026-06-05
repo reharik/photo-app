@@ -26,6 +26,7 @@ declare module 'styled-components' {
     /* ── Typography ──────────────────────────────────────── */
     font: {
       body: string;
+      serif: string;
       mono: string;
     };
     fontSize: {
@@ -33,8 +34,10 @@ declare module 'styled-components' {
       _24: string;
       _21: string;
       _18: string;
+      _17: string;
       _16: string;
       _14: string;
+      _13: string;
       _12: string;
       _10: string;
     };

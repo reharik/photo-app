@@ -1,7 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 
-export type NavigationLinkItem = { label: string; to: string };
+export type NavigationLinkItem = {
+  label: string;
+  to: string;
+  /** When set, active if pathname is in this list (e.g. Recent on `/` and `/media`). */
+  activePaths?: string[];
+};
 
 export type NavigationProps = {
   links: NavigationLinkItem[];
@@ -11,25 +16,37 @@ export type NavigationProps = {
   onLinkClick?: () => void;
 };
 
+const isLinkActive = (link: NavigationLinkItem, pathname: string): boolean => {
+  if (link.activePaths != null && link.activePaths.length > 0) {
+    return link.activePaths.includes(pathname);
+  }
+  return pathname === link.to;
+};
+
 export const Navigation = (props: NavigationProps) => {
   const { links, variant = 'inline', onLinkClick } = props;
+  const location = useLocation();
   const stacked = variant === 'stacked';
 
   return (
     <StyledNavigation $stacked={stacked}>
       <StyledNavLinks $stacked={stacked}>
-        {links.map((x) => (
-          <StyledNavLink
-            to={x.to}
-            key={x.label}
-            $stacked={stacked}
-            onClick={() => {
-              onLinkClick?.();
-            }}
-          >
-            {x.label}
-          </StyledNavLink>
-        ))}
+        {links.map((x) => {
+          const active = isLinkActive(x, location.pathname);
+          return (
+            <StyledNavLink
+              to={x.to}
+              key={x.label}
+              $stacked={stacked}
+              $active={active}
+              onClick={() => {
+                onLinkClick?.();
+              }}
+            >
+              {x.label}
+            </StyledNavLink>
+          );
+        })}
       </StyledNavLinks>
     </StyledNavigation>
   );
@@ -58,28 +75,24 @@ const StyledNavigation = styled.div<{ $stacked: boolean }>`
 
 const StyledNavLinks = styled.div<{ $stacked: boolean }>`
   display: flex;
-  gap: ${({ $stacked, theme }) => ($stacked ? 0 : theme.spacing(1))};
+  gap: ${({ $stacked, theme }) => ($stacked ? 0 : theme.spacing(3))};
   flex-direction: ${({ $stacked }) => ($stacked ? 'column' : 'row')};
+  align-items: ${({ $stacked }) => ($stacked ? 'stretch' : 'center')};
 `;
 
-const StyledNavLink = styled(NavLink)<{ $stacked: boolean }>`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 14px;
+const StyledNavLink = styled(NavLink)<{ $stacked: boolean; $active: boolean }>`
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  color: ${({ $active, theme }) =>
+    $active ? theme.color.bodyText : theme.color.bodyTextMuted};
+  font-size: ${({ theme }) => theme.fontSize._13};
+  font-weight: ${({ $active, theme }) => ($active ? theme.weight.medium : theme.weight.regular)};
   text-decoration: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  background: transparent;
+  transition: color 0.15s ease;
 
   &:hover {
     color: ${({ theme }) => theme.color.bodyText};
-    background: ${({ theme }) => theme.color.body};
-  }
-
-  &.active {
-    color: ${({ theme }) => theme.color.bodyText};
-    background: ${({ theme }) => theme.color.body};
   }
 
   ${({ $stacked, theme }) =>
@@ -88,13 +101,6 @@ const StyledNavLink = styled(NavLink)<{ $stacked: boolean }>`
           display: block;
           width: 100%;
           padding: ${theme.spacing(1)};
-          font-size: 15px;
-          border-radius: ${theme.borderRadius.md};
         `
-      : css`
-          @media (max-width: 768px) {
-            padding: ${theme.spacing(0.5)} ${theme.spacing(1.5)};
-            font-size: 13px;
-          }
-        `}
+      : undefined}
 `;

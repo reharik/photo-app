@@ -20,11 +20,13 @@ import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
-import { SelectableGallery } from '../gallery/SelectableGallery';
-import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
-import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
-import { UploadMediaButton } from '../media/UploadMediaButton';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
+import { LibraryGrid } from './library/LibraryGrid';
+import {
+  LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT,
+  LibrarySelectionToolbar,
+} from './library/LibrarySelectionToolbar';
+import { UploadMediaButton } from './UploadMediaButton';
 
 type LibrarySectionProps = {
   nodes: MediaItemSummaryVM[];
@@ -111,7 +113,6 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
       setDeleteMediaOpen(false);
       clearSelection();
       void reloadData();
-      // Album queries: item counts / cover can change when media is removed from albums (not redundant with recent-media reload).
       await client.refetchQueries({ include: [ViewerAlbumsDocument] });
     }
   };
@@ -147,40 +148,35 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
   return (
     <Container>
       {toastMessage ? <Toast message={toastMessage} onDismiss={dismissToast} /> : null}
-      <SelectableGalleryHeader
-        selectionCount={selectionCount}
-        clearSelection={clearSelection}
-        availableActions={availableActions}
-        Header={() => (
-          <>
-            <Title>Library</Title>
-            <HeaderActions>
-              <UploadMediaButton />
-            </HeaderActions>
-          </>
-        )}
-      />
-      <InfiniteScroll paging={paging} rootMargin="600px">
-        <SelectableGallery
-          nodes={nodes}
-          multiSelectProps={multiSelectProps}
-          selectableActions={selectableActions}
-          emptyState={
+      <ToolbarSlot $active={selectionCount > 0}>
+        {selectionCount > 0 ? (
+          <LibrarySelectionToolbar
+            count={selectionCount}
+            onCancel={clearSelection}
+            availableActions={availableActions}
+          />
+        ) : null}
+      </ToolbarSlot>
+      <ScrollArea paging={paging} rootMargin="600px">
+        {nodes.length === 0 ? (
+          <EmptyStateWrap>
             <EmptyState
               title="No media yet"
               text="Upload your first media to start building your family gallery"
               action={<UploadMediaButton />}
             />
-          }
-          renderItem={({ item, orderedMediaIds }) => (
-            <MediaItemTile
-              item={item}
-              mediaGalleryIds={orderedMediaIds}
-              onReactionsRefetch={reloadData}
+          </EmptyStateWrap>
+        ) : (
+          <GridWrap>
+            <LibraryGrid
+              nodes={nodes}
+              multiSelectProps={multiSelectProps}
+              selectableActions={selectableActions}
+              selectionActive={selectionCount > 0}
             />
-          )}
-        />
-      </InfiniteScroll>
+          </GridWrap>
+        )}
+      </ScrollArea>
       {addToAlbumOpen && (
         <AppModal
           onClose={() => setAddToAlbumOpen(false)}
@@ -241,24 +237,30 @@ const Container = styled.div`
   flex-direction: column;
 `;
 
-const Title = styled.h1`
-  font-size: 32px;
-  font-weight: 500;
-  margin: 0;
-  color: ${({ theme }) => theme.color.bodyText};
-  letter-spacing: -0.5px;
+const ToolbarSlot = styled.div<{ $active: boolean }>`
+  flex-shrink: 0;
+  height: ${LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT};
+  box-sizing: border-box;
+  background: ${({ $active, theme }) => ($active ? theme.color.bodyRaised : theme.color.body)};
+  box-shadow: ${({ $active, theme }) =>
+    $active ? `inset 0 -0.5px 0 ${theme.color.borderSubtle}` : 'none'};
+  overflow: hidden;
+`;
+
+const ScrollArea = styled(InfiniteScroll)`
+  flex: 1;
   min-width: 0;
+  min-height: 0;
+`;
+
+const GridWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
 
   @media (max-width: 768px) {
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
-    flex: 1;
+    padding: ${({ theme }) => theme.spacing(1.5)};
   }
 `;
 
-const HeaderActions = styled.div`
-  display: flex;
-  gap: ${({ theme }) => theme.spacing(2)};
-  flex-shrink: 0;
+const EmptyStateWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
 `;

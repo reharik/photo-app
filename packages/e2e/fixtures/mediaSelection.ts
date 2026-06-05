@@ -21,6 +21,8 @@ export type MediaSelectionHandle = {
   clear: () => Promise<void>;
 };
 
+export type SelectionToolbarVariant = 'legacy' | 'library';
+
 export type SelectMediaItemsOptions = {
   /**
    * When set, asserts each label appears as a button on the selection toolbar.
@@ -32,10 +34,18 @@ export type SelectMediaItemsOptions = {
    * (e.g. an "Add album item" modal on the album screen).
    */
   scope?: Locator;
+  /** Library grid uses "{N} photos selected"; album/gallery screens use "{N} selected". */
+  toolbarVariant?: SelectionToolbarVariant;
 };
 
-const selectionCountLabel = (count: number): string =>
-  count === 1 ? '1 selected' : `${count} selected`;
+const selectionCountLabel = (count: number, variant: SelectionToolbarVariant = 'legacy'): string =>
+  variant === 'library'
+    ? count === 1
+      ? '1 photo selected'
+      : `${count} photos selected`
+    : count === 1
+      ? '1 selected'
+      : `${count} selected`;
 
 export const mediaTile = (root: Page | Locator, mediaItemId: string): Locator =>
   root.getByTestId(`media-tile-${mediaItemId}`);
@@ -95,9 +105,10 @@ export const selectMediaItems = async (
 
   const toolbar = selectionToolbarIn(root);
   const count = mediaItemIds.length;
+  const toolbarVariant = options.toolbarVariant ?? 'legacy';
 
   await expect(toolbar).toBeVisible();
-  await expect(toolbar).toContainText(selectionCountLabel(count));
+  await expect(toolbar).toContainText(selectionCountLabel(count, toolbarVariant));
 
   if (options.expectActions != null) {
     for (const actionName of options.expectActions) {

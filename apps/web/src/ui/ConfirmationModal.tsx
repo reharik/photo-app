@@ -79,8 +79,9 @@ const ConfirmButton = styled.button<{ $tone: 'default' | 'danger' }>`
   cursor: pointer;
   border: 1px solid
     ${({ $tone, theme }) =>
-      $tone === 'danger' ? '${theme.color.alertError}' : theme.color.primaryButtonBg};
+      $tone === 'danger' ? theme.color.dangerButtonBg : theme.color.primaryButtonBg};
   background: ${({ $tone, theme }) =>
-    $tone === 'danger' ? '${theme.color.alertError}' : theme.color.primaryButtonBg};
-  color: white;
+    $tone === 'danger' ? theme.color.dangerButtonBg : theme.color.primaryButtonBg};
+  color: ${({ $tone, theme }) =>
+    $tone === 'danger' ? theme.color.dangerButtonText : theme.color.primaryButtonText};
 `;

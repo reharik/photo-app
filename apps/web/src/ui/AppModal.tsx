@@ -90,7 +90,7 @@ const Dialog = styled.div<{ $maxWidth: string }>`
   background: ${({ theme }) => theme.color.body};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: ${({ theme }) => theme.boxShadow.md};
 `;
 
 const Header = styled.div`

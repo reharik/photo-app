@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 
+/* White on image overlay — not theme page chrome. */
 const stageImageOverlayButtonStyles = css`
   position: absolute;
   top: max(${({ theme }) => theme.spacing(2)}, env(safe-area-inset-top, 0px));

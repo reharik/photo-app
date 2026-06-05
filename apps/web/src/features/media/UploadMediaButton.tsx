@@ -1,7 +1,6 @@
-import { useRef } from 'react';
 import styled from 'styled-components';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { type AppError } from '../../domain/errors/errorTypes';
+import { UploadMediaTrigger } from './UploadMediaTrigger';
 
 type UploadMediaButtonProps = {
   albumId?: string;
@@ -18,47 +17,21 @@ export const UploadMediaButton = ({
   shortText,
   multiple = true,
 }: UploadMediaButtonProps) => {
-  const { enqueueFiles, isUploading } = useUploadQueue();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const startUploadPick = () => {
-    fileInputRef.current?.click();
-  };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = '';
-
-    if (files.length === 0) {
-      return;
-    }
-
-    setAppErrors?.([]);
-    enqueueFiles(files, albumId);
-  };
-
   return (
-    <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple={multiple}
-        accept="image/*,video/*,image/heic,image/heif,.heic,.heif"
-        data-testid="upload-media-input"
-        style={{ display: 'none' }}
-        onChange={handleFileChange}
-      />
-
-      <UploadButton type="button" onClick={startUploadPick} disabled={isUploading}>
-        {isUploading ? (
-          'Uploading…'
-        ) : (
-          <>
-            <UploadButtonLabelWide>{text || 'Upload Media'}</UploadButtonLabelWide>
-            <UploadButtonLabelNarrow>{shortText || 'Upload'}</UploadButtonLabelNarrow>
-          </>
-        )}
-      </UploadButton>
-    </>
+    <UploadMediaTrigger albumId={albumId} setAppErrors={setAppErrors} multiple={multiple}>
+      {({ onPick, isUploading }) => (
+        <UploadButton type="button" onClick={onPick} disabled={isUploading}>
+          {isUploading ? (
+            'Uploading…'
+          ) : (
+            <>
+              <UploadButtonLabelWide>{text || 'Upload Media'}</UploadButtonLabelWide>
+              <UploadButtonLabelNarrow>{shortText || 'Upload'}</UploadButtonLabelNarrow>
+            </>
+          )}
+        </UploadButton>
+      )}
+    </UploadMediaTrigger>
   );
 };
 
@@ -79,7 +52,7 @@ const UploadButtonLabelNarrow = styled.span`
 const UploadButton = styled.button`
   padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
   background: ${({ theme }) => theme.color.primaryButtonBg};
-  color: ${({ theme }) => theme.color.body};
+  color: ${({ theme }) => theme.color.primaryButtonText};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   font-size: 14px;

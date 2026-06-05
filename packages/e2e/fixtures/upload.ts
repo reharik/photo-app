@@ -49,12 +49,9 @@ export const getMediaTileIds = async (page: Page): Promise<string[]> => {
   );
 };
 
-const uploadMediaButton = (page: Page) =>
-  page.getByRole('button', { name: 'Upload Media' }).first();
-
 export const expectLibraryPage = async (page: Page): Promise<void> => {
-  await expect(page.getByText('Library')).toBeVisible();
-  await expect(uploadMediaButton(page)).toBeVisible();
+  await expect(page.getByText('Harik family')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Upload media' })).toBeVisible();
 };
 
 /**
@@ -92,7 +89,7 @@ export const uploadMediaViaUi = async (
   await expect(page.getByRole('button', { name: 'Uploading…' }).first()).toBeVisible({
     timeout: 10_000,
   });
-  await expect(uploadMediaButton(page)).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Upload media' })).toBeVisible({
     timeout: UPLOAD_TIMEOUT_MS,
   });
 

@@ -13,9 +13,10 @@ test.describe('Foundation tests', () => {
       const [a, b, c, d, e] = await setup(grabTestImages, userA, 5);
 
       const selection = await selectMediaItems(userA.page, [a.id, b.id], {
-        expectActions: ['Share', 'Add to album', 'Delete from library'],
+        toolbarVariant: 'library',
+        expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 selected');
+      await expect(selection.toolbar).toContainText('2 photos selected');
 
       await addMediaItemsToNewAlbum(userA.page, 'lovely_new_album', [a.id, b.id], {
         alreadySelected: true,

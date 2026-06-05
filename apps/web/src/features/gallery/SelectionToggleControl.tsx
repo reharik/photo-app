@@ -75,6 +75,7 @@ const ToggleGlyph = styled.span<{ $selected: boolean }>`
   font-weight: 700;
   line-height: 1;
   flex-shrink: 0;
+  /* Shadow on image overlay — not theme page chrome. */
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 
   ${({ $selected, theme }) =>
@@ -85,6 +86,7 @@ const ToggleGlyph = styled.span<{ $selected: boolean }>`
     border: none;
   `
       : `
+    /* White on image overlay — not theme page chrome. */
     background: rgba(0, 0, 0, 0.35);
     border: 2px solid rgba(255, 255, 255, 0.92);
     color: transparent;
