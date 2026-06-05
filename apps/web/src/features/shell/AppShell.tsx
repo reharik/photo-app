@@ -1,3 +1,4 @@
+import { Menu } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -74,18 +75,17 @@ export const AppShell = () => {
           <>
             <SCNavContent>
               <MobileNavLeading>
-                <MobileAppTitleButton
+                <MobileNavMenuButton
                   type="button"
                   aria-expanded={openMenu === 'nav'}
                   aria-controls="app-shell-mobile-nav"
                   id="app-shell-nav-trigger"
+                  aria-label="Open navigation menu"
                   onClick={toggleNavMenu}
                 >
-                  <Wordmark>Harik family</Wordmark>
-                  <TitleChevron aria-hidden $open={openMenu === 'nav'}>
-                    ▾
-                  </TitleChevron>
-                </MobileAppTitleButton>
+                  <Menu size={20} strokeWidth={2} aria-hidden />
+                </MobileNavMenuButton>
+                <Wordmark aria-hidden>Harik family</Wordmark>
               </MobileNavLeading>
               <NavActions>
                 <UploadMediaIconButton />
@@ -155,7 +155,11 @@ const SCNavigation = styled.nav`
   flex-shrink: 0;
 
   @media (max-width: 768px) {
-    padding: 0 ${({ theme }) => theme.spacing(2)};
+    padding: 0 ${({ theme }) => theme.spacing(1.5)};
+  }
+
+  @media (max-width: 375px) {
+    padding: 0 ${({ theme }) => theme.spacing(1)};
   }
 `;
 
@@ -171,12 +175,14 @@ const SCNavContent = styled.div`
 
   @media (max-width: 768px) {
     height: 52px;
+    gap: ${({ theme }) => theme.spacing(1)};
   }
 `;
 
 const MobileNavLeading = styled.div`
   display: flex;
   align-items: center;
+  gap: ${({ theme }) => theme.spacing(1)};
   min-width: 0;
   flex: 1;
 `;
@@ -184,8 +190,12 @@ const MobileNavLeading = styled.div`
 const NavActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  gap: ${({ theme }) => theme.spacing(0.5)};
   flex-shrink: 0;
+
+  @media (max-width: 375px) {
+    gap: ${({ theme }) => theme.spacing(0.25)};
+  }
 `;
 
 const wordmarkCss = css`
@@ -199,6 +209,14 @@ const wordmarkCss = css`
 
 const Wordmark = styled.span`
   ${wordmarkCss}
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 375px) {
+    font-size: ${({ theme }) => theme.fontSize._16};
+  }
 `;
 
 const WordmarkLink = styled(Link)`
@@ -211,18 +229,26 @@ const WordmarkLink = styled(Link)`
   }
 `;
 
-const MobileAppTitleButton = styled.button`
+const MobileNavMenuButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  padding: 0;
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   background: transparent;
+  color: ${({ theme }) => theme.color.bodyText};
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.15s ease;
-  min-width: 0;
+
+  @media (max-width: 375px) {
+    width: 32px;
+    height: 32px;
+  }
 
   &:hover {
     background: ${({ theme }) => theme.color.body};
@@ -232,15 +258,6 @@ const MobileAppTitleButton = styled.button`
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 2px;
   }
-`;
-
-const TitleChevron = styled.span<{ $open: boolean }>`
-  flex-shrink: 0;
-  font-size: 10px;
-  line-height: 1;
-  color: ${({ theme }) => theme.color.bodyTextMuted};
-  transform: rotate(${({ $open }) => ($open ? '180deg' : '0')});
-  transition: transform 0.15s ease;
 `;
 
 const MobileNavPanel = styled.div`

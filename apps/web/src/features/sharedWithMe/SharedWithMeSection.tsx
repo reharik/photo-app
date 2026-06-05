@@ -16,6 +16,9 @@ const noopSelect: MultiSelectProps = {
   toggleSelectAt: () => {
     /* read-only: no selection */
   },
+  enterSelectionAt: () => {
+    /* read-only: no selection */
+  },
 };
 
 type SharedWithMeSectionProps = {

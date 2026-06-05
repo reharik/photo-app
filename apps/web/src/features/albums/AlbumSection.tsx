@@ -1,6 +1,9 @@
-import { FrontendUploadStatus, Operation } from '@packages/contracts';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FrontendUploadStatus, MediaAssetKind, Operation } from '@packages/contracts';
+import { ArrowUpRight } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
@@ -11,12 +14,13 @@ import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
-import { SelectableGallery } from '../gallery/SelectableGallery';
-import { AlbumMediaTile } from '../gallery/tiles/AlbumMediaTile';
+import { MediaGrid } from '../media/grid/MediaGrid';
+import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
-import { UploadMediaButton } from '../media/UploadMediaButton';
+import { Button } from '../../ui/Button';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
-import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
+import { ShellNavIconButton } from '../shell/ShellNavIconButton';
+import { AddToAlbumHeaderButton } from './AddToAlbumHeaderButton';
 import { AlbumSectionMetadata } from './AlbumSectionMetadata';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
@@ -40,8 +44,6 @@ type AlbumSectionProps = {
   modalState: {
     shareAlbumOpen: boolean;
     setShareAlbumOpen: (open: boolean) => void;
-    shareItemsOpen: boolean;
-    setShareItemsOpen: (open: boolean) => void;
     addCoverItemOpen: boolean;
     setAddCoverItemOpen: (open: boolean) => void;
   };
@@ -72,11 +74,6 @@ export const AlbumSection = ({
 
   const selectableActions = [
     {
-      operation: Operation.grantAlbumAuthorization,
-      label: 'Share',
-      onAction: () => modalState.setShareItemsOpen(true),
-    },
-    {
       operation: Operation.removeItems,
       label: 'Remove from album',
       onAction: () => removeAlbumItemState.setRemoveItemOpen(true),
@@ -84,7 +81,6 @@ export const AlbumSection = ({
   ];
   const {
     multiSelectProps,
-    selectedItems,
     selectedIds,
     availableActions,
     clearSelection,
@@ -94,18 +90,24 @@ export const AlbumSection = ({
     actions: selectableActions,
   });
 
-  const selectedMediaItemIds = useMemo(
-    () => selectedItems.map((item) => item.mediaItem.id),
-    [selectedItems],
-  );
+  const isMobileAlbum = useMediaQuery('(max-width: 768px)');
 
   const onAlbumScroll = useCallback((): void => {
+    if (isMobileAlbum) {
+      return;
+    }
     const el = albumScrollRef.current;
     if (el == null) {
       return;
     }
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
-  }, []);
+  }, [isMobileAlbum]);
+
+  useEffect(() => {
+    if (isMobileAlbum) {
+      setMetaCompact(false);
+    }
+  }, [isMobileAlbum]);
 
   const { items } = useUploadQueue();
 
@@ -118,32 +120,54 @@ export const AlbumSection = ({
       void reloadData();
   }, [items, album.id, reloadData]);
 
-  const albumHeaderActions = (
-    <HeaderActions>
+  const albumHeaderActions = isMobileAlbum ? (
+    <>
+      {album.operations.includes(Operation.addItems) && (
+        <AddToAlbumHeaderButton
+          albumId={album.id}
+          disabled={!album}
+          variant="icon"
+          onAddFromLibrary={() => {
+            addAlbumItemState.setAddItemOpen(true);
+          }}
+        />
+      )}
       {album.operations.includes(Operation.grantAlbumAuthorization) && (
-        <SecondaryButton
+        <ShellNavIconButton
           type="button"
+          aria-label="Share album"
+          disabled={!album}
+          onClick={() => {
+            modalState.setShareAlbumOpen(true);
+          }}
+        >
+          <ArrowUpRight size={20} strokeWidth={2} aria-hidden />
+        </ShellNavIconButton>
+      )}
+    </>
+  ) : (
+    <HeaderActions>
+      {album.operations.includes(Operation.addItems) && (
+        <AddToAlbumHeaderButton
+          albumId={album.id}
+          disabled={!album}
+          onAddFromLibrary={() => {
+            addAlbumItemState.setAddItemOpen(true);
+          }}
+        />
+      )}
+      {album.operations.includes(Operation.grantAlbumAuthorization) && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="large"
           disabled={!album}
           onClick={() => {
             modalState.setShareAlbumOpen(true);
           }}
         >
           Share album
-        </SecondaryButton>
-      )}
-      {album.operations.includes(Operation.addItems) && (
-        <PrimaryButton
-          type="button"
-          disabled={!album}
-          onClick={() => {
-            addAlbumItemState.setAddItemOpen(true);
-          }}
-        >
-          Add items to Album
-        </PrimaryButton>
-      )}
-      {album.operations.includes(Operation.addItems) && (
-        <UploadMediaButton albumId={album.id} text="Upload items to album" />
+        </Button>
       )}
     </HeaderActions>
   );
@@ -171,37 +195,43 @@ export const AlbumSection = ({
         }}
         onScroll={onAlbumScroll}
       >
-        <SelectableGallery
-          nodes={albumItems}
-          mediaIdSelector={(x) => x.mediaItem.id}
-          multiSelectProps={multiSelectProps}
-          embedInParentScroll
-          selectableActions={selectableActions}
-          emptyState={
-            <EmptyState
-              title="No album items yet"
-              text="Start choosing media items to include to build your gallery"
-              action={
-                <PrimaryButton
-                  type="button"
-                  disabled={!album}
-                  onClick={() => {
-                    addAlbumItemState.setAddItemOpen(true);
-                  }}
-                >
-                  Add items to Album
-                </PrimaryButton>
-              }
+        {albumItems.length === 0 ? (
+          <EmptyState
+            title="No album items yet"
+            text="Start choosing media items to include to build your gallery"
+            action={
+              <AddToAlbumHeaderButton
+                albumId={album.id}
+                disabled={!album}
+                onAddFromLibrary={() => {
+                  addAlbumItemState.setAddItemOpen(true);
+                }}
+              />
+            }
+          />
+        ) : (
+          <GridWrap>
+            <MediaGrid
+              nodes={albumItems}
+              mediaIdSelector={(item) => item.mediaItem.id}
+              selectionIdSelector={(item) => item.id}
+              multiSelectProps={multiSelectProps}
+              selectableActions={selectableActions}
+              selectionActive={selectionCount > 0}
+              columnCounts={ALBUM_GRID_COLUMNS}
+              groupBy="none"
+              getTileProps={(item, orderedMediaIds) => ({
+                to: `/media/${item.mediaItem.id}`,
+                thumbnailUrl: buildMediaItemUrl(item.mediaItem.id, MediaAssetKind.thumbnail),
+                mediaGalleryIds: orderedMediaIds,
+                kind: item.mediaItem.kind,
+                title: item.mediaItem.title,
+                reactionCounts: item.mediaItem.reactionCounts,
+                testId: item.mediaItem.id,
+              })}
             />
-          }
-          renderItem={({ item, orderedMediaIds }) => (
-            <AlbumMediaTile
-              item={item}
-              mediaGalleryIds={orderedMediaIds}
-              onReactionsRefetch={reloadData}
-            />
-          )}
-        />
+          </GridWrap>
+        )}
         <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
       {removeAlbumItemState.removeItemOpen && (
@@ -229,17 +259,6 @@ export const AlbumSection = ({
           onSuccessToast={(message) => setToastMessage(message)}
           onErrorToast={(message) => setToastMessage(message)}
           onClose={() => modalState.setShareAlbumOpen(false)}
-        />
-      )}
-      {modalState.shareItemsOpen && (
-        <GrantMediaItemShareModal
-          mediaItemIds={selectedMediaItemIds}
-          onSuccessToast={(message) => setToastMessage(message)}
-          onErrorToast={(message) => setToastMessage(message)}
-          onClose={() => {
-            modalState.setShareItemsOpen(false);
-            clearSelection();
-          }}
         />
       )}
       {addAlbumItemState.addItemOpen && (
@@ -291,49 +310,8 @@ const Container = styled.div`
 
 const HeaderActions = styled.div`
   display: flex;
+  align-items: flex-start;
   gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const PrimaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
-  background: ${({ theme }) => theme.color.primaryButtonBg};
-  color: ${({ theme }) => theme.color.body};
-  border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.color.primaryButtonHover};
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
-const SecondaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
-  background: transparent;
-  color: ${({ theme }) => theme.color.bodyText};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
 `;
 
 const AlbumBodyScroll = styled.div`
@@ -342,14 +320,18 @@ const AlbumBodyScroll = styled.div`
   min-width: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(6)}
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(6)}
     ${({ theme }) => theme.spacing(6)};
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)}
+    padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)}
       ${({ theme }) => theme.spacing(3)};
   }
+`;
+
+const GridWrap = styled.div`
+  width: 100%;
 `;
 
 const AddAlbumItemModalHeader = styled.div`

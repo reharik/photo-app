@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-type LibraryDateSectionProps = {
+type MediaGridDateSectionProps = {
   label: string;
   subtitle: string;
   location?: string;
@@ -9,12 +9,12 @@ type LibraryDateSectionProps = {
 
 // Section header is non-sticky in v1. Sticky bucket labels on scroll (Apple/Google Photos
 // style) need intersection observers and swap logic — deferred to a future PR.
-export const LibraryDateSection = ({
+export const MediaGridDateSection = ({
   label,
   subtitle,
   location,
   children,
-}: LibraryDateSectionProps) => {
+}: MediaGridDateSectionProps) => {
   const subtitleText =
     location != null && location.trim() !== ''
       ? `${subtitle} · ${location.trim()}`

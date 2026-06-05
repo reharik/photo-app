@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import styled from 'styled-components';
 import type { AppError } from '../domain/errors/errorTypes';
 import { AppErrorPanel } from '../ui/AppErrorPanel';
+import { Button } from './Button';
 import { AppModal } from './AppModal';
 
 type ConfirmationModalProps = {
@@ -42,19 +42,26 @@ export const ConfirmationModal = ({
       closeOnBackdropClick={!isSubmitting}
       footer={
         <>
-          <SecondaryButton type="button" onClick={onClose} disabled={isSubmitting}>
-            {cancelLabel}
-          </SecondaryButton>
-          <ConfirmButton
+          <Button
             type="button"
-            $tone={confirmTone}
+            variant="secondary"
+            size="large"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            {cancelLabel}
+          </Button>
+          <Button
+            type="button"
+            variant={confirmTone === 'danger' ? 'danger' : 'primary'}
+            size="large"
+            loading={isSubmitting}
             onClick={() => {
               void onConfirm();
             }}
-            disabled={isSubmitting}
           >
             {isSubmitting ? (confirmingLabel ?? confirmLabel) : confirmLabel}
-          </ConfirmButton>
+          </Button>
         </>
       }
     >
@@ -64,24 +71,3 @@ export const ConfirmationModal = ({
   );
 };
 
-const SecondaryButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
-  background: transparent;
-  color: ${({ theme }) => theme.color.bodyText};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  cursor: pointer;
-`;
-
-const ConfirmButton = styled.button<{ $tone: 'default' | 'danger' }>`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  cursor: pointer;
-  border: 1px solid
-    ${({ $tone, theme }) =>
-      $tone === 'danger' ? theme.color.dangerButtonBg : theme.color.primaryButtonBg};
-  background: ${({ $tone, theme }) =>
-    $tone === 'danger' ? theme.color.dangerButtonBg : theme.color.primaryButtonBg};
-  color: ${({ $tone, theme }) =>
-    $tone === 'danger' ? theme.color.dangerButtonText : theme.color.primaryButtonText};
-`;

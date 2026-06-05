@@ -1,6 +1,6 @@
 // src/ui/Primitives.tsx
 import React from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <VStack gap={1}>
@@ -77,83 +77,8 @@ export const Label = styled.label`
   color: ${({ theme }) => theme.color.label};
 `;
 
-// ── Button ──────────────────────────────────────────────────────
-
-const ButtonBase = styled.button<{
-  $variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  $size?: 'sm' | 'md';
-  $fullWidth?: boolean;
-}>`
-  border: 1px solid transparent;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  padding: ${({ $size = 'md' }) => ($size === 'sm' ? '8px 10px' : '10px 14px')};
-  cursor: pointer;
-  font-weight: ${({ theme }) => theme.weight.semi};
-  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:disabled {
-    cursor: not-allowed;
-    background: ${({ theme }) => theme.color.buttonDisabled};
-    color: ${({ theme }) => theme.color.buttonDisabledText};
-    border-color: transparent;
-  }
-
-  ${({ $variant = 'primary', theme }) => {
-    switch ($variant) {
-      case 'secondary':
-        return css`
-          background: ${theme.color.secondaryButtonBg};
-          color: ${theme.color.secondaryButtonText};
-          border-color: ${theme.color.secondaryButtonBorder};
-          &:hover:not(:disabled) {
-            background: ${theme.color.secondaryButtonHover};
-          }
-        `;
-      case 'ghost':
-        return css`
-          background: transparent;
-          color: ${theme.color.ghostButtonText};
-          &:hover:not(:disabled) {
-            color: ${theme.color.bodyText};
-            background: ${theme.color.ghostButtonHover};
-          }
-        `;
-      case 'danger':
-        return css`
-          background: ${theme.color.dangerButtonBg};
-          color: ${theme.color.dangerButtonText};
-          &:hover:not(:disabled) {
-            filter: brightness(1.1);
-          }
-        `;
-      default:
-        return css`
-          background: ${theme.color.primaryButtonBg};
-          color: ${theme.color.primaryButtonText};
-          &:hover:not(:disabled) {
-            background: ${theme.color.primaryButtonHover};
-          }
-        `;
-    }
-  }}
-`;
-
-type ButtonProps = React.ComponentPropsWithoutRef<'button'> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md';
-  fullWidth?: boolean;
-};
-
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant, size, fullWidth, ...rest }, ref) => (
-    <ButtonBase ref={ref} $variant={variant} $size={size} $fullWidth={fullWidth} {...rest} />
-  ),
-);
-Button.displayName = 'Button';
+export { Button } from './Button';
+export type { ButtonProps, ButtonSize, ButtonVariant } from './Button';
 
 // ── Badge ───────────────────────────────────────────────────────
 

@@ -37,9 +37,6 @@ export const Profile = (props: ProfileProps) => {
           }}
         >
           <ShellUserAvatar displayName={displayName} size={32} />
-          <ChevronIcon aria-hidden $open={mobileMenuOpen}>
-            ▾
-          </ChevronIcon>
         </ProfileMenuTrigger>
         {mobileMenuOpen ? (
           <ProfileDropdown
@@ -110,14 +107,18 @@ const DesktopProfileRoot = styled.div`
 const ProfileMenuTrigger = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.75)};
   margin: 0;
-  padding: ${({ theme }) => theme.spacing(0.5)};
+  padding: ${({ theme }) => theme.spacing(0.25)};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   background: transparent;
   cursor: pointer;
   transition: background 0.15s ease;
+  flex-shrink: 0;
+
+  @media (max-width: 375px) {
+    padding: 0;
+  }
 
   &:hover {
     background: ${({ theme }) => theme.color.body};
@@ -127,15 +128,6 @@ const ProfileMenuTrigger = styled.button`
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 2px;
   }
-`;
-
-const ChevronIcon = styled.span<{ $open: boolean }>`
-  flex-shrink: 0;
-  font-size: 9px;
-  line-height: 1;
-  color: ${({ theme }) => theme.color.bodyTextMuted};
-  transform: rotate(${({ $open }) => ($open ? '180deg' : '0')});
-  transition: transform 0.15s ease;
 `;
 
 const ProfileDropdown = styled.div`

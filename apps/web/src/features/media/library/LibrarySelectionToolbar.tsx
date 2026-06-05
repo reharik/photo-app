@@ -1,7 +1,11 @@
 import { Heart, MoreHorizontal, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
+import { MaxWidthBreakpoint } from '../../../styles/theme';
+import { AnchoredMenu } from '../../../ui/AnchoredMenu';
+import { Button } from '../../../ui/Button';
 
 type LibrarySelectionToolbarProps = {
   count: number;
@@ -11,6 +15,8 @@ type LibrarySelectionToolbarProps = {
 
 /** Toolbar row: spacing(1.5) vertical padding ×2 + 32px icon/button row = 56px. */
 export const LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT = '56px';
+
+const MOBILE_TOOLBAR_MEDIA = `(max-width: ${MaxWidthBreakpoint.Mobile}px)`;
 
 const findAction = (
   actions: GalleryActionItems[],
@@ -23,21 +29,37 @@ export const LibrarySelectionToolbar = ({
   availableActions,
 }: LibrarySelectionToolbarProps) => {
   const [overflowOpen, setOverflowOpen] = useState(false);
-  const overflowRef = useRef<HTMLDivElement>(null);
+  const overflowTriggerRef = useRef<HTMLButtonElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const isMobileToolbar = useMediaQuery(MOBILE_TOOLBAR_MEDIA);
 
   const shareAction = findAction(availableActions, 'Share');
   const addToAlbumAction = findAction(availableActions, 'Add to album');
   const deleteAction = findAction(availableActions, 'Delete from library');
-  const label = count === 1 ? '1 photo selected' : `${count} photos selected`;
+  const label = isMobileToolbar
+    ? count === 1
+      ? '1 selected'
+      : `${count} selected`
+    : count === 1
+      ? '1 photo selected'
+      : `${count} photos selected`;
+
+  const showOverflowMenu =
+    isMobileToolbar || deleteAction != null || addToAlbumAction != null;
 
   useEffect(() => {
     if (!overflowOpen) {
       return;
     }
     const handleClick = (e: MouseEvent): void => {
-      if (!overflowRef.current?.contains(e.target as Node)) {
-        setOverflowOpen(false);
+      const target = e.target as Node;
+      if (
+        overflowTriggerRef.current?.contains(target) ||
+        overflowMenuRef.current?.contains(target)
+      ) {
+        return;
       }
+      setOverflowOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -49,23 +71,30 @@ export const LibrarySelectionToolbar = ({
         <CountText>{label}</CountText>
         <ActionGroup>
           {shareAction ? (
-            <ShareButton type="button" onClick={shareAction.onAction}>
-              <Send size={14} strokeWidth={2} aria-hidden />
+            <Button
+              type="button"
+              variant="primary"
+              size="small"
+              leadingIcon={<Send size={14} strokeWidth={2} />}
+              onClick={shareAction.onAction}
+            >
               Share
-            </ShareButton>
+            </Button>
           ) : null}
-          {addToAlbumAction ? (
-            <GhostTextButton type="button" onClick={addToAlbumAction.onAction}>
+          {!isMobileToolbar && addToAlbumAction ? (
+            <Button type="button" variant="ghost" size="small" onClick={addToAlbumAction.onAction}>
               Add to album
-            </GhostTextButton>
+            </Button>
           ) : null}
-          {/* TODO: wire favorite/like toggle when a bulk-favorite mutation exists */}
-          <GhostIconButton type="button" aria-label="Favorite" disabled>
-            <Heart size={18} strokeWidth={2} aria-hidden />
-          </GhostIconButton>
-          {deleteAction ? (
-            <OverflowMenuRoot ref={overflowRef}>
+          {!isMobileToolbar ? (
+            <GhostIconButton type="button" aria-label="Favorite" disabled>
+              <Heart size={18} strokeWidth={2} aria-hidden />
+            </GhostIconButton>
+          ) : null}
+          {showOverflowMenu ? (
+            <>
               <GhostIconButton
+                ref={overflowTriggerRef}
                 type="button"
                 aria-label="More actions"
                 aria-haspopup="true"
@@ -74,8 +103,30 @@ export const LibrarySelectionToolbar = ({
               >
                 <MoreHorizontal size={18} strokeWidth={2} aria-hidden />
               </GhostIconButton>
-              {overflowOpen ? (
-                <OverflowMenu role="menu" aria-label="More actions">
+              <AnchoredMenu
+                open={overflowOpen}
+                anchorRef={overflowTriggerRef}
+                menuRef={overflowMenuRef}
+                aria-label="More actions"
+              >
+                {isMobileToolbar && addToAlbumAction ? (
+                  <OverflowMenuItem
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOverflowOpen(false);
+                      addToAlbumAction.onAction();
+                    }}
+                  >
+                    Add to album
+                  </OverflowMenuItem>
+                ) : null}
+                {isMobileToolbar ? (
+                  <OverflowMenuItem type="button" role="menuitem" disabled>
+                    Favorite
+                  </OverflowMenuItem>
+                ) : null}
+                {deleteAction ? (
                   <OverflowMenuItem
                     type="button"
                     role="menuitem"
@@ -87,9 +138,9 @@ export const LibrarySelectionToolbar = ({
                   >
                     Delete from library
                   </OverflowMenuItem>
-                </OverflowMenu>
-              ) : null}
-            </OverflowMenuRoot>
+                ) : null}
+              </AnchoredMenu>
+            </>
           ) : null}
           <CancelButton type="button" onClick={onCancel} aria-label="Clear selection">
             Cancel
@@ -101,6 +152,8 @@ export const LibrarySelectionToolbar = ({
 };
 
 const Bar = styled.div`
+  position: relative;
+  z-index: 20;
   flex-shrink: 0;
   height: 100%;
 `;
@@ -117,9 +170,13 @@ const BarInner = styled.div`
   padding: ${({ theme }) => `${theme.spacing(1.5)} ${theme.spacing(3)}`};
   min-width: 0;
 
-  @media (max-width: 768px) {
+  @media (max-width: ${MaxWidthBreakpoint.Mobile}px) {
+    gap: ${({ theme }) => theme.spacing(1)};
+    padding: ${({ theme }) => `${theme.spacing(1.25)} ${theme.spacing(1.5)}`};
+  }
+
+  @media (max-width: 768px) and (min-width: ${MaxWidthBreakpoint.Mobile + 1}px) {
     padding: ${({ theme }) => `${theme.spacing(1.25)} ${theme.spacing(2)}`};
-    flex-wrap: wrap;
   }
 `;
 
@@ -128,6 +185,10 @@ const CountText = styled.span`
   font-weight: ${({ theme }) => theme.weight.medium};
   color: ${({ theme }) => theme.color.bodyText};
   min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const ActionGroup = styled.div`
@@ -135,62 +196,12 @@ const ActionGroup = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(1.5)};
   flex-shrink: 0;
-  flex-wrap: wrap;
   justify-content: flex-end;
-`;
 
-const ShareButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: ${({ theme }) => `${theme.spacing(0.75)} ${theme.spacing(2)}`};
-  border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  background: ${({ theme }) => theme.color.primaryButtonBg};
-  color: ${({ theme }) => theme.color.primaryButtonText};
-  font-size: ${({ theme }) => theme.fontSize._13};
-  font-weight: ${({ theme }) => theme.weight.medium};
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-
-  &:hover:not(:disabled) {
-    opacity: 0.92;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.textAccent};
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-`;
-
-const GhostTextButton = styled.button`
-  padding: ${({ theme }) => `${theme.spacing(0.75)} ${theme.spacing(1)}`};
-  border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  background: transparent;
-  color: ${({ theme }) => theme.color.ghostButtonText};
-  font-size: ${({ theme }) => theme.fontSize._13};
-  font-weight: ${({ theme }) => theme.weight.medium};
-  cursor: pointer;
-  transition: color 0.15s ease;
-
-  &:hover:not(:disabled) {
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.textAccent};
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+  @media (max-width: ${MaxWidthBreakpoint.Mobile}px) {
+    gap: ${({ theme }) => theme.spacing(0.75)};
+    flex-shrink: 1;
+    min-width: 0;
   }
 `;
 
@@ -207,6 +218,12 @@ const GhostIconButton = styled.button`
   color: ${({ theme }) => theme.color.ghostButtonText};
   cursor: pointer;
   transition: color 0.15s ease;
+  flex-shrink: 0;
+
+  @media (max-width: ${MaxWidthBreakpoint.Mobile}px) {
+    width: 28px;
+    height: 28px;
+  }
 
   &:hover:not(:disabled) {
     color: ${({ theme }) => theme.color.bodyText};
@@ -223,24 +240,6 @@ const GhostIconButton = styled.button`
   }
 `;
 
-const OverflowMenuRoot = styled.div`
-  position: relative;
-  flex-shrink: 0;
-`;
-
-const OverflowMenu = styled.div`
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 180px;
-  padding: ${({ theme }) => theme.spacing(0.5)};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  background: ${({ theme }) => theme.color.bodyRaised};
-  box-shadow: ${({ theme }) => theme.boxShadow.md};
-  z-index: 40;
-`;
-
 const OverflowMenuItem = styled.button<{ $danger?: boolean }>`
   display: block;
   width: 100%;
@@ -254,7 +253,12 @@ const OverflowMenuItem = styled.button<{ $danger?: boolean }>`
   cursor: pointer;
   transition: background 0.1s ease;
 
-  &:hover {
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
     background: ${({ theme }) => theme.color.bodyElevated};
   }
 
@@ -274,6 +278,7 @@ const CancelButton = styled.button`
   font-weight: ${({ theme }) => theme.weight.medium};
   cursor: pointer;
   transition: color 0.15s ease;
+  flex-shrink: 0;
 
   &:hover {
     color: ${({ theme }) => theme.color.bodyText};

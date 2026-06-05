@@ -132,7 +132,7 @@ export const addSelectionToNewAlbum = async (
 export type AddMediaItemsToExistingAlbumOptions = {
   /**
    * When false, assumes the "Add album item" modal is already open.
-   * Default: clicks "Add items to Album" on the current album screen.
+   * Default: opens the "Add to album" menu and chooses "Add from library".
    */
   openModal?: boolean;
 };
@@ -156,7 +156,8 @@ export const addMediaItemsToExistingAlbum = async (
   }
 
   if (openModal) {
-    await page.getByRole('button', { name: 'Add items to Album' }).click();
+    await page.getByRole('button', { name: 'Add to album' }).click();
+    await page.getByRole('menuitem', { name: 'Add from library' }).click();
   }
 
   const modal = getModal(page);

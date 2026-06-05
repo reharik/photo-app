@@ -1,7 +1,8 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { FrontendUploadStatus, Operation } from '@packages/contracts';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FrontendUploadStatus, MediaAssetKind, Operation } from '@packages/contracts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import {
   AddMediaItemsToAlbumDocument,
@@ -11,6 +12,10 @@ import {
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
+import {
+  saveGalleryScrollPosition,
+  useGalleryScrollRestoration,
+} from '../../hooks/useGalleryScrollRestoration';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
@@ -21,7 +26,8 @@ import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
-import { LibraryGrid } from './library/LibraryGrid';
+import { MediaGrid } from './grid/MediaGrid';
+import { LIBRARY_GRID_COLUMNS } from './grid/gridColumns';
 import {
   LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT,
   LibrarySelectionToolbar,
@@ -35,6 +41,7 @@ type LibrarySectionProps = {
 };
 
 export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
@@ -88,6 +95,20 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
     });
 
   const { items } = useUploadQueue();
+
+  useGalleryScrollRestoration({
+    storageKey: 'library',
+    scrollRootRef,
+    ready: nodes.length > 0,
+    nodeCount: nodes.length,
+    loadMore: paging.loadMore,
+    hasMore: paging.hasMore,
+    isLoadingMore: paging.isLoadingMore,
+  });
+
+  const handleTileNavigate = useCallback((mediaId: string): void => {
+    saveGalleryScrollPosition('library', scrollRootRef.current, mediaId);
+  }, []);
 
   useEffect(() => {
     const newlyReadyForThisAlbum = items.filter((item) =>
@@ -168,11 +189,25 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
           </EmptyStateWrap>
         ) : (
           <GridWrap>
-            <LibraryGrid
+            <MediaGrid
               nodes={nodes}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
+              columnCounts={LIBRARY_GRID_COLUMNS}
+              groupBy="date"
+              getTileProps={(item, orderedMediaIds) => ({
+                to: `/media/${item.id}`,
+                thumbnailUrl: buildMediaItemUrl(item.id, MediaAssetKind.thumbnail),
+                mediaGalleryIds: orderedMediaIds,
+                kind: item.kind,
+                title: item.title,
+                reactionCounts: item.reactionCounts,
+                testId: item.id,
+                onBeforeNavigate: () => {
+                  handleTileNavigate(item.id);
+                },
+              })}
             />
           </GridWrap>
         )}
@@ -238,13 +273,15 @@ const Container = styled.div`
 `;
 
 const ToolbarSlot = styled.div<{ $active: boolean }>`
+  position: relative;
+  z-index: 20;
   flex-shrink: 0;
   height: ${LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT};
   box-sizing: border-box;
   background: ${({ $active, theme }) => ($active ? theme.color.bodyRaised : theme.color.body)};
   box-shadow: ${({ $active, theme }) =>
     $active ? `inset 0 -0.5px 0 ${theme.color.borderSubtle}` : 'none'};
-  overflow: hidden;
+  overflow: visible;
 `;
 
 const ScrollArea = styled(InfiniteScroll)`

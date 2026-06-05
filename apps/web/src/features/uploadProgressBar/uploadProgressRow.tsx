@@ -36,12 +36,12 @@ export const UploadProgressRow = ({
       </RowMain>
       <RowActions>
         {showRetry ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
+          <Button type="button" variant="ghost" size="small" onClick={onRetry}>
             Retry
           </Button>
         ) : null}
         {showCancel ? (
-          <Button type="button" variant="ghost" size="sm" onClick={onRemove}>
+          <Button type="button" variant="ghost" size="small" onClick={onRemove}>
             Cancel
           </Button>
         ) : null}

@@ -1,14 +1,11 @@
 import { useMemo } from 'react';
 import styled from 'styled-components';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
+import type { MultiSelectProps } from '../media/grid/types';
 import { ViewableItemVM } from '../../viewModels';
 import { SelectableGalleryItem } from './SelectableGalleryItem';
 
-export type MultiSelectProps = {
-  isSelected: (id: string) => boolean;
-  handleModifierClick: (e: React.MouseEvent, id: string, index: number) => void;
-  toggleSelectAt: (id: string, index: number) => void;
-};
+export type { MultiSelectProps };
 
 const DEFAULT_GRID_MIN_COLUMN_PX = 280;
 const DEFAULT_GRID_MIN_COLUMN_MOBILE_PX = 160;

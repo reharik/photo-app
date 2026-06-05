@@ -69,6 +69,12 @@ export const useMultiSelectIds = (orderedIds: string[]) => {
     setAnchorIndex(index);
   }, []);
 
+  /** Enter selection with a single item (mobile long-press entry). */
+  const enterSelectionAt = useCallback((id: string, index: number): void => {
+    setSelectedIds(new Set([id]));
+    setAnchorIndex(index);
+  }, []);
+
   const clearSelection = useCallback((): void => {
     setSelectedIds(new Set());
     setAnchorIndex(null);
@@ -82,6 +88,7 @@ export const useMultiSelectIds = (orderedIds: string[]) => {
     isSelected,
     handleModifierClick,
     toggleSelectAt,
+    enterSelectionAt,
     clearSelection,
   };
 };

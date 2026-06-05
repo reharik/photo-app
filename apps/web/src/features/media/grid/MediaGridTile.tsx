@@ -1,34 +1,68 @@
-import { MediaAssetKind, MediaKind, ReactionEmoji } from '@packages/contracts';
+import { MediaKind, ReactionEmoji } from '@packages/contracts';
 import { Heart, MessageCircleMore } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import styled from 'styled-components';
-import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
-import type { MediaItemSummaryVM, ReactionCountsVM } from '../../../viewModels/';
+import styled, { css } from 'styled-components';
+import type { ReactionCountsVM } from '../../../viewModels/';
 
-export type LibraryMediaTileProps = {
-  item: MediaItemSummaryVM;
+export type MediaGridTileFit = 'cover' | 'contain';
+
+export type MediaGridTileProps = {
+  to: string;
+  thumbnailUrl: string;
   mediaGalleryIds: string[];
+  kind: MediaKind;
+  title?: string;
+  reactionCounts: ReactionCountsVM;
+  /** Used for data-testid on the thumbnail. */
+  testId: string;
+  onBeforeNavigate?: () => void;
   /** Future burst detection at media ingest; always undefined until then. */
   burstCount?: number;
+  tileFit?: MediaGridTileFit;
 };
 
 const getReactionCount = (reactionCounts: ReactionCountsVM, emoji: ReactionEmoji): number =>
   reactionCounts.byEmoji.find((e) => e.emoji.equals(emoji))?.count ?? 0;
 
-export const LibraryMediaTile = ({ item, mediaGalleryIds, burstCount }: LibraryMediaTileProps) => {
-  const url = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
+export const MediaGridTile = ({
+  to,
+  thumbnailUrl,
+  mediaGalleryIds,
+  kind,
+  title,
+  reactionCounts,
+  testId,
+  burstCount,
+  tileFit = 'cover',
+  onBeforeNavigate,
+}: MediaGridTileProps) => {
   const showBurstBadge = burstCount != null && burstCount > 1;
-  const heartCount = getReactionCount(item.reactionCounts, ReactionEmoji.heart);
-  const commentCount = getReactionCount(item.reactionCounts, ReactionEmoji.comment);
+  const heartCount = getReactionCount(reactionCounts, ReactionEmoji.heart);
+  const commentCount = getReactionCount(reactionCounts, ReactionEmoji.comment);
   const showReactionPill = heartCount > 0 || commentCount > 0;
+  const isContain = tileFit === 'contain';
 
   return (
     <TileRoot>
-      <ThumbLink to={`/media/${item.id}`} state={{ mediaGalleryIds }}>
-        {item.kind.equals(MediaKind.photo) ? (
-          <ThumbImage src={url} data-testid={item.id} alt={item.title?.trim() ?? ''} />
+      <ThumbLink
+        to={to}
+        state={{ mediaGalleryIds }}
+        $contain={isContain}
+        onClick={() => {
+          onBeforeNavigate?.();
+        }}
+      >
+        {kind.equals(MediaKind.photo) ? (
+          <ThumbImage
+            src={thumbnailUrl}
+            data-testid={testId}
+            alt={title?.trim() ?? ''}
+            $contain={isContain}
+          />
         ) : (
-          <ThumbIcon aria-hidden>{'🎬'}</ThumbIcon>
+          <ThumbIcon aria-hidden $contain={isContain}>
+            {'🎬'}
+          </ThumbIcon>
         )}
         {showBurstBadge ? (
           <BurstBadge aria-hidden>
@@ -85,7 +119,14 @@ const ReactionHoverPill = styled(TileChromePill)`
   transition: opacity 150ms ease;
 `;
 
-const ThumbLink = styled(Link)`
+const thumbLinkContainStyles = css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.color.bodyElevated};
+`;
+
+const ThumbLink = styled(Link)<{ $contain: boolean }>`
   position: relative;
   display: block;
   width: 100%;
@@ -95,6 +136,8 @@ const ThumbLink = styled(Link)`
   color: inherit;
   text-decoration: none;
 
+  ${({ $contain }) => ($contain ? thumbLinkContainStyles : '')}
+
   @media (hover: hover) {
     &:hover ${ReactionHoverPill} {
       opacity: 1;
@@ -102,22 +145,40 @@ const ThumbLink = styled(Link)`
   }
 `;
 
-const ThumbImage = styled.img`
+const thumbImageCoverStyles = css`
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 `;
 
-const ThumbIcon = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
+const thumbImageContainStyles = css`
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+`;
+
+const ThumbImage = styled.img<{ $contain: boolean }>`
+  ${({ $contain }) => ($contain ? thumbImageContainStyles : thumbImageCoverStyles)}
+`;
+
+const ThumbIcon = styled.div<{ $contain: boolean }>`
   opacity: 0.35;
-  background: ${({ theme }) => theme.color.bodyElevated};
+  font-size: ${({ $contain }) => ($contain ? '32px' : '40px')};
+  ${({ $contain, theme }) =>
+    $contain
+      ? ''
+      : `
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${theme.color.bodyElevated};
+  `}
 `;
 
 const BurstBadge = styled(TileChromePill)`

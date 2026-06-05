@@ -1,42 +1,81 @@
+import { useCallback } from 'react';
 import styled from 'styled-components';
+import { useLongPress } from '../../../hooks/useLongPress';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
-import { LibrarySelectionToggle } from './LibrarySelectionToggle';
+import { MediaGridSelectionToggle } from './MediaGridSelectionToggle';
 
 const SELECTED_PHOTO_SCALE = 0.92;
 const PHOTO_SCALE_TRANSITION = 'transform 180ms cubic-bezier(0.2, 0, 0, 1)';
+const TOUCH_GRID_MEDIA = '(hover: none) and (pointer: coarse)';
 
-type LibrarySelectableItemProps = {
+type MediaGridSelectableItemProps = {
   itemId: string;
   isSelected: boolean;
   selectionActive: boolean;
   onToggle: () => void;
+  onEnterSelection: () => void;
   onModifierClick: (event: React.MouseEvent) => void;
   selectable?: boolean;
   selectableActions?: GalleryActionItems[];
   children: React.ReactNode;
 };
 
-export const LibrarySelectableItem = ({
+export const MediaGridSelectableItem = ({
   itemId,
   selectable = true,
   isSelected,
   selectionActive,
   onModifierClick,
   onToggle,
+  onEnterSelection,
   children,
   selectableActions = [],
-}: LibrarySelectableItemProps) => {
+}: MediaGridSelectableItemProps) => {
+  const isTouchGrid = useMediaQuery(TOUCH_GRID_MEDIA);
   const showSelectionChrome = selectable && selectableActions.length > 0;
   const showSelectedFrame = isSelected && selectionActive && showSelectionChrome;
 
+  // TODO: long-press should produce a visible "selection engaged" signal — small scale pulse on long-pressed tile, ~100ms, before the ring settles.
+  const longPress = useLongPress({
+    onLongPress: onEnterSelection,
+    enabled: isTouchGrid && showSelectionChrome && !selectionActive,
+  });
+  const { consumeSuppressedClick } = longPress;
+
+  const handleClickCapture = useCallback(
+    (event: React.MouseEvent): void => {
+      if (consumeSuppressedClick()) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      onModifierClick(event);
+
+      if (selectionActive && showSelectionChrome && !event.defaultPrevented) {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggle();
+      }
+    },
+    [consumeSuppressedClick, onModifierClick, onToggle, selectionActive, showSelectionChrome],
+  );
+
   return (
     <Item data-testid={`media-tile-${itemId}`}>
-      <ThumbFrame data-library-selectable-thumb="" $showSelectedFrame={showSelectedFrame}>
-        <ThumbClickCapture onClickCapture={onModifierClick}>
+      <ThumbFrame data-media-grid-selectable-thumb="" $showSelectedFrame={showSelectedFrame}>
+        <ThumbClickCapture
+          onClickCapture={handleClickCapture}
+          onPointerDown={longPress.onPointerDown}
+          onPointerMove={longPress.onPointerMove}
+          onPointerUp={longPress.onPointerUp}
+          onPointerCancel={longPress.onPointerCancel}
+        >
           <PhotoScaleLayer $scaled={showSelectedFrame}>
             {children}
             {showSelectionChrome ? (
-              <LibrarySelectionToggle
+              <MediaGridSelectionToggle
                 selected={isSelected}
                 selectionActive={selectionActive}
                 onToggle={onToggle}
@@ -53,6 +92,7 @@ const Item = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  touch-action: manipulation;
 `;
 
 const ThumbFrame = styled.div<{ $showSelectedFrame: boolean }>`
@@ -65,9 +105,7 @@ const ThumbFrame = styled.div<{ $showSelectedFrame: boolean }>`
   background: ${({ theme }) => theme.color.body};
 
   ${({ $showSelectedFrame, theme }) =>
-    $showSelectedFrame
-      ? `box-shadow: inset 0 0 0 2px ${theme.color.primaryButtonBg};`
-      : ''}
+    $showSelectedFrame ? `box-shadow: inset 0 0 0 2px ${theme.color.primaryButtonBg};` : ''}
 `;
 
 const ThumbClickCapture = styled.div`
@@ -77,6 +115,7 @@ const ThumbClickCapture = styled.div`
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  touch-action: pan-y;
 `;
 
 const PhotoScaleLayer = styled.div<{ $scaled: boolean }>`

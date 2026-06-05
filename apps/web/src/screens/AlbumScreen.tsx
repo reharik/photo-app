@@ -24,7 +24,6 @@ export const AlbumScreen = () => {
   const [addAlbumItemModalOpen, setAddAlbumItemModalOpen] = useState(false);
   const [removeFromAlbumOpen, setRemoveFromAlbumOpen] = useState(false);
   const [shareAlbumOpen, setShareAlbumOpen] = useState(false);
-  const [shareItemsOpen, setShareItemsOpen] = useState(false);
   const [addCoverItemOpen, setAddCoverItemOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const addToAlbumMutation = useAppMutationState();
@@ -179,8 +178,6 @@ export const AlbumScreen = () => {
   const modalState = {
     shareAlbumOpen,
     setShareAlbumOpen,
-    shareItemsOpen,
-    setShareItemsOpen,
     addCoverItemOpen,
     setAddCoverItemOpen,
   };

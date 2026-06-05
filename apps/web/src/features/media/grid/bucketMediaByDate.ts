@@ -1,13 +1,8 @@
 import { DateTime } from 'luxon';
 import type { MediaItemSummaryVM } from '../../../viewModels/';
-import type { LibraryDateBucket, LibraryDateBucketKey } from './libraryDateBucketTypes';
+import type { MediaGridDateBucket, MediaGridDateBucketKey } from './mediaGridDateBucketTypes';
 
-const BUCKET_ORDER: LibraryDateBucketKey[] = [
-  'today',
-  'yesterday',
-  'lastWeek',
-  'thisMonth',
-];
+const BUCKET_ORDER: MediaGridDateBucketKey[] = ['today', 'yesterday', 'lastWeek', 'thisMonth'];
 
 const formatSubtitleDate = (dt: DateTime): string => dt.toLocaleString(DateTime.DATE_MED);
 
@@ -18,7 +13,7 @@ const formatSubtitleRange = (min: DateTime, max: DateTime): string => {
   return `${formatSubtitleDate(min)} to ${formatSubtitleDate(max)}`;
 };
 
-const resolveBucketKey = (createdAt: DateTime, now: DateTime): LibraryDateBucketKey => {
+const resolveBucketKey = (createdAt: DateTime, now: DateTime): MediaGridDateBucketKey => {
   const todayStart = now.startOf('day');
   const yesterdayStart = todayStart.minus({ days: 1 });
   const lastWeekStart = todayStart.minus({ days: 7 });
@@ -43,7 +38,7 @@ const resolveBucketKey = (createdAt: DateTime, now: DateTime): LibraryDateBucket
   return `year:${createdAt.year}`;
 };
 
-const bucketLabel = (key: LibraryDateBucketKey): string => {
+const bucketLabel = (key: MediaGridDateBucketKey): string => {
   switch (key) {
     case 'today':
       return 'Today';
@@ -69,7 +64,7 @@ const bucketLabel = (key: LibraryDateBucketKey): string => {
   }
 };
 
-const bucketSubtitle = (key: LibraryDateBucketKey, dates: DateTime[], now: DateTime): string => {
+const bucketSubtitle = (key: MediaGridDateBucketKey, dates: DateTime[], now: DateTime): string => {
   if (dates.length === 0) {
     return '';
   }
@@ -93,7 +88,7 @@ const bucketSubtitle = (key: LibraryDateBucketKey, dates: DateTime[], now: DateT
   }
 };
 
-const sortBucketKeys = (keys: LibraryDateBucketKey[]): LibraryDateBucketKey[] => {
+const sortBucketKeys = (keys: MediaGridDateBucketKey[]): MediaGridDateBucketKey[] => {
   const fixed = BUCKET_ORDER.filter((k) => keys.includes(k));
   const months = keys
     .filter((k): k is `month:${number}:${number}` => k.startsWith('month:'))
@@ -112,10 +107,10 @@ const sortBucketKeys = (keys: LibraryDateBucketKey[]): LibraryDateBucketKey[] =>
   return [...fixed, ...months, ...years];
 };
 
-export const bucketMediaByDate = (nodes: MediaItemSummaryVM[]): LibraryDateBucket[] => {
+export const bucketMediaByDate = (nodes: MediaItemSummaryVM[]): MediaGridDateBucket[] => {
   const now = DateTime.local();
-  const groups = new Map<LibraryDateBucketKey, MediaItemSummaryVM[]>();
-  const datesByKey = new Map<LibraryDateBucketKey, DateTime[]>();
+  const groups = new Map<MediaGridDateBucketKey, MediaItemSummaryVM[]>();
+  const datesByKey = new Map<MediaGridDateBucketKey, DateTime[]>();
 
   for (const item of nodes) {
     const createdAt = item.createdAt;

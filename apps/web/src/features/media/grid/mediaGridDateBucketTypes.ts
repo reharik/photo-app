@@ -1,6 +1,6 @@
 import type { MediaItemSummaryVM } from '../../../viewModels/';
 
-export type LibraryDateBucketKey =
+export type MediaGridDateBucketKey =
   | 'today'
   | 'yesterday'
   | 'lastWeek'
@@ -8,8 +8,8 @@ export type LibraryDateBucketKey =
   | `month:${number}:${number}`
   | `year:${number}`;
 
-export type LibraryDateBucket = {
-  key: LibraryDateBucketKey;
+export type MediaGridDateBucket = {
+  key: MediaGridDateBucketKey;
   label: string;
   subtitle: string;
   location?: string;

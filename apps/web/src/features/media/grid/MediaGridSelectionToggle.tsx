@@ -1,20 +1,20 @@
 import styled from 'styled-components';
 
-type LibrarySelectionToggleProps = {
+type MediaGridSelectionToggleProps = {
   selected: boolean;
   selectionActive: boolean;
   onToggle: () => void;
 };
 
 /**
- * Top-right selection affordance on library tiles.
+ * Top-right selection affordance on media grid tiles.
  * Hollow ring on hover before selection mode; always visible once selection starts.
  */
-export const LibrarySelectionToggle = ({
+export const MediaGridSelectionToggle = ({
   selected,
   selectionActive,
   onToggle,
-}: LibrarySelectionToggleProps) => {
+}: MediaGridSelectionToggleProps) => {
   return (
     <ToggleButton
       type="button"
@@ -52,12 +52,11 @@ const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boole
   justify-content: center;
   cursor: pointer;
   z-index: 2;
-  opacity: ${({ $selected, $selectionActive }) =>
-    $selected || $selectionActive ? 1 : 0};
+  opacity: ${({ $selected, $selectionActive }) => ($selected || $selectionActive ? 1 : 0)};
   pointer-events: ${({ $selected, $selectionActive }) =>
     $selected || $selectionActive ? 'auto' : 'none'};
 
-  [data-library-selectable-thumb]:hover & {
+  [data-media-grid-selectable-thumb]:hover & {
     opacity: 1;
     pointer-events: auto;
   }

@@ -1,13 +1,17 @@
 import { MediaAssetKind, MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
+import { Camera } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { css, styled } from 'styled-components';
 import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { MediaItemSummaryVM, ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
 import { SingleSelectionTile } from '../gallery/tiles/SingleSelectionTile';
+import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
+import { AlbumSelectionActions } from './AlbumSelectionActions';
 
 type AlbumSectionMetadataProps = {
   count: number;
@@ -51,6 +55,8 @@ export type MinimalAlbumItemSummaryVM = {
   operations: Operation[];
 };
 
+const MOBILE_ALBUM_MEDIA = '(max-width: 768px)';
+
 export const AlbumSectionMetadata = ({
   count,
   album,
@@ -65,8 +71,10 @@ export const AlbumSectionMetadata = ({
   addCoverItemOpen = false,
   setAddCoverItemOpen = () => {},
 }: AlbumSectionMetadataProps) => {
+  const isMobileAlbum = useMediaQuery(MOBILE_ALBUM_MEDIA);
   const isSelecting = selectionCount > 0;
-  const selectionLabel = selectionCount === 1 ? '1 selected' : `${selectionCount} selected`;
+  const showMobileBrowse = isMobileAlbum && !isSelecting;
+  const showMobileSelection = isMobileAlbum && isSelecting;
   const coverMediaUrl = album.coverMedia
     ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
     : undefined;
@@ -80,7 +88,7 @@ export const AlbumSectionMetadata = ({
       />
     ) : (
       <CoverPlaceholder aria-hidden $compact={metaCompact}>
-        📷
+        <Camera size={metaCompact ? 18 : 28} strokeWidth={1.75} aria-hidden />
       </CoverPlaceholder>
     );
     return album.operations.includes(Operation.editCover) ? (
@@ -91,67 +99,64 @@ export const AlbumSectionMetadata = ({
       <>{cover}</>
     );
   };
+
+  const renderSelectionActions = () =>
+    onClearSelection != null ? (
+      <AlbumSelectionActions
+        selectionCount={selectionCount}
+        onClearSelection={onClearSelection}
+        selectionActions={selectionActions}
+      />
+    ) : null;
+
   return (
     <>
-      <AlbumMeta $compact={metaCompact}>
-        <AlbumMetaContent>
-          <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
-          <AlbumInfo $compact={metaCompact}>
-            {metaCompact ? (
-              <AlbumCompactSummary>
-                {`${count} media items ${album.updatedAt ? `· Updated ${album.updatedAt.isValid ? album.updatedAt.toLocaleString(DateTime.DATE_MED) : ''}` : ''}`}
-              </AlbumCompactSummary>
-            ) : (
-              <>
-                <AlbumTitle>{album.title}</AlbumTitle>
-                <AlbumStats>
-                  <Stat>{count} media items</Stat>
-                </AlbumStats>
-                {album.updatedAt && (
-                  <AlbumDescription>
-                    Updated{' '}
-                    {localizeDate(
-                      album.updatedAt.isValid
-                        ? album.updatedAt.toLocaleString(DateTime.DATE_MED)
-                        : '',
-                    )}
-                  </AlbumDescription>
+      <AlbumMeta
+        $compact={metaCompact}
+        $mobileBrowse={showMobileBrowse}
+        $mobileSelection={showMobileSelection}
+      >
+        {showMobileBrowse ? (
+          <MobileBrowseHeader>
+            <MobileBrowseTitleRow>
+              <MobileBrowseTitle>{album.title}</MobileBrowseTitle>
+              {headerActions != null ? (
+                <MobileBrowseActions>{headerActions}</MobileBrowseActions>
+              ) : null}
+            </MobileBrowseTitleRow>
+            <MobileBrowseSubtitle>{buildAlbumBrowseSubtitle(count, album.updatedAt)}</MobileBrowseSubtitle>
+          </MobileBrowseHeader>
+        ) : showMobileSelection ? (
+          renderSelectionActions()
+        ) : (
+          <>
+            <AlbumMetaPrimary $compact={metaCompact}>
+              <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
+              <AlbumInfo $compact={metaCompact}>
+                {metaCompact ? (
+                  <AlbumCompactSummary>
+                    {buildAlbumBrowseSubtitle(count, album.updatedAt)}
+                  </AlbumCompactSummary>
+                ) : (
+                  <>
+                    <AlbumTitle>{album.title}</AlbumTitle>
+                    <AlbumStats>
+                      <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
+                    </AlbumStats>
+                    {album.updatedAt?.isValid ? (
+                      <AlbumDescription>
+                        Updated {localizeDate(album.updatedAt.toLocaleString(DateTime.DATE_MED))}
+                      </AlbumDescription>
+                    ) : null}
+                  </>
                 )}
-              </>
-            )}
-          </AlbumInfo>
-        </AlbumMetaContent>
-        <HeaderTrailing>
-          {isSelecting ? (
-            <TrailingColumn>
-              <SelectionActionGroup>
-                {selectionActions.map((action) => (
-                  <HeaderActionButton
-                    key={action.operation?.key ?? action.label ?? ''}
-                    type="button"
-                    onClick={action.onAction}
-                  >
-                    {action.label}
-                  </HeaderActionButton>
-                ))}
-              </SelectionActionGroup>
-              <SelectionRow>
-                {onClearSelection != null ? (
-                  <ClearSelectionButton
-                    type="button"
-                    onClick={onClearSelection}
-                    aria-label="Clear selection"
-                  >
-                    ✕
-                  </ClearSelectionButton>
-                ) : null}
-                <SelectionCount>{selectionLabel}</SelectionCount>
-              </SelectionRow>
-            </TrailingColumn>
-          ) : (
-            headerActions
-          )}
-        </HeaderTrailing>
+              </AlbumInfo>
+            </AlbumMetaPrimary>
+            <HeaderTrailing $selecting={isSelecting}>
+              {isSelecting ? renderSelectionActions() : headerActions}
+            </HeaderTrailing>
+          </>
+        )}
       </AlbumMeta>
       {addCoverItemOpen && (
         <AppModal
@@ -195,7 +200,11 @@ export const AlbumSectionMetadata = ({
   );
 };
 
-const AlbumMeta = styled.div<{ $compact: boolean }>`
+const AlbumMeta = styled.div<{
+  $compact: boolean;
+  $mobileBrowse: boolean;
+  $mobileSelection: boolean;
+}>`
   flex-shrink: 0;
   display: flex;
   flex-direction: row;
@@ -217,14 +226,67 @@ const AlbumMeta = styled.div<{ $compact: boolean }>`
     gap 180ms ease,
     padding 180ms ease;
 
-  @media (max-width: 768px) {
-    padding: ${({ theme, $compact }) =>
-      $compact
-        ? `${theme.spacing(2)} ${theme.spacing(3)}`
-        : `${theme.spacing(3)} ${theme.spacing(3)} ${theme.spacing(2)}`};
-    flex-direction: ${({ $compact }) => ($compact ? 'row' : 'column')};
-    align-items: ${({ $compact }) => ($compact ? 'center' : 'stretch')};
-  }
+  ${({ $mobileBrowse, theme }) =>
+    $mobileBrowse
+      ? css`
+          padding: ${theme.spacing(1.5)} ${theme.spacing(3)} ${theme.spacing(1.25)};
+        `
+      : ''}
+
+  ${({ $mobileSelection, theme }) =>
+    $mobileSelection
+      ? css`
+          padding: ${theme.spacing(1.5)} ${theme.spacing(3)};
+        `
+      : ''}
+`;
+
+const MobileBrowseHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  width: 100%;
+  min-width: 0;
+`;
+
+const MobileBrowseTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(1)};
+  min-width: 0;
+`;
+
+const MobileBrowseTitle = styled.h2`
+  margin: 0;
+  font-family: ${({ theme }) => theme.font.serif};
+  font-size: ${({ theme }) => theme.fontSize._18};
+  font-weight: ${({ theme }) => theme.weight.regular};
+  color: ${({ theme }) => theme.color.bodyText};
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const MobileBrowseSubtitle = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.fontSize._13};
+  line-height: 1.4;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MobileBrowseActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.25)};
+  flex-shrink: 0;
 `;
 
 const AlbumCover = styled.div<{ $compact: boolean }>`
@@ -234,7 +296,7 @@ const AlbumCover = styled.div<{ $compact: boolean }>`
   border-radius: ${({ theme, $compact }) =>
     $compact ? theme.borderRadius.md : theme.borderRadius.lg};
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: center;
   overflow: hidden;
 
@@ -247,19 +309,17 @@ const AlbumCover = styled.div<{ $compact: boolean }>`
       : css`
           width: 180px;
           aspect-ratio: 4 / 3;
-
-          @media (max-width: 768px) {
-            width: 100%;
-            max-width: 220px;
-            margin-inline: auto;
-          }
         `}
 `;
 
 const CoverPlaceholder = styled.div<{ $compact: boolean }>`
-  font-size: ${({ $compact }) => ($compact ? '24px' : 'clamp(32px, min(10vw, 15vh), 56px)')};
-  line-height: 1;
-  opacity: 0.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: ${({ theme }) => theme.color.bodyElevated};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
 `;
 
 const CoverUploadButton = styled.button`
@@ -276,6 +336,7 @@ const CoverUploadButton = styled.button`
 `;
 
 const CoverImage = styled.img`
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -322,6 +383,7 @@ const AlbumDescription = styled.p`
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   line-height: 1.6;
 `;
+
 const AddAlbumCoverModalHeader = styled.div`
   flex-shrink: 0;
   display: flex;
@@ -354,7 +416,7 @@ const AddAlbumCoverModalClose = styled.button`
   }
 `;
 
-const AlbumMetaContent = styled.div`
+const AlbumMetaPrimary = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -364,103 +426,10 @@ const AlbumMetaContent = styled.div`
   align-self: center;
 `;
 
-const HeaderTrailing = styled.div`
+const HeaderTrailing = styled.div<{ $selecting: boolean }>`
   display: flex;
-  flex-shrink: 0;
+  flex-shrink: 1;
   align-self: flex-start;
-`;
-
-const TrailingColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const SelectionRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-`;
-
-const SelectionCount = styled.span`
-  font-size: 16px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-`;
-
-const ClearSelectionButton = styled.button`
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  background: ${({ theme }) => theme.color.bodyRaised};
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.body};
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.textAccent};
-    outline-offset: 2px;
-  }
-
-  @media (max-width: 768px) {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-`;
-
-const SelectionActionGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
-  flex-wrap: wrap;
-  justify-content: flex-start;
-`;
-
-const HeaderActionButton = styled.button`
-  padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)};
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-  background: transparent;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-  white-space: nowrap;
-
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.75;
-  }
+  min-width: 0;
+  max-width: 100%;
 `;
