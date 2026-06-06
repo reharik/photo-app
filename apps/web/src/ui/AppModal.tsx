@@ -87,6 +87,10 @@ const Backdrop = styled.div`
 const Dialog = styled.div<{ $maxWidth: string }>`
   width: 100%;
   max-width: ${({ $maxWidth }) => $maxWidth};
+  max-height: calc(100vh - ${({ theme }) => theme.spacing(3)} * 2);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: ${({ theme }) => theme.color.body};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
@@ -94,6 +98,7 @@ const Dialog = styled.div<{ $maxWidth: string }>`
 `;
 
 const Header = styled.div`
+  flex-shrink: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -120,10 +125,15 @@ const CloseButton = styled.button`
 `;
 
 const Body = styled.div<{ $padding: number }>`
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: ${({ theme, $padding }) => theme.spacing($padding)};
 `;
 
 const Footer = styled.div`
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing(2)};

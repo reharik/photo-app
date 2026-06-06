@@ -25,14 +25,11 @@ export const SharedWithMeScreen = () => {
     nextFetchPolicy: 'cache-and-network',
   });
 
-  const onReactionsRefetch = useCallback(async (): Promise<void> => {
-    await query.refetch();
-  }, [query]);
-
   const {
     data: sharedWithMeMediaItems,
     content,
     paging,
+    refetch,
   } = usePaginatedQueryRenderState({
     query,
     select: (data) => ({
@@ -54,8 +51,7 @@ export const SharedWithMeScreen = () => {
       <SharedWithMeSection
         sharedWithMeMediaItems={sharedWithMeMediaItems.nodes}
         paging={paging}
-        totalCount={sharedWithMeMediaItems.totalCount}
-        onReactionsRefetch={onReactionsRefetch}
+        reloadData={refetch}
       />
     </Container>
   );

@@ -1,18 +1,18 @@
-import { MediaKind, ReactionTargetType } from '@packages/contracts';
+import { MediaKind } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaViewerKeyboard } from '../../../hooks/useMediaViewerKeyboard';
 import { useMobileViewerGestures } from '../../../hooks/useMobileViewerGestures';
-import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
-import { ReactionsContainer } from '../../reactions/ReactionsContainer';
 import { MediaRenderer } from './MediaRenderer';
 import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
-import { ViewerBelowMediaSlot } from './MediaViewerStyles';
 import type { NavigateDirection } from './mediaViewerTypes';
-import { useMediaViewerSlideTransition } from './useMediaViewerSlideTransition';
+import {
+  SlideTransitionWrap,
+  useMediaViewerSlideTransition,
+} from './useMediaViewerSlideTransition';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
 export type { NavigateDirection } from './mediaViewerTypes';
@@ -23,17 +23,13 @@ export type MediaViewerProps = {
   displayUrl: string;
   imageAlt: string;
   mediaItemId: string;
-  reactionCounts: ReactionCountsVM;
-  viewerReactions?: ViewerReactionVM[];
-  canReact?: boolean;
-  onRefetch?: () => Promise<void>;
-  /** When false, hides the reactions strip below the media. */
+  /** When false, hides the stage close button on mobile. */
   showCloseButton?: boolean;
   onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
   escapeConsumedRef?: MutableRefObject<(() => boolean) | null>;
-  /** Mobile layout: toggles close button, reactions, and metadata overlay visibility. */
+  /** Mobile layout: toggles close button and metadata card visibility. */
   mobileChrome?: {
     visible: boolean;
     onToggleChrome: () => void;
@@ -56,10 +52,6 @@ export const MediaViewer = ({
   displayUrl,
   imageAlt,
   mediaItemId,
-  reactionCounts,
-  viewerReactions,
-  canReact,
-  onRefetch,
   onClose,
   showCloseButton = true,
   onNavigate,
@@ -99,7 +91,7 @@ export const MediaViewer = ({
     };
   }, [escapeConsumedRef]);
 
-  const { requestNavigate, SlideTransitionWrap } = useMediaViewerSlideTransition({
+  const { requestNavigate, slideTransition } = useMediaViewerSlideTransition({
     contentKey: displayUrl,
     canNavigate,
     onNavigate,
@@ -121,7 +113,7 @@ export const MediaViewer = ({
   });
 
   const media = (
-    <SlideTransitionWrap>
+    <SlideTransitionWrap {...slideTransition}>
       <MediaChrome>
         <ZoomableImageViewport
           key={displayUrl}
@@ -141,19 +133,6 @@ export const MediaViewer = ({
     </SlideTransitionWrap>
   );
 
-  const belowMediaSlot = (
-    <ViewerBelowMediaSlot>
-      <ReactionsContainer
-        targetId={mediaItemId}
-        targetType={ReactionTargetType.mediaItem}
-        reactionCounts={reactionCounts}
-        viewerReactions={viewerReactions}
-        canReact={canReact}
-        onRefetch={onRefetch}
-      />
-    </ViewerBelowMediaSlot>
-  );
-
   const chromeVisible = mobileChrome?.visible ?? false;
 
   return (
@@ -162,24 +141,16 @@ export const MediaViewer = ({
         {isMobileLayout && mobileChrome != null ? (
           <MediaViewerMobile
             media={media}
-            belowMedia={belowMediaSlot}
             onClose={onClose}
             chromeVisible={chromeVisible}
             showCloseButton={showCloseButton}
             gestureHandlers={gestureHandlers}
           />
         ) : !canNavigate ? (
-          <MediaViewerSingle
-            media={media}
-            belowMedia={belowMediaSlot}
-            onClose={onClose}
-            showCloseButton={showCloseButton}
-          />
+          <MediaViewerSingle media={media} />
         ) : (
           <MediaViewerDesktopNav
             media={media}
-            belowMedia={belowMediaSlot}
-            onClose={onClose}
             onNavigate={requestNavigate}
             canNavigate={canNavigate}
           />
@@ -188,6 +159,7 @@ export const MediaViewer = ({
     </ViewerRoot>
   );
 };
+
 const ViewerRoot = styled.div`
   flex: 1;
   display: flex;
@@ -208,7 +180,6 @@ const ViewerShell = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(2)};
   overflow: auto;
 
   @media (max-width: 968px) {
@@ -218,7 +189,9 @@ const ViewerShell = styled.div`
   }
 
   @media (min-width: 969px) {
-    padding: ${({ theme }) => theme.spacing(3)};
+    align-items: stretch;
+    overflow: hidden;
+    width: 100%;
   }
 `;
 

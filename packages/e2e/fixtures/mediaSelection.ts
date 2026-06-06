@@ -17,9 +17,11 @@ export type MediaSelectionHandle = {
   expectActionVisible: (buttonName: string) => Promise<void>;
   /** Asserts an action button is not present in the selection bar. */
   expectActionHidden: (buttonName: string) => Promise<void>;
-  /** Clears the selection via the ✕ control; toolbar is hidden afterward. */
-  clear: () => Promise<void>;
+  /** Clears the selection via Cancel (warm-light) or legacy ✕; toolbar hidden afterward. */
+  clear: (buttonLabel?: ClearSelectionButtonLabel) => Promise<void>;
 };
+
+export type ClearSelectionButtonLabel = 'Cancel' | 'Clear selection';
 
 export type SelectionToolbarVariant = 'legacy' | 'library';
 
@@ -36,6 +38,8 @@ export type SelectMediaItemsOptions = {
   scope?: Locator;
   /** Library grid uses "{N} photos selected"; album/gallery screens use "{N} selected". */
   toolbarVariant?: SelectionToolbarVariant;
+  /** Warm-light toolbars use "Cancel"; legacy SelectableGallerySelectionBar uses "Clear selection". */
+  clearButtonLabel?: ClearSelectionButtonLabel;
 };
 
 const selectionCountLabel = (count: number, variant: SelectionToolbarVariant = 'legacy'): string =>
@@ -55,8 +59,8 @@ const selectionToolbarIn = (root: Page | Locator): Locator =>
 
 /**
  * Hovers a gallery tile and toggles its corner checkbox on if not already selected.
- * Works on any screen that renders `SelectableGallery` + `media-tile-{id}` (recent
- * media, album detail, shared-with-me, public album grid, media picker, etc.).
+ * Works on any screen that renders `media-tile-{id}` (library, albums, shared-with-me,
+ * public album, media picker, album list, etc.).
  */
 export const selectMediaTile = async (
   page: Page,
@@ -128,8 +132,12 @@ export const selectMediaItems = async (
     await expect(toolbar.getByRole('button', { name: buttonName })).toHaveCount(0);
   };
 
-  const clear = async (): Promise<void> => {
-    await toolbar.getByRole('button', { name: 'Clear selection' }).click();
+  const clearButtonLabel = options.clearButtonLabel ?? 'Cancel';
+
+  const clear = async (
+    buttonLabel: ClearSelectionButtonLabel = clearButtonLabel,
+  ): Promise<void> => {
+    await toolbar.getByRole('button', { name: buttonLabel }).click();
     await expect(toolbar).toBeHidden();
   };
 

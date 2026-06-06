@@ -24,9 +24,16 @@ export const formatTakenDisplay = (takenAt?: DateTime): string => {
   return takenAt.toLocaleString(DateTime.DATETIME_MED);
 };
 
-export const formatDateOnly = (dt?: DateTime): string => {
-  if (!dt || !dt.isValid) {
-    return '—';
+export const formatMomentHeading = (takenAt?: DateTime): string | undefined => {
+  if (!takenAt?.isValid) {
+    return undefined;
+  }
+  return takenAt.toLocaleString(DateTime.DATE_FULL);
+};
+
+export const formatDateOnly = (dt?: DateTime): string | undefined => {
+  if (!dt?.isValid) {
+    return undefined;
   }
   return dt.toLocaleString(DateTime.DATE_MED);
 };

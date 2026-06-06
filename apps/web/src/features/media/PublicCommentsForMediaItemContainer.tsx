@@ -3,16 +3,18 @@ import { JSX } from 'react';
 import styled from 'styled-components';
 import { CommentsForPublicMediaItemDocument } from '../../graphql/generated/types';
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
-import { CommentsPanel } from '../comments/CommentsPanel';
+import { CommentsPanel, type CommentsPanelLayout } from '../comments/CommentsPanel';
 
 const PAGE_SIZE = 50;
 
 export type PublicCommentsForMediaItemContainerProps = {
   mediaItemId: string;
+  layout?: CommentsPanelLayout;
 };
 
 export const PublicCommentsForMediaItemContainer = ({
   mediaItemId,
+  layout = 'default',
 }: PublicCommentsForMediaItemContainerProps): JSX.Element => {
   const query = useQuery(CommentsForPublicMediaItemDocument, {
     variables: { mediaItemId, limit: PAGE_SIZE, offset: 0 },
@@ -26,18 +28,17 @@ export const PublicCommentsForMediaItemContainer = ({
     select: (data) => data.publicAccess?.mediaItem?.comments,
   });
   const comments = data?.nodes ?? [];
-  const titleText = data && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
   if (!comments) {
     return <>{content}</>;
   }
   return (
     <Root>
-      <SectionTitle>{titleText}</SectionTitle>
       <CommentsPanel
         comments={comments}
         loading={query.loading}
         error={[]}
         canComment={false}
+        layout={layout}
         onRetry={() => void query.refetch()}
       />
     </Root>
@@ -48,13 +49,4 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1)};
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 `;

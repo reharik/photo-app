@@ -58,6 +58,7 @@ declare module 'styled-components' {
       body: string;
       bodyRaised: string;
       bodyElevated: string;
+      stageDark: string;
       bodyText: string;
       bodyTextSecondary: string;
       bodyTextMuted: string;

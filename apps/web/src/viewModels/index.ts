@@ -3,17 +3,17 @@ import {
   AlbumSummaryFragment,
   CommentDetailFieldsFragment,
   CommentFieldsFragment,
-  EmojiCountFragment,
   MediaItemDetailFragment,
   MediaItemSummaryFragment,
   Operation,
   PublicAlbumItemSummaryFragment,
   PublicAlbumSummaryFragment,
   PublicMediaItemSummaryFragment,
-  ReactionCountsFragment,
   SharedWithMedMediaItemFragment,
   ViewerReactionFragment,
 } from '../graphql/generated/types';
+
+export type { EmojiCountVM, ReactionCountsVM, ReactorVM } from './reaction';
 
 export type AlbumItemSummaryVM = AlbumItemSummaryFragment;
 export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'> & {
@@ -31,8 +31,6 @@ export type PublicAlbumSummaryVM = Omit<PublicAlbumSummaryFragment, 'items'> & {
   itemCount: number;
 };
 
-export type ReactionCountsVM = ReactionCountsFragment;
-export type EmojiCountVM = EmojiCountFragment;
 export type ViewerReactionVM = ViewerReactionFragment;
 
 export type SharedWithMedMediaItemVM = SharedWithMedMediaItemFragment & ViewableItemVM;

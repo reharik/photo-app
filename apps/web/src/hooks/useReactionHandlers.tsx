@@ -9,16 +9,19 @@ import {
 import { ViewerReactionVM } from '../viewModels/index';
 import { UseAppMutationStateResult } from './useAppMutation';
 
+const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
+
 export const useReactionHandlers = (
   targetId: string,
   targetType: ReactionTargetType,
   toggleMutation: UseAppMutationStateResult,
   viewerReactions?: ViewerReactionVM[],
   onRefetch?: () => void,
+  buildTileHref: (itemId: string) => string = defaultBuildTileHref,
 ) => {
   const navigate = useNavigate();
 
-  if (!viewerReactions || !onRefetch) {
+  if (viewerReactions == null || onRefetch == null) {
     return { handleToggle: () => Promise.resolve() };
   }
 
@@ -62,7 +65,7 @@ export const useReactionHandlers = (
       }
     }
     if (emoji.equals(ReactionEmoji.comment)) {
-      void navigate(`/media/${targetId}#comment`);
+      void navigate(`${buildTileHref(targetId)}#comment`);
     }
   };
 

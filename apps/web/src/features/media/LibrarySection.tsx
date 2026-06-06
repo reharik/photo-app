@@ -1,8 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { FrontendUploadStatus, MediaAssetKind, Operation } from '@packages/contracts';
+import { FrontendUploadStatus, Operation } from '@packages/contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import {
   AddMediaItemsToAlbumDocument,
@@ -12,11 +11,11 @@ import {
   ViewerAlbumsDocument,
 } from '../../graphql/generated/types';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
+import { useAppMutationState } from '../../hooks/useAppMutation';
 import {
   saveGalleryScrollPosition,
   useGalleryScrollRestoration,
 } from '../../hooks/useGalleryScrollRestoration';
-import { useAppMutationState } from '../../hooks/useAppMutation';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
@@ -26,8 +25,8 @@ import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
-import { MediaGrid } from './grid/MediaGrid';
 import { LIBRARY_GRID_COLUMNS } from './grid/gridColumns';
+import { MediaGrid } from './grid/MediaGrid';
 import {
   LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT,
   LibrarySelectionToolbar,
@@ -196,18 +195,9 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
               selectionActive={selectionCount > 0}
               columnCounts={LIBRARY_GRID_COLUMNS}
               groupBy="date"
-              getTileProps={(item, orderedMediaIds) => ({
-                to: `/media/${item.id}`,
-                thumbnailUrl: buildMediaItemUrl(item.id, MediaAssetKind.thumbnail),
-                mediaGalleryIds: orderedMediaIds,
-                kind: item.kind,
-                title: item.title,
-                reactionCounts: item.reactionCounts,
-                testId: item.id,
-                onBeforeNavigate: () => {
-                  handleTileNavigate(item.id);
-                },
-              })}
+              handleTileNavigate={handleTileNavigate}
+              canReact
+              onReactionsRefetch={reloadData}
             />
           </GridWrap>
         )}

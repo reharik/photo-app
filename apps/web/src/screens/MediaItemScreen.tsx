@@ -117,10 +117,6 @@ export const MediaItemScreen = () => {
         displayUrl={displayUrl}
         imageAlt={imageAlt}
         mediaItemId={mediaItem.id}
-        reactionCounts={mediaItem.reactionCounts}
-        viewerReactions={mediaItem.viewerReactions}
-        canReact
-        onRefetch={handleAfterSave}
         onClose={handleClose}
         onNavigate={handleMediaNavigate}
         canNavigate={galleryNavigation.enabled}
@@ -159,22 +155,21 @@ export const MediaItemScreen = () => {
 const Container = styled.div`
   position: fixed;
   inset: 0;
-  background: ${({ theme }) => theme.color.body};
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+  background: ${({ theme }) => theme.color.stageDark};
   z-index: 100;
 
   @media (max-width: 968px) {
-    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    align-items: stretch;
     -webkit-overflow-scrolling: touch;
   }
 `;
 
-/** Fills the viewport on small screens and grows with content so the page background stays solid while scrolling. */
+/** Cream chrome (rail / metadata card) layers on top of {@link Container}'s stageDark backdrop. */
 const LayoutInner = styled.div`
   display: flex;
   flex-direction: row;
@@ -182,13 +177,16 @@ const LayoutInner = styled.div`
   min-height: 0;
   min-width: 0;
   width: 100%;
-  background: ${({ theme }) => theme.color.body};
+  align-items: stretch;
+
+  @media (min-width: 969px) {
+    overflow: hidden;
+  }
 
   @media (max-width: 968px) {
     flex-direction: column;
     flex: 1 0 auto;
     min-height: 100dvh;
-    align-items: flex-start;
   }
 `;
 
@@ -199,6 +197,7 @@ const ViewerColumn = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-self: stretch;
 
   @media (max-width: 968px) {
     /* Shrink-wrap image + reactions; page scroll handles overflow */

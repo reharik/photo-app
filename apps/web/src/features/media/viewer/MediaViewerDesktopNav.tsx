@@ -1,32 +1,23 @@
 import { ReactNode } from 'react';
 import styled, { css } from 'styled-components';
-import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
+import { ViewerStageDesktop } from './MediaViewerStyles';
 import { NavigateDirection } from './mediaViewerTypes';
 
 type MediaViewerDesktopNavProps = {
   media: ReactNode;
-  belowMedia?: ReactNode;
-  onClose: () => void;
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
 };
 
 export const MediaViewerDesktopNav = ({
   media,
-  belowMedia,
-  onClose,
   onNavigate,
   canNavigate,
 }: MediaViewerDesktopNavProps) => {
   return (
     <DesktopNavLayout>
       <DesktopMediaStage>
-        <ViewerCardDesktop>
-          {media}
-          {belowMedia}
-        </ViewerCardDesktop>
-
-        <DesktopNavOverlayButton
+        <DesktopNavMarginButton
           type="button"
           aria-label="Previous image"
           disabled={!canNavigate}
@@ -34,9 +25,11 @@ export const MediaViewerDesktopNav = ({
           onClick={() => onNavigate('previous')}
         >
           ‹
-        </DesktopNavOverlayButton>
+        </DesktopNavMarginButton>
 
-        <DesktopNavOverlayButton
+        <ViewerStageDesktop>{media}</ViewerStageDesktop>
+
+        <DesktopNavMarginButton
           type="button"
           aria-label="Next image"
           disabled={!canNavigate}
@@ -44,11 +37,7 @@ export const MediaViewerDesktopNav = ({
           onClick={() => onNavigate('next')}
         >
           ›
-        </DesktopNavOverlayButton>
-
-        <StageImageCloseButton type="button" onClick={onClose} aria-label="Close viewer">
-          ✕
-        </StageImageCloseButton>
+        </DesktopNavMarginButton>
       </DesktopMediaStage>
     </DesktopNavLayout>
   );
@@ -57,83 +46,76 @@ export const MediaViewerDesktopNav = ({
 const DesktopNavLayout = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   width: 100%;
   min-height: 0;
   flex: 1;
-`;
-
-/** Desktop: tighter frame so the image can dominate; arrows sit in {@link DesktopNavOverlayButton} on top. */
-const ViewerCardDesktop = styled(ViewerCard)`
-  padding: ${({ theme }) => theme.spacing(2)};
-  gap: 0;
-  max-width: min(1400px, 100%);
 `;
 
 const DesktopMediaStage = styled.div`
   position: relative;
-  container-type: inline-size;
-  container-name: media-stage;
-  align-self: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   width: 100%;
-  max-width: min(1400px, 100%);
   flex: 1;
   min-height: 0;
   min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 `;
 
-/** Google Photos–style floating chevrons on the image */
-/* White on image overlay — not theme page chrome. */
-const DesktopNavOverlayButton = styled.button<{ $side: 'start' | 'end' }>`
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+/** Chevrons sit in the dark stage margin beside the photo, not on the image. */
+const DesktopNavMarginButton = styled.button<{ $side: 'start' | 'end' }>`
+  flex-shrink: 0;
+  align-self: center;
   z-index: 3;
   width: 48px;
   height: 48px;
+  margin: 0 ${({ theme }) => theme.spacing(1)};
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 28px;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.95);
+  color: ${({ theme }) => theme.color.body};
   cursor: pointer;
-  border: none;
+  border: 1px solid color-mix(in srgb, ${({ theme }) => theme.color.body} 22%, transparent);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.38);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, ${({ theme }) => theme.color.body} 10%, transparent);
+  opacity: 0;
   transition:
+    opacity 0.2s ease,
     background 0.15s ease,
-    transform 0.15s ease;
+    border-color 0.15s ease;
 
-  ${({ $side, theme }) =>
+  ${({ $side }) =>
     $side === 'start'
       ? css`
-          left: ${theme.spacing(2)};
+          order: 0;
         `
       : css`
-          right: ${theme.spacing(2)};
+          order: 2;
         `}
 
-  &:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.52);
+  ${DesktopMediaStage}:hover &, ${DesktopMediaStage}:focus-within & {
+    opacity: 1;
   }
 
-  &:disabled {
-    opacity: 0.28;
-    cursor: not-allowed;
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, ${({ theme }) => theme.color.body} 18%, transparent);
+    border-color: color-mix(in srgb, ${({ theme }) => theme.color.body} 32%, transparent);
   }
 
   &:focus-visible {
+    opacity: 1;
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0;
+    cursor: not-allowed;
+    pointer-events: none;
   }
 `;

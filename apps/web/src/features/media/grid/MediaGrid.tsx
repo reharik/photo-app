@@ -1,20 +1,33 @@
+import { MediaKind } from '@packages/contracts';
 import { useMemo } from 'react';
 import styled from 'styled-components';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
-import type { MediaItemSummaryVM, ViewableItemVM } from '../../../viewModels/';
+import type {
+  MediaItemSummaryVM,
+  ReactionCountsVM,
+  ViewerReactionVM,
+  ViewableItemVM,
+} from '../../../viewModels/';
 import { bucketMediaByDate } from './bucketMediaByDate';
 import { type MediaGridColumnCounts, mediaGridColumnStyles } from './gridColumns';
 import { MediaGridDateSection } from './MediaGridDateSection';
 import { MediaGridSelectableItem } from './MediaGridSelectableItem';
-import { MediaGridTile, type MediaGridTileProps } from './MediaGridTile';
+import { MediaGridTile, type MediaGridTileFit } from './MediaGridTile';
 import type { MultiSelectProps } from './types';
 
 export type MediaGridGroupBy = 'date' | 'none';
 
+export type GridMediaItem = {
+  id: string;
+  kind: MediaKind;
+  title?: string;
+  reactionCounts: ReactionCountsVM;
+  viewerReactions?: ViewerReactionVM[];
+} & ViewableItemVM;
+
 type MediaGridProps<T extends ViewableItemVM> = {
   nodes: T[];
-  mediaIdSelector?: (item: T) => string;
-  selectionIdSelector?: (item: T) => string;
+  toDisplayable?: (item: T) => GridMediaItem;
   multiSelectProps: MultiSelectProps;
   selectableActions?: GalleryActionItems[];
   selectable?: boolean;
@@ -22,39 +35,54 @@ type MediaGridProps<T extends ViewableItemVM> = {
   columnCounts: MediaGridColumnCounts;
   /** Date grouping uses `createdAt` on `MediaItemSummaryVM` nodes only. */
   groupBy?: MediaGridGroupBy;
-  getTileProps: (item: T, orderedMediaIds: string[]) => MediaGridTileProps;
+  handleTileNavigate?: (itemId: string) => void;
+  tileFit?: MediaGridTileFit;
+  disableTileNavigation?: boolean;
+  /** When true, unselected tiles render subdued (e.g. after first selection in library). */
+  dimUnselectedTiles?: boolean;
+  /** Tile link target; defaults to authed `/media/{id}`. */
+  buildTileHref?: (itemId: string) => string;
+  /** When true, desktop hover pill toggles heart and comment navigates to detail. */
+  canReact?: boolean;
+  /** Refetch list data after a successful reaction mutation. */
+  onReactionsRefetch?: () => void;
 };
 
 export const MediaGrid = <T extends ViewableItemVM>({
   nodes,
-  mediaIdSelector = (item: T) => item.id,
-  selectionIdSelector = mediaIdSelector,
+  toDisplayable = (item: T) => item as unknown as GridMediaItem,
   multiSelectProps,
   selectableActions = [],
   selectable = true,
   selectionActive,
   columnCounts,
   groupBy = 'none',
-  getTileProps,
+  handleTileNavigate,
+  tileFit = 'cover',
+  disableTileNavigation = false,
+  dimUnselectedTiles = false,
+  buildTileHref,
+  canReact = false,
+  onReactionsRefetch,
 }: MediaGridProps<T>) => {
-  const orderedMediaIds = useMemo(() => nodes.map(mediaIdSelector), [nodes, mediaIdSelector]);
-  const indexBySelectionId = useMemo(
-    () => new Map(nodes.map((node, index) => [selectionIdSelector(node), index])),
-    [nodes, selectionIdSelector],
+  const orderedMediaIds = useMemo(
+    () => nodes.map((x) => toDisplayable(x).id),
+    [nodes, toDisplayable],
   );
+  const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
   const renderTiles = (items: T[]) => (
     <TileGrid $columnCounts={columnCounts}>
       {items.map((item) => {
-        const selectionId = selectionIdSelector(item);
-        const globalIndex = indexBySelectionId.get(selectionId) ?? 0;
+        const selectionId = item.id;
+        const globalIndex = indexById.get(selectionId) ?? 0;
         const hasActions = selectableActions.some(
           (action) => action.operation == null || item.operations?.includes(action.operation),
         );
-
+        const mediaItem = toDisplayable(item);
         return (
           <MediaGridSelectableItem
             key={selectionId}
-            itemId={mediaIdSelector(item)}
+            itemId={mediaItem.id}
             selectable={selectable && hasActions}
             selectionActive={selectionActive}
             isSelected={multiSelectProps.isSelected(selectionId)}
@@ -64,8 +92,22 @@ export const MediaGrid = <T extends ViewableItemVM>({
               multiSelectProps.handleModifierClick(event, selectionId, globalIndex)
             }
             selectableActions={selectableActions}
+            dimUnselectedTiles={dimUnselectedTiles}
           >
-            <MediaGridTile {...getTileProps(item, orderedMediaIds)} />
+            <MediaGridTile
+              mediaGalleryIds={orderedMediaIds}
+              kind={mediaItem.kind}
+              title={mediaItem.title}
+              reactionCounts={mediaItem.reactionCounts}
+              viewerReactions={mediaItem.viewerReactions}
+              canReact={canReact}
+              onReactionsRefetch={onReactionsRefetch}
+              itemId={mediaItem.id}
+              onBeforeNavigate={handleTileNavigate}
+              tileFit={tileFit}
+              disableTileNavigation={disableTileNavigation}
+              buildTileHref={buildTileHref}
+            />
           </MediaGridSelectableItem>
         );
       })}

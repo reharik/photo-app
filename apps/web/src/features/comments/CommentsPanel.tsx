@@ -4,6 +4,7 @@ import { AppError } from '../../domain/errors/errorTypes';
 import { CommentRootVM } from '../../viewModels/';
 import { CommentComposer } from './CommentComposer';
 import { CommentThread } from './CommentThread';
+import { CommentsEmptyHint } from './CommentsEmptyHint';
 import { CommentsEmptyState } from './CommentsEmptyState';
 import { CommentsErrorState } from './CommentsErrorState';
 import { CommentsLoadingState } from './CommentsLoadingState';
@@ -11,11 +12,14 @@ import { CommentsLoadingState } from './CommentsLoadingState';
 /** @deprecated Use CommentRootVM | CommentReplyVM directly from the viewModels. */
 export type CommentsPanelComment = CommentRootVM;
 
+export type CommentsPanelLayout = 'default' | 'rail';
+
 export type CommentsPanelProps = {
   comments: CommentRootVM[];
   loading: boolean;
   error?: AppError[];
   canComment: boolean;
+  layout?: CommentsPanelLayout;
   onRetry?: () => void;
   onAddComment?: (body: string, parentCommentId?: string) => void;
   onEditComment?: (commentId: string, body: string) => void;
@@ -36,6 +40,7 @@ export const CommentsPanel = ({
   loading,
   error,
   canComment,
+  layout = 'default',
   onRetry,
   onAddComment,
   onEditComment,
@@ -46,52 +51,90 @@ export const CommentsPanel = ({
   deletingCommentId = undefined,
 }: CommentsPanelProps): JSX.Element => {
   const threads = comments.filter(shouldRenderThread);
-  if (error && error.length > 0) {
-    return <CommentsErrorState error={error[0]} onRetry={onRetry} />;
-  }
+  const isRail = layout === 'rail';
+  const queryError = error?.[0];
+  const showComposer = canComment && onAddComment != null;
 
-  if (loading && threads.length === 0) {
-    return <CommentsLoadingState />;
-  }
+  if (!isRail) {
+    if (queryError != null) {
+      return <CommentsErrorState error={queryError} onRetry={onRetry} />;
+    }
 
-  if (threads.length === 0) {
+    if (loading && threads.length === 0) {
+      return <CommentsLoadingState />;
+    }
+
+    if (threads.length === 0) {
+      return (
+        <Root>
+          {showComposer ? (
+            <CommentComposer
+              isLoading={addCommentLoading}
+              onSubmit={(body) => void Promise.resolve(onAddComment(body))}
+            />
+          ) : null}
+          <CommentsEmptyState canComment={canComment} />
+        </Root>
+      );
+    }
+
     return (
       <Root>
-        {canComment && onAddComment ? (
+        {showComposer ? (
           <CommentComposer
             isLoading={addCommentLoading}
             onSubmit={(body) => void Promise.resolve(onAddComment(body))}
           />
         ) : null}
-        <CommentsEmptyState canComment={canComment} />
+        <ThreadList role="list">
+          {threads.map((comment) => (
+            <CommentThread
+              key={comment.id}
+              comment={comment}
+              canComment={canComment}
+              addCommentLoading={addCommentLoading}
+              editCommentLoading={editCommentLoading}
+              deletingCommentId={deletingCommentId}
+              onAddComment={onAddComment}
+              onEditComment={onEditComment}
+              onDeleteComment={onDeleteComment}
+              onRefetchComments={onRefetchComments}
+            />
+          ))}
+        </ThreadList>
       </Root>
     );
   }
 
   return (
     <Root>
-      {canComment && onAddComment ? (
+      {showComposer ? (
         <CommentComposer
           isLoading={addCommentLoading}
           onSubmit={(body) => void Promise.resolve(onAddComment(body))}
         />
       ) : null}
-      <ThreadList role="list">
-        {threads.map((comment) => (
-          <CommentThread
-            key={comment.id}
-            comment={comment}
-            canComment={canComment}
-            addCommentLoading={addCommentLoading}
-            editCommentLoading={editCommentLoading}
-            deletingCommentId={deletingCommentId}
-            onAddComment={onAddComment}
-            onEditComment={onEditComment}
-            onDeleteComment={onDeleteComment}
-            onRefetchComments={onRefetchComments}
-          />
-        ))}
-      </ThreadList>
+      {queryError != null ? <CommentsErrorState error={queryError} onRetry={onRetry} /> : null}
+      {loading && threads.length === 0 ? <CommentsLoadingState /> : null}
+      {!loading && threads.length === 0 && canComment ? <CommentsEmptyHint /> : null}
+      {threads.length > 0 ? (
+        <ThreadList role="list">
+          {threads.map((comment) => (
+            <CommentThread
+              key={comment.id}
+              comment={comment}
+              canComment={canComment}
+              addCommentLoading={addCommentLoading}
+              editCommentLoading={editCommentLoading}
+              deletingCommentId={deletingCommentId}
+              onAddComment={onAddComment}
+              onEditComment={onEditComment}
+              onDeleteComment={onDeleteComment}
+              onRefetchComments={onRefetchComments}
+            />
+          ))}
+        </ThreadList>
+      ) : null}
     </Root>
   );
 };

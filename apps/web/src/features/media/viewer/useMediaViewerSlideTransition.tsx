@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -13,6 +14,7 @@ import type { NavigateDirection } from './mediaViewerTypes';
 const SLIDE_OFFSET = '16%';
 const EXIT_MS = 180;
 const ENTER_MS = 260;
+const EXIT_FALLBACK_MS = EXIT_MS + 80;
 
 const slideInFromRight = keyframes`
   from {
@@ -36,6 +38,45 @@ const slideInFromLeft = keyframes`
   }
 `;
 
+type SlideTransitionWrapProps = {
+  children: ReactNode;
+  isExiting: boolean;
+  exitDirection: NavigateDirection;
+  enterDirection: NavigateDirection | undefined;
+  onTransitionEnd: (e: TransitionEvent<HTMLDivElement>) => void;
+  onAnimationEnd: () => void;
+};
+
+/** Stable component — must not be recreated per render or exit transitions never complete. */
+export const SlideTransitionWrap = ({
+  children,
+  isExiting,
+  exitDirection,
+  enterDirection,
+  onTransitionEnd,
+  onAnimationEnd,
+}: SlideTransitionWrapProps) => (
+  <SlideClip>
+    <SlideTrack
+      $isExiting={isExiting}
+      $exitDirection={exitDirection}
+      $enterDirection={enterDirection}
+      onTransitionEnd={onTransitionEnd}
+      onAnimationEnd={onAnimationEnd}
+    >
+      {children}
+    </SlideTrack>
+  </SlideClip>
+);
+
+export type SlideTransitionState = {
+  isExiting: boolean;
+  exitDirection: NavigateDirection;
+  enterDirection: NavigateDirection | undefined;
+  onTransitionEnd: (e: TransitionEvent<HTMLDivElement>) => void;
+  onAnimationEnd: () => void;
+};
+
 type UseMediaViewerSlideTransitionOptions = {
   contentKey: string;
   canNavigate: boolean;
@@ -44,7 +85,7 @@ type UseMediaViewerSlideTransitionOptions = {
 
 type UseMediaViewerSlideTransitionResult = {
   requestNavigate: (direction: NavigateDirection) => void;
-  SlideTransitionWrap: (props: { children: ReactNode }) => ReactNode;
+  slideTransition: SlideTransitionState;
 };
 
 export const useMediaViewerSlideTransition = ({
@@ -59,8 +100,13 @@ export const useMediaViewerSlideTransition = ({
   const awaitingEnterRef = useRef(false);
   const lastDirectionRef = useRef<NavigateDirection>('next');
   const prevContentKeyRef = useRef(contentKey);
+  const isExitingRef = useRef(isExiting);
 
   const isTransitioning = isExiting || enterDirection != null;
+
+  useLayoutEffect(() => {
+    isExitingRef.current = isExiting;
+  }, [isExiting]);
 
   const requestNavigate = useCallback(
     (direction: NavigateDirection) => {
@@ -79,6 +125,9 @@ export const useMediaViewerSlideTransition = ({
   );
 
   const completeExit = useCallback(() => {
+    if (!isExitingRef.current) {
+      return;
+    }
     setIsExiting(false);
     awaitingEnterRef.current = true;
     onNavigate(lastDirectionRef.current);
@@ -99,44 +148,42 @@ export const useMediaViewerSlideTransition = ({
 
   const handleTransitionEnd = useCallback(
     (e: TransitionEvent<HTMLDivElement>) => {
-      if (e.propertyName !== 'transform' || !isExiting) {
+      if (e.target !== e.currentTarget) {
+        return;
+      }
+      if (e.propertyName !== 'transform' || !isExitingRef.current) {
         return;
       }
       completeExit();
     },
-    [completeExit, isExiting],
+    [completeExit],
   );
 
   const handleAnimationEnd = useCallback(() => {
     setEnterDirection(undefined);
   }, []);
 
-  const SlideTransitionWrap = useCallback(
-    ({ children }: { children: ReactNode }): ReactNode => (
-      <SlideClip>
-        <SlideTrack
-          $isExiting={isExiting}
-          $exitDirection={exitDirection}
-          $enterDirection={enterDirection}
-          onTransitionEnd={handleTransitionEnd}
-          onAnimationEnd={handleAnimationEnd}
-        >
-          {children}
-        </SlideTrack>
-      </SlideClip>
-    ),
-    [
-      enterDirection,
-      exitDirection,
-      handleAnimationEnd,
-      handleTransitionEnd,
-      isExiting,
-    ],
-  );
+  useEffect(() => {
+    if (!isExiting) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      completeExit();
+    }, EXIT_FALLBACK_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [completeExit, isExiting]);
 
   return {
     requestNavigate,
-    SlideTransitionWrap,
+    slideTransition: {
+      isExiting,
+      exitDirection,
+      enterDirection,
+      onTransitionEnd: handleTransitionEnd,
+      onAnimationEnd: handleAnimationEnd,
+    },
   };
 };
 

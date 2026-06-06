@@ -13,6 +13,9 @@ fragment MediaItemDetail on MediaItem {
   viewerReactions {
     ...ViewerReaction
   }
+  comments(input: { collectionInfo: { pageInfo: { limit: 1, offset: 0 } } }) {
+    totalCount
+  }
 
   ...ViewableMediaItem
 }

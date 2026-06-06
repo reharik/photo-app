@@ -1,9 +1,9 @@
 import { JSX, type ReactNode } from 'react';
 import styled, { css } from 'styled-components';
 import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
+
 type MediaViewerMobileProps = {
   media: ReactNode;
-  belowMedia?: ReactNode;
   onClose: () => void;
   chromeVisible: boolean;
   showCloseButton?: boolean;
@@ -12,7 +12,6 @@ type MediaViewerMobileProps = {
 
 export const MediaViewerMobile = ({
   media,
-  belowMedia,
   onClose,
   chromeVisible,
   showCloseButton = true,
@@ -31,8 +30,6 @@ export const MediaViewerMobile = ({
           </ChromeLayer>
         ) : null}
       </MobileMediaStage>
-
-      {belowMedia != null ? <ReactionsSlot>{belowMedia}</ReactionsSlot> : null}
     </MobileLayout>
   );
 };
@@ -43,7 +40,6 @@ const MobileLayout = styled.div`
   align-items: stretch;
   justify-content: flex-start;
   width: 100%;
-  max-width: min(960px, 100%);
   min-height: 0;
   flex: 0 0 auto;
 `;
@@ -55,6 +51,7 @@ const MobileMediaStage = styled.div`
   flex: 0 0 auto;
   min-height: 0;
   min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -74,13 +71,11 @@ const ChromeLayer = styled.div<{ $visible: boolean }>`
   ${chromeVisibility}
 `;
 
-/** Reactions stay visible in immersive (no-chrome) mode; only overlay chrome is toggled. */
-const ReactionsSlot = styled.div`
-  flex-shrink: 0;
-`;
-
 const ViewerCardMobile = styled(ViewerCard)`
   width: 100%;
   min-height: 0;
   flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 `;

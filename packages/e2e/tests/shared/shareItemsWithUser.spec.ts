@@ -45,10 +45,9 @@ test.describe('Share individual items with an existing user', () => {
       await expectMediaItemLoaded(userB.page, a.id);
       await expectMediaItemLoaded(userB.page, b.id);
 
-      await reactToItem(userB.page, itemA);
-
       await userB.page.getByTestId(`media-tile-${a.id}`).getByRole('link').first().click();
       await expect(userB.page).toHaveURL(new RegExp(`/media/${a.id}`));
+      await reactToItem(userB.page, userB.page.getByLabel('Media viewer'));
 
       const rootBody = `Root comment ${uniqueSuffix}`;
 

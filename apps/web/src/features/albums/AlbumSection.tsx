@@ -1,23 +1,22 @@
-import { FrontendUploadStatus, MediaAssetKind, Operation } from '@packages/contracts';
+import { FrontendUploadStatus, Operation } from '@packages/contracts';
 import { ArrowUpRight } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
+import { Button } from '../../ui/Button';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
-import { MediaGrid } from '../media/grid/MediaGrid';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
-import { Button } from '../../ui/Button';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 import { AddToAlbumHeaderButton } from './AddToAlbumHeaderButton';
@@ -79,16 +78,11 @@ export const AlbumSection = ({
       onAction: () => removeAlbumItemState.setRemoveItemOpen(true),
     },
   ];
-  const {
-    multiSelectProps,
-    selectedIds,
-    availableActions,
-    clearSelection,
-    selectionCount,
-  } = useMultiSelectGallery({
-    nodes: albumItems,
-    actions: selectableActions,
-  });
+  const { multiSelectProps, selectedIds, availableActions, clearSelection, selectionCount } =
+    useMultiSelectGallery({
+      nodes: albumItems,
+      actions: selectableActions,
+    });
 
   const isMobileAlbum = useMediaQuery('(max-width: 768px)');
 
@@ -213,22 +207,14 @@ export const AlbumSection = ({
           <GridWrap>
             <MediaGrid
               nodes={albumItems}
-              mediaIdSelector={(item) => item.mediaItem.id}
-              selectionIdSelector={(item) => item.id}
+              toDisplayable={(item) => item.mediaItem}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
               columnCounts={ALBUM_GRID_COLUMNS}
               groupBy="none"
-              getTileProps={(item, orderedMediaIds) => ({
-                to: `/media/${item.mediaItem.id}`,
-                thumbnailUrl: buildMediaItemUrl(item.mediaItem.id, MediaAssetKind.thumbnail),
-                mediaGalleryIds: orderedMediaIds,
-                kind: item.mediaItem.kind,
-                title: item.mediaItem.title,
-                reactionCounts: item.mediaItem.reactionCounts,
-                testId: item.mediaItem.id,
-              })}
+              canReact
+              onReactionsRefetch={reloadData}
             />
           </GridWrap>
         )}
@@ -273,23 +259,21 @@ export const AlbumSection = ({
         >
           <MediaSelectorSection
             onAddToAlbum={addAlbumItemState.submitAddToAlbum}
-            onClose={() => {
-              clearSelection();
-              addAlbumItemState.setAddItemOpen(false);
-            }}
             header={
               <AddAlbumItemModalHeader>
                 <AddAlbumItemModalTitle id="add-album-item-modal-title">
                   Add album item
                 </AddAlbumItemModalTitle>
-                <AddAlbumItemModalClose
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="small"
                   onClick={() => {
                     addAlbumItemState.setAddItemOpen(false);
                   }}
                 >
                   Close
-                </AddAlbumItemModalClose>
+                </Button>
               </AddAlbumItemModalHeader>
             }
             nodes={addAlbumItemState.pickerMediaItems}
@@ -346,22 +330,8 @@ const AddAlbumItemModalHeader = styled.div`
 
 const AddAlbumItemModalTitle = styled.h2`
   margin: 0;
+  font-family: ${({ theme }) => theme.font.serif};
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.color.bodyText};
-`;
-
-const AddAlbumItemModalClose = styled.button`
-  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(2)};
-  background: transparent;
-  color: ${({ theme }) => theme.color.bodyText};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.color.primaryButtonBg};
-  }
 `;

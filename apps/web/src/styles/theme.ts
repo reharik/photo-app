@@ -74,6 +74,7 @@ export const theme: DefaultTheme = {
     body: colors.gray_10,                // paper white
     bodyRaised: colors.gray_15,          // nav, sticky headers
     bodyElevated: colors.gray_20,        // subtle panels
+    stageDark: colors.gray_85,           // photo lightbox stage (warm dark, not pure black)
     bodyText: colors.gray_90,            // primary text
     bodyTextSecondary: colors.gray_80,   // subtitles
     bodyTextMuted: colors.gray_70,       // metadata, timestamps

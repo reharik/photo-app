@@ -15,18 +15,20 @@ import {
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
-import { CommentsPanel } from '../comments/CommentsPanel';
+import { CommentsPanel, type CommentsPanelLayout } from '../comments/CommentsPanel';
 
 const PAGE_SIZE = 50;
 
 export type CommentsForViewerMediaItemContainerProps = {
   mediaItemId: string;
   canComment: boolean;
+  layout?: CommentsPanelLayout;
 };
 
 export const CommentsForViewerMediaItemContainer = ({
   mediaItemId,
   canComment,
+  layout = 'default',
 }: CommentsForViewerMediaItemContainerProps): JSX.Element => {
   const [deletingCommentId, setDeletingCommentId] = useState<string | undefined>(undefined);
 
@@ -49,8 +51,6 @@ export const CommentsForViewerMediaItemContainer = ({
   });
 
   const comments = data?.nodes ?? [];
-  const titleText =
-    data && data.totalCount && data.totalCount > 0 ? `Comments · ${data.totalCount}` : 'Comments';
 
   const mutationErrors: AppError[] = useMemo(
     () => [...addMutation.errors, ...editMutation.errors, ...deleteMutation.errors],
@@ -125,13 +125,13 @@ export const CommentsForViewerMediaItemContainer = ({
   }
   return (
     <Root>
-      <SectionTitle>{titleText}</SectionTitle>
-      <AppErrorPanel errors={mutationErrors} />
+      {layout === 'default' ? <AppErrorPanel errors={mutationErrors} /> : null}
       <CommentsPanel
         comments={comments}
         loading={query.loading}
         error={mutationErrors}
         canComment={canComment}
+        layout={layout}
         onRetry={() => void query.refetch()}
         onAddComment={canComment ? handleAddComment : undefined}
         onEditComment={canComment ? handleEditComment : undefined}
@@ -151,13 +151,4 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(1)};
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 `;

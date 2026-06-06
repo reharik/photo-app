@@ -1,15 +1,23 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
-import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { PublicAlbumItemSummaryVM, PublicAlbumSummaryVM } from '../../viewModels/';
 import { AlbumSectionMetadata } from '../albums/AlbumSectionMetadata';
-import { SelectableGallery } from '../gallery/SelectableGallery';
-import { PublicAlbumMediaTile } from '../gallery/tiles/PublicAlbumMediaTile';
+import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid } from '../media/grid/MediaGrid';
+import type { MultiSelectProps } from '../media/grid/types';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
+
+const noopMultiSelect: MultiSelectProps = {
+  isSelected: () => false,
+  handleModifierClick: () => undefined,
+  toggleSelectAt: () => undefined,
+  enterSelectionAt: () => undefined,
+};
 
 type PublicAlbumSectionProps = {
   album: PublicAlbumSummaryVM;
@@ -24,14 +32,15 @@ export const PublicAlbumSection = ({
   paging,
   totalCount,
 }: PublicAlbumSectionProps) => {
+  const { token } = useParams<{ token: string }>();
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
   const { sentinelRef, scrollRootRef } = useInfiniteScroll(paging);
 
-  const { multiSelectProps } = useMultiSelectGallery({
-    nodes: albumItems,
-    actions: [],
-  });
+  const buildTileHref = useMemo(
+    () => (itemId: string) => `/shared/${token}/media/${itemId}`,
+    [token],
+  );
 
   const onAlbumScroll = useCallback((): void => {
     const el = albumScrollRef.current;
@@ -57,21 +66,27 @@ export const PublicAlbumSection = ({
         }}
         onScroll={onAlbumScroll}
       >
-        <SelectableGallery
-          nodes={albumItems}
-          mediaIdSelector={(x) => x.mediaItem.id}
-          multiSelectProps={multiSelectProps}
-          embedInParentScroll
-          emptyState={
-            <EmptyState
-              title="No album items yet"
-              text="Start choosing media items to include to build your gallery"
+        {albumItems.length === 0 ? (
+          <EmptyState
+            title="No album items yet"
+            text="Start choosing media items to include to build your gallery"
+          />
+        ) : (
+          <GridWrap>
+            <MediaGrid
+              nodes={albumItems}
+              toDisplayable={(item) => item.mediaItem}
+              multiSelectProps={noopMultiSelect}
+              selectableActions={[]}
+              selectable={false}
+              selectionActive={false}
+              columnCounts={ALBUM_GRID_COLUMNS}
+              groupBy="none"
+              buildTileHref={buildTileHref}
+              canReact={false}
             />
-          }
-          renderItem={({ item, orderedMediaIds }) => (
-            <PublicAlbumMediaTile item={item} mediaGalleryIds={orderedMediaIds} />
-          )}
-        />
+          </GridWrap>
+        )}
         <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
     </Container>
@@ -92,12 +107,16 @@ const AlbumBodyScroll = styled.div`
   min-width: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: ${({ theme }) => theme.spacing(3)} ${({ theme }) => theme.spacing(6)}
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(6)}
     ${({ theme }) => theme.spacing(6)};
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)}
+    padding: ${({ theme }) => theme.spacing(1.5)} ${({ theme }) => theme.spacing(3)}
       ${({ theme }) => theme.spacing(3)};
   }
+`;
+
+const GridWrap = styled.div`
+  width: 100%;
 `;

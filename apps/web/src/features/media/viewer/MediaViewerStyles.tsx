@@ -103,13 +103,18 @@ export const ViewerCard = styled.div<{ $positionForOverlay?: boolean }>`
   }
 `;
 
-/** Renders beneath the zoomable media inside the viewer card (desktop / single-with-card). On mobile, sits below the media stage (see MediaViewerMobile). */
-export const ViewerBelowMediaSlot = styled.div`
-  flex-shrink: 0;
+/** Desktop photo stage — no card frame; sits on {@link theme.color.stageDark}. */
+export const ViewerStageDesktop = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  flex: 1;
+  order: 1;
+  min-width: 0;
+  min-height: 0;
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(2)} 0;
   box-sizing: border-box;
 `;
+

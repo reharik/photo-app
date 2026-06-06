@@ -98,7 +98,6 @@ export const PublicMediaItemScreen = () => {
         displayUrl={displayUrl}
         imageAlt={imageAlt}
         mediaItemId={mediaItem.id}
-        reactionCounts={mediaItem.reactionCounts}
         onClose={handleDismissScreen}
         showCloseButton={galleryNavigation.enabled}
         onNavigate={handleMediaNavigate}
@@ -136,22 +135,21 @@ export const PublicMediaItemScreen = () => {
 const Container = styled.div`
   position: fixed;
   inset: 0;
-  background: ${({ theme }) => theme.color.body};
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+  background: ${({ theme }) => theme.color.stageDark};
   z-index: 100;
 
   @media (max-width: 968px) {
-    flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    align-items: stretch;
     -webkit-overflow-scrolling: touch;
   }
 `;
 
-/** Fills the viewport on small screens and grows with content so the page background stays solid while scrolling. */
+/** Cream chrome (rail / metadata card) layers on top of {@link Container}'s stageDark backdrop. */
 const LayoutInner = styled.div`
   display: flex;
   flex-direction: row;
@@ -159,7 +157,11 @@ const LayoutInner = styled.div`
   min-height: 0;
   min-width: 0;
   width: 100%;
-  background: ${({ theme }) => theme.color.body};
+  align-items: stretch;
+
+  @media (min-width: 969px) {
+    overflow: hidden;
+  }
 
   @media (max-width: 968px) {
     flex-direction: column;
@@ -175,6 +177,7 @@ const ViewerColumn = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+  align-self: stretch;
 
   @media (max-width: 968px) {
     flex: 0 0 auto;

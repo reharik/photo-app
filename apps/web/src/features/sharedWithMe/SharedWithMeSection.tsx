@@ -1,74 +1,60 @@
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
-import { GalleryActionItems, useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMedMediaItemVM } from '../../viewModels/';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
-import { SelectableGallery, type MultiSelectProps } from '../gallery/SelectableGallery';
-import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
-import { MediaItemTile } from '../gallery/tiles/MediaItemTile';
+import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid } from '../media/grid/MediaGrid';
+import type { MultiSelectProps } from '../media/grid/types';
 
-const noopSelect: MultiSelectProps = {
+const noopMultiSelect: MultiSelectProps = {
   isSelected: () => false,
-  handleModifierClick: () => {
-    /* read-only: no selection */
-  },
-  toggleSelectAt: () => {
-    /* read-only: no selection */
-  },
-  enterSelectionAt: () => {
-    /* read-only: no selection */
-  },
+  handleModifierClick: () => undefined,
+  toggleSelectAt: () => undefined,
+  enterSelectionAt: () => undefined,
 };
 
 type SharedWithMeSectionProps = {
   sharedWithMeMediaItems: SharedWithMedMediaItemVM[];
-  totalCount: number;
   paging: PagingState;
-  onReactionsRefetch: () => Promise<void>;
+  reloadData: () => void;
 };
 
 export const SharedWithMeSection = ({
   sharedWithMeMediaItems,
   paging,
-  onReactionsRefetch,
+  reloadData,
 }: SharedWithMeSectionProps) => {
-  const selectableActions: GalleryActionItems[] = [];
-
-  const { clearSelection, selectionCount } = useMultiSelectGallery({
-    nodes: sharedWithMeMediaItems,
-    actions: selectableActions,
-  });
   return (
     <Container>
-      <Block>
-        <SelectableGalleryHeader
-          selectionCount={selectionCount}
-          clearSelection={clearSelection}
-          availableActions={[]}
-          Header={() => <Title>Media Shared with you</Title>}
-        />
-        <InfiniteScroll paging={paging} rootMargin="600px">
-          <SelectableGallery
-            nodes={sharedWithMeMediaItems}
-            mediaIdSelector={(item) => item.mediaItem.id}
-            multiSelectProps={noopSelect}
-            emptyState={
-              <EmptyState
-                title="No shared media"
-                text="When someone shares individual photos or videos with you, they will show up here."
-              />
-            }
-            renderItem={({ item, orderedMediaIds: galleryIds }) => (
-              <MediaItemTile
-                item={item.mediaItem}
-                mediaGalleryIds={galleryIds}
-                onReactionsRefetch={onReactionsRefetch}
-              />
-            )}
-          />
-        </InfiniteScroll>
-      </Block>
+      <PageHeader>
+        <Title>Media Shared with you</Title>
+      </PageHeader>
+      <ScrollArea paging={paging} rootMargin="600px">
+        {sharedWithMeMediaItems.length === 0 ? (
+          <EmptyStateWrap>
+            <EmptyState
+              title="No shared media"
+              text="When someone shares individual photos or videos with you, they will show up here."
+            />
+          </EmptyStateWrap>
+        ) : (
+          <GridWrap>
+            <MediaGrid
+              nodes={sharedWithMeMediaItems}
+              toDisplayable={(item) => item.mediaItem}
+              multiSelectProps={noopMultiSelect}
+              selectableActions={[]}
+              selectable={false}
+              selectionActive={false}
+              columnCounts={LIBRARY_GRID_COLUMNS}
+              groupBy="none"
+              canReact
+              onReactionsRefetch={reloadData}
+            />
+          </GridWrap>
+        )}
+      </ScrollArea>
     </Container>
   );
 };
@@ -79,27 +65,52 @@ const Container = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(4)};
-  overflow: auto;
+`;
+
+const PageHeader = styled.div`
+  flex-shrink: 0;
+  background: ${({ theme }) => theme.color.bodyRaised};
+  box-shadow: inset 0 -0.5px 0 ${({ theme }) => theme.color.borderSubtle};
+  padding: ${({ theme }) => `${theme.spacing(2)} ${theme.spacing(3)}`};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => `${theme.spacing(1.5)} ${theme.spacing(1.5)}`};
+  }
 `;
 
 const Title = styled.h1`
-  font-size: 32px;
-  font-weight: 500;
   margin: 0;
+  font-family: ${({ theme }) => theme.font.serif};
+  font-size: 24px;
+  font-weight: 500;
   color: ${({ theme }) => theme.color.bodyText};
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
   min-width: 0;
 
   @media (max-width: 768px) {
     font-size: 18px;
-    font-weight: 600;
     letter-spacing: -0.2px;
-    flex: 1;
   }
 `;
-const Block = styled.div`
-  display: flex;
-  flex-direction: column;
+
+const ScrollArea = styled(InfiniteScroll)`
+  flex: 1;
+  min-width: 0;
   min-height: 0;
+`;
+
+const GridWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1.5)};
+  }
+`;
+
+const EmptyStateWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1.5)};
+  }
 `;
