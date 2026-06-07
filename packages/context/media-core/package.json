@@ -26,9 +26,9 @@
     "barrels": "nx barrels media-core",
     "build": "nx build media-core",
     "dev": "nx dev media-core",
-    "gen:container": "nx run media-core:gen:container",
+    "gen:ioc": "nx gen-ioc media-core",
+    "ioc:discover": "ioc inspect --discovery",
     "ioc:inspect": "ioc inspect",
-    "ioc:inspect:discovery": "ioc inspect --discovery",
     "lint": "nx lint media-core",
     "test": "nx test media-core"
   },

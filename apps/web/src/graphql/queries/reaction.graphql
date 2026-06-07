@@ -1,13 +1,23 @@
 fragment ReactionCounts on ReactionCounts {
   total
   byEmoji {
-    ...EmojiCount
+    ...ReactionDetails
   }
 }
 
-fragment EmojiCount on EmojiCount {
+fragment ReactionDetails on ReactionDetails {
   emoji
   count
+  reactors {
+    ...Reactor
+  }
+}
+
+fragment Reactor on Reactor {
+  userId
+  firstName
+  lastName
+  isViewer
 }
 
 fragment ViewerReaction on ViewerReaction {

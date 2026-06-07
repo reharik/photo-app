@@ -9,12 +9,14 @@ import {
   User,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
+import { AuditRecord } from '../..';
 import {
   AlbumItemWithMediaRow,
   AlbumWithCoverRow,
   CommentRow,
   DBMediaItemRow,
   DBPublicMediaItemRow,
+  DBReactionCounts,
   MediaItemCollectionInfo,
   NamespacedMediaItemRow,
   PagedList,
@@ -153,8 +155,16 @@ export type AlbumMemberReadRepository = {
   }) => Promise<AlbumMemberRow | undefined>;
 };
 
+export type ReactionRecord = {
+  id: EntityId;
+  targetType: ReactionTargetType;
+  targetId: EntityId;
+  userId: EntityId;
+  emoji: ReactionEmoji;
+} & AuditRecord;
+
 export type DBCommentRow = Omit<CommentRow, 'reactionCounts'> & {
-  reactionCounts: { total: number; byEmoji: { emoji: string; count: number }[] };
+  reactionCounts: DBReactionCounts;
 };
 
 export type CommentReadRepository = {

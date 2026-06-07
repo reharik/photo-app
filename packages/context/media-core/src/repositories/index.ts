@@ -14,7 +14,6 @@ export * from './domainRepositories/commentRepository';
 export * from './domainRepositories/grantRepository';
 export * from './domainRepositories/mediaItemRepository';
 export * from './domainRepositories/notificationRepository';
-export * from './domainRepositories/reactionRepository';
 export * from './domainRepositories/userRepository';
 export * from './readRepositories/albumMemberReadRepository';
 export * from './readRepositories/albumReadRepository';

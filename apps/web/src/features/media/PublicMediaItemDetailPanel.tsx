@@ -3,6 +3,8 @@ import { forwardRef, useImperativeHandle } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
+import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
+import { MediaKindRailLabel } from './detail/MediaKindRailLabel';
 import {
   CommentsSection,
   ConversationMetadataZone,
@@ -11,8 +13,6 @@ import {
   MetadataPanelStack,
   RailHeader,
 } from './detail/mobileMetadataLayout';
-import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
-import { MediaKindRailLabel } from './detail/MediaKindRailLabel';
 import { PhotoDetailsDisclosure } from './detail/PhotoDetailsDisclosure';
 import { PublicMediaItemDetailRailReactions } from './detail/PublicMediaItemDetailRailReactions';
 import { PublicCommentsForMediaItemContainer } from './PublicCommentsForMediaItemContainer';
@@ -107,7 +107,11 @@ export const PublicMediaItemDetailPanel = forwardRef<
           </DetailsPanelCloseButton>
         </RailHeader>
 
-        {titleText ? <TitleText>{titleText}</TitleText> : <MediaKindRailLabel kind={mediaItem.kind} />}
+        {titleText ? (
+          <TitleText>{titleText}</TitleText>
+        ) : (
+          <MediaKindRailLabel kind={mediaItem.kind} />
+        )}
 
         {isMobileLayout ? photoDetails : null}
       </DescriptiveMetadataZone>

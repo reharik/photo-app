@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nx build web",
     "clean": "nx clean web",
-    "codegen": "nx codegen web",
+    "gen:gql": "nx gen-gql web",
     "dev": "nx dev web",
     "lint": "nx lint web",
     "preview": "nx preview web",

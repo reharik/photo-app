@@ -3,6 +3,7 @@ import {
   CommentTargetType,
   ReactionEmoji,
   ReactionTargetType,
+  User,
 } from '@packages/contracts';
 import { Knex } from 'knex';
 import { Comment, fail, ok } from '../../../domain';
@@ -14,7 +15,7 @@ import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId, WriteResult } from '../../../types/types';
 import { ValidateOperationService } from '../../readServices/mediaGrantService';
-import { AddReaction } from '../reactions/addReaction';
+import { ToggleReaction } from '../reactions/toggleReaction';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -34,6 +35,7 @@ export type AddCommentCommand = {
   targetId: EntityId;
   parentCommentId?: EntityId;
   body: string;
+  viewer: User;
 };
 
 export interface AddComment extends WriteServiceBase {
@@ -44,7 +46,7 @@ type AddCommentDeps = {
   commentRepository: CommentRepository;
   userReadRepository: UserReadRepository;
   validateOperationService: ValidateOperationService;
-  addReaction: AddReaction;
+  toggleReaction: ToggleReaction;
   withTransaction: WithTransaction;
 };
 
@@ -52,7 +54,7 @@ export const build__AddComment = ({
   commentRepository,
   userReadRepository,
   validateOperationService,
-  addReaction,
+  toggleReaction,
   withTransaction,
 }: AddCommentDeps): AddComment => {
   return async (
@@ -93,12 +95,12 @@ export const build__AddComment = ({
 
       return await withTransaction(trx, async (db) => {
         await commentRepository.save(comment, db);
-        const result = await addReaction(
+        const result = await toggleReaction(
           {
             targetType: ReactionTargetType.mediaItem,
             targetId: command.targetId,
             emoji: ReactionEmoji.comment,
-            viewer: { userId: command.authorId },
+            viewer: command.viewer,
           },
           db,
         );
@@ -120,12 +122,12 @@ export const build__AddComment = ({
 
       return await withTransaction(trx, async (db) => {
         await commentRepository.save(comment, db);
-        const result = await addReaction(
+        const result = await toggleReaction(
           {
             targetType: ReactionTargetType.mediaItem,
             targetId: command.targetId,
             emoji: ReactionEmoji.comment,
-            viewer: { userId: command.authorId },
+            viewer: command.viewer,
           },
           db,
         );

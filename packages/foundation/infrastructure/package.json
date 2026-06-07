@@ -26,7 +26,9 @@
     "barrels": "nx barrels infrastructure",
     "build": "nx build infrastructure",
     "dev": "nx dev infrastructure",
-    "gen:container": "nx run infrastructure:gen:container",
+    "gen:ioc": "nx gen-ioc infrastructure",
+    "ioc:discover": "ioc inspect --discovery",
+    "ioc:inspect": "ioc inspect",
     "lint": "nx lint infrastructure",
     "test": "nx test infrastructure"
   },

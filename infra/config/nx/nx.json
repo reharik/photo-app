@@ -1,12 +1,15 @@
 {
   "pluginsConfig": { "@nx/js": { "analyzeSourceFiles": false } },
   "namedInputs": {
+    "sharedGlobals": ["{workspaceRoot}/package-lock.json"],
     "default": [
+      "sharedGlobals",
       "{projectRoot}/**/*",
       "!{projectRoot}/**/*.spec.*",
       "!{projectRoot}/**/*.test.*"
     ],
     "prod": [
+      "sharedGlobals",
       "default",
       "!{projectRoot}/**/*.spec.*",
       "!{projectRoot}/**/*.test.*",

@@ -9,11 +9,14 @@ import {
   PublicAlbumItemSummaryFragment,
   PublicAlbumSummaryFragment,
   PublicMediaItemSummaryFragment,
+  ReactionCountsFragment,
+  ReactionDetailsFragment,
+  ReactorFragment,
   SharedWithMedMediaItemFragment,
   ViewerReactionFragment,
 } from '../graphql/generated/types';
 
-export type { EmojiCountVM, ReactionCountsVM, ReactorVM } from './reaction';
+export type {} from './reaction';
 
 export type AlbumItemSummaryVM = AlbumItemSummaryFragment;
 export type AlbumSummaryVM = Omit<AlbumSummaryFragment, 'items'> & {
@@ -38,3 +41,7 @@ export type ViewableItemVM = {
   id: string;
   operations: Operation[];
 };
+
+export type ReactionCountsVM = ReactionCountsFragment;
+export type ReactionDetailsVM = ReactionDetailsFragment;
+export type ReactorVM = ReactorFragment;

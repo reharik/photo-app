@@ -20,7 +20,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["clean", "barrels", "^build"],
+      "dependsOn": ["barrels", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

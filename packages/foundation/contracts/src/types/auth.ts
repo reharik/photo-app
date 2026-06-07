@@ -13,6 +13,8 @@ export interface User {
   createdBy?: string;
   updatedBy?: string;
   lastLoginAt?: string;
+  displayName: string;
+  isAuthenticated: boolean;
 }
 
 export interface LoginInput {

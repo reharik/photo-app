@@ -12,7 +12,13 @@
     },
     "barrels": {
       "executor": "nx:run-commands",
-      "cache": false,
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/barrelsby.json",
+        "{projectRoot}/src/channels/**/*.ts",
+        "!{projectRoot}/src/channels/index.ts"
+      ],
+      "outputs": ["{projectRoot}/src/channels/index.ts"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "npx barrelsby --config barrelsby.json"
@@ -20,7 +26,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["clean", "barrels", "^build"],
+      "dependsOn": ["barrels", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

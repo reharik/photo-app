@@ -10,9 +10,28 @@
         "cwd": "{projectRoot}"
       }
     },
-    "gen:container": {
+    "gen-ioc": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["^build"],
+      "inputs": [
+        "{projectRoot}/src/ioc.config.ts",
+        "{projectRoot}/src/**/*.ts",
+        "!{projectRoot}/src/**/*.spec.ts",
+        "!{projectRoot}/src/**/*.test.ts",
+        "!{projectRoot}/src/**/*.tests.ts",
+        "!{projectRoot}/src/**/tests/**",
+        "!{projectRoot}/src/generated/**",
+        {
+          "dependentTasksOutputFiles": "**/ioc-manifest.ts",
+          "transitive": true
+        }
+      ],
+      "outputs": [
+        "{projectRoot}/src/generated/ioc-composed.ts",
+        "{projectRoot}/src/generated/ioc-manifest.ts",
+        "{projectRoot}/src/generated/ioc-registry.types.ts"
+      ],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"
@@ -20,8 +39,10 @@
     },
     "build:vite": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["prod", "^prod", "{projectRoot}/vite.config.mjs"],
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["gen:container", "heic-converter:build", "^build"],
+      "dependsOn": ["gen-ioc", "heic-converter:build", "^build"],
       "options": {
         "command": "vite build --config vite.config.mjs",
         "cwd": "{projectRoot}"
@@ -46,7 +67,7 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "gen:container"],
+      "dependsOn": ["^build", "gen-ioc"],
       "options": {
         "command": "tsc --noEmit -p tsconfig.json",
         "cwd": "{projectRoot}"

@@ -37,6 +37,7 @@ export const useReactionHandlers = (
                 targetType,
                 targetId,
                 id: reaction.id,
+                emoji,
               },
             },
           },

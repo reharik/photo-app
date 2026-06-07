@@ -1,4 +1,4 @@
-import type { AddReactionCommand, RemoveReactionCommand } from '@packages/media-core';
+import type { ToggleReactionCommand } from '@packages/media-core';
 import { authenticatedResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { writeResultToPayload } from '../../util/writeResultToPayload';
@@ -6,20 +6,20 @@ import { writeResultToPayload } from '../../util/writeResultToPayload';
 const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     addReaction: authenticatedResolver(async (_parent, args, ctx) => {
-      const command: AddReactionCommand = {
+      const command: ToggleReactionCommand = {
         ...args.input,
-        viewer: { userId: ctx.viewer.id },
+        viewer: ctx.viewer,
       };
-      const result = await ctx.writeServices.addReaction(command);
+      const result = await ctx.writeServices.toggleReaction(command);
       return writeResultToPayload(result);
     }),
 
     removeReaction: authenticatedResolver(async (_parent, args, ctx) => {
-      const command: RemoveReactionCommand = {
+      const command: ToggleReactionCommand = {
         ...args.input,
-        viewer: { userId: ctx.viewer.id },
+        viewer: ctx.viewer,
       };
-      const result = await ctx.writeServices.removeReaction(command);
+      const result = await ctx.writeServices.toggleReaction(command);
       return writeResultToPayload(result);
     }),
   },

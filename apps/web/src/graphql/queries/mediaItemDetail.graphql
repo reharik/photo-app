@@ -1,21 +1,9 @@
 fragment MediaItemDetail on MediaItem {
-  id
-  kind
-  mimeType
-  title
   description
-  originalFileName
-  createdAt
   takenAt
-  reactionCounts {
-    ...ReactionCounts
-  }
-  viewerReactions {
-    ...ViewerReaction
-  }
+  ...MediaItemSummary
+
   comments(input: { collectionInfo: { pageInfo: { limit: 1, offset: 0 } } }) {
     totalCount
   }
-
-  ...ViewableMediaItem
 }

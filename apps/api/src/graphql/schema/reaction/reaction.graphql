@@ -10,12 +10,20 @@ enum ReactionEmoji {
 
 type ReactionCounts {
   total: Int! # sum across all emoji
-  byEmoji: [EmojiCount!]! # detailed breakdown
+  byEmoji: [ReactionDetails!]! # detailed breakdown
 }
 
-type EmojiCount {
+type Reactor {
+  firstName: String
+  lastName: String
+  userId: ID!
+  isViewer: Boolean!
+}
+
+type ReactionDetails {
   emoji: ReactionEmoji!
   count: Int!
+  reactors: [Reactor!]!
 }
 
 type ViewerReaction {

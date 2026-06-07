@@ -16,7 +16,7 @@
   "scripts": {
     "barrels": "nx barrels contracts",
     "build": "nx build contracts",
-    "codegen": "nx codegen contracts",
+    "gen:enums": "nx gen-enums contracts",
     "dev": "nx dev contracts",
     "lint": "nx lint contracts",
     "test": "nx test contracts"

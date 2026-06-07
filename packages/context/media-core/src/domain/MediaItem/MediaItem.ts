@@ -6,21 +6,26 @@
 import type { MediaAssetKind, Operation } from '@packages/contracts';
 import {
   AppErrorCollection,
-  CommentTargetType,
   ContractError,
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
+  ReactionTargetType,
 } from '@packages/contracts';
-import { MediaItemTag } from '../../services/writeServices/mediaItem/writeMediaItem.types';
+import { groupByMapping } from '@packages/infrastructure';
+import { DBReactionCounts } from '../../services/readServices/types';
+import {
+  MediaItemTag,
+  Reaction,
+} from '../../services/writeServices/mediaItem/writeMediaItem.types';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
-import { Comment, CommentRecord } from '../Comment/Comment';
 import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
 import { fail, ok } from '../utilities/writeResponse';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
+
 interface AssetMetadata {
   kind: MediaAssetKind;
   mimeType?: string;
@@ -29,15 +34,12 @@ interface AssetMetadata {
   height?: number;
 }
 
-export type MediaItemTagRecord = {
+export type MediaItemTagRecord = Omit<MediaItemTag, 'id'> & {
   id: string;
-  mediaItemId: EntityId;
-  userTagId: EntityId;
-  label: string;
-  createdBy: EntityId;
-  createdAt: Date;
-  updatedBy: EntityId;
-  updatedAt: Date;
+};
+
+export type MediaItemReactionRecord = Omit<Reaction, 'id'> & {
+  id: string;
 };
 
 export type MediaItemProps = Omit<
@@ -49,6 +51,7 @@ export type MediaItemProps = Omit<
   title?: string | null;
   description?: string | null;
   takenAt?: Date | null;
+  reactionCounts?: DBReactionCounts;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -56,10 +59,10 @@ export type MediaItemRecord = MediaItemProps & {
 } & AuditRecord;
 
 export type MediaItemChildRecords = {
-  comments: CommentRecord[];
   assets: MediaAssetRecord[];
   tags: MediaItemTagRecord[];
   authorizations: AuthorizationRecord[];
+  reactions: MediaItemReactionRecord[];
 };
 
 export type CreateMediaItemInput = {
@@ -78,15 +81,34 @@ export type CreateMediaItemInput = {
 
 export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
-  #comments: Comment[] = [];
   #assets: MediaAsset[] = [];
   #authorizations: Authorization[] = [];
-  #removedComments: Comment[] = [];
   #removedAssets: MediaAsset[] = [];
   #removedAuthorizations: Authorization[] = [];
   #tags: MediaItemTag[] = [];
   #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
   #addedTags: Omit<MediaItemTag, 'label'>[] = [];
+  #reactions: Reaction[] = [];
+  #addedReactions: Reaction[] = [];
+  #removedReactions: { targetId: EntityId; targetType: string; userId: EntityId; emoji: string }[] =
+    [];
+
+  #computedReactionCounts(): void {
+    const byEmoji = groupByMapping(
+      this.#reactions,
+      (r) => r.emoji,
+      (r) => ({ userId: r.userId, firstName: r.firstName, lastName: r.lastName }),
+    );
+
+    this.props.reactionCounts = {
+      total: this.#reactions.length,
+      byEmoji: Array.from(byEmoji, ([emoji, reactors]) => ({
+        emoji: emoji.value,
+        count: reactors.length,
+        reactors,
+      })),
+    };
+  }
 
   private constructor(actorId: ActorId, props: MediaItemProps, id?: EntityId) {
     super(id, actorId, 'media_item');
@@ -94,6 +116,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       ...props,
     };
     this.props.ownerId = actorId;
+    this.#computedReactionCounts();
   }
 
   static create(input: CreateMediaItemInput, actorId: ActorId): MediaItem {
@@ -109,38 +132,11 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     const mediaItem = new MediaItem(record.createdBy, record, record.id);
 
     mediaItem.rehydrateAudit(record);
-    mediaItem.#comments = childRecords.comments.map((r) => Comment.rehydrate(r));
     mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
     mediaItem.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
     mediaItem.#tags = [...(childRecords.tags ?? [])];
+    mediaItem.#reactions = [...(childRecords.reactions ?? [])];
     return mediaItem;
-  }
-
-  addComment(
-    props: {
-      authorId: EntityId;
-      body: string;
-      displayName: string;
-      displayAvatarUrl?: string;
-      parentCommentId?: EntityId;
-    },
-    actorId: ActorId,
-  ): void {
-    this.#comments.push(
-      Comment.create(
-        {
-          targetType: CommentTargetType.mediaItem,
-          targetId: this.id(),
-          authorId: props.authorId,
-          body: props.body,
-          displayName: props.displayName,
-          displayAvatarUrl: props.displayAvatarUrl,
-          parentCommentId: props.parentCommentId,
-        },
-        actorId,
-      ),
-    );
-    this.touch(actorId);
   }
 
   addAsset(kind: MediaAssetKind, mimeType: string) {
@@ -372,9 +368,36 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
+  toggleReaction(item: Reaction, actorId: ActorId): WriteResult {
+    const reaction = this.#reactions.find(
+      (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,
+    );
+    if (reaction) {
+      this.#removedReactions.push({
+        targetId: this.id(),
+        targetType: ReactionTargetType.mediaItem.value,
+        userId: item.userId,
+        emoji: item.emoji.value,
+      });
+      this.#reactions = this.#reactions.filter((r) => r.id !== reaction.id);
+    } else {
+      const newReaction = {
+        ...item,
+        id: crypto.randomUUID(),
+        targetId: this.id(),
+        targetType: ReactionTargetType.mediaItem,
+        updatedBy: actorId,
+        updatedAt: new Date(),
+      };
+      this.#addedReactions.push(newReaction);
+      this.#reactions.push(newReaction);
+    }
+    this.#computedReactionCounts();
+    return ok(undefined);
+  }
+
   childEntities(): ChildEntities {
     return {
-      comments: { upsert: this.#comments, removed: this.#removedComments },
       assets: { upsert: this.#assets, removed: this.#removedAssets },
       authorizations: { upsert: this.#authorizations, removed: this.#removedAuthorizations },
     };
@@ -387,6 +410,12 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
         removed: this.#removedTags,
         conflictKeys: ['mediaItemId', 'userTagId'],
         tableName: 'media_item_tag',
+      },
+      reactions: {
+        upsert: this.#addedReactions,
+        removed: this.#removedReactions,
+        conflictKeys: ['targetId', 'targetType', 'userId', 'emoji'],
+        tableName: 'reaction',
       },
     };
   }

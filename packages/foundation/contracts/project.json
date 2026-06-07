@@ -12,21 +12,39 @@
     },
     "barrels": {
       "executor": "nx:run-commands",
-      "dependsOn": ["codegen"],
-      "cache": false,
+      "cache": true,
+      "dependsOn": ["gen-enums"],
+      "inputs": [
+        "{projectRoot}/barrelsby.json",
+        "{projectRoot}/src/enums/**/*.ts",
+        "!{projectRoot}/src/enums/index.ts",
+        "{projectRoot}/src/types/**/*.ts",
+        "!{projectRoot}/src/types/index.ts",
+        { "dependentTasksOutputFiles": "**/graphqlSmartEnums.ts" }
+      ],
+      "outputs": [
+        "{projectRoot}/src/enums/index.ts",
+        "{projectRoot}/src/types/index.ts"
+      ],
       "options": {
         "cwd": "{projectRoot}",
         "command": "npx barrelsby --config barrelsby.json"
       }
     },
-    "codegen": {
+    "gen-enums": {
       "executor": "nx:run-commands",
-      "dependsOn": ["api:schema-gen"],
+      "cache": true,
+      "dependsOn": ["api:gen-gql"],
+      "inputs": [
+        "{projectRoot}/codegen.yml",
+        "{workspaceRoot}/apps/api/src/graphql/generated/schema.graphql",
+        { "dependentTasksOutputFiles": "**/schema.graphql" }
+      ],
       "outputs": ["{projectRoot}/src/enums/graphqlSmartEnums.ts"],
       "options": {
         "cwd": "{projectRoot}",
         "commands": [
-          "test -f ../../../apps/api/src/graphql/generated/schema.graphql || (echo \"Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run 'npm run schema-gen:api' first, or ensure contracts:codegen depends on api:schema-gen in project.json (it does, but nx may have silently skipped it).\" && exit 1)",
+          "test -f ../../../apps/api/src/graphql/generated/schema.graphql || (echo \"Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run 'npm run gen:gql:api' first, or ensure contracts:gen-enums depends on api:gen-gql in project.json (it does, but nx may have silently skipped it).\" && exit 1)",
           "graphql-codegen --config codegen.yml",
           "npx prettier --write src/enums/graphqlSmartEnums.ts"
         ],
@@ -35,7 +53,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["clean", "barrels", "codegen", "^build"],
+      "dependsOn": ["barrels", "gen-enums", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

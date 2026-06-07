@@ -1,4 +1,10 @@
-import { MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
+import {
+  MediaItemStatus,
+  MediaKind,
+  Operation,
+  ReactionEmoji,
+  ReactionTargetType,
+} from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
@@ -86,6 +92,34 @@ export type UpdateMediaItemTagsCommand = {
 };
 
 export type UpdateMediaItemTagsResult = {
+  mediaItemId: EntityId;
+};
+
+export type Reaction = {
+  id?: string;
+  targetId: EntityId;
+  targetType: ReactionTargetType;
+  userId: EntityId;
+  firstName?: string;
+  lastName?: string;
+  emoji: ReactionEmoji;
+  createdBy: EntityId;
+  createdAt: Date;
+  updatedBy: EntityId;
+  updatedAt: Date;
+};
+
+export type MediaItemReactionInput = Omit<Reaction, 'userId'> & {
+  userId?: EntityId;
+};
+
+export type UpdateMediaItemReactionsCommand = {
+  viewerId: EntityId;
+  mediaItemId: EntityId;
+  tags: MediaItemReactionInput[];
+};
+
+export type UpdateMediaItemReactionsResult = {
   mediaItemId: EntityId;
 };
 

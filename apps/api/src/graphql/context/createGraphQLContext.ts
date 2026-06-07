@@ -52,13 +52,7 @@ const buildAuthenticatedContext = ({
   scope,
   user,
 }: AuthenticatedContextDeps): AuthenticatedGraphQLContext => {
-  const viewer = {
-    id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    displayName: `${user.firstName} ${user.lastName}`,
-    isAuthenticated: true,
-  };
+  const viewer = { ...user, displayName: `${user.firstName} ${user.lastName}` };
   scope.register({ viewer: asValue(viewer) });
   const readServices = scope.resolve('readServices');
   const agnosticReadServices = scope.resolve('agnosticReadServices');

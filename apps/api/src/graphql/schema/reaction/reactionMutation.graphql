@@ -13,6 +13,7 @@ input RemoveReactionInput {
   id: ID!
   targetType: ReactionTargetType!
   targetId: ID!
+  emoji: ReactionEmoji!
 }
 
 type ReactionMutationResponse {

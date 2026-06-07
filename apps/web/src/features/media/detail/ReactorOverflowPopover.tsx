@@ -1,8 +1,8 @@
 import { type JSX, type RefObject, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import type { ReactorVM } from '../../../viewModels/reaction';
+import type { ReactorVM } from '../../../viewModels';
+import { displayNameForReactor, sortReactorsForDisplay } from './formatReactorLine';
 import { railPopoverBackground } from './reactionPopoverStyles';
-import { sortReactorsForDisplay } from './formatReactorLine';
 
 export type ReactorOverflowPopoverProps = {
   reactors: ReactorVM[];
@@ -11,9 +11,6 @@ export type ReactorOverflowPopoverProps = {
   /** Clicks inside the anchor (trigger + bridge) do not dismiss. */
   anchorRef: RefObject<HTMLElement | null>;
 };
-
-const displayNameForReactor = (reactor: ReactorVM): string =>
-  reactor.isViewer ? 'You' : reactor.displayName;
 
 export const ReactorOverflowPopover = ({
   reactors,
@@ -55,7 +52,7 @@ export const ReactorOverflowPopover = ({
     <Panel ref={panelRef} role="tooltip">
       <NameList>
         {sorted.map((reactor) => (
-          <NameItem key={reactor.id}>{displayNameForReactor(reactor)}</NameItem>
+          <NameItem key={reactor.userId}>{displayNameForReactor(reactor)}</NameItem>
         ))}
       </NameList>
     </Panel>

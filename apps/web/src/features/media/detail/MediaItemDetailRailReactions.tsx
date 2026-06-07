@@ -7,7 +7,6 @@ import type { ReactionCountsFragment } from '../../../graphql/generated/types';
 import { useAppMutationState } from '../../../hooks/useAppMutation';
 import { useReactionHandlers } from '../../../hooks/useReactionHandlers';
 import type { ViewerReactionVM } from '../../../viewModels/';
-import { augmentWithStubReactors } from './augmentWithStubReactors';
 import { buildReactorLine } from './formatReactorLine';
 import { ReactorLineDisplay } from './ReactorLineDisplay';
 
@@ -33,8 +32,9 @@ export const MediaItemDetailRailReactions = ({
     onRefetch != null ? () => void onRefetch() : undefined,
   );
 
-  const augmented = augmentWithStubReactors(reactionCounts);
-  const heartEntry = augmented.byEmoji.find((entry) => entry.emoji.equals(ReactionEmoji.heart));
+  const heartEntry = reactionCounts.byEmoji.find((entry) =>
+    entry.emoji.equals(ReactionEmoji.heart),
+  );
   const reactors = heartEntry?.reactors ?? [];
   const reactorLine = buildReactorLine(reactors);
   const hasReaction =

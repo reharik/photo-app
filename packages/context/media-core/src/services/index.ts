@@ -45,5 +45,4 @@ export * from './writeServices/mediaItem/updateMediaItemTags';
 export * from './writeServices/mediaItem/writeMediaItem.types';
 export * from './writeServices/publicLink/createPublicLinkForAlbum';
 export * from './writeServices/publicLink/createPublicLinkForMediaItems';
-export * from './writeServices/reactions/addReaction';
-export * from './writeServices/reactions/removeReaction';
+export * from './writeServices/reactions/toggleReaction';

@@ -1,3 +1,4 @@
+import { User } from '@packages/contracts';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type Koa from 'koa';
 import type { AppCradle } from '../../di/generated/ioc-composed';
@@ -7,21 +8,13 @@ type ReadServices = AppCradle['readServices'];
 type WriteServices = AppCradle['writeServices'];
 type AgnosticReadServices = AppCradle['agnosticReadServices'];
 
-export type GraphQLContextViewer = {
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  displayName: string;
-  isAuthenticated: boolean;
-};
-
 type GraphQLContextShared = {
   agnosticReadServices: AgnosticReadServices;
 };
 
 export type AuthenticatedGraphQLContext = GraphQLContextShared & {
   kind: 'authenticated';
-  viewer: GraphQLContextViewer;
+  viewer: User;
   writeServices: WriteServices;
   readServices: ReadServices;
 };

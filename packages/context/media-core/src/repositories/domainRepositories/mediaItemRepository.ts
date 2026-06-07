@@ -1,16 +1,16 @@
 import {
-  CommentTargetType,
   MediaAssetKind,
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
   Operation,
+  ReactionEmoji,
+  ReactionTargetType,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
-import { DBReactionCounts } from '../..';
+import { ReactionRecord } from '../..';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
-import type { CommentRecord } from '../../domain/Comment/Comment';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import {
   MediaItem,
@@ -25,11 +25,7 @@ export type MediaItemRepository = {
   getById: (id: EntityId, trx?: Knex.Transaction) => Promise<MediaItem | undefined>;
   save: (mediaItem: MediaItem, trx: Knex.Transaction) => Promise<void>;
   delete: (mediaItem: MediaItem, trx: Knex.Transaction) => Promise<void>;
-  updateReactionCounts(
-    mediaItemId: EntityId,
-    reactionCounts: DBReactionCounts,
-    trx: Knex.Transaction,
-  ): Promise<void>;
+
   ensureUserTagId: (userTag: UserTagRow, trx: Knex.Transaction) => Promise<EntityId>;
 };
 
@@ -59,13 +55,14 @@ export const build__MediaItemRepository = ({
         return;
       }
 
-      const commentRows = await withEnumRevival(
-        db<CommentRecord>('comment')
-          .where({ targetType: CommentTargetType.mediaItem, targetId: id })
+      const reactionRows = await withEnumRevival(
+        db<ReactionRecord>('reaction')
+          .where({ targetId: id, targetType: ReactionTargetType.mediaItem })
           .orderBy('createdAt', 'asc'),
-        { targetType: CommentTargetType },
+        { emoji: ReactionEmoji, targetType: ReactionTargetType },
         { strict: true },
       );
+
       // TODO this is a smell. These should be created by a service but not in the repository.
       // stored on the AR because they are actually never used again.
       const assetRows = await withEnumRevival(
@@ -91,10 +88,10 @@ export const build__MediaItemRepository = ({
         .orderBy('userTag.label', 'asc');
 
       const childRecords = {
-        comments: commentRows,
         assets: assetRows,
         authorizations: authorizationRows,
         tags: tagRows,
+        reactions: reactionRows,
       };
 
       return MediaItem.rehydrate(mediaItemRow, childRecords);
@@ -118,19 +115,10 @@ export const build__MediaItemRepository = ({
     return await trx<MediaItemRecord>('mediaItem').where({ id: mediaItem.id() }).delete();
   };
 
-  const updateReactionCounts = async (
-    mediaItemId: EntityId,
-    reactionCounts: DBReactionCounts,
-    trx: Knex.Transaction,
-  ): Promise<void> => {
-    await trx('mediaItem').where({ id: mediaItemId }).update({ reactionCounts });
-  };
-
   return {
     getById,
     save,
     delete: deleteMediaItem,
-    updateReactionCounts,
     ensureUserTagId,
   };
 };

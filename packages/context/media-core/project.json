@@ -12,15 +12,49 @@
     },
     "barrels": {
       "executor": "nx:run-commands",
-      "cache": false,
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/barrelsby.json",
+        "{projectRoot}/src/application/**/*.ts",
+        "!{projectRoot}/src/application/index.ts",
+        "{projectRoot}/src/repositories/**/*.ts",
+        "!{projectRoot}/src/repositories/index.ts",
+        "{projectRoot}/src/services/**/*.ts",
+        "!{projectRoot}/src/services/index.ts",
+        "{projectRoot}/src/domain/**/*.ts",
+        "!{projectRoot}/src/domain/index.ts",
+        "{projectRoot}/src/types/**/*.ts",
+        "!{projectRoot}/src/types/index.ts"
+      ],
+      "outputs": [
+        "{projectRoot}/src/application/index.ts",
+        "{projectRoot}/src/repositories/index.ts",
+        "{projectRoot}/src/services/index.ts",
+        "{projectRoot}/src/domain/index.ts",
+        "{projectRoot}/src/types/index.ts"
+      ],
       "options": {
         "cwd": "{projectRoot}",
         "command": "npx barrelsby --config barrelsby.json"
       }
     },
-    "gen:container": {
+    "gen-ioc": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["^build"],
+      "inputs": [
+        "{projectRoot}/src/ioc.config.ts",
+        "{projectRoot}/src/**/*.ts",
+        "!{projectRoot}/src/**/*.spec.ts",
+        "!{projectRoot}/src/**/*.test.ts",
+        "!{projectRoot}/src/**/*.tests.ts",
+        "!{projectRoot}/src/**/tests/**",
+        "!{projectRoot}/src/generated/**"
+      ],
+      "outputs": [
+        "{projectRoot}/src/generated/ioc-manifest.ts",
+        "{projectRoot}/src/generated/ioc-registry.types.ts"
+      ],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"
@@ -28,7 +62,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["barrels", "gen:container", "^build"],
+      "dependsOn": ["barrels", "gen-ioc", "^build"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

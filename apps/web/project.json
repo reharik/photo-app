@@ -19,11 +19,16 @@
     },
     "sync-schema": {
       "executor": "nx:run-commands",
-      "dependsOn": ["api:schema-gen"],
+      "cache": true,
+      "dependsOn": ["api:gen-gql"],
+      "inputs": [
+        "{workspaceRoot}/apps/api/src/graphql/generated/schema.graphql",
+        { "dependentTasksOutputFiles": "**/schema.graphql" }
+      ],
       "outputs": ["{projectRoot}/src/graphql/generated/schema.graphql"],
       "options": {
         "commands": [
-          "test -f ../api/src/graphql/generated/schema.graphql || (echo 'ERROR: Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run npm run schema-gen:api first.' && exit 1)",
+          "test -f ../api/src/graphql/generated/schema.graphql || (echo 'ERROR: Schema file not found at apps/api/src/graphql/generated/schema.graphql. Run npm run gen:gql:api first.' && exit 1)",
           "mkdir -p src/graphql/generated",
           "cp ../api/src/graphql/generated/schema.graphql src/graphql/generated/schema.graphql"
         ],
@@ -31,13 +36,15 @@
         "cwd": "{projectRoot}"
       }
     },
-    "codegen": {
+    "gen-gql": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["sync-schema", "contracts:build"],
       "inputs": [
         "{projectRoot}/codegen.yml",
         "{projectRoot}/src/graphql/**/*.graphql",
-        "{projectRoot}/src/graphql/generated/schema.graphql"
+        "{projectRoot}/src/graphql/generated/schema.graphql",
+        { "dependentTasksOutputFiles": "**/schema.graphql" }
       ],
       "outputs": [
         "{projectRoot}/src/graphql/generated/types.ts",
@@ -55,7 +62,7 @@
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["ts-patch:install", "codegen"],
+      "dependsOn": ["gen-gql"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",
@@ -80,7 +87,7 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["contracts:build", "codegen"],
+      "dependsOn": ["contracts:build", "gen-gql"],
       "options": {
         "command": "tsc --noEmit -p tsconfig.json",
         "cwd": "{projectRoot}"

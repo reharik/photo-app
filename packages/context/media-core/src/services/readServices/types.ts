@@ -119,8 +119,14 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
+export type Reactor = {
+  firstName?: string;
+  lastName?: string;
+  userId: EntityId;
+};
 export type ReactionCount = {
   emoji: ReactionEmoji;
+  reactors: Reactor[];
   count: number;
 };
 
@@ -156,7 +162,18 @@ export type MediaItemChildren = {
   operations: Operation[];
 };
 
-export type DBReactionCounts = { total: number; byEmoji: { emoji: string; count: number }[] };
+export type DBReactionCounts = {
+  total: number;
+  byEmoji: {
+    emoji: string;
+    count: number;
+    reactors: {
+      firstName?: string;
+      lastName?: string;
+      userId: EntityId;
+    }[];
+  }[];
+};
 
 export interface MediaItemCollectionInfo extends CollectionInfo<MediaItemSortBy> {
   pageInfo: PageInfo;

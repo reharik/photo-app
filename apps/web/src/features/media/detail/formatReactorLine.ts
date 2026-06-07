@@ -1,4 +1,4 @@
-import type { ReactorVM } from '../../../viewModels/reaction';
+import { ReactorVM } from '../../../viewModels';
 
 export type ReactorLine = {
   inlineNames: string[];
@@ -6,8 +6,8 @@ export type ReactorLine = {
   allReactors: ReactorVM[];
 };
 
-const displayNameForReactor = (reactor: ReactorVM): string =>
-  reactor.isViewer ? 'You' : reactor.displayName;
+export const displayNameForReactor = (reactor: ReactorVM): string =>
+  reactor.isViewer ? 'You' : `${reactor.firstName} ${reactor.lastName}`;
 
 /** Viewer first, then remaining reactors in source order. */
 export const sortReactorsForDisplay = (reactors: ReactorVM[]): ReactorVM[] => {

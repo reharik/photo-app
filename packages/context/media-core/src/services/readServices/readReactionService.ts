@@ -1,10 +1,10 @@
 import { ReactionEmoji } from '@packages/contracts';
-import { ReactionCounts } from '../..';
+import { DBReactionCounts, ReactionCounts } from '../..';
 import { EntityId } from '../../types';
 
 export type WithAnemicReactions = {
   id: EntityId;
-  reactionCounts: { total: number; byEmoji: { emoji: string; count: number }[] };
+  reactionCounts: DBReactionCounts;
 };
 export interface ReadReactionService {
   withReactions: (rows: WithAnemicReactions[]) => Map<EntityId, { reactionCounts: ReactionCounts }>;
@@ -24,6 +24,7 @@ export const build__ReadReactionService = (): ReadReactionService => {
         byEmoji: (item.reactionCounts.byEmoji || []).map((e) => ({
           emoji: ReactionEmoji.fromValue(e.emoji),
           count: e.count,
+          reactors: e.reactors ?? [],
         })),
       };
       result.set(item.id, {

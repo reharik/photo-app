@@ -13,7 +13,6 @@ import type { CommentRepository } from '../repositories/domainRepositories/comme
 import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
-import type { ReactionRepository } from '../repositories/domainRepositories/reactionRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
 import type {
@@ -66,14 +65,12 @@ import type { UpdateMediaItem } from '../services/writeServices/mediaItem/update
 import type { UpdateMediaItemTags } from '../services/writeServices/mediaItem/updateMediaItemTags.js';
 import type { CreatePublicLinkForAlbum } from '../services/writeServices/publicLink/createPublicLinkForAlbum.js';
 import type { CreatePublicLinkForMediaItems } from '../services/writeServices/publicLink/createPublicLinkForMediaItems.js';
-import type { AddReaction } from '../services/writeServices/reactions/addReaction.js';
-import type { RemoveReaction } from '../services/writeServices/reactions/removeReaction.js';
+import type { ToggleReaction } from '../services/writeServices/reactions/toggleReaction.js';
 
 export interface IocGeneratedCradle {
   addAlbumItem: AddAlbumItem;
   addComment: AddComment;
   addMediaItemsToAlbum: AddMediaItemsToAlbum;
-  addReaction: AddReaction;
   agnosticReadServices: {
     commentReadService: CommentReadService;
     publicAccessReadService: PublicAccessReadService;
@@ -117,7 +114,6 @@ export interface IocGeneratedCradle {
     publicMediaItemReadService: PublicMediaItemReadService;
   };
   reactionReadRepository: ReactionReadRepository;
-  reactionRepository: ReactionRepository;
   readReactionService: ReadReactionService;
   readServices: {
     viewerAlbumReadService: ViewerAlbumReadService;
@@ -128,12 +124,12 @@ export interface IocGeneratedCradle {
     viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
     viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   };
-  removeReaction: RemoveReaction;
   reorderAlbumItems: ReorderAlbumItems;
   runInTransaction: RunInTransaction;
   setCoverMedia: SetCoverMedia;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
+  toggleReaction: ToggleReaction;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;
   updateMediaItemTags: UpdateMediaItemTags;
@@ -152,7 +148,6 @@ export interface IocGeneratedCradle {
     addAlbumItem: AddAlbumItem;
     addComment: AddComment;
     addMediaItemsToAlbum: AddMediaItemsToAlbum;
-    addReaction: AddReaction;
     createAlbum: CreateAlbum;
     createMediaUpload: CreateMediaUpload;
     createPublicLinkForAlbum: CreatePublicLinkForAlbum;
@@ -166,9 +161,9 @@ export interface IocGeneratedCradle {
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
     grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
-    removeReaction: RemoveReaction;
     reorderAlbumItems: ReorderAlbumItems;
     setCoverMedia: SetCoverMedia;
+    toggleReaction: ToggleReaction;
     unsetCoverMedia: UnsetCoverMedia;
     updateMediaItem: UpdateMediaItem;
     updateMediaItemTags: UpdateMediaItemTags;

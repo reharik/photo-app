@@ -16,8 +16,9 @@
         "cwd": "{projectRoot}"
       }
     },
-    "schema-gen": {
+    "gen-gql": {
       "executor": "nx:run-commands",
+      "cache": true,
       "inputs": ["{projectRoot}/src/graphql/schema/**/*.graphql", "{projectRoot}/codegen.yml"],
       "outputs": [
         "{projectRoot}/src/graphql/generated/schema.graphql",
@@ -32,9 +33,28 @@
         "parallel": false
       }
     },
-    "gen:container": {
+    "gen-ioc": {
       "executor": "nx:run-commands",
+      "cache": true,
       "dependsOn": ["^build"],
+      "inputs": [
+        "{projectRoot}/src/ioc.config.ts",
+        "{projectRoot}/src/**/*.ts",
+        "!{projectRoot}/src/**/*.spec.ts",
+        "!{projectRoot}/src/**/*.test.ts",
+        "!{projectRoot}/src/**/*.tests.ts",
+        "!{projectRoot}/src/**/tests/**",
+        "!{projectRoot}/src/di/generated/**",
+        {
+          "dependentTasksOutputFiles": "**/ioc-manifest.ts",
+          "transitive": true
+        }
+      ],
+      "outputs": [
+        "{projectRoot}/src/di/generated/ioc-composed.ts",
+        "{projectRoot}/src/di/generated/ioc-manifest.ts",
+        "{projectRoot}/src/di/generated/ioc-registry.types.ts"
+      ],
       "options": {
         "command": "ioc generate",
         "cwd": "{projectRoot}"
@@ -42,8 +62,10 @@
     },
     "build:vite": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["prod", "^prod", "{projectRoot}/vite.config.mjs"],
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["gen:container", "ts-patch:install", "^build"],
+      "dependsOn": ["gen-ioc", "^build"],
       "options": {
         "command": "vite build --config vite.config.mjs",
         "cwd": "{projectRoot}"
@@ -59,6 +81,9 @@
     },
     "build:graphql-static": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["{projectRoot}/src/graphql/schema/**"],
+      "outputs": ["{projectRoot}/dist/graphql"],
       "dependsOn": ["build:vite"],
       "options": {
         "command": "mkdir -p dist/graphql && cp -R src/graphql/schema dist/graphql/",
@@ -67,6 +92,11 @@
     },
     "build:db": {
       "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/tsconfig.db.json",
+        "{projectRoot}/db/**/*.ts"
+      ],
       "dependsOn": ["build:vite"],
       "outputs": ["{projectRoot}/dist/db"],
       "options": {
@@ -86,7 +116,7 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "schema-gen"],
+      "dependsOn": ["^build", "gen-gql"],
       "options": {
         "command": "tsc --noEmit -p tsconfig.json",
         "cwd": "{projectRoot}"
