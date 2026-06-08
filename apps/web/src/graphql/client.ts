@@ -25,8 +25,12 @@ const scalarLink = withScalars({
   },
 });
 
+const apiBase = config.apiBaseUrl.endsWith('/')
+  ? config.apiBaseUrl.slice(0, -1)
+  : config.apiBaseUrl;
+
 const httpLink = new HttpLink({
-  uri: `${config.apiBaseUrl}/graphql`,
+  uri: `${apiBase}/graphql`,
   credentials: 'include',
 });
 

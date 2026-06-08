@@ -1,5 +1,4 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
-import { env } from './env';
 import type { TestUser } from './users';
 
 /**
@@ -11,7 +10,7 @@ import type { TestUser } from './users';
  * Use `loginViaUi` when the test actually exercises the login screen.
  */
 export const loginViaApi = async (context: BrowserContext, user: TestUser): Promise<void> => {
-  const response = await context.request.post(`${env.apiBaseUrl}/api/auth/login`, {
+  const response = await context.request.post(`/api/auth/login`, {
     data: { email: user.email, password: user.password },
   });
   if (!response.ok()) {
@@ -39,7 +38,7 @@ export const loginViaUi = async (page: Page, user: TestUser): Promise<void> => {
 };
 
 export const logoutViaApi = async (context: BrowserContext): Promise<void> => {
-  await context.request.post(`${env.apiBaseUrl}/api/auth/logout`).catch(() => {
+  await context.request.post(`/api/auth/logout`).catch(() => {
     /* best-effort */
   });
 };

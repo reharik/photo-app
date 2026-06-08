@@ -280,10 +280,10 @@ const SubmitButton = styled.button`
 
 const ErrorMessage = styled.div`
   padding: ${({ theme }) => theme.spacing(2)};
-  background: rgba(217, 140, 126, 0.1);
-  border: 1px solid ${({ theme }) => theme.color.alertError};
+  background: ${({ theme }) => theme.color.alertError};
+  border: 1px solid ${({ theme }) => theme.color.formError};
   border-radius: ${({ theme }) => theme.borderRadius.md};
-  color: ${({ theme }) => theme.color.alertError};
+  color: ${({ theme }) => theme.color.alertErrorText};
   font-size: 14px;
 `;
 

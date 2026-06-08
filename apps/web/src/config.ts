@@ -3,6 +3,7 @@ export type Config = {
 };
 
 export const config: Config = {
-  // VITE_API is set in vite.config.js (dev: localhost:3001, production build: /api)
+  // VITE_API: API base path/prefix. Default `/api` (Vite dev proxy + production Caddy).
+  // Must include the `/api` segment — auth and GraphQL paths append `/auth/...`, `/graphql`.
   apiBaseUrl: (import.meta.env.VITE_API || '/api') as string,
 };

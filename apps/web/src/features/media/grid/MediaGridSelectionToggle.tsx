@@ -56,9 +56,11 @@ const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boole
   pointer-events: ${({ $selected, $selectionActive }) =>
     $selected || $selectionActive ? 'auto' : 'none'};
 
-  [data-media-grid-selectable-thumb]:hover & {
-    opacity: 1;
-    pointer-events: auto;
+  @media (hover: hover) {
+    [data-media-grid-selectable-thumb]:hover & {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   &:focus-visible {

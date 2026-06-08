@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
 
   const defaults = {
-    VITE_API: 'http://localhost:3001/api',
+    VITE_API: '/api',
   };
 
   const getEnv = (key) => {
@@ -38,11 +38,15 @@ export default defineConfig(({ mode }) => {
     ],
     server: {
       port: 5173,
-      host: 'localhost',
+      host: true,
       hmr: {
         port: 5174,
       },
       proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
         // Proxy only concrete media asset fetches (e.g. /media/:mediaId/:variant)
         // so SPA routes like /media keep resolving to index.html on refresh.
         '^/media/[^/]+/[^/]+$': {
