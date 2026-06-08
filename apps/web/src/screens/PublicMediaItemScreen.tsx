@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { buildMediaItemUrl } from '../domain/formatters/mediaItemUrlBuilder';
 import { getGalleryNavigation } from '../features/gallery/mediaItemGalleryNavigation';
 import { NeighborDisplayPrefetch } from '../features/gallery/NeighborDisplayPrefetch';
+import { useNeighborDetailPrefetch } from '../features/gallery/useNeighborDetailPrefetch';
 import {
   PublicMediaItemDetailPanel,
   PublicMediaItemDetailPanelHandle,
@@ -20,6 +21,8 @@ import { Toast } from '../ui/Toast';
 export type MediaItemLocationState = {
   mediaGalleryIds?: string[];
 };
+
+const PUBLIC_DETAIL_QUERY_CONTEXT = { accessMode: 'public' as const };
 
 export const PublicMediaItemScreen = () => {
   const { mediaId, token } = useParams<{ mediaId: string; token: string }>();
@@ -62,6 +65,16 @@ export const PublicMediaItemScreen = () => {
     galleryIds,
     mediaId,
     isEditingDetails: false,
+  });
+
+  useNeighborDetailPrefetch({
+    enabled: galleryNavigation.enabled && galleryIds != null,
+    galleryNavigation,
+    galleryIds: galleryIds ?? [],
+    mediaId,
+    mediaItemResolved: mediaItem != null,
+    query: PublicMediaItemDetailDocument,
+    queryContext: PUBLIC_DETAIL_QUERY_CONTEXT,
   });
 
   const handleMediaNavigate = useCallback(

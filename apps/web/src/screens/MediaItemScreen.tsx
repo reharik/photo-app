@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { buildMediaItemUrl } from '../domain/formatters/mediaItemUrlBuilder';
 import { getGalleryNavigation } from '../features/gallery/mediaItemGalleryNavigation';
 import { NeighborDisplayPrefetch } from '../features/gallery/NeighborDisplayPrefetch';
+import { useNeighborDetailPrefetch } from '../features/gallery/useNeighborDetailPrefetch';
 import {
   MediaItemDetailPanel,
   type MediaItemDetailPanelHandle,
@@ -74,6 +75,15 @@ export const MediaItemScreen = () => {
     galleryIds,
     mediaId,
     isEditingDetails,
+  });
+
+  useNeighborDetailPrefetch({
+    enabled: galleryNavigation.enabled && galleryIds != null,
+    galleryNavigation,
+    galleryIds: galleryIds ?? [],
+    mediaId,
+    mediaItemResolved: mediaItem != null,
+    query: ViewerMediaItemDetailDocument,
   });
 
   const handleMediaNavigate = useCallback(
