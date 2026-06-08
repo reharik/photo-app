@@ -13,10 +13,16 @@ import {
   type MediaItemDetailPanelHandle,
 } from '../features/media/MediaItemDetailPanel';
 import { MediaViewer } from '../features/media/viewer/MediaViewer';
-import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
+import type {
+  MobileViewerSheet,
+  NavigateDirection,
+} from '../features/media/viewer/mediaViewerTypes';
 import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { Toast } from '../ui/Toast';
+
+/** Mobile stage chrome (close + action bar) is always visible — single-tap toggle is a no-op. */
+const noopToggleMobileChrome = (): void => undefined;
 
 export type MediaItemLocationState = {
   mediaGalleryIds?: string[];
@@ -41,7 +47,7 @@ export const MediaItemScreen = () => {
   });
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [isEditingDetails, setIsEditingDetails] = useState(false);
-  const [isMobileChromeVisible, setIsMobileChromeVisible] = useState(false);
+  const [activeMobileSheet, setActiveMobileSheet] = useState<MobileViewerSheet>('none');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const detailPanelRef = useRef<MediaItemDetailPanelHandle>(null);
 
@@ -49,20 +55,30 @@ export const MediaItemScreen = () => {
   const mediaViewerEscapeConsumedRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
-    setIsMobileChromeVisible(false);
+    setActiveMobileSheet('none');
   }, [mediaItem?.id]);
-
-  const handleDismissScreen = useCallback((): void => {
-    void navigate(-1);
-  }, [navigate]);
-
-  const handleToggleMobileChrome = useCallback((): void => {
-    setIsMobileChromeVisible((visible) => !visible);
-  }, []);
 
   const handleClose = useCallback((): void => {
     detailPanelRef.current?.handleCloseRequest();
   }, []);
+
+  /** Terminal dismiss — {@link handleClose} → panel {@link handleCloseRequest} → here when not editing. */
+  const handleDismissScreen = useCallback((): void => {
+    void navigate(-1);
+  }, [navigate]);
+
+  const handleCloseMobileSheet = useCallback((): void => {
+    detailPanelRef.current?.handleSheetDismiss();
+    setActiveMobileSheet('none');
+  }, []);
+
+  const handleEscape = useCallback((): void => {
+    if (activeMobileSheet !== 'none') {
+      handleCloseMobileSheet();
+      return;
+    }
+    detailPanelRef.current?.handleCloseRequest();
+  }, [activeMobileSheet, handleCloseMobileSheet]);
 
   const handleAfterSave = useCallback(async (): Promise<void> => {
     if (mediaId != null && mediaId !== '') {
@@ -106,12 +122,6 @@ export const MediaItemScreen = () => {
     [galleryIds, navigate, galleryNavigation],
   );
 
-  // const viewerChrome = (children: ReactNode) => (
-  //   <ViewerShell>
-  //     <ViewerCard>{children}</ViewerCard>
-  //   </ViewerShell>
-  // );
-
   const viewerPane = (() => {
     if (mediaItem == null) {
       return null;
@@ -123,18 +133,24 @@ export const MediaItemScreen = () => {
 
     return (
       <MediaViewer
+        key={mediaItem.id}
         kind={mediaItem.kind}
         mimeType={mediaItem.mimeType}
         displayUrl={displayUrl}
         imageAlt={imageAlt}
         mediaItemId={mediaItem.id}
         onClose={handleClose}
+        onEscape={handleEscape}
         onNavigate={handleMediaNavigate}
         canNavigate={galleryNavigation.enabled}
         escapeConsumedRef={mediaViewerEscapeConsumedRef}
         mobileChrome={{
-          visible: isMobileChromeVisible,
-          onToggleChrome: handleToggleMobileChrome,
+          visible: true,
+          onToggleChrome: noopToggleMobileChrome,
+          onOpenInfoSheet: () => setActiveMobileSheet('info'),
+          onOpenCommentSheet: () => setActiveMobileSheet('comment'),
+          activeSheet: activeMobileSheet,
+          sheetOpen: activeMobileSheet !== 'none',
         }}
       />
     );
@@ -167,7 +183,9 @@ export const MediaItemScreen = () => {
           onDismissScreen={handleDismissScreen}
           onSaved={handleAfterSave}
           onEditingSessionChange={setIsEditingDetails}
-          isMobileMetadataVisible={isMobileChromeVisible}
+          activeMobileSheet={activeMobileSheet}
+          onCloseMobileSheet={handleCloseMobileSheet}
+          onRequestOpenInfoSheet={() => setActiveMobileSheet('info')}
         />
       </LayoutInner>
     </Container>
@@ -185,9 +203,7 @@ const Container = styled.div`
   z-index: 100;
 
   @media (max-width: 968px) {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
   }
 `;
 
@@ -207,12 +223,13 @@ const LayoutInner = styled.div`
 
   @media (max-width: 968px) {
     flex-direction: column;
-    flex: 1 0 auto;
-    min-height: 100dvh;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 `;
 
-/** Wraps the viewer so the media + metadata stack and scroll on narrow viewports. */
+/** Wraps the viewer so the media stage fills the viewport on narrow layouts. */
 const ViewerColumn = styled.div`
   flex: 1;
   min-width: 0;
@@ -222,10 +239,11 @@ const ViewerColumn = styled.div`
   align-self: stretch;
 
   @media (max-width: 968px) {
-    /* Shrink-wrap image + reactions; page scroll handles overflow */
-    flex: 0 0 auto;
+    flex: 1;
     min-height: 0;
-    overflow: visible;
+    overflow: hidden;
     width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 `;

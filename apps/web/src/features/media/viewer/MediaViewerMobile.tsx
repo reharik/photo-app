@@ -1,6 +1,9 @@
 import { JSX, type ReactNode } from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
+import { MobileViewerActionBar } from './MobileViewerActionBar';
+import type { MobileViewerSheet } from './mediaViewerTypes';
 import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
+import { viewerChromeVisibility } from './viewerChromeVisibility';
 
 type MediaViewerMobileProps = {
   media: ReactNode;
@@ -8,6 +11,9 @@ type MediaViewerMobileProps = {
   chromeVisible: boolean;
   showCloseButton?: boolean;
   gestureHandlers: Record<string, unknown>;
+  activeSheet: MobileViewerSheet;
+  onOpenInfoSheet: () => void;
+  onOpenCommentSheet: () => void;
 };
 
 export const MediaViewerMobile = ({
@@ -16,19 +22,31 @@ export const MediaViewerMobile = ({
   chromeVisible,
   showCloseButton = true,
   gestureHandlers,
+  activeSheet,
+  onOpenInfoSheet,
+  onOpenCommentSheet,
 }: MediaViewerMobileProps): JSX.Element => {
   return (
     <MobileLayout>
       <MobileMediaStage {...gestureHandlers}>
         <ViewerCardMobile>{media}</ViewerCardMobile>
 
-        {showCloseButton ? (
-          <ChromeLayer $visible={chromeVisible}>
+        <ChromeLayer $visible={chromeVisible}>
+          {showCloseButton ? (
             <StageImageCloseButton type="button" onClick={onClose} aria-label="Close viewer">
               ✕
             </StageImageCloseButton>
-          </ChromeLayer>
-        ) : null}
+          ) : null}
+        </ChromeLayer>
+
+        <MobileViewerActionBar
+          chromeVisible={chromeVisible}
+          activeSheet={activeSheet}
+          // TODO: inline reaction picker — React opens Comment sheet for now.
+          onReact={onOpenCommentSheet}
+          onComment={onOpenCommentSheet}
+          onInfo={onOpenInfoSheet}
+        />
       </MobileMediaStage>
     </MobileLayout>
   );
@@ -41,40 +59,36 @@ const MobileLayout = styled.div`
   justify-content: flex-start;
   width: 100%;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 1;
+  height: 100%;
 `;
 
 const MobileMediaStage = styled.div`
   position: relative;
   container-type: inline-size;
   container-name: media-stage;
-  flex: 0 0 auto;
+  flex: 1;
   min-height: 0;
   min-width: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: flex-start;
   touch-action: none;
 `;
 
-const chromeVisibility = css<{ $visible: boolean }>`
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  visibility: ${({ $visible }) => ($visible ? 'visible' : 'hidden')};
-  pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
-  transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease;
-`;
-
 const ChromeLayer = styled.div<{ $visible: boolean }>`
-  ${chromeVisibility}
+  ${viewerChromeVisibility}
 `;
 
 const ViewerCardMobile = styled(ViewerCard)`
   width: 100%;
   min-height: 0;
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   background: transparent;
   border: none;
   border-radius: 0;

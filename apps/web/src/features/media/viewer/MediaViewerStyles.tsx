@@ -97,7 +97,7 @@ export const ViewerCard = styled.div<{ $positionForOverlay?: boolean }>`
       : undefined}
 
   @media (max-width: 968px) {
-    padding: ${({ theme }) => theme.spacing(2)};
+    padding: 0;
     gap: ${({ theme }) => theme.spacing(2)};
     min-height: 0;
   }

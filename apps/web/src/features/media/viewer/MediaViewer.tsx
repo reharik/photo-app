@@ -13,7 +13,7 @@ import { MediaRenderer } from './MediaRenderer';
 import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
-import type { NavigateDirection } from './mediaViewerTypes';
+import type { MobileViewerChrome, NavigateDirection } from './mediaViewerTypes';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
 export type { NavigateDirection } from './mediaViewerTypes';
@@ -30,11 +30,10 @@ export type MediaViewerProps = {
   onNavigate: (direction: NavigateDirection) => void;
   canNavigate: boolean;
   escapeConsumedRef?: MutableRefObject<(() => boolean) | null>;
-  /** Mobile layout: toggles close button and metadata card visibility. */
-  mobileChrome?: {
-    visible: boolean;
-    onToggleChrome: () => void;
-  };
+  /** Window Escape — defaults to {@link onClose} when omitted. */
+  onEscape?: () => void;
+  /** Mobile layout: stage chrome + bottom sheets. */
+  mobileChrome?: MobileViewerChrome;
 };
 
 const MOBILE_NAV_MEDIA = '(max-width: 968px)';
@@ -58,6 +57,7 @@ export const MediaViewer = ({
   onNavigate,
   canNavigate = false,
   escapeConsumedRef,
+  onEscape,
   mobileChrome,
 }: MediaViewerProps) => {
   const isMobileLayout = useMediaQuery(MOBILE_NAV_MEDIA);
@@ -95,11 +95,11 @@ export const MediaViewer = ({
   useMediaViewerKeyboard({
     onNavigate,
     escapeConsumedRef,
-    onEscape: onClose,
+    onEscape: onEscape ?? onClose,
   });
 
   const { gestureHandlers } = useMobileViewerGestures({
-    enabled: mobileGesturesEnabled,
+    enabled: mobileGesturesEnabled && !(mobileChrome?.sheetOpen ?? false),
     canNavigate,
     zoomActive,
     onNavigate,
@@ -138,6 +138,9 @@ export const MediaViewer = ({
             chromeVisible={chromeVisible}
             showCloseButton={showCloseButton}
             gestureHandlers={gestureHandlers}
+            activeSheet={mobileChrome.activeSheet ?? 'none'}
+            onOpenInfoSheet={mobileChrome.onOpenInfoSheet ?? ((): void => undefined)}
+            onOpenCommentSheet={mobileChrome.onOpenCommentSheet ?? ((): void => undefined)}
           />
         ) : !canNavigate ? (
           <MediaViewerSingle media={media} />
@@ -162,8 +165,9 @@ const ViewerRoot = styled.div`
   overflow: hidden;
 
   @media (max-width: 968px) {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 `;
 
@@ -176,9 +180,11 @@ const ViewerShell = styled.div`
   overflow: auto;
 
   @media (max-width: 968px) {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     align-items: stretch;
+    justify-content: stretch;
   }
 
   @media (min-width: 969px) {

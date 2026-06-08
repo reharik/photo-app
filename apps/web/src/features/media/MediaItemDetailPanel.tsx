@@ -5,6 +5,7 @@ import { formatDateOnly } from '../../domain/formatters/mediaItemMetaFormat';
 import { MediaItemCommentCountFragmentDoc } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { MediaItemDetailVM } from '../../viewModels/';
+import { BottomSheet } from '../../ui/BottomSheet';
 import { MediaItemDetailRailFields } from './detail/MediaItemDetailRailFields';
 import { MediaItemDetailRailReactions } from './detail/MediaItemDetailRailReactions';
 import {
@@ -14,15 +15,19 @@ import {
   DetailsPanelCloseButton,
   MetadataPanelStack,
   RailHeader,
+  SheetContentZone,
 } from './detail/mobileMetadataLayout';
 import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
 import { PhotoDetailsDisclosure } from './detail/PhotoDetailsDisclosure';
 import { CommentsForViewerMediaItemContainer } from './CommentsForViewerMediaItemContainer';
 import { MediaItemDetailForm } from './MediaItemDetailForm';
+import type { MobileViewerSheet } from './viewer/mediaViewerTypes';
 
 export type MediaItemDetailPanelHandle = {
   /** Cancels an active edit, or runs {@link MediaItemDetailPanelProps.onDismissScreen} when not editing. */
   handleCloseRequest: () => void;
+  /** Ends an active edit when a mobile sheet is dismissed (no navigation). */
+  handleSheetDismiss: () => void;
 };
 
 export type MediaItemDetailPanelProps = {
@@ -31,8 +36,9 @@ export type MediaItemDetailPanelProps = {
   onSaved: () => Promise<void>;
   /** Notified synchronously when the user enters or leaves detail editing (e.g. to block gallery navigation). */
   onEditingSessionChange?: (isEditing: boolean) => void;
-  /** On narrow viewports, hides the descriptive cream card when false; conversation stays visible. */
-  isMobileMetadataVisible?: boolean;
+  activeMobileSheet?: MobileViewerSheet;
+  onCloseMobileSheet?: () => void;
+  onRequestOpenInfoSheet?: () => void;
 };
 
 const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
@@ -47,7 +53,9 @@ export const MediaItemDetailPanel = forwardRef<
       onDismissScreen,
       onSaved,
       onEditingSessionChange,
-      isMobileMetadataVisible = false,
+      activeMobileSheet = 'none',
+      onCloseMobileSheet,
+      onRequestOpenInfoSheet,
     },
     ref,
   ) => {
@@ -78,7 +86,8 @@ export const MediaItemDetailPanel = forwardRef<
     const openEditDetails = useCallback((): void => {
       setIsEditingDetails(true);
       onEditingSessionChangeRef.current?.(true);
-    }, []);
+      onRequestOpenInfoSheet?.();
+    }, [onRequestOpenInfoSheet]);
 
     const handleCloseRequest = useCallback((): void => {
       if (isEditingDetails) {
@@ -88,7 +97,22 @@ export const MediaItemDetailPanel = forwardRef<
       onDismissScreen();
     }, [endEditingSession, isEditingDetails, onDismissScreen]);
 
-    useImperativeHandle(ref, () => ({ handleCloseRequest }), [handleCloseRequest]);
+    const handleSheetDismiss = useCallback((): void => {
+      if (isEditingDetails) {
+        endEditingSession();
+      }
+    }, [endEditingSession, isEditingDetails]);
+
+    const handleMobileSheetClose = useCallback((): void => {
+      handleSheetDismiss();
+      onCloseMobileSheet?.();
+    }, [handleSheetDismiss, onCloseMobileSheet]);
+
+    useImperativeHandle(
+      ref,
+      () => ({ handleCloseRequest, handleSheetDismiss }),
+      [handleCloseRequest, handleSheetDismiss],
+    );
 
     if (mediaItem == null) {
       return null;
@@ -96,8 +120,6 @@ export const MediaItemDetailPanel = forwardRef<
 
     const canEdit = mediaItem.operations.includes(Operation.editMediaItem);
     const canComment = mediaItem.operations.includes(Operation.comment);
-    const showDescriptiveZone =
-      !isMobileLayout || isMobileMetadataVisible || isEditingDetails;
 
     const dateAdded = formatDateOnly(mediaItem.createdAt);
     const photoDetailRows = [
@@ -128,52 +150,89 @@ export const MediaItemDetailPanel = forwardRef<
       />
     );
 
+    const railFields = (
+      <MediaItemDetailRailFields
+        mediaItem={mediaItem}
+        canEdit={canEdit}
+        isEditingDetails={isEditingDetails}
+        onOpenEdit={openEditDetails}
+        editForm={
+          isEditingDetails ? (
+            <MediaItemDetailForm
+              mediaItem={mediaItem}
+              onSaved={onSaved}
+              onFinishEditing={endEditingSession}
+            />
+          ) : undefined
+        }
+      />
+    );
+
+    const reactions = (
+      <MediaItemDetailRailReactions
+        mediaItemId={mediaItem.id}
+        reactionCounts={mediaItem.reactionCounts}
+        viewerReactions={mediaItem.viewerReactions}
+        onRefetch={onSaved}
+      />
+    );
+
+    const comments = (
+      <CommentsSection>
+        <CommentsForViewerMediaItemContainer
+          mediaItemId={mediaItem.id}
+          canComment={canComment}
+          layout="rail"
+        />
+      </CommentsSection>
+    );
+
+    if (isMobileLayout) {
+      return (
+        <>
+          <BottomSheet
+            open={activeMobileSheet === 'info'}
+            onClose={handleMobileSheetClose}
+            ariaLabel="Photo information"
+          >
+            <SheetContentZone>
+              {railFields}
+              {photoDetails}
+            </SheetContentZone>
+          </BottomSheet>
+
+          <BottomSheet
+            open={activeMobileSheet === 'comment'}
+            onClose={handleMobileSheetClose}
+            ariaLabel="Comments"
+          >
+            <SheetContentZone>
+              {reactions}
+              {comments}
+            </SheetContentZone>
+          </BottomSheet>
+        </>
+      );
+    }
+
     return (
       <MetadataPanelStack>
-        <DescriptiveMetadataZone $hiddenOnMobile={!showDescriptiveZone}>
+        <DescriptiveMetadataZone>
           <RailHeader>
             <DetailsPanelCloseButton type="button" onClick={handleCloseRequest} aria-label="Close">
               ✕
             </DetailsPanelCloseButton>
           </RailHeader>
 
-          <MediaItemDetailRailFields
-            mediaItem={mediaItem}
-            canEdit={canEdit}
-            isEditingDetails={isEditingDetails}
-            onOpenEdit={openEditDetails}
-            editForm={
-              isEditingDetails ? (
-                <MediaItemDetailForm
-                  mediaItem={mediaItem}
-                  onSaved={onSaved}
-                  onFinishEditing={endEditingSession}
-                />
-              ) : undefined
-            }
-          />
+          {railFields}
 
-          {isMobileLayout ? photoDetails : null}
+          {photoDetails}
         </DescriptiveMetadataZone>
 
         <ConversationMetadataZone>
-          <MediaItemDetailRailReactions
-            mediaItemId={mediaItem.id}
-            reactionCounts={mediaItem.reactionCounts}
-            viewerReactions={mediaItem.viewerReactions}
-            onRefetch={onSaved}
-          />
-
-          <CommentsSection>
-            <CommentsForViewerMediaItemContainer
-              mediaItemId={mediaItem.id}
-              canComment={canComment}
-              layout="rail"
-            />
-          </CommentsSection>
+          {reactions}
+          {comments}
         </ConversationMetadataZone>
-
-        {!isMobileLayout ? photoDetails : null}
       </MetadataPanelStack>
     );
   },

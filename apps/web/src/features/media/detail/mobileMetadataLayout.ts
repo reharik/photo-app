@@ -113,6 +113,14 @@ export const DetailsPanelCloseButton = styled.button`
   }
 `;
 
+/** Mobile sheet body — content padding inside {@link BottomSheet}. */
+export const SheetContentZone = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(3)};
+  ${mobileCardChrome}
+`;
+
 export const CommentsSection = styled.div<{ $showTopRule?: boolean }>`
   display: flex;
   flex-direction: column;
