@@ -7,9 +7,10 @@ import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
-import { MediaItemSummaryVM, ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
-import { SingleSelectGallery } from '../gallery/SingleSelectGallery';
-import { SingleSelectionTile } from '../gallery/tiles/SingleSelectionTile';
+import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
+import { PICKER_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid } from '../media/grid/MediaGrid';
+import type { MultiSelectProps } from '../media/grid/types';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 import { AlbumSelectionActions } from './AlbumSelectionActions';
 
@@ -56,6 +57,13 @@ export type MinimalAlbumItemSummaryVM = {
 };
 
 const MOBILE_ALBUM_MEDIA = '(max-width: 768px)';
+
+const noopMultiSelect: MultiSelectProps = {
+  isSelected: () => false,
+  handleModifierClick: () => undefined,
+  toggleSelectAt: () => undefined,
+  enterSelectionAt: () => undefined,
+};
 
 export const AlbumSectionMetadata = ({
   count,
@@ -108,6 +116,15 @@ export const AlbumSectionMetadata = ({
         selectionActions={selectionActions}
       />
     ) : null;
+
+  const handleCoverTileClick = (mediaItemId: string): void => {
+    const albumItem = albumItems.find((item) => item.mediaItem.id === mediaItemId);
+    if (albumItem == null) {
+      return;
+    }
+    onSelectCover?.(albumItem.id);
+    setAddCoverItemOpen(false);
+  };
 
   return (
     <>
@@ -180,20 +197,24 @@ export const AlbumSectionMetadata = ({
             </AddAlbumCoverModalHeader>
           }
         >
-          {!isPublic && (
-            <SingleSelectGallery
-              nodes={albumItems}
-              renderItem={({ item }) => (
-                <SingleSelectionTile
-                  item={item.mediaItem as MediaItemSummaryVM}
-                  onSelect={() => {
-                    onSelectCover?.(item.id);
-                    setAddCoverItemOpen(false);
-                  }}
-                />
-              )}
-            />
-          )}
+          {!isPublic ? (
+            <CoverPickerGridWrap>
+              <MediaGrid
+                nodes={albumItems}
+                toDisplayable={(item) => item.mediaItem}
+                multiSelectProps={noopMultiSelect}
+                selectableActions={[]}
+                selectable={false}
+                selectionActive={false}
+                columnCounts={PICKER_GRID_COLUMNS}
+                groupBy="none"
+                tileFit="contain"
+                disableTileNavigation
+                canReact={false}
+                handleTileNavigate={handleCoverTileClick}
+              />
+            </CoverPickerGridWrap>
+          ) : null}
         </AppModal>
       )}
     </>
@@ -399,6 +420,14 @@ const AddAlbumCoverModalTitle = styled.h2`
   font-size: 18px;
   font-weight: 500;
   color: ${({ theme }) => theme.color.bodyText};
+`;
+
+const CoverPickerGridWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1.5)};
+  }
 `;
 
 const AddAlbumCoverModalClose = styled.button`

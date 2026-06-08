@@ -10,6 +10,7 @@ describe('build__MediaStorage', () => {
           awsRegion: 'us-east-1',
           s3UploadUrlTtlSeconds: 900,
           s3DownloadUrlTtlSeconds: 900,
+          s3DownloadUrlSigningBucketSeconds: 300,
         },
       };
       const storage = build__MediaStorage(deps);

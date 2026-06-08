@@ -1,16 +1,17 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
-import {
-  MediaGridTileReactionPill,
-  ReactionHoverPill,
-} from './MediaGridTileReactionPill';
+import { MediaGridTileReactionPill, ReactionHoverPill } from './MediaGridTileReactionPill';
 
 export type MediaGridTileFit = 'cover' | 'contain';
 
 const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
+
+const placeholderIconForKind = (kind: MediaKind): string =>
+  kind.equals(MediaKind.photo) ? '🖼️' : '🎬';
 
 export type MediaGridTileProps = {
   mediaGalleryIds: string[];
@@ -29,6 +30,8 @@ export type MediaGridTileProps = {
   disableTileNavigation?: boolean;
   /** Tile link target; defaults to authed `/media/{id}`. */
   buildTileHref?: (itemId: string) => string;
+  /** When false, skip thumbnail fetch and show the kind placeholder (e.g. album with no cover). */
+  hasThumbnail?: boolean;
 };
 
 export const MediaGridTile = ({
@@ -45,25 +48,35 @@ export const MediaGridTile = ({
   disableTileNavigation = false,
   buildTileHref = defaultBuildTileHref,
   onBeforeNavigate,
+  hasThumbnail = true,
 }: MediaGridTileProps) => {
+  const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const showBurstBadge = burstCount != null && burstCount > 1;
   const isContain = tileFit === 'contain';
   const to = buildTileHref(itemId);
   const thumbnailUrl = buildMediaItemUrl(itemId, MediaAssetKind.thumbnail);
   /** Used for data-testid on the thumbnail. */
   const testId = itemId;
+  const placeholderIcon = placeholderIconForKind(kind);
+  const showThumbnailImage = kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
+
+  useEffect(() => {
+    setThumbLoadFailed(false);
+  }, [itemId, hasThumbnail, thumbnailUrl]);
+
   const thumbContent = (
     <>
-      {kind.equals(MediaKind.photo) ? (
+      {showThumbnailImage ? (
         <ThumbImage
           src={thumbnailUrl}
           data-testid={testId}
           alt={title?.trim() ?? ''}
           $contain={isContain}
+          onError={() => setThumbLoadFailed(true)}
         />
       ) : (
-        <ThumbIcon aria-hidden $contain={isContain}>
-          {'🎬'}
+        <ThumbIcon aria-hidden $contain={isContain} data-testid={testId}>
+          {placeholderIcon}
         </ThumbIcon>
       )}
       {showBurstBadge ? (
@@ -83,10 +96,18 @@ export const MediaGridTile = ({
     </>
   );
 
+  const handleActivate = onBeforeNavigate != null ? () => onBeforeNavigate(itemId) : undefined;
+
   return (
     <TileRoot>
       {disableTileNavigation ? (
-        <ThumbShell $contain={isContain}>{thumbContent}</ThumbShell>
+        <ThumbShell
+          $contain={isContain}
+          $clickable={handleActivate != null}
+          onClick={handleActivate}
+        >
+          {thumbContent}
+        </ThumbShell>
       ) : (
         <ThumbLink
           to={to}
@@ -144,9 +165,10 @@ const thumbFrameBaseStyles = css`
   }
 `;
 
-const ThumbShell = styled.div<{ $contain: boolean }>`
+const ThumbShell = styled.div<{ $contain: boolean; $clickable?: boolean }>`
   ${thumbFrameBaseStyles}
   ${({ $contain }) => ($contain ? thumbFrameContainStyles : '')}
+  ${({ $clickable }) => ($clickable ? 'cursor: pointer;' : '')}
 `;
 
 const ThumbLink = styled(Link)<{ $contain: boolean }>`

@@ -3,6 +3,7 @@
 import type { Knex } from 'knex';
 import type { AggregateRoot } from '../../domain/AggregateRoot';
 import type { Entity, VOCollection } from '../../domain/Entity';
+import { serializeValue } from '../../domain/utilities/serializeAggregates';
 
 export const persistRoot = async <T extends AggregateRoot<Record<string, unknown>>>(
   trx: Knex.Transaction,
@@ -65,12 +66,15 @@ export const persistValueCollection = async <T>(
   const { tableName, upsert, removed, conflictKeys } = collection;
 
   if (upsert.length) {
-    await trx(tableName).insert(upsert).onConflict(conflictKeys).merge();
+    const rows = upsert.map((row) => serializeValue(row) as Record<string, unknown>);
+    await trx(tableName).insert(rows).onConflict(conflictKeys).merge();
   }
 
   if (removed.length) {
     for (const where of removed) {
-      await trx(tableName).where(where).delete();
+      await trx(tableName)
+        .where(serializeValue(where) as Record<string, unknown>)
+        .delete();
     }
   }
 };

@@ -6,8 +6,8 @@ import { env } from './fixtures/env';
  *
  * These tests assume the api (default http://localhost:3001) and web
  * (default http://localhost:5173) are already running, and that the
- * database has the standard `01_user.ts` seed applied so User A and
- * User B exist, and that api storage for media uploads is configured.
+ * database has the e2e users from `01_user.ts` applied (`tester.one@…`,
+ * `two.tester@…`), and that api storage for media uploads is configured.
  * Tests create media through the Upload Media UI (no direct DB inserts).
  * Start api + web before running `npm test` here.
  */

@@ -77,11 +77,19 @@ const isMissingOrInvisibleHeadError = (error: unknown): boolean => {
   return isMissingObjectError(error) || error.$metadata.httpStatusCode === 403;
 };
 
+/** Browser-cache directive for write-once derivative objects (display/thumbnail). */
+const DERIVATIVE_OBJECT_CACHE_CONTROL = 'private, max-age=31536000, immutable';
+
+const isDerivativeObjectKey = (storageKey: string): boolean => {
+  return storageKey.endsWith('/display') || storageKey.endsWith('/thumbnail');
+};
+
 export type MediaStorageConfig = {
   s3Bucket: string;
   awsRegion: string;
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
+  s3DownloadUrlSigningBucketSeconds: number;
 };
 
 export type MediaStorageDeps = {
@@ -93,6 +101,7 @@ export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage 
     awsRegion,
     s3UploadUrlTtlSeconds = 900,
     s3DownloadUrlTtlSeconds = 900,
+    s3DownloadUrlSigningBucketSeconds = 300,
   } = config;
   const client = new S3Client({ region: awsRegion });
 
@@ -126,6 +135,9 @@ export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage 
     };
     if (input.mimeType !== undefined) {
       commandInput.ContentType = input.mimeType;
+    }
+    if (isDerivativeObjectKey(input.storageKey)) {
+      commandInput.CacheControl = DERIVATIVE_OBJECT_CACHE_CONTROL;
     }
     if (Buffer.isBuffer(input.body)) {
       commandInput.ContentLength = input.body.length;
@@ -191,8 +203,17 @@ export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage 
       Key: input.storageKey,
     });
 
+    const expiresIn = input.expiresInSeconds ?? s3DownloadUrlTtlSeconds;
+    const bucketMs = s3DownloadUrlSigningBucketSeconds * 1000;
+    const bucketStartMs = Math.floor(Date.now() / bucketMs) * bucketMs;
+
+    // Presign URL stability invariant: signing bucket MUST stay < download TTL.
+    // TTL − bucket is the guaranteed minimum URL validity for a request at the
+    // end of a bucket (e.g. 900s TTL − 300s bucket = 600s minimum). Widening
+    // one requires widening the other.
     return getSignedUrl(client, command, {
-      expiresIn: input.expiresInSeconds ?? s3DownloadUrlTtlSeconds,
+      expiresIn,
+      signingDate: new Date(bucketStartMs),
     });
   };
 

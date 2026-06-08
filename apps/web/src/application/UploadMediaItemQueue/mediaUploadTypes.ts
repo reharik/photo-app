@@ -24,6 +24,7 @@ export type UploadQueueState = {
 
 export type EnqueuePayload = {
   files: File[];
+  albumId?: string;
 };
 
 export type MarkReadyPayload = {

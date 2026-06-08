@@ -107,6 +107,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     );
 
     comment.#reactions = [...(childRecords.reactions ?? [])];
+    comment.#computedReactionCounts();
     comment.rehydrateAudit({ createdAt, updatedAt, createdBy, updatedBy });
     return comment;
   }
@@ -144,7 +145,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     if (reaction) {
       this.#removedReactions.push({
         targetId: this.id(),
-        targetType: ReactionTargetType.mediaItem.value,
+        targetType: ReactionTargetType.comment.value,
         userId: item.userId,
         emoji: item.emoji.value,
       });
@@ -154,7 +155,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
         ...item,
         id: crypto.randomUUID(),
         targetId: this.id(),
-        targetType: ReactionTargetType.mediaItem,
+        targetType: ReactionTargetType.comment,
         updatedBy: actorId,
         updatedAt: new Date(),
       };
@@ -162,6 +163,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
       this.#reactions.push(newReaction);
     }
     this.#computedReactionCounts();
+    this.touch(actorId);
     return ok(undefined);
   }
 

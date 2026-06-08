@@ -7,7 +7,6 @@ import {
   useMemo,
   useReducer,
   useRef,
-  useState,
 } from 'react';
 
 import { useApolloClient } from '@apollo/client/react';
@@ -30,14 +29,12 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
 
   const [state, dispatch] = useReducer(uploadQueueReducer, initialUploadQueueState);
   const isProcessingRef = useRef<boolean>(false);
-  const [albumId, setAlbumId] = useState<string | undefined>(undefined);
 
   const enqueueFiles = useCallback(
     (files: File[], albumId?: string) => {
-      setAlbumId(albumId);
-      dispatch({ type: 'enqueue', payload: { files } });
+      dispatch({ type: 'enqueue', payload: { files, albumId } });
     },
-    [setAlbumId],
+    [dispatch],
   );
 
   const retryItem = useCallback(
@@ -87,11 +84,11 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
       client,
       nextItem.file,
       handleWorkflowEvent(nextItem.localId),
-      albumId,
+      nextItem.albumId,
     ).finally(() => {
       isProcessingRef.current = false;
     });
-  }, [state.items, client, handleWorkflowEvent, albumId]);
+  }, [state.items, client, handleWorkflowEvent]);
 
   // Track which items have already been handed off to readiness polling,
   // so we don't double-start polling for the same item across re-renders.

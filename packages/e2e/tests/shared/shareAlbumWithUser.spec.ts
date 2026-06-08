@@ -20,7 +20,7 @@ test.describe('Share an album with an existing user', () => {
 
       const albumTitle = `e2e-share-album-${uniqueSuffix}`;
 
-      await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id, b.id]);
+      const { albumId } = await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id, b.id]);
 
       await userA.page.getByRole('button', { name: 'Share album' }).click();
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share album' });
@@ -29,13 +29,8 @@ test.describe('Share an album with an existing user', () => {
       await expect(shareDialog).toBeHidden();
 
       await loginViaUi(userB.page, userB.user);
-      await userB.page.goto('/albums');
-
-      const album = userB.page.getByRole('link', { name: albumTitle });
-
-      await expect(album).toBeVisible();
-
-      await album.click();
+      await userB.page.goto(`/albums/${albumId}`);
+      await expect(userB.page.getByRole('heading', { name: albumTitle })).toBeVisible();
 
       const itemA = mediaTile(userB.page, a.id);
       await expect(itemA).toBeVisible();

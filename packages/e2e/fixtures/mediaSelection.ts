@@ -42,7 +42,10 @@ export type SelectMediaItemsOptions = {
   clearButtonLabel?: ClearSelectionButtonLabel;
 };
 
-const selectionCountLabel = (count: number, variant: SelectionToolbarVariant = 'legacy'): string =>
+export const selectionCountLabel = (
+  count: number,
+  variant: SelectionToolbarVariant = 'legacy',
+): string =>
   variant === 'library'
     ? count === 1
       ? '1 photo selected'
@@ -109,13 +112,21 @@ export const selectMediaItems = async (
 
   const toolbar = selectionToolbarIn(root);
   const count = mediaItemIds.length;
-  const toolbarVariant = options.toolbarVariant ?? 'legacy';
+  const toolbarVariant = options.toolbarVariant ?? 'library';
 
   await expect(toolbar).toBeVisible();
   await expect(toolbar).toContainText(selectionCountLabel(count, toolbarVariant));
 
+  const overflowOnlyActions = new Set(['Delete from library']);
+
   if (options.expectActions != null) {
     for (const actionName of options.expectActions) {
+      if (overflowOnlyActions.has(actionName)) {
+        await toolbar.getByRole('button', { name: 'More actions' }).click();
+        await expect(page.getByRole('menuitem', { name: actionName })).toBeVisible();
+        await page.keyboard.press('Escape');
+        continue;
+      }
       await expect(toolbar.getByRole('button', { name: actionName })).toBeVisible();
     }
   }

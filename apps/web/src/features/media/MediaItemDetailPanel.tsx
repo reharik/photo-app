@@ -1,6 +1,8 @@
+import { useFragment } from '@apollo/client/react';
 import { Operation } from '@packages/contracts';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { formatDateOnly } from '../../domain/formatters/mediaItemMetaFormat';
+import { MediaItemCommentCountFragmentDoc } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { MediaItemDetailVM } from '../../viewModels/';
 import { MediaItemDetailRailFields } from './detail/MediaItemDetailRailFields';
@@ -54,6 +56,15 @@ export const MediaItemDetailPanel = forwardRef<
     const onEditingSessionChangeRef = useRef(onEditingSessionChange);
     onEditingSessionChangeRef.current = onEditingSessionChange;
 
+    const { data: commentCountData, complete: commentCountKnown } = useFragment({
+      fragment: MediaItemCommentCountFragmentDoc,
+      fragmentName: 'MediaItemCommentCount',
+      from: {
+        __typename: 'MediaItem',
+        id: mediaItem?.id ?? '',
+      },
+    });
+
     useEffect(() => {
       setIsEditingDetails(false);
       onEditingSessionChangeRef.current?.(false);
@@ -96,18 +107,24 @@ export const MediaItemDetailPanel = forwardRef<
       dateAdded != null ? { label: 'Date added', value: dateAdded } : undefined,
     ].filter((row) => row != null);
 
-    const expandPhotoDetailsByDefault = !hasRailSubstantiveContent({
-      title: mediaItem.title,
-      description: mediaItem.description,
-      reactionTotal: mediaItem.reactionCounts.total,
-      commentCount: mediaItem.comments.totalCount,
-    });
+    const commentTotalCount = commentCountData?.comments?.totalCount;
+    const expandPhotoDetailsByDefault =
+      commentCountKnown &&
+      !hasRailSubstantiveContent({
+        title: mediaItem.title,
+        description: mediaItem.description,
+        reactionTotal: mediaItem.reactionCounts.total,
+        commentCount: commentTotalCount ?? 0,
+      });
+    const photoDetailsDisclosureKey = commentCountKnown
+      ? `${mediaItem.id}-comments-known`
+      : `${mediaItem.id}-comments-pending`;
 
     const photoDetails = (
       <PhotoDetailsDisclosure
-        key={mediaItem.id}
+        key={photoDetailsDisclosureKey}
         rows={photoDetailRows}
-        defaultExpanded={expandPhotoDetailsByDefault}
+        defaultExpanded={commentCountKnown ? expandPhotoDetailsByDefault : false}
       />
     );
 

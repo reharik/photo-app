@@ -1,9 +1,3 @@
 fragment MediaItemDetail on MediaItem {
-  description
-  takenAt
   ...MediaItemSummary
-
-  comments(input: { collectionInfo: { pageInfo: { limit: 1, offset: 0 } } }) {
-    totalCount
-  }
 }

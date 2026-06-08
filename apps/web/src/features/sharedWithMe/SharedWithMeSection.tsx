@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { EmptyState } from '../../ui/EmptyState';
-import { SharedWithMedMediaItemVM } from '../../viewModels/';
+import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
@@ -15,7 +15,7 @@ const noopMultiSelect: MultiSelectProps = {
 };
 
 type SharedWithMeSectionProps = {
-  sharedWithMeMediaItems: SharedWithMedMediaItemVM[];
+  sharedWithMeMediaItems: SharedWithMeMediaItemVM[];
   paging: PagingState;
   reloadData: () => void;
 };

@@ -1,4 +1,4 @@
-import { expect, UserSession } from '../fixtures/test';
+import { UserSession } from '../fixtures/test';
 import { GrabTestImagesResult } from '../fixtures/testAssets';
 import { loginAndOpenLibrary, uploadMediaViaUi } from '../fixtures/upload';
 export const setup = async (
@@ -7,8 +7,6 @@ export const setup = async (
   numberOfItems: number,
 ) => {
   await loginAndOpenLibrary(user.page, user.context, user.user);
-  await expect(user.page.getByText('Harik family')).toBeVisible();
-  await expect(user.page.getByRole('button', { name: 'Upload Media' }).first()).toBeVisible();
 
   const items = grabTestImages(numberOfItems);
   return uploadMediaViaUi(user.page, items);

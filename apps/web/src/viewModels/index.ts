@@ -12,7 +12,7 @@ import {
   ReactionCountsFragment,
   ReactionDetailsFragment,
   ReactorFragment,
-  SharedWithMedMediaItemFragment,
+  SharedWithMeMediaItemFragment,
   ViewerReactionFragment,
 } from '../graphql/generated/types';
 
@@ -36,7 +36,7 @@ export type PublicAlbumSummaryVM = Omit<PublicAlbumSummaryFragment, 'items'> & {
 
 export type ViewerReactionVM = ViewerReactionFragment;
 
-export type SharedWithMedMediaItemVM = SharedWithMedMediaItemFragment & ViewableItemVM;
+export type SharedWithMeMediaItemVM = SharedWithMeMediaItemFragment & ViewableItemVM;
 export type ViewableItemVM = {
   id: string;
   operations: Operation[];

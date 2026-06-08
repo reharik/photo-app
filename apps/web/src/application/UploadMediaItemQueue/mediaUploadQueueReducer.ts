@@ -15,6 +15,7 @@ export const uploadQueueReducer: React.Reducer<UploadQueueState, UploadQueueActi
         localId: crypto.randomUUID(),
         file,
         status: FrontendUploadStatus.queued,
+        albumId: action.payload.albumId,
       }));
 
       return {

@@ -18,6 +18,7 @@ const ENV_KEYS = [
   'S3_BUCKET',
   'S3_UPLOAD_URL_TTL_SECONDS',
   'S3_DOWNLOAD_URL_TTL_SECONDS',
+  'S3_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS',
   'MEDIA_WORKER_POLL_MS',
   'JWT_SECRET',
 ] as const;
@@ -75,10 +76,12 @@ describe('build__Config', () => {
       process.env.MEDIA_WORKER_POLL_MS = '5000';
       process.env.S3_UPLOAD_URL_TTL_SECONDS = '120';
       process.env.S3_DOWNLOAD_URL_TTL_SECONDS = '240';
+      process.env.S3_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS = '300';
       const config = build__Config();
       expect(config.mediaWorkerPollIntervalMs).toBe(5000);
       expect(config.s3UploadUrlTtlSeconds).toBe(120);
       expect(config.s3DownloadUrlTtlSeconds).toBe(240);
+      expect(config.s3DownloadUrlSigningBucketSeconds).toBe(300);
     });
   });
 });

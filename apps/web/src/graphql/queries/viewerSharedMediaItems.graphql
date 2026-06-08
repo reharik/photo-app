@@ -1,9 +1,9 @@
-query ViewerSharedWithMedMediaItems($collectionInfo: SharedWithMeMediaItemCollectionInput!) {
+query ViewerSharedWithMeMediaItems($collectionInfo: SharedWithMeMediaItemCollectionInput!) {
   viewer {
     id
     sharedWithMeMediaItems(input: { collectionInfo: $collectionInfo }) {
       nodes {
-        ...SharedWithMedMediaItem
+        ...SharedWithMeMediaItem
       }
       pageInfo {
         limit
@@ -14,7 +14,7 @@ query ViewerSharedWithMedMediaItems($collectionInfo: SharedWithMeMediaItemCollec
   }
 }
 
-fragment SharedWithMedMediaItem on SharedWithMedMediaItemType {
+fragment SharedWithMeMediaItem on SharedWithMeMediaItemType {
   id
   sharedAt
   sharedBy

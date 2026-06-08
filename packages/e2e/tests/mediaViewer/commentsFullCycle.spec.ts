@@ -16,7 +16,7 @@ test.describe('Comments full cycle on the media detail screen', () => {
 
       await userA.page.getByTestId(`media-tile-${item.id}`).getByRole('link').first().click();
       await expect(userA.page).toHaveURL(new RegExp(`/media/${item.id}(\\?.*)?$`));
-      await expect(userA.page.getByRole('heading', { name: 'Details' })).toBeVisible();
+      await expect(userA.page.getByLabel('Media viewer')).toBeVisible();
       const rootBody = `Root comment ${uniqueSuffix}`;
       const replyBody = `Reply ${uniqueSuffix}`;
       const editedReplyBody = `Reply ${uniqueSuffix} amended`;

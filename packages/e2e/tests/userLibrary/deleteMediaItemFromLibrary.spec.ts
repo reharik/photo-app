@@ -19,7 +19,7 @@ test.describe('User Library', () => {
       await expect(selection.toolbar).toContainText('2 photos selected');
 
       await selection.toolbar.getByRole('button', { name: 'More actions' }).click();
-      await selection.toolbar.getByRole('menuitem', { name: 'Delete from library' }).click();
+      await userA.page.getByRole('menuitem', { name: 'Delete from library' }).click();
       await expect(userA.page.getByRole('dialog', { name: 'Delete from library?' })).toBeVisible();
       await userA.page.getByRole('button', { name: 'Delete', exact: true }).click();
       await expect(userA.page.getByRole('dialog', { name: 'Delete from library?' })).toBeHidden();

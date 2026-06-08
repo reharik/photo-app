@@ -3,7 +3,7 @@ import { SharedWithMeMediaItemSortBy, SortDir } from '@packages/contracts';
 import { useCallback } from 'react';
 import styled from 'styled-components';
 import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
-import { ViewerSharedWithMedMediaItemsDocument } from '../graphql/generated/types';
+import { ViewerSharedWithMeMediaItemsDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 
 export const SharedWithMeScreen = () => {
@@ -17,7 +17,7 @@ export const SharedWithMeScreen = () => {
     }),
     [],
   );
-  const query = useQuery(ViewerSharedWithMedMediaItemsDocument, {
+  const query = useQuery(ViewerSharedWithMeMediaItemsDocument, {
     variables: {
       ...buildPageVariables(0),
     },

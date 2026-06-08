@@ -213,7 +213,7 @@ export type ShareContactRepository = {
   getShareSuggestions: (userId: EntityId) => Promise<ShareContactSuggestion[]>;
 };
 
-export type SharedWithMedMediaItemRow = NamespacedMediaItemRow & {
+export type SharedWithMeMediaItemRow = NamespacedMediaItemRow & {
   id: string;
   sharedBy: EntityId;
   sharedAt: Date;
@@ -238,7 +238,7 @@ export type SharedWithMeReadRepository = {
   }: {
     viewerId: EntityId;
     collectionInfo: SharedWithMeMediaItemCollectionInfo;
-  }) => Promise<PagedList<SharedWithMedMediaItemRow>>;
+  }) => Promise<PagedList<SharedWithMeMediaItemRow>>;
   getAlbumsSharedWithMe: ({
     viewerId,
     collectionInfo,

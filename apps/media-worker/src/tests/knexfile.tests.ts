@@ -20,6 +20,7 @@ describe('build__KnexConfig', () => {
         s3Bucket: 'b',
         s3UploadUrlTtlSeconds: 900,
         s3DownloadUrlTtlSeconds: 900,
+        s3DownloadUrlSigningBucketSeconds: 300,
         mediaWorkerPollIntervalMs: 2000,
       };
 

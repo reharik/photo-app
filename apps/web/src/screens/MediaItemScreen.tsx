@@ -6,6 +6,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../domain/formatters/mediaItemUrlBuilder';
 import { getGalleryNavigation } from '../features/gallery/mediaItemGalleryNavigation';
+import { NeighborDisplayPrefetch } from '../features/gallery/NeighborDisplayPrefetch';
 import {
   MediaItemDetailPanel,
   type MediaItemDetailPanelHandle,
@@ -129,12 +130,23 @@ export const MediaItemScreen = () => {
     );
   })();
 
+  const neighborPrefetch =
+    galleryNavigation.enabled && galleryIds != null ? (
+      <NeighborDisplayPrefetch galleryNavigation={galleryNavigation} galleryIds={galleryIds} />
+    ) : null;
+
   if (!mediaItem) {
-    return content;
+    return (
+      <>
+        {neighborPrefetch}
+        {content}
+      </>
+    );
   }
 
   return (
     <Container>
+      {neighborPrefetch}
       {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       <LayoutInner>
         <ViewerColumn>{viewerPane}</ViewerColumn>

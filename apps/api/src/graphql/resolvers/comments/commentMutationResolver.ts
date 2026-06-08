@@ -16,6 +16,7 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         targetId: args.input.targetId,
         parentCommentId: args.input.parentCommentId ?? undefined,
         body: args.input.body,
+        viewer: ctx.viewer,
       };
 
       const result = await ctx.writeServices.addComment(command);

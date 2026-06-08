@@ -1,14 +1,62 @@
+import { useLayoutEffect, useRef } from 'react';
 import styled from 'styled-components';
 
 export type ImageRendererProps = {
   id: string;
   src: string;
   alt: string;
+  onDisplayReady?: () => void;
 };
 
-export const ImageRenderer = ({ id, src, alt }: ImageRendererProps) => {
+const waitForImagePaintable = async (img: HTMLImageElement): Promise<void> => {
+  if (!img.complete) {
+    await new Promise<void>((resolve) => {
+      const onDone = (): void => {
+        img.removeEventListener('load', onDone);
+        img.removeEventListener('error', onDone);
+        resolve();
+      };
+      img.addEventListener('load', onDone);
+      img.addEventListener('error', onDone);
+      if (img.complete) {
+        onDone();
+      }
+    });
+  }
+  try {
+    await img.decode();
+  } catch {
+    // Cached or unsupported decode() — onLoad path is sufficient.
+  }
+};
+
+export const ImageRenderer = ({ id, src, alt, onDisplayReady }: ImageRendererProps) => {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const onDisplayReadyRef = useRef(onDisplayReady);
+  onDisplayReadyRef.current = onDisplayReady;
+
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (img == null) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void waitForImagePaintable(img).then(() => {
+      if (!cancelled) {
+        onDisplayReadyRef.current?.();
+      }
+    });
+
+    return (): void => {
+      cancelled = true;
+    };
+  }, [src]);
+
   return (
     <StyledImg
+      ref={imgRef}
       data-testid={id}
       src={src}
       alt={alt}

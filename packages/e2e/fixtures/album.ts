@@ -1,5 +1,11 @@
-import { expect, type Page } from '@playwright/test';
-import { selectMediaItems, selectionToolbar, type MediaSelectionHandle } from './mediaSelection';
+import { expect, type Page, type Response } from '@playwright/test';
+import {
+  selectMediaItems,
+  selectionCountLabel,
+  selectionToolbar,
+  type MediaSelectionHandle,
+  type SelectionToolbarVariant,
+} from './mediaSelection';
 import { getModal } from './modal';
 import { expectMediaTileVisible } from './navigation';
 import { UPLOAD_TIMEOUT_MS } from './upload';
@@ -8,6 +14,33 @@ export type CreatedAlbumResult = {
   albumId: string;
   albumTitle: string;
   mediaItemIds: string[];
+};
+
+const isAddMediaItemsToAlbumResponse = (response: Response): boolean => {
+  if (!response.url().includes('/graphql') || response.request().method() !== 'POST') {
+    return false;
+  }
+
+  const body = response.request().postDataJSON() as { operationName?: string } | undefined;
+  return body?.operationName === 'AddMediaItemsToAlbum';
+};
+
+const readAlbumIdFromAddMutation = async (response: Response): Promise<string> => {
+  const json = (await response.json()) as {
+    data?: { AddMediaItemsToAlbum?: { data?: { albumId?: string } } };
+  };
+  const albumId = json.data?.AddMediaItemsToAlbum?.data?.albumId;
+  if (albumId == null) {
+    throw new Error(`AddMediaItemsToAlbum response missing albumId: ${JSON.stringify(json)}`);
+  }
+  return albumId;
+};
+
+const waitForAddMediaItemsToAlbumAlbumId = async (page: Page): Promise<string> => {
+  const response = await page.waitForResponse(isAddMediaItemsToAlbumResponse, {
+    timeout: UPLOAD_TIMEOUT_MS,
+  });
+  return readAlbumIdFromAddMutation(response);
 };
 
 export type AddMediaItemsToNewAlbumOptions = {
@@ -22,6 +55,8 @@ export type AddMediaItemsToNewAlbumOptions = {
    * after the modal closes (albumId will be empty).
    */
   navigateToAlbum?: boolean;
+  /** Library uses "{N} photos selected"; album screens use "{N} selected". */
+  toolbarVariant?: SelectionToolbarVariant;
 };
 
 /**
@@ -52,7 +87,7 @@ export const addMediaItemsToNewAlbum = async (
   mediaItemIds: string[],
   options: AddMediaItemsToNewAlbumOptions = {},
 ): Promise<CreatedAlbumResult> => {
-  const { alreadySelected = false, navigateToAlbum = true } = options;
+  const { alreadySelected = false, navigateToAlbum = true, toolbarVariant = 'library' } = options;
 
   if (mediaItemIds.length === 0) {
     throw new Error('addMediaItemsToNewAlbum requires at least one media item id');
@@ -61,34 +96,29 @@ export const addMediaItemsToNewAlbum = async (
   if (!alreadySelected) {
     const selection = await selectMediaItems(page, mediaItemIds, {
       expectActions: ['Add to album'],
+      toolbarVariant,
     });
     await selection.clickAction('Add to album');
   } else {
     const toolbar = selectionToolbar(page);
     await expect(toolbar).toBeVisible();
-    await expect(toolbar).toContainText(
-      mediaItemIds.length === 1 ? '1 selected' : `${mediaItemIds.length} selected`,
-    );
+    await expect(toolbar).toContainText(selectionCountLabel(mediaItemIds.length, toolbarVariant));
     await toolbar.getByRole('button', { name: 'Add to album' }).click();
   }
 
+  const albumIdPromise = waitForAddMediaItemsToAlbumAlbumId(page);
   await submitNewAlbumInAddModal(page, albumTitle);
+  const albumId = await albumIdPromise;
 
   if (!navigateToAlbum) {
-    return { albumId: '', albumTitle, mediaItemIds };
+    return { albumId, albumTitle, mediaItemIds };
   }
 
-  await page.goto('/albums');
-  await page.getByRole('link', { name: albumTitle }).click();
+  await page.goto(`/albums/${albumId}`);
   await expect(page.getByRole('heading', { name: albumTitle })).toBeVisible();
 
-  const match = page.url().match(/\/albums\/([^/?]+)/);
-  if (match?.[1] == null) {
-    throw new Error(`Expected album URL after create; got ${page.url()}`);
-  }
-
   return {
-    albumId: match[1],
+    albumId,
     albumTitle,
     mediaItemIds,
   };
@@ -106,24 +136,20 @@ export const addSelectionToNewAlbum = async (
 ): Promise<CreatedAlbumResult> => {
   await selection.expectActionVisible('Add to album');
   await selection.clickAction('Add to album');
+  const albumIdPromise = waitForAddMediaItemsToAlbumAlbumId(page);
   await submitNewAlbumInAddModal(page, albumTitle);
+  const albumId = await albumIdPromise;
 
   const { navigateToAlbum = true } = options;
   if (!navigateToAlbum) {
-    return { albumId: '', albumTitle, mediaItemIds: selection.mediaItemIds };
+    return { albumId, albumTitle, mediaItemIds: selection.mediaItemIds };
   }
 
-  await page.goto('/albums');
-  await page.getByRole('link', { name: albumTitle }).click();
+  await page.goto(`/albums/${albumId}`);
   await expect(page.getByRole('heading', { name: albumTitle })).toBeVisible();
 
-  const match = page.url().match(/\/albums\/([^/?]+)/);
-  if (match?.[1] == null) {
-    throw new Error(`Expected album URL after create; got ${page.url()}`);
-  }
-
   return {
-    albumId: match[1],
+    albumId,
     albumTitle,
     mediaItemIds: selection.mediaItemIds,
   };
@@ -166,6 +192,7 @@ export const addMediaItemsToExistingAlbum = async (
   const selection = await selectMediaItems(page, mediaItemIds, {
     scope: modal,
     expectActions: ['Add to album'],
+    toolbarVariant: 'legacy',
   });
   await selection.clickAction('Add to album');
 
@@ -181,21 +208,19 @@ export const addMediaItemsToExistingAlbum = async (
  * (must already be in the album), and waits until the header cover updates.
  */
 export const setAlbumCover = async (page: Page, mediaItemId: string): Promise<void> => {
-  const coverButton = page
-    .getByRole('button')
-    .filter({ has: page.locator('img, [aria-hidden]') })
-    .first();
+  const coverButton = page.getByRole('main').getByRole('button').first();
   await coverButton.click();
 
   const modal = getModal(page);
   await expect(modal).toBeVisible();
+  await expect(modal.getByText('Select album Cover')).toBeVisible();
 
-  const coverThumb = modal.locator(`img[src*="/media/${mediaItemId}/"]`);
+  const coverThumb = modal.getByTestId(mediaItemId);
   await expect(coverThumb).toBeVisible();
   await coverThumb.click();
 
   await expect(modal).toBeHidden({ timeout: UPLOAD_TIMEOUT_MS });
-  await expect(coverButton.locator(`img[src*="/media/${mediaItemId}/"]`)).toBeVisible({
+  await expect(page.getByRole('main').getByTestId(mediaItemId)).toBeVisible({
     timeout: UPLOAD_TIMEOUT_MS,
   });
 };

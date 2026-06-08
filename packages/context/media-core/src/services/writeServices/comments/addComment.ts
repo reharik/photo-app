@@ -85,8 +85,11 @@ export const build__AddComment = ({
       }
       const comment = Comment.create(
         {
-          ...command,
+          targetType: command.targetType,
+          targetId: command.targetId,
+          parentCommentId: command.parentCommentId,
           authorId: command.authorId,
+          body: command.body,
           displayName: `${user.firstName}, ${user.lastName}`,
           displayAvatarUrl: undefined,
         },
@@ -112,8 +115,11 @@ export const build__AddComment = ({
       //   snapshot them into the row (denormalized — do not join through user on reads).
       const comment = Comment.create(
         {
-          ...command,
+          targetType: command.targetType,
+          targetId: command.targetId,
+          parentCommentId: command.parentCommentId,
           authorId: command.authorId,
+          body: command.body,
           displayName: `${user.firstName}, ${user.lastName}`,
           displayAvatarUrl: undefined,
         },

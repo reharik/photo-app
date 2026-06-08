@@ -6,7 +6,7 @@ import { SharedWithMeAlbumCollectionInfo } from '../../services/readServices/typ
 import type {
   ReadRepositoryDeps,
   SharedAlbumRow,
-  SharedWithMedMediaItemRow,
+  SharedWithMeMediaItemRow,
   SharedWithMeReadRepository,
 } from './types';
 
@@ -69,7 +69,7 @@ export const build__SharedWithMeReadRepository = ({
   }: {
     viewerId: EntityId;
     collectionInfo: SharedWithMeMediaItemCollectionInfo;
-  }): Promise<PagedList<SharedWithMedMediaItemRow>> => {
+  }): Promise<PagedList<SharedWithMeMediaItemRow>> => {
     const baseQuery = database('accessGrant')
       .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
       .whereNotNull('accessGrant.mediaItemId')
@@ -86,7 +86,7 @@ export const build__SharedWithMeReadRepository = ({
       grantedQuery,
       { mediaItemKind: MediaKind, mediaItemStatus: MediaItemStatus },
       { strict: true },
-    )) as (SharedWithMedMediaItemRow & { totalCount: number })[];
+    )) as (SharedWithMeMediaItemRow & { totalCount: number })[];
 
     return toPagedResult(rows);
   },

@@ -1,5 +1,12 @@
 import { MediaKind } from '@packages/contracts';
-import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaViewerKeyboard } from '../../../hooks/useMediaViewerKeyboard';
@@ -10,6 +17,7 @@ import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
 import type { NavigateDirection } from './mediaViewerTypes';
 import {
+  ENTER_IMAGE_DECODE_TIMEOUT_MS,
   SlideTransitionWrap,
   useMediaViewerSlideTransition,
 } from './useMediaViewerSlideTransition';
@@ -60,13 +68,36 @@ export const MediaViewer = ({
   mobileChrome,
 }: MediaViewerProps) => {
   const isMobileLayout = useMediaQuery(MOBILE_NAV_MEDIA);
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const [zoomActive, setZoomActive] = useState(false);
   const zoomActiveRef = useRef(false);
   const resetZoomRef = useRef<(() => void) | null>(null);
 
   const zoomLayerEnabled = isZoomableImage(kind, mimeType);
+  const isPhotoDisplay = zoomLayerEnabled;
   const mobileGesturesEnabled = isMobileLayout && mobileChrome != null;
+
+  const [decodedDisplayUrl, setDecodedDisplayUrl] = useState<string | undefined>();
+
+  const isEnterImageReady =
+    !isPhotoDisplay || prefersReducedMotion || decodedDisplayUrl === displayUrl;
+
+  useEffect(() => {
+    if (!isPhotoDisplay || prefersReducedMotion || decodedDisplayUrl === displayUrl) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDecodedDisplayUrl(displayUrl);
+    }, ENTER_IMAGE_DECODE_TIMEOUT_MS);
+    return (): void => {
+      clearTimeout(timer);
+    };
+  }, [decodedDisplayUrl, displayUrl, isPhotoDisplay, prefersReducedMotion]);
+
+  const handleImageDisplayReady = useCallback((): void => {
+    setDecodedDisplayUrl(displayUrl);
+  }, [displayUrl]);
 
   useLayoutEffect(() => {
     zoomActiveRef.current = zoomActive;
@@ -95,6 +126,7 @@ export const MediaViewer = ({
     contentKey: displayUrl,
     canNavigate,
     onNavigate,
+    enterContentReady: !isPhotoDisplay || isEnterImageReady,
   });
 
   useMediaViewerKeyboard({
@@ -127,6 +159,7 @@ export const MediaViewer = ({
             mimeType={mimeType}
             displayUrl={displayUrl}
             imageAlt={imageAlt}
+            onImageDisplayReady={isPhotoDisplay ? handleImageDisplayReady : undefined}
           />
         </ZoomableImageViewport>
       </MediaChrome>

@@ -35,7 +35,7 @@ export const loginViaUi = async (page: Page, user: TestUser): Promise<void> => {
   await email.fill(user.email);
   await password.fill(user.password);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await expect(page.getByRole('link', { name: 'Media', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Recent', exact: true })).toBeVisible();
 };
 
 export const logoutViaApi = async (context: BrowserContext): Promise<void> => {

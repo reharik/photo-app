@@ -23,6 +23,8 @@ export type GridMediaItem = {
   title?: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
+  /** When false, tile shows the kind placeholder instead of fetching a thumbnail. */
+  hasThumbnail?: boolean;
 } & ViewableItemVM;
 
 type MediaGridProps<T extends ViewableItemVM> = {
@@ -100,6 +102,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
               title={mediaItem.title}
               reactionCounts={mediaItem.reactionCounts}
               viewerReactions={mediaItem.viewerReactions}
+              hasThumbnail={mediaItem.hasThumbnail}
               canReact={canReact}
               onReactionsRefetch={onReactionsRefetch}
               itemId={mediaItem.id}

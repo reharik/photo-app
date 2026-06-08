@@ -8,6 +8,7 @@ export type MediaRendererProps = {
   mimeType: string;
   displayUrl: string;
   imageAlt: string;
+  onImageDisplayReady?: () => void;
 };
 
 const isPhotoLike = (kind: MediaKind, mimeType: string): boolean => {
@@ -24,9 +25,23 @@ const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
   return mimeType.startsWith('video/');
 };
 
-export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: MediaRendererProps) => {
+export const MediaRenderer = ({
+  id,
+  kind,
+  mimeType,
+  displayUrl,
+  imageAlt,
+  onImageDisplayReady,
+}: MediaRendererProps) => {
   if (isPhotoLike(kind, mimeType)) {
-    return <ImageRenderer id={id} src={displayUrl} alt={imageAlt} />;
+    return (
+      <ImageRenderer
+        id={id}
+        src={displayUrl}
+        alt={imageAlt}
+        onDisplayReady={onImageDisplayReady}
+      />
+    );
   }
 
   if (isVideoLike(kind, mimeType)) {

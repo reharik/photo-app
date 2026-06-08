@@ -1,11 +1,11 @@
-type SharedWithMedMediaItemType implements Node {
+type SharedWithMeMediaItemType implements Node {
   id: ID!
   sharedAt: DateTime!
   sharedBy: ID!
   mediaItem: MediaItem!
 }
 
-type SharedWithMedMediaAlbumType implements Node {
+type SharedWithMeMediaAlbumType implements Node {
   id: ID!
   sharedAt: DateTime!
   sharedBy: ID!
@@ -19,7 +19,7 @@ input SharedWithMeMediaItemCollectionInput {
 }
 
 type SharedWithMeMediaItemCollectionPayload {
-  nodes: [SharedWithMedMediaItemType!]!
+  nodes: [SharedWithMeMediaItemType!]!
   totalCount: Int!
   pageInfo: PageInfo!
 }
@@ -35,7 +35,7 @@ input SharedWithMeAlbumCollectionInput {
 }
 
 type SharedWithMeAlbumCollectionPayload {
-  nodes: [SharedWithMedMediaAlbumType!]!
+  nodes: [SharedWithMeMediaAlbumType!]!
   totalCount: Int!
   pageInfo: PageInfo!
 }

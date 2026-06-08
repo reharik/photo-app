@@ -15,6 +15,8 @@ const SLIDE_OFFSET = '16%';
 const EXIT_MS = 180;
 const ENTER_MS = 260;
 const EXIT_FALLBACK_MS = EXIT_MS + 80;
+/** Max wait for incoming image decode before playing enter animation anyway. */
+export const ENTER_IMAGE_DECODE_TIMEOUT_MS = 450;
 
 const slideInFromRight = keyframes`
   from {
@@ -42,6 +44,7 @@ type SlideTransitionWrapProps = {
   children: ReactNode;
   isExiting: boolean;
   exitDirection: NavigateDirection;
+  isAwaitingEnterContent: boolean;
   enterDirection: NavigateDirection | undefined;
   onTransitionEnd: (e: TransitionEvent<HTMLDivElement>) => void;
   onAnimationEnd: () => void;
@@ -52,6 +55,7 @@ export const SlideTransitionWrap = ({
   children,
   isExiting,
   exitDirection,
+  isAwaitingEnterContent,
   enterDirection,
   onTransitionEnd,
   onAnimationEnd,
@@ -60,6 +64,7 @@ export const SlideTransitionWrap = ({
     <SlideTrack
       $isExiting={isExiting}
       $exitDirection={exitDirection}
+      $concealEnter={isAwaitingEnterContent}
       $enterDirection={enterDirection}
       onTransitionEnd={onTransitionEnd}
       onAnimationEnd={onAnimationEnd}
@@ -72,6 +77,7 @@ export const SlideTransitionWrap = ({
 export type SlideTransitionState = {
   isExiting: boolean;
   exitDirection: NavigateDirection;
+  isAwaitingEnterContent: boolean;
   enterDirection: NavigateDirection | undefined;
   onTransitionEnd: (e: TransitionEvent<HTMLDivElement>) => void;
   onAnimationEnd: () => void;
@@ -81,6 +87,7 @@ type UseMediaViewerSlideTransitionOptions = {
   contentKey: string;
   canNavigate: boolean;
   onNavigate: (direction: NavigateDirection) => void;
+  enterContentReady?: boolean;
 };
 
 type UseMediaViewerSlideTransitionResult = {
@@ -92,17 +99,21 @@ export const useMediaViewerSlideTransition = ({
   contentKey,
   canNavigate,
   onNavigate,
+  enterContentReady = true,
 }: UseMediaViewerSlideTransitionOptions): UseMediaViewerSlideTransitionResult => {
   const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const [isExiting, setIsExiting] = useState(false);
   const [exitDirection, setExitDirection] = useState<NavigateDirection>('next');
   const [enterDirection, setEnterDirection] = useState<NavigateDirection | undefined>();
+  const [pendingEnterDirection, setPendingEnterDirection] = useState<
+    NavigateDirection | undefined
+  >();
   const awaitingEnterRef = useRef(false);
   const lastDirectionRef = useRef<NavigateDirection>('next');
   const prevContentKeyRef = useRef(contentKey);
   const isExitingRef = useRef(isExiting);
 
-  const isTransitioning = isExiting || enterDirection != null;
+  const isTransitioning = isExiting || pendingEnterDirection != null || enterDirection != null;
 
   useLayoutEffect(() => {
     isExitingRef.current = isExiting;
@@ -143,8 +154,16 @@ export const useMediaViewerSlideTransition = ({
       return;
     }
     awaitingEnterRef.current = false;
-    setEnterDirection(lastDirectionRef.current);
+    setPendingEnterDirection(lastDirectionRef.current);
   }, [contentKey]);
+
+  useLayoutEffect(() => {
+    if (pendingEnterDirection == null || !enterContentReady) {
+      return;
+    }
+    setEnterDirection(pendingEnterDirection);
+    setPendingEnterDirection(undefined);
+  }, [enterContentReady, pendingEnterDirection]);
 
   const handleTransitionEnd = useCallback(
     (e: TransitionEvent<HTMLDivElement>) => {
@@ -180,6 +199,7 @@ export const useMediaViewerSlideTransition = ({
     slideTransition: {
       isExiting,
       exitDirection,
+      isAwaitingEnterContent: pendingEnterDirection != null,
       enterDirection,
       onTransitionEnd: handleTransitionEnd,
       onAnimationEnd: handleAnimationEnd,
@@ -197,6 +217,7 @@ const SlideClip = styled.div`
 const SlideTrack = styled.div<{
   $isExiting: boolean;
   $exitDirection: NavigateDirection;
+  $concealEnter: boolean;
   $enterDirection: NavigateDirection | undefined;
 }>`
   width: fit-content;
@@ -220,6 +241,13 @@ const SlideTrack = styled.div<{
           transform: none;
           opacity: 1;
         `}
+
+  ${({ $concealEnter }) =>
+    $concealEnter
+      ? css`
+          opacity: 0;
+        `
+      : undefined}
 
   ${({ $enterDirection }) =>
     $enterDirection === 'next'

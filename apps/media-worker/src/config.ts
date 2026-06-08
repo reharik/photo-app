@@ -10,6 +10,7 @@ type NodeEnv = (typeof nodeEnvs)[number];
 
 const DEFAULT_UPLOAD_URL_TTL_SECONDS = 15 * 60;
 const DEFAULT_DOWNLOAD_URL_TTL_SECONDS = 15 * 60;
+const DEFAULT_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS = 5 * 60;
 
 export type Config = {
   nodeEnv: NodeEnv;
@@ -27,6 +28,7 @@ export type Config = {
   s3Bucket: string;
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
+  s3DownloadUrlSigningBucketSeconds: number;
   mediaWorkerPollIntervalMs: number;
 };
 
@@ -81,6 +83,9 @@ const createConfigFromEnv = (): Config => {
     s3DownloadUrlTtlSeconds: process.env.S3_DOWNLOAD_URL_TTL_SECONDS
       ? Number(process.env.S3_DOWNLOAD_URL_TTL_SECONDS)
       : DEFAULT_DOWNLOAD_URL_TTL_SECONDS,
+    s3DownloadUrlSigningBucketSeconds: process.env.S3_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS
+      ? Number(process.env.S3_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS)
+      : DEFAULT_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS,
     mediaWorkerPollIntervalMs: process.env.MEDIA_WORKER_POLL_MS
       ? Number(process.env.MEDIA_WORKER_POLL_MS)
       : 2000,

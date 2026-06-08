@@ -6,6 +6,8 @@ fragment MediaItemSummary on MediaItem {
   mimeType
   originalFileName
   createdAt
+  description
+  takenAt
   reactionCounts {
     ...ReactionCounts
   }

@@ -119,6 +119,13 @@ export type SharedWithMeItemProjection = {
   mediaItem: MediaItemProjection;
 };
 
+export type SharedWithMeAlbumProjection = {
+  id: EntityId;
+  sharedAt: Date;
+  sharedBy: EntityId;
+  mediaItem: MediaItemProjection;
+};
+
 export type Reactor = {
   firstName?: string;
   lastName?: string;

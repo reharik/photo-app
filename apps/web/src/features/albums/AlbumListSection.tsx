@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { MediaKind } from '@packages/contracts';
+import { useCallback, useState } from 'react';
 import styled from 'styled-components';
-import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
-import { EmptyState } from '../../ui/EmptyState';
 import { Button } from '../../ui/Button';
+import { EmptyState } from '../../ui/EmptyState';
 import { AlbumSummaryVM } from '../../viewModels/';
-import { SelectableGallery } from '../gallery/SelectableGallery';
-import { SelectableGalleryHeader } from '../gallery/SelectableGalleryHeader';
-import { AlbumTile } from '../gallery/tiles/AlbumTile';
+import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid, type GridMediaItem } from '../media/grid/MediaGrid';
+import type { MultiSelectProps } from '../media/grid/types';
 import { CreateAlbumModal } from './CreateAlbumModal';
+
+const noopMultiSelect: MultiSelectProps = {
+  isSelected: () => false,
+  handleModifierClick: () => undefined,
+  toggleSelectAt: () => undefined,
+  enterSelectionAt: () => undefined,
+};
 
 type AlbumListSectionProps = {
   nodes: AlbumSummaryVM[];
@@ -20,50 +27,84 @@ export const AlbumListSection = ({
   isCreatingAlbum,
   submitCreateAlbum,
 }: AlbumListSectionProps) => {
-  const { multiSelectProps, clearSelection, selectionCount } = useMultiSelectGallery({
-    nodes,
-    actions: [],
-  });
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  const buildAlbumTileHref = useCallback(
+    (displayId: string): string => {
+      const album =
+        nodes.find((node) => node.coverMedia?.id === displayId) ??
+        nodes.find((node) => node.id === displayId);
+      return album != null ? `/albums/${album.id}` : '/albums';
+    },
+    [nodes],
+  );
+
+  const toAlbumDisplayable = useCallback((album: AlbumSummaryVM): GridMediaItem => {
+    if (album.coverMedia != null) {
+      return album.coverMedia;
+    }
+    return {
+      id: album.id,
+      kind: MediaKind.photo,
+      title: album.title,
+      reactionCounts: { total: 0, byEmoji: [] },
+      operations: album.operations,
+      hasThumbnail: false,
+    };
+  }, []);
 
   const closeCreate = () => {
     setCreateModalOpen(false);
   };
+
   return (
     <Container>
-      <SelectableGalleryHeader
-        selectionCount={selectionCount}
-        clearSelection={clearSelection}
-        availableActions={[]}
-        Header={() => (
-          <Header>
-            <Title>Albums</Title>
-            <HeaderActions>
-              <Button type="button" variant="primary" size="large" onClick={() => setCreateModalOpen(true)}>
-                <PrimaryButtonLabelWide>Add album</PrimaryButtonLabelWide>
-                <PrimaryButtonLabelNarrow>Add</PrimaryButtonLabelNarrow>
-              </Button>
-            </HeaderActions>
-          </Header>
+      <PageHeader>
+        <Header>
+          <Title>Albums</Title>
+          <HeaderActions>
+            <Button
+              type="button"
+              variant="primary"
+              size="large"
+              onClick={() => setCreateModalOpen(true)}
+            >
+              <PrimaryButtonLabelWide>Add album</PrimaryButtonLabelWide>
+              <PrimaryButtonLabelNarrow>Add</PrimaryButtonLabelNarrow>
+            </Button>
+          </HeaderActions>
+        </Header>
+      </PageHeader>
+      <ScrollArea>
+        {nodes.length === 0 ? (
+          <EmptyStateWrap>
+            <EmptyState
+              title="No albums yet"
+              text="Create an album to organize your media."
+              action={
+                <EmptyButton type="button" onClick={() => setCreateModalOpen(true)}>
+                  Add album
+                </EmptyButton>
+              }
+            />
+          </EmptyStateWrap>
+        ) : (
+          <GridWrap>
+            <MediaGrid
+              nodes={nodes}
+              toDisplayable={toAlbumDisplayable}
+              multiSelectProps={noopMultiSelect}
+              selectableActions={[]}
+              selectable={false}
+              selectionActive={false}
+              columnCounts={LIBRARY_GRID_COLUMNS}
+              groupBy="none"
+              buildTileHref={buildAlbumTileHref}
+              canReact={false}
+            />
+          </GridWrap>
         )}
-      />
-      <SelectableGallery
-        selectable={false}
-        nodes={nodes}
-        multiSelectProps={multiSelectProps}
-        emptyState={
-          <EmptyState
-            title="No albums yet"
-            text="Create an album to organize your media."
-            action={
-              <EmptyButton type="button" onClick={() => setCreateModalOpen(true)}>
-                Add album
-              </EmptyButton>
-            }
-          />
-        }
-        renderItem={({ item }) => <AlbumTile item={item} />}
-      />
+      </ScrollArea>
       {createModalOpen ? (
         <CreateAlbumModal
           isCreating={isCreatingAlbum}
@@ -81,6 +122,24 @@ const Container = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+`;
+
+const PageHeader = styled.div`
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  padding: ${({ theme }) => `${theme.spacing(4)} ${theme.spacing(6)}`};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(3)};
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
+    align-items: center;
+  }
 `;
 
 const Title = styled.h1`
@@ -104,7 +163,7 @@ const HeaderActions = styled.div`
   gap: ${({ theme }) => theme.spacing(2)};
   flex-shrink: 0;
 `;
-/** Padding and border live on SelectableGalleryHeader; keep this row layout-only. */
+
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
@@ -112,6 +171,30 @@ const Header = styled.div`
   gap: ${({ theme }) => theme.spacing(3)};
   min-width: 0;
   width: 100%;
+`;
+
+const ScrollArea = styled.div`
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const GridWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1.5)};
+  }
+`;
+
+const EmptyStateWrap = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+
+  @media (max-width: 768px) {
+    padding: ${({ theme }) => theme.spacing(1.5)};
+  }
 `;
 
 const PrimaryButtonLabelWide = styled.span`

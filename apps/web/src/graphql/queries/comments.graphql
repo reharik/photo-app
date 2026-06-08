@@ -28,6 +28,14 @@ fragment CommentDetailFields on Comment {
   }
 }
 
+# Count-only slice for useFragment subscriptions on MediaItem — limit/offset literals
+# are arbitrary; MediaItem.comments uses keyArgs: false so totalCount shares one slot.
+fragment MediaItemCommentCount on MediaItem {
+  comments(input: { collectionInfo: { pageInfo: { limit: 1, offset: 0 } } }) {
+    totalCount
+  }
+}
+
 query CommentsForViewerMediaItem($mediaItemId: ID!, $limit: Int!, $offset: Int!) {
   viewer {
     id

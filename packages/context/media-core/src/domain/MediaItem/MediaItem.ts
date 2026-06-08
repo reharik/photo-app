@@ -136,6 +136,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     mediaItem.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
     mediaItem.#tags = [...(childRecords.tags ?? [])];
     mediaItem.#reactions = [...(childRecords.reactions ?? [])];
+    mediaItem.#computedReactionCounts();
     return mediaItem;
   }
 
@@ -393,6 +394,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       this.#reactions.push(newReaction);
     }
     this.#computedReactionCounts();
+    this.touch(actorId);
     return ok(undefined);
   }
 

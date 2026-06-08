@@ -1,7 +1,7 @@
 /**
- * Test user credentials. These match `apps/api/db/seeds/01_user.ts`.
- * Run `npm run db:seed:local --workspace=@app/api` against your local
- * database before running these tests if the seed has not been applied.
+ * E2e-only users from `apps/api/db/seeds/01_user.ts` (separate from the
+ * manual dev accounts). Run `npm run db:seed:local --workspace=@app/api`
+ * if these users are missing.
  */
 export type TestUser = {
   email: string;
@@ -9,14 +9,16 @@ export type TestUser = {
   displayName: string;
 };
 
+/** Primary test actor — creates albums, uploads media, shares items. */
 export const USER_A: TestUser = {
-  email: 'harik.raif@gmail.com',
+  email: 'tester.one@gmail.com',
   password: '123123123',
-  displayName: 'Raif',
+  displayName: 'E2e Owner',
 };
 
+/** Secondary actor — receives shares and exercises recipient flows. */
 export const USER_B: TestUser = {
-  email: 'bubba.jones@gmail.com',
+  email: 'two.tester@gmail.com',
   password: '123123123',
-  displayName: 'User',
+  displayName: 'E2e Recipient',
 };
