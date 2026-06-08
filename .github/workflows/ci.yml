@@ -24,9 +24,9 @@ jobs:
       - run: npm ci
       - run: npm run check:deps
       - run: npm run check:policy
-      - name: Generate container types
-        run: npm run gen:container
-      - run: npm run lint
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
+      - run: npm run lint:all
       - name: Check formatting
         run: npm run format:check
 
@@ -47,8 +47,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nx-
       - run: npm ci
-      - name: Generate container types
-        run: npm run gen:container
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
       - run: npm run test:ci
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -75,9 +75,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nx-
       - run: npm ci
-      - name: Generate container types
-        run: npm run gen:container
-      - run: npm run build
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
+      - run: npm run build:all
       - name: Build production frontend
         run: npm run build:web
         env:

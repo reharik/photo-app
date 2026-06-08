@@ -47,11 +47,11 @@ jobs:
 
       - run: npm run check:policy
 
-      - name: Generate container types
+      - name: Generate IoC manifests
         if: ${{ inputs.run_gen_container }}
-        run: npm run gen:container
+        run: npm run gen:ioc:all
 
-      - run: npm run lint
+      - run: npm run lint:all
 
       - name: Check formatting
         if: ${{ inputs.run_format_check }}
@@ -78,9 +78,9 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate container types
+      - name: Generate IoC manifests
         if: ${{ inputs.run_gen_container }}
-        run: npm run gen:container
+        run: npm run gen:ioc:all
 
       - run: npm run test:ci
 
@@ -113,11 +113,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate container types
+      - name: Generate IoC manifests
         if: ${{ inputs.run_gen_container }}
-        run: npm run gen:container
+        run: npm run gen:ioc:all
 
-      - run: npm run build
+      - run: npm run build:all
 
       - name: Build production frontend
         run: npm run build:web

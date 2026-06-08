@@ -31,7 +31,6 @@
     "check:policy": "tsx scripts/validate-policy.ts",
     "clean:all": "nx run-many --target=clean --all",
     "clean:dist": "nx reset && nx run-many --target=clean --all",
-    "gen:all": "nx run-many --target=codegen --all",
     "gen:enums": "nx gen-enums contracts",
     "gen:ioc:all": "nx run-many --target=gen-ioc --all",
     "gen:ioc:api": "nx gen-ioc api",

@@ -63,8 +63,10 @@ RUN if [ -f "apps/${SERVICE_NAME}/src/scripts/serverStartUpProd.sh" ]; then \
 FROM node:20 AS deps-prod
 WORKDIR /app
 COPY --from=manifests /manifests/ ./
+# --ignore-scripts: postinstall runs ts-patch install, but ts-patch is a
+# devDependency and isn't present in a prod-only install.
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --omit=dev
+    npm ci --omit=dev --ignore-scripts
 
 # === Runtime: Node apps (api, media-worker) ===
 FROM node:20-slim AS runtime-node

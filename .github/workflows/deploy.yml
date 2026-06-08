@@ -297,9 +297,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate container types
-        run: npm run codegen:web
-
       - name: Build frontend
         run: npm run build:web
         env:
