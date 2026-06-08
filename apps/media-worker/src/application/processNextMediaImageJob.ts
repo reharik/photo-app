@@ -9,6 +9,7 @@ import {
 
 import { Knex } from 'knex';
 import type { Config } from '../config.js';
+import { extractCaptureTime } from '../infrastructure/exif/extractCaptureTime.js';
 import type { MediaProcessingJobRepository } from '../repositories/domainRepositories/mediaProcessingJobRepository.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator';
 import { readStreamToBuffer } from './readStreamToBuffer';
@@ -131,7 +132,11 @@ export const build__ProcessNextMediaImageJob = ({
         byteLength: originalBuffer.length,
         mimeType: streamResult.mimeType,
       });
-      const derivatives = await generateImageDerivatives(originalBuffer);
+      const [derivatives, capture] = await Promise.all([
+        generateImageDerivatives(originalBuffer),
+        extractCaptureTime(originalBuffer),
+      ]);
+
       logger.info('Image derivatives generated', {
         jobId: job.id,
         mediaItemId: job.mediaItemId,
@@ -223,6 +228,13 @@ export const build__ProcessNextMediaImageJob = ({
         await finishFailed(`${readyResult.error.code}: ${readyResult.error.display}`);
         return 'processed';
       }
+
+      const captureResult = mediaItem.applyExifCaptureTime(capture);
+      logger.info('EXIF capture time evaluated', {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+        result: captureResult.kind === 'applied' ? 'applied' : `skipped:${captureResult.reason}`,
+      });
 
       await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
       await finishSucceeded();

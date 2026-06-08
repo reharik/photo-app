@@ -33,6 +33,9 @@ interface AssetMetadata {
   width?: number;
   height?: number;
 }
+type ApplyCaptureTimeResult =
+  | { kind: 'applied'; takenAtUtc: Date; offsetMinutes: number | undefined }
+  | { kind: 'skipped'; reason: 'no-exif-date' | 'already-set' };
 
 export type MediaItemTagRecord = Omit<MediaItemTag, 'id'> & {
   id: string;
@@ -51,6 +54,7 @@ export type MediaItemProps = Omit<
   title?: string | null;
   description?: string | null;
   takenAt?: Date | null;
+  takenAtUtcOffsetMinutes?: number | null;
   reactionCounts?: DBReactionCounts;
 };
 
@@ -247,6 +251,25 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
   height(): number | undefined {
     return this.props.height;
+  }
+
+  applyExifCaptureTime(input: {
+    takenAtUtc?: Date;
+    takenAtUtcOffsetMinutes?: number;
+  }): ApplyCaptureTimeResult {
+    if (input.takenAtUtc == null) {
+      return { kind: 'skipped', reason: 'no-exif-date' };
+    }
+    if (this.props.takenAt != null) {
+      return { kind: 'skipped', reason: 'already-set' };
+    }
+    this.props.takenAt = input.takenAtUtc;
+    this.props.takenAtUtcOffsetMinutes = input.takenAtUtcOffsetMinutes;
+    return {
+      kind: 'applied',
+      takenAtUtc: input.takenAtUtc,
+      offsetMinutes: input.takenAtUtcOffsetMinutes,
+    };
   }
 
   getAuthorizations(): Authorization[] {

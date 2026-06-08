@@ -1,9 +1,8 @@
 {
-  "watch": ["src", "../../packages/*/dist", "../../packages/*/*/dist"],
+  "watch": ["src", "../../packages"],
   "ext": "ts,js,json",
   "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist", "node_modules"],
-  "exec": "tsx src/main.ts",
-  "signal": "SIGTERM",
+  "exec": "node --conditions=development --import tsx src/main.ts",
   "env": {
     "NODE_ENV": "development"
   }

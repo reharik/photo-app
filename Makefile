@@ -18,6 +18,10 @@ docker/dev/recreate-api:
 	$(compose_dev) rm -sf api
 	$(compose_dev) up -d api
 
+docker/dev/recreate-worker:
+	$(compose_dev) rm -sf media-worker
+	$(compose_dev) up -d media-worker
+
 docker/dev/build:
 	$(compose_dev) build --no-cache;
 

@@ -92,7 +92,7 @@
       "executor": "nx:run-commands",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
-        "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests",
+        "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.config.js --runInBand --passWithNoTests && node --import tsx --experimental-test-isolation=process --experimental-test-module-mocks --test src/infrastructure/exif/computeCaptureInstant.test.ts src/infrastructure/exif/extractCaptureTime.fieldPreference.test.ts src/infrastructure/exif/extractCaptureTime.test.ts",
         "cwd": "{projectRoot}"
       },
       "configurations": {
