@@ -8,6 +8,7 @@ fragment MediaItemSummary on MediaItem {
   createdAt
   description
   takenAt
+  takenAtUtcOffsetMinutes
   reactionCounts {
     ...ReactionCounts
   }

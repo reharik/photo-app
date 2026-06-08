@@ -159,6 +159,7 @@ export interface DBMediaItemRow {
   createdAt: Date;
   updatedAt: Date;
   reactionCounts: DBReactionCounts;
+  takenAtUtcOffsetMinutes?: number;
 }
 export type MediaItemProjection = Omit<DBMediaItemRow, 'reactionCounts'> & MediaItemChildren;
 

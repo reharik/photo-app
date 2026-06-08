@@ -28,6 +28,7 @@ const DBmediaItemRowFields = [
   'media_item.created_by',
   'media_item.updated_by',
   'media_item.reaction_counts',
+  'media_item.taken_at_utc_offset_minutes',
 ];
 
 export const build__MediaItemReadRepository = ({

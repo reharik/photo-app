@@ -19,6 +19,7 @@ type MediaItem implements ViewableItem & Node {
   comments(input: CommentsInput!): CommentCollectionPayload!
   reactionCounts: ReactionCounts!
   viewerReactions: [ViewerReaction!]
+  takenAtUtcOffsetMinutes: Int
 }
 
 type Tag {
