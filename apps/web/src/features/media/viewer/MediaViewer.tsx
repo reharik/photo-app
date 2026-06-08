@@ -1,7 +1,5 @@
 import { MediaKind } from '@packages/contracts';
 import {
-  useCallback,
-  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -16,11 +14,12 @@ import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
 import type { NavigateDirection } from './mediaViewerTypes';
-import {
-  ENTER_IMAGE_DECODE_TIMEOUT_MS,
-  SlideTransitionWrap,
-  useMediaViewerSlideTransition,
-} from './useMediaViewerSlideTransition';
+// DIAGNOSTIC: slide transition stripped to isolate cream/white flash on navigation.
+// import {
+//   ENTER_IMAGE_DECODE_TIMEOUT_MS,
+//   SlideTransitionWrap,
+//   useMediaViewerSlideTransition,
+// } from './useMediaViewerSlideTransition';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
 export type { NavigateDirection } from './mediaViewerTypes';
@@ -68,36 +67,13 @@ export const MediaViewer = ({
   mobileChrome,
 }: MediaViewerProps) => {
   const isMobileLayout = useMediaQuery(MOBILE_NAV_MEDIA);
-  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   const [zoomActive, setZoomActive] = useState(false);
   const zoomActiveRef = useRef(false);
   const resetZoomRef = useRef<(() => void) | null>(null);
 
   const zoomLayerEnabled = isZoomableImage(kind, mimeType);
-  const isPhotoDisplay = zoomLayerEnabled;
   const mobileGesturesEnabled = isMobileLayout && mobileChrome != null;
-
-  const [decodedDisplayUrl, setDecodedDisplayUrl] = useState<string | undefined>();
-
-  const isEnterImageReady =
-    !isPhotoDisplay || prefersReducedMotion || decodedDisplayUrl === displayUrl;
-
-  useEffect(() => {
-    if (!isPhotoDisplay || prefersReducedMotion || decodedDisplayUrl === displayUrl) {
-      return;
-    }
-    const timer = setTimeout(() => {
-      setDecodedDisplayUrl(displayUrl);
-    }, ENTER_IMAGE_DECODE_TIMEOUT_MS);
-    return (): void => {
-      clearTimeout(timer);
-    };
-  }, [decodedDisplayUrl, displayUrl, isPhotoDisplay, prefersReducedMotion]);
-
-  const handleImageDisplayReady = useCallback((): void => {
-    setDecodedDisplayUrl(displayUrl);
-  }, [displayUrl]);
 
   useLayoutEffect(() => {
     zoomActiveRef.current = zoomActive;
@@ -122,15 +98,15 @@ export const MediaViewer = ({
     };
   }, [escapeConsumedRef]);
 
-  const { requestNavigate, slideTransition } = useMediaViewerSlideTransition({
-    contentKey: displayUrl,
-    canNavigate,
-    onNavigate,
-    enterContentReady: !isPhotoDisplay || isEnterImageReady,
-  });
+  // const { requestNavigate, slideTransition } = useMediaViewerSlideTransition({
+  //   contentKey: displayUrl,
+  //   canNavigate,
+  //   onNavigate,
+  //   enterContentReady: !isPhotoDisplay || isEnterImageReady,
+  // });
 
   useMediaViewerKeyboard({
-    onNavigate: requestNavigate,
+    onNavigate,
     escapeConsumedRef,
     onEscape: onClose,
   });
@@ -139,31 +115,28 @@ export const MediaViewer = ({
     enabled: mobileGesturesEnabled,
     canNavigate,
     zoomActive,
-    onNavigate: requestNavigate,
+    onNavigate,
     onDismiss: onClose,
     onToggleChrome: mobileChrome?.onToggleChrome ?? ((): void => undefined),
   });
 
   const media = (
-    <SlideTransitionWrap {...slideTransition}>
-      <MediaChrome>
-        <ZoomableImageViewport
-          key={displayUrl}
-          enabled={zoomLayerEnabled}
-          onZoomActiveChange={setZoomActive}
-          resetZoomRef={resetZoomRef}
-        >
-          <MediaRenderer
-            id={mediaItemId}
-            kind={kind}
-            mimeType={mimeType}
-            displayUrl={displayUrl}
-            imageAlt={imageAlt}
-            onImageDisplayReady={isPhotoDisplay ? handleImageDisplayReady : undefined}
-          />
-        </ZoomableImageViewport>
-      </MediaChrome>
-    </SlideTransitionWrap>
+    <MediaChrome>
+      <ZoomableImageViewport
+        key={displayUrl}
+        enabled={zoomLayerEnabled}
+        onZoomActiveChange={setZoomActive}
+        resetZoomRef={resetZoomRef}
+      >
+        <MediaRenderer
+          id={mediaItemId}
+          kind={kind}
+          mimeType={mimeType}
+          displayUrl={displayUrl}
+          imageAlt={imageAlt}
+        />
+      </ZoomableImageViewport>
+    </MediaChrome>
   );
 
   const chromeVisible = mobileChrome?.visible ?? false;
@@ -184,7 +157,7 @@ export const MediaViewer = ({
         ) : (
           <MediaViewerDesktopNav
             media={media}
-            onNavigate={requestNavigate}
+            onNavigate={onNavigate}
             canNavigate={canNavigate}
           />
         )}
