@@ -14,12 +14,6 @@ import { MediaViewerDesktopNav } from './MediaViewerDesktopNav';
 import { MediaViewerMobile } from './MediaViewerMobile';
 import { MediaViewerSingle } from './MediaViewerSingle';
 import type { NavigateDirection } from './mediaViewerTypes';
-// DIAGNOSTIC: slide transition stripped to isolate cream/white flash on navigation.
-// import {
-//   ENTER_IMAGE_DECODE_TIMEOUT_MS,
-//   SlideTransitionWrap,
-//   useMediaViewerSlideTransition,
-// } from './useMediaViewerSlideTransition';
 import { ZoomableImageViewport } from './ZoomableImageViewport';
 
 export type { NavigateDirection } from './mediaViewerTypes';
@@ -97,13 +91,6 @@ export const MediaViewer = ({
       escapeConsumedRef.current = null;
     };
   }, [escapeConsumedRef]);
-
-  // const { requestNavigate, slideTransition } = useMediaViewerSlideTransition({
-  //   contentKey: displayUrl,
-  //   canNavigate,
-  //   onNavigate,
-  //   enterContentReady: !isPhotoDisplay || isEnterImageReady,
-  // });
 
   useMediaViewerKeyboard({
     onNavigate,
