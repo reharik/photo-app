@@ -1,5 +1,6 @@
 import { MediaAssetKind } from '@packages/contracts';
-import { createPortal, type ReactElement } from 'react-dom';
+import type { ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import type { GalleryNavigation } from './mediaItemGalleryNavigation';
 

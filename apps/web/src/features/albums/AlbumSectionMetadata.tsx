@@ -46,6 +46,7 @@ export type MinimalMediaItemSummaryVM = {
   status?: MediaItemStatus;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
+  operations: Operation[];
 };
 
 export type MinimalAlbumItemSummaryVM = {
@@ -141,7 +142,9 @@ export const AlbumSectionMetadata = ({
                 <MobileBrowseActions>{headerActions}</MobileBrowseActions>
               ) : null}
             </MobileBrowseTitleRow>
-            <MobileBrowseSubtitle>{buildAlbumBrowseSubtitle(count, album.updatedAt)}</MobileBrowseSubtitle>
+            <MobileBrowseSubtitle>
+              {buildAlbumBrowseSubtitle(count, album.updatedAt)}
+            </MobileBrowseSubtitle>
           </MobileBrowseHeader>
         ) : showMobileSelection ? (
           renderSelectionActions()
