@@ -44,7 +44,10 @@ export const useMobileViewerGestures = ({
   onNavigate,
   onDismiss,
   onToggleChrome,
-}: UseMobileViewerGesturesOptions): { gestureHandlers: MobileViewerGestureHandlers } => {
+}: UseMobileViewerGesturesOptions): {
+  gestureHandlers: MobileViewerGestureHandlers;
+  cancelPendingTap: () => void;
+} => {
   const startRef = useRef<{ x: number; y: number; pointerId: number } | null>(null);
   const activePointersRef = useRef(0);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,5 +164,6 @@ export const useMobileViewerGestures = ({
       onPointerUp,
       onPointerCancel,
     },
+    cancelPendingTap: clearSingleTapTimer,
   };
 };

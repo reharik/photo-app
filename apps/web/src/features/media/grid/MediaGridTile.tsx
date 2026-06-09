@@ -195,6 +195,9 @@ const thumbImageContainStyles = css`
 
 const ThumbImage = styled.img<{ $contain: boolean }>`
   ${({ $contain }) => ($contain ? thumbImageContainStyles : thumbImageCoverStyles)}
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-drag: none;
 `;
 
 const ThumbIcon = styled.div<{ $contain: boolean }>`

@@ -8,7 +8,8 @@ type MediaGridSelectionToggleProps = {
 
 /**
  * Top-right selection affordance on media grid tiles.
- * Hollow ring on hover before selection mode; always visible once selection starts.
+ * Desktop: hollow ring on hover before selection mode; always visible once selection starts.
+ * Touch: always-visible ring with expanded hit target (no long-press).
  */
 export const MediaGridSelectionToggle = ({
   selected,
@@ -55,6 +56,26 @@ const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boole
   opacity: ${({ $selected, $selectionActive }) => ($selected || $selectionActive ? 1 : 0)};
   pointer-events: ${({ $selected, $selectionActive }) =>
     $selected || $selectionActive ? 'auto' : 'none'};
+
+  @media (hover: none) and (pointer: coarse) {
+    opacity: 1;
+    pointer-events: auto;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+    }
+
+    ${({ $selected }) =>
+      !$selected
+        ? `
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.15),
+        0 1px 3px rgba(0, 0, 0, 0.4);
+    `
+        : ''}
+  }
 
   @media (hover: hover) {
     [data-media-grid-selectable-thumb]:hover & {

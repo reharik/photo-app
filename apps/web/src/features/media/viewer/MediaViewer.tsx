@@ -98,8 +98,8 @@ export const MediaViewer = ({
     onEscape: onEscape ?? onClose,
   });
 
-  const { gestureHandlers } = useMobileViewerGestures({
-    enabled: false,
+  const { gestureHandlers, cancelPendingTap } = useMobileViewerGestures({
+    enabled: mobileGesturesEnabled && !(mobileChrome?.sheetOpen ?? false),
     canNavigate,
     zoomActive,
     onNavigate,
@@ -113,6 +113,7 @@ export const MediaViewer = ({
         key={displayUrl}
         enabled={zoomLayerEnabled}
         onZoomActiveChange={setZoomActive}
+        onDoubleTapRecognized={cancelPendingTap}
         resetZoomRef={resetZoomRef}
       >
         <MediaRenderer

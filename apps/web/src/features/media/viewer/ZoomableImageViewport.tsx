@@ -30,6 +30,8 @@ export type ZoomableImageViewportProps = {
   onZoomActiveChange?: (zoomActive: boolean) => void;
   /** Set to a function that resets zoom to 1× (used with Escape from the parent screen). */
   resetZoomRef?: MutableRefObject<(() => void) | null>;
+  /** Called when a double-tap is confirmed (e.g. cancel deferred single-tap chrome toggle). */
+  onDoubleTapRecognized?: () => void;
   children: ReactNode;
 };
 
@@ -41,10 +43,9 @@ export const ZoomableImageViewport = ({
   enabled,
   onZoomActiveChange,
   resetZoomRef,
+  onDoubleTapRecognized,
   children,
 }: ZoomableImageViewportProps): ReactNode => {
-  // TODO: remove — temporary double-tap zoom diagnostic
-  console.count('[zoom] ZoomableImageViewport render');
   const [zoomed, setZoomed] = useState(false);
   const controlsRef = useRef<ReactZoomPanPinchRef | null>(null);
   const [tapTargetNode, setTapTargetNode] = useState<HTMLDivElement | null>(null);
@@ -74,8 +75,6 @@ export const ZoomableImageViewport = ({
 
   const handleTransform = useCallback(
     (_ref: ReactZoomPanPinchRef, state: { scale: number }): void => {
-      // TODO: remove — temporary double-tap zoom diagnostic
-      console.log('[zoom] transform', performance.now().toFixed(0), state.scale);
       syncZoomActive(state.scale);
     },
     [syncZoomActive],
@@ -127,6 +126,7 @@ export const ZoomableImageViewport = ({
 
         if (elapsed <= DOUBLE_TAP_MAX_INTERVAL_MS && distance <= DOUBLE_TAP_MAX_DISTANCE_PX) {
           lastTapRef.current = null;
+          onDoubleTapRecognized?.();
           handleDoubleTapZoom(clientX, clientY);
           return true;
         }
@@ -135,7 +135,7 @@ export const ZoomableImageViewport = ({
       lastTapRef.current = { time: now, x: clientX, y: clientY };
       return false;
     },
-    [handleDoubleTapZoom],
+    [handleDoubleTapZoom, onDoubleTapRecognized],
   );
 
   useEffect(() => {
@@ -225,9 +225,6 @@ export const ZoomableImageViewport = ({
         }}
         onInit={handleInit}
         onTransform={handleTransform}
-        onZoomStart={(r) => console.log('[zoom] start', performance.now().toFixed(0), r.state.scale)}
-        onZoom={(r) => console.log('[zoom] frame', performance.now().toFixed(0), r.state.scale)}
-        onZoomStop={(r) => console.log('[zoom] stop', performance.now().toFixed(0), r.state.scale)}
       >
         <TransformComponent
           wrapperStyle={{
