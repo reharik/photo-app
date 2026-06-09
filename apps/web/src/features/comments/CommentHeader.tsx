@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { JSX } from 'react';
 import styled from 'styled-components';
+import { formatActivityTime } from '../../ui/dateDisplay';
 
 type CommentHeaderDisplay = {
   displayName: string;
@@ -12,30 +13,16 @@ type Props = {
   comment: CommentHeaderDisplay;
 };
 
-const formatRelativeTime = (dt: DateTime): string => {
-  const now = DateTime.now().get('millisecond');
-  const diffMs = now - dt.get('millisecond');
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  if (diffDay < 7) return `${diffDay}d ago`;
-
-  return dt.toFormat('MMM d, yyyy');
-};
-
 export const CommentHeader = ({ comment }: Props): JSX.Element => {
   const { displayName, createdAt, isEdited } = comment;
+  const iso = createdAt.toISO() ?? '';
+  const displayTime = createdAt.isValid ? formatActivityTime(createdAt) : '';
 
   return (
     <Root>
       <DisplayName>{displayName}</DisplayName>
-      <Timestamp dateTime={createdAt.toLocaleString()} title={createdAt.toLocaleString()}>
-        {createdAt ? formatRelativeTime(createdAt) : ''}
+      <Timestamp dateTime={iso} title={displayTime}>
+        {displayTime}
       </Timestamp>
       {isEdited ? <EditedBadge>(edited)</EditedBadge> : null}
     </Root>

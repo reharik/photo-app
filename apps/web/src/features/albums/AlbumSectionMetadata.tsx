@@ -2,11 +2,11 @@ import { MediaAssetKind, MediaItemStatus, MediaKind, Operation } from '@packages
 import { Camera } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { css, styled } from 'styled-components';
-import { localizeDate } from '../../domain/formatters/dateFormatters';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
+import { formatActivityDate } from '../../ui/dateDisplay';
 import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { PICKER_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
@@ -165,7 +165,7 @@ export const AlbumSectionMetadata = ({
                     </AlbumStats>
                     {album.updatedAt?.isValid ? (
                       <AlbumDescription>
-                        Updated {localizeDate(album.updatedAt.toLocaleString(DateTime.DATE_MED))}
+                        Updated {formatActivityDate(album.updatedAt)}
                       </AlbumDescription>
                     ) : null}
                   </>

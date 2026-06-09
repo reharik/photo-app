@@ -1,16 +1,15 @@
 import { DateTime } from 'luxon';
+import { formatActivityDate, formatActivityMonthYear } from '../../../ui/dateDisplay';
 import type { MediaItemSummaryVM } from '../../../viewModels/';
 import type { MediaGridDateBucket, MediaGridDateBucketKey } from './mediaGridDateBucketTypes';
 
 const BUCKET_ORDER: MediaGridDateBucketKey[] = ['today', 'yesterday', 'lastWeek', 'thisMonth'];
 
-const formatSubtitleDate = (dt: DateTime): string => dt.toLocaleString(DateTime.DATE_MED);
-
 const formatSubtitleRange = (min: DateTime, max: DateTime): string => {
   if (min.hasSame(max, 'day')) {
-    return formatSubtitleDate(min);
+    return formatActivityDate(min);
   }
-  return `${formatSubtitleDate(min)} to ${formatSubtitleDate(max)}`;
+  return `${formatActivityDate(min)} to ${formatActivityDate(max)}`;
 };
 
 const resolveBucketKey = (createdAt: DateTime, now: DateTime): MediaGridDateBucketKey => {
@@ -51,10 +50,12 @@ const bucketLabel = (key: MediaGridDateBucketKey): string => {
     default: {
       if (key.startsWith('month:')) {
         const [, month, year] = key.split(':');
-        return DateTime.fromObject({
-          month: Number(month),
-          year: Number(year),
-        }).toFormat('MMMM yyyy');
+        return formatActivityMonthYear(
+          DateTime.fromObject({
+            month: Number(month),
+            year: Number(year),
+          }),
+        );
       }
       if (key.startsWith('year:')) {
         return key.slice('year:'.length);
@@ -74,9 +75,9 @@ const bucketSubtitle = (key: MediaGridDateBucketKey, dates: DateTime[], now: Dat
 
   switch (key) {
     case 'today':
-      return formatSubtitleDate(now);
+      return formatActivityDate(now);
     case 'yesterday':
-      return formatSubtitleDate(now.minus({ days: 1 }));
+      return formatActivityDate(now.minus({ days: 1 }));
     case 'lastWeek':
     case 'thisMonth':
       return formatSubtitleRange(min, max);

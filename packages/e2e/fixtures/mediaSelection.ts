@@ -38,7 +38,7 @@ export type SelectMediaItemsOptions = {
   scope?: Locator;
   /** Library grid uses "{N} photos selected"; album/gallery screens use "{N} selected". */
   toolbarVariant?: SelectionToolbarVariant;
-  /** Warm-light toolbars use "Cancel"; legacy SelectableGallerySelectionBar uses "Clear selection". */
+  /** Warm-light toolbars use "Cancel"; legacy toolbars use "Clear selection". */
   clearButtonLabel?: ClearSelectionButtonLabel;
 };
 

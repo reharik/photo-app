@@ -1,11 +1,12 @@
 import { useFragment } from '@apollo/client/react';
 import { Operation } from '@packages/contracts';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { formatDateOnly } from '../../domain/formatters/mediaItemMetaFormat';
 import { MediaItemCommentCountFragmentDoc } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import type { MediaItemDetailVM } from '../../viewModels/';
 import { BottomSheet } from '../../ui/BottomSheet';
+import { formatActivityDate } from '../../ui/dateDisplay';
+import type { MediaItemDetailVM } from '../../viewModels/';
+import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
 import { MediaItemDetailRailFields } from './detail/MediaItemDetailRailFields';
 import { MediaItemDetailRailReactions } from './detail/MediaItemDetailRailReactions';
 import {
@@ -17,9 +18,9 @@ import {
   RailHeader,
   SheetContentZone,
 } from './detail/mobileMetadataLayout';
-import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
-import { PhotoDetailsDisclosure } from './detail/PhotoDetailsDisclosure';
+
 import { CommentsForViewerMediaItemContainer } from './CommentsForViewerMediaItemContainer';
+import { PhotoDetailsDisclosure } from './detail/PhotoDetailsDisclosure';
 import { MediaItemDetailForm } from './MediaItemDetailForm';
 import type { MobileViewerSheet } from './viewer/mediaViewerTypes';
 
@@ -108,11 +109,10 @@ export const MediaItemDetailPanel = forwardRef<
       onCloseMobileSheet?.();
     }, [handleSheetDismiss, onCloseMobileSheet]);
 
-    useImperativeHandle(
-      ref,
-      () => ({ handleCloseRequest, handleSheetDismiss }),
-      [handleCloseRequest, handleSheetDismiss],
-    );
+    useImperativeHandle(ref, () => ({ handleCloseRequest, handleSheetDismiss }), [
+      handleCloseRequest,
+      handleSheetDismiss,
+    ]);
 
     if (mediaItem == null) {
       return null;
@@ -121,7 +121,9 @@ export const MediaItemDetailPanel = forwardRef<
     const canEdit = mediaItem.operations.includes(Operation.editMediaItem);
     const canComment = mediaItem.operations.includes(Operation.comment);
 
-    const dateAdded = formatDateOnly(mediaItem.createdAt);
+    const dateAdded = mediaItem.createdAt?.isValid
+      ? formatActivityDate(mediaItem.createdAt)
+      : undefined;
     const photoDetailRows = [
       mediaItem.originalFileName?.trim()
         ? { label: 'File name', value: mediaItem.originalFileName.trim() }

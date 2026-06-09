@@ -1,6 +1,6 @@
 import { type JSX, type ReactNode } from 'react';
 import styled, { css } from 'styled-components';
-import { formatMomentHeading } from '../../../domain/formatters/mediaItemMetaFormat';
+import { formatCaptureDateWithWeekday } from '../../../ui/dateDisplay';
 import type { MediaItemDetailVM } from '../../../viewModels/';
 import { MediaKindRailLabel } from './MediaKindRailLabel';
 
@@ -19,7 +19,10 @@ export const MediaItemDetailRailFields = ({
   onOpenEdit,
   editForm,
 }: MediaItemDetailRailFieldsProps): JSX.Element => {
-  const momentHeading = formatMomentHeading(mediaItem.takenAt);
+  const momentHeading = formatCaptureDateWithWeekday(
+    mediaItem.takenAt,
+    mediaItem.takenAtUtcOffsetMinutes ?? null,
+  );
   const titleText = mediaItem.title?.trim();
   const descriptionText = mediaItem.description?.trim();
 

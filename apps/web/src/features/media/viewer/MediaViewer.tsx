@@ -99,7 +99,7 @@ export const MediaViewer = ({
   });
 
   const { gestureHandlers } = useMobileViewerGestures({
-    enabled: mobileGesturesEnabled && !(mobileChrome?.sheetOpen ?? false),
+    enabled: false,
     canNavigate,
     zoomActive,
     onNavigate,

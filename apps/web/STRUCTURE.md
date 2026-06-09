@@ -73,21 +73,11 @@ src/
 │   │       ├── ZoomableImageViewport.tsx
 │   │       └── mediaViewerTypes.ts
 │   ├── gallery/
-│   │   ├── SelectableGallery.tsx
-│   │   ├── SelectableGalleryHeader.tsx
-│   │   ├── SelectableGalleryItem.tsx
-│   │   ├── SelectableGallerySelectionBar.tsx
-│   │   ├── SingleSelectGallery.tsx
-│   │   ├── SelectionCornerCheck.tsx
-│   │   ├── SelectionToggleControl.tsx
 │   │   ├── AddItemsToAlbum.tsx
-│   │   ├── MediaSelectionToolbar.tsx
-│   │   └── tiles/
-│   │       ├── AlbumMediaTile.tsx
-│   │       ├── AlbumTile.tsx
-│   │       ├── MediaItemTile.tsx
-│   │       ├── SelectionTile.tsx
-│   │       └── SingleSelectionTile.tsx
+│   │   ├── InfiniteScroll.tsx
+│   │   ├── mediaItemGalleryNavigation.ts
+│   │   ├── NeighborDisplayPrefetch.tsx
+│   │   └── useNeighborDetailPrefetch.ts
 │   ├── sharing/
 │   │   ├── GrantShareForm.tsx
 │   │   ├── GrantAlbumShareModal.tsx
