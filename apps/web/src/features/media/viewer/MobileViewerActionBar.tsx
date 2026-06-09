@@ -10,7 +10,10 @@ type MobileViewerActionBarProps = {
   onReact: () => void;
   onComment: () => void;
   onInfo: () => void;
+  interactionsLocked?: boolean;
 };
+
+const noopLockedAction = (): void => undefined;
 
 export const MobileViewerActionBar = ({
   chromeVisible,
@@ -18,14 +21,20 @@ export const MobileViewerActionBar = ({
   onReact,
   onComment,
   onInfo,
+  interactionsLocked = false,
 }: MobileViewerActionBarProps) => {
+  const reactHandler = interactionsLocked ? noopLockedAction : onReact;
+  const commentHandler = interactionsLocked ? noopLockedAction : onComment;
+
   return (
     <ActionBarRoot $visible={chromeVisible}>
       <ActionButton
         type="button"
         aria-label="React"
         aria-pressed={false}
-        onClick={onReact}
+        aria-disabled={interactionsLocked}
+        $locked={interactionsLocked}
+        onClick={reactHandler}
       >
         <ActionIcon aria-hidden="true">
           <Heart size={22} strokeWidth={2} />
@@ -36,7 +45,9 @@ export const MobileViewerActionBar = ({
         type="button"
         aria-label="Comment"
         aria-pressed={activeSheet === 'comment'}
-        onClick={onComment}
+        aria-disabled={interactionsLocked}
+        $locked={interactionsLocked}
+        onClick={commentHandler}
       >
         <ActionIcon aria-hidden="true">
           <MessageCircle size={22} strokeWidth={2} />
@@ -76,7 +87,7 @@ const ActionBarRoot = styled.div<{ $visible: boolean }>`
   ${viewerChromeVisibility}
 `;
 
-const ActionButton = styled.button`
+const ActionButton = styled.button<{ $locked?: boolean }>`
   flex: 1;
   min-width: 0;
   min-height: 44px;
@@ -114,6 +125,16 @@ const ActionButton = styled.button`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 2px;
+  }
+
+  &[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &[aria-disabled='true']:hover {
+    background: rgba(0, 0, 0, 0.28);
+    border-color: rgba(255, 255, 255, 0.28);
   }
 `;
 

@@ -14,6 +14,7 @@ type MediaViewerMobileProps = {
   activeSheet: MobileViewerSheet;
   onOpenInfoSheet: () => void;
   onOpenCommentSheet: () => void;
+  interactionsLocked?: boolean;
 };
 
 export const MediaViewerMobile = ({
@@ -25,6 +26,7 @@ export const MediaViewerMobile = ({
   activeSheet,
   onOpenInfoSheet,
   onOpenCommentSheet,
+  interactionsLocked = false,
 }: MediaViewerMobileProps): JSX.Element => {
   return (
     <MobileLayout>
@@ -46,6 +48,7 @@ export const MediaViewerMobile = ({
           onReact={onOpenCommentSheet}
           onComment={onOpenCommentSheet}
           onInfo={onOpenInfoSheet}
+          interactionsLocked={interactionsLocked}
         />
       </MobileMediaStage>
     </MobileLayout>

@@ -142,6 +142,7 @@ export const MediaViewer = ({
             activeSheet={mobileChrome.activeSheet ?? 'none'}
             onOpenInfoSheet={mobileChrome.onOpenInfoSheet ?? ((): void => undefined)}
             onOpenCommentSheet={mobileChrome.onOpenCommentSheet ?? ((): void => undefined)}
+            interactionsLocked={mobileChrome.interactionsLocked ?? false}
           />
         ) : !canNavigate ? (
           <MediaViewerSingle media={media} />

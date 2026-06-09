@@ -9,4 +9,6 @@ export type MobileViewerChrome = {
   onOpenCommentSheet?: () => void;
   activeSheet?: MobileViewerSheet;
   sheetOpen?: boolean;
+  /** When true, React/Comment action-bar buttons render grayed and inert; Info stays interactive. */
+  interactionsLocked?: boolean;
 };

@@ -13,7 +13,10 @@ import {
   PublicMediaItemDetailPanelHandle,
 } from '../features/media/PublicMediaItemDetailPanel';
 import { MediaViewer } from '../features/media/viewer/MediaViewer';
-import type { NavigateDirection } from '../features/media/viewer/mediaViewerTypes';
+import type {
+  MobileViewerSheet,
+  NavigateDirection,
+} from '../features/media/viewer/mediaViewerTypes';
 import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { Toast } from '../ui/Toast';
@@ -41,8 +44,8 @@ export const PublicMediaItemScreen = () => {
     query,
     select: (data) => data.publicAccess?.mediaItem,
   });
-  /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [isMobileChromeVisible, setIsMobileChromeVisible] = useState(false);
+  const [activeMobileSheet, setActiveMobileSheet] = useState<MobileViewerSheet>('none');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const detailPanelRef = useRef<PublicMediaItemDetailPanelHandle>(null);
 
@@ -51,6 +54,7 @@ export const PublicMediaItemScreen = () => {
 
   useEffect(() => {
     setIsMobileChromeVisible(false);
+    setActiveMobileSheet('none');
   }, [mediaItem?.id]);
 
   const handleDismissScreen = useCallback((): void => {
@@ -59,6 +63,10 @@ export const PublicMediaItemScreen = () => {
 
   const handleToggleMobileChrome = useCallback((): void => {
     setIsMobileChromeVisible((visible) => !visible);
+  }, []);
+
+  const handleCloseMobileSheet = useCallback((): void => {
+    setActiveMobileSheet('none');
   }, []);
 
   const galleryNavigation = getGalleryNavigation({
@@ -120,6 +128,11 @@ export const PublicMediaItemScreen = () => {
         mobileChrome={{
           visible: isMobileChromeVisible,
           onToggleChrome: handleToggleMobileChrome,
+          onOpenInfoSheet: () => setActiveMobileSheet('info'),
+          onOpenCommentSheet: () => undefined,
+          activeSheet: activeMobileSheet,
+          sheetOpen: activeMobileSheet !== 'none',
+          interactionsLocked: true,
         }}
       />
     );
@@ -150,7 +163,8 @@ export const PublicMediaItemScreen = () => {
           ref={detailPanelRef}
           mediaItem={mediaItem}
           onDismissScreen={handleDismissScreen}
-          isMobileMetadataVisible={isMobileChromeVisible}
+          activeMobileSheet={activeMobileSheet}
+          onCloseMobileSheet={handleCloseMobileSheet}
         />
       </LayoutInner>
     </Container>

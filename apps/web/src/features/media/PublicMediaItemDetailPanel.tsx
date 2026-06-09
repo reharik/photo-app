@@ -1,6 +1,7 @@
 import { ReactionEmoji } from '@packages/contracts';
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle } from 'react';
 import styled from 'styled-components';
+import { BottomSheet } from '../../ui/BottomSheet';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
 import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
@@ -12,10 +13,12 @@ import {
   DetailsPanelCloseButton,
   MetadataPanelStack,
   RailHeader,
+  SheetContentZone,
 } from './detail/mobileMetadataLayout';
 import { PhotoDetailsDisclosure } from './detail/PhotoDetailsDisclosure';
 import { PublicMediaItemDetailRailReactions } from './detail/PublicMediaItemDetailRailReactions';
 import { PublicCommentsForMediaItemContainer } from './PublicCommentsForMediaItemContainer';
+import type { MobileViewerSheet } from './viewer/mediaViewerTypes';
 
 export type PublicMediaItemDetailPanelHandle = {
   handleCloseRequest: () => void;
@@ -24,8 +27,8 @@ export type PublicMediaItemDetailPanelHandle = {
 export type PublicMediaItemDetailPanelProps = {
   mediaItem: PublicMediaItemSummaryVM | undefined;
   onDismissScreen: () => void;
-  /** On narrow viewports, hides the descriptive cream card when false; conversation stays visible. */
-  isMobileMetadataVisible?: boolean;
+  activeMobileSheet?: MobileViewerSheet;
+  onCloseMobileSheet?: () => void;
 };
 
 const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
@@ -44,8 +47,13 @@ const formatDurationSeconds = (seconds: number): string => {
 export const PublicMediaItemDetailPanel = forwardRef<
   PublicMediaItemDetailPanelHandle,
   PublicMediaItemDetailPanelProps
->(({ mediaItem, onDismissScreen, isMobileMetadataVisible = false }, ref) => {
+>(({ mediaItem, onDismissScreen, activeMobileSheet = 'none', onCloseMobileSheet }, ref) => {
   const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_MEDIA);
+
+  const handleMobileSheetClose = useCallback((): void => {
+    onCloseMobileSheet?.();
+  }, [onCloseMobileSheet]);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -61,7 +69,6 @@ export const PublicMediaItemDetailPanel = forwardRef<
   }
 
   const titleText = mediaItem.title?.trim();
-  const showDescriptiveZone = !isMobileLayout || isMobileMetadataVisible;
   const heartCount =
     mediaItem.reactionCounts.byEmoji.find((entry) => entry.emoji.equals(ReactionEmoji.heart))
       ?.count ?? 0;
@@ -98,35 +105,59 @@ export const PublicMediaItemDetailPanel = forwardRef<
     />
   );
 
+  const titleOrKind =
+    titleText != null ? (
+      <TitleText>{titleText}</TitleText>
+    ) : (
+      <MediaKindRailLabel kind={mediaItem.kind} />
+    );
+
+  const conversationZone = (
+    <ConversationMetadataZone>
+      {showPublicReactions ? (
+        <PublicMediaItemDetailRailReactions reactionCounts={mediaItem.reactionCounts} />
+      ) : null}
+
+      <CommentsSection $showTopRule={showPublicReactions}>
+        <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} layout="rail" />
+      </CommentsSection>
+    </ConversationMetadataZone>
+  );
+
+  if (isMobileLayout) {
+    return (
+      <>
+        <BottomSheet
+          open={activeMobileSheet === 'info'}
+          onClose={handleMobileSheetClose}
+          ariaLabel="Photo information"
+        >
+          <SheetContentZone>
+            {titleOrKind}
+            {photoDetails}
+          </SheetContentZone>
+        </BottomSheet>
+
+        <MetadataPanelStack>{conversationZone}</MetadataPanelStack>
+      </>
+    );
+  }
+
   return (
     <MetadataPanelStack>
-      <DescriptiveMetadataZone $hiddenOnMobile={!showDescriptiveZone}>
+      <DescriptiveMetadataZone>
         <RailHeader>
           <DetailsPanelCloseButton type="button" onClick={onDismissScreen} aria-label="Close">
             ✕
           </DetailsPanelCloseButton>
         </RailHeader>
 
-        {titleText ? (
-          <TitleText>{titleText}</TitleText>
-        ) : (
-          <MediaKindRailLabel kind={mediaItem.kind} />
-        )}
+        {titleOrKind}
 
-        {isMobileLayout ? photoDetails : null}
+        {photoDetails}
       </DescriptiveMetadataZone>
 
-      <ConversationMetadataZone>
-        {showPublicReactions ? (
-          <PublicMediaItemDetailRailReactions reactionCounts={mediaItem.reactionCounts} />
-        ) : null}
-
-        <CommentsSection $showTopRule={showPublicReactions}>
-          <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} layout="rail" />
-        </CommentsSection>
-      </ConversationMetadataZone>
-
-      {!isMobileLayout ? photoDetails : null}
+      {conversationZone}
     </MetadataPanelStack>
   );
 });
