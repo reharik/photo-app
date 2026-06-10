@@ -1,6 +1,5 @@
 type Mutation {
   createAlbum(input: CreateAlbumInput!): CreateAlbumResponse!
-  AddMediaItemToAlbum(input: AddMediaItemToAlbumInput!): AddMediaItemToAlbumResponse!
   AddMediaItemsToAlbum(input: AddMediaItemsToAlbumInput!): AddMediaItemsToAlbumResponse!
   ReorderAlbumItems(input: ReorderAlbumItemsInput!): ReorderAlbumItemsResponse!
   DeleteAlbumItemsFromAlbum(

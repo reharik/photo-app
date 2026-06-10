@@ -1,4 +1,4 @@
-import { AlbumMemberRole, AppErrorCollection, Operation } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, MediaKind, Operation } from '@packages/contracts';
 import type { ActorId, EntityId, WriteResult } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
@@ -93,12 +93,14 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return max + ALBUM_ITEM_ORDER_GAP;
   }
 
-  addItem(mediaItemId: EntityId, actorId: ActorId): WriteResult<AlbumItem> {
+  addItem(mediaItemId: EntityId, actorId: ActorId, mediaKind: MediaKind): WriteResult<AlbumItem> {
     if (this.#items.some((i) => i.mediaItemId() === mediaItemId)) {
       return fail(AppErrorCollection.album.MediaAlreadyInAlbum);
     }
     // TODO: check various invariants when they exist e.g. is album mutable
-
+    if (mediaKind.equals(MediaKind.photo)) {
+      this.props.coverMediaId = this.props.coverMediaId ?? mediaItemId;
+    }
     const albumItem = AlbumItem.create(
       { mediaItemId, orderIndex: this.nextOrderIndex(), albumId: this.id() },
       actorId,
@@ -184,6 +186,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return fail(AppErrorCollection.album.MediaItemNotInAlbum);
     }
     this.#items = this.#items.filter((i) => !albumItemIds.includes(i.id()));
+    this.props.coverMediaId = !found.some((i) => i.mediaItemId() === this.props.coverMediaId)
+      ? this.props.coverMediaId
+      : null;
     this.#removedItems = [...this.#removedItems, ...found];
     this.touch(actorId);
     return ok(undefined);

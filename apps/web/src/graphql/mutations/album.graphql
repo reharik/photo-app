@@ -9,18 +9,6 @@ mutation CreateAlbum($input: CreateAlbumInput!) {
   }
 }
 
-mutation AddMediaItemToAlbum($input: AddMediaItemToAlbumInput!) {
-  AddMediaItemToAlbum(input: $input) {
-    data {
-      albumId
-      albumItemId
-    }
-    errors {
-      ...errorsFragment
-    }
-  }
-}
-
 mutation AddMediaItemsToAlbum($input: AddMediaItemsToAlbumInput!) {
   AddMediaItemsToAlbum(input: $input) {
     data {

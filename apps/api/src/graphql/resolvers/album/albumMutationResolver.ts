@@ -5,7 +5,6 @@ import type {
   MutationReorderAlbumItemsArgs,
   Resolvers,
 } from '../../generated/types.generated';
-import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const albumResolvers: Pick<Resolvers, 'Mutation'> = {
@@ -19,23 +18,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
 
       return writeResultToPayload(result);
     }),
-    AddMediaItemToAlbum: authenticatedResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.addAlbumItem({
-        viewerId: ctx.viewer.id,
-        albumId: args.input.albumId,
-        mediaItemId: args.input.mediaItemId,
-      });
 
-      return {
-        data: result.success
-          ? {
-              albumId: result.value.albumId,
-              albumItemId: result.value.albumItemId,
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
-    }),
     AddMediaItemsToAlbum: authenticatedResolver(
       async (_parent, args: MutationAddMediaItemsToAlbumArgs, ctx) => {
         const command: AddMediaItemsToAlbumCommand = {

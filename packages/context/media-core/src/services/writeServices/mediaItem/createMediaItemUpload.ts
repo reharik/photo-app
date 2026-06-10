@@ -68,23 +68,24 @@ export const build__CreateMediaItemUpload = ({
       mimeType,
     });
 
-    await runInTransaction(trx, async (db) => {
+    return runInTransaction(trx, async (db) => {
       await mediaItemRepository.save(mediaItem, db);
+      // If albumId is passed that means that we are adding media directly
+      // to the album.
       if (albumId) {
         const album = await albumRepository.getById(albumId, db);
         if (!album) {
           return fail(AppErrorCollection.album.AlbumNotFound);
         }
-        album.addItem(mediaItem.id(), viewerId);
+        album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
         await albumRepository.save(album, db);
       }
-    });
-
-    return ok({
-      mediaItemId: mediaItem.id(),
-      status: mediaItem.status(),
-      uploadTarget,
-      albumId,
+      return ok({
+        mediaItemId: mediaItem.id(),
+        status: mediaItem.status(),
+        uploadTarget,
+        albumId,
+      });
     });
   };
 };

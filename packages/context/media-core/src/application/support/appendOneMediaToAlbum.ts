@@ -27,5 +27,5 @@ export const tryAppendOneMediaToAlbum = (
   if (!r3.success) {
     return r3;
   }
-  return album.addItem(mediaItemId, viewerId);
+  return album.addItem(mediaItemId, viewerId, mediaItem.kind);
 };

@@ -88,7 +88,8 @@ export const AlbumSectionMetadata = ({
     ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
     : undefined;
 
-  const renderCover = () => {
+  const renderCover = (forceCompact?: boolean) => {
+    const compact = forceCompact ?? metaCompact;
     const cover = album.coverMedia ? (
       <CoverImage
         src={coverMediaUrl}
@@ -96,8 +97,8 @@ export const AlbumSectionMetadata = ({
         alt={album.coverMedia?.kind.display ?? ''}
       />
     ) : (
-      <CoverPlaceholder aria-hidden $compact={metaCompact}>
-        <Camera size={metaCompact ? 18 : 28} strokeWidth={1.75} aria-hidden />
+      <CoverPlaceholder aria-hidden $compact={compact}>
+        <Camera size={compact ? 18 : 28} strokeWidth={1.75} aria-hidden />
       </CoverPlaceholder>
     );
     return album.operations.includes(Operation.editCover) ? (
@@ -136,15 +137,18 @@ export const AlbumSectionMetadata = ({
       >
         {showMobileBrowse ? (
           <MobileBrowseHeader>
-            <MobileBrowseTitleRow>
-              <MobileBrowseTitle>{album.title}</MobileBrowseTitle>
-              {headerActions != null ? (
-                <MobileBrowseActions>{headerActions}</MobileBrowseActions>
-              ) : null}
-            </MobileBrowseTitleRow>
-            <MobileBrowseSubtitle>
-              {buildAlbumBrowseSubtitle(count, album.updatedAt)}
-            </MobileBrowseSubtitle>
+            <AlbumCover $compact>{renderCover(true)}</AlbumCover>
+            <MobileBrowseInfo>
+              <MobileBrowseTitleRow>
+                <MobileBrowseTitle>{album.title}</MobileBrowseTitle>
+                {headerActions != null ? (
+                  <MobileBrowseActions>{headerActions}</MobileBrowseActions>
+                ) : null}
+              </MobileBrowseTitleRow>
+              <MobileBrowseSubtitle>
+                {buildAlbumBrowseSubtitle(count, album.updatedAt)}
+              </MobileBrowseSubtitle>
+            </MobileBrowseInfo>
           </MobileBrowseHeader>
         ) : showMobileSelection ? (
           renderSelectionActions()
@@ -267,9 +271,18 @@ const AlbumMeta = styled.div<{
 
 const MobileBrowseHeader = styled.div`
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  width: 100%;
+  min-width: 0;
+`;
+
+const MobileBrowseInfo = styled.div`
+  display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.5)};
-  width: 100%;
+  flex: 1;
   min-width: 0;
 `;
 
