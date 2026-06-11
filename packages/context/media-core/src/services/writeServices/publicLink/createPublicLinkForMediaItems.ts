@@ -60,6 +60,14 @@ export const build__CreatePublicLinkForMediaItems = ({
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);
     }
 
+    const album = Album.create(
+      {
+        title: input.name ?? 'Public Link Album',
+        isPublicLinkAlbum: true,
+      },
+      input.viewerId,
+    );
+
     for (const mediaItemId of mediaItemIds) {
       const loadedMediaItem = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
       if (!loadedMediaItem.success) {
@@ -73,17 +81,9 @@ export const build__CreatePublicLinkForMediaItems = ({
       if (!ownershipResult.success) {
         return ownershipResult;
       }
+      album.addItem(mediaItemId, input.viewerId, loadedMediaItem.value.kind());
     }
-    const album = Album.create(
-      {
-        title: input.name ?? 'Public Link Album',
-        isPublicLinkAlbum: true,
-      },
-      input.viewerId,
-    );
-    mediaItemIds.forEach((x) => {
-      album.addItem(x, input.viewerId);
-    });
+
     await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
     const publicLinkResult = await createPublicLinkForAlbum(
       {

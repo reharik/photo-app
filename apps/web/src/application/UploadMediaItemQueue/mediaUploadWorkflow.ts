@@ -1,6 +1,6 @@
 import type { ApolloClient } from '@apollo/client';
 
-import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus as FUS, MediaKind } from '@packages/contracts';
 import { AppResultFailure, fail, ok, type AppResult } from '../../domain/errors/errorTypes';
 import { executeMutation } from '../../domain/graphql/executeMutation';
 import {
@@ -131,6 +131,20 @@ export const mediaUploadWorkflow = async (
 ): Promise<AppResult<{ mediaItemId: string }>> => {
   try {
     onEvent({ type: FUS.creating });
+
+    const classified = resolveUploadFileClassification(file);
+    if (classified?.kind.equals(MediaKind.video)) {
+      const result = fail([FrontendError.videoNotSupported]);
+      if (!result.success) {
+        onEvent({
+          type: FUS.failed,
+          stage: FUS.creating,
+          errors: result.errors,
+        });
+      }
+      return result;
+    }
+
     const created = await createMediaUpload(client, file, albumId);
     if (!created.success) {
       onEvent({

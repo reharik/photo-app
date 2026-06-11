@@ -37,6 +37,13 @@ const frontendErrorInput = {
     retryable: false,
     source: 'frontend',
   },
+  videoNotSupported: {
+    code: 'VIDEO_NOT_SUPPORTED',
+    message: 'Videos aren’t supported yet — photos only.',
+    category: ErrorCategory.validation,
+    retryable: false,
+    source: 'frontend',
+  },
 } as const;
 export type FrontendError = Enumeration<typeof FrontendError>;
 export const FrontendError = enumeration<typeof frontendErrorInput>('FrontendError', {
