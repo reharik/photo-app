@@ -1,41 +1,51 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { BrandedLoading } from './public/BrandedLoading';
+import { PublicUnavailable } from './public/PublicUnavailable';
 import { PublicAlbumScreen } from './PublicAlbumScreen';
 
+type HandshakeStatus = 'pending' | 'success' | 'failure';
+
+const HANDSHAKE_MIN_DISPLAY_MS = 800;
+
 export const PublicAccessScreen = () => {
-  const [error, setError] = useState<string | undefined>();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [status, setStatus] = useState<HandshakeStatus>('pending');
   const auth = useAuth();
   const { token } = useParams<{ token: string }>();
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setStatus('failure');
+      return;
+    }
 
-    void Promise.all([
-      auth
-        .publicAccess(token)
-        .then((result) => {
-          if (!result.success) {
-            setError(result.error);
-            return;
-          }
-          setIsAuthenticated(true);
-        })
-        .catch((error) => {
-          setError(error instanceof Error ? error.message : 'Public access failed');
+    setStatus('pending');
+
+    void (async () => {
+      const [result] = await Promise.all([
+        auth.publicAccess(token).catch(() => ({ success: false as const })),
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, HANDSHAKE_MIN_DISPLAY_MS);
         }),
-      new Promise((resolve) => setTimeout(resolve, 800)),
-    ]);
+      ]);
+
+      if (!result.success) {
+        setStatus('failure');
+        return;
+      }
+
+      setStatus('success');
+    })();
   }, [auth, token]);
 
-  if (error != undefined) {
-    return <p role="alert">{error}</p>;
+  if (status === 'failure') {
+    return <PublicUnavailable />;
   }
 
-  if (isAuthenticated) {
+  if (status === 'success') {
     return <PublicAlbumScreen />;
   }
 
-  return null;
+  return <BrandedLoading />;
 };

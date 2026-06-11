@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
+import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 import { Toast } from '../ui/Toast';
 
 export const PublicAlbumScreen = () => {
@@ -35,7 +36,7 @@ export const PublicAlbumScreen = () => {
     query,
     select: (data) => {
       if (!data.publicAccess?.album) {
-        throw new Error('Album not found');
+        return undefined;
       }
 
       const { items, ...album } = data.publicAccess.album;
@@ -49,15 +50,19 @@ export const PublicAlbumScreen = () => {
   });
 
   if (!data) {
-    return content;
+    const isAlbumUnavailable =
+      query.data != null && query.data.publicAccess?.album == null;
+
+    return resolvePublicQueryView({
+      query,
+      content,
+      isUnavailable: isAlbumUnavailable,
+    });
   }
 
   const album = data.album;
   const albumItems = data.nodes ?? [];
   const totalCount = data.totalCount ?? 0;
-  if (!data) {
-    return content;
-  }
   if (albumItems.length === 1) {
     return <Navigate to={`/shared/${token}/media/${albumItems[0]?.mediaItem?.id}`} replace />;
   }

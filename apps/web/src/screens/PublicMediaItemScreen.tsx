@@ -20,6 +20,7 @@ import type {
 import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { Toast } from '../ui/Toast';
+import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 
 export type MediaItemLocationState = {
   mediaGalleryIds?: string[];
@@ -144,10 +145,16 @@ export const PublicMediaItemScreen = () => {
     ) : null;
 
   if (!mediaItem) {
+    const isMediaUnavailable = query.data != null && query.data.publicAccess?.mediaItem == null;
+
     return (
       <>
         {neighborPrefetch}
-        {content}
+        {resolvePublicQueryView({
+          query,
+          content,
+          isUnavailable: isMediaUnavailable,
+        })}
       </>
     );
   }

@@ -190,6 +190,10 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   if (( ${#RECREATE_SERVICES[@]} == 0 )); then
     echo "No changed backend services; skipping docker compose recreate"
   else
+    if printf '%s\n' "${RECREATE_SERVICES[@]}" | grep -qx "api"; then
+      echo "Backend recreating → pre-migration safety dump"
+      /usr/local/bin/betaname-backup.sh pre-migration
+    fi
     echo "Recreating compose services: ${RECREATE_SERVICES[*]}"
     if docker compose version >/dev/null 2>&1; then
       sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d \

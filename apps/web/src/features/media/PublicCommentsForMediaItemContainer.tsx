@@ -15,7 +15,7 @@ export type PublicCommentsForMediaItemContainerProps = {
 export const PublicCommentsForMediaItemContainer = ({
   mediaItemId,
   layout = 'default',
-}: PublicCommentsForMediaItemContainerProps): JSX.Element => {
+}: PublicCommentsForMediaItemContainerProps): JSX.Element | null => {
   const query = useQuery(CommentsForPublicMediaItemDocument, {
     variables: { mediaItemId, limit: PAGE_SIZE, offset: 0 },
     fetchPolicy: 'cache-first',
@@ -23,13 +23,18 @@ export const PublicCommentsForMediaItemContainer = ({
     context: { accessMode: 'public' },
   });
 
-  const { data, content } = getQueryRenderState({
+  const { data } = getQueryRenderState({
     query,
     select: (data) => data.publicAccess?.mediaItem?.comments,
   });
   const comments = data?.nodes ?? [];
+
+  if (query.error != null) {
+    return null;
+  }
+
   if (!comments) {
-    return <>{content}</>;
+    return null;
   }
   return (
     <Root>

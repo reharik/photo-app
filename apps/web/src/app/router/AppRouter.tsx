@@ -8,13 +8,28 @@ import { MediaItemScreen } from '../../screens/MediaItemScreen';
 import { PublicAccessScreen } from '../../screens/PublicAccessScreen';
 import { PublicMediaItemScreen } from '../../screens/PublicMediaItemScreen';
 import { SharedWithMeScreen } from '../../screens/SharedWithMeScreen';
+import { PublicRouteShell } from '../PublicRouteShell';
 import { RequireViewer } from '../RequireViewer';
 
 export const AppRouter = () => {
   return (
     <Routes>
-      <Route path="/shared/:token" element={<PublicAccessScreen />} />
-      <Route path="/shared/:token/media/:mediaId" element={<PublicMediaItemScreen />} />
+      <Route
+        path="/shared/:token"
+        element={
+          <PublicRouteShell>
+            <PublicAccessScreen />
+          </PublicRouteShell>
+        }
+      />
+      <Route
+        path="/shared/:token/media/:mediaId"
+        element={
+          <PublicRouteShell>
+            <PublicMediaItemScreen />
+          </PublicRouteShell>
+        }
+      />
       <Route path="/login" element={<LoggedOutScreen />} />
       <Route element={<RequireViewer />}>
         <Route element={<AppShell />}>

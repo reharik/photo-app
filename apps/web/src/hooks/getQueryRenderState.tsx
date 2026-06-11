@@ -51,23 +51,9 @@ export function getQueryRenderState<TQuery extends QueryLike, TSelected, TMapped
       data: undefined,
       content: (
         <QueryErrorState
-          error={{
-            name: 'ApolloError',
-            message: 'Response not successful: Received status code 500',
-            graphQLErrors: [
-              {
-                message: 'Internal server error',
-                path: ['viewer', 'albums'],
-                extensions: {
-                  code: 'INTERNAL_SERVER_ERROR',
-                },
-              },
-            ],
-            networkError: {
-              name: 'ServerError',
-              message: 'Response not successful: Received status code 500',
-              statusCode: 500,
-            },
+          error={query.error}
+          onRetry={() => {
+            void query.refetch();
           }}
         />
       ),

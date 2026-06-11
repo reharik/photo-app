@@ -27,7 +27,7 @@ export const usePaginatedQueryRenderState = <
   buildPageVariables,
 }: {
   query: QueryLike<TQuery>;
-  select: (data: TQuery) => TSelected;
+  select: (data: TQuery) => TSelected | undefined;
   buildPageVariables: (offset: number) => OperationVariables;
 }): PagingStateResult<TSelected> => {
   const base = getQueryRenderState({ query, select });
