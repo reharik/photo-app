@@ -1,12 +1,12 @@
-import { MediaKind } from '@packages/contracts';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import styled from 'styled-components';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
 import { AlbumSummaryVM } from '../../viewModels/';
-import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
-import { MediaGrid, type GridMediaItem } from '../media/grid/MediaGrid';
+import { ALBUM_LIST_COLUMNS } from '../media/grid/gridColumns';
+import { MediaGrid } from '../media/grid/MediaGrid';
 import type { MultiSelectProps } from '../media/grid/types';
+import { AlbumTile } from './AlbumTile';
 import { CreateAlbumModal } from './CreateAlbumModal';
 
 const noopMultiSelect: MultiSelectProps = {
@@ -28,30 +28,6 @@ export const AlbumListSection = ({
   submitCreateAlbum,
 }: AlbumListSectionProps) => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
-
-  const buildAlbumTileHref = useCallback(
-    (displayId: string): string => {
-      const album =
-        nodes.find((node) => node.coverMedia?.id === displayId) ??
-        nodes.find((node) => node.id === displayId);
-      return album != null ? `/albums/${album.id}` : '/albums';
-    },
-    [nodes],
-  );
-
-  const toAlbumDisplayable = useCallback((album: AlbumSummaryVM): GridMediaItem => {
-    if (album.coverMedia != null) {
-      return album.coverMedia;
-    }
-    return {
-      id: album.id,
-      kind: MediaKind.photo,
-      title: album.title,
-      reactionCounts: { total: 0, byEmoji: [] },
-      operations: album.operations,
-      hasThumbnail: false,
-    };
-  }, []);
 
   const closeCreate = () => {
     setCreateModalOpen(false);
@@ -92,15 +68,13 @@ export const AlbumListSection = ({
           <GridWrap>
             <MediaGrid
               nodes={nodes}
-              toDisplayable={toAlbumDisplayable}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}
               selectable={false}
               selectionActive={false}
-              columnCounts={LIBRARY_GRID_COLUMNS}
+              columnCounts={ALBUM_LIST_COLUMNS}
               groupBy="none"
-              buildTileHref={buildAlbumTileHref}
-              canReact={false}
+              renderItem={(album) => <AlbumTile album={album} />}
             />
           </GridWrap>
         )}

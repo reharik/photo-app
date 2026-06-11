@@ -5,6 +5,7 @@ import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
+import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
 
 const noopMultiSelect: MultiSelectProps = {
@@ -42,15 +43,21 @@ export const SharedWithMeSection = ({
           <GridWrap>
             <MediaGrid
               nodes={sharedWithMeMediaItems}
-              toDisplayable={(item) => item.mediaItem}
+              getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}
               selectable={false}
               selectionActive={false}
               columnCounts={LIBRARY_GRID_COLUMNS}
               groupBy="none"
-              canReact
-              onReactionsRefetch={reloadData}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item.mediaItem}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact
+                  onReactionsRefetch={reloadData}
+                />
+              )}
             />
           </GridWrap>
         )}

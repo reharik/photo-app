@@ -4,6 +4,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { PICKER_GRID_COLUMNS } from './grid/gridColumns';
 import { MediaGrid } from './grid/MediaGrid';
+import { MediaGridTile } from './grid/MediaGridTile';
 import { MediaPickerSelectionBar } from './MediaPickerSelectionBar';
 
 type MediaSelectorSectionProps = {
@@ -53,9 +54,15 @@ export const MediaSelectorSection = ({ nodes, header, onAddToAlbum }: MediaSelec
               dimUnselectedTiles={selectionCount > 0}
               columnCounts={PICKER_GRID_COLUMNS}
               groupBy="none"
-              tileFit="contain"
-              disableTileNavigation
-              canReact={false}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact={false}
+                  tileFit="contain"
+                  disableTileNavigation
+                />
+              )}
             />
           </GridWrap>
         )}

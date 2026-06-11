@@ -8,6 +8,7 @@ import { PublicAlbumItemSummaryVM, PublicAlbumSummaryVM } from '../../viewModels
 import { AlbumSectionMetadata } from '../albums/AlbumSectionMetadata';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
+import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
@@ -75,15 +76,21 @@ export const PublicAlbumSection = ({
           <GridWrap>
             <MediaGrid
               nodes={albumItems}
-              toDisplayable={(item) => item.mediaItem}
+              getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_GRID_COLUMNS}
               groupBy="none"
-              buildTileHref={buildTileHref}
-              canReact={false}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item.mediaItem}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact={false}
+                  buildTileHref={buildTileHref}
+                />
+              )}
             />
           </GridWrap>
         )}

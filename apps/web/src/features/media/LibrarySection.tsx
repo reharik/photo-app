@@ -27,6 +27,7 @@ import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 import { LIBRARY_GRID_COLUMNS } from './grid/gridColumns';
 import { MediaGrid } from './grid/MediaGrid';
+import { MediaGridTile } from './grid/MediaGridTile';
 import {
   LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT,
   LibrarySelectionToolbar,
@@ -195,9 +196,15 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
               selectionActive={selectionCount > 0}
               columnCounts={LIBRARY_GRID_COLUMNS}
               groupBy="date"
-              handleTileNavigate={handleTileNavigate}
-              canReact
-              onReactionsRefetch={reloadData}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact
+                  onReactionsRefetch={reloadData}
+                  onBeforeNavigate={handleTileNavigate}
+                />
+              )}
             />
           </GridWrap>
         )}

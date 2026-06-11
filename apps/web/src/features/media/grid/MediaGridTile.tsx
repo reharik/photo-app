@@ -13,15 +13,19 @@ const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
 const placeholderIconForKind = (kind: MediaKind): string =>
   kind.equals(MediaKind.photo) ? '🖼️' : '🎬';
 
-export type MediaGridTileProps = {
-  mediaGalleryIds: string[];
+export type MediaGridTileItem = {
+  id: string;
   kind: MediaKind;
   title?: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
+};
+
+export type MediaGridTileProps = {
+  item: MediaGridTileItem;
+  mediaGalleryIds: string[];
   canReact?: boolean;
   onReactionsRefetch?: () => void;
-  itemId: string;
   onBeforeNavigate?: (itemId: string) => void;
   /** Future burst detection at media ingest; always undefined until then. */
   burstCount?: number;
@@ -35,14 +39,10 @@ export type MediaGridTileProps = {
 };
 
 export const MediaGridTile = ({
+  item,
   mediaGalleryIds,
-  kind,
-  title,
-  reactionCounts,
-  viewerReactions,
   canReact = false,
   onReactionsRefetch,
-  itemId,
   burstCount,
   tileFit = 'cover',
   disableTileNavigation = false,
@@ -53,16 +53,17 @@ export const MediaGridTile = ({
   const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const showBurstBadge = burstCount != null && burstCount > 1;
   const isContain = tileFit === 'contain';
-  const to = buildTileHref(itemId);
-  const thumbnailUrl = buildMediaItemUrl(itemId, MediaAssetKind.thumbnail);
+  const to = buildTileHref(item.id);
+  const thumbnailUrl = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   /** Used for data-testid on the thumbnail. */
-  const testId = itemId;
-  const placeholderIcon = placeholderIconForKind(kind);
-  const showThumbnailImage = kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
+  const testId = item.id;
+  const placeholderIcon = placeholderIconForKind(item.kind);
+  const showThumbnailImage =
+    item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
 
   useEffect(() => {
     setThumbLoadFailed(false);
-  }, [itemId, hasThumbnail, thumbnailUrl]);
+  }, [item.id, hasThumbnail, thumbnailUrl]);
 
   const thumbContent = (
     <>
@@ -70,7 +71,7 @@ export const MediaGridTile = ({
         <ThumbImage
           src={thumbnailUrl}
           data-testid={testId}
-          alt={title?.trim() ?? ''}
+          alt={item.title?.trim() ?? ''}
           $contain={isContain}
           onError={() => setThumbLoadFailed(true)}
         />
@@ -86,9 +87,9 @@ export const MediaGridTile = ({
         </BurstBadge>
       ) : null}
       <MediaGridTileReactionPill
-        itemId={itemId}
-        reactionCounts={reactionCounts}
-        viewerReactions={viewerReactions}
+        itemId={item.id}
+        reactionCounts={item.reactionCounts}
+        viewerReactions={item.viewerReactions}
         canReact={canReact}
         buildTileHref={buildTileHref}
         onReactionsRefetch={onReactionsRefetch}
@@ -96,7 +97,8 @@ export const MediaGridTile = ({
     </>
   );
 
-  const handleActivate = onBeforeNavigate != null ? () => onBeforeNavigate(itemId) : undefined;
+  const handleActivate =
+    onBeforeNavigate != null ? () => onBeforeNavigate(item.id) : undefined;
 
   return (
     <TileRoot>
@@ -113,7 +115,7 @@ export const MediaGridTile = ({
           to={to}
           state={{ mediaGalleryIds }}
           $contain={isContain}
-          onClick={() => (onBeforeNavigate ? onBeforeNavigate(itemId) : undefined)}
+          onClick={() => (onBeforeNavigate ? onBeforeNavigate(item.id) : undefined)}
         >
           {thumbContent}
         </ThumbLink>

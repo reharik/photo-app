@@ -10,6 +10,7 @@ import { formatActivityDate } from '../../ui/dateDisplay';
 import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { PICKER_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
+import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 import { AlbumSelectionActions } from './AlbumSelectionActions';
@@ -208,17 +209,23 @@ export const AlbumSectionMetadata = ({
             <CoverPickerGridWrap>
               <MediaGrid
                 nodes={albumItems}
-                toDisplayable={(item) => item.mediaItem}
+                getMediaItem={(item) => item.mediaItem}
                 multiSelectProps={noopMultiSelect}
                 selectableActions={[]}
                 selectable={false}
                 selectionActive={false}
                 columnCounts={PICKER_GRID_COLUMNS}
                 groupBy="none"
-                tileFit="contain"
-                disableTileNavigation
-                canReact={false}
-                handleTileNavigate={handleCoverTileClick}
+                renderItem={(item, ctx) => (
+                  <MediaGridTile
+                    item={item.mediaItem}
+                    mediaGalleryIds={ctx.mediaGalleryIds}
+                    canReact={false}
+                    tileFit="contain"
+                    disableTileNavigation
+                    onBeforeNavigate={handleCoverTileClick}
+                  />
+                )}
               />
             </CoverPickerGridWrap>
           ) : null}

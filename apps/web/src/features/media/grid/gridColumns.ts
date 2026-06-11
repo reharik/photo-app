@@ -13,6 +13,14 @@ export const LIBRARY_GRID_COLUMNS: MediaGridColumnCounts = { mobile: 3, tablet: 
 /** Album / public album — embedded scroll with metadata header. */
 export const ALBUM_GRID_COLUMNS: MediaGridColumnCounts = { mobile: 2, tablet: 3, desktop: 3 };
 
+/**
+ * Album LIST page — roomier tiles so each album card has space for its
+ * title + meta caption and reads as a container, not a photo thumbnail.
+ * Intentionally wider than ALBUM_GRID_COLUMNS (the in-album photo grid,
+ * which packs photos tighter).
+ */
+export const ALBUM_LIST_COLUMNS: MediaGridColumnCounts = { mobile: 2, tablet: 2, desktop: 3 };
+
 /** Add-to-album modal picker. */
 export const PICKER_GRID_COLUMNS: MediaGridColumnCounts = { mobile: 4, tablet: 4, desktop: 5 };
 

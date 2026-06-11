@@ -1,75 +1,55 @@
-import { MediaKind } from '@packages/contracts';
-import { useMemo } from 'react';
+import { DateTime } from 'luxon';
+import { useMemo, type ReactNode } from 'react';
 import styled from 'styled-components';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
-import type {
-  MediaItemSummaryVM,
-  ReactionCountsVM,
-  ViewerReactionVM,
-  ViewableItemVM,
-} from '../../../viewModels/';
+import type { MediaItemSummaryVM, ViewableItemVM } from '../../../viewModels/';
 import { bucketMediaByDate } from './bucketMediaByDate';
-import { type MediaGridColumnCounts, mediaGridColumnStyles } from './gridColumns';
+import { mediaGridColumnStyles, type MediaGridColumnCounts } from './gridColumns';
 import { MediaGridDateSection } from './MediaGridDateSection';
 import { MediaGridSelectableItem } from './MediaGridSelectableItem';
-import { MediaGridTile, type MediaGridTileFit } from './MediaGridTile';
 import type { MultiSelectProps } from './types';
 
 export type MediaGridGroupBy = 'date' | 'none';
 
 export type GridMediaItem = {
   id: string;
-  kind: MediaKind;
-  title?: string;
-  reactionCounts: ReactionCountsVM;
-  viewerReactions?: ViewerReactionVM[];
-  /** When false, tile shows the kind placeholder instead of fetching a thumbnail. */
-  hasThumbnail?: boolean;
-} & ViewableItemVM;
+  createdAt?: DateTime;
+};
+
+export type MediaGridRenderContext = {
+  mediaGalleryIds: string[];
+};
 
 type MediaGridProps<T extends ViewableItemVM> = {
   nodes: T[];
-  toDisplayable?: (item: T) => GridMediaItem;
+  getMediaItem?: (item: T) => GridMediaItem | undefined;
+  renderItem: (item: T, ctx: MediaGridRenderContext) => ReactNode;
   multiSelectProps: MultiSelectProps;
   selectableActions?: GalleryActionItems[];
   selectable?: boolean;
   selectionActive: boolean;
   columnCounts: MediaGridColumnCounts;
-  /** Date grouping uses `createdAt` on `MediaItemSummaryVM` nodes only. */
+  /** Date grouping uses `createdAt` from `getMediaItem(item)` when `groupBy` is `"date"`. */
   groupBy?: MediaGridGroupBy;
-  handleTileNavigate?: (itemId: string) => void;
-  tileFit?: MediaGridTileFit;
-  disableTileNavigation?: boolean;
   /** When true, unselected tiles render subdued (e.g. after first selection in library). */
   dimUnselectedTiles?: boolean;
-  /** Tile link target; defaults to authed `/media/{id}`. */
-  buildTileHref?: (itemId: string) => string;
-  /** When true, desktop hover pill toggles heart and comment navigates to detail. */
-  canReact?: boolean;
-  /** Refetch list data after a successful reaction mutation. */
-  onReactionsRefetch?: () => void;
 };
 
 export const MediaGrid = <T extends ViewableItemVM>({
   nodes,
-  toDisplayable = (item: T) => item as unknown as GridMediaItem,
+  getMediaItem = (item: T) => item,
+  renderItem,
   multiSelectProps,
   selectableActions = [],
   selectable = true,
   selectionActive,
   columnCounts,
   groupBy = 'none',
-  handleTileNavigate,
-  tileFit = 'cover',
-  disableTileNavigation = false,
   dimUnselectedTiles = false,
-  buildTileHref,
-  canReact = false,
-  onReactionsRefetch,
 }: MediaGridProps<T>) => {
   const orderedMediaIds = useMemo(
-    () => nodes.map((x) => toDisplayable(x).id),
-    [nodes, toDisplayable],
+    () => nodes.map((node) => getMediaItem(node)?.id).filter((id): id is string => id != null),
+    [nodes, getMediaItem],
   );
   const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
   const renderTiles = (items: T[]) => (
@@ -80,11 +60,12 @@ export const MediaGrid = <T extends ViewableItemVM>({
         const hasActions = selectableActions.some(
           (action) => action.operation == null || item.operations?.includes(action.operation),
         );
-        const mediaItem = toDisplayable(item);
+        const mediaItem = getMediaItem(item);
         return (
           <MediaGridSelectableItem
             key={selectionId}
-            itemId={mediaItem.id}
+            // Albums return no media item; fall back to the item's own id.
+            itemId={mediaItem?.id ?? item.id}
             selectable={selectable && hasActions}
             selectionActive={selectionActive}
             isSelected={multiSelectProps.isSelected(selectionId)}
@@ -96,21 +77,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
             selectableActions={selectableActions}
             dimUnselectedTiles={dimUnselectedTiles}
           >
-            <MediaGridTile
-              mediaGalleryIds={orderedMediaIds}
-              kind={mediaItem.kind}
-              title={mediaItem.title}
-              reactionCounts={mediaItem.reactionCounts}
-              viewerReactions={mediaItem.viewerReactions}
-              hasThumbnail={mediaItem.hasThumbnail}
-              canReact={canReact}
-              onReactionsRefetch={onReactionsRefetch}
-              itemId={mediaItem.id}
-              onBeforeNavigate={handleTileNavigate}
-              tileFit={tileFit}
-              disableTileNavigation={disableTileNavigation}
-              buildTileHref={buildTileHref}
-            />
+            {renderItem(item, { mediaGalleryIds: orderedMediaIds })}
           </MediaGridSelectableItem>
         );
       })}
@@ -118,8 +85,18 @@ export const MediaGrid = <T extends ViewableItemVM>({
   );
 
   if (groupBy === 'date') {
-    // Date buckets require MediaItemSummaryVM (library). Other views use groupBy="none".
-    const dateSections = bucketMediaByDate(nodes as unknown as MediaItemSummaryVM[]);
+    type DateBucketProxy = MediaItemSummaryVM & { __node: T };
+
+    const bucketProxies: DateBucketProxy[] = [];
+    for (const node of nodes) {
+      const createdAt = getMediaItem(node)?.createdAt;
+      if (createdAt == null || !createdAt.isValid) {
+        continue;
+      }
+      bucketProxies.push({ createdAt, __node: node } as DateBucketProxy);
+    }
+
+    const dateSections = bucketMediaByDate(bucketProxies);
 
     return (
       <GridRoot>
@@ -130,7 +107,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
             subtitle={section.subtitle}
             location={section.location}
           >
-            {renderTiles(section.items as unknown as T[])}
+            {renderTiles(section.items.map((proxy) => (proxy as DateBucketProxy).__node))}
           </MediaGridDateSection>
         ))}
       </GridRoot>

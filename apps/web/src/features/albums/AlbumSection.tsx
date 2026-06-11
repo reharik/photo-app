@@ -16,6 +16,7 @@ import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
+import { MediaGridTile } from '../media/grid/MediaGridTile';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
@@ -207,14 +208,20 @@ export const AlbumSection = ({
           <GridWrap>
             <MediaGrid
               nodes={albumItems}
-              toDisplayable={(item) => item.mediaItem}
+              getMediaItem={(item) => item.mediaItem}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
               columnCounts={ALBUM_GRID_COLUMNS}
               groupBy="none"
-              canReact
-              onReactionsRefetch={reloadData}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item.mediaItem}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact
+                  onReactionsRefetch={reloadData}
+                />
+              )}
             />
           </GridWrap>
         )}
