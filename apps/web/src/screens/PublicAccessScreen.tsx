@@ -7,7 +7,7 @@ import { PublicAlbumScreen } from './PublicAlbumScreen';
 
 type HandshakeStatus = 'pending' | 'success' | 'failure';
 
-const HANDSHAKE_MIN_DISPLAY_MS = 800;
+const HANDSHAKE_MIN_DISPLAY_MS = 1000;
 
 export const PublicAccessScreen = () => {
   const [status, setStatus] = useState<HandshakeStatus>('pending');

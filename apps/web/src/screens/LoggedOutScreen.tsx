@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { APP_NAME, APP_TAGLINE } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
 import { FormInput } from '../ui/FormInput';
 
@@ -42,10 +43,8 @@ export const LoggedOutScreen = () => {
       <ContentWrapper>
         <LeftPanel>
           <BrandSection>
-            <BrandTitle>Family Media</BrandTitle>
-            <BrandTagline>
-              A private, secure place to share and preserve your family memories
-            </BrandTagline>
+            <BrandTitle>{APP_NAME}</BrandTitle>
+            <BrandTagline>{APP_TAGLINE}</BrandTagline>
           </BrandSection>
           <FeatureList>
             <Feature>
