@@ -123,7 +123,7 @@ export type SharedWithMeAlbumProjection = {
   id: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
-  mediaItem: MediaItemProjection;
+  album: AlbumProjection;
 };
 
 export type Reactor = {

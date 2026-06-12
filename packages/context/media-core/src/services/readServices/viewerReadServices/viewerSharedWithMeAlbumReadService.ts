@@ -6,38 +6,31 @@ import {
 import { ReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {
-  AlbumItemCollectionInfo,
-  AlbumItemProjection,
   AlbumProjection,
+  AlbumWithCoverRow,
   MediaItemProjection,
   PagedList,
   SharedWithMeAlbumCollectionInfo,
+  SharedWithMeAlbumProjection,
 } from '../types';
-import { ViewerAlbumReadService } from './viewerAlbumReadService';
 
 export interface ViewerSharedWithMeAlbumReadService extends ReadServiceBase {
   listAlbums: (
     collectionInfo: SharedWithMeAlbumCollectionInfo,
-  ) => Promise<PagedList<AlbumProjection>>;
-  getAlbum: (albumId: string) => Promise<AlbumProjection | undefined>;
-  getViewableAlbumItems: (args: {
-    albumId: string;
-    collectionInfo: AlbumItemCollectionInfo;
-  }) => Promise<PagedList<AlbumItemProjection>>;
+  ) => Promise<PagedList<SharedWithMeAlbumProjection>>;
+  getAlbum: (albumId: string) => Promise<SharedWithMeAlbumProjection | undefined>;
 }
 
 type ViewerSharedWithMeAlbumReadServiceDeps = {
   sharedWithMeReadRepository: SharedWithMeReadRepository;
-  viewerAlbumReadService: ViewerAlbumReadService;
   viewerId: string;
 };
 
 export const build__ViewerSharedWithMeAlbumReadService = ({
   sharedWithMeReadRepository,
-  viewerAlbumReadService,
   viewerId,
 }: ViewerSharedWithMeAlbumReadServiceDeps): ViewerSharedWithMeAlbumReadService => {
-  const buildCover = (album: SharedAlbumRow) => {
+  const buildCover = (album: AlbumWithCoverRow) => {
     if (album.mediaItemId == null) {
       return undefined;
     }
@@ -55,39 +48,51 @@ export const build__ViewerSharedWithMeAlbumReadService = ({
     };
   };
 
+  const buildAlbumProjection = (
+    album: AlbumWithCoverRow,
+    coverMedia: MediaItemProjection | undefined,
+  ): AlbumProjection => ({
+    id: album.id,
+    title: album.title,
+    itemCount: album.itemCount,
+    createdAt: album.createdAt,
+    updatedAt: album.updatedAt,
+    viewerMemberRole: album.viewerMemberRole,
+    coverMedia,
+    operations: album.viewerMemberRole?.operations ?? [],
+  });
+
+  const buildSharedAlbumProjection = (row: SharedAlbumRow): SharedWithMeAlbumProjection => {
+    const coverMedia = buildCover(row);
+    return {
+      id: row.grantId,
+      sharedAt: row.sharedAt,
+      sharedBy: row.sharedBy,
+      album: buildAlbumProjection(row, coverMedia),
+    };
+  };
+
   return {
     listAlbums: async (
       collectionInfo: SharedWithMeAlbumCollectionInfo,
-    ): Promise<PagedList<AlbumProjection>> => {
+    ): Promise<PagedList<SharedWithMeAlbumProjection>> => {
       const albumsResult = await sharedWithMeReadRepository.getAlbumsSharedWithMe({
         viewerId,
         collectionInfo,
       });
-      const coversMap = new Map<string, MediaItemProjection>();
-      for (const album of albumsResult.nodes.filter((a) => a.mediaItemId != null)) {
-        const cover = buildCover(album);
-        if (cover) {
-          coversMap.set(album.id, cover);
-        }
-      }
-      const nodes = albumsResult.nodes.map((album) => ({
-        id: album.albumId,
-        title: album.albumTitle,
-        itemCount: album.albumItemCount,
-        createdAt: album.albumCreatedAt,
-        updatedAt: album.albumUpdatedAt,
-        viewerMemberRole: album.viewerMemberRole,
-        coverMedia: coversMap.get(album.id),
-        operations: album.viewerMemberRole?.operations ?? [],
-      }));
 
       return {
-        nodes,
+        nodes: albumsResult.nodes.map(buildSharedAlbumProjection),
         totalCount: albumsResult.totalCount,
       };
     },
 
-    getAlbum: viewerAlbumReadService.getAlbum,
-    getViewableAlbumItems: viewerAlbumReadService.getViewableAlbumItems,
+    getAlbum: async (albumId: string): Promise<SharedWithMeAlbumProjection | undefined> => {
+      const row = await sharedWithMeReadRepository.getAlbumSharedWithMe({ albumId, viewerId });
+      if (!row) {
+        return undefined;
+      }
+      return buildSharedAlbumProjection(row);
+    },
   };
 };

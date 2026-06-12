@@ -31,18 +31,20 @@ export const build__ViewerSharedWithMeMediaItemReadService = ({
         viewerId,
         collectionInfo,
       });
-      const sharedWithMeMediaItems = rows.nodes.map(mapMediaItemRowToDBMediaItemRow);
-      const mediaItems = await enrichMediaItems.enrich(viewerId, sharedWithMeMediaItems);
-      const mediaItemsMap = indexByUnique(mediaItems);
-      const items = rows.nodes.map((sharedItem) => ({
-        id: sharedItem.id,
+      const dbMediaItems = rows.nodes.map(mapMediaItemRowToDBMediaItemRow);
+
+      const enrichedMediaItems = await enrichMediaItems.enrich(viewerId, dbMediaItems);
+      const mediaItemsMap = indexByUnique(enrichedMediaItems);
+
+      const nodes = rows.nodes.map((sharedItem) => ({
+        id: sharedItem.grantId,
         sharedAt: sharedItem.sharedAt,
         sharedBy: sharedItem.sharedBy,
-        operations: [],
         mediaItem: mediaItemsMap.get(sharedItem.mediaItemId)!,
       }));
+
       return {
-        nodes: items,
+        nodes,
         totalCount: rows.totalCount,
       };
     },

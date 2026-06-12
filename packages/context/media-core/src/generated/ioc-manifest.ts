@@ -1168,7 +1168,7 @@ export const iocManifest = {
         moduleIndex: 33,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['SharedWithMeReadRepository', 'ViewerAlbumReadService'],
+        dependencyContractNames: ['SharedWithMeReadRepository'],
       },
     },
     ViewerSharedWithMeMediaItemReadService: {
