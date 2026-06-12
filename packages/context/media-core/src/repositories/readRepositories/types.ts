@@ -214,22 +214,16 @@ export type ShareContactRepository = {
 };
 
 export type SharedWithMeMediaItemRow = NamespacedMediaItemRow & {
-  id: string;
+  grantId: EntityId;
   sharedBy: EntityId;
   sharedAt: Date;
 };
 
 export type SharedAlbumRow = {
-  id: string;
-  albumId: string;
-  albumTitle: string;
-  albumItemCount: number;
-  albumCreatedAt: Date;
-  albumUpdatedAt: Date;
-  viewerMemberRole?: AlbumMemberRole;
-  sharedBy: EntityId;
+  grantId: EntityId;
   sharedAt: Date;
-} & NamespacedMediaItemRow; // cover item
+  sharedBy: EntityId;
+} & AlbumWithCoverRow;
 
 export type SharedWithMeReadRepository = {
   getMediaItemsSharedWithMe: ({
@@ -246,6 +240,13 @@ export type SharedWithMeReadRepository = {
     viewerId: EntityId;
     collectionInfo: SharedWithMeAlbumCollectionInfo;
   }) => Promise<PagedList<SharedAlbumRow>>;
+  getAlbumSharedWithMe: ({
+    viewerId,
+    albumId,
+  }: {
+    viewerId: EntityId;
+    albumId: string;
+  }) => Promise<SharedAlbumRow | undefined>;
 };
 
 export type MediaItemTagRow = {
