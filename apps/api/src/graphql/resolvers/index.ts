@@ -22,6 +22,7 @@ import reactionMutationResolvers from './reactions/reactionMutationResolver.js';
 import { reactorResolvers } from './reactors/reactorResolver.js';
 import publicAccessResolver from './root/publicAccessResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
+import sharedWithMeResolvers from './sharedWithMe/sharedWithMeResolver.js';
 
 /**
  * Resolvers must be registered with static imports so the Vite production bundle includes them.
@@ -43,4 +44,5 @@ export const resolvers = mergeResolvers([
   publicMediaItemResolver,
   publicAlbumResolver,
   viewerResolvers,
+  sharedWithMeResolvers,
 ]);
