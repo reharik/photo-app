@@ -33,10 +33,7 @@ export const SharedWithMeScreen = () => {
   } = usePaginatedQueryRenderState({
     query,
     select: (data) => ({
-      nodes: (data?.viewer?.sharedWithMeMediaItems?.nodes ?? []).map((x) => ({
-        ...x,
-        operations: [],
-      })),
+      nodes: data?.viewer?.sharedWithMeMediaItems?.nodes ?? [],
       totalCount: data?.viewer?.sharedWithMeMediaItems?.totalCount ?? 0,
     }),
     buildPageVariables,
