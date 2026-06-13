@@ -1,26 +1,178 @@
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { AnchoredMenu } from '../../ui/AnchoredMenu';
+
+export type NavigationChildItem = {
+  label: string;
+  to: string;
+  activePaths?: string[];
+};
 
 export type NavigationLinkItem = {
   label: string;
   to: string;
-  /** When set, active if pathname is in this list (e.g. Recent on `/` and `/media`). */
   activePaths?: string[];
 };
 
+export type NavigationParentItem = {
+  label: string;
+  children: NavigationChildItem[];
+};
+
+export type NavigationItem = NavigationLinkItem | NavigationParentItem;
+
+export const isNavigationParent = (item: NavigationItem): item is NavigationParentItem =>
+  'children' in item && Array.isArray(item.children);
+
 export type NavigationProps = {
-  links: NavigationLinkItem[];
+  links: NavigationItem[];
   /** Inline row (desktop) vs full-width stack (mobile sheet). */
   variant?: 'inline' | 'stacked';
   /** Called after a navigation link is activated (e.g. close mobile menu). */
   onLinkClick?: () => void;
 };
 
+/** Exact-match only — never prefix. /shared/* siblings share a prefix; prefix would false-active them. */
+const isChildActive = (child: NavigationChildItem, pathname: string): boolean => {
+  if (child.activePaths != null && child.activePaths.length > 0) {
+    return child.activePaths.includes(pathname);
+  }
+  return pathname === child.to;
+};
+
+const isParentActive = (parent: NavigationParentItem, pathname: string): boolean =>
+  parent.children.some((child) => isChildActive(child, pathname));
+
 const isLinkActive = (link: NavigationLinkItem, pathname: string): boolean => {
   if (link.activePaths != null && link.activePaths.length > 0) {
     return link.activePaths.includes(pathname);
   }
   return pathname === link.to;
+};
+
+type NavigationParentInlineProps = {
+  item: NavigationParentItem;
+  onLinkClick?: () => void;
+};
+
+const NavigationParentInline = ({ item, onLinkClick }: NavigationParentInlineProps) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const parentActive = isParentActive(item, location.pathname);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handleClick = (e: MouseEvent): void => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      setMenuOpen(false);
+    };
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  return (
+    <ParentInlineWrap>
+      <ParentTrigger
+        ref={triggerRef}
+        type="button"
+        $active={parentActive}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        {item.label}
+      </ParentTrigger>
+      <AnchoredMenu
+        open={menuOpen}
+        anchorRef={triggerRef}
+        menuRef={menuRef}
+        aria-label={item.label}
+        align="start"
+      >
+        {item.children.map((child) => (
+          <MenuNavLink
+            key={child.label}
+            to={child.to}
+            role="menuitem"
+            onClick={() => {
+              setMenuOpen(false);
+              onLinkClick?.();
+            }}
+          >
+            {child.label}
+          </MenuNavLink>
+        ))}
+      </AnchoredMenu>
+    </ParentInlineWrap>
+  );
+};
+
+type NavigationParentStackedProps = {
+  item: NavigationParentItem;
+  onLinkClick?: () => void;
+};
+
+const NavigationParentStacked = ({ item, onLinkClick }: NavigationParentStackedProps) => {
+  const location = useLocation();
+  const parentActive = isParentActive(item, location.pathname);
+  const [expanded, setExpanded] = useState(parentActive);
+
+  useEffect(() => {
+    if (parentActive) {
+      setExpanded(true);
+    }
+  }, [parentActive]);
+
+  return (
+    <StackedParentWrap>
+      <StackedParentButton
+        type="button"
+        $active={parentActive}
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        {item.label}
+      </StackedParentButton>
+      {expanded ? (
+        <StackedChildren>
+          {item.children.map((child) => {
+            const active = isChildActive(child, location.pathname);
+            return (
+              <StyledNavLink
+                key={child.label}
+                to={child.to}
+                $stacked
+                $active={active}
+                $indented
+                onClick={() => {
+                  onLinkClick?.();
+                }}
+              >
+                {child.label}
+              </StyledNavLink>
+            );
+          })}
+        </StackedChildren>
+      ) : null}
+    </StackedParentWrap>
+  );
 };
 
 export const Navigation = (props: NavigationProps) => {
@@ -31,19 +183,31 @@ export const Navigation = (props: NavigationProps) => {
   return (
     <StyledNavigation $stacked={stacked}>
       <StyledNavLinks $stacked={stacked}>
-        {links.map((x) => {
-          const active = isLinkActive(x, location.pathname);
+        {links.map((item) => {
+          if (isNavigationParent(item)) {
+            return stacked ? (
+              <NavigationParentStacked
+                key={item.label}
+                item={item}
+                onLinkClick={onLinkClick}
+              />
+            ) : (
+              <NavigationParentInline key={item.label} item={item} onLinkClick={onLinkClick} />
+            );
+          }
+
+          const active = isLinkActive(item, location.pathname);
           return (
             <StyledNavLink
-              to={x.to}
-              key={x.label}
+              to={item.to}
+              key={item.label}
               $stacked={stacked}
               $active={active}
               onClick={() => {
                 onLinkClick?.();
               }}
             >
-              {x.label}
+              {item.label}
             </StyledNavLink>
           );
         })}
@@ -80,8 +244,7 @@ const StyledNavLinks = styled.div<{ $stacked: boolean }>`
   align-items: ${({ $stacked }) => ($stacked ? 'stretch' : 'center')};
 `;
 
-const StyledNavLink = styled(NavLink)<{ $stacked: boolean; $active: boolean }>`
-  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+const navLinkTextCss = css<{ $active: boolean }>`
   color: ${({ $active, theme }) =>
     $active ? theme.color.bodyText : theme.color.bodyTextMuted};
   font-size: ${({ theme }) => theme.fontSize._13};
@@ -94,13 +257,104 @@ const StyledNavLink = styled(NavLink)<{ $stacked: boolean; $active: boolean }>`
   &:hover {
     color: ${({ theme }) => theme.color.bodyText};
   }
+`;
 
-  ${({ $stacked, theme }) =>
-    $stacked
-      ? css`
-          display: block;
-          width: 100%;
-          padding: ${theme.spacing(1)};
-        `
-      : undefined}
+const StyledNavLink = styled(NavLink)<{
+  $stacked: boolean;
+  $active: boolean;
+  $indented?: boolean;
+}>`
+  ${navLinkTextCss}
+
+  ${({ $stacked, $indented, theme }) => {
+    if ($stacked && $indented) {
+      return css`
+        display: block;
+        width: 100%;
+        padding: ${theme.spacing(0.75)} ${theme.spacing(1)} ${theme.spacing(0.75)}
+          ${theme.spacing(2.5)};
+      `;
+    }
+    if ($stacked) {
+      return css`
+        display: block;
+        width: 100%;
+        padding: ${theme.spacing(1)};
+      `;
+    }
+    return css`
+      padding: ${theme.spacing(0.5)} ${theme.spacing(1)};
+    `;
+  }}
+`;
+
+const ParentInlineWrap = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+const ParentTrigger = styled.button<{ $active: boolean }>`
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing(0.5)} ${({ theme }) => theme.spacing(1)};
+  ${navLinkTextCss}
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 2px;
+  }
+`;
+
+const MenuNavLink = styled(NavLink)`
+  display: block;
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  background: transparent;
+  color: ${({ theme }) => theme.color.bodyText};
+  font-size: ${({ theme }) => theme.fontSize._14};
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.1s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 0;
+  }
+`;
+
+const StackedParentWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+`;
+
+const StackedParentButton = styled.button<{ $active: boolean }>`
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: ${({ theme }) => theme.spacing(1)};
+  ${navLinkTextCss}
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 2px;
+  }
+`;
+
+const StackedChildren = styled.div`
+  display: flex;
+  flex-direction: column;
 `;

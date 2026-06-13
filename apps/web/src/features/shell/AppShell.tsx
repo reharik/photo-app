@@ -5,15 +5,25 @@ import styled, { css } from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
-import { Navigation, type NavigationLinkItem } from './Navigation';
+import { Navigation, type NavigationItem } from './Navigation';
 import { Profile } from './Profile';
 
 const MOBILE_SHELL = '(max-width: 768px)';
 
-const NAV_LINKS: NavigationLinkItem[] = [
+const NAV_LINKS: NavigationItem[] = [
   { label: 'Recent', to: '/media', activePaths: ['/', '/media'] },
   { label: 'Albums', to: '/albums' },
-  { label: 'Shared', to: '/shared-with-me' },
+  {
+    label: 'Shared',
+    children: [
+      {
+        label: 'Photos',
+        to: '/shared/photos',
+        activePaths: ['/shared/photos', '/shared-with-me'],
+      },
+      { label: 'Albums', to: '/shared/albums' },
+    ],
+  },
 ];
 
 type OpenMenu = null | 'nav' | 'profile';
