@@ -1,0 +1,24 @@
+query ViewerSharedWithMeAlbums {
+  viewer {
+    id
+    sharedWithMeAlbums(
+      input: {
+        collectionInfo: { pageInfo: { limit: 50, offset: 0 }, sortBy: SHARED_AT, sortDir: DESC }
+      }
+    ) {
+      nodes {
+        id
+        sharedAt
+        sharedBy
+        album {
+          ...AlbumSummary
+        }
+      }
+      pageInfo {
+        limit
+        offset
+      }
+      totalCount
+    }
+  }
+}
