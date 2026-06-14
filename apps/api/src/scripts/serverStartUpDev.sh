@@ -14,4 +14,4 @@ npx tsx src/scripts/runSeeds.ts || echo "Warning: Seeds failed, continuing..."
 
 # Start the server with nodemon
 echo "Starting server with nodemon..."
-npx nodemon
+npx nodemon --verbose

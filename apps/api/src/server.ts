@@ -1,11 +1,10 @@
 import type { Logger } from '@packages/infrastructure';
-
 import type { Config } from './config.js';
 import type { KoaServer } from './koaServer.js';
 
 export interface Server {
   start(): Promise<void>;
-  close(resolve: (value: unknown) => void): Promise<void>;
+  close(): Promise<void>;
 }
 
 type ServerDeps = {
@@ -26,6 +25,12 @@ export const build__Server = ({ koaServer, config, logger }: ServerDeps): Server
           resolve();
         });
       });
+    },
+    async close() {
+      koaServer.closeIdleConnections?.();
+      await new Promise<void>((resolve, reject) =>
+        koaServer.close((err) => (err ? reject(err) : resolve())),
+      );
     },
   };
 };

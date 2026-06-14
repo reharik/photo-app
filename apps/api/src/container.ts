@@ -1,3 +1,4 @@
+import { User } from '@packages/contracts';
 import { EntityId } from '@packages/media-core';
 import { asValue, AwilixContainer, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
@@ -6,12 +7,11 @@ import {
   composedRegistrationOverrides,
   type AppCradle,
 } from './di/generated/ioc-composed.js';
-import { GraphQLContextViewer } from './graphql/context/types';
 
 export type Cradle = AppCradle & {
   container: AwilixContainer<AppCradle>;
   viewerId: EntityId;
-  viewer: GraphQLContextViewer;
+  viewer: User;
   publicLinkId: EntityId;
 };
 

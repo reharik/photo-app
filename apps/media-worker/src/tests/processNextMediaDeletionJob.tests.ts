@@ -4,7 +4,9 @@ import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaItem,
+  type RunInTransaction,
 } from '@packages/media-core';
+import type { Knex } from 'knex';
 
 import { build__ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob';
 import type { AppCradle } from '../generated/ioc-composed.js';
@@ -41,6 +43,7 @@ describe('build__ProcessNextMediaDeletionJob', () => {
     const markPendingRetry = jest.fn().mockResolvedValue(undefined);
     const deleteObject = jest.fn().mockResolvedValue(undefined);
     const deleteItem = jest.fn().mockResolvedValue(undefined);
+    const runInTransaction: RunInTransaction = jest.fn(async (_trx, fn) => fn({} as Knex.Transaction));
 
     return {
       config: { s3Bucket: 'test-bucket' } as AppCradle['config'],
@@ -68,6 +71,7 @@ describe('build__ProcessNextMediaDeletionJob', () => {
       mediaStorage: {
         deleteObject: overrides.deleteObject ?? deleteObject,
       } as AppCradle['mediaStorage'],
+      runInTransaction,
     } as AppCradle;
   };
 
@@ -107,7 +111,7 @@ describe('build__ProcessNextMediaDeletionJob', () => {
       expect(cradle.mediaStorage.deleteObject).toHaveBeenCalledWith(
         buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail),
       );
-      expect(cradle.mediaItemRepository.delete).toHaveBeenCalledWith(item);
+      expect(cradle.mediaItemRepository.delete).toHaveBeenCalledWith(item, expect.anything());
       expect(cradle.mediaDeletionJobRepository.markSucceeded).toHaveBeenCalledWith(
         JOB_ID,
         ACTOR_ID,

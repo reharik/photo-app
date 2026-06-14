@@ -20,6 +20,7 @@ export default defineIocConfig({
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },
+  scopeProvided: ['viewerId', 'publicLinkId'],
   groups: {
     publicReadServices: {
       kind: 'object',

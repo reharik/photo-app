@@ -3,7 +3,7 @@ import type { Knex } from 'knex';
 import knexStringcase from 'knex-stringcase';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { build__Config, type Config } from './config';
+import { createConfigFromEnv, type Config } from './config';
 import { configurePostgresTypes } from './infrastructure/database/configurePostgresTypes';
 
 // knex-stringcase runs its pipeline as: optional postProcessResponse → camelCase keys → appPostProcessResponse.
@@ -78,6 +78,6 @@ export const build__KnexConfig = ({ config }: KnexConfigDeps): KnexConfig => {
   return createKnexConfig(config);
 };
 
-export const knexConfig: KnexConfig = createKnexConfig(build__Config());
+export const knexConfig: KnexConfig = createKnexConfig(createConfigFromEnv());
 
 export default knexConfig;

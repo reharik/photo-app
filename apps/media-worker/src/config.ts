@@ -50,15 +50,10 @@ const ensureEnvLoaded = (): DotenvConfigOutput | undefined => {
   });
 };
 
-const createConfigFromEnv = (): Config => {
+export const createConfigFromEnv = (): Config => {
   const nodeEnv = getValidValue<NodeEnv>(process.env.NODE_ENV || 'development', nodeEnvs);
 
   const isProduction = nodeEnv === 'production' || nodeEnv === 'prod';
-  const warnings: string[] = [];
-
-  if (isProduction && process.env.JWT_SECRET === 'your-secret-key-here') {
-    warnings.push('Using default JWT secret in production. This is a security risk.');
-  }
 
   return {
     nodeEnv,
@@ -71,7 +66,6 @@ const createConfigFromEnv = (): Config => {
     logLevel:
       (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
       (isProduction ? 'info' : 'debug'),
-    ...(warnings.length > 0 ? { warnings } : {}),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,

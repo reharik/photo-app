@@ -93,10 +93,7 @@
     "build:db": {
       "executor": "nx:run-commands",
       "cache": true,
-      "inputs": [
-        "{projectRoot}/tsconfig.db.json",
-        "{projectRoot}/db/**/*.ts"
-      ],
+      "inputs": ["{projectRoot}/tsconfig.db.json", "{projectRoot}/db/**/*.ts"],
       "dependsOn": ["build:vite"],
       "outputs": ["{projectRoot}/dist/db"],
       "options": {
@@ -108,7 +105,7 @@
     "build": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["build:vite", "build:graphql-static", "build:db"],
+      "dependsOn": ["build:vite", "build:graphql-static", "build:db", "typecheck"],
       "options": {
         "command": "echo 'api build complete'",
         "cwd": "{projectRoot}"
@@ -116,7 +113,7 @@
     },
     "typecheck": {
       "executor": "nx:run-commands",
-      "dependsOn": ["^build", "gen-gql"],
+      "dependsOn": ["^build", "gen-gql", "gen-ioc"],
       "options": {
         "command": "tsc --noEmit -p tsconfig.json",
         "cwd": "{projectRoot}"

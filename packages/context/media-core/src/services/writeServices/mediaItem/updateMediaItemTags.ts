@@ -4,11 +4,10 @@ import { loadRequiredMediaItem } from '../../../application/support/resourceLoad
 import { ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { WriteResult } from '../../../types/types';
+import { EntityId, WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   MediaItemTag,
-  MediaItemTagInput,
   UpdateMediaItemTagsCommand,
   UpdateMediaItemTagsResult,
 } from './writeMediaItem.types';
@@ -52,7 +51,7 @@ export const build__UpdateMediaItemTags = ({
       // --- Phase 1: distill the incoming batch, then resolve every tag to a userTagId ---
 
       // Dedup by normalized label, preferring an entry that already has a userTagId.
-      const distilledByLabel = new Map<string, MediaItemTagInput>();
+      const distilledByLabel = new Map<string, { userTagId?: EntityId; label: string }>();
       for (const tag of tags) {
         const key = normalizeLabel(tag.label);
         const existing = distilledByLabel.get(key);
@@ -86,8 +85,8 @@ export const build__UpdateMediaItemTags = ({
           mediaItemId,
           userTagId,
           label: normalizeLabel(tag.label), // or normalized — see note below
-          createdBy: tag.createdBy || viewerId,
-          createdAt: tag.createdAt || new Date(),
+          createdBy: viewerId,
+          createdAt: new Date(),
           updatedBy: viewerId,
           updatedAt: new Date(),
           // no `id` — the AR/repo assigns on insert

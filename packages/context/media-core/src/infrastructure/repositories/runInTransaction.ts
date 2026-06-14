@@ -1,10 +1,35 @@
 import { Knex } from 'knex';
 import { WriteResult } from '../../types/types';
 
+/**
+ * Low-level transaction helper. Starts a new Knex transaction when `trx` is
+ * undefined; otherwise runs `fn` on the supplied transaction (join an outer
+ * scope).
+ *
+ * The callback may return any value. The transaction commits when `fn`
+ * resolves without throwing and rolls back when `fn` throws. It does not
+ * inspect `WriteResult` — a returned failure does not roll back by itself.
+ *
+ * Prefer this when validation and authorization already happened outside the
+ * transaction and the block only persists already-validated state (e.g.
+ * `editComment`, `toggleReaction`). Repositories inject this to save entities
+ * atomically.
+ */
 export interface RunInTransaction {
   <T>(trx: Knex.Transaction | undefined, fn: (db: Knex.Transaction) => Promise<T>): Promise<T>;
 }
 
+/**
+ * WriteResult-aware wrapper around {@link RunInTransaction}. The callback
+ * must return `WriteResult<T>`. A failed result rolls the transaction back
+ * but is returned to the caller instead of throwing.
+ *
+ * Prefer this when the transaction block orchestrates multiple write steps that
+ * can fail with domain errors — especially when calling nested write services
+ * that return `WriteResult` (e.g. `addComment` saving a comment and toggling a
+ * reaction in one atomic unit). Pass `trx` to participate in a caller's
+ * transaction; omit it to open a new one.
+ */
 export interface WithTransaction {
   <T>(
     trx: Knex.Transaction | undefined,
@@ -39,6 +64,8 @@ export const build__runInTransaction =
     return database.transaction(fn);
   };
 
+// Converts failed WriteResults into TransactionAbortError so Knex rolls back,
+// then maps that back to the failure WriteResult for the service layer.
 export const build__withTransaction =
   ({ runInTransaction }: WithTransactionDeps): WithTransaction =>
   async <T>(
@@ -56,4 +83,3 @@ export const build__withTransaction =
       throw err;
     }
   };
-// touch

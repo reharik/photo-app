@@ -59,7 +59,7 @@
     "build": {
       "executor": "nx:run-commands",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["build:vite"],
+      "dependsOn": ["build:vite", "typecheck"],
       "options": {
         "command": "echo 'media-worker build complete'",
         "cwd": "{projectRoot}"

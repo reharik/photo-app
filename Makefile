@@ -14,6 +14,14 @@ COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME) \
 docker compose --project-directory $(CURDIR) $(BASE_FILES) $(DEV_FILES)
 endef
 
+temp-raw:
+	$(compose_dev) logs api | grep -i -A3 'restarting due to' | head -40
+
+temp:
+	$(compose_dev) logs api | grep -oiP 'due to changes?:?\s*\K.*' \
+  | xargs -n1 dirname 2>/dev/null | sort | uniq -c | sort -rn
+
+
 docker/dev/recreate-api:
 	$(compose_dev) rm -sf api
 	$(compose_dev) up -d api

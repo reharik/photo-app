@@ -22,10 +22,7 @@
         "!{projectRoot}/src/types/index.ts",
         { "dependentTasksOutputFiles": "**/graphqlSmartEnums.ts" }
       ],
-      "outputs": [
-        "{projectRoot}/src/enums/index.ts",
-        "{projectRoot}/src/types/index.ts"
-      ],
+      "outputs": ["{projectRoot}/src/enums/index.ts", "{projectRoot}/src/types/index.ts"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "npx barrelsby --config barrelsby.json"
@@ -51,9 +48,14 @@
         "parallel": false
       }
     },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": { "command": "tsc --noEmit -p {projectRoot}/tsconfig.json" }
+    },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["barrels", "gen-enums", "^build"],
+      "dependsOn": ["barrels", "gen-enums", "^build", "typecheck"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

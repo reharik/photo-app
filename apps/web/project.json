@@ -62,7 +62,7 @@
     "build": {
       "executor": "@nx/vite:build",
       "outputs": ["{projectRoot}/dist"],
-      "dependsOn": ["gen-gql"],
+      "dependsOn": ["gen-gql", "typecheck"],
       "options": {
         "outputPath": "apps/web/dist",
         "configFile": "{projectRoot}/vite.config.js",

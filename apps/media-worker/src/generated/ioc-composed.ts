@@ -27,12 +27,26 @@ export type AppCradle = LocalCradle & MediaCoreCradle & InfrastructureCradle;
 
 // Compile-time externals satisfaction assertions
 type _IocExpect<T extends true> = T;
-type _MediaCoreExternalsSatisfied =
-  MediaCoreExternals extends Pick<AppCradle, keyof MediaCoreExternals> ? true : false;
-type _MediaCoreExternalsAssert = _IocExpect<_MediaCoreExternalsSatisfied>;
-type _InfrastructureExternalsSatisfied =
-  InfrastructureExternals extends Pick<AppCradle, keyof InfrastructureExternals> ? true : false;
-type _InfrastructureExternalsAssert = _IocExpect<_InfrastructureExternalsSatisfied>;
+// If any assertion below is `false`, run `ioc validate` for a detailed per-key explanation.
+type _MediaCoreExternalsPick = Pick<AppCradle, keyof MediaCoreExternals>;
+type _MediaCore_config = _MediaCoreExternalsPick['config'] extends MediaCoreExternals['config']
+  ? true
+  : false;
+type _MediaCore_configAssert = _IocExpect<_MediaCore_config>;
+type _MediaCore_database =
+  _MediaCoreExternalsPick['database'] extends MediaCoreExternals['database'] ? true : false;
+type _MediaCore_databaseAssert = _IocExpect<_MediaCore_database>;
+type _MediaCore_mediaProcessingJobRepository =
+  _MediaCoreExternalsPick['mediaProcessingJobRepository'] extends MediaCoreExternals['mediaProcessingJobRepository']
+    ? true
+    : false;
+type _MediaCore_mediaProcessingJobRepositoryAssert =
+  _IocExpect<_MediaCore_mediaProcessingJobRepository>;
+// If any assertion below is `false`, run `ioc validate` for a detailed per-key explanation.
+type _InfrastructureExternalsPick = Pick<AppCradle, keyof InfrastructureExternals>;
+type _Infrastructure_config =
+  _InfrastructureExternalsPick['config'] extends InfrastructureExternals['config'] ? true : false;
+type _Infrastructure_configAssert = _IocExpect<_Infrastructure_config>;
 
 export const composedRegistrationOverrides = {
   composedPackageNames: ['@packages/media-core', '@packages/infrastructure'],

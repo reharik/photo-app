@@ -90,7 +90,6 @@ type UpdateMediaItemTagsResponse {
 
 type UpdateMediaItemTagsPayload {
   mediaItemId: ID!
-  tags: [Tag!]!
 }
 
 type CreateMediaUploadResponse {

@@ -29,8 +29,8 @@ export type Logger = {
 };
 
 export type LoggerConfig = {
+  logLevel: Level;
   logJsonFilePath?: string;
-  logLevel: string;
 };
 export type LoggerDeps = {
   config: LoggerConfig;

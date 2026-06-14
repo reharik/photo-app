@@ -1,10 +1,16 @@
 import { Logger } from '@packages/infrastructure';
+import { AwilixContainer } from 'awilix';
 import dotenv from 'dotenv';
 import type { Knex } from 'knex';
-import { createAppContainer } from './container';
+import { Cradle, createAppContainer } from './container';
 import type { Server } from './server';
 
-const attachGlobalHandlers = (database: Knex, logger: Logger, server: Server) => {
+const attachGlobalHandlers = (
+  database: Knex,
+  logger: Logger,
+  server: Server,
+  container: AwilixContainer<Cradle>,
+) => {
   let shuttingDown = false;
 
   const shutdown = async (signal: string) => {
@@ -12,55 +18,43 @@ const attachGlobalHandlers = (database: Knex, logger: Logger, server: Server) =>
     if (shuttingDown) return;
     shuttingDown = true;
 
-    // Force-exit if cleanup takes too long
     setTimeout(() => {
       console.error('Shutdown timeout, forcing exit');
       process.exit(1);
     }, 5000).unref();
 
     try {
-      await new Promise((resolve) => server.close(resolve));
-      await database.destroy();
+      await server.close(); // 1. stop new conns, drain in-flight
+      await database.destroy(); // 2. close pg pool
+      await container.dispose(); // 3. dispose the rest
     } finally {
       process.exit(0);
     }
   };
 
-  process.on('SIGINT', () => {
-    void shutdown();
-  });
-
-  process.on('SIGTERM', () => {
-    void shutdown();
-  });
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
   process.on('unhandledRejection', (reason) => {
     if (reason instanceof Error) {
       logger.error('Unhandled promise rejection', reason);
       return;
     }
-
     logger.error('Unhandled promise rejection', { reason });
   });
 
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught exception', error);
-
-    // optional but recommended in prod:
-    // process.exit(1);
   });
 };
 
 const bootstrap = async () => {
   dotenv.config();
-
   const container = createAppContainer();
-
   const database = container.resolve<Knex>('database');
   const logger = container.resolve<Logger>('logger');
   const server = container.resolve<Server>('server');
-  attachGlobalHandlers(database, logger, server);
-
+  attachGlobalHandlers(database, logger, server, container); // ← container now passed
   await server.start();
 };
 

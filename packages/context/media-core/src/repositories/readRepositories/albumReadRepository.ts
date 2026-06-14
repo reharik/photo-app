@@ -128,7 +128,7 @@ export const build__AlbumReadRepository = ({
         .select(...albumWithCoverSelectColumns)
         .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
         .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .where((b) => whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b))
+        .where('albumMember.userId', viewerId)
         .andWhere('album.isPublicLinkAlbum', false)
         .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
         .orderBy('album.id', 'asc')

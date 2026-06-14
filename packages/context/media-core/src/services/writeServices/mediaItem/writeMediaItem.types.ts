@@ -88,7 +88,7 @@ export type MediaItemTagInput = Omit<MediaItemTag, 'userTagId'> & {
 export type UpdateMediaItemTagsCommand = {
   viewerId: EntityId;
   mediaItemId: EntityId;
-  tags: MediaItemTagInput[];
+  tags: { userTagId?: EntityId; label: string }[];
 };
 
 export type UpdateMediaItemTagsResult = {

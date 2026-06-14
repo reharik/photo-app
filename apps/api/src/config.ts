@@ -63,7 +63,7 @@ const ensureEnvLoaded = (): DotenvConfigOutput | undefined => {
   });
 };
 
-const createConfigFromEnv = (): Config => {
+export const createConfigFromEnv = (): Config => {
   const nodeEnv = getValidValue<NodeEnv>(process.env.NODE_ENV || 'development', nodeEnvs);
 
   const isProduction = nodeEnv === 'production' || nodeEnv === 'prod';

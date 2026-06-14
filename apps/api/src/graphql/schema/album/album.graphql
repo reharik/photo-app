@@ -6,8 +6,8 @@ type Album implements ViewableItem & Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
-  operations: [Operation!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  operations: [Operation!]!
   itemCount: Int!
 }
 

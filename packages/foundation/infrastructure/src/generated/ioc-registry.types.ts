@@ -10,3 +10,5 @@ export interface IocGeneratedCradle {
 export interface IocExternals {
   config: LoggerConfig;
 }
+
+export interface IocScopeProvided {}

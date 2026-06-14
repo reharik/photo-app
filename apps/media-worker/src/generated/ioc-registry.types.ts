@@ -2,7 +2,7 @@
 Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Logger } from '@packages/infrastructure';
-import type { MediaItemRepository, MediaStorage } from '@packages/media-core';
+import type { MediaItemRepository, MediaStorage, RunInTransaction } from '@packages/media-core';
 import type { Knex } from 'knex';
 import type { ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob.js';
 import type { ProcessNextMediaImageJob } from '../application/processNextMediaImageJob.js';
@@ -27,4 +27,7 @@ export interface IocExternals {
   logger: Logger;
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
+  runInTransaction: RunInTransaction;
 }
+
+export interface IocScopeProvided {}

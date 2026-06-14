@@ -1,6 +1,7 @@
 import { Resolvers } from '../../generated/types.generated';
 export const reactorResolvers: Resolvers = {
   Reactor: {
-    isViewer: (parent, args, context) => parent.userId === context.viewer?.id,
+    isViewer: (parent, args, context) =>
+      parent.userId === ('viewer' in context ? context.viewer?.id : undefined),
   },
 };

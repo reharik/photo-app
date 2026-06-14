@@ -91,6 +91,7 @@ const Dialog = styled.div<{ $maxWidth: string }>`
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
   background: ${({ theme }) => theme.color.body};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
@@ -127,6 +128,7 @@ const CloseButton = styled.button`
 const Body = styled.div<{ $padding: number }>`
   flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: ${({ theme, $padding }) => theme.spacing($padding)};

@@ -20,10 +20,7 @@
         "{projectRoot}/src/utilities/**/*.ts",
         "!{projectRoot}/src/utilities/index.ts"
       ],
-      "outputs": [
-        "{projectRoot}/src/logger/index.ts",
-        "{projectRoot}/src/utilities/index.ts"
-      ],
+      "outputs": ["{projectRoot}/src/logger/index.ts", "{projectRoot}/src/utilities/index.ts"],
       "options": {
         "cwd": "{projectRoot}",
         "command": "npx barrelsby --config barrelsby.json"
@@ -52,9 +49,14 @@
         "cwd": "{projectRoot}"
       }
     },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": { "command": "tsc --noEmit -p {projectRoot}/tsconfig.json" }
+    },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["barrels", "gen-ioc", "^build"],
+      "dependsOn": ["barrels", "gen-ioc", "^build", "typecheck"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",

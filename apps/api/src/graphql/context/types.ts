@@ -1,4 +1,5 @@
 import { User } from '@packages/contracts';
+import { PublicAlbumReadService } from '@packages/media-core';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type Koa from 'koa';
 import type { AppCradle } from '../../di/generated/ioc-composed';

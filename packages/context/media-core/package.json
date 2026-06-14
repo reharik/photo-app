@@ -11,12 +11,12 @@
     },
     "./iocManifest": {
       "development": "./src/generated/ioc-manifest.ts",
-      "types": "./dist/src/generated/ioc-manifest.js",
+      "types": "./dist/src/generated/ioc-manifest.d.ts",
       "default": "./dist/src/generated/ioc-manifest.js"
     },
     "./iocTypes": {
       "development": "./src/generated/ioc-registry.types.ts",
-      "types": "./dist/src/generated/ioc-registry.types.js",
+      "types": "./dist/src/generated/ioc-registry.types.d.ts",
       "default": "./dist/src/generated/ioc-registry.types.js"
     }
   },
@@ -46,7 +46,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.1",
     "concurrently": "^9.2.1",
-    "ioc-manifest": "^1.2.1",
+    "ioc-manifest": "^1.4.1",
     "jest": "30.4.1",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"

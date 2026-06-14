@@ -27,6 +27,8 @@ generates:
         PublicAccess: '@packages/media-core#PublicAccessRow'
         PublicAlbum: '@packages/media-core#PublicAlbumProjection'
         Album: '@packages/media-core#AlbumProjection'
+        SharedWithMeMediaAlbumType: '@packages/media-core#SharedWithMeAlbumProjection'
+        SharedWithMeMediaItemType: '@packages/media-core#SharedWithMeItemProjection'
         MediaItem: '@packages/media-core#MediaItemProjection'
         PublicMediaItem: '@packages/media-core#PublicMediaItemProjection'
         # MediaAsset: '@packages/media-core#MediaAssetProjection'

@@ -86,18 +86,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
 
         const result = await ctx.writeServices.updateMediaItem(command);
         return writeResultToPayload(result);
-
-        // return {
-        //   data: result.success
-        //     ? {
-        //         mediaItemId: result.value.mediaItemId,
-        //         title: result.value.title,
-        //         description: result.value.description,
-        //         takenAt: result.value.takenAt,
-        //       }
-        //     : undefined,
-        //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        // };
       },
     ),
     updateMediaItemTags: authenticatedResolver(
@@ -108,15 +96,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
           tags: args.input.tags,
         };
         const result = await ctx.writeServices.updateMediaItemTags(command);
-        // return {
-        //   data: result.success
-        //     ? {
-        //         mediaItemId: result.value.mediaItemId,
-        //         tags: result.value.tags,
-        //       }
-        //     : undefined,
-        //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
-        // };
         return writeResultToPayload(result);
       },
     ),

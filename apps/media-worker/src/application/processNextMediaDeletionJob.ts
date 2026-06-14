@@ -2,6 +2,7 @@ import { MediaAssetKind } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import {
   buildMediaAssetStorageKey,
+  RunInTransaction,
   type MediaItemRepository,
   type MediaStorage,
 } from '@packages/media-core';
@@ -34,6 +35,7 @@ type ProcessNextMediaDeletionJobDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   logger: Logger;
+  runInTransaction: RunInTransaction;
 };
 
 export const build__ProcessNextMediaDeletionJob = ({
@@ -42,6 +44,7 @@ export const build__ProcessNextMediaDeletionJob = ({
   mediaItemRepository,
   mediaStorage,
   logger,
+  runInTransaction,
 }: ProcessNextMediaDeletionJobDeps): ProcessNextMediaDeletionJob => {
   return async (): Promise<ProcessNextMediaDeletionJobResult> => {
     const job = await mediaDeletionJobRepository.claimNextAvailableJob();
@@ -91,7 +94,9 @@ export const build__ProcessNextMediaDeletionJob = ({
 
       const mediaItem = await mediaItemRepository.getById(job.mediaItemId);
       if (mediaItem) {
-        await mediaItemRepository.delete(mediaItem);
+        await runInTransaction(undefined, async (db) => {
+          await mediaItemRepository.delete(mediaItem, db);
+        });
         logger.info('Media item row deleted', {
           mediaItemId: job.mediaItemId,
           jobId: job.id,

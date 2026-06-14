@@ -1,7 +1,15 @@
 {
   "watch": ["src", "../../packages"],
   "ext": "ts,js,json",
-  "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "dist", "node_modules"],
+  "ignore": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "**/dist/**",
+    "node_modules",
+    "**/*.d.ts",
+    "**/*.js.map",
+    "**/*.tsbuildinfo"
+  ],
   "exec": "node --conditions=development --import tsx src/main.ts",
   "env": {
     "NODE_ENV": "development"

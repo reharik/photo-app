@@ -60,9 +60,14 @@
         "cwd": "{projectRoot}"
       }
     },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "options": { "command": "tsc --noEmit -p {projectRoot}/tsconfig.json" }
+    },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["barrels", "gen-ioc", "^build"],
+      "dependsOn": ["barrels", "gen-ioc", "^build", "typecheck"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
