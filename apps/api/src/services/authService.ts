@@ -259,7 +259,7 @@ export const build__AuthService = ({
       channels: ['email'],
       template: 'passwordReset',
       data: {
-        firstName: user.firstName,
+        firstName: user.firstName ?? '',
       },
     });
     return ok(undefined);

@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, ok } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
-import type { NotificationService } from '@packages/notifications';
+import type { NotificationService, TemplateData } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
 import knexFactory from 'knex';
 import type { Knex } from 'knex';
@@ -63,10 +63,10 @@ describe('AuthService password reset', () => {
 
     capturedCodes = [];
     notifyMock = jest.fn<NotificationService['notify']>(async (payload) => {
-      if (payload.template === 'forgot-password' && payload.data?.code !== undefined) {
-        capturedCodes.push(String(payload.data.code));
+      if (payload.template === 'forgotPassword') {
+        capturedCodes.push((payload.data as TemplateData['forgotPassword']).code);
       }
-      return ok({ messageId: 'test-msg' });
+      return ok('test-msg');
     });
 
     authService = build__AuthService({
@@ -119,7 +119,7 @@ describe('AuthService password reset', () => {
         expect.objectContaining({
           to: { email },
           channels: ['email'],
-          template: 'forgot-password',
+          template: 'forgotPassword',
         }),
       );
 
@@ -203,7 +203,7 @@ describe('AuthService password reset', () => {
       expect(notifyMock).toHaveBeenCalledWith(
         expect.objectContaining({
           to: { email },
-          template: 'password-reset',
+          template: 'passwordReset',
         }),
       );
     });

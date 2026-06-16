@@ -18,7 +18,7 @@ export type WelcomeEmailProps = {
   appUrl: string;
 };
 
-const APP_NAME = 'betaname';
+const APP_NAME = 'Betana.me';
 type WelcomeData = TemplateData['welcome'];
 
 export const subject = (data: WelcomeData): string => {

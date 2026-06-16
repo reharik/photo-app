@@ -35,7 +35,10 @@ describe('build__AuthController', () => {
       forgotPassword: jest.fn<AuthService['forgotPassword']>(),
       resetPassword: jest.fn<AuthService['resetPassword']>(),
     };
-    authController = build__AuthController({ authService, logger });
+    authController = build__AuthController({
+      authService: authService as unknown as AuthService,
+      logger,
+    });
   });
 
   describe('forgotPassword', () => {
