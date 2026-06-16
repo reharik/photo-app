@@ -9,7 +9,7 @@ export const subject = (): string => {
   return 'Your password reset code';
 };
 
-export const ForgotPassword = (data: ForgotPasswordData): ReactElement => {
+const ForgotPassword = (data: ForgotPasswordData): ReactElement => {
   const appName = data.appName ?? 'PhotoApp';
   const greetingName = data.firstName?.trim() || 'there';
 
@@ -40,6 +40,8 @@ export const ForgotPassword = (data: ForgotPasswordData): ReactElement => {
     </BaseEmail>
   );
 };
+
+export default ForgotPassword;
 
 const paragraph = {
   color: '#3f3f46',

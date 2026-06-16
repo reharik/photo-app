@@ -9,7 +9,7 @@ export const subject = (_data: PasswordResetData): string => {
   return 'Your password was changed';
 };
 
-export const PasswordReset = (data: PasswordResetData): ReactElement => {
+const PasswordReset = (data: PasswordResetData): ReactElement => {
   const appName = data.appName ?? 'PhotoApp';
   const greetingName = data.firstName?.trim() || 'there';
 
@@ -46,3 +46,5 @@ const muted = {
   lineHeight: '1.5',
   margin: '0 0 6px',
 };
+
+export default PasswordReset;
