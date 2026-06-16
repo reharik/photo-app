@@ -43,5 +43,5 @@ export type EmailConfig = {
   fromEmail: string;
   fromName: string;
   awsRegion: string;
-  awsEndpoint?: string;
+  awsEndpoint?: string; // Will be undefined in production, LocalStack URL in development
 };

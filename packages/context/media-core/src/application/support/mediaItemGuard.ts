@@ -1,6 +1,5 @@
-import { AppErrorCollection, MediaItemStatus } from '@packages/contracts';
+import { AppErrorCollection, fail, MediaItemStatus, ok } from '@packages/contracts';
 import { DBMediaItemRow, EntityId } from '../..';
-import { fail, ok } from '../../domain/utilities/writeResponse';
 
 export const ensureMediaItemOwnedByViewer = (ownerId: EntityId, viewerId: EntityId) =>
   ownerId === viewerId

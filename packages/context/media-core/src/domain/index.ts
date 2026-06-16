@@ -20,4 +20,3 @@ export * from './utilities/entityGuard';
 export * from './utilities/reorderAlbumItems';
 export * from './utilities/serializeAggregates';
 export * from './utilities/stampAudit';
-export * from './utilities/writeResponse';

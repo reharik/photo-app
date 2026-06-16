@@ -1,18 +1,21 @@
 import { SendRawEmailCommand, SESClient, SESClientConfig } from '@aws-sdk/client-ses';
-import { ContractError, fail, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { EmailConfig } from './types';
 
+export type SendEmailInput = {
+  to: string;
+  subject: string;
+  html: string;
+  fromEmail: string;
+  fromDisplayName?: string;
+  replyToEmail?: string;
+  bcc?: string;
+  text?: string;
+};
+
 export interface EmailService {
-  sendEmail: (
-    to: string,
-    subject: string,
-    body: string,
-    fromEmail: string,
-    fromDisplayName?: string,
-    replyToEmail?: string,
-    bcc?: string,
-  ) => Promise<WriteResult<{ messageId: string }>>;
+  sendEmail: (input: SendEmailInput) => Promise<WriteResult<{ messageId: string }>>;
 }
 
 export type EmailClientDeps = {
@@ -20,94 +23,117 @@ export type EmailClientDeps = {
   config: EmailConfig;
 };
 
-export type EmailClientConfig = {
-  awsRegion: string;
+const buildFromHeader = (fromEmail: string, fromDisplayName?: string): string => {
+  if (fromDisplayName) {
+    const safeName = fromDisplayName.replace(/"/g, '\\"');
+    return `"${safeName}" <${fromEmail}>`;
+  }
+  return fromEmail;
+};
+
+// Use default credential chain (IAM roles on ECS/EC2/Lambda, AWS_ACCESS_KEY_ID env, ~/.aws/credentials).
+// Do not pass credentials so the SDK resolves them automatically.
+const buildRawEmail = (input: SendEmailInput): Buffer => {
+  const headers: string[] = [
+    `From: ${buildFromHeader(input.fromEmail, input.fromDisplayName)}`,
+    `To: ${input.to}`,
+    `Subject: ${input.subject}`,
+    'MIME-Version: 1.0',
+  ];
+
+  if (input.replyToEmail) {
+    headers.push(`Reply-To: ${input.replyToEmail}`);
+  }
+
+  if (input.bcc) {
+    headers.push(`Bcc: ${input.bcc}`);
+  }
+
+  const plainText = input.text?.trim();
+  if (plainText) {
+    const boundary = `boundary_${Date.now()}`;
+    headers.push(`Content-Type: multipart/alternative; boundary="${boundary}"`);
+    const body = [
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      plainText,
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      input.html,
+      `--${boundary}--`,
+    ].join('\r\n');
+    return Buffer.from(`${headers.join('\r\n')}\r\n\r\n${body}`, 'utf-8');
+  }
+
+  headers.push('Content-Type: text/html; charset=UTF-8');
+  return Buffer.from(`${headers.join('\r\n')}\r\n\r\n${input.html}`, 'utf-8');
 };
 
 export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailService => {
-  // Use default credential chain (IAM roles on ECS/EC2/Lambda, AWS_ACCESS_KEY_ID env, ~/.aws/credentials).
-  // Do not pass credentials so the SDK resolves them automatically.
   if (!config.awsEndpoint) {
     logger.info(
       'Using AWS default credential chain for SES (IAM roles, environment variables, or shared config).',
     );
+  } else {
+    logger.info('Using LocalStack SES endpoint for email delivery.', {
+      endpoint: config.awsEndpoint,
+    });
   }
 
   const sesClientConfig: SESClientConfig = {
     region: config.awsRegion,
     endpoint: config.awsEndpoint, // Will be undefined in production, LocalStack URL in development
+    ...(config.awsEndpoint
+      ? {
+          credentials: {
+            accessKeyId: 'test',
+            secretAccessKey: 'test',
+          },
+        }
+      : {}),
   };
 
   const sesClient = new SESClient(sesClientConfig);
 
   return {
-    sendEmail: async (
-      to: string,
-      subject: string,
-      body: string,
-      fromEmail: string,
-      fromDisplayName?: string,
-      replyToEmail?: string,
-      bcc?: string,
-    ): Promise<WriteResult<{ messageId: string }>> => {
+    sendEmail: async (input: SendEmailInput): Promise<WriteResult<{ messageId: string }>> => {
       logger.info('Sending email', {
-        to,
-        subject,
-        from: fromEmail,
-        fromDisplayName,
-        replyTo: replyToEmail,
-        bcc: bcc ?? undefined,
+        to: input.to,
+        subject: input.subject,
+        from: input.fromEmail,
+        fromDisplayName: input.fromDisplayName,
+        replyTo: input.replyToEmail,
+        bcc: input.bcc ?? undefined,
       });
 
       try {
-        // Build raw email with headers
-        const headers: string[] = [];
-
-        if (fromDisplayName) {
-          const safeName = fromDisplayName.replace(/"/g, '\\"');
-          headers.push(`From: "${safeName}" <${fromEmail}>`);
-        } else {
-          headers.push(`From: ${fromEmail}`);
-        }
-
-        headers.push(`To: ${to}`);
-
-        if (replyToEmail) {
-          headers.push(`Reply-To: ${replyToEmail}`);
-        }
-
-        if (bcc) {
-          headers.push(`Bcc: ${bcc}`);
-        }
-
-        headers.push(`Subject: ${subject}`);
-        headers.push('MIME-Version: 1.0');
-        headers.push('Content-Type: text/plain; charset=UTF-8');
-
-        const rawEmail = headers.join('\r\n') + '\r\n\r\n' + body;
-        const rawMessage = Buffer.from(rawEmail, 'utf-8');
-
+        const rawMessage = buildRawEmail(input);
         const command = new SendRawEmailCommand({
-          Source: fromEmail, // IMPORTANT: bare email for SES identity check
+          Source: input.fromEmail, // IMPORTANT: bare email for SES identity check
           RawMessage: { Data: rawMessage },
         });
 
         const result = await sesClient.send(command);
-
         const messageId = result.MessageId || 'unknown';
+
         logger.info('Email sent successfully', {
-          to,
-          subject,
+          to: input.to,
+          subject: input.subject,
           messageId,
-          from: fromEmail,
-          fromDisplayName,
-          replyTo: replyToEmail,
+          from: input.fromEmail,
+          fromDisplayName: input.fromDisplayName,
+          replyTo: input.replyToEmail,
         });
+
         return ok({ messageId });
       } catch (error) {
         logger.error('Error sending email', { error });
+        return fail(ContractError.EmailSendFailed);
       }
-      return fail(ContractError.EMAIL_SEND_FAILED);
     },
   };
 };

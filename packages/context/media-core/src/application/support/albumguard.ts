@@ -1,6 +1,5 @@
-import { AppErrorCollection, Operation } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
-import { fail, ok } from '../../domain/utilities/writeResponse';
 import { EntityId } from '../../types/types';
 
 export const ensureMemberCanEditAlbum = (

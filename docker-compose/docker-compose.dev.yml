@@ -1,8 +1,7 @@
 services:
   # Infra dev base includes LocalStack; keep it opt-in so default `make docker/dev/up` uses real AWS (~/.aws).
-  localstack:
-    profiles:
-      - localstack
+  # localstack:
+  #   profiles: !override []
 
   api:
     build:
@@ -15,22 +14,26 @@ services:
       - '3001:3001'
     env_file:
       - ./apps/api/.env
-    # Override .env so container talks to db service on internal port (5432), not host-mapped 5433
+    # Merge with infra/config/docker-compose/dev.yml (LocalStack, AWS_ENDPOINT, etc.).
     depends_on: !override
+      localstack:
+        condition: service_healthy
       db:
         condition: service_healthy
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
       API_PORT: '3001'
-      # Clear infra dev.yml LocalStack URL when LocalStack is not running (see localstack profile above).
-      AWS_ENDPOINT: ''
+      # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      FROM_EMAIL: test@example.com
+      FROM_NAME: PhotoApp Dev
     volumes:
       - ./apps/api:/app/apps/api
       - /app/apps/api/node_modules
       - ./packages:/app/packages
-      - ~/.aws:/root/.aws:ro
-    # Override default dev CMD; keep APP_WORKSPACE_PATH in sync with build.args above and volume mount.
     command: ['sh', '-c', 'sh apps/api/src/scripts/serverStartUpDev.sh']
 
   media-worker:
@@ -48,6 +51,7 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
+      # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
       AWS_ENDPOINT: ''
     volumes:
       - ./apps/media-worker:/app/apps/media-worker

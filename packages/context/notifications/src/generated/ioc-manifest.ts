@@ -6,6 +6,7 @@ import type { IocGeneratedContainerManifest, IocModuleNamespace } from 'ioc-mani
 
 import * as ioc_channels_email from '../channels/email.js';
 import * as ioc_channels_sms from '../channels/sms.js';
+import * as ioc_emailClient from '../emailClient.js';
 import * as ioc_notificationService from '../notificationService.js';
 
 type IocManifestGroupRoots = {
@@ -32,13 +33,14 @@ export const iocManifest = {
   moduleImports: [
     ioc_channels_email,
     ioc_channels_sms,
+    ioc_emailClient,
     ioc_notificationService,
   ] as const satisfies readonly IocModuleNamespace[],
 
   contracts: {
     EmailChannel: {
       emailChannel: {
-        exportName: 'build__emailChannel',
+        exportName: 'build__EmailChannel',
         registrationKey: 'emailChannel',
         modulePath: 'channels/email.ts',
         relImport: '../channels/email.js',
@@ -46,6 +48,21 @@ export const iocManifest = {
         implementationName: 'emailChannel',
         lifetime: 'singleton',
         moduleIndex: 0,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['EmailService'],
+      },
+    },
+    EmailService: {
+      emailClient: {
+        exportName: 'build__EmailClient',
+        registrationKey: 'emailClient',
+        modulePath: 'emailClient.ts',
+        relImport: '../emailClient.js',
+        contractName: 'EmailService',
+        implementationName: 'emailClient',
+        lifetime: 'singleton',
+        moduleIndex: 2,
         default: true,
         discoveredBy: 'naming',
       },
@@ -59,7 +76,7 @@ export const iocManifest = {
         contractName: 'NotificationService',
         implementationName: 'notificationService',
         lifetime: 'singleton',
-        moduleIndex: 2,
+        moduleIndex: 3,
         default: true,
         discoveredBy: 'naming',
       },

@@ -26,9 +26,8 @@ export interface AuthService {
 
 type UserRow = User & {
   passwordHash?: string;
-  firstName?: string;
-  lastName?: string;
   phone?: string;
+  smsOptIn?: boolean;
 };
 
 const sanitizeUser = (user: UserRow): SanitizedUser => {
@@ -111,30 +110,30 @@ export const build__AuthService = ({
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    // const [user] = await database<UserRow>('user')
-    //   .insert({
-    //     id,
-    //     email,
-    //     firstName,
-    //     lastName,
-    //     ...(phone !== undefined ? { phone } : {}),
-    //     passwordHash,
-    //     emailVerified: false,
-    //     smsOptIn: smsOptIn ?? false,
-    //     createdBy: id,
-    //     updatedBy: id,
-    //   })
-    //   .returning('*');
+    const [user] = await database<UserRow>('user')
+      .insert({
+        id,
+        email,
+        firstName,
+        lastName,
+        ...(phone !== undefined ? { phone } : {}),
+        passwordHash,
+        emailVerified: false,
+        smsOptIn: smsOptIn ?? false,
+        createdBy: id,
+        updatedBy: id,
+      })
+      .returning('*');
 
-    // // Generate JWT token
-    // const token = jwt.sign(
-    //   {
-    //     userId: user.id,
-    //     email: user.email,
-    //   },
-    //   config.jwtSecret,
-    //   { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
-    // );
+    // Generate JWT token
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+      },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
+    );
 
     await notificationService.notify({
       to: { email },
@@ -144,18 +143,18 @@ export const build__AuthService = ({
         resourceName: 'Q3 Report',
         inviteUrl: 'https://example.com/invite/abc',
       },
-      data: {
-        firstName,
-        lastName,
-      },
+      // data: {
+      //   firstName,
+      //   lastName,
+      // },
     });
 
     logger.info('User signed up successfully', {
       // userId: user.id,
       // email: user.email,
     });
-    return {};
-    // return { user: sanitizeUser(user), token };
+    // return {};
+    return { user: sanitizeUser(user), token };
   },
 
   verifyJWTToken: async (token: string) => {

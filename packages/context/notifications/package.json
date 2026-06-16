@@ -31,18 +31,20 @@
     "ioc:inspect": "ioc inspect",
     "ioc:validate": "ioc validate",
     "lint": "nx lint notifications",
-    "test": "nx test notifications"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' nx test notifications",
+    "test:localstack": "NODE_OPTIONS='--experimental-vm-modules' AWS_ENDPOINT=http://localhost:4566 nx test notifications --testPathPattern=emailLocalstack"
   },
   "dependencies": {
-    "@aws-sdk/client-connect": "^3.1069.0",
     "@aws-sdk/client-ses": "^3.1069.0",
+    "@packages/contracts": "*",
+    "@packages/infrastructure": "*",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.7",
     "ioc-manifest": "^1.4.2",
-    "react": "^19.0.0",
-    "resend": "^4.0.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.4.1",
     "@types/node": "^24.9.1",
     "@types/react": "^19.0.10",
     "typescript": "^5.9.2"

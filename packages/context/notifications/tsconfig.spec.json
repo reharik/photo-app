@@ -6,7 +6,9 @@
     "types": ["jest", "node"],
     "baseUrl": ".",
     "paths": {
-      "@packages/notifications": ["src/index.ts"]
+      "@packages/notifications": ["src/index.ts"],
+      "@packages/contracts": ["../../foundation/contracts/src/index.ts"],
+      "@packages/infrastructure": ["../../foundation/infrastructure/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "jest.config.js"],

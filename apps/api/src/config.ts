@@ -33,6 +33,8 @@ export type Config = {
   awsRegion: string;
   awsAccessKeyId?: string;
   awsSecretAccessKey?: string;
+  /** LocalStack only — do not set in production. */
+  awsEndpoint?: string;
   s3Bucket: string;
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
@@ -75,6 +77,12 @@ export const createConfigFromEnv = (): Config => {
     warnings.push('Using default JWT secret in production. This is a security risk.');
   }
 
+  if (isProduction && process.env.AWS_ENDPOINT) {
+    warnings.push(
+      'AWS_ENDPOINT is set in production. AWS requests will route to that endpoint instead of real AWS.',
+    );
+  }
+
   const trustProxyEnv = process.env.TRUST_PROXY;
   const trustProxy =
     trustProxyEnv === 'true' ? true : trustProxyEnv === 'false' ? false : isProduction;
@@ -104,6 +112,7 @@ export const createConfigFromEnv = (): Config => {
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
     awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,
+    awsEndpoint: process.env.AWS_ENDPOINT?.trim() || undefined,
     s3Bucket: process.env.S3_BUCKET || 'photoshare-dev',
     s3UploadUrlTtlSeconds: process.env.S3_UPLOAD_URL_TTL_SECONDS
       ? Number(process.env.S3_UPLOAD_URL_TTL_SECONDS)

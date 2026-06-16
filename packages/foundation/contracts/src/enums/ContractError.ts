@@ -24,6 +24,7 @@ const errorAreaInput = [
   'authorization',
   'user',
   'reaction',
+  'notification',
 ] as const;
 
 export type ErrorArea = Enumeration<typeof ErrorArea>;
@@ -446,6 +447,21 @@ const contractErrorInput = {
     category: ErrorCategory.auth,
     area: ErrorArea.mediaItem,
     retryable: false,
+  },
+
+  EmailNotConfigured: {
+    code: 'EMAIL_NOT_CONFIGURED',
+    display: 'Email is not configured',
+    category: ErrorCategory.system,
+    area: ErrorArea.notification,
+    retryable: false,
+  },
+  EmailSendFailed: {
+    code: 'EMAIL_SEND_FAILED',
+    display: 'Failed to send email',
+    category: ErrorCategory.network,
+    area: ErrorArea.notification,
+    retryable: true,
   },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;

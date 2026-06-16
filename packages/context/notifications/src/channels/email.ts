@@ -1,29 +1,12 @@
-import { WriteResult } from '@packages/contracts';
-import { getResendClient } from '../client.js';
+import { ContractError, fail, WriteResult } from '@packages/contracts';
 import { EmailService } from '../emailClient.js';
-import { EmailConfig } from '../types';
+import { EmailConfig } from '../types.js';
 
 export type EmailSendInput = {
   to: string;
   subject: string;
   html: string;
   text?: string;
-};
-
-export type EmailSendResult =
-  | { ok: true; id: string }
-  | { ok: false; error: string; providerDetail?: string };
-
-const buildFrom = (config: EmailChannelConfig): string | null => {
-  const address = config.fromEmail.trim();
-  const name = config.fromName.trim();
-  if (!address) {
-    return null;
-  }
-  if (name) {
-    return `${name} <${address}>`;
-  }
-  return address;
 };
 
 export interface Channel {
@@ -39,23 +22,21 @@ export type EmailChannelDeps = {
   emailClient: EmailService;
 };
 
-export const build__emailChannel = ({ config, emailClient }: EmailChannelDeps): EmailChannel => ({
-  sendEmail: async (input: EmailSendInput): Promise<EmailSendResult> => {
-    const fromEmail = buildFrom(config);
+export const build__EmailChannel = ({ config, emailClient }: EmailChannelDeps): EmailChannel => ({
+  sendEmail: async (input: EmailSendInput): Promise<WriteResult<{ messageId: string }>> => {
+    const fromEmail = config.fromEmail.trim();
     if (!fromEmail) {
-      return { ok: false, error: 'FROM_EMAIL environment variable is not set' };
+      return fail(ContractError.EmailNotConfigured);
     }
 
-    const client = getResendClient();
-    if (!client) {
-      return { ok: false, error: 'RESEND_API_KEY environment variable is not set' };
-    }
+    const fromDisplayName = config.fromName.trim() || undefined;
 
-    return await emailClient.sendEmail({
-      fromEmail,
+    return emailClient.sendEmail({
       to: input.to,
       subject: input.subject,
-      body: input.html,
+      html: input.html,
+      fromEmail,
+      fromDisplayName,
       ...(input.text ? { text: input.text } : {}),
     });
   },

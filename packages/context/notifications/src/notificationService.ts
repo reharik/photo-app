@@ -115,18 +115,17 @@ export const build__NotificationService = ({
           const subject = entry.getSubject(payload.data);
           const result = await channels.emailChannel.sendEmail({ to: email, subject, html });
 
-          if (!result.ok) {
+          if (!result.success) {
             logNotifyFailure({
               event: 'notify_email_failed',
               template: payload.template,
               recipient: email,
-              error: result.error,
-              providerDetail: result.providerDetail,
+              error: result.error.display,
             });
-            return { success: false, error: result.error };
+            return { success: false, error: result.error.display };
           }
 
-          ids.push(result.id);
+          ids.push(result.value.messageId);
           continue;
         }
 
