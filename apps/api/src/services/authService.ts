@@ -1,4 +1,8 @@
 import {
+  ContractError,
+  fail,
+  ok,
+  WriteResult,
   type AuthResponse,
   type LoginInput,
   type SignupInput,
@@ -10,7 +14,8 @@ import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
-import { randomUUID } from 'node:crypto';
+import { DateTime } from 'luxon';
+import { createHash, randomInt, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
 
 export type SanitizedUser = Omit<User, 'passwordHash'>;
@@ -18,6 +23,8 @@ export type SanitizedUser = Omit<User, 'passwordHash'>;
 export interface AuthService {
   login: (credentials: LoginInput) => Promise<AuthResponse | undefined>;
   signup: (credentials: SignupInput) => Promise<AuthResponse | undefined>;
+  forgotPassword: (email: string) => Promise<WriteResult<void>>;
+  resetPassword: (email: string, password: string, code: string) => Promise<WriteResult<void>>;
   verifyJWTToken: (token: string) => Promise<User | undefined>;
   hashPassword: (password: string) => Promise<string>;
   comparePassword: (password: string, hash: string) => Promise<boolean>;
@@ -28,6 +35,15 @@ type UserRow = User & {
   passwordHash?: string;
   phone?: string;
   smsOptIn?: boolean;
+};
+
+type PasswordResetRow = {
+  id: string;
+  userId: string;
+  codeHash: string;
+  expiresAt: string;
+  consumedAt: string | null;
+  attemptCount: number;
 };
 
 const sanitizeUser = (user: UserRow): SanitizedUser => {
@@ -162,6 +178,93 @@ export const build__AuthService = ({
     return { user: sanitizeUser(user), token };
   },
 
+  forgotPassword: async (email: string) => {
+    const user = await database<UserRow>('user').where({ email }).first();
+    if (!user) {
+      logger.warn('Forgot password attempt failed: user not found', { email });
+      return ok(undefined);
+    }
+    // invalidate existing records
+    const currentTime = DateTime.now();
+    await database('passwordReset')
+      .where({ userId: user.id })
+      .andWhere('expiresAt', '>', database.fn.now())
+      .update({ expiresAt: currentTime.minus({ minutes: 1 }).toISO() });
+
+    // generate new code
+    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
+    const codeHash = createHash('sha256').update(code).digest('hex');
+
+    //store new record
+    await database('passwordReset').insert({
+      id: randomUUID(),
+      userId: user.id,
+      codeHash: codeHash,
+      expiresAt: currentTime.plus({ minutes: 10 }).toISO(),
+    });
+
+    void notificationService.notify({
+      to: { email },
+      channels: ['email'],
+      template: 'forgotPassword',
+      data: {
+        code,
+        firstName: user.firstName,
+        appName: config.appName,
+      },
+    });
+
+    return ok(undefined);
+  },
+
+  resetPassword: async (email: string, password: string, code: string) => {
+    const user = await database<UserRow>('user').where({ email }).first();
+    if (!user) {
+      logger.warn('Reset password attempt failed: user not found', { email });
+      return fail(ContractError.InvalidPasswordResetCode);
+    }
+    const reset = await database('passwordReset')
+      .where({ userId: user.id, consumedAt: null })
+      .andWhere('expiresAt', '>', database.fn.now())
+      .first<PasswordResetRow>();
+
+    if (!reset) {
+      logger.warn('Reset password attempt failed: reset not found', { email });
+      return fail(ContractError.InvalidPasswordResetCode);
+    }
+
+    if (reset.attemptCount >= 3) {
+      logger.warn('Reset password attempt failed: too many attempts', { email });
+      return fail(ContractError.TooManyAttempts);
+    }
+
+    const codeHash = createHash('sha256').update(code).digest('hex');
+    if (reset.codeHash !== codeHash) {
+      logger.warn('Reset password attempt failed: invalid code', { email });
+      await database('passwordReset')
+        .where({ id: reset.id })
+        .update({ attemptCount: reset.attemptCount + 1 });
+      return fail(ContractError.InvalidPasswordResetCode);
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+    await database('user').where({ id: user.id }).update({ passwordHash });
+    await database('passwordReset')
+      .where({ id: reset.id })
+      .update({ consumedAt: new Date().toISOString() });
+
+    await notificationService.notify({
+      to: { email },
+      channels: ['email'],
+      template: 'passwordReset',
+      data: {
+        firstName: user.firstName,
+      },
+    });
+    return ok(undefined);
+  },
+
   verifyJWTToken: async (token: string) => {
     try {
       const decoded = jwt.verify(token, config.jwtSecret) as {
@@ -190,6 +293,7 @@ export const build__AuthService = ({
       return undefined;
     }
   },
+
   publicAccess: async (token: string) => {
     const hashedToken = hashToken(token);
     console.log('[VALIDATE] token:', JSON.stringify(token));

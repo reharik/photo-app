@@ -54,6 +54,7 @@ export const resetDb = async (db: Knex): Promise<void> => {
       media_deletion_job,
       media_asset,
       media_item,
+      password_reset,
       "user"
     RESTART IDENTITY CASCADE;
   `);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { APP_NAME, APP_TAGLINE } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,10 @@ import { FormInput } from '../ui/FormInput';
 const isValidPhone = (value: string): boolean => {
   const digits = value.replace(/\D/g, '');
   return digits.length >= 10 && digits.length <= 15;
+};
+
+type LoginLocationState = {
+  successMessage?: string;
 };
 
 export const LoggedOutScreen = () => {
@@ -23,6 +27,8 @@ export const LoggedOutScreen = () => {
 
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const successMessage = (location.state as LoginLocationState | undefined)?.successMessage;
 
   const trimmedPhone = phone.trim();
   const showSmsOptIn = trimmedPhone.length > 0;
@@ -249,8 +255,13 @@ export const LoggedOutScreen = () => {
                     required
                     autoComplete="current-password"
                   />
+                  <ForgotPasswordRow>
+                    <ForgotPasswordLink to="/forgot-password">Forgot password?</ForgotPasswordLink>
+                  </ForgotPasswordRow>
                 </>
               )}
+
+              {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
 
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
@@ -478,6 +489,31 @@ const ErrorMessage = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.md};
   color: ${({ theme }) => theme.color.alertErrorText};
   font-size: 14px;
+`;
+
+const SuccessMessage = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+  background: ${({ theme }) => theme.color.alertSuccess};
+  border: 1px solid ${({ theme }) => theme.color.alertSuccessText};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: ${({ theme }) => theme.color.alertSuccessText};
+  font-size: 14px;
+`;
+
+const ForgotPasswordRow = styled.div`
+  text-align: right;
+  margin-top: -${({ theme }) => theme.spacing(1)};
+`;
+
+const ForgotPasswordLink = styled(Link)`
+  color: ${({ theme }) => theme.color.link};
+  font-size: 14px;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.linkHover};
+  }
 `;
 
 const AuthFooter = styled.div`

@@ -1,4 +1,4 @@
-import { type User } from '@packages/contracts';
+import { ContractError, type User } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import type { Context } from 'koa';
 
@@ -8,6 +8,8 @@ export interface AuthController {
   login: (ctx: Context) => Promise<Context>;
   signup: (ctx: Context) => Promise<Context>;
   logout: (ctx: Context) => Context;
+  forgotPassword: (ctx: Context) => Promise<Context>;
+  resetPassword: (ctx: Context) => Promise<Context>;
   me: (ctx: Context) => Context;
   publicAccess: (ctx: Context) => Context;
 }
@@ -157,6 +159,56 @@ export const build__AuthController = ({
     });
     ctx.status = 200;
     ctx.body = { message: 'Logged out successfully' };
+    return ctx;
+  },
+
+  forgotPassword: async (ctx: Context): Promise<Context> => {
+    const { email } = ctx.request.body as { email: string };
+    if (!email) {
+      logger.warn('Forgot password attempt failed from controller', {
+        email,
+        ip: ctx.ip,
+      });
+      ctx.status = 200;
+      ctx.body = { message: "If an account exists for that email, we've sent a reset code." };
+      return ctx;
+    }
+
+    await authService.forgotPassword(email);
+
+    ctx.status = 200;
+    ctx.body = { message: "If an account exists for that email, we've sent a reset code." };
+    return ctx;
+  },
+
+  resetPassword: async (ctx: Context): Promise<Context> => {
+    const { email, password, code } = ctx.request.body as {
+      email: string;
+      password: string;
+      code: string;
+    };
+    if (!email || !password || !code) {
+      ctx.status = 400;
+      ctx.body = { error: 'Email, password, and code are required' };
+      return ctx;
+    }
+
+    if (password.length < 8) {
+      ctx.status = 400;
+      ctx.body = { error: 'Password must be at least 8 characters long' };
+      return ctx;
+    }
+
+    const result = await authService.resetPassword(email, password, code);
+    if (!result.success) {
+      logger.error(result.error.code);
+      const status = result.error.equals(ContractError.TooManyAttempts) ? 429 : 400;
+      ctx.status = status;
+      ctx.body = { error: result.error.display };
+      return ctx;
+    }
+    ctx.status = 200;
+    ctx.body = { message: 'Password reset successfully' };
     return ctx;
   },
 

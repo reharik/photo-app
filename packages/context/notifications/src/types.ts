@@ -1,5 +1,3 @@
-export type TemplateName = 'welcome' | 'share-invite' | 'digest';
-
 export type TemplateData = {
   welcome: {
     firstName: string;
@@ -22,7 +20,18 @@ export type TemplateData = {
     digestUrl: string;
     appName?: string;
   };
+  passwordReset: {
+    firstName: string;
+    appName?: string;
+  };
+  forgotPassword: {
+    code: string;
+    appName?: string;
+    firstName?: string;
+  };
 };
+
+export type TemplateName = keyof TemplateData;
 
 export type NotificationChannel = 'email' | 'sms';
 

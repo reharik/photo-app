@@ -484,6 +484,20 @@ const contractErrorInput = {
     area: ErrorArea.notification,
     retryable: false,
   },
+  TooManyAttempts: {
+    code: 'TOO_MANY_ATTEMPTS',
+    display: 'Too many attempts',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  InvalidPasswordResetCode: {
+    code: 'INVALID_PASSWORD_RESET_CODE',
+    display: 'Invalid password reset code',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

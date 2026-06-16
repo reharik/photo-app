@@ -3,6 +3,7 @@ import { AppShell } from '../../features/shell/AppShell';
 import { AlbumScreen } from '../../screens/AlbumScreen';
 import { AlbumsListScreen } from '../../screens/AlbumsListScreen';
 import { HomeScreen } from '../../screens/HomeScreen';
+import { ForgotPasswordScreen } from '../../screens/ForgotPasswordScreen';
 import { LoggedOutScreen } from '../../screens/LoggedOutScreen';
 import { MediaItemScreen } from '../../screens/MediaItemScreen';
 import { PublicAccessScreen } from '../../screens/PublicAccessScreen';
@@ -32,6 +33,7 @@ export const AppRouter = () => {
         }
       />
       <Route path="/login" element={<LoggedOutScreen />} />
+      <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
       <Route element={<RequireViewer />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<HomeScreen />} />
