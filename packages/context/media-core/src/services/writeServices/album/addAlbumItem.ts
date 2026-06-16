@@ -4,11 +4,12 @@ import {
   loadRequiredAlbum,
   loadRequiredReadOnlyMediaItem,
 } from '../../../application/support/resourceLoaders';
-import { ok } from '../../../domain/utilities/writeResponse';
+
+import { ok, WriteResult } from '@packages/contracts';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
-import { WriteResult } from '../../../types/types';
+
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
 

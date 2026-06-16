@@ -1,4 +1,4 @@
-import { AppErrorCollection } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import {
@@ -7,13 +7,12 @@ import {
 } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/types';
-import { EntityId, WriteResult } from '../../../types/types';
+import { EntityId } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
 import {
   GrantUserAuthorizationForMediaItemsCommand,

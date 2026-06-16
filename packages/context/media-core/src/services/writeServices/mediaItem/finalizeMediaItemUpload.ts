@@ -1,15 +1,21 @@
-import { AppErrorCollection, MediaAssetKind, MediaKind } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  fail,
+  MediaAssetKind,
+  MediaKind,
+  ok,
+  WriteResult,
+} from '@packages/contracts';
 import { Knex } from 'knex';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/MediaProcessingJob/MediaProcessingJobRepository';
-import type { WriteResult } from '../../../types/types';
+
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   FinalizeMediaItemUploadCommand,

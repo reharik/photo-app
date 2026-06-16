@@ -1,16 +1,15 @@
-import { AlbumMemberRole, AppErrorCollection } from '@packages/contracts';
+import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import crypto from 'crypto';
 import { Knex } from 'knex';
 import { hashToken } from '../../../application';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import {
   GrantRecord,
   GrantRepository,
 } from '../../../repositories/domainRepositories/grantRepository';
-import { EntityId, WriteResult } from '../../../types/types';
+import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type CreatePublicLinkForAlbumCommand = {

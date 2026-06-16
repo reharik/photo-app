@@ -1,4 +1,7 @@
+import { WriteResult } from '@packages/contracts';
 import { getResendClient } from '../client.js';
+import { EmailService } from '../emailClient.js';
+import { EmailConfig } from '../types';
 
 export type EmailSendInput = {
   to: string;
@@ -11,9 +14,9 @@ export type EmailSendResult =
   | { ok: true; id: string }
   | { ok: false; error: string; providerDetail?: string };
 
-const buildFrom = (): string | null => {
-  const address = process.env.FROM_EMAIL?.trim();
-  const name = process.env.FROM_NAME?.trim();
+const buildFrom = (config: EmailChannelConfig): string | null => {
+  const address = config.fromEmail.trim();
+  const name = config.fromName.trim();
   if (!address) {
     return null;
   }
@@ -23,37 +26,37 @@ const buildFrom = (): string | null => {
   return address;
 };
 
-export const sendEmail = async (input: EmailSendInput): Promise<EmailSendResult> => {
-  const from = buildFrom();
-  if (!from) {
-    return { ok: false, error: 'FROM_EMAIL environment variable is not set' };
-  }
+export interface Channel {
+  readonly __channelBrand?: true;
+}
 
-  const client = getResendClient();
-  if (!client) {
-    return { ok: false, error: 'RESEND_API_KEY environment variable is not set' };
-  }
+export interface EmailChannel extends Channel {
+  sendEmail: (input: EmailSendInput) => Promise<WriteResult<{ messageId: string }>>;
+}
 
-  const { data, error } = await client.emails.send({
-    from,
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-    ...(input.text ? { text: input.text } : {}),
-  });
-
-  if (error) {
-    return {
-      ok: false,
-      error: error.message ?? 'Resend returned an error',
-      providerDetail: JSON.stringify(error),
-    };
-  }
-
-  const id = data?.id;
-  if (!id) {
-    return { ok: false, error: 'Resend did not return a message id' };
-  }
-
-  return { ok: true, id };
+export type EmailChannelDeps = {
+  config: EmailConfig;
+  emailClient: EmailService;
 };
+
+export const build__emailChannel = ({ config, emailClient }: EmailChannelDeps): EmailChannel => ({
+  sendEmail: async (input: EmailSendInput): Promise<EmailSendResult> => {
+    const fromEmail = buildFrom(config);
+    if (!fromEmail) {
+      return { ok: false, error: 'FROM_EMAIL environment variable is not set' };
+    }
+
+    const client = getResendClient();
+    if (!client) {
+      return { ok: false, error: 'RESEND_API_KEY environment variable is not set' };
+    }
+
+    return await emailClient.sendEmail({
+      fromEmail,
+      to: input.to,
+      subject: input.subject,
+      body: input.html,
+      ...(input.text ? { text: input.text } : {}),
+    });
+  },
+});

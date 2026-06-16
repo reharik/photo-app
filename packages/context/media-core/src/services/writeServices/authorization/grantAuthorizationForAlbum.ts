@@ -1,14 +1,12 @@
-import { Operation } from '@packages/contracts';
+import { fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain/Authorization/Authorization';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/types';
-import { WriteResult } from '../../../types/types';
 import { AuthorizationProjection } from '../../readServices/types';
 import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
 import { GrantUserAuthorizationResult } from '../mediaItem/writeMediaItem.types';

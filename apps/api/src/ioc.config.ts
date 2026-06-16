@@ -17,7 +17,11 @@ export default defineIocConfig({
     ],
     factoryPrefix: 'build__',
   },
-  composedManifests: ['@packages/media-core', '@packages/infrastructure'],
+  composedManifests: [
+    '@packages/media-core',
+    '@packages/infrastructure',
+    '@packages/notifications',
+  ],
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },

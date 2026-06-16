@@ -1,9 +1,8 @@
-import { ContractError } from '@packages/contracts';
+import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
 import { EntityId } from '../..';
-import type { ActorId, WriteResult } from '../../types/types';
+import type { ActorId } from '../../types/types';
 import { AlbumItem } from '../Album/AlbumItem';
 import { albumItemOrderIndexForOrdinal } from '../Album/albumItemOrder';
-import { fail, ok } from '../utilities/writeResponse';
 
 export const reorderAlbumItems = (
   orderedAlbumItemIds: EntityId[],

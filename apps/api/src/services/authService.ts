@@ -6,11 +6,11 @@ import {
 } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import { hashToken } from '@packages/media-core';
+import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
 import { randomUUID } from 'node:crypto';
-
 import type { Config } from '../config.js';
 
 export type SanitizedUser = Omit<User, 'passwordHash'>;
@@ -28,6 +28,7 @@ type UserRow = User & {
   passwordHash?: string;
   firstName?: string;
   lastName?: string;
+  phone?: string;
 };
 
 const sanitizeUser = (user: UserRow): SanitizedUser => {
@@ -36,27 +37,19 @@ const sanitizeUser = (user: UserRow): SanitizedUser => {
   return sanitized;
 };
 
-const splitDisplayName = (fullName: string): { firstName: string; lastName: string } => {
-  const trimmed = fullName.trim();
-  if (trimmed.length === 0) {
-    return { firstName: '-', lastName: '-' };
-  }
-  const spaceIdx = trimmed.indexOf(' ');
-  if (spaceIdx === -1) {
-    return { firstName: trimmed, lastName: '-' };
-  }
-  const firstName = trimmed.slice(0, spaceIdx);
-  const lastName = trimmed.slice(spaceIdx + 1).trim() || '-';
-  return { firstName, lastName };
-};
-
 type AuthServiceDeps = {
   database: Knex;
   logger: Logger;
   config: Config;
+  notificationService: NotificationService;
 };
 
-export const build__AuthService = ({ database, logger, config }: AuthServiceDeps): AuthService => ({
+export const build__AuthService = ({
+  database,
+  logger,
+  config,
+  notificationService,
+}: AuthServiceDeps): AuthService => ({
   login: async (credentials: LoginInput) => {
     const { email, password } = credentials;
 
@@ -103,7 +96,7 @@ export const build__AuthService = ({ database, logger, config }: AuthServiceDeps
   },
 
   signup: async (credentials: SignupInput) => {
-    const { email, password, name } = credentials;
+    const { email, password, firstName, lastName, phone, smsOptIn } = credentials;
 
     // Check if user already exists
     const existingUser = await database<UserRow>('user').where({ email }).first();
@@ -113,41 +106,56 @@ export const build__AuthService = ({ database, logger, config }: AuthServiceDeps
     }
 
     const id = randomUUID();
-    const { firstName, lastName } = splitDisplayName(name);
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create user
-    const [user] = await database<UserRow>('user')
-      .insert({
-        id,
-        email,
+    // const [user] = await database<UserRow>('user')
+    //   .insert({
+    //     id,
+    //     email,
+    //     firstName,
+    //     lastName,
+    //     ...(phone !== undefined ? { phone } : {}),
+    //     passwordHash,
+    //     emailVerified: false,
+    //     smsOptIn: smsOptIn ?? false,
+    //     createdBy: id,
+    //     updatedBy: id,
+    //   })
+    //   .returning('*');
+
+    // // Generate JWT token
+    // const token = jwt.sign(
+    //   {
+    //     userId: user.id,
+    //     email: user.email,
+    //   },
+    //   config.jwtSecret,
+    //   { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
+    // );
+
+    await notificationService.notify({
+      to: { email },
+      template: 'share-invite',
+      data: {
+        inviterName: 'Alice',
+        resourceName: 'Q3 Report',
+        inviteUrl: 'https://example.com/invite/abc',
+      },
+      data: {
         firstName,
         lastName,
-        passwordHash,
-        emailVerified: false,
-        createdBy: id,
-        updatedBy: id,
-      })
-      .returning('*');
-
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
       },
-      config.jwtSecret,
-      { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
-    );
-
-    logger.info('User signed up successfully', {
-      userId: user.id,
-      email: user.email,
     });
 
-    return { user: sanitizeUser(user), token };
+    logger.info('User signed up successfully', {
+      // userId: user.id,
+      // email: user.email,
+    });
+    return {};
+    // return { user: sanitizeUser(user), token };
   },
 
   verifyJWTToken: async (token: string) => {

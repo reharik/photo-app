@@ -192,7 +192,7 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   else
     if printf '%s\n' "${RECREATE_SERVICES[@]}" | grep -qx "api"; then
       echo "Backend recreating → pre-migration safety dump"
-      # /usr/local/bin/betaname-backup.sh pre-migration
+      /usr/local/bin/betaname-backup.sh pre-migration
     fi
     echo "Recreating compose services: ${RECREATE_SERVICES[*]}"
     if docker compose version >/dev/null 2>&1; then

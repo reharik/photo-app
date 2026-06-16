@@ -36,6 +36,7 @@
     "gen:ioc:api": "nx gen-ioc api",
     "gen:ioc:infrastructure": "nx gen-ioc infrastructure",
     "gen:ioc:media-core": "nx gen-ioc media-core",
+    "gen:ioc:notifications": "nx gen-ioc notifications",
     "gen:ioc:worker": "nx gen-ioc media-worker",
     "gen:gql:all": "nx run-many --target=gen-gql --projects=api,web",
     "gen:gql:api": "nx gen-gql api",
@@ -45,10 +46,12 @@
     "ioc:discovery:api": "npm --workspace @app/api run ioc:discover",
     "ioc:discovery:infrastructure": "npm --workspace @packages/infrastructure run ioc:discover",
     "ioc:discovery:media-core": "npm --workspace @packages/media-core run ioc:discover",
+    "ioc:discovery:notifications": "npm --workspace @packages/notifications run ioc:discover",
     "ioc:discovery:worker": "npm --workspace @app/media-worker run ioc:discover",
     "ioc:inspect:api": "npm --workspace @app/api run ioc:inspect",
     "ioc:inspect:infrastructure": "npm --workspace @packages/infrastructure run ioc:inspect",
     "ioc:inspect:media-core": "npm --workspace @packages/media-core run ioc:inspect",
+    "ioc:inspect:notifications": "npm --workspace @packages/notifications run ioc:inspect",
     "ioc:inspect:worker": "npm --workspace @app/media-worker run ioc:inspect",
     "db:make": "nx run api:db:make",
     "db:migrate": "nx run api:db:migrate",
@@ -83,7 +86,7 @@
   },
   "dependencies": {
     "@reharik/smart-enum": "^0.4.6",
-    "ioc-manifest": "^1.4.1",
+    "ioc-manifest": "^1.4.2",
     "knip": "^6.4.1"
   },
   "devDependencies": {
@@ -96,6 +99,7 @@
     "@nx/js": "21.4.1",
     "@nx/react": "21.4.1",
     "@nx/vite": "21.4.1",
+    "@react-email/ui": "^6.6.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

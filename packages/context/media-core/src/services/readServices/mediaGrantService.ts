@@ -1,11 +1,9 @@
-import { AppErrorCollection, Operation } from '@packages/contracts';
-import { fail, ok } from '../..';
+import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import {
   AlbumMemberReadRepository,
   GrantReadRepository,
   MediaItemReadRepository,
 } from '../../repositories/readRepositories/types';
-import { WriteResult } from '../../types/types';
 
 export type AuthorizeMediaCommentInput = {
   mediaItemId: string;

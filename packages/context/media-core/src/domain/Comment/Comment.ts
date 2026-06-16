@@ -4,14 +4,13 @@
  *
  */
 
-import { ReactionTargetType, type CommentTargetType } from '@packages/contracts';
+import { ok, ReactionTargetType, WriteResult, type CommentTargetType } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { DBReactionCounts } from '../../services/readServices/types';
 import { Reaction } from '../../services/writeServices/mediaItem/writeMediaItem.types';
-import type { ActorId, EntityId, WriteResult } from '../../types/types';
+import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { AuditRecord, VOCollection } from '../Entity';
-import { ok } from '../utilities/writeResponse';
 
 export type CommentReactionRecord = Omit<Reaction, 'id'> & {
   id: string;

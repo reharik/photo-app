@@ -1,4 +1,4 @@
-import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
+import { AppErrorCollection, fail, MediaAssetKind, ok, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import {
   buildMediaAssetStorageKey,
@@ -6,11 +6,9 @@ import {
   MediaStorage,
 } from '../../../application/media/MediaStorage';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
 

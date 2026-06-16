@@ -1,5 +1,5 @@
 import { useApolloClient } from '@apollo/client/react';
-import { User } from '@packages/contracts';
+import { SignupInput, User } from '@packages/contracts';
 import React, { createContext, ReactNode, useContext } from 'react';
 import { ViewerDocument } from '../graphql/generated/types';
 import { useApiFetch } from '../hooks/useApiFetch';
@@ -9,7 +9,7 @@ type TokenActionResult = { success: boolean; error?: string };
 
 interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthActionResult>;
-  signup: (email: string, password: string, name: string) => Promise<AuthActionResult>;
+  signup: (input: SignupInput) => Promise<AuthActionResult>;
   publicAccess: (token: string) => Promise<TokenActionResult>;
   logout: () => Promise<void>;
 }
@@ -36,15 +36,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const signup = async (
-    email: string,
-    password: string,
-    name: string,
-  ): Promise<AuthActionResult> => {
+  const signup = async (input: SignupInput): Promise<AuthActionResult> => {
     try {
       const data = await apiFetch<{ user: User }>('/auth/signup', {
         method: 'POST',
-        body: { email, password, name },
+        body: input,
       });
       if (data.success) {
         await apolloClient.query({ query: ViewerDocument, fetchPolicy: 'network-only' });

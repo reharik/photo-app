@@ -1,9 +1,8 @@
-import { AppErrorCollection } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -11,7 +10,7 @@ import {
   AlbumReadRepository,
   MediaItemReadRepository,
 } from '../../../repositories/readRepositories/types';
-import { EntityId, WriteResult } from '../../../types/types';
+import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemsCommand, DeleteMediaItemsResult } from './writeMediaItem.types';

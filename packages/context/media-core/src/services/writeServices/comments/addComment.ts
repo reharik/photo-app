@@ -1,19 +1,22 @@
 import {
   AppErrorCollection,
   CommentTargetType,
+  fail,
+  ok,
   ReactionEmoji,
   ReactionTargetType,
   User,
+  WriteResult,
 } from '@packages/contracts';
 import { Knex } from 'knex';
-import { Comment, fail, ok } from '../../../domain';
+import { Comment } from '../../../domain';
 import {
   unwrapOrThrow,
   WithTransaction,
 } from '../../../infrastructure/repositories/runInTransaction';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
-import { EntityId, WriteResult } from '../../../types/types';
+import { EntityId } from '../../../types/types';
 import { ValidateOperationService } from '../../readServices/mediaGrantService';
 import { ToggleReaction } from '../reactions/toggleReaction';
 import { WriteServiceBase } from '../writeServiceBaseType';

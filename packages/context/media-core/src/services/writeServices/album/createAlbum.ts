@@ -1,9 +1,8 @@
+import { ok, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { Album } from '../../../domain/Album/Album';
-import { ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateAlbumCommand, CreateAlbumResult } from './writeAlbum.types';
 export interface CreateAlbum extends WriteServiceBase {

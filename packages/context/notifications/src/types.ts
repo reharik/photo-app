@@ -2,8 +2,9 @@ export type TemplateName = 'welcome' | 'share-invite' | 'digest';
 
 export type TemplateData = {
   welcome: {
-    userName: string;
-    gettingStartedUrl: string;
+    firstName: string;
+    lastName: string;
+    appUrl: string;
     appName?: string;
   };
   'share-invite': {
@@ -13,7 +14,8 @@ export type TemplateData = {
     appName?: string;
   };
   digest: {
-    userName: string;
+    firstName: string;
+    lastName: string;
     periodLabel: string;
     summaryLine: string;
     highlights: { title: string; detail: string }[];
@@ -36,3 +38,10 @@ export type NotifySuccess = { success: true; id: string };
 export type NotifyFailure = { success: false; error: string };
 
 export type NotifyResult = NotifySuccess | NotifyFailure;
+
+export type EmailConfig = {
+  fromEmail: string;
+  fromName: string;
+  awsRegion: string;
+  awsEndpoint?: string;
+};

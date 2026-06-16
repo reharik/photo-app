@@ -1,9 +1,8 @@
-import { AppErrorCollection } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
-import { fail, ok } from '../../../domain';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
-import { EntityId, WriteResult } from '../../../types/types';
+import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type EditCommentCommand = {

@@ -1,10 +1,8 @@
-import { AppErrorCollection, Operation } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { fail, ok } from '../../../domain/utilities/writeResponse';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { WriteResult } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumCommand, DeleteAlbumResult } from './writeAlbum.types';
 

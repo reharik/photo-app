@@ -16,7 +16,9 @@ const Digest = (data: DigestData): ReactElement => {
   return (
     <BaseEmail appName={appName} previewText={preview} title={`${data.periodLabel} digest`}>
       <Section>
-        <Text style={greeting}>Hi {data.userName},</Text>
+        <Text style={greeting}>
+          Hi {data.firstName} {data.lastName},
+        </Text>
         <Text style={paragraph}>{data.summaryLine}</Text>
       </Section>
       <Section style={{ marginTop: '20px' }}>

@@ -5,33 +5,87 @@ import { APP_NAME, APP_TAGLINE } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
 import { FormInput } from '../ui/FormInput';
 
+const isValidPhone = (value: string): boolean => {
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 15;
+};
+
 export const LoggedOutScreen = () => {
   const [isSignup, setIsSignup] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, signup } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const trimmedPhone = phone.trim();
+  const showSmsOptIn = trimmedPhone.length > 0;
+
+  const resetSignupFields = () => {
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setSmsOptIn(false);
+  };
+
+  const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setPhone(value);
+    if (value.trim().length === 0) {
+      setSmsOptIn(false);
+    }
+  };
+
+  const toggleAuthMode = () => {
+    setError(undefined);
+    if (isSignup) {
+      resetSignupFields();
+    }
+    setIsSignup(!isSignup);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(undefined);
     setIsLoading(true);
 
     try {
-      const result = isSignup ? await signup(email, password, name) : await login(email, password);
+      if (isSignup) {
+        if (trimmedPhone.length > 0 && !isValidPhone(trimmedPhone)) {
+          setError('Enter a valid phone number or leave the field blank.');
+          return;
+        }
 
-      if (!result.ok) {
-        setError(result.message);
-        return;
+        const result = await signup({
+          email: email.trim(),
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          ...(trimmedPhone.length > 0 ? { phone: trimmedPhone } : {}),
+          smsOptIn: trimmedPhone.length > 0 && smsOptIn,
+        });
+
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+      } else {
+        const result = await login(email.trim(), password);
+
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
       }
 
       await navigate('/', { replace: true });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
@@ -49,11 +103,11 @@ export const LoggedOutScreen = () => {
           <FeatureList>
             <Feature>
               <FeatureIcon>📸</FeatureIcon>
-              <FeatureText>Unlimited media storage</FeatureText>
+              <FeatureText>All your photos in one place</FeatureText>
             </Feature>
             <Feature>
-              <FeatureIcon>👨‍👩‍👧‍👦</FeatureIcon>
-              <FeatureText>Family-friendly sharing</FeatureText>
+              <FeatureIcon>🖼️</FeatureIcon>
+              <FeatureText>Share with family and friends</FeatureText>
             </Feature>
             <Feature>
               <FeatureIcon>🔒</FeatureIcon>
@@ -67,46 +121,137 @@ export const LoggedOutScreen = () => {
         </LeftPanel>
 
         <RightPanel>
-          <AuthCard>
+          <AuthCard $isSignup={isSignup}>
             <AuthHeader>
               <AuthTitle>{isSignup ? 'Create Account' : 'Welcome Back'}</AuthTitle>
               <AuthSubtitle>
-                {isSignup
-                  ? 'Start preserving your family memories'
-                  : 'Sign in to access your media'}
+                {isSignup ? 'Create your account to get started.' : 'Welcome back.'}
               </AuthSubtitle>
             </AuthHeader>
 
-            <Form onSubmit={handleSubmit}>
+            <Form onSubmit={handleSubmit} $isSignup={isSignup}>
               {isSignup && (
-                <FormInput
-                  label="Name"
-                  type="text"
-                  value={name}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-                  required
-                  autoComplete="name"
-                />
+                <>
+                  <NameRow>
+                    <FormInput
+                      id="signup-first-name"
+                      label="First name"
+                      type="text"
+                      placeholder="Jane"
+                      value={firstName}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                        setFirstName(event.target.value)
+                      }
+                      required
+                      autoComplete="given-name"
+                    />
+                    <FormInput
+                      id="signup-last-name"
+                      label="Last name"
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                        setLastName(event.target.value)
+                      }
+                      required
+                      autoComplete="family-name"
+                    />
+                  </NameRow>
+                  <FormInput
+                    id="signup-email"
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    data-testid="login-email"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(event.target.value)
+                    }
+                    required
+                    autoComplete="email"
+                  />
+                  <FormInput
+                    id="signup-password"
+                    label="Password"
+                    type="password"
+                    value={password}
+                    data-testid="login-password"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(event.target.value)
+                    }
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                  />
+                  <PhoneField>
+                    <FormInput
+                      id="signup-phone"
+                      label="Phone number"
+                      type="tel"
+                      placeholder="+1 555 123 4567"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                    />
+                    <FieldHelper>
+                      Optional — add a number if you&apos;d like SMS notifications. You can always
+                      add it later.
+                    </FieldHelper>
+                  </PhoneField>
+                  {showSmsOptIn && (
+                    <SmsOptInRow>
+                      <SmsOptInCheckbox
+                        id="signup-sms-opt-in"
+                        type="checkbox"
+                        checked={smsOptIn}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                          setSmsOptIn(event.target.checked)
+                        }
+                      />
+                      <SmsOptInLabel>
+                        Text me notifications (optional). You can add or change this anytime in
+                        settings.
+                      </SmsOptInLabel>
+                    </SmsOptInRow>
+                  )}
+                </>
               )}
-              <FormInput
-                label="Email"
-                type="email"
-                value={email}
-                data-testid="login-email"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-              <FormInput
-                label={isSignup ? 'Password (at least 8 characters)' : 'Password'}
-                type="password"
-                value={password}
-                data-testid="login-password"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                required
-                minLength={isSignup ? 8 : undefined}
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
-              />
+
+              {!isSignup && (
+                <>
+                  <FormInput
+                    id="login-email"
+                    label="Email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    data-testid="login-email"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(event.target.value)
+                    }
+                    required
+                    autoComplete="email"
+                  />
+                  <FormInput
+                    id="login-password"
+                    label="Password"
+                    type="password"
+                    placeholder="Your password"
+                    value={password}
+                    data-testid="login-password"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(event.target.value)
+                    }
+                    required
+                    autoComplete="current-password"
+                  />
+                </>
+              )}
+
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
               <SubmitButton type="submit" disabled={isLoading}>
@@ -117,7 +262,7 @@ export const LoggedOutScreen = () => {
             <AuthFooter>
               <ToggleText>
                 {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
-                <ToggleLink onClick={() => setIsSignup(!isSignup)}>
+                <ToggleLink type="button" onClick={toggleAuthMode}>
                   {isSignup ? 'Sign In' : 'Create Account'}
                 </ToggleLink>
               </ToggleText>
@@ -223,17 +368,17 @@ const RightPanel = styled.div`
   justify-content: center;
 `;
 
-const AuthCard = styled.div`
+const AuthCard = styled.div<{ $isSignup: boolean }>`
   background: ${({ theme }) => theme.color.bodyRaised};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.xl};
   padding: ${({ theme }) => theme.spacing(6)};
   width: 100%;
-  max-width: 440px;
+  max-width: ${({ $isSignup }) => ($isSignup ? '520px' : '440px')};
 `;
 
 const AuthHeader = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing(4)};
+  margin-bottom: ${({ theme }) => theme.spacing(5)};
 `;
 
 const AuthTitle = styled.h2`
@@ -247,17 +392,66 @@ const AuthSubtitle = styled.p`
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
   font-size: 14px;
+  line-height: 1.5;
 `;
 
-const Form = styled.form`
+const Form = styled.form<{ $isSignup: boolean }>`
   display: flex;
   flex-direction: column;
+  gap: ${({ theme, $isSignup }) => theme.spacing($isSignup ? 4 : 3)};
+`;
+
+const NameRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: ${({ theme }) => theme.spacing(3)};
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const PhoneField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(1)};
+`;
+
+const FieldHelper = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.fontSize._12};
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+`;
+
+const SmsOptInRow = styled.label`
+  display: flex;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing(2)};
+  min-height: 44px;
+  padding: ${({ theme }) => theme.spacing(1)} 0;
+  cursor: pointer;
+`;
+
+const SmsOptInCheckbox = styled.input`
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: ${({ theme }) => theme.color.primaryButtonBg};
+  cursor: pointer;
+`;
+
+const SmsOptInLabel = styled.span`
+  font-size: ${({ theme }) => theme.fontSize._14};
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.bodyText};
 `;
 
 const SubmitButton = styled.button`
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(2)};
+  min-height: 48px;
+  padding: ${({ theme }) => theme.spacing(2)} ${({ theme }) => theme.spacing(3)};
   background: ${({ theme }) => theme.color.primaryButtonBg};
   color: ${({ theme }) => theme.color.body};
   border: none;
@@ -304,6 +498,7 @@ const ToggleLink = styled.button`
   padding: 0;
   text-decoration: underline;
   transition: color 0.2s ease;
+  cursor: pointer;
 
   &:hover {
     color: ${({ theme }) => theme.color.linkHover};

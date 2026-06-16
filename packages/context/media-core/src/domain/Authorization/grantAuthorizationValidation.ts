@@ -1,8 +1,7 @@
-import { AlbumMemberRole, AppErrorCollection } from '@packages/contracts';
-import { EntityId, WriteResult } from '../../types/types';
+import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { EntityId } from '../../types/types';
 import { Album } from '../Album/Album';
 import { MediaItem } from '../MediaItem/MediaItem';
-import { fail, ok } from '../utilities/writeResponse';
 
 export const grantAuthorizationValidation = <T extends Album | MediaItem>(
   item: T,

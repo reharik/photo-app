@@ -68,30 +68,52 @@ export const build__AuthController = ({
     const body = ctx.request.body as {
       email?: unknown;
       password?: unknown;
-      name?: unknown;
+      firstName?: unknown;
+      lastName?: unknown;
+      phone?: unknown;
+      smsOptIn?: unknown;
     };
 
     const email = typeof body.email === 'string' ? body.email.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
-
-    if (email.length === 0 || password.length === 0 || name.length === 0) {
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+    const phoneRaw = typeof body.phone === 'string' ? body.phone.trim() : '';
+    const phone = phoneRaw.length > 0 ? phoneRaw : undefined;
+    const smsOptIn = typeof body.smsOptIn === 'boolean' ? body.smsOptIn : false;
+    if (
+      email.length === 0 ||
+      password.length === 0 ||
+      firstName.length === 0 ||
+      lastName.length === 0
+    ) {
       ctx.status = 400;
-      ctx.body = { error: 'Email, password, and name are required' };
+      ctx.body = { error: 'Email, password, first name, and last name are required' };
       return ctx;
     }
 
-    // Validate password length
     if (password.length < 8) {
       ctx.status = 400;
       ctx.body = { error: 'Password must be at least 8 characters long' };
       return ctx;
     }
 
+    if (phone !== undefined) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) {
+        ctx.status = 400;
+        ctx.body = { error: 'Enter a valid phone number or leave the field blank' };
+        return ctx;
+      }
+    }
+
     const result = await authService.signup({
       email,
       password,
-      name,
+      firstName,
+      lastName,
+      phone,
+      smsOptIn,
     });
     if (!result) {
       logger.warn('Signup attempt failed from controller', {

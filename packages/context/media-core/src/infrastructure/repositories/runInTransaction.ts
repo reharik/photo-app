@@ -1,5 +1,5 @@
+import { WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
-import { WriteResult } from '../../types/types';
 
 /**
  * Low-level transaction helper. Starts a new Knex transaction when `trx` is

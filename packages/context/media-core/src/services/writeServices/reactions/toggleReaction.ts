@@ -1,10 +1,17 @@
-import { AppErrorCollection, ReactionEmoji, ReactionTargetType, User } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  fail,
+  ok,
+  ReactionEmoji,
+  ReactionTargetType,
+  User,
+  WriteResult,
+} from '@packages/contracts';
 import { Knex } from 'knex';
-import { fail, ok } from '../../../domain';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import type { EntityId, WriteResult } from '../../../types/types';
+import type { EntityId } from '../../../types/types';
 import { Reaction } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 

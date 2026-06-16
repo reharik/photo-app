@@ -43,6 +43,8 @@ export type Config = {
    * Required for `Secure` session cookies when TLS terminates at the load balancer or nginx.
    */
   trustProxy: boolean;
+  fromEmail: string;
+  fromName: string;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -116,6 +118,8 @@ export const createConfigFromEnv = (): Config => {
       ? Number(process.env.MEDIA_WORKER_POLL_MS)
       : 2000,
     trustProxy,
+    fromEmail: process.env.FROM_EMAIL || '',
+    fromName: process.env.FROM_NAME || '',
   };
 };
 

@@ -15,9 +15,15 @@
     "skipLibCheck": true,
     "strictNullChecks": true,
     "strict": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
-  "include": ["src/**/*.ts", "db/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "db/**/*.ts",
+    "../../packages/context/notifications/src/**/*.tsx"
+  ],
   "exclude": [
     "jest.*",
     "dist",

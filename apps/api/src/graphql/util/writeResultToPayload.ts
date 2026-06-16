@@ -1,4 +1,4 @@
-import { WriteResult } from '@packages/media-core';
+import { WriteResult } from '@packages/contracts';
 import { ContractError } from '../generated/types.generated';
 import { toContractErrorPayload } from '../mappers/contractErrorMapper';
 

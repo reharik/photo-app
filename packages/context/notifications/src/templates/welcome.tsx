@@ -1,57 +1,152 @@
-import { Button, Section, Text } from '@react-email/components';
-import { ReactElement } from 'react';
-import { TemplateData } from '../types.js';
-import { BaseEmail } from './base.js';
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Hr,
+  Html,
+  Preview,
+  Section,
+  Text,
+} from '@react-email/components';
+import React from 'react';
+import { TemplateData } from '../types';
 
+export type WelcomeEmailProps = {
+  firstName?: string;
+  appUrl: string;
+};
+
+const APP_NAME = 'betaname';
 type WelcomeData = TemplateData['welcome'];
 
 export const subject = (data: WelcomeData): string => {
   const app = data.appName ?? 'PhotoApp';
-  return `Welcome to ${app}, ${data.userName}`;
+  return `Welcome to ${app}, ${data.firstName} ${data.lastName}`;
 };
 
-const Welcome = (data: WelcomeData): ReactElement => {
-  const appName = data.appName ?? 'PhotoApp';
+export const WelcomeEmail = ({ firstName, appUrl }: WelcomeData) => {
+  const greetingName = firstName?.trim() || 'there';
+
   return (
-    <BaseEmail
-      appName={appName}
-      previewText={`Your ${appName} account is ready.`}
-      title={`Welcome, ${data.userName}`}
-    >
-      <Section>
-        <Text style={paragraph}>
-          Thanks for joining {appName}. You can upload photos, organize albums, and invite others
-          when you are ready.
-        </Text>
-        <Text style={paragraph}>
-          If you did not create this account, you can safely ignore this email.
-        </Text>
-      </Section>
-      <Section style={{ marginTop: '24px' }}>
-        <Button href={data.gettingStartedUrl} style={buttonStyle}>
-          Open your dashboard
-        </Button>
-      </Section>
-    </BaseEmail>
+    <Html>
+      <Head />
+      <Preview>
+        Your {APP_NAME} account is ready — your photos, shared with the people you choose.
+      </Preview>
+      <Body style={body}>
+        <Container style={container}>
+          <Section style={brandSection}>
+            <Text style={brand}>{APP_NAME}</Text>
+          </Section>
+
+          <Heading style={heading}>Welcome, {greetingName}!</Heading>
+
+          <Text style={paragraph}>Your {APP_NAME} account is ready.</Text>
+
+          <Text style={paragraph}>
+            {APP_NAME} is a private place for your photos — keep them in one spot, and share the
+            moments you want with the family and friends you choose. Add your own, and see what
+            everyone else adds.
+          </Text>
+
+          <Section style={buttonSection}>
+            <Button style={button} href={appUrl}>
+              Open {APP_NAME}
+            </Button>
+          </Section>
+
+          <Text style={paragraph}>
+            Didn&apos;t create this account? You can safely ignore this email — nothing else will
+            happen.
+          </Text>
+
+          <Hr style={hr} />
+
+          <Text style={footer}>
+            You&apos;re receiving this because someone created a {APP_NAME} account with this email
+            address.
+          </Text>
+        </Container>
+      </Body>
+    </Html>
   );
 };
 
-const paragraph = {
-  color: '#3f3f46',
-  fontSize: '15px',
-  lineHeight: '1.6',
-  margin: '0 0 12px',
+WelcomeEmail.PreviewProps = {
+  firstName: 'Jane',
+  appUrl: 'https://photos.backintouch.net',
+} satisfies WelcomeEmailProps;
+
+export default WelcomeEmail;
+
+// ---- styles ----
+
+const body: React.CSSProperties = {
+  backgroundColor: '#f5f3ee',
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  margin: 0,
+  padding: '32px 0',
 };
 
-const buttonStyle = {
-  backgroundColor: '#18181b',
-  borderRadius: '6px',
-  color: '#fafafa',
-  display: 'inline-block',
-  fontSize: '14px',
+const container: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  borderRadius: '12px',
+  margin: '0 auto',
+  padding: '40px',
+  maxWidth: '480px',
+};
+
+const brandSection: React.CSSProperties = {
+  marginBottom: '24px',
+};
+
+const brand: React.CSSProperties = {
+  fontSize: '20px',
   fontWeight: 600,
-  padding: '12px 20px',
-  textDecoration: 'none',
+  color: '#6b4a2b',
+  margin: 0,
 };
 
-export default Welcome;
+const heading: React.CSSProperties = {
+  fontSize: '24px',
+  fontWeight: 600,
+  color: '#2b2b2b',
+  margin: '0 0 16px',
+};
+
+const paragraph: React.CSSProperties = {
+  fontSize: '16px',
+  lineHeight: '1.6',
+  color: '#3a3a3a',
+  margin: '0 0 16px',
+};
+
+const buttonSection: React.CSSProperties = {
+  margin: '28px 0',
+};
+
+const button: React.CSSProperties = {
+  backgroundColor: '#6b4a2b',
+  borderRadius: '8px',
+  color: '#ffffff',
+  fontSize: '16px',
+  fontWeight: 600,
+  textDecoration: 'none',
+  textAlign: 'center',
+  display: 'inline-block',
+  padding: '14px 28px',
+};
+
+const hr: React.CSSProperties = {
+  borderColor: '#e8e4dc',
+  margin: '32px 0 16px',
+};
+
+const footer: React.CSSProperties = {
+  fontSize: '13px',
+  lineHeight: '1.5',
+  color: '#8a8a8a',
+  margin: 0,
+};

@@ -5,8 +5,19 @@
   "type": "module",
   "exports": {
     ".": {
+      "development": "./src/index.ts",
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
+    },
+    "./iocManifest": {
+      "development": "./src/generated/ioc-manifest.ts",
+      "types": "./dist/src/generated/ioc-manifest.d.ts",
+      "default": "./dist/src/generated/ioc-manifest.js"
+    },
+    "./iocTypes": {
+      "development": "./src/generated/ioc-registry.types.ts",
+      "types": "./dist/src/generated/ioc-registry.types.d.ts",
+      "default": "./dist/src/generated/ioc-registry.types.js"
     }
   },
   "main": "./dist/src/index.js",
@@ -15,12 +26,19 @@
     "barrels": "nx barrels notifications",
     "build": "nx build notifications",
     "dev": "nx dev notifications",
+    "gen:ioc": "nx gen-ioc notifications",
+    "ioc:discover": "ioc inspect --discovery",
+    "ioc:inspect": "ioc inspect",
+    "ioc:validate": "ioc validate",
     "lint": "nx lint notifications",
     "test": "nx test notifications"
   },
   "dependencies": {
+    "@aws-sdk/client-connect": "^3.1069.0",
+    "@aws-sdk/client-ses": "^3.1069.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.7",
+    "ioc-manifest": "^1.4.2",
     "react": "^19.0.0",
     "resend": "^4.0.0"
   },
