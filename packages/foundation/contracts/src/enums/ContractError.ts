@@ -463,6 +463,27 @@ const contractErrorInput = {
     area: ErrorArea.notification,
     retryable: true,
   },
+  SmsNotConfigured: {
+    code: 'SMS_NOT_CONFIGURED',
+    display: 'SMS is not configured',
+    category: ErrorCategory.system,
+    area: ErrorArea.notification,
+    retryable: false,
+  },
+  noNotificationChannelsAvailable: {
+    code: 'NO_NOTIFICATION_CHANNELS_AVAILABLE',
+    display: 'No notification channels available',
+    category: ErrorCategory.domain,
+    area: ErrorArea.notification,
+    retryable: false,
+  },
+  noRecipientsProvided: {
+    code: 'NO_RECIPIENTS_PROVIDED',
+    display: 'No recipients provided',
+    category: ErrorCategory.domain,
+    area: ErrorArea.notification,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

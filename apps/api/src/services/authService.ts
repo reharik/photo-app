@@ -135,25 +135,30 @@ export const build__AuthService = ({
       { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
     );
 
-    await notificationService.notify({
+    const result = await notificationService.notify({
       to: { email },
-      template: 'share-invite',
+      channels: ['email'],
+      template: 'welcome',
       data: {
-        inviterName: 'Alice',
-        resourceName: 'Q3 Report',
-        inviteUrl: 'https://example.com/invite/abc',
+        firstName,
+        lastName,
+        appUrl: config.clientUrl,
+        appName: config.appName,
       },
-      // data: {
-      //   firstName,
-      //   lastName,
-      // },
     });
 
-    logger.info('User signed up successfully', {
-      // userId: user.id,
-      // email: user.email,
-    });
-    // return {};
+    if (result.success) {
+      logger.info('User signed up successfully', {
+        userId: user.id,
+        email: user.email,
+      });
+    } else {
+      logger.error('Failed to send welcome email', {
+        userId: user.id,
+        email: user.email,
+        error: result.error.display,
+      });
+    }
     return { user: sanitizeUser(user), token };
   },
 

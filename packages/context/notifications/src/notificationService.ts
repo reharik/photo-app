@@ -1,15 +1,11 @@
+import { ContractError, WriteResult, fail, ok } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { render } from '@react-email/render';
 import { createElement } from 'react';
 import { NotImplementedError } from './channels/sms.js';
 import { IocGeneratedCradle } from './generated/ioc-registry.types.js';
 import { templateRegistry } from './templates/index.js';
-import type {
-  NotificationChannel,
-  NotificationPayload,
-  NotifyResult,
-  TemplateName,
-} from './types.js';
+import type { NotificationChannel, NotificationPayload, TemplateName } from './types.js';
 
 const resolveRecipients = (
   to: NotificationPayload<TemplateName>['to'],
@@ -53,7 +49,7 @@ export type NotificationServiceDeps = {
 };
 
 export interface NotificationService {
-  notify: <T extends TemplateName>(payload: NotificationPayload<T>) => Promise<NotifyResult>;
+  notify: <T extends TemplateName>(payload: NotificationPayload<T>) => Promise<WriteResult<string>>;
 }
 
 export const build__NotificationService = ({
@@ -72,7 +68,7 @@ export const build__NotificationService = ({
   return {
     notify: async <T extends TemplateName>(
       payload: NotificationPayload<T>,
-    ): Promise<NotifyResult> => {
+    ): Promise<WriteResult<string>> => {
       const { email, phone } = resolveRecipients(payload.to);
       const availableChannels = resolveChannels(payload.channels, email, phone);
 
@@ -80,7 +76,7 @@ export const build__NotificationService = ({
         const error =
           'No recipient address: provide a non-empty email or phone, or pass non-empty `channels`';
         logNotifyFailure({ event: 'notify_invalid_recipient', template: payload.template, error });
-        return { success: false, error };
+        return fail(ContractError.noNotificationChannelsAvailable);
       }
       const ids: string[] = [];
 
@@ -94,7 +90,7 @@ export const build__NotificationService = ({
               channel,
               error,
             });
-            return { success: false, error };
+            return fail(ContractError.noRecipientsProvided);
           }
 
           const entry = templateRegistry[payload.template];
@@ -109,7 +105,7 @@ export const build__NotificationService = ({
               recipient: email,
               error: message,
             });
-            return { success: false, error: `Template render failed: ${message}` };
+            return fail(ContractError.EmailSendFailed);
           }
 
           const subject = entry.getSubject(payload.data);
@@ -122,7 +118,7 @@ export const build__NotificationService = ({
               recipient: email,
               error: result.error.display,
             });
-            return { success: false, error: result.error.display };
+            return fail(ContractError.EmailSendFailed);
           }
 
           ids.push(result.value.messageId);
@@ -138,7 +134,7 @@ export const build__NotificationService = ({
               channel,
               error,
             });
-            return { success: false, error };
+            return fail(ContractError.SmsNotConfigured);
           }
 
           try {
@@ -148,7 +144,17 @@ export const build__NotificationService = ({
               toPhone: phone,
               body: subjectLine,
             });
-            ids.push(smsResult.id);
+            if (smsResult.success) {
+              ids.push(smsResult.value.id);
+            } else {
+              logNotifyFailure({
+                event: 'notify_sms_failed',
+                template: payload.template,
+                recipient: phone,
+                error: smsResult.error.display,
+              });
+              return fail(ContractError.SmsNotConfigured);
+            }
           } catch (err: unknown) {
             if (err instanceof NotImplementedError) {
               logNotifyFailure({
@@ -157,7 +163,7 @@ export const build__NotificationService = ({
                 recipient: phone,
                 error: err.message,
               });
-              return { success: false, error: err.message };
+              return fail(ContractError.SmsNotConfigured);
             }
             const message = err instanceof Error ? err.message : String(err);
             logNotifyFailure({
@@ -166,12 +172,12 @@ export const build__NotificationService = ({
               recipient: phone,
               error: message,
             });
-            return { success: false, error: message };
+            return fail(ContractError.SmsNotConfigured);
           }
         }
       }
 
-      return { success: true, id: ids.join('|') };
+      return ok(ids.join('|'));
     },
   };
 };

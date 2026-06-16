@@ -1,3 +1,4 @@
+import { WriteResult } from '@packages/contracts';
 import { Channel } from './email';
 /**
  * SMS channel (stub).
@@ -21,7 +22,7 @@ export class NotImplementedError extends Error {
 }
 
 export interface SmsChannel extends Channel {
-  sendSms: (input: SmsSendInput) => Promise<{ id: string }>;
+  sendSms: (input: SmsSendInput) => Promise<WriteResult<{ id: string }>>;
 }
 
 export type SmsSendInput = {
@@ -31,7 +32,7 @@ export type SmsSendInput = {
 
 export const build__smsChannel = (): SmsChannel => ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/require-await
-  sendSms: async (_input: SmsSendInput): Promise<{ id: string }> => {
+  sendSms: async (_input: SmsSendInput): Promise<WriteResult<{ id: string }>> => {
     throw new NotImplementedError(
       'SMS channel is not yet implemented. See channels/sms.ts for integration notes (e.g. Twilio).',
     );

@@ -47,6 +47,8 @@ export type Config = {
   trustProxy: boolean;
   fromEmail: string;
   fromName: string;
+  clientUrl: string;
+  appName: string;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -129,6 +131,8 @@ export const createConfigFromEnv = (): Config => {
     trustProxy,
     fromEmail: process.env.FROM_EMAIL || '',
     fromName: process.env.FROM_NAME || '',
+    clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    appName: process.env.APP_NAME || 'PhotoShare',
   };
 };
 
