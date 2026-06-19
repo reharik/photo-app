@@ -75,7 +75,7 @@ export const WelcomeEmail = ({ firstName, appUrl }: WelcomeData) => {
 
 WelcomeEmail.PreviewProps = {
   firstName: 'Jane',
-  appUrl: 'https://photos.backintouch.net',
+  appUrl: 'https://betaname.app',
 } satisfies WelcomeEmailProps;
 
 export default WelcomeEmail;

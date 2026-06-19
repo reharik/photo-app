@@ -63,7 +63,6 @@ describe('build__NotificationService', () => {
           firstName: 'Jane',
           lastName: 'Doe',
           appUrl: 'https://photos.example.com',
-          appName: 'PhotoApp',
         },
       });
 

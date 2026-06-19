@@ -10,7 +10,7 @@ import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packag
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { AppCradle } from '../di/generated/ioc-composed.js';
+import type { Cradle } from '../container.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
@@ -191,7 +191,7 @@ const insertAlbumMember = async (
   database: Knex,
   albumId: string,
   userId: string,
-  role: (typeof AlbumMemberRole)[keyof typeof AlbumMemberRole],
+  role: AlbumMemberRole,
 ): Promise<void> => {
   const now = new Date();
   await database('albumMember').insert({
@@ -277,7 +277,7 @@ const createUploadedMediaItemViaGraphQL = async (params: {
 
 describe('DeleteAlbumItemsFromAlbum', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<AppCradle>;
+  let container: AwilixContainer<Cradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -373,7 +373,7 @@ describe('DeleteAlbumItemsFromAlbum', () => {
 
 describe('deleteAlbum', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<AppCradle>;
+  let container: AwilixContainer<Cradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -430,7 +430,7 @@ describe('deleteAlbum', () => {
   });
 
   describe('When the actor is an admin member', () => {
-    it('should succeed', async () => {
+    it('should fail with member not allowed to delete album', async () => {
       const albumResult = await executeGraphQL<{
         createAlbum: WriteMutationResponse<{ albumId: string }>;
       }>({
@@ -447,15 +447,20 @@ describe('deleteAlbum', () => {
       await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.admin);
 
       const del = await executeGraphQL<{
-        deleteAlbum: WriteMutationResponse<{ albumId: string }>;
+        deleteAlbum: WriteMutationResponse<unknown>;
       }>({
         query: deleteAlbumMutation,
         variables: { albumId },
         context: loggedInViewer1,
       });
       expect(del.json.errors).toBeUndefined();
-      expect(del.json.data?.deleteAlbum.errors).toEqual([]);
-      expect(del.json.data?.deleteAlbum.data?.albumId).toBe(albumId);
+      expect(del.json.data?.deleteAlbum.data).toBeFalsy();
+      expect(del.json.data?.deleteAlbum.errors[0]?.code).toBe(
+        AppErrorCollection.album.MemberNotAllowedToDeleteAlbum.code,
+      );
+
+      const row = await database('album').where({ id: albumId }).first();
+      expect(row?.id).toBe(albumId);
     });
   });
 
@@ -497,7 +502,7 @@ describe('deleteAlbum', () => {
 
 describe('deleteMediaItem', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<AppCradle>;
+  let container: AwilixContainer<Cradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -581,7 +586,7 @@ describe('deleteMediaItem', () => {
 
 describe('deleteMediaItems', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<AppCradle>;
+  let container: AwilixContainer<Cradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -709,7 +714,7 @@ describe('deleteMediaItems', () => {
 
 describe('updateMediaItemDetails', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<AppCradle>;
+  let container: AwilixContainer<Cradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 

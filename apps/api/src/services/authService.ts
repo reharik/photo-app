@@ -159,7 +159,6 @@ export const build__AuthService = ({
         firstName,
         lastName,
         appUrl: config.clientUrl,
-        appName: config.appName,
       },
     });
 
@@ -209,8 +208,7 @@ export const build__AuthService = ({
       template: 'forgotPassword',
       data: {
         code,
-        firstName: user.firstName,
-        appName: config.appName,
+        firstName: user.firstName ?? '',
       },
     });
 

@@ -1,5 +1,5 @@
 {
-  "name": "photo-app",
+  "name": "betaname",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -61,9 +61,6 @@
     "dev:contracts": "nx dev contracts",
     "dev:web": "nx dev web",
     "dev:worker": "nx dev media-worker",
-    "docker:build:api": "docker build -f infra/docker/Dockerfile --target runtime-node --build-arg APP_NAME=api -t photoapp-api .",
-    "docker:build:web": "docker build -f infra/docker/Dockerfile --target runtime-web --build-arg APP_NAME=web -t photoapp-web .",
-    "docker:build:worker": "docker build -f infra/docker/Dockerfile --target runtime-node --build-arg APP_NAME=media-worker -t photoapp-worker .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:all": "nx run-many --target=lint --all",

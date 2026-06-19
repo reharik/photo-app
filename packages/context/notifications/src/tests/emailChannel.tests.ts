@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
-import { ContractError, fail, ok } from '@packages/contracts';
+import { ContractError, ok } from '@packages/contracts';
 import type { EmailService } from '../emailClient.js';
 
 describe('build__emailChannel', () => {
@@ -17,7 +17,7 @@ describe('build__emailChannel', () => {
       const channel = build__emailChannel({
         emailConfig: {
           fromEmail: '',
-          fromName: 'PhotoApp',
+          fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
         },
         emailClient,
@@ -46,7 +46,7 @@ describe('build__emailChannel', () => {
       const channel = build__emailChannel({
         emailConfig: {
           fromEmail: 'notifications@example.com',
-          fromName: 'PhotoApp',
+          fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
         },
         emailClient: { sendEmail },
@@ -64,7 +64,7 @@ describe('build__emailChannel', () => {
         subject: 'Welcome',
         html: '<p>Hello</p>',
         fromEmail: 'notifications@example.com',
-        fromDisplayName: 'PhotoApp',
+        fromDisplayName: 'BetanaMe',
         text: 'Hello',
       });
       expect(result.success).toBe(true);

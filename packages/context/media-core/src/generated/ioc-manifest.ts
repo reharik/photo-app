@@ -668,6 +668,7 @@ export const iocManifest = {
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
+          'AlbumRepository',
           'GrantRepository',
           'MediaItemRepository',
           'RunInTransaction',

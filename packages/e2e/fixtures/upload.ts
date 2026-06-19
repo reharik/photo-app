@@ -33,7 +33,7 @@ export const createTestImageFile = (
   options: CreateTestImageFileOptions = {},
 ): string => {
   const sourceAssetName = options.sourceAssetName ?? 'sample.jpg';
-  const dir = mkdtempSync(join(tmpdir(), 'photoapp-e2e-'));
+  const dir = mkdtempSync(join(tmpdir(), 'betaname-e2e-'));
   const dest = join(dir, fileName);
   copyFileSync(join(E2E_ASSETS_DIR, sourceAssetName), dest);
   return dest;

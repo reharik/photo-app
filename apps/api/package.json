@@ -1,7 +1,7 @@
 {
   "name": "@app/api",
   "private": true,
-  "description": "PhotoApp API",
+  "description": "BetanaMe API",
   "keywords": [],
   "license": "ISC",
   "author": "",

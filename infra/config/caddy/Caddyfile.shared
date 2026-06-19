@@ -60,6 +60,29 @@ photos.backintouch.net {
 	}
 }
 
+betaname.app {
+	handle /api/* {
+		reverse_proxy localhost:3002 {
+			health_uri /health
+			health_interval 30s
+		}
+	}
+	handle /media/* {
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy localhost:3002 {
+			health_uri /health
+			health_interval 30s
+		}
+	}
+	handle {
+		@shared path /shared/*
+		header @shared X-Robots-Tag "noindex, nofollow"
+		root * /srv/photo-app
+		try_files {path} /index.html
+		file_server
+	}
+}
+
 # Fallback for IP access (HTTP only)
 :80 {
 	respond "Please use configured domain names"

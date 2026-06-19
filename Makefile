@@ -1,4 +1,4 @@
-APP_NAME := photo-app
+APP_NAME := betaname
 ENV_NAME ?= dev
 COMPOSE_PROJECT_NAME := $(APP_NAME)-$(ENV_NAME)
 

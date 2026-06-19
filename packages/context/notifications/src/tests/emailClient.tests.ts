@@ -45,7 +45,7 @@ describe('build__EmailClient', () => {
         logger,
         emailConfig: {
           fromEmail: 'sender@example.com',
-          fromName: 'PhotoApp',
+          fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
           awsEndpoint: 'http://localhost:4566',
         },
@@ -56,7 +56,7 @@ describe('build__EmailClient', () => {
         subject: 'Hello',
         html: '<p>Welcome</p>',
         fromEmail: 'sender@example.com',
-        fromDisplayName: 'PhotoApp',
+        fromDisplayName: 'BetanaMe',
       });
 
       expect(result.success).toBe(true);

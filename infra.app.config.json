@@ -1,5 +1,5 @@
 {
-  "appName": "photo-app",
+  "appName": "betaname",
   "s3Bucket": "network-deploy-709865789463-us-east-1",
   "docker": {
     "workers": [{ "name": "media-worker", "workspacePath": "apps/media-worker" }]

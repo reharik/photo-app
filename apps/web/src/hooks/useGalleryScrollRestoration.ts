@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { useNavigationType } from 'react-router-dom';
 
-const STORAGE_PREFIX = 'photoapp:gallery-scroll:';
+const STORAGE_PREFIX = 'betaname:gallery-scroll:';
 
 type SavedGalleryScroll = {
   scrollTop: number;

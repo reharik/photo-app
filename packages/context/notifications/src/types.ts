@@ -22,7 +22,7 @@ export type TemplateData = {
   };
   forgotPassword: {
     code: string;
-    appName?: string;
+    firstName: string;
   };
   publicShare: {
     inviterName: string;

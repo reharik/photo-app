@@ -6,19 +6,19 @@ import { registerIocFromManifest } from 'ioc-manifest';
 import type { Knex } from 'knex';
 
 import type { Config } from '../config.js';
+import type { Cradle } from '../container.js';
 import { build__CreateGraphQLContext } from '../graphql/context/createGraphQLContext.js';
 import type { GraphQLInitialContext } from '../graphql/context/types.js';
 
 import {
   composedManifests,
   composedRegistrationOverrides,
-  type AppCradle,
 } from '../di/generated/ioc-composed.js';
 import { ensureTestViewerUsers } from './ensureTestViewerUsers';
 import { createExecuteGraphQL } from './executeGQL';
 import { createIntegrationTestMediaStorage } from './integrationTestMediaStorage';
 
-const registerTestKnexForGlobalTeardown = (container: AwilixContainer<AppCradle>): void => {
+const registerTestKnexForGlobalTeardown = (container: AwilixContainer<Cradle>): void => {
   if (process.env.NODE_ENV !== 'test') {
     return;
   }
@@ -35,12 +35,12 @@ const noopNotificationService: NotificationService = {
  * Uses in-memory MediaStorage so tests do not require S3 or a local media directory.
  */
 export const setupGraphqlIntegrationTests = async (): Promise<{
-  container: AwilixContainer<AppCradle>;
+  container: AwilixContainer<Cradle>;
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   integrationTestMediaStorage: ReturnType<typeof createIntegrationTestMediaStorage>;
 }> => {
   const integrationTestMediaStorage = createIntegrationTestMediaStorage();
-  const container = createContainer<AppCradle>({
+  const container = createContainer<Cradle>({
     injectionMode: 'PROXY',
   });
   registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
@@ -56,7 +56,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
     container: asValue(container),
     mediaStorage: asValue(integrationTestMediaStorage),
     notificationService: asValue(noopNotificationService),
-    graphQLContextFactory: asValue((initialContext: GraphQLInitialContext) => {
+    createGraphQLContext: asValue((initialContext: GraphQLInitialContext) => {
       try {
         return baseGraphQLContextFactory(initialContext);
       } catch {

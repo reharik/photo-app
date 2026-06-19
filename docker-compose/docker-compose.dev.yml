@@ -27,7 +27,7 @@ services:
       # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
-      FROM_NAME: PhotoApp Dev
+      FROM_NAME: BetanaMe Dev
     volumes:
       - ./apps/api:/app/apps/api
       - /app/apps/api/node_modules
