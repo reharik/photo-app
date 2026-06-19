@@ -73,9 +73,15 @@ export const build__SharedWithMeReadRepository = ({
     const baseQuery = database('accessGrant')
       .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
       .whereNotNull('accessGrant.mediaItemId')
+      .leftJoin('user as granter', 'granter.id', 'accessGrant.grantedBy')
       .orderBy(`accessGrant.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
       .orderBy('mediaItem.id', 'asc')
-      .select(...accessGrantFieldSelect, ...mediaItemSelectColumns)
+      .select(
+        ...accessGrantFieldSelect,
+        ...mediaItemSelectColumns,
+        'granter.grantedByFirstName',
+        'granter.grantedByLastName',
+      )
       .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
       .limit(collectionInfo.pageInfo.limit + 1)
       .offset(collectionInfo.pageInfo.offset);
@@ -114,6 +120,7 @@ export const build__SharedWithMeReadRepository = ({
         'item_counts.album_id',
         'album.id',
       )
+      .leftJoin('user as granter', 'granter.id', 'accessGrant.grantedBy')
       .whereNotNull('accessGrant.albumId')
       .andWhere('album.isPublicLinkAlbum', false)
       .orderBy(`accessGrant.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
@@ -121,6 +128,8 @@ export const build__SharedWithMeReadRepository = ({
       .select<(SharedAlbumRow & { totalCount: number })[]>(
         ...accessGrantFieldSelect,
         ...albumWithCoverSelectColumns,
+        'granter.grantedByFirstName',
+        'granter.grantedByLastName',
       )
       .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
       .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
@@ -156,6 +165,7 @@ export const build__SharedWithMeReadRepository = ({
           .on('albumMember.userId', database.raw('?', [viewerId]));
       })
       .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
+      .leftJoin('user as granter', 'granter.id', 'accessGrant.grantedBy')
       .whereNotNull('accessGrant.albumId')
       .andWhere('album.isPublicLinkAlbum', false)
       .select(
@@ -164,7 +174,12 @@ export const build__SharedWithMeReadRepository = ({
           .where('album_item.album_id', albumId)
           .as('itemCount'),
       )
-      .select<SharedAlbumRow>(...accessGrantFieldSelect, ...albumWithCoverSelectColumns)
+      .select<SharedAlbumRow>(
+        ...accessGrantFieldSelect,
+        ...albumWithCoverSelectColumns,
+        'granter.grantedByFirstName',
+        'granter.grantedByLastName',
+      )
       .where('album.id', albumId);
     const grantedQuery = applyActiveUserGrant(baseQuery, { database, viewerId });
 

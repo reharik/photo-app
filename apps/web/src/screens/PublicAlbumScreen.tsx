@@ -6,8 +6,8 @@ import styled from 'styled-components';
 import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
-import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 import { Toast } from '../ui/Toast';
+import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 
 export const PublicAlbumScreen = () => {
   const { token } = useParams<{ token: string }>();
@@ -50,8 +50,7 @@ export const PublicAlbumScreen = () => {
   });
 
   if (!data) {
-    const isAlbumUnavailable =
-      query.data != null && query.data.publicAccess?.album == null;
+    const isAlbumUnavailable = query.data != null && query.data.publicAccess?.album == null;
 
     return resolvePublicQueryView({
       query,

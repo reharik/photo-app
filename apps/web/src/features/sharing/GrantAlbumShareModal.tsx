@@ -13,7 +13,11 @@ import {
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { AppModal } from '../../ui/AppModal';
-import { GrantShareForm, type GrantShareFormValues } from './GrantShareForm';
+import {
+  GrantShareForm,
+  type GrantSharePublicLinkFormValues,
+  type GrantShareUserFormValues,
+} from './GrantShareForm';
 
 type GrantAlbumShareModalProps = {
   albumId: string;
@@ -46,11 +50,11 @@ export const GrantAlbumShareModal = ({
     [contactsQuery.data],
   );
 
-  const handleSubmit = async (values: GrantShareFormValues): Promise<void> => {
+  const handleSubmit = async (values: GrantShareUserFormValues): Promise<void> => {
     const input: GrantUserAuthorizationForAlbumInput = {
       albumId,
       operations: values.operations,
-      grantedToHandle: values.handle.length > 0 ? values.handle : undefined,
+      grantedToHandle: values.handle,
       label: values.label,
       expiresAt: values.expiresAt,
     };
@@ -75,7 +79,7 @@ export const GrantAlbumShareModal = ({
     onClose();
   };
 
-  const handleCreatePublicLink = async (values: GrantShareFormValues): Promise<void> => {
+  const handleCreatePublicLink = async (values: GrantSharePublicLinkFormValues): Promise<void> => {
     const input: CreatePublicLinkForAlbumInput = {
       albumId,
       name: values.label,

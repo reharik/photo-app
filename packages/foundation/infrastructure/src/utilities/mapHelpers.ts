@@ -1,3 +1,5 @@
+import { StandardEnumItem } from '@reharik/smart-enum';
+
 /**
  * Array-to-Map indexing utilities.
  *
@@ -98,3 +100,29 @@ export function groupByMapping<T, K, V>(
   }
   return map;
 }
+
+export const EnumArraysAreEqual = <E extends StandardEnumItem>(a: E[], b: E[]): boolean => {
+  const av = new Set(a.map((e) => e.value));
+  const bv = new Set(b.map((e) => e.value));
+  return av.size === bv.size && [...av].every((v) => bv.has(v));
+};
+
+export const dedupeIds = <T>(ids: T[]): T[] => {
+  const seen = new Set<T>();
+  const out: T[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+};
+
+export const dedupeBy = <T extends object>(items: T[], keys: Array<(item: T) => unknown>): T[] => [
+  ...items
+    .reduce((m, item) => {
+      const key = keys.map((k) => k(item)).join('\x1f');
+      return m.set(key, item);
+    }, new Map<string, T>())
+    .values(),
+];

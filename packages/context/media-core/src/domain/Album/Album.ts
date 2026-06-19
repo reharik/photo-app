@@ -7,6 +7,7 @@ import {
   Operation,
   WriteResult,
 } from '@packages/contracts';
+import { EnumArraysAreEqual } from '@packages/infrastructure';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
@@ -164,6 +165,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
+  title(): string {
+    return this.props.title;
+  }
 
   /**
    * Removes every album item that references this media (at most one per album under normal DB constraints).
@@ -261,7 +265,6 @@ export class Album extends AggregateRoot<AlbumRecord> {
         return updatedExpireDate;
       }
       this.touch(actorId);
-      return ok({ authorization: existingAuthorization });
     }
 
     if (label && result.value.status === 'updateLabel') {
@@ -270,10 +273,15 @@ export class Album extends AggregateRoot<AlbumRecord> {
         return updatedLabel;
       }
       this.touch(actorId);
-      return ok({ authorization: existingAuthorization });
     }
-
-    return fail(AppErrorCollection.album.NoActionProvidedOnAuthorizationCommand);
+    if (operations && !EnumArraysAreEqual(existingAuthorization.operations(), operations)) {
+      const updatedOperations = existingAuthorization.updateOperations(operations, actorId);
+      if (!updatedOperations.success) {
+        return updatedOperations;
+      }
+      this.touch(actorId);
+    }
+    return ok({ authorization: existingAuthorization });
   }
   revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
     const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
@@ -291,24 +299,20 @@ export class Album extends AggregateRoot<AlbumRecord> {
   getPublicLinks(): PublicLink[] {
     return this.#publicLinks;
   }
+
   grantPublicLink(
     actorId: ActorId,
-    token: string,
     expiresAt?: Date,
     operations?: Operation[],
-    publicLinkId?: EntityId,
   ): WriteResult<PublicLink> {
-    if (!publicLinkId && !token) {
-      return fail(AppErrorCollection.authorization.PublicLinkMustHaveTokenOrId);
-    }
-
-    const publicLink = this.#publicLinks.find((x) => x.id() === publicLinkId);
+    let publicLink = this.#publicLinks.find((x) =>
+      EnumArraysAreEqual(x.authorization().operations(), operations || []),
+    );
     if (!publicLink) {
       // creating a new public link creates a new authorization/access_grant
-      const publicLink = PublicLink.create(
+      publicLink = PublicLink.create(
         {
           operations: operations ?? [],
-          linkToken: token,
           grantedBy: actorId,
           label: undefined,
           expiresAt,
@@ -326,9 +330,8 @@ export class Album extends AggregateRoot<AlbumRecord> {
         return updatedExpireDate;
       }
       this.touch(actorId);
-      return ok(publicLink);
     }
-    return fail(AppErrorCollection.album.NoActionProvidedOnPublicLinkCommand);
+    return ok(publicLink);
   }
 
   revokePublicLink(publicLinkId: EntityId, actorId: ActorId): WriteResult {

@@ -103,7 +103,7 @@ export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage 
     s3DownloadUrlTtlSeconds = 900,
     s3DownloadUrlSigningBucketSeconds = 300,
   } = config;
-  const client = new S3Client({ region: awsRegion });
+  const client = new S3Client({ region: awsRegion, requestChecksumCalculation: 'WHEN_REQUIRED' });
 
   const getUploadTarget = async (input: UploadTargetRequest): Promise<UploadTarget> => {
     const command = new PutObjectCommand({

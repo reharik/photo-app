@@ -1,14 +1,7 @@
 mutation grantUserAuthorizationsForMediaItems($input: GrantUserAuthorizationsForMediaItemsInput!) {
   grantUserAuthorizationsForMediaItems(input: $input) {
     data {
-      authorizations {
-        id
-        grantedToUserId
-        operations
-        label
-        expiresAt
-        createdAt
-      }
+      authorizationIds
     }
     errors {
       ...errorsFragment
@@ -19,14 +12,7 @@ mutation grantUserAuthorizationsForMediaItems($input: GrantUserAuthorizationsFor
 mutation GrantUserAuthorizationForAlbum($input: GrantUserAuthorizationForAlbumInput!) {
   grantUserAuthorizationForAlbum(input: $input) {
     data {
-      authorizations {
-        id
-        grantedToUserId
-        operations
-        label
-        expiresAt
-        createdAt
-      }
+      authorizationIds
     }
     errors {
       ...errorsFragment

@@ -54,7 +54,7 @@ export const unwrapOrThrow = <T>(result: WriteResult<T>): T => {
   return result.value;
 };
 
-export const build__runInTransaction =
+export const build__RunInTransaction =
   ({ database }: RunInTransactionDeps): RunInTransaction =>
   async <T>(
     trx: Knex.Transaction | undefined,
@@ -66,7 +66,7 @@ export const build__runInTransaction =
 
 // Converts failed WriteResults into TransactionAbortError so Knex rolls back,
 // then maps that back to the failure WriteResult for the service layer.
-export const build__withTransaction =
+export const build__WithTransaction =
   ({ runInTransaction }: WithTransactionDeps): WithTransaction =>
   async <T>(
     trx: Knex.Transaction | undefined,

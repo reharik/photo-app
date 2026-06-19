@@ -1,5 +1,7 @@
 import { User } from '@packages/contracts';
+import { NotificationService } from '@packages/notifications';
 import { asValue, AwilixContainer } from 'awilix';
+import { Config } from '../../config';
 import { Cradle } from '../../container';
 import {
   AuthenticatedGraphQLContext,
@@ -10,16 +12,25 @@ import {
 
 type ContextDeps = {
   container: AwilixContainer<Cradle>;
+  notificationService: NotificationService;
+  config: Config;
 };
 type PublicContextDeps = {
   scope: AwilixContainer<Cradle>;
+  config: Config;
 };
 type AuthenticatedContextDeps = {
   scope: AwilixContainer<Cradle>;
   user: User;
+  notificationService: NotificationService;
+  config: Config;
 };
 
-export const build__CreateGraphQLContext = ({ container }: ContextDeps): GraphQLContextFactory => {
+export const build__CreateGraphQLContext = ({
+  container,
+  notificationService,
+  config,
+}: ContextDeps): GraphQLContextFactory => {
   return (
     initialContext: GraphQLInitialContext,
   ): AuthenticatedGraphQLContext | PublicGraphQLContext => {
@@ -35,6 +46,7 @@ export const build__CreateGraphQLContext = ({ container }: ContextDeps): GraphQL
       scope.register({ publicLinkId: asValue(publicAccessId) });
       return buildPublicContext({
         scope,
+        config,
       });
     }
     if (initialContext.state?.isLoggedIn && user) {
@@ -42,6 +54,8 @@ export const build__CreateGraphQLContext = ({ container }: ContextDeps): GraphQL
       return buildAuthenticatedContext({
         scope,
         user,
+        notificationService,
+        config,
       });
     }
     throw new Error('Invalid access mode');
@@ -51,6 +65,8 @@ export const build__CreateGraphQLContext = ({ container }: ContextDeps): GraphQL
 const buildAuthenticatedContext = ({
   scope,
   user,
+  notificationService,
+  config,
 }: AuthenticatedContextDeps): AuthenticatedGraphQLContext => {
   const viewer = { ...user, displayName: `${user.firstName} ${user.lastName}` };
   scope.register({ viewer: asValue(viewer) });
@@ -64,10 +80,12 @@ const buildAuthenticatedContext = ({
     writeServices,
     readServices,
     agnosticReadServices,
+    notificationService,
+    config,
   };
 };
 
-const buildPublicContext = ({ scope }: PublicContextDeps): PublicGraphQLContext => {
+const buildPublicContext = ({ scope, config }: PublicContextDeps): PublicGraphQLContext => {
   const publicReadServices = scope.resolve('publicReadServices');
   const agnosticReadServices = scope.resolve('agnosticReadServices');
   const publicLinkId = scope.resolve('publicLinkId');
@@ -77,5 +95,6 @@ const buildPublicContext = ({ scope }: PublicContextDeps): PublicGraphQLContext 
     publicReadServices,
     publicLinkId,
     agnosticReadServices,
+    config,
   };
 };

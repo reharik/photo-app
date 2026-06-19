@@ -3,13 +3,11 @@ export type TemplateData = {
     firstName: string;
     lastName: string;
     appUrl: string;
-    appName?: string;
   };
   'share-invite': {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
-    appName?: string;
   };
   digest: {
     firstName: string;
@@ -18,16 +16,18 @@ export type TemplateData = {
     summaryLine: string;
     highlights: { title: string; detail: string }[];
     digestUrl: string;
-    appName?: string;
   };
   passwordReset: {
     firstName: string;
-    appName?: string;
   };
   forgotPassword: {
     code: string;
     appName?: string;
-    firstName?: string;
+  };
+  publicShare: {
+    inviterName: string;
+    resourceName: string;
+    publicUrl: string;
   };
 };
 

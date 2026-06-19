@@ -25,8 +25,6 @@ services:
       POSTGRES_PORT: '5432'
       API_PORT: '3001'
       # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
-      AWS_ACCESS_KEY_ID: test
-      AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
       FROM_NAME: PhotoApp Dev

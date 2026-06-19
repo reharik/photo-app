@@ -58,3 +58,21 @@ export const expectPublicMediaDetailUrl = async (
     timeout: 30_000,
   });
 };
+
+export const buildPublicMediaDetailUrl = (shareUrl: string, mediaItemId: string): string =>
+  `${shareUrl.replace(/\/$/, '')}/media/${mediaItemId}`;
+
+export const expectPublicMediaUnavailable = async (page: Page): Promise<void> => {
+  await expect(page.getByRole('alert')).toContainText("This album isn't available");
+};
+
+/** Direct `/media/{id}` navigation must not render the shared viewer for revoked items. */
+export const expectAuthenticatedMediaDetailInaccessible = async (
+  page: Page,
+  mediaItemId: string,
+): Promise<void> => {
+  await page.goto(`/media/${mediaItemId}`);
+  await expect(page).toHaveURL(new RegExp(`/media/${mediaItemId}(\\?.*)?$`));
+  await expect(page.getByTestId(mediaItemId)).toHaveCount(0);
+  await expect(page.getByLabel('Add a comment…')).toHaveCount(0);
+};

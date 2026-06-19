@@ -11,20 +11,15 @@ import {
   Text,
 } from '@react-email/components';
 import { ReactElement, ReactNode } from 'react';
+import { APP_NAME } from '.';
 
 export type BaseEmailProps = {
   previewText: string;
   title: string;
-  appName: string;
   children: ReactNode;
 };
 
-export const BaseEmail = ({
-  previewText,
-  title,
-  appName,
-  children,
-}: BaseEmailProps): ReactElement => {
+export const BaseEmail = ({ previewText, title, children }: BaseEmailProps): ReactElement => {
   return (
     <Html>
       <Head />
@@ -32,7 +27,7 @@ export const BaseEmail = ({
       <Body style={bodyStyle}>
         <Container style={containerStyle}>
           <Section style={headerStyle}>
-            <Text style={brandStyle}>{appName}</Text>
+            <Text style={brandStyle}>{APP_NAME}</Text>
           </Section>
           <Heading as="h1" style={headingStyle}>
             {title}
@@ -41,7 +36,7 @@ export const BaseEmail = ({
           <Hr style={hrStyle} />
           <Section style={footerStyle}>
             <Text style={footerMutedStyle}>
-              You are receiving this email because of an account or activity on {appName}.
+              You are receiving this email because of an account or activity on {APP_NAME}.
             </Text>
             <Text style={footerMutedStyle}>
               <Link href="#" style={footerLinkStyle}>

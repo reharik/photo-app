@@ -1,2 +1,9 @@
 export { coreLogger, type Logger } from './logger/coreLogger';
-export { groupByMapping, indexBy, indexByUnique } from './utilities/mapHelpers';
+export {
+  EnumArraysAreEqual,
+  dedupeBy,
+  dedupeIds,
+  groupByMapping,
+  indexBy,
+  indexByUnique,
+} from './utilities/mapHelpers';

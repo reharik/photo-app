@@ -198,7 +198,7 @@ export const build__AlbumReadRepository = ({
         })
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('album.id', albumId)
-        .andWhere('mediaItem.status', 'READY')
+        .andWhere('mediaItem.status', MediaItemStatus.ready)
         .andWhere((b) => {
           b.where('albumMember.userId', viewerId).orWhereExists(function () {
             this.select('*')

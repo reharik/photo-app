@@ -1,5 +1,6 @@
 import { expect, type Page, type Response } from '@playwright/test';
 import {
+  expectMediaItemLoaded,
   selectMediaItems,
   selectionCountLabel,
   selectionToolbar,
@@ -200,6 +201,59 @@ export const addMediaItemsToExistingAlbum = async (
 
   for (const mediaItemId of mediaItemIds) {
     await expectMediaTileVisible(page, mediaItemId);
+  }
+};
+
+/**
+ * On an album detail screen: selects items in the album gallery, removes them
+ * from the album only, and waits until each tile disappears.
+ */
+export const removeMediaItemsFromAlbum = async (
+  page: Page,
+  mediaItemIds: string[],
+): Promise<void> => {
+  if (mediaItemIds.length === 0) {
+    throw new Error('removeMediaItemsFromAlbum requires at least one media item id');
+  }
+
+  const selection = await selectMediaItems(page, mediaItemIds, {
+    toolbarVariant: 'album',
+    expectActions: ['Remove from album'],
+  });
+  await selection.clickAction('Remove from album');
+
+  const modal = getModal(page);
+  await expect(modal).toBeVisible();
+  await expect(modal.getByText('Remove from album?')).toBeVisible();
+  await modal.getByRole('button', { name: 'Remove from album' }).click();
+  await expect(modal).toBeHidden({ timeout: UPLOAD_TIMEOUT_MS });
+
+  for (const mediaItemId of mediaItemIds) {
+    await expect(page.getByTestId(`media-tile-${mediaItemId}`)).toHaveCount(0);
+  }
+};
+
+export type ExpectAlbumGalleryItemsOptions = {
+  albumTitle?: string;
+  loadedIds: string[];
+  absentIds?: string[];
+};
+
+/** Asserts an album gallery shows the expected loaded and absent media tiles. */
+export const expectAlbumGalleryItems = async (
+  page: Page,
+  { albumTitle, loadedIds, absentIds = [] }: ExpectAlbumGalleryItemsOptions,
+): Promise<void> => {
+  if (albumTitle != null) {
+    await expect(page.getByRole('heading', { name: albumTitle })).toBeVisible();
+  }
+
+  for (const mediaItemId of loadedIds) {
+    await expectMediaItemLoaded(page, mediaItemId);
+  }
+
+  for (const mediaItemId of absentIds) {
+    await expect(page.getByTestId(`media-tile-${mediaItemId}`)).toHaveCount(0);
   }
 };
 

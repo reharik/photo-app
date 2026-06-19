@@ -1,5 +1,5 @@
 import type { Logger } from '@packages/infrastructure';
-import { hashToken, type PublicAccessReadService } from '@packages/media-core';
+import { type PublicAccessReadService } from '@packages/media-core';
 import type { Context, Next } from 'koa';
 
 import type { AuthService } from '../services/authService.js';
@@ -68,8 +68,7 @@ export const build__OptionalAuthMiddleware =
 
     const publicToken = ctx.cookies.get('public');
     if (publicToken) {
-      const hashedToken = hashToken(publicToken);
-      const publicAccessId = await publicAccessReadService.validateHashedToken(hashedToken);
+      const publicAccessId = await publicAccessReadService.validateToken(publicToken);
       ctx.state.publicAccessId = publicAccessId;
     }
     await next();

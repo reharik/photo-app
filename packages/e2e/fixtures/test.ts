@@ -1,6 +1,7 @@
 import { test as base, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { cleanupGrantsToRecipient, cleanupOwnedRows } from './cleanup';
 import { closeDb, getUserIdByEmail } from './db';
+import { clearLocalStackSesMessages } from './localstackSes';
 import { grabTestImages, type GrabTestImagesResult } from './testAssets';
 import { USER_A, USER_B, type TestUser } from './users';
 
@@ -88,6 +89,7 @@ export const test = base.extend<Fixtures>({
 });
 
 test.afterAll(async () => {
+  await clearLocalStackSesMessages();
   await closeDb();
 });
 

@@ -2,19 +2,18 @@ import { Button, Section, Text } from '@react-email/components';
 import type { ReactElement } from 'react';
 import type { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
+import { APP_NAME } from './index.js';
 
 type DigestData = TemplateData['digest'];
 
 export const subject = (data: DigestData): string => {
-  const app = data.appName ?? 'PhotoApp';
-  return `Your ${data.periodLabel} recap from ${app}`;
+  return `Your ${data.periodLabel} recap from ${APP_NAME}`;
 };
 
 const Digest = (data: DigestData): ReactElement => {
-  const appName = data.appName ?? 'PhotoApp';
   const preview = `${data.highlights.length} highlights from ${data.periodLabel}.`;
   return (
-    <BaseEmail appName={appName} previewText={preview} title={`${data.periodLabel} digest`}>
+    <BaseEmail previewText={preview} title={`${data.periodLabel} digest`}>
       <Section>
         <Text style={greeting}>
           Hi {data.firstName} {data.lastName},

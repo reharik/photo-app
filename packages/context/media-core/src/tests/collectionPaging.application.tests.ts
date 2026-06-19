@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
 import {
-  build__ViewerAlbumReadServiceFactory,
+  build__ViewerAlbumReadService,
   CollectionInfo,
   type AlbumCollectionInfo,
   type AlbumItemCollectionInfo,
@@ -47,11 +47,11 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = build__ViewerAlbumReadServiceFactory({
-        albumReadRepository,
+      const service = build__ViewerAlbumReadService({
+        albumReadRepository: albumReadRepository as AlbumReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
-      } as never);
-      const service = factory({ viewerId });
+        viewerId,
+      });
 
       const result = await service.listAlbums({} as AlbumCollectionInfo);
 
@@ -78,11 +78,11 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = build__ViewerAlbumReadServiceFactory({
-        albumReadRepository,
+      const service = build__ViewerAlbumReadService({
+        albumReadRepository: albumReadRepository as AlbumReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
-      } as never);
-      const service = factory({ viewerId });
+        viewerId,
+      });
 
       const gqlCollection: AlbumCollectionInfo = {
         pageInfo: { limit: 7, offset: 14 },
@@ -142,11 +142,11 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         listByViewerId,
       };
 
-      const factory = build__ViewerAlbumReadServiceFactory({
-        albumReadRepository,
+      const service = build__ViewerAlbumReadService({
+        albumReadRepository: albumReadRepository as AlbumReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
-      } as never);
-      const service = factory({ viewerId });
+        viewerId,
+      });
 
       const gqlCollection: AlbumCollectionInfo = {
         pageInfo: { limit: 10, offset: 0 },
@@ -174,11 +174,11 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         getViewableAlbumItemsForViewer,
       };
 
-      const factory = build__ViewerAlbumReadServiceFactory({
-        albumReadRepository,
+      const service = build__ViewerAlbumReadService({
+        albumReadRepository: albumReadRepository as AlbumReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
-      } as never);
-      const service = factory({ viewerId });
+        viewerId,
+      });
 
       const result = await service.getViewableAlbumItems({
         albumId,
@@ -210,11 +210,11 @@ describe('ViewerAlbumReadService (collection paging)', () => {
         getViewableAlbumItemsForViewer,
       };
 
-      const factory = build__ViewerAlbumReadServiceFactory({
-        albumReadRepository,
+      const service = build__ViewerAlbumReadService({
+        albumReadRepository: albumReadRepository as AlbumReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
-      } as never);
-      const service = factory({ viewerId });
+        viewerId,
+      });
 
       const gqlCollection: AlbumItemCollectionInfo = {
         pageInfo: { limit: 4, offset: 8 },

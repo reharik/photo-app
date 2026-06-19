@@ -11,6 +11,7 @@ import {
   Text,
 } from '@react-email/components';
 import React from 'react';
+import { APP_NAME } from '.';
 import { TemplateData } from '../types';
 
 export type WelcomeEmailProps = {
@@ -18,12 +19,10 @@ export type WelcomeEmailProps = {
   appUrl: string;
 };
 
-const APP_NAME = 'Betana.me';
 type WelcomeData = TemplateData['welcome'];
 
 export const subject = (data: WelcomeData): string => {
-  const app = data.appName ?? 'PhotoApp';
-  return `Welcome to ${app}, ${data.firstName} ${data.lastName}`;
+  return `Welcome to ${APP_NAME}, ${data.firstName} ${data.lastName}`;
 };
 
 export const WelcomeEmail = ({ firstName, appUrl }: WelcomeData) => {

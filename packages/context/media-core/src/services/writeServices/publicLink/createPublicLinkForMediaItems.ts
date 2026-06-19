@@ -1,4 +1,5 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { dedupeIds } from '@packages/infrastructure';
 import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
@@ -31,19 +32,6 @@ type CreatePublicLinkForMediaItemsDeps = {
   runInTransaction: RunInTransaction;
 };
 
-const dedupePreserveOrder = (ids: EntityId[]): EntityId[] => {
-  const seen = new Set<EntityId>();
-  const deduped: EntityId[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    deduped.push(id);
-  }
-  return deduped;
-};
-
 export const build__CreatePublicLinkForMediaItems = ({
   mediaItemRepository,
   albumRepository,
@@ -54,7 +42,7 @@ export const build__CreatePublicLinkForMediaItems = ({
     input: CreatePublicLinkForMediaItemsCommand,
     trx?: Knex.Transaction,
   ): Promise<WriteResult<CreatePublicLinkResponse>> => {
-    const mediaItemIds = dedupePreserveOrder(input.mediaItemIds);
+    const mediaItemIds = dedupeIds(input.mediaItemIds);
     if (mediaItemIds.length === 0) {
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);
     }

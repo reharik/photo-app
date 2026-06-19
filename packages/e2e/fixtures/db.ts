@@ -1,4 +1,6 @@
 import knex, { Knex } from 'knex';
+import knexStringcase from 'knex-stringcase';
+
 import { env } from './env';
 
 let cached: Knex | undefined;
@@ -11,17 +13,19 @@ export const getDb = (): Knex => {
   if (cached) {
     return cached;
   }
-  cached = knex({
-    client: 'pg',
-    connection: {
-      host: env.postgres.host,
-      port: env.postgres.port,
-      user: env.postgres.user,
-      password: env.postgres.password,
-      database: env.postgres.database,
-    },
-    pool: { min: 0, max: 4 },
-  });
+  cached = knex(
+    knexStringcase({
+      client: 'pg',
+      connection: {
+        host: env.postgres.host,
+        port: env.postgres.port,
+        user: env.postgres.user,
+        password: env.postgres.password,
+        database: env.postgres.database,
+      },
+      pool: { min: 0, max: 4 },
+    }),
+  );
   return cached;
 };
 

@@ -35,7 +35,7 @@ test.describe('Share individual items with an existing user', () => {
       await expect(shareDialog).toBeHidden();
 
       await loginViaUi(userB.page, userB.user);
-      await userB.page.goto('/shared-with-me');
+      await userB.page.goto('/shared/photos');
 
       const itemA = mediaTile(userB.page, a.id);
       await expect(itemA).toBeVisible();

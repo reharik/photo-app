@@ -1,5 +1,5 @@
 import type { ActorId, EntityId } from '../types/types';
-import { serializeEntity } from './utilities/serializeAggregates';
+import { serializeValue } from './utilities/serializeAggregates';
 
 export type ChildRow = {
   upsert: Entity<Record<string, unknown>>[];
@@ -12,7 +12,6 @@ export type RemovedEntities = Record<string, string[]>;
 
 export interface Persistable<TRecord> {
   toPersistence(): TRecord;
-  persistenceState(): Record<string, unknown>;
 }
 
 export type AuditRecord = {
@@ -102,16 +101,30 @@ export abstract class Entity<
   VOs(): Record<string, VOCollection> {
     return {};
   }
-
-  public persistenceState(): Record<string, unknown> {
-    return {
+  /**
+   * Final persisted record. Repo-facing — don't override.
+   */
+  toPersistence(): TRecord {
+    return serializeValue({
       id: this.id(),
       ...this.props,
       ...this.exportAudit(),
-    };
+      ...this.persistenceExtras(), // spreads last: adds or replaces values only
+    }) as TRecord;
   }
 
-  toPersistence(): TRecord {
-    return serializeEntity(this);
+  /**
+   * Extra fields to persist beyond id/props/audit. Default: none.
+   *
+   * Override to ADD a derived field, or REPLACE a prop's value (key must
+   * already exist in props). Returned keys win (spread last).
+   *
+   * Can't remove a key or reshape the base here. If you need that: the field
+   * probably shouldn't be in `props`, or rename the prop to match its column
+   * (a phantom column means prop name ≠ column name). Only if you truly need
+   * to drop keys should you stop spreading props above and build the map by hand.
+   */
+  protected persistenceExtras(): Record<string, unknown> {
+    return {};
   }
 }

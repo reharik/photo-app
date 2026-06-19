@@ -118,13 +118,13 @@ describe('Album (domain)', () => {
     it('should reject the second add with media already in album', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
       const mediaId = 'media-1';
-      const first = album.addItem(mediaId, ownerId);
+      const first = album.addItem(mediaId, ownerId, MediaKind.photo);
       expect(first.success).toBe(true);
       if (!first.success) {
         throw new Error('expected first addItem to succeed');
       }
       expect(first.value.orderIndex()).toBe(ALBUM_ITEM_ORDER_INITIAL);
-      const second = album.addItem(mediaId, ownerId);
+      const second = album.addItem(mediaId, ownerId, MediaKind.photo);
       expect(second).toEqual({
         success: false,
         error: expect.objectContaining({
@@ -137,8 +137,8 @@ describe('Album (domain)', () => {
   describe('When addItem is called twice for different media', () => {
     it('should assign increasing sparse order indices', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
-      const a = album.addItem('media-a', ownerId);
-      const b = album.addItem('media-b', ownerId);
+      const a = album.addItem('media-a', ownerId, MediaKind.photo);
+      const b = album.addItem('media-b', ownerId, MediaKind.photo);
       expect(a.success).toBe(true);
       expect(b.success).toBe(true);
       if (!a.success || !b.success) {
@@ -166,7 +166,7 @@ describe('Album (domain)', () => {
     it('should succeed based on membership only', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
       const mediaId = 'media-cover';
-      const add = album.addItem(mediaId, ownerId);
+      const add = album.addItem(mediaId, ownerId, MediaKind.photo);
       expect(add.success).toBe(true);
       if (!add.success) {
         throw new Error('expected addItem to succeed');
@@ -179,9 +179,9 @@ describe('Album (domain)', () => {
   describe('When reorderItems is called with a full permutation', () => {
     it('should assign new sparse indices in list order', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
-      const a = album.addItem('m1', ownerId);
-      const b = album.addItem('m2', ownerId);
-      const c = album.addItem('m3', ownerId);
+      const a = album.addItem('m1', ownerId, MediaKind.photo);
+      const b = album.addItem('m2', ownerId, MediaKind.photo);
+      const c = album.addItem('m3', ownerId, MediaKind.photo);
       expect(a.success && b.success && c.success).toBe(true);
       if (!a.success || !b.success || !c.success) {
         throw new Error('expected all addItem calls to succeed');
@@ -202,7 +202,7 @@ describe('Album (domain)', () => {
     it('should remove the album item and clear the cover', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
       const mediaId = 'media-a';
-      const add = album.addItem(mediaId, ownerId);
+      const add = album.addItem(mediaId, ownerId, MediaKind.photo);
       expect(add.success).toBe(true);
       if (!add.success) {
         throw new Error('expected addItem to succeed');
@@ -220,8 +220,8 @@ describe('Album (domain)', () => {
   describe('When removeMediaItemFromAlbum targets media that is not the cover', () => {
     it('should remove only that album item and leave the cover unchanged', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
-      const a = album.addItem('keep-cover', ownerId);
-      const b = album.addItem('remove-me', ownerId);
+      const a = album.addItem('keep-cover', ownerId, MediaKind.photo);
+      const b = album.addItem('remove-me', ownerId, MediaKind.photo);
       expect(a.success && b.success).toBe(true);
       if (!a.success || !b.success) {
         throw new Error('expected both addItem calls to succeed');
@@ -239,7 +239,7 @@ describe('Album (domain)', () => {
   describe('When removeMediaItemFromAlbum targets media that is not in the album', () => {
     it('should leave items unchanged', () => {
       const album = Album.create({ title: 'Trip' }, ownerId);
-      const add = album.addItem('only-one', ownerId);
+      const add = album.addItem('only-one', ownerId, MediaKind.photo);
       expect(add.success).toBe(true);
 
       const beforeItems = album.childEntities().items.upsert.length;

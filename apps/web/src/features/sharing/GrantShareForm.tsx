@@ -11,18 +11,21 @@ import { Button, HStack, VStack } from '../../ui/Primitives';
 import { ShareRecipientInput } from './ShareRecipientInput';
 import { ShareTokenResult } from './ShareTokenResult';
 
-export type GrantShareFormValues = {
-  handle: string;
+export type GrantSharePublicLinkFormValues = {
   operations: Operation[];
   label?: string;
   expiresAt?: DateTime;
 };
 
+export type GrantShareUserFormValues = GrantSharePublicLinkFormValues & {
+  handle: string;
+};
+
 type GrantShareFormProps = {
   suggestions: ShareContactType[];
-  onSubmit: (input: GrantShareFormValues) => Promise<void>;
-  /** When set, shows a "Create shareable link" path and requires a handle for the primary Share action. */
-  onCreatePublicLink?: (input: GrantShareFormValues) => Promise<void>;
+  onSubmit: (input: GrantShareUserFormValues) => Promise<void>;
+  /** When set, shows a "Create shareable link" path that does not require a handle. */
+  onCreatePublicLink?: (input: GrantSharePublicLinkFormValues) => Promise<void>;
   isLoading: boolean;
   errors: AppError[];
   createdToken?: string;
@@ -33,6 +36,11 @@ const trimmedOrUndefined = (value: string): string | undefined => {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 };
+
+const handleRequiredMessage = (hasPublicLinkPath: boolean): string =>
+  hasPublicLinkPath
+    ? 'Enter a user handle to share with a specific person, or use “Create shareable link” below.'
+    : 'Enter a user handle to share with a specific person.';
 
 export const GrantShareForm = ({
   suggestions,
@@ -47,20 +55,19 @@ export const GrantShareForm = ({
   const [operations] = useState<Operation[]>([]);
   const [label, setLabel] = useState('');
   const [expiresAt, setExpiresAt] = useState<DateTime | undefined>();
-  const [shareToUserError, setShareToUserError] = useState<string | undefined>(undefined);
+  const [handleError, setHandleError] = useState<string | undefined>(undefined);
 
   const setHandleValue = (value: string) => {
     setHandle(value);
-    if (shareToUserError) {
-      setShareToUserError(undefined);
+    if (handleError) {
+      setHandleError(undefined);
     }
   };
 
-  const formValues = (): GrantShareFormValues => ({
-    handle: handle.trim(),
+  const sharedFormValues = (): GrantSharePublicLinkFormValues => ({
     operations,
     label: trimmedOrUndefined(label),
-    expiresAt: expiresAt,
+    expiresAt,
   });
 
   const handleSubmit = async (event: React.ChangeEvent<HTMLFormElement>) => {
@@ -68,22 +75,24 @@ export const GrantShareForm = ({
     if (isLoading) {
       return;
     }
-    if (onCreatePublicLink && !handle.trim()) {
-      setShareToUserError(
-        'Enter a user handle to share with a specific person, or use “Create shareable link” below.',
-      );
+    const trimmedHandle = handle.trim();
+    if (!trimmedHandle) {
+      setHandleError(handleRequiredMessage(Boolean(onCreatePublicLink)));
       return;
     }
-    setShareToUserError(undefined);
-    await onSubmit(formValues());
+    setHandleError(undefined);
+    await onSubmit({
+      handle: trimmedHandle,
+      ...sharedFormValues(),
+    });
   };
 
   const handleCreateShareableLink = async () => {
     if (isLoading) {
       return;
     }
-    setShareToUserError(undefined);
-    await onCreatePublicLink?.(formValues());
+    setHandleError(undefined);
+    await onCreatePublicLink?.(sharedFormValues());
   };
 
   if (createdToken) {
@@ -104,12 +113,12 @@ export const GrantShareForm = ({
     <Form onSubmit={handleSubmit}>
       <VStack gap={3}>
         <AppErrorPanel errors={errors} />
-        {shareToUserError && <FieldHint role="alert">{shareToUserError}</FieldHint>}
         <ShareRecipientInput
           value={handle}
           onChange={setHandleValue}
           suggestions={suggestions}
           disabled={isLoading}
+          error={handleError}
         />
         {/* <SharePermissionSelect value={operations} onChange={setPermission} disabled={isLoading} /> */}
         <FormInput
@@ -161,12 +170,6 @@ export const GrantShareForm = ({
 
 const Form = styled.form`
   width: 100%;
-`;
-
-const FieldHint = styled.p`
-  margin: 0;
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.color.alertError};
 `;
 
 const ShareableLinkBlock = styled.div`

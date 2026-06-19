@@ -26,5 +26,4 @@ type GrantUserAuthorizationResult {
 
 type GrantUserAuthorizationPayload {
   authorizationIds: [ID!]!
-  authorizations: [AuthorizationType!]!
 }

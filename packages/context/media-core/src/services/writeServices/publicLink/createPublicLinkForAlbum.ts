@@ -1,14 +1,8 @@
 import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
-import crypto from 'crypto';
 import { Knex } from 'knex';
-import { hashToken } from '../../../application';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import {
-  GrantRecord,
-  GrantRepository,
-} from '../../../repositories/domainRepositories/grantRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
@@ -33,13 +27,11 @@ export interface CreatePublicLinkForAlbum extends WriteServiceBase {
 type CreatePublicLinkForAlbumDeps = {
   albumRepository: AlbumRepository;
   runInTransaction: RunInTransaction;
-  grantRepository: GrantRepository;
 };
 
 export const build__CreatePublicLinkForAlbum = ({
   albumRepository,
   runInTransaction,
-  grantRepository,
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
     input: CreatePublicLinkForAlbumCommand,
@@ -54,38 +46,16 @@ export const build__CreatePublicLinkForAlbum = ({
     if (!member || !member.role().equals(AlbumMemberRole.owner)) {
       return fail(AppErrorCollection.album.NotAllowedToGrantAuthorizationForAlbum);
     }
-    const token = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(token);
-    console.log('[CREATE] token:', JSON.stringify(token));
-    console.log('[CREATE] hash:', tokenHash);
 
-    const publicLinkResult = album.grantPublicLink(input.viewerId, tokenHash, input.expiresAt);
+    const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
     if (!publicLinkResult.success) {
       return publicLinkResult;
     }
     const publicLink = publicLinkResult.value;
-    const authorization = publicLink.authorization();
 
-    const authorizationId = authorization.id();
-    const mediaItemIds = album.getMediaItemIds();
-
-    // this is outside of the AR because grants are a side-effect projection maintained by the write services.
     await runInTransaction(trx, async (db) => {
       await albumRepository.save(album, db);
-
-      const now = new Date();
-      const grants: GrantRecord[] = mediaItemIds.map((x) => {
-        return {
-          id: crypto.randomUUID(),
-          mediaItemId: x,
-          accessGrantId: authorizationId,
-          operations: authorization.operations(),
-          createdAt: now,
-        };
-      });
-      await grantRepository.createGrants(grants, db);
     });
-    // TODO: create share_link row with hashed token, create album-level access_grant, and wire grant table population.
-    return ok({ token });
+    return ok({ token: publicLink.linkToken() });
   };
 };

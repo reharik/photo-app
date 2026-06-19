@@ -79,7 +79,7 @@
       "executor": "nx:run-commands",
       "options": {
         "commands": [
-          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/playwright.config.ts\"",
+          "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/global-setup.ts\" \"{projectRoot}/playwright.config.ts\"",
           "npx eslint --config {projectRoot}/eslint.config.js \"{projectRoot}/tests/**/*.spec.ts\""
         ],
         "parallel": false
@@ -87,7 +87,7 @@
       "configurations": {
         "fix": {
           "commands": [
-            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/playwright.config.ts\"",
+            "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/fixtures/**/*.{ts,tsx}\" \"{projectRoot}/routines/**/*.{ts,tsx}\" \"{projectRoot}/reporters/**/*.{ts,tsx}\" \"{projectRoot}/global-setup.ts\" \"{projectRoot}/playwright.config.ts\"",
             "npx eslint --config {projectRoot}/eslint.config.js --fix \"{projectRoot}/tests/**/*.spec.ts\""
           ],
           "parallel": false

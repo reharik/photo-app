@@ -7,6 +7,11 @@ import apiJestConfig from './jest.config.js';
 export default {
   ...apiJestConfig,
   displayName: 'api-integration',
+  moduleNameMapper: {
+    ...apiJestConfig.moduleNameMapper,
+    '^@react-email/tailwind$': '<rootDir>/src/tests/__mocks__/reactEmailTailwind.js',
+    '^koa$': '<rootDir>/src/tests/__mocks__/koa.js',
+  },
   /**
    * One worker only: integration tests share a real Postgres DB and a singleton IoC container.
    * Parallel test files will race on TRUNCATE/inserts and produce flaky (3–6 random) failures.

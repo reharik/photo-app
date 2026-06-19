@@ -8,7 +8,7 @@ import {
 export type AuthorizeMediaViewInput = {
   mediaId: string;
   viewerId?: string;
-  hashedToken?: string;
+  token?: string;
 };
 
 export type MediaGrantService = {
@@ -24,8 +24,8 @@ export const build__MediaGrantService = ({
   grantReadRepository,
 }: MediaGrantServiceDeps): MediaGrantService => ({
   authorizeView: async (input: AuthorizeMediaViewInput): Promise<WriteResult<string>> => {
-    const { mediaId, viewerId, hashedToken } = input;
-    if (!viewerId && !hashedToken) {
+    const { mediaId, viewerId, token } = input;
+    if (!viewerId && !token) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
     }
 
@@ -45,7 +45,7 @@ export const build__MediaGrantService = ({
     const granted = await grantReadRepository.hasActiveGrant({
       mediaItemId: mediaId,
       viewerId,
-      tokenHash: hashedToken,
+      token,
     });
 
     if (!granted) {

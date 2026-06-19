@@ -1,5 +1,5 @@
 import { AppErrorCollection, MediaAssetKind } from '@packages/contracts';
-import { buildMediaAssetStorageKey, hashToken } from '@packages/media-core';
+import { buildMediaAssetStorageKey } from '@packages/media-core';
 import jwt from 'jsonwebtoken';
 import type { Context, Next } from 'koa';
 import type { Config } from '../config.js';
@@ -28,17 +28,15 @@ export const build__MediaAuthMiddleware =
     } else if (publicToken) {
       payload = { token: publicToken };
     }
-    const hashedToken = payload?.token ? hashToken(payload.token) : undefined;
     const viewerId = payload?.userId;
     const { mediaId, variant } = ctx.params as { mediaId: string; variant: string };
-    if (!viewerId && !hashedToken) ctx.throw(401);
+    if (!viewerId && !payload?.token) ctx.throw(401);
 
     const decision = await mediaGrantService.authorizeView({
       mediaId,
       viewerId,
-      hashedToken,
+      token: payload?.token,
     });
-
     if (!decision.success) {
       switch (decision.error) {
         case AppErrorCollection.mediaItem.MediaItemNotFound:

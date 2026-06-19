@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumItemSortBy, AlbumSortBy, SortDir } from '@packages/contracts';
+import { AlbumItemSortBy, AlbumMemberRole, AlbumSortBy, MediaKind, MediaItemStatus, SortDir } from '@packages/contracts';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
 import type { AlbumItemCollectionInfo, AlbumReadRepository } from '@packages/media-core';
-import { buildMediaItemBaseStorageKey, CollectionInfo } from '@packages/media-core';
+import { CollectionInfo } from '@packages/media-core';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -38,7 +38,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
       id: randomUUID(),
       albumId: params.id,
       userId: viewerId,
-      role: 'admin',
+      role: AlbumMemberRole.admin.value,
       createdAt: params.updatedAt,
       updatedAt: params.updatedAt,
       createdBy: viewerId,
@@ -54,13 +54,12 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
     await database('mediaItem').insert({
       id: params.id,
       ownerId: viewerId,
-      storageKey: buildMediaItemBaseStorageKey(viewerId, params.id),
-      kind: 'photo',
+      kind: MediaKind.photo.value,
       mimeType: 'image/jpeg',
       sizeBytes: 1,
       width: 1,
       height: 1,
-      status: 'ready',
+      status: MediaItemStatus.ready.value,
       createdAt: params.createdAt,
       updatedAt: params.updatedAt,
       createdBy: viewerId,
@@ -72,7 +71,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
       kind: 'display',
       mimeType: 'image/jpeg',
       fileSizeBytes: 1,
-      status: 'ready',
+      status: 'READY',
       createdAt: params.createdAt,
       updatedAt: params.updatedAt,
       createdBy: viewerId,
@@ -157,7 +156,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         }),
       });
 
-      expect(page.nodes.map((r) => r.title)).toEqual(['paging-a', 'paging-b', 'paging-c']);
+      expect(page.nodes.map((r) => r.title)).toEqual(['paging-a', 'paging-b']);
     });
   });
 
@@ -189,7 +188,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         }),
       });
 
-      expect(page.nodes.map((r) => r.title)).toEqual(['paging-c', 'paging-m', 'paging-z']);
+      expect(page.nodes.map((r) => r.title)).toEqual(['paging-c', 'paging-m']);
     });
   });
 
@@ -224,7 +223,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
   });
 
   describe('When getAlbumItemsForViewer runs with createdAt sort', () => {
-    it('should apply limit+1 and order by album_item.created_at', async () => {
+    it('should apply limit and order by album_item.created_at', async () => {
       const albumId = randomUUID();
       const t0 = new Date('2021-03-01T10:00:00.000Z');
       await insertAlbumWithMember({

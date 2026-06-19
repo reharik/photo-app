@@ -4,32 +4,38 @@ import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './index.js';
 
-type ShareInviteData = TemplateData['share-invite'];
+type PublicShareData = TemplateData['publicShare'];
 
-export const subject = (data: ShareInviteData): string => {
+export const subject = (data: PublicShareData): string => {
   return `${data.inviterName} shared “${data.resourceName}” with you`;
 };
 
-const ShareInvite = (data: ShareInviteData): ReactElement => {
+const PublicShare = (data: PublicShareData): ReactElement => {
   return (
     <BaseEmail
-      previewText={`${data.inviterName} invited you to ${data.resourceName}.`}
-      title={'You have been invited'}
+      previewText={`${data.inviterName} shared ${data.resourceName} with you.`}
+      title={'A photo album was shared with you'}
     >
       <Section>
         <Text style={paragraph}>
           <strong>{data.inviterName}</strong> shared <strong>{data.resourceName}</strong> with you
-          on {APP_NAME}. Open it below to enjoy the photos.
+          on {APP_NAME}. No account needed — just open it below.
         </Text>
       </Section>
       <Section style={{ marginTop: '24px' }}>
-        <Button href={data.inviteUrl} style={buttonStyle}>
+        <Button href={data.publicUrl} style={buttonStyle}>
           View album
         </Button>
       </Section>
       <Section style={{ marginTop: '16px' }}>
         <Text style={muted}>If the button doesn’t work, paste this link into your browser:</Text>
-        <Text style={linkFallback}>{data.inviteUrl}</Text>
+        <Text style={linkFallback}>{data.publicUrl}</Text>
+      </Section>
+      <Section style={{ marginTop: '24px' }}>
+        <Text style={muted}>
+          Want to keep it? Sign up for {APP_NAME} and this album will be waiting in your shared
+          albums — plus you can start your own.
+        </Text>
       </Section>
     </BaseEmail>
   );
@@ -68,4 +74,4 @@ const buttonStyle = {
   textDecoration: 'none',
 };
 
-export default ShareInvite;
+export default PublicShare;

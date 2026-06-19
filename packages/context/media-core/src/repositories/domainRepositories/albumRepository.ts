@@ -7,12 +7,14 @@ import type { AlbumMemberRecord } from '../../domain/Album/AlbumMember';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import { RunInTransaction } from '../../infrastructure/repositories/runInTransaction';
 import { EntityId } from '../../types/types';
+import { GrantSync } from '../grantSync';
 import { persist } from './AggregateRepo';
 import {
   publicLinkSelectColumns,
   PublicLinkWithAuthorizationRaw,
   publicLinkWithAuthorizationRawToPublicLink,
 } from './albumRepositoryMappings';
+import { GrantRepository } from './grantRepository';
 
 export type AlbumRepository = {
   getById: (id: EntityId, trx?: Knex.Transaction) => Promise<Album | undefined>;
@@ -23,10 +25,13 @@ export type AlbumRepository = {
 type AlbumRepositoryDeps = {
   database: Knex;
   runInTransaction: RunInTransaction;
+  grantRepository: GrantRepository;
+  grantSync: GrantSync;
 };
 
 export const build__AlbumRepository = ({
   runInTransaction,
+  grantSync,
 }: AlbumRepositoryDeps): AlbumRepository => {
   const getById = async (id: EntityId, trx?: Knex.Transaction): Promise<Album | undefined> => {
     return runInTransaction(trx, async (db) => {
@@ -73,6 +78,7 @@ export const build__AlbumRepository = ({
 
   const save = async (album: Album, trx: Knex.Transaction): Promise<void> => {
     await persist(trx, album);
+    await grantSync.syncGrants(album, trx);
   };
 
   const deleteAlbum = async (album: Album, trx: Knex.Transaction): Promise<void> => {

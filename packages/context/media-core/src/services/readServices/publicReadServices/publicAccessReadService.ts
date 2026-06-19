@@ -5,7 +5,7 @@ import {
 import { AgnosticReadServiceBase } from '../readServiceBaseType';
 
 export interface PublicAccessReadService extends AgnosticReadServiceBase {
-  validateHashedToken: (tokenHash: string) => Promise<string | undefined>;
+  validateToken: (token: string) => Promise<string | undefined>;
   getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
 }
 
@@ -17,9 +17,8 @@ export const build__PublicAccessReadService = ({
   publicAccessReadRepository,
 }: PublicAccessReadServiceDeps): PublicAccessReadService => {
   return {
-    validateHashedToken: async (tokenHash: string): Promise<string | undefined> => {
-      const publicAccess =
-        await publicAccessReadRepository.getPublicAccessIdByHashedToken(tokenHash);
+    validateToken: async (token: string): Promise<string | undefined> => {
+      const publicAccess = await publicAccessReadRepository.getPublicAccessIdByToken(token);
       if (!publicAccess) {
         return undefined;
       }

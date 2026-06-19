@@ -1,6 +1,5 @@
 import { isSmartEnumItem } from '@reharik/smart-enum';
 
-import { Entity } from '../Entity';
 import { isEntity } from './entityGuard';
 
 export const serializeValue = (value: unknown): unknown => {
@@ -24,7 +23,3 @@ export const serializeValue = (value: unknown): unknown => {
     Object.entries(value).map(([key, nested]) => [key, serializeValue(nested)]),
   );
 };
-
-export const serializeEntity = <TRecord extends Record<string, unknown>, E extends Entity<TRecord>>(
-  entity: E,
-): TRecord => serializeValue(entity.persistenceState()) as TRecord;

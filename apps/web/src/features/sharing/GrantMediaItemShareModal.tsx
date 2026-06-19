@@ -13,7 +13,11 @@ import {
 } from '../../graphql/generated/types';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { AppModal } from '../../ui/AppModal';
-import { GrantShareForm, type GrantShareFormValues } from './GrantShareForm';
+import {
+  GrantShareForm,
+  type GrantSharePublicLinkFormValues,
+  type GrantShareUserFormValues,
+} from './GrantShareForm';
 
 type GrantMediaItemShareModalProps = {
   mediaItemIds: string[];
@@ -50,17 +54,15 @@ export const GrantMediaItemShareModal = ({
     [contactsQuery.data],
   );
 
-  const handleSubmit = async (values: GrantShareFormValues): Promise<void> => {
+  const handleSubmit = async (values: GrantShareUserFormValues): Promise<void> => {
     if (mediaItemIds.length === 0) {
       return;
     }
 
-    const grantedToHandle = values.handle.length > 0 ? values.handle : undefined;
-    // const operations = values.operations;
     const input: GrantUserAuthorizationsForMediaItemsInput = {
       mediaItemIds,
       operations: [Operation.download, Operation.comment],
-      grantedToHandle,
+      grantedToHandle: values.handle,
       label: values.label,
       expiresAt: values.expiresAt,
     };
@@ -75,11 +77,6 @@ export const GrantMediaItemShareModal = ({
         data.grantUserAuthorizationsForMediaItems,
     );
 
-    // if (result.data.token) {
-    //   setCreatedToken(result.data.token);
-    //   return;
-    // }
-
     if (!result.success) {
       onErrorToast?.(result.errors[0]?.message ?? "Couldn't share items");
       onClose();
@@ -92,7 +89,7 @@ export const GrantMediaItemShareModal = ({
     onClose();
   };
 
-  const handleCreatePublicLink = async (values: GrantShareFormValues): Promise<void> => {
+  const handleCreatePublicLink = async (values: GrantSharePublicLinkFormValues): Promise<void> => {
     if (mediaItemIds.length === 0) {
       return;
     }

@@ -14,6 +14,7 @@ import type { GrantRepository } from '../repositories/domainRepositories/grantRe
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
+import type { GrantSync } from '../repositories/grantSync.js';
 import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
 import type {
   AlbumMemberReadRepository,
@@ -98,6 +99,7 @@ export interface IocGeneratedCradle {
   grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
   grantReadRepository: GrantReadRepository;
   grantRepository: GrantRepository;
+  grantSync: GrantSync;
   grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
   mediaItemOperationsService: MediaItemOperationsService;
   mediaItemReadRepository: MediaItemReadRepository;

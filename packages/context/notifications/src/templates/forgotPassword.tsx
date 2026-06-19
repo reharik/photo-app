@@ -2,6 +2,7 @@ import { Section, Text } from '@react-email/components';
 import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
+import { APP_NAME } from './index.js';
 
 type ForgotPasswordData = TemplateData['forgotPassword'];
 
@@ -10,19 +11,17 @@ export const subject = (): string => {
 };
 
 const ForgotPassword = (data: ForgotPasswordData): ReactElement => {
-  const appName = data.appName ?? 'PhotoApp';
   const greetingName = data.firstName?.trim() || 'there';
 
   return (
     <BaseEmail
-      appName={appName}
-      previewText={`Your ${appName} password reset code is ${data.code}.`}
+      previewText={`Your ${APP_NAME} password reset code is ${data.code}.`}
       title={'Reset your password'}
     >
       <Section>
         <Text style={paragraph}>Hi {greetingName},</Text>
         <Text style={paragraph}>
-          We received a request to reset your {appName} password. Enter the code below to continue:
+          We received a request to reset your {APP_NAME} password. Enter the code below to continue:
         </Text>
       </Section>
 

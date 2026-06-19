@@ -69,7 +69,7 @@ export type AuthorizationReadRepository = {
 export type HasActiveGrantInput = {
   mediaItemId: string;
   viewerId?: string;
-  tokenHash?: string;
+  token?: string;
 };
 
 export type HasActiveGrantPermissionInput = {
@@ -216,6 +216,8 @@ export type ShareContactRepository = {
 export type SharedWithMeMediaItemRow = NamespacedMediaItemRow & {
   grantId: EntityId;
   sharedBy: EntityId;
+  sharedByFirstName: string;
+  sharedByLastName: string;
   sharedAt: Date;
 };
 
@@ -223,6 +225,8 @@ export type SharedAlbumRow = {
   grantId: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
+  sharedByFirstName: string;
+  sharedByLastName: string;
 } & AlbumWithCoverRow;
 
 export type SharedWithMeReadRepository = {
@@ -308,7 +312,7 @@ export type PublicAccessRow = {
 export type PublicAccessIdRow = { publicAccessId: string };
 
 export type PublicAccessReadRepository = {
-  getPublicAccessIdByHashedToken: (tokenHash: string) => Promise<PublicAccessIdRow | undefined>;
+  getPublicAccessIdByToken: (token: string) => Promise<PublicAccessIdRow | undefined>;
   getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
-  canAccessMediaWithLink: (input: { tokenHash: string; mediaItemId: string }) => Promise<boolean>;
+  canAccessMediaWithLink: (input: { token: string; mediaItemId: string }) => Promise<boolean>;
 };

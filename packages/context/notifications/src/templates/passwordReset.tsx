@@ -2,6 +2,7 @@ import { Section, Text } from '@react-email/components';
 import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
+import { APP_NAME } from './index.js';
 
 type PasswordResetData = TemplateData['passwordReset'];
 
@@ -10,19 +11,17 @@ export const subject = (_data: PasswordResetData): string => {
 };
 
 const PasswordReset = (data: PasswordResetData): ReactElement => {
-  const appName = data.appName ?? 'PhotoApp';
   const greetingName = data.firstName?.trim() || 'there';
 
   return (
     <BaseEmail
-      appName={appName}
-      previewText={`Your ${appName} password was just changed.`}
+      previewText={`Your ${APP_NAME} password was just changed.`}
       title={'Your password was changed'}
     >
       <Section>
         <Text style={paragraph}>Hi {greetingName},</Text>
         <Text style={paragraph}>
-          Your {appName} password was just changed. You can now sign in with your new password.
+          Your {APP_NAME} password was just changed. You can now sign in with your new password.
         </Text>
         <Text style={muted}>
           If you didn&apos;t make this change, your account may be at risk. Reset your password

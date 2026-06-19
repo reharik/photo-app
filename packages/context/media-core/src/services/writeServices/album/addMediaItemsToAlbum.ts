@@ -1,4 +1,5 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { dedupeIds } from '@packages/infrastructure';
 import { Knex } from 'knex';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
@@ -26,19 +27,6 @@ type AddMediaItemsToAlbumDeps = {
   runInTransaction: RunInTransaction;
 };
 
-const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
-  const seen = new Set<EntityId>();
-  const out: EntityId[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    out.push(id);
-  }
-  return out;
-};
-
 export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
@@ -49,7 +37,7 @@ export const build__AddMediaItemsToAlbum = ({
     trx?: Knex.Transaction,
   ): Promise<WriteResult<AddMediaItemsToAlbumResult>> => {
     const { viewerId, newAlbum } = input;
-    const mediaItemIds = dedupeMediaIdsPreserveOrder(input.mediaItemIds);
+    const mediaItemIds = dedupeIds(input.mediaItemIds);
 
     if (mediaItemIds.length === 0) {
       return fail(AppErrorCollection.album.AddMediaToAlbumEmptyMediaList);

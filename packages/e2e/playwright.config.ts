@@ -6,12 +6,13 @@ import { env } from './fixtures/env';
  *
  * These tests assume the api (default http://localhost:3001) and web
  * (default http://localhost:5173) are already running, and that the
- * database has the e2e users from `01_user.ts` applied (`tester.one@…`,
- * `two.tester@…`), and that api storage for media uploads is configured.
+ * database is reachable (global setup upserts seed users from `01_user.ts`),
+ * and that api storage for media uploads is configured.
  * Tests create media through the Upload Media UI (no direct DB inserts).
  * Start api + web before running `npm test` here.
  */
 export default defineConfig({
+  globalSetup: './global-setup.ts',
   testDir: './tests',
   timeout: 120_000,
   expect: {

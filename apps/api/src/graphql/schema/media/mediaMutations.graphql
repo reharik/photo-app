@@ -123,8 +123,7 @@ type FinalizeMediaUploadPayload {
 input GrantUserAuthorizationsForMediaItemsInput {
   mediaItemIds: [ID!]!
   operations: [Operation!]!
-  grantedToUserId: ID
-  grantedToHandle: String
+  grantedToHandle: String!
   label: String
   expiresAt: DateTime
 }

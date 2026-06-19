@@ -7,7 +7,6 @@ import {
 } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
-import { AuthorizationProjection } from '../../readServices/types';
 
 export type FinalizeMediaItemUploadCommand = {
   viewerId: EntityId;
@@ -125,15 +124,18 @@ export type UpdateMediaItemReactionsResult = {
 
 export type GrantUserAuthorizationResult = {
   authorizationIds: EntityId[];
-  authorizations: AuthorizationProjection[];
+  inviteeEmail: string;
+  inviterName: string;
+  albumTitle: string;
+  tokenOrUserId: string;
+  isPublicLink?: boolean;
 };
 
 export type GrantUserAuthorizationForMediaItemsCommand = {
   viewerId: EntityId;
   mediaItemIds: EntityId[];
   operations: Operation[];
-  grantedToUserId?: EntityId;
-  grantedToHandle?: string;
+  grantedToHandle: string;
   label?: string;
   expiresAt?: Date;
 };

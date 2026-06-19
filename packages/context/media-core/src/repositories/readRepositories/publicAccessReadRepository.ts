@@ -8,9 +8,9 @@ import type {
 export const build__PublicAccessReadRepository = ({
   database,
 }: ReadRepositoryDeps): PublicAccessReadRepository => ({
-  getPublicAccessIdByHashedToken: async (tokenHash: string) => {
+  getPublicAccessIdByToken: async (token: string) => {
     const publicAccess = await database<PublicAccessIdRow>('shareLink')
-      .where('shareLink.linkToken', tokenHash)
+      .where('shareLink.linkToken', token)
       .whereNull('shareLink.revokedAt')
       .where((b) => {
         b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
@@ -34,11 +34,11 @@ export const build__PublicAccessReadRepository = ({
     }
     return publicAccess;
   },
-  canAccessMediaWithLink: async ({ tokenHash, mediaItemId }) => {
+  canAccessMediaWithLink: async ({ token, mediaItemId }) => {
     const q = database('shareLink')
       .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')
       .join('grant', 'accessGrant.id', 'grant.accessGrantId')
-      .where('shareLink.linkToken', tokenHash)
+      .where('shareLink.linkToken', token)
       .whereNull('shareLink.revokedAt')
       .where((b) =>
         b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now()),

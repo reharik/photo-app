@@ -19,7 +19,7 @@ export const build__GrantReadRepository = ({
     return database('shareLink')
       .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')
       .join('grant', 'accessGrant.id', 'grant.accessGrantId')
-      .where('shareLink.linkToken', input.tokenHash)
+      .where('shareLink.linkToken', input.token)
       .where('grant.mediaItemId', input.mediaItemId)
       .first();
   },

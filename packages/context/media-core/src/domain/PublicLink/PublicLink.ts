@@ -1,4 +1,5 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
 import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { AuditRecord, ChildEntities, Entity } from '../Entity';
@@ -21,7 +22,7 @@ export type PublicLinkChildRecords = {
 
 export type CreatePublicLinkInput = {
   operations: Operation[];
-  linkToken: string;
+
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
@@ -55,10 +56,12 @@ export class PublicLink extends Entity<PublicLinkRecord> {
       },
       actorId,
     );
+    const token = crypto.randomBytes(16).toString('hex');
+
     const publicLink = new PublicLink(
       actorId,
       {
-        linkToken: input.linkToken,
+        linkToken: token,
         grantedBy: actorId,
         expiresAt: input.expiresAt,
         albumId: input.albumId,
@@ -88,7 +91,7 @@ export class PublicLink extends Entity<PublicLinkRecord> {
     publicLink.rehydrateAudit(record);
     return publicLink;
   }
-  linkToken(): string | undefined {
+  linkToken(): string {
     return this.props.linkToken;
   }
 

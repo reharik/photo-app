@@ -1,4 +1,5 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { dedupeIds } from '@packages/infrastructure';
 import { Knex } from 'knex';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
@@ -10,7 +11,6 @@ import {
   AlbumReadRepository,
   MediaItemReadRepository,
 } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemsCommand, DeleteMediaItemsResult } from './writeMediaItem.types';
@@ -31,19 +31,6 @@ type DeleteMediaItemsDeps = {
   mediaStorage: MediaStorage;
 };
 
-const dedupeMediaIdsPreserveOrder = (ids: EntityId[]): EntityId[] => {
-  const seen = new Set<EntityId>();
-  const out: EntityId[] = [];
-  for (const id of ids) {
-    if (seen.has(id)) {
-      continue;
-    }
-    seen.add(id);
-    out.push(id);
-  }
-  return out;
-};
-
 export const build__DeleteMediaItems = ({
   mediaItemRepository,
   mediaItemReadRepository,
@@ -57,7 +44,7 @@ export const build__DeleteMediaItems = ({
     trx?: Knex.Transaction,
   ): Promise<WriteResult<DeleteMediaItemsResult>> => {
     const { viewerId } = input;
-    const dedupedIds = dedupeMediaIdsPreserveOrder(input.mediaItemIds);
+    const dedupedIds = dedupeIds(input.mediaItemIds);
 
     if (dedupedIds.length === 0) {
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);

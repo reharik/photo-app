@@ -3,6 +3,7 @@ import type { TemplateData, TemplateName } from '../types.js';
 import Digest, { subject as digestSubject } from './digest.js';
 import ForgotPassword, { subject as forgotPasswordSubject } from './forgotPassword.js';
 import PasswordReset, { subject as passwordResetSubject } from './passwordReset.js';
+import PublicShare, { subject as publicShareSubject } from './public-share.js';
 import ShareInvite, { subject as shareInviteSubject } from './share-invite.js';
 import Welcome, { subject as welcomeSubject } from './welcome.js';
 
@@ -21,4 +22,7 @@ export const templateRegistry: TemplateRegistry = {
   digest: { Component: Digest, getSubject: digestSubject },
   passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
   forgotPassword: { Component: ForgotPassword, getSubject: forgotPasswordSubject },
+  publicShare: { Component: PublicShare, getSubject: publicShareSubject },
 };
+
+export const APP_NAME = 'Betana.me';

@@ -198,7 +198,7 @@ const insertAlbumMember = async (
     id: randomUUID(),
     albumId,
     userId,
-    role: role,
+    role: role.value,
     createdAt: now,
     updatedAt: now,
     createdBy: TEST_VIEWER_A_ID,

@@ -1,6 +1,12 @@
-import { addMediaItemsToNewAlbum } from '../../fixtures/album';
+import {
+  addMediaItemsToExistingAlbum,
+  addMediaItemsToNewAlbum,
+  expectAlbumGalleryItems,
+  removeMediaItemsFromAlbum,
+} from '../../fixtures/album';
 import { loginViaUi } from '../../fixtures/auth';
 import { expectMediaItemLoaded, mediaTile } from '../../fixtures/mediaSelection';
+import { expectAuthenticatedMediaDetailInaccessible } from '../../fixtures/navigation';
 import { expect, test } from '../../fixtures/test';
 import { reactToItem } from '../../routines/reactToItem';
 import { setup } from '../../routines/setup';
@@ -16,7 +22,7 @@ test.describe('Share an album with an existing user', () => {
       grabTestImages,
       uniqueSuffix,
     }) => {
-      const [a, b, c] = await setup(grabTestImages, userA, 3);
+      const [a, b, c, d] = await setup(grabTestImages, userA, 4);
 
       const albumTitle = `e2e-share-album-${uniqueSuffix}`;
 
@@ -36,6 +42,7 @@ test.describe('Share an album with an existing user', () => {
       await expect(itemA).toBeVisible();
       await expect(userB.page.getByTestId(`media-tile-${b.id}`)).toBeVisible();
       await expect(userB.page.getByTestId(`media-tile-${c.id}`)).toHaveCount(0);
+      await expect(userB.page.getByTestId(`media-tile-${d.id}`)).toHaveCount(0);
       await expectMediaItemLoaded(userB.page, a.id);
       await expectMediaItemLoaded(userB.page, b.id);
       await reactToItem(userB.page, itemA);
@@ -54,6 +61,41 @@ test.describe('Share an album with an existing user', () => {
       await expect(rootRow).toBeVisible();
 
       await reactToItem(userB.page, rootRow);
+
+      await userB.page.goto(`/albums/${albumId}`);
+      await expect(userB.page.getByRole('heading', { name: albumTitle })).toBeVisible();
+
+      await addMediaItemsToExistingAlbum(userA.page, [c.id]);
+
+      await expectAlbumGalleryItems(userA.page, {
+        albumTitle,
+        loadedIds: [a.id, b.id, c.id],
+        absentIds: [d.id],
+      });
+
+      await userB.page.reload();
+      await expectAlbumGalleryItems(userB.page, {
+        albumTitle,
+        loadedIds: [a.id, b.id, c.id],
+        absentIds: [d.id],
+      });
+
+      await removeMediaItemsFromAlbum(userA.page, [c.id]);
+
+      await expectAlbumGalleryItems(userA.page, {
+        albumTitle,
+        loadedIds: [a.id, b.id],
+        absentIds: [c.id],
+      });
+
+      await userB.page.reload();
+      await expectAlbumGalleryItems(userB.page, {
+        albumTitle,
+        loadedIds: [a.id, b.id],
+        absentIds: [c.id],
+      });
+
+      await expectAuthenticatedMediaDetailInaccessible(userB.page, c.id);
 
       await userB.page.goto('/albums');
     });

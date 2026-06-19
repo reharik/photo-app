@@ -23,7 +23,7 @@ export type MediaSelectionHandle = {
 
 export type ClearSelectionButtonLabel = 'Cancel' | 'Clear selection';
 
-export type SelectionToolbarVariant = 'legacy' | 'library';
+export type SelectionToolbarVariant = 'legacy' | 'library' | 'album';
 
 export type SelectMediaItemsOptions = {
   /**
@@ -36,17 +36,20 @@ export type SelectMediaItemsOptions = {
    * (e.g. an "Add album item" modal on the album screen).
    */
   scope?: Locator;
-  /** Library grid uses "{N} photos selected"; album/gallery screens use "{N} selected". */
+  /** Library and album grids use "{N} photos selected"; pickers use "{N} selected". */
   toolbarVariant?: SelectionToolbarVariant;
   /** Warm-light toolbars use "Cancel"; legacy toolbars use "Clear selection". */
   clearButtonLabel?: ClearSelectionButtonLabel;
 };
 
+export const selectionToolbarName = (variant: SelectionToolbarVariant = 'library'): string =>
+  variant === 'album' ? 'Selected album items' : 'Selected items';
+
 export const selectionCountLabel = (
   count: number,
   variant: SelectionToolbarVariant = 'legacy',
 ): string =>
-  variant === 'library'
+  variant === 'library' || variant === 'album'
     ? count === 1
       ? '1 photo selected'
       : `${count} photos selected`
@@ -57,8 +60,10 @@ export const selectionCountLabel = (
 export const mediaTile = (root: Page | Locator, mediaItemId: string): Locator =>
   root.getByTestId(`media-tile-${mediaItemId}`);
 
-const selectionToolbarIn = (root: Page | Locator): Locator =>
-  root.getByRole('toolbar', { name: 'Selected items' });
+const selectionToolbarIn = (
+  root: Page | Locator,
+  variant: SelectionToolbarVariant = 'library',
+): Locator => root.getByRole('toolbar', { name: selectionToolbarName(variant) });
 
 /**
  * Hovers a gallery tile and toggles its corner checkbox on if not already selected.
@@ -110,9 +115,9 @@ export const selectMediaItems = async (
     await selectMediaTile(page, mediaItemId, options.scope);
   }
 
-  const toolbar = selectionToolbarIn(root);
   const count = mediaItemIds.length;
   const toolbarVariant = options.toolbarVariant ?? 'library';
+  const toolbar = selectionToolbarIn(root, toolbarVariant);
 
   await expect(toolbar).toBeVisible();
   await expect(toolbar).toContainText(selectionCountLabel(count, toolbarVariant));

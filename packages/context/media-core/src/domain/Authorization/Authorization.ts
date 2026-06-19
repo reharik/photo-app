@@ -6,20 +6,19 @@ export type AuthorizationProps = {
   mediaItemId?: EntityId;
   albumId?: EntityId;
   grantedToUser?: EntityId;
-  publicLinkId?: EntityId;
+  shareLinkId?: EntityId;
   operations: Operation[];
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
-};
+} & AuditRecord;
 
 export type AuthorizationRecord = {
   id: string;
   mediaItemId?: string;
   albumId?: string;
   grantedToUser?: string;
-  publicLinkId?: string;
   shareLinkId?: string;
   grantedBy: EntityId;
   operations: Operation[];
@@ -49,12 +48,16 @@ export class Authorization extends Entity<AuthorizationRecord> {
 
   static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
     return new Authorization(actorId, {
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: actorId,
+      updatedBy: actorId,
       //TODO:  FOR NOW WE ARE JUST GRANTING ALL PERMISSIONS
       // WE WILL EVENTUALLY ADD PERMS INTO THE FORM
 
       operations: [Operation.download, Operation.comment],
       grantedToUser: input.grantedToUser,
-      publicLinkId: input.publicLinkId,
+      shareLinkId: input.publicLinkId,
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
@@ -64,21 +67,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
   }
 
   static rehydrate(record: AuthorizationRecord): Authorization {
-    const asset = new Authorization(
-      record.createdBy,
-      {
-        operations: record.operations,
-        grantedToUser: record.grantedToUser,
-        publicLinkId: record.publicLinkId ?? record.shareLinkId,
-        grantedBy: record.grantedBy,
-        label: record.label,
-        expiresAt: record.expiresAt,
-        revokedAt: record.revokedAt,
-        mediaItemId: record.mediaItemId,
-        albumId: record.albumId,
-      },
-      record.id,
-    );
+    const asset = new Authorization(record.createdBy, record, record.id);
     asset.rehydrateAudit(record);
     return asset;
   }
@@ -86,15 +75,22 @@ export class Authorization extends Entity<AuthorizationRecord> {
     return this.props.grantedToUser;
   }
   publicLinkId(): EntityId | undefined {
-    return this.props.publicLinkId;
+    return this.props.shareLinkId;
   }
   // This is so we can set the id after creating the public link
   setPublicLinkId(publicLinkId: EntityId): void {
-    this.props.publicLinkId = publicLinkId;
+    this.props.shareLinkId = publicLinkId;
   }
   operations(): Operation[] {
     return this.props.operations;
   }
+
+  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+    this.props.operations = operations;
+    this.touch(actorId);
+    return ok(undefined);
+  }
+
   label(): string | undefined {
     return this.props.label;
   }
@@ -131,20 +127,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
   revokedAt(): Date | undefined {
     return this.props.revokedAt;
   }
-
-  toPersistence(): AuthorizationRecord {
-    return {
-      id: this.id(),
-      mediaItemId: this.props.mediaItemId,
-      albumId: this.props.albumId,
-      grantedToUser: this.props.grantedToUser,
-      shareLinkId: this.props.publicLinkId,
-      grantedBy: this.props.grantedBy,
-      operations: this.props.operations,
-      label: this.props.label,
-      expiresAt: this.props.expiresAt,
-      revokedAt: this.props.revokedAt,
-      ...this.exportAudit(),
-    };
+  createdAt(): Date | undefined {
+    return this.props.createdAt;
   }
 }

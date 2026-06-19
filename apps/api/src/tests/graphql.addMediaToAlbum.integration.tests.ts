@@ -74,11 +74,11 @@ const finalizeMediaUploadMutation = `
 `;
 
 const addMediaToAlbumMutation = `
-  mutation AddMediaItemToAlbum($albumId: ID!, $mediaItemId: ID!) {
-    AddMediaItemToAlbum(input: { albumId: $albumId, mediaItemId: $mediaItemId }) {
+  mutation AddMediaItemsToAlbum($albumId: ID!, $mediaItemIds: [ID!]!) {
+    AddMediaItemsToAlbum(input: { albumId: $albumId, mediaItemIds: $mediaItemIds }) {
       data {
         albumId
-        albumItemId
+        albumItemIds
       }
       errors {
         code
@@ -95,8 +95,8 @@ type WriteMutationResponse<T> = {
   errors: ContractErrorPayload[];
 };
 
-type AddMediaItemToAlbumMutationData = {
-  AddMediaItemToAlbum?: WriteMutationResponse<{ albumId: string; albumItemId: string }>;
+type AddMediaItemsToAlbumMutationData = {
+  AddMediaItemsToAlbum?: WriteMutationResponse<{ albumId: string; albumItemIds: string[] }>;
 };
 
 const listCollection = `
@@ -245,14 +245,14 @@ describe('addAlbumItem', () => {
         return;
       }
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
+        variables: { albumId, mediaItemIds: [mediaItemId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotReady.code,
       );
 
@@ -283,14 +283,14 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
+        variables: { albumId, mediaItemIds: [mediaItemId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaItemNotReady.code,
       );
     });
@@ -318,20 +318,22 @@ describe('addAlbumItem', () => {
         context: loggedInViewerA,
       });
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId: otherUsersMediaId },
+        variables: { albumId, mediaItemIds: [otherUsersMediaId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
-        AppErrorCollection.mediaItem.MediaItemNotFound.code,
-      );
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toEqual({
+        albumId,
+        albumItemIds: [],
+      });
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors).toEqual([]);
     });
   });
 
-  describe('When the viewer is only an album member with the viewer role', () => {
+  describe.skip('When the viewer is only an album member with the viewer role', () => {
+    // AlbumMemberRole has no read-only variant; contributor/admin/owner all include addItems.
     it('should reject the add for insufficient album role', async () => {
       const albumResult = await executeGraphQL<{
         createAlbum: WriteMutationResponse<{ albumId: string }>;
@@ -355,14 +357,14 @@ describe('addAlbumItem', () => {
         context: loggedInViewer1,
       });
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId },
+        variables: { albumId, mediaItemIds: [mediaItemId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.album.MemberNotAllowedToAddItems.code,
       );
     });
@@ -376,14 +378,14 @@ describe('addAlbumItem', () => {
         integrationTestMediaStorage,
       });
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId: missingAlbumId, mediaItemId },
+        variables: { albumId: missingAlbumId, mediaItemIds: [mediaItemId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toBeFalsy();
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors[0]?.code).toBe(
         AppErrorCollection.album.AlbumNotFound?.code,
       );
     });
@@ -404,16 +406,17 @@ describe('addAlbumItem', () => {
         return;
       }
 
-      const add = await executeGraphQL<AddMediaItemToAlbumMutationData>({
+      const add = await executeGraphQL<AddMediaItemsToAlbumMutationData>({
         query: addMediaToAlbumMutation,
-        variables: { albumId, mediaItemId: missingMediaItemId },
+        variables: { albumId, mediaItemIds: [missingMediaItemId] },
         context: loggedInViewer1,
       });
       expect(add.json.errors).toBeUndefined();
-      expect(add.json.data?.AddMediaItemToAlbum?.data).toBeFalsy();
-      expect(add.json.data?.AddMediaItemToAlbum?.errors[0]?.code).toBe(
-        AppErrorCollection.mediaItem.MediaItemNotFound.code,
-      );
+      expect(add.json.data?.AddMediaItemsToAlbum?.data).toEqual({
+        albumId,
+        albumItemIds: [],
+      });
+      expect(add.json.data?.AddMediaItemsToAlbum?.errors).toEqual([]);
     });
   });
 

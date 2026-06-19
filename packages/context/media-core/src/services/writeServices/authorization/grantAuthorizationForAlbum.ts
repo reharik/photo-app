@@ -1,27 +1,13 @@
-import { fail, ok, Operation, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
 import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { Authorization } from '../../../domain/Authorization/Authorization';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/types';
-import { AuthorizationProjection } from '../../readServices/types';
 import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
 import { GrantUserAuthorizationResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
-
-const toAuthorizationProjection = (authorization: Authorization): AuthorizationProjection => ({
-  id: authorization.id(),
-  grantedToUserId: authorization.grantedToUser(),
-  operations: authorization.operations(),
-  label: authorization.label(),
-  expiresAt: authorization.expiresAt(),
-  revokedAt: authorization.revokedAt(),
-  // Authorization was just created in this transaction;
-  createdAt: new Date(),
-});
 
 export interface GrantUserAuthorizationForAlbum extends WriteServiceBase {
   (
@@ -32,7 +18,6 @@ export interface GrantUserAuthorizationForAlbum extends WriteServiceBase {
 type GrantUserAuthorizationForAlbumDeps = {
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
-  grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
   runInTransaction: RunInTransaction;
 };
@@ -40,7 +25,6 @@ type GrantUserAuthorizationForAlbumDeps = {
 export const build__GrantUserAuthorizationForAlbum = ({
   albumRepository,
   userRepository,
-  grantRepository,
   shareContactRepository,
   runInTransaction,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
@@ -49,7 +33,6 @@ export const build__GrantUserAuthorizationForAlbum = ({
     trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, albumId, operations, grantedToHandle, label, expiresAt } = input;
-    let { grantedToUserId } = input;
 
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
@@ -61,70 +44,56 @@ export const build__GrantUserAuthorizationForAlbum = ({
     if (!member || !member.role().can(Operation.grantAlbumAuthorization)) {
       return fail(Operation.grantAlbumAuthorization.deniedError);
     }
-
-    let grantedToHandleResolved: string | undefined;
-    if (grantedToHandle) {
-      const ensureUser = await ensureUserExists(grantedToHandle, userRepository);
-      if (!ensureUser.success) {
-        return fail(ensureUser.error);
+    const granter = await userRepository.getById(viewerId);
+    if (!granter) {
+      return fail(AppErrorCollection.user.UserNotFound);
+    }
+    const ensureUser = await ensureUserExists(grantedToHandle, userRepository);
+    if (!ensureUser.success) {
+      const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
+      if (!publicLinkResult.success) {
+        return publicLinkResult;
       }
-      grantedToUserId = ensureUser.value.id();
-      grantedToHandleResolved = ensureUser.value.handle();
-    } else if (grantedToUserId) {
-      const found = await userRepository.getById(grantedToUserId);
-      grantedToHandleResolved = found?.handle();
+      const publicLink = publicLinkResult.value;
+      await runInTransaction(trx, async (db) => {
+        await albumRepository.save(album, db);
+      });
+
+      return ok({
+        authorizationIds: [publicLink.id()],
+        inviteeEmail: grantedToHandle,
+        inviterName: granter?.fullName(),
+        albumTitle: album.title(),
+        tokenOrUserId: publicLink.linkToken(),
+        isPublicLink: true,
+      });
     }
 
-    const result = album.grantAuthorization(
+    const invitee = ensureUser.value;
+    const grantResult = album.grantAuthorization(
       operations,
       viewerId,
-      grantedToUserId,
+      invitee.id(),
       label,
       expiresAt,
     );
-    if (!result.success) {
-      return result;
+    if (!grantResult.success) {
+      return grantResult;
     }
-
-    const authorization = result.value.authorization;
-    const authorizationId = authorization.id();
-    const mediaItemIds = album.getMediaItemIds();
 
     await runInTransaction(trx, async (db) => {
       await albumRepository.save(album, db);
-
-      const now = new Date();
-      for (const mediaItemId of mediaItemIds) {
-        await grantRepository.createGrant(
-          {
-            id: crypto.randomUUID(),
-            mediaItemId,
-            accessGrantId: authorizationId,
-            grantedToUser: grantedToUserId,
-            operations: authorization.operations(),
-            createdAt: now,
-          },
-          db,
-        );
-      }
-
-      if (grantedToUserId && grantedToHandleResolved) {
-        await shareContactRepository.upsertContact(
-          viewerId,
-          grantedToUserId,
-          grantedToHandleResolved,
-          db,
-        );
-        const owner = await userRepository.getById(viewerId);
-        if (owner) {
-          await shareContactRepository.upsertContact(grantedToUserId, viewerId, owner.handle(), db);
-        }
-      }
+      await shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db);
+      await shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db);
     });
 
+    const authorizationId = grantResult.value.authorization.id();
     return ok({
       authorizationIds: [authorizationId],
-      authorizations: [toAuthorizationProjection(authorization)],
+      inviteeEmail: grantedToHandle,
+      inviterName: granter?.fullName(),
+      albumTitle: album.title(),
+      tokenOrUserId: album.id(),
     });
   };
 };

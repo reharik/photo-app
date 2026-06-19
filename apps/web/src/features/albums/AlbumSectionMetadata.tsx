@@ -94,7 +94,7 @@ export const AlbumSectionMetadata = ({
     const cover = album.coverMedia ? (
       <CoverImage
         src={coverMediaUrl}
-        data-testid={album.coverMedia.id}
+        data-testid={`album-cover-${album.coverMedia.id}`}
         alt={album.coverMedia?.kind.display ?? ''}
       />
     ) : (

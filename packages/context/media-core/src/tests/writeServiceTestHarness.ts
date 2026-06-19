@@ -39,15 +39,23 @@ export const createWriteTestHarness = (): WriteTestHarness => {
 
 export const albumActiveItems = (album: Album) => album.childEntities().items.upsert;
 
+const createEmptyAlbumRepository = (): AlbumRepository => ({
+  getById: async () => undefined,
+  save: async () => {},
+  delete: async () => {},
+});
+
 export const createUploadService = (
   harness: WriteTestHarness,
   mediaItemRepository: MediaItemRepository,
   mediaStorage: MediaStorage,
+  albumRepository: AlbumRepository = createEmptyAlbumRepository(),
 ) =>
   build__CreateMediaItemUpload({
     mediaItemRepository,
+    albumRepository,
     mediaStorage,
-    database: harness.database,
+    runInTransaction: harness.runInTransaction,
   });
 
 export const createFinalizeService = (
@@ -60,7 +68,7 @@ export const createFinalizeService = (
     mediaItemRepository,
     mediaStorage,
     mediaProcessingJobRepository,
-    database: harness.database,
+    runInTransaction: harness.runInTransaction,
   });
 
 export const createAlbumService = (harness: WriteTestHarness, albumRepository: AlbumRepository) =>

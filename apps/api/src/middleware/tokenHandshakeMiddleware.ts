@@ -1,5 +1,5 @@
 import type { Logger } from '@packages/infrastructure';
-import { hashToken, type PublicAccessReadService } from '@packages/media-core';
+import { type PublicAccessReadService } from '@packages/media-core';
 import type { Context, Next } from 'koa';
 
 export type TokenHandshakeMiddleware = (ctx: Context, next: Next) => Promise<void>;
@@ -14,8 +14,7 @@ export const build__TokenHandshakeMiddleware =
   async (ctx: Context, next: Next) => {
     const body = ctx.request.body as { token: string };
     const token = body.token;
-    const hashedToken = hashToken(token);
-    const publicAccessId = await publicAccessReadService.validateHashedToken(hashedToken);
+    const publicAccessId = await publicAccessReadService.validateToken(token);
     if (!publicAccessId) {
       logger.warn('Authentication failed: invalid or expired token', {
         method: ctx.method,

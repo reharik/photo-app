@@ -93,8 +93,7 @@ export type GrantUserAuthorizationForAlbumCommand = {
   viewerId: EntityId;
   albumId: EntityId;
   operations: Operation[];
-  grantedToUserId?: EntityId;
-  grantedToHandle?: string;
+  grantedToHandle: string;
   label?: string;
   expiresAt?: Date;
 };

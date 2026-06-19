@@ -113,4 +113,16 @@ export class User extends AggregateRoot<UserRecord> {
     this.props.emailVerified = true;
     this.touch(actorId);
   }
+  firstName(): string {
+    return this.props.firstName;
+  }
+  lastName(): string {
+    return this.props.lastName;
+  }
+  fullName(): string {
+    return this.props.firstName + ' ' + this.props.lastName;
+  }
+  email(): string {
+    return this.props.email;
+  }
 }

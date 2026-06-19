@@ -21,6 +21,7 @@ import publicMediaItemResolver from './publicMediaItem/publicMediaItemResolver.j
 import reactionMutationResolvers from './reactions/reactionMutationResolver.js';
 import { reactorResolvers } from './reactors/reactorResolver.js';
 import publicAccessResolver from './root/publicAccessResolver.js';
+import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
 import sharedWithMeResolvers from './sharedWithMe/sharedWithMeResolver.js';
 
@@ -43,6 +44,7 @@ export const resolvers = mergeResolvers([
   publicAccessResolver,
   publicMediaItemResolver,
   publicAlbumResolver,
+  viewerMutationResolvers,
   viewerResolvers,
   sharedWithMeResolvers,
 ]);
