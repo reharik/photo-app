@@ -77,7 +77,7 @@ betaname.app {
 	handle {
 		@shared path /shared/*
 		header @shared X-Robots-Tag "noindex, nofollow"
-		root * /srv/photo-app
+		root * /srv/betaname
 		try_files {path} /index.html
 		file_server
 	}
