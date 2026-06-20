@@ -82,7 +82,6 @@ export const PublicAlbumSection = ({
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_GRID_COLUMNS}
-              groupBy="none"
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}

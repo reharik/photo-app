@@ -26,6 +26,8 @@ import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
 import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 import { LIBRARY_GRID_COLUMNS } from './grid/gridColumns';
+import { NamedGroupStrategy } from './grid/groupBy/groupByStrategyTypes';
+import { makeDateStrategy } from './grid/groupBy/makeDateStrategy';
 import { MediaGrid } from './grid/MediaGrid';
 import { MediaGridTile } from './grid/MediaGridTile';
 import {
@@ -40,6 +42,10 @@ type LibrarySectionProps = {
   paging: PagingState;
 };
 
+const groupByStrategy: NamedGroupStrategy<MediaItemSummaryVM> = makeDateStrategy(
+  'takenDate',
+  (n) => n.takenAt,
+);
 export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
@@ -166,6 +172,8 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
     setToastMessage(result.errors[0]?.message ?? "Couldn't add items to album");
   };
 
+  const groupedSections = useMemo(() => groupByStrategy.group(nodes), [nodes]);
+
   return (
     <Container>
       {toastMessage ? <Toast message={toastMessage} onDismiss={dismissToast} /> : null}
@@ -195,7 +203,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
               columnCounts={LIBRARY_GRID_COLUMNS}
-              groupBy="date"
+              groupedSections={groupedSections}
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item}

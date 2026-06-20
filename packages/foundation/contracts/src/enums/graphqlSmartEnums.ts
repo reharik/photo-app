@@ -23,7 +23,10 @@ const albumSortByInput = {
 const commentTargetTypeInput = ['album', 'mediaItem'] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
-const mediaItemSortByInput = { createdAt: { column: 'created_at' } } as const;
+const mediaItemSortByInput = {
+  createdAt: { column: 'created_at' },
+  takenAt: { column: 'taken_at' },
+} as const;
 const mediaItemStatusInput = [
   'deleteFailed',
   'deletePending',

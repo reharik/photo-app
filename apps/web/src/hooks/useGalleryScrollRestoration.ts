@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import { useNavigationType } from 'react-router-dom';
+import { NavigationType, useNavigationType } from 'react-router-dom';
 
 const STORAGE_PREFIX = 'betaname:gallery-scroll:';
 
@@ -100,7 +100,7 @@ export const useGalleryScrollRestoration = ({
       return;
     }
 
-    if (navigationType !== 'POP') {
+    if (navigationType !== NavigationType.Pop) {
       restoredRef.current = false;
       clearSavedScroll(storageKey);
       return;

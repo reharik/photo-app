@@ -49,7 +49,6 @@ export const SharedWithMeSection = ({
               selectable={false}
               selectionActive={false}
               columnCounts={LIBRARY_GRID_COLUMNS}
-              groupBy="none"
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}

@@ -215,7 +215,6 @@ export const AlbumSectionMetadata = ({
                 selectable={false}
                 selectionActive={false}
                 columnCounts={PICKER_GRID_COLUMNS}
-                groupBy="none"
                 renderItem={(item, ctx) => (
                   <MediaGridTile
                     item={item.mediaItem}

@@ -13,7 +13,11 @@ type MediaSelectorSectionProps = {
   onAddToAlbum: (selectedIds: string[]) => void;
 };
 
-export const MediaSelectorSection = ({ nodes, header, onAddToAlbum }: MediaSelectorSectionProps) => {
+export const MediaSelectorSection = ({
+  nodes,
+  header,
+  onAddToAlbum,
+}: MediaSelectorSectionProps) => {
   const selectableActions = [
     {
       label: 'Add to album',
@@ -53,7 +57,6 @@ export const MediaSelectorSection = ({ nodes, header, onAddToAlbum }: MediaSelec
               selectionActive
               dimUnselectedTiles={selectionCount > 0}
               columnCounts={PICKER_GRID_COLUMNS}
-              groupBy="none"
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item}

@@ -213,7 +213,6 @@ export const AlbumSection = ({
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
               columnCounts={ALBUM_GRID_COLUMNS}
-              groupBy="none"
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}

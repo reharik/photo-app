@@ -1,9 +1,13 @@
 import { DateTime } from 'luxon';
-import { formatActivityDate, formatActivityMonthYear } from '../../../ui/dateDisplay';
-import type { MediaItemSummaryVM } from '../../../viewModels/';
-import type { MediaGridDateBucket, MediaGridDateBucketKey } from './mediaGridDateBucketTypes';
+import { formatActivityDate, formatActivityMonthYear } from '../../../../ui/dateDisplay';
+import { groupNodes } from './groupByStrategy';
+import {
+  MediaGridDateBucketKey,
+  MediaGridGroupBy,
+  NamedGroupStrategy,
+} from './groupByStrategyTypes';
 
-const BUCKET_ORDER: MediaGridDateBucketKey[] = ['today', 'yesterday', 'lastWeek', 'thisMonth'];
+const DATE_BUCKET_ORDER: MediaGridDateBucketKey[] = ['today', 'yesterday', 'lastWeek', 'thisMonth'];
 
 const formatSubtitleRange = (min: DateTime, max: DateTime): string => {
   if (min.hasSame(max, 'day')) {
@@ -89,49 +93,38 @@ const bucketSubtitle = (key: MediaGridDateBucketKey, dates: DateTime[], now: Dat
   }
 };
 
-const sortBucketKeys = (keys: MediaGridDateBucketKey[]): MediaGridDateBucketKey[] => {
-  const fixed = BUCKET_ORDER.filter((k) => keys.includes(k));
-  const months = keys
-    .filter((k): k is `month:${number}:${number}` => k.startsWith('month:'))
-    .sort((a, b) => {
-      const [, am, ay] = a.split(':').map(Number);
-      const [, bm, by] = b.split(':').map(Number);
-      if (ay !== by) {
-        return by - ay;
-      }
-      return bm - am;
-    });
-  const years = keys
-    .filter((k): k is `year:${number}` => k.startsWith('year:'))
-    .sort((a, b) => Number(b.slice(5)) - Number(a.slice(5)));
-
-  return [...fixed, ...months, ...years];
-};
-
-export const bucketMediaByDate = (nodes: MediaItemSummaryVM[]): MediaGridDateBucket[] => {
-  const now = DateTime.local();
-  const groups = new Map<MediaGridDateBucketKey, MediaItemSummaryVM[]>();
-  const datesByKey = new Map<MediaGridDateBucketKey, DateTime[]>();
-
-  for (const item of nodes) {
-    const createdAt = item.createdAt;
-    if (createdAt == null || !createdAt.isValid) {
-      continue;
-    }
-    const key = resolveBucketKey(createdAt, now);
-    const bucketItems = groups.get(key) ?? [];
-    bucketItems.push(item);
-    groups.set(key, bucketItems);
-
-    const bucketDates = datesByKey.get(key) ?? [];
-    bucketDates.push(createdAt);
-    datesByKey.set(key, bucketDates);
+const rankDateKey = (k: MediaGridDateBucketKey): [number, number, number] => {
+  const fixed = DATE_BUCKET_ORDER.indexOf(k);
+  if (fixed !== -1) return [0, fixed, 0]; // today…thisMonth, in order
+  if (k.startsWith('month:')) {
+    const [, m, y] = k.split(':').map(Number);
+    return [1, -y, -m]; // newer year, then newer month
   }
-
-  return sortBucketKeys([...groups.keys()]).map((key) => ({
-    key,
-    label: bucketLabel(key),
-    subtitle: bucketSubtitle(key, datesByKey.get(key) ?? [], now),
-    items: groups.get(key) ?? [],
-  }));
+  const y = Number(k.slice('year:'.length));
+  return [2, -y, 0]; // years last, newest first
 };
+
+const dateKeyComparator = (a: MediaGridDateBucketKey, b: MediaGridDateBucketKey): number => {
+  const ra = rankDateKey(a);
+  const rb = rankDateKey(b);
+  return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2];
+};
+
+export const makeDateStrategy = <T>(
+  key: MediaGridGroupBy,
+  extract: (n: T) => DateTime | undefined,
+  now: DateTime = DateTime.now(),
+): NamedGroupStrategy<T> => ({
+  key,
+  group: (nodes) =>
+    groupNodes<T, DateTime, MediaGridDateBucketKey>(nodes, {
+      extract: (n) => {
+        const d = extract(n);
+        return d && d.isValid ? d : undefined;
+      },
+      keyOf: (d) => resolveBucketKey(d, now),
+      labelOf: bucketLabel,
+      subtitleOf: (k, dates) => bucketSubtitle(k, dates, now),
+      compareKeys: dateKeyComparator,
+    }),
+});

@@ -68,6 +68,7 @@ type MediaItemCollectionPayload {
 
 enum MediaItemSortBy {
   CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TAKEN_AT @enumMeta(props: [{ name: "column", value: "taken_at" }])
 }
 
 type AlbumCollectionPayload {

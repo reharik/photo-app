@@ -1,20 +1,13 @@
-import { DateTime } from 'luxon';
 import { useMemo, type ReactNode } from 'react';
 import styled from 'styled-components';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
-import type { MediaItemSummaryVM, ViewableItemVM } from '../../../viewModels/';
-import { bucketMediaByDate } from './bucketMediaByDate';
+import type { ViewableItemVM } from '../../../viewModels/';
 import { mediaGridColumnStyles, type MediaGridColumnCounts } from './gridColumns';
+import { GroupResult } from './groupBy/groupByStrategyTypes';
 import { MediaGridDateSection } from './MediaGridDateSection';
 import { MediaGridSelectableItem } from './MediaGridSelectableItem';
 import type { MultiSelectProps } from './types';
-
-export type MediaGridGroupBy = 'date' | 'none';
-
-export type GridMediaItem = {
-  id: string;
-  createdAt?: DateTime;
-};
+import { GridMediaItem } from './types';
 
 export type MediaGridRenderContext = {
   mediaGalleryIds: string[];
@@ -30,7 +23,7 @@ type MediaGridProps<T extends ViewableItemVM> = {
   selectionActive: boolean;
   columnCounts: MediaGridColumnCounts;
   /** Date grouping uses `createdAt` from `getMediaItem(item)` when `groupBy` is `"date"`. */
-  groupBy?: MediaGridGroupBy;
+  groupedSections?: GroupResult<T>[];
   /** When true, unselected tiles render subdued (e.g. after first selection in library). */
   dimUnselectedTiles?: boolean;
 };
@@ -44,7 +37,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
   selectable = true,
   selectionActive,
   columnCounts,
-  groupBy = 'none',
+  groupedSections,
   dimUnselectedTiles = false,
 }: MediaGridProps<T>) => {
   const orderedMediaIds = useMemo(
@@ -84,30 +77,12 @@ export const MediaGrid = <T extends ViewableItemVM>({
     </TileGrid>
   );
 
-  if (groupBy === 'date') {
-    type DateBucketProxy = MediaItemSummaryVM & { __node: T };
-
-    const bucketProxies: DateBucketProxy[] = [];
-    for (const node of nodes) {
-      const createdAt = getMediaItem(node)?.createdAt;
-      if (createdAt == null || !createdAt.isValid) {
-        continue;
-      }
-      bucketProxies.push({ createdAt, __node: node } as DateBucketProxy);
-    }
-
-    const dateSections = bucketMediaByDate(bucketProxies);
-
+  if (groupedSections) {
     return (
       <GridRoot>
-        {dateSections.map((section) => (
-          <MediaGridDateSection
-            key={section.key}
-            label={section.label}
-            subtitle={section.subtitle}
-            location={section.location}
-          >
-            {renderTiles(section.items.map((proxy) => (proxy as DateBucketProxy).__node))}
+        {groupedSections.map((section) => (
+          <MediaGridDateSection key={section.key} label={section.label} subtitle={section.subtitle}>
+            {renderTiles(section.items)}
           </MediaGridDateSection>
         ))}
       </GridRoot>

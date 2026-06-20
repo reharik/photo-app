@@ -73,7 +73,6 @@ export const AlbumListSection = ({
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_LIST_COLUMNS}
-              groupBy="none"
               renderItem={(album) => <AlbumTile album={album} />}
             />
           </GridWrap>

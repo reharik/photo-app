@@ -3,28 +3,17 @@ import styled from 'styled-components';
 type MediaGridDateSectionProps = {
   label: string;
   subtitle: string;
-  location?: string;
   children: React.ReactNode;
 };
 
 // Section header is non-sticky in v1. Sticky bucket labels on scroll (Apple/Google Photos
 // style) need intersection observers and swap logic — deferred to a future PR.
-export const MediaGridDateSection = ({
-  label,
-  subtitle,
-  location,
-  children,
-}: MediaGridDateSectionProps) => {
-  const subtitleText =
-    location != null && location.trim() !== ''
-      ? `${subtitle} · ${location.trim()}`
-      : subtitle;
-
+export const MediaGridDateSection = ({ label, subtitle, children }: MediaGridDateSectionProps) => {
   return (
     <Section>
       <Header>
         <SectionLabel>{label}</SectionLabel>
-        {subtitleText !== '' ? <SectionSubtitle>{subtitleText}</SectionSubtitle> : null}
+        {<SectionSubtitle>{subtitle}</SectionSubtitle>}
       </Header>
       {children}
     </Section>
