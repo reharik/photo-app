@@ -25,4 +25,4 @@ export const templateRegistry: TemplateRegistry = {
   publicShare: { Component: PublicShare, getSubject: publicShareSubject },
 };
 
-export const APP_NAME = 'Betana.me';
+export const APP_NAME = 'BetanaMe';

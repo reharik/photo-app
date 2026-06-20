@@ -79,8 +79,8 @@ export const build__SharedWithMeReadRepository = ({
       .select(
         ...accessGrantFieldSelect,
         ...mediaItemSelectColumns,
-        'granter.grantedByFirstName',
-        'granter.grantedByLastName',
+        'granter.firstName as grantedByFirstName',
+        'granter.lastName as grantedByLastName',
       )
       .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
       .limit(collectionInfo.pageInfo.limit + 1)
@@ -128,8 +128,8 @@ export const build__SharedWithMeReadRepository = ({
       .select<(SharedAlbumRow & { totalCount: number })[]>(
         ...accessGrantFieldSelect,
         ...albumWithCoverSelectColumns,
-        'granter.grantedByFirstName',
-        'granter.grantedByLastName',
+        'granter.firstName as grantedByFirstName',
+        'granter.lastName as grantedByLastName',
       )
       .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
       .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
@@ -177,8 +177,8 @@ export const build__SharedWithMeReadRepository = ({
       .select<SharedAlbumRow>(
         ...accessGrantFieldSelect,
         ...albumWithCoverSelectColumns,
-        'granter.grantedByFirstName',
-        'granter.grantedByLastName',
+        'granter.firstName as grantedByFirstName',
+        'granter.lastName as grantedByLastName',
       )
       .where('album.id', albumId);
     const grantedQuery = applyActiveUserGrant(baseQuery, { database, viewerId });
