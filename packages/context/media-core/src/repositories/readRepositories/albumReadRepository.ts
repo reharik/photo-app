@@ -209,9 +209,19 @@ export const build__AlbumReadRepository = ({
         })
         .select(...albumItemWithMediaSelectColumns)
         .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .orderBy(`albumItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
+        .orderBy(
+          `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
+          collectionInfo.sortDir.value,
+          collectionInfo.sortBy.nullsLast === 'true'
+            ? 'last'
+            : collectionInfo.sortBy.nullsLast === 'false'
+              ? 'first'
+              : (() => {
+                  throw new Error(`bad nullsLast`);
+                })(),
+        )
         .orderBy('albumItem.id', 'asc')
-        .limit(collectionInfo.pageInfo.limit + 1)
+        .limit(collectionInfo.pageInfo.limit)
         .offset(collectionInfo.pageInfo.offset),
       {
         mediaItemKind: MediaKind,
@@ -284,9 +294,19 @@ export const build__AlbumReadRepository = ({
           ...albumItemWithMediaSelectColumns,
         )
         .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .orderBy('albumItem.orderIndex', 'asc')
+        .orderBy(
+          `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
+          collectionInfo.sortDir.value,
+          collectionInfo.sortBy.nullsLast === 'true'
+            ? 'last'
+            : collectionInfo.sortBy.nullsLast === 'false'
+              ? 'first'
+              : (() => {
+                  throw new Error(`bad nullsLast`);
+                })(),
+        )
         .orderBy('albumItem.id', 'asc')
-        .limit(collectionInfo.pageInfo.limit + 1)
+        .limit(collectionInfo.pageInfo.limit)
         .offset(collectionInfo.pageInfo.offset),
       {
         mediaItemKind: MediaKind,

@@ -1,5 +1,7 @@
-import { useMemo, type ReactNode } from 'react';
+import { RefObject, useMemo, type ReactNode } from 'react';
 import styled from 'styled-components';
+import { PagingState } from '../../../hooks/getPaginatedQueryRenderState';
+import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import type { GalleryActionItems } from '../../../hooks/useMultiSelectGallery';
 import type { ViewableItemVM } from '../../../viewModels/';
 import { mediaGridColumnStyles, type MediaGridColumnCounts } from './gridColumns';
@@ -26,9 +28,12 @@ type MediaGridProps<T extends ViewableItemVM> = {
   groupedSections?: GroupResult<T>[];
   /** When true, unselected tiles render subdued (e.g. after first selection in library). */
   dimUnselectedTiles?: boolean;
+  paging?: PagingState;
+  scrollRootRef?: RefObject<HTMLDivElement | null>;
 };
 
 export const MediaGrid = <T extends ViewableItemVM>({
+  paging,
   nodes,
   getMediaItem = (item: T) => item,
   renderItem,
@@ -39,23 +44,32 @@ export const MediaGrid = <T extends ViewableItemVM>({
   columnCounts,
   groupedSections,
   dimUnselectedTiles = false,
+  scrollRootRef,
 }: MediaGridProps<T>) => {
   const orderedMediaIds = useMemo(
     () => nodes.map((node) => getMediaItem(node)?.id).filter((id): id is string => id != null),
     [nodes, getMediaItem],
   );
+  const { sentinelRef } = useInfiniteScroll({
+    ...(paging ? paging : { hasMore: false, isLoadingMore: false, loadMore: () => {} }),
+    scrollRootRef,
+  });
+
   const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
+  const TRIGGER_FROM_END = 8; // at 20/page; tune by feel
   const renderTiles = (items: T[]) => (
     <TileGrid $columnCounts={columnCounts}>
-      {items.map((item) => {
+      {items.map((item, i) => {
         const selectionId = item.id;
         const globalIndex = indexById.get(selectionId) ?? 0;
         const hasActions = selectableActions.some(
           (action) => action.operation == null || item.operations?.includes(action.operation),
         );
         const mediaItem = getMediaItem(item);
+        const isTrigger = i === items.length - TRIGGER_FROM_END;
         return (
           <MediaGridSelectableItem
+            sentinelRef={isTrigger ? sentinelRef : undefined}
             key={selectionId}
             // Albums return no media item; fall back to the item's own id.
             itemId={mediaItem?.id ?? item.id}

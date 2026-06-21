@@ -40,6 +40,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
           inviterName,
           resourceName: albumTitle,
           inviteUrl,
+          signupUrl: `${ctx.config.clientUrl}/signup`,
         },
       });
 
@@ -81,6 +82,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
           inviterName,
           resourceName: albumTitle,
           inviteUrl,
+          signupUrl: `${ctx.config.clientUrl}/signup`,
         },
       });
       return {

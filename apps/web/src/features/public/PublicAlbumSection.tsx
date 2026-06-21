@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { EmptyState } from '../../ui/EmptyState';
 import { PublicAlbumItemSummaryVM, PublicAlbumSummaryVM } from '../../viewModels/';
 import { AlbumSectionMetadata } from '../albums/AlbumSectionMetadata';
@@ -36,7 +35,6 @@ export const PublicAlbumSection = ({
   const { token } = useParams<{ token: string }>();
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
-  const { sentinelRef, scrollRootRef } = useInfiniteScroll(paging);
 
   const buildTileHref = useMemo(
     () => (itemId: string) => `/shared/${token}/media/${itemId}`,
@@ -62,7 +60,6 @@ export const PublicAlbumSection = ({
       />
       <AlbumBodyScroll
         ref={(el) => {
-          scrollRootRef.current = el;
           albumScrollRef.current = el;
         }}
         onScroll={onAlbumScroll}
@@ -76,6 +73,8 @@ export const PublicAlbumSection = ({
           <GridWrap>
             <MediaGrid
               nodes={albumItems}
+              paging={paging}
+              scrollRootRef={albumScrollRef}
               getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}
@@ -93,7 +92,6 @@ export const PublicAlbumSection = ({
             />
           </GridWrap>
         )}
-        <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
     </Container>
   );

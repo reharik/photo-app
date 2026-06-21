@@ -99,14 +99,20 @@ export const apolloClient = new ApolloClient({
         Album: {
           keyFields: ['id'],
           fields: {
-            items: nestedPagePagination(),
+            items: nestedPagePagination(
+              (args) =>
+                `s:${args?.input?.collectionInfo?.sortBy}:${args?.input?.collectionInfo?.sortDir}`,
+            ),
             // and comments if applicable
           },
         },
         PublicAlbum: {
           keyFields: ['id'],
           fields: {
-            items: nestedPagePagination(),
+            items: nestedPagePagination(
+              (args) =>
+                `s:${args?.input?.collectionInfo?.sortBy}:${args?.input?.collectionInfo?.sortDir}`,
+            ),
             comments: nestedPagePagination(),
           },
         },

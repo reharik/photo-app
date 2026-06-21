@@ -83,7 +83,7 @@ export const build__SharedWithMeReadRepository = ({
         'granter.lastName as grantedByLastName',
       )
       .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-      .limit(collectionInfo.pageInfo.limit + 1)
+      .limit(collectionInfo.pageInfo.limit)
       .offset(collectionInfo.pageInfo.offset);
 
     const grantedQuery = applyActiveUserGrant(baseQuery, { database, viewerId });

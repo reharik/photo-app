@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import styled from 'styled-components';
+import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
 import { MediaItemSummaryVM } from '../../viewModels/';
@@ -11,13 +13,16 @@ type MediaSelectorSectionProps = {
   nodes: MediaItemSummaryVM[];
   header: React.ReactNode;
   onAddToAlbum: (selectedIds: string[]) => void;
+  paging: PagingState;
 };
 
 export const MediaSelectorSection = ({
   nodes,
   header,
   onAddToAlbum,
+  paging,
 }: MediaSelectorSectionProps) => {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
   const selectableActions = [
     {
       label: 'Add to album',
@@ -43,7 +48,7 @@ export const MediaSelectorSection = ({
         )}
       </HeaderSlot>
 
-      <PickerScrollArea>
+      <PickerScrollArea ref={scrollRootRef}>
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState title="No media items to add" text="No media items to add" />
@@ -52,6 +57,8 @@ export const MediaSelectorSection = ({
           <GridWrap>
             <MediaGrid
               nodes={nodes}
+              paging={paging}
+              scrollRootRef={scrollRootRef}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive

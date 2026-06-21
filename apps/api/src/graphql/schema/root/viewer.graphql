@@ -67,8 +67,22 @@ type MediaItemCollectionPayload {
 }
 
 enum MediaItemSortBy {
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
-  TAKEN_AT @enumMeta(props: [{ name: "column", value: "taken_at" }])
+  CREATED_AT
+    @enumMeta(
+      props: [
+        { name: "column", value: "created_at" }
+        { name: "table", value: "media_item" }
+        { name: "nullsLast", value: "false" }
+      ]
+    )
+  TAKEN_AT
+    @enumMeta(
+      props: [
+        { name: "column", value: "taken_at" }
+        { name: "table", value: "media_item" }
+        { name: "nullsLast", value: "true" }
+      ]
+    )
 }
 
 type AlbumCollectionPayload {
@@ -78,6 +92,20 @@ type AlbumCollectionPayload {
 }
 
 enum AlbumSortBy {
-  TITLE @enumMeta(props: [{ name: "column", value: "title" }])
-  CREATED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  TITLE
+    @enumMeta(
+      props: [
+        { name: "column", value: "title" }
+        { name: "table", value: "album" }
+        { name: "nullsLast", value: "true" }
+      ]
+    )
+  CREATED_AT
+    @enumMeta(
+      props: [
+        { name: "column", value: "created_at" }
+        { name: "table", value: "album" }
+        { name: "nullsLast", value: "false" }
+      ]
+    )
 }

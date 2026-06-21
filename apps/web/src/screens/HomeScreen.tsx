@@ -9,7 +9,7 @@ export const HomeScreen = () => {
   const buildPageVariables = useCallback(
     (offset: number) => ({
       collectionInfo: {
-        pageInfo: { limit: 10, offset },
+        pageInfo: { limit: 20, offset },
         sortBy: MediaItemSortBy.createdAt,
         sortDir: SortDir.desc,
       },

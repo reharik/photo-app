@@ -1,8 +1,10 @@
 import { useQuery } from '@apollo/client/react';
-import { useCallback, useMemo, useState } from 'react';
+import { AlbumItemSortBy, SortDir } from '@packages/contracts';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { AlbumSection } from '../features/albums/AlbumSection';
+import type { AlbumGroupBy } from '../features/albums/AlbumSectionMetadata';
 import {
   AddMediaItemsToAlbumDocument,
   AddMediaItemsToAlbumMutation,
@@ -11,7 +13,6 @@ import {
   MediaItemSortBy,
   SetCoverMediaDocument,
   SetCoverMediaMutation,
-  SortDir,
   ViewerAlbumDetailDocument,
   ViewerLibraryDocument,
 } from '../graphql/generated/types';
@@ -29,17 +30,22 @@ export const AlbumScreen = () => {
   const addToAlbumMutation = useAppMutationState();
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
+  const [groupBy, setGroupBy] = useState<AlbumGroupBy>('none');
+  const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
+  const sortParamsInitialized = useRef(false);
 
   const buildPageVariables = useCallback(
-    (offset: number) => ({
-      albumId: albumId ?? '',
-      collectionInfo: {
-        pageInfo: { limit: 10, offset },
-        sortBy: MediaItemSortBy.createdAt,
-        sortDir: SortDir.desc,
-      },
-    }),
-    [albumId],
+    (offset: number) => {
+      return {
+        albumId: albumId ?? '',
+        collectionInfo: {
+          pageInfo: { limit: 20, offset },
+          sortBy: groupBy === 'takenDate' ? AlbumItemSortBy.takenAt : AlbumItemSortBy.createdAt,
+          sortDir,
+        },
+      };
+    },
+    [albumId, groupBy, sortDir],
   );
 
   const query = useQuery(ViewerAlbumDetailDocument, {
@@ -51,7 +57,12 @@ export const AlbumScreen = () => {
     nextFetchPolicy: 'cache-and-network',
   });
 
-  const { data, content, refetch, paging } = usePaginatedQueryRenderState({
+  const {
+    data: albumData,
+    content,
+    refetch,
+    paging,
+  } = usePaginatedQueryRenderState({
     query,
     select: (data) => {
       if (!data.viewer?.album) {
@@ -68,35 +79,51 @@ export const AlbumScreen = () => {
     buildPageVariables,
   });
 
-  const mediaItemsForPickerQuery = useQuery(ViewerLibraryDocument, {
-    variables: {
+  useEffect(() => {
+    if (!sortParamsInitialized.current) {
+      sortParamsInitialized.current = true;
+      return;
+    }
+    void query.refetch(buildPageVariables(0));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupBy, sortDir]); // ONLY sort inputs — not query, not buildPageVariables
+
+  // replace the bare useQuery with the paginated hook
+  const buildPickerVariables = useCallback(
+    (offset: number) => ({
       collectionInfo: {
-        pageInfo: { limit: 10, offset: 0 },
+        pageInfo: { limit: 20, offset },
         sortBy: MediaItemSortBy.createdAt,
         sortDir: SortDir.desc,
       },
-    },
+    }),
+    [],
+  );
+
+  const mediaItemsForPickerQuery = useQuery(ViewerLibraryDocument, {
+    variables: buildPickerVariables(0),
     skip: !addAlbumItemModalOpen,
     fetchPolicy: 'cache-first',
     nextFetchPolicy: 'cache-first',
   });
 
-  const pickerMediaItems = useMemo(() => {
-    const mediaItems = mediaItemsForPickerQuery.data?.viewer?.mediaItems.nodes;
-    const existingAlbumItems = data?.nodes;
+  const pickerState = usePaginatedQueryRenderState({
+    query: mediaItemsForPickerQuery,
+    select: (data) => {
+      const mediaItems = data?.viewer?.mediaItems.nodes || [];
+      const existingAlbumItems = albumData?.nodes || [];
 
-    if (!mediaItems || !existingAlbumItems) {
-      return [];
-    }
+      const items = mediaItems.filter(
+        (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
+      );
+      return { nodes: items, totalCount: data.viewer?.mediaItems.totalCount ?? 0 };
+    },
+    buildPageVariables: buildPickerVariables,
+  });
 
-    return mediaItems.filter(
-      (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
-    );
-  }, [mediaItemsForPickerQuery.data, data]);
-
-  const album = data?.album;
-  const albumItems = data?.nodes ?? [];
-  const totalCount = data?.totalCount ?? 0;
+  const album = albumData?.album;
+  const albumItems = albumData?.nodes ?? [];
+  const totalCount = albumData?.totalCount ?? 0;
   if (!album || !album?.id) {
     return content;
   }
@@ -167,7 +194,10 @@ export const AlbumScreen = () => {
     addItemOpen: addAlbumItemModalOpen,
     setAddItemOpen: setAddAlbumItemModalOpen,
     submitAddToAlbum: submitAddToAlbum,
-    pickerMediaItems,
+    pickerMediaItems: pickerState.data?.nodes ?? [],
+    pickerTotalCount: pickerState.data?.totalCount ?? 0,
+    pickerPaging: pickerState.paging,
+    pickerRefetch: pickerState.refetch,
   };
   const removeAlbumItemState = {
     removeItemOpen: removeFromAlbumOpen,
@@ -190,6 +220,10 @@ export const AlbumScreen = () => {
           paging={paging}
           albumItems={albumItems}
           totalCount={totalCount}
+          groupBy={groupBy}
+          sortDir={sortDir}
+          onGroupByChange={setGroupBy}
+          onSortDirChange={setSortDir}
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
           modalState={modalState}

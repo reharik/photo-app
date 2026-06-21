@@ -105,11 +105,21 @@ export const build__MediaItemReadRepository = ({
       database('mediaItem')
         .where({ ownerId: viewerId })
         .andWhere('status', MediaItemStatus.ready.value)
-        .orderBy(`mediaItem.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
+        .orderBy(
+          `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
+          collectionInfo.sortDir.value,
+          collectionInfo.sortBy.nullsLast === 'true'
+            ? 'last'
+            : collectionInfo.sortBy.nullsLast === 'false'
+              ? 'first'
+              : (() => {
+                  throw new Error(`bad nullsLast`);
+                })(),
+        )
         .orderBy('mediaItem.id', 'asc') // tie-breaker
         .select<(DBMediaItemRow & { totalCount: number })[]>(...DBmediaItemRowFields)
         .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .limit(collectionInfo.pageInfo.limit + 1)
+        .limit(collectionInfo.pageInfo.limit)
         .offset(collectionInfo.pageInfo.offset),
       {
         kind: MediaKind,

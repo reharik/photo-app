@@ -20,6 +20,7 @@ export interface GroupStrategy<T, V, K extends string> {
   labelOf: (key: K) => string; // key → header
   subtitleOf: (key: K, members: V[]) => string; // key + members → subline
   compareKeys: (a: K, b: K) => number; // bucket order
+  orphanLabel?: string;
 }
 
 export type NamedGroupStrategy<T> = {

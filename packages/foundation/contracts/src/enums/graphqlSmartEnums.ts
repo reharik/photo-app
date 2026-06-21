@@ -13,19 +13,20 @@ import { Operation } from './operation';
 import { ReactionEmoji } from './reactionEmojis';
 
 const albumItemSortByInput = {
-  createdAt: { column: 'created_at' },
-  orderIndex: { column: 'order_index' },
+  createdAt: { column: 'created_at', table: 'album_item', nullsLast: 'false' },
+  orderIndex: { column: 'order_index', table: 'album_item', nullsLast: 'false' },
+  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
 } as const;
 const albumSortByInput = {
-  createdAt: { column: 'created_at' },
-  title: { column: 'title' },
+  createdAt: { column: 'created_at', table: 'album', nullsLast: 'false' },
+  title: { column: 'title', table: 'album', nullsLast: 'true' },
 } as const;
 const commentTargetTypeInput = ['album', 'mediaItem'] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = {
-  createdAt: { column: 'created_at' },
-  takenAt: { column: 'taken_at' },
+  createdAt: { column: 'created_at', table: 'media_item', nullsLast: 'false' },
+  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
 } as const;
 const mediaItemStatusInput = [
   'deleteFailed',

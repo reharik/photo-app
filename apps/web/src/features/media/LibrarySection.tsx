@@ -23,7 +23,6 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
-import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { GrantMediaItemShareModal } from '../sharing/GrantMediaItemShareModal';
 import { LIBRARY_GRID_COLUMNS } from './grid/gridColumns';
 import { NamedGroupStrategy } from './grid/groupBy/groupByStrategyTypes';
@@ -186,7 +185,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
           />
         ) : null}
       </ToolbarSlot>
-      <ScrollArea paging={paging} rootMargin="600px">
+      <ScrollArea ref={scrollRootRef}>
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
@@ -199,6 +198,8 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
           <GridWrap>
             <MediaGrid
               nodes={nodes}
+              paging={paging}
+              scrollRootRef={scrollRootRef}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
@@ -289,10 +290,11 @@ const ToolbarSlot = styled.div<{ $active: boolean }>`
   overflow: visible;
 `;
 
-const ScrollArea = styled(InfiniteScroll)`
+const ScrollArea = styled.div`
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
 `;
 
 const GridWrap = styled.div`

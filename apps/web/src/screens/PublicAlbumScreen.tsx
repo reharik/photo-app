@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { MediaItemSortBy, SortDir } from '@packages/contracts';
+import { AlbumItemSortBy, SortDir } from '@packages/contracts';
 import { useCallback, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -16,8 +16,8 @@ export const PublicAlbumScreen = () => {
   const buildPageVariables = useCallback(
     (offset: number) => ({
       collectionInfo: {
-        pageInfo: { limit: 10, offset },
-        sortBy: MediaItemSortBy.createdAt,
+        pageInfo: { limit: 20, offset },
+        sortBy: AlbumItemSortBy.createdAt,
         sortDir: SortDir.desc,
       },
     }),

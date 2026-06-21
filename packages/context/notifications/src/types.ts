@@ -28,6 +28,7 @@ export type TemplateData = {
     inviterName: string;
     resourceName: string;
     publicUrl: string;
+    signupUrl: string;
   };
 };
 

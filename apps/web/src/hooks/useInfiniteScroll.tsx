@@ -1,40 +1,47 @@
-import { useEffect, useRef } from 'react';
+import { RefObject, useCallback, useRef } from 'react';
 
 export const useInfiniteScroll = ({
   hasMore,
   isLoadingMore,
   loadMore,
   rootMargin = '100px',
+  scrollRootRef,
 }: {
   hasMore: boolean;
   isLoadingMore: boolean;
   loadMore: () => void;
   rootMargin?: string;
+  scrollRootRef?: RefObject<HTMLDivElement | null>;
 }) => {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const stateRef = useRef({ hasMore, isLoadingMore, loadMore });
   stateRef.current = { hasMore, isLoadingMore, loadMore };
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+  // Callback ref: attaches to whichever item is currently Nth-from-end.
+  // Re-runs each time that node changes (i.e. every page), so the observer
+  // always watches the live trigger element, never a stale one.
+  const sentinelRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      if (!node) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const { hasMore, isLoadingMore, loadMore } = stateRef.current;
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          console.log('-> calling loadMore');
-          loadMore();
-        }
-      },
-      { rootMargin, root: scrollRootRef.current },
-    );
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          const { hasMore, isLoadingMore, loadMore } = stateRef.current;
+          if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+            loadMore();
+          }
+        },
+        { rootMargin, root: scrollRootRef?.current },
+      );
+      observerRef.current.observe(node);
+    },
+    [rootMargin],
+  );
 
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [rootMargin]);
-
-  return { sentinelRef, scrollRootRef };
+  return { sentinelRef };
 };

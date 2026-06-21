@@ -1,11 +1,10 @@
-import { FrontendUploadStatus, Operation } from '@packages/contracts';
+import { FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
 import { ArrowUpRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
-import { useInfiniteScroll } from '../../hooks/useInfiniteScroll';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
@@ -15,25 +14,34 @@ import { EmptyState } from '../../ui/EmptyState';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
+import { groupByTakenDatePreservingOrder } from '../media/grid/groupBy/makeDateStrategy';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
 import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 import { AddToAlbumHeaderButton } from './AddToAlbumHeaderButton';
-import { AlbumSectionMetadata } from './AlbumSectionMetadata';
+import { AlbumSectionMetadata, type AlbumGroupBy } from './AlbumSectionMetadata';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
+
+const albumTakenDateSections = (albumItems: AlbumItemSummaryVM[]) =>
+  groupByTakenDatePreservingOrder(albumItems, (item) => item.mediaItem.takenAt);
 
 type AlbumSectionProps = {
   album: AlbumSummaryVM;
   albumItems: AlbumItemSummaryVM[];
   totalCount: number;
+  groupBy: AlbumGroupBy;
+  sortDir: SortDir;
+  onGroupByChange: (groupBy: AlbumGroupBy) => void;
+  onSortDirChange: (sortDir: SortDir) => void;
   addAlbumItemState: {
     addItemOpen: boolean;
     setAddItemOpen: (open: boolean) => void;
     submitAddToAlbum: (newAlbumItemIds: string[]) => void;
     pickerMediaItems: MediaItemSummaryVM[];
+    pickerPaging: PagingState;
   };
   removeAlbumItemState: {
     removeItemOpen: boolean;
@@ -57,6 +65,10 @@ export const AlbumSection = ({
   album,
   albumItems,
   totalCount,
+  groupBy,
+  sortDir,
+  onGroupByChange,
+  onSortDirChange,
   addAlbumItemState,
   removeAlbumItemState,
   modalState,
@@ -65,7 +77,6 @@ export const AlbumSection = ({
   paging,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
-  const { sentinelRef, scrollRootRef } = useInfiniteScroll(paging);
   const [metaCompact, setMetaCompact] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
   const dismissAlbumToast = useCallback((): void => {
@@ -103,6 +114,22 @@ export const AlbumSection = ({
       setMetaCompact(false);
     }
   }, [isMobileAlbum]);
+
+  useEffect(() => {
+    const el = albumScrollRef.current;
+    if (el == null) {
+      return;
+    }
+    el.scrollTop = 0;
+    setMetaCompact(false);
+  }, [groupBy, sortDir]);
+
+  const takenDateSections = useMemo(() => albumTakenDateSections(albumItems), [albumItems]);
+
+  const groupedSections = useMemo(
+    () => (groupBy === 'takenDate' ? takenDateSections : undefined),
+    [groupBy, takenDateSections],
+  );
 
   const { items } = useUploadQueue();
 
@@ -179,13 +206,16 @@ export const AlbumSection = ({
         album={album}
         metaCompact={metaCompact}
         albumItems={albumItems}
+        groupBy={groupBy}
+        sortDir={sortDir}
+        onGroupByChange={onGroupByChange}
+        onSortDirChange={onSortDirChange}
         onSelectCover={submitAddAlbumCover}
         addCoverItemOpen={modalState.addCoverItemOpen}
         setAddCoverItemOpen={modalState.setAddCoverItemOpen}
       />
       <AlbumBodyScroll
         ref={(el) => {
-          scrollRootRef.current = el;
           albumScrollRef.current = el;
         }}
         onScroll={onAlbumScroll}
@@ -207,12 +237,15 @@ export const AlbumSection = ({
         ) : (
           <GridWrap>
             <MediaGrid
+              paging={paging}
               nodes={albumItems}
               getMediaItem={(item) => item.mediaItem}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
               columnCounts={ALBUM_GRID_COLUMNS}
+              groupedSections={groupedSections}
+              scrollRootRef={albumScrollRef}
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}
@@ -224,7 +257,6 @@ export const AlbumSection = ({
             />
           </GridWrap>
         )}
-        <div ref={sentinelRef} style={{ height: 1 }} />
       </AlbumBodyScroll>
       {removeAlbumItemState.removeItemOpen && (
         <ConfirmationModal
@@ -283,6 +315,7 @@ export const AlbumSection = ({
               </AddAlbumItemModalHeader>
             }
             nodes={addAlbumItemState.pickerMediaItems}
+            paging={addAlbumItemState.pickerPaging}
           />
         </AppModal>
       )}

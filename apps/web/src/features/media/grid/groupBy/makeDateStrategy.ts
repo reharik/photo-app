@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon';
 import { formatActivityDate, formatActivityMonthYear } from '../../../../ui/dateDisplay';
-import { groupNodes } from './groupByStrategy';
+import { groupNodes, groupNodesByEncounterOrder } from './groupByStrategy';
 import {
+  GroupResult,
   MediaGridDateBucketKey,
   MediaGridGroupBy,
   NamedGroupStrategy,
@@ -110,6 +111,20 @@ const dateKeyComparator = (a: MediaGridDateBucketKey, b: MediaGridDateBucketKey)
   return ra[0] - rb[0] || ra[1] - rb[1] || ra[2] - rb[2];
 };
 
+const buildTakenDateGroupStrategy = <T>(
+  extract: (n: T) => DateTime | undefined,
+  now: DateTime,
+) => ({
+  extract: (n: T) => {
+    const d = extract(n);
+    return d && d.isValid ? d : undefined;
+  },
+  keyOf: (d: DateTime) => resolveBucketKey(d, now),
+  labelOf: bucketLabel,
+  subtitleOf: (k: MediaGridDateBucketKey, dates: DateTime[]) => bucketSubtitle(k, dates, now),
+  compareKeys: dateKeyComparator,
+});
+
 export const makeDateStrategy = <T>(
   key: MediaGridGroupBy,
   extract: (n: T) => DateTime | undefined,
@@ -117,14 +132,19 @@ export const makeDateStrategy = <T>(
 ): NamedGroupStrategy<T> => ({
   key,
   group: (nodes) =>
-    groupNodes<T, DateTime, MediaGridDateBucketKey>(nodes, {
-      extract: (n) => {
-        const d = extract(n);
-        return d && d.isValid ? d : undefined;
-      },
-      keyOf: (d) => resolveBucketKey(d, now),
-      labelOf: bucketLabel,
-      subtitleOf: (k, dates) => bucketSubtitle(k, dates, now),
-      compareKeys: dateKeyComparator,
-    }),
+    groupNodes<T, DateTime, MediaGridDateBucketKey>(
+      nodes,
+      buildTakenDateGroupStrategy(extract, now),
+    ),
 });
+
+/** Preserve server sort order; null takenAt → single "Unknown date" section pinned to top. */
+export const groupByTakenDatePreservingOrder = <T>(
+  nodes: T[],
+  extract: (n: T) => DateTime | undefined,
+  now: DateTime = DateTime.now(),
+): GroupResult<T>[] =>
+  groupNodesByEncounterOrder(nodes, {
+    ...buildTakenDateGroupStrategy(extract, now),
+    orphanLabel: 'Unknown date',
+  });

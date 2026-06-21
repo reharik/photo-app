@@ -10,7 +10,7 @@ export const SharedWithMeScreen = () => {
   const buildPageVariables = useCallback(
     (offset: number) => ({
       collectionInfo: {
-        pageInfo: { limit: 10, offset },
+        pageInfo: { limit: 20, offset },
         sortBy: SharedWithMeMediaItemSortBy.sharedAt,
         sortDir: SortDir.desc,
       },

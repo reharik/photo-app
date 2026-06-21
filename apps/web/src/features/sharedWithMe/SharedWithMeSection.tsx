@@ -1,8 +1,8 @@
+import { useRef } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMeMediaItemVM } from '../../viewModels/';
-import { InfiniteScroll } from '../gallery/InfiniteScroll';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
@@ -26,12 +26,13 @@ export const SharedWithMeSection = ({
   paging,
   reloadData,
 }: SharedWithMeSectionProps) => {
+  const scrollRootRef = useRef<HTMLDivElement>(null);
   return (
     <Container>
       <PageHeader>
         <Title>Media Shared with you</Title>
       </PageHeader>
-      <ScrollArea paging={paging} rootMargin="600px">
+      <ScrollArea ref={scrollRootRef}>
         {sharedWithMeMediaItems.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
@@ -43,6 +44,8 @@ export const SharedWithMeSection = ({
           <GridWrap>
             <MediaGrid
               nodes={sharedWithMeMediaItems}
+              paging={paging}
+              scrollRootRef={scrollRootRef}
               getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}
@@ -99,10 +102,11 @@ const Title = styled.h1`
   }
 `;
 
-const ScrollArea = styled(InfiniteScroll)`
+const ScrollArea = styled.div`
   flex: 1;
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
 `;
 
 const GridWrap = styled.div`

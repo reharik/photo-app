@@ -23,6 +23,7 @@ type MediaGridSelectableItemProps = {
   selectableActions?: GalleryActionItems[];
   dimUnselectedTiles?: boolean;
   children: React.ReactNode;
+  sentinelRef?: React.RefCallback<HTMLElement>;
 };
 
 export const MediaGridSelectableItem = ({
@@ -36,6 +37,7 @@ export const MediaGridSelectableItem = ({
   dimUnselectedTiles = false,
   children,
   selectableActions = [],
+  sentinelRef,
 }: MediaGridSelectableItemProps) => {
   const showSelectionChrome = selectable && selectableActions.length > 0;
   const showSelectedFrame = isSelected && selectionActive && showSelectionChrome;
@@ -55,7 +57,7 @@ export const MediaGridSelectableItem = ({
   );
 
   return (
-    <Item data-testid={`media-tile-${itemId}`}>
+    <Item data-testid={`media-tile-${itemId}`} ref={sentinelRef}>
       <ThumbFrame data-media-grid-selectable-thumb="" $showSelectedFrame={showSelectedFrame}>
         <ThumbClickCapture onClickCapture={handleClickCapture}>
           <PhotoScaleLayer $scaled={showSelectedFrame} $dimmed={showDimmed}>
@@ -112,7 +114,5 @@ const PhotoScaleLayer = styled.div<{ $scaled: boolean; $dimmed: boolean }>`
   transform: scale(${({ $scaled }) => ($scaled ? SELECTED_PHOTO_SCALE : 1)});
   transform-origin: center center;
   opacity: ${({ $dimmed }) => ($dimmed ? UNSELECTED_DIM_OPACITY : 1)};
-  transition:
-    ${PHOTO_SCALE_TRANSITION},
-    ${PHOTO_DIM_TRANSITION};
+  transition: ${PHOTO_SCALE_TRANSITION}, ${PHOTO_DIM_TRANSITION};
 `;

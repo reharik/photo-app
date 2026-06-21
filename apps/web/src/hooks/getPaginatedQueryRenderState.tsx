@@ -32,14 +32,14 @@ export const usePaginatedQueryRenderState = <
 }): PagingStateResult<TSelected> => {
   const base = getQueryRenderState({ query, select });
 
+  const hasMore = base.data ? base.data.nodes.length < base.data.totalCount : false;
   const loadMore = useCallback(() => {
     if (!base.data) return;
-    if (base.data.nodes.length >= base.data.totalCount) return;
+    if (!hasMore) return;
     if (query.networkStatus === NetworkStatus.fetchMore) return;
     void query.fetchMore({ variables: buildPageVariables(base.data.nodes.length) });
-  }, [base.data, query, buildPageVariables]);
+  }, [base.data, hasMore, query, buildPageVariables]);
 
-  const hasMore = base.data ? base.data.nodes.length < base.data.totalCount : false;
   const isLoadingMore = query.networkStatus === NetworkStatus.fetchMore;
 
   return { ...base, paging: { loadMore, hasMore, isLoadingMore } };

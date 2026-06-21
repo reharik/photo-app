@@ -1,10 +1,18 @@
-import { MediaAssetKind, MediaItemStatus, MediaKind, Operation } from '@packages/contracts';
-import { Camera } from 'lucide-react';
+import {
+  MediaAssetKind,
+  MediaItemStatus,
+  MediaKind,
+  Operation,
+  SortDir,
+} from '@packages/contracts';
+import { Camera, ChevronDown } from 'lucide-react';
 import { DateTime } from 'luxon';
+import { useEffect, useRef, useState } from 'react';
 import { css, styled } from 'styled-components';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
+import { AnchoredMenu } from '../../ui/AnchoredMenu';
 import { AppModal } from '../../ui/AppModal';
 import { formatActivityDate } from '../../ui/dateDisplay';
 import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
@@ -15,11 +23,17 @@ import type { MultiSelectProps } from '../media/grid/types';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 import { AlbumSelectionActions } from './AlbumSelectionActions';
 
+export type AlbumGroupBy = 'none' | 'takenDate';
+
 type AlbumSectionMetadataProps = {
   count: number;
   album: MinimalAlbumSummaryVM;
   metaCompact: boolean;
   albumItems: MinimalAlbumItemSummaryVM[];
+  groupBy?: AlbumGroupBy;
+  sortDir?: SortDir;
+  onGroupByChange?: (groupBy: AlbumGroupBy) => void;
+  onSortDirChange?: (sortDir: SortDir) => void;
   onSelectCover?: (mediaId: string) => void;
   addCoverItemOpen?: boolean;
   setAddCoverItemOpen?: (open: boolean) => void;
@@ -60,6 +74,17 @@ export type MinimalAlbumItemSummaryVM = {
 
 const MOBILE_ALBUM_MEDIA = '(max-width: 768px)';
 
+const GROUP_BY_OPTIONS: { value: AlbumGroupBy; label: string }[] = [
+  { value: 'none', label: 'None' },
+  { value: 'takenDate', label: 'Taken date' },
+];
+
+const groupByLabel = (groupBy: AlbumGroupBy): string =>
+  GROUP_BY_OPTIONS.find((option) => option.value === groupBy)?.label ?? 'None';
+
+const sortDirLabel = (sortDir: SortDir): string =>
+  sortDir.equals(SortDir.desc) ? '↓ Newest first' : '↑ Oldest first';
+
 const noopMultiSelect: MultiSelectProps = {
   isSelected: () => false,
   handleModifierClick: () => undefined,
@@ -72,6 +97,10 @@ export const AlbumSectionMetadata = ({
   album,
   metaCompact,
   albumItems,
+  groupBy,
+  sortDir,
+  onGroupByChange,
+  onSortDirChange,
   onSelectCover,
   isPublic,
   headerActions,
@@ -81,10 +110,28 @@ export const AlbumSectionMetadata = ({
   addCoverItemOpen = false,
   setAddCoverItemOpen = () => {},
 }: AlbumSectionMetadataProps) => {
+  const [groupByMenuOpen, setGroupByMenuOpen] = useState(false);
+  const groupByTriggerRef = useRef<HTMLButtonElement>(null);
+  const groupByMenuRef = useRef<HTMLDivElement>(null);
   const isMobileAlbum = useMediaQuery(MOBILE_ALBUM_MEDIA);
   const isSelecting = selectionCount > 0;
   const showMobileBrowse = isMobileAlbum && !isSelecting;
   const showMobileSelection = isMobileAlbum && isSelecting;
+
+  useEffect(() => {
+    if (!groupByMenuOpen) {
+      return;
+    }
+    const handleClick = (event: MouseEvent): void => {
+      const target = event.target as Node;
+      if (groupByTriggerRef.current?.contains(target) || groupByMenuRef.current?.contains(target)) {
+        return;
+      }
+      setGroupByMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [groupByMenuOpen]);
   const coverMediaUrl = album.coverMedia
     ? buildMediaItemUrl(album.coverMedia.id, MediaAssetKind.thumbnail)
     : undefined;
@@ -129,6 +176,53 @@ export const AlbumSectionMetadata = ({
     setAddCoverItemOpen(false);
   };
 
+  const renderSortPicker = () =>
+    groupBy != null && sortDir != null && onGroupByChange != null && onSortDirChange != null ? (
+      <AlbumSortPickerRow>
+        <GroupByPickerWrap>
+          <PickerTextControl
+            ref={groupByTriggerRef}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={groupByMenuOpen}
+            onClick={() => setGroupByMenuOpen((open) => !open)}
+          >
+            Group by {groupByLabel(groupBy)}
+            <ChevronDown size={14} strokeWidth={2} aria-hidden />
+          </PickerTextControl>
+          <AnchoredMenu
+            open={groupByMenuOpen}
+            anchorRef={groupByTriggerRef}
+            menuRef={groupByMenuRef}
+            aria-label="Group by"
+          >
+            {GROUP_BY_OPTIONS.map((option) => (
+              <GroupByMenuItem
+                key={option.value}
+                type="button"
+                role="menuitem"
+                $selected={groupBy === option.value}
+                onClick={() => {
+                  onGroupByChange(option.value);
+                  setGroupByMenuOpen(false);
+                }}
+              >
+                {option.label}
+              </GroupByMenuItem>
+            ))}
+          </AnchoredMenu>
+        </GroupByPickerWrap>
+        <PickerDivider aria-hidden />
+        <PickerTextControl
+          type="button"
+          aria-label={sortDirLabel(sortDir)}
+          onClick={() => onSortDirChange(sortDir.equals(SortDir.desc) ? SortDir.asc : SortDir.desc)}
+        >
+          {sortDirLabel(sortDir)}
+        </PickerTextControl>
+      </AlbumSortPickerRow>
+    ) : null;
+
   return (
     <>
       <AlbumMeta
@@ -136,52 +230,55 @@ export const AlbumSectionMetadata = ({
         $mobileBrowse={showMobileBrowse}
         $mobileSelection={showMobileSelection}
       >
-        {showMobileBrowse ? (
-          <MobileBrowseHeader>
-            <AlbumCover $compact>{renderCover(true)}</AlbumCover>
-            <MobileBrowseInfo>
-              <MobileBrowseTitleRow>
-                <MobileBrowseTitle>{album.title}</MobileBrowseTitle>
-                {headerActions != null ? (
-                  <MobileBrowseActions>{headerActions}</MobileBrowseActions>
-                ) : null}
-              </MobileBrowseTitleRow>
-              <MobileBrowseSubtitle>
-                {buildAlbumBrowseSubtitle(count, album.updatedAt)}
-              </MobileBrowseSubtitle>
-            </MobileBrowseInfo>
-          </MobileBrowseHeader>
-        ) : showMobileSelection ? (
-          renderSelectionActions()
-        ) : (
-          <>
-            <AlbumMetaPrimary $compact={metaCompact}>
-              <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
-              <AlbumInfo $compact={metaCompact}>
-                {metaCompact ? (
-                  <AlbumCompactSummary>
-                    {buildAlbumBrowseSubtitle(count, album.updatedAt)}
-                  </AlbumCompactSummary>
-                ) : (
-                  <>
-                    <AlbumTitle>{album.title}</AlbumTitle>
-                    <AlbumStats>
-                      <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
-                    </AlbumStats>
-                    {album.updatedAt?.isValid ? (
-                      <AlbumDescription>
-                        Updated {formatActivityDate(album.updatedAt)}
-                      </AlbumDescription>
-                    ) : null}
-                  </>
-                )}
-              </AlbumInfo>
-            </AlbumMetaPrimary>
-            <HeaderTrailing $selecting={isSelecting}>
-              {isSelecting ? renderSelectionActions() : headerActions}
-            </HeaderTrailing>
-          </>
-        )}
+        <AlbumMetaMainRow>
+          {showMobileBrowse ? (
+            <MobileBrowseHeader>
+              <AlbumCover $compact>{renderCover(true)}</AlbumCover>
+              <MobileBrowseInfo>
+                <MobileBrowseTitleRow>
+                  <MobileBrowseTitle>{album.title}</MobileBrowseTitle>
+                  {headerActions != null ? (
+                    <MobileBrowseActions>{headerActions}</MobileBrowseActions>
+                  ) : null}
+                </MobileBrowseTitleRow>
+                <MobileBrowseSubtitle>
+                  {buildAlbumBrowseSubtitle(count, album.updatedAt)}
+                </MobileBrowseSubtitle>
+              </MobileBrowseInfo>
+            </MobileBrowseHeader>
+          ) : showMobileSelection ? (
+            renderSelectionActions()
+          ) : (
+            <>
+              <AlbumMetaPrimary $compact={metaCompact}>
+                <AlbumCover $compact={metaCompact}>{renderCover()}</AlbumCover>
+                <AlbumInfo $compact={metaCompact}>
+                  {metaCompact ? (
+                    <AlbumCompactSummary>
+                      {buildAlbumBrowseSubtitle(count, album.updatedAt)}
+                    </AlbumCompactSummary>
+                  ) : (
+                    <>
+                      <AlbumTitle>{album.title}</AlbumTitle>
+                      <AlbumStats>
+                        <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
+                      </AlbumStats>
+                      {album.updatedAt?.isValid ? (
+                        <AlbumDescription>
+                          Updated {formatActivityDate(album.updatedAt)}
+                        </AlbumDescription>
+                      ) : null}
+                    </>
+                  )}
+                </AlbumInfo>
+              </AlbumMetaPrimary>
+              <HeaderTrailing $selecting={isSelecting}>
+                {isSelecting ? renderSelectionActions() : headerActions}
+              </HeaderTrailing>
+            </>
+          )}
+        </AlbumMetaMainRow>
+        {renderSortPicker()}
       </AlbumMeta>
       {addCoverItemOpen && (
         <AppModal
@@ -241,10 +338,9 @@ const AlbumMeta = styled.div<{
 }>`
   flex-shrink: 0;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme, $compact }) => theme.spacing($compact ? 2 : 3)};
+  flex-direction: column;
+  align-items: stretch;
+  gap: ${({ theme, $compact }) => theme.spacing($compact ? 1 : 1.5)};
   padding: ${({ theme, $compact }) =>
     $compact
       ? `${theme.spacing(2)} ${theme.spacing(6)}`
@@ -273,6 +369,89 @@ const AlbumMeta = styled.div<{
           padding: ${theme.spacing(1.5)} ${theme.spacing(3)};
         `
       : ''}
+`;
+
+const AlbumMetaMainRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(3)};
+  width: 100%;
+  min-width: 0;
+`;
+
+const AlbumSortPickerRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  width: 100%;
+  min-width: 0;
+`;
+
+const GroupByPickerWrap = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+`;
+
+const PickerTextControl = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.25)};
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.fontSize._13};
+  font-weight: ${({ theme }) => theme.weight.regular};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  line-height: 1.4;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.bodyText};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 2px;
+    border-radius: ${({ theme }) => theme.borderRadius.sm};
+  }
+`;
+
+const PickerDivider = styled.span`
+  width: 1px;
+  height: 12px;
+  background: ${({ theme }) => theme.color.border};
+  flex-shrink: 0;
+`;
+
+const GroupByMenuItem = styled.button<{ $selected: boolean }>`
+  display: block;
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  background: transparent;
+  color: ${({ theme }) => theme.color.bodyText};
+  font-size: ${({ theme }) => theme.fontSize._13};
+  font-weight: ${({ $selected, theme }) =>
+    $selected ? theme.weight.medium : theme.weight.regular};
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 0;
+  }
 `;
 
 const MobileBrowseHeader = styled.div`
