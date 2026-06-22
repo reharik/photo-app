@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-import { AlbumItemSortBy, AlbumMemberRole, AlbumSortBy, MediaKind, MediaItemStatus, SortDir } from '@packages/contracts';
+import {
+  AlbumItemSortBy,
+  AlbumMemberRole,
+  AlbumSortBy,
+  MediaKind,
+  MediaItemStatus,
+  SortDir,
+} from '@packages/contracts';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -275,7 +282,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({
           pageInfo: { limit: 1, offset: 0 },
-          sortBy: AlbumSortBy.createdAt,
+          sortBy: AlbumItemSortBy.createdAt,
           sortDir: SortDir.asc,
         }),
       });
@@ -287,7 +294,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({
           pageInfo: { limit: 1, offset: 1 },
-          sortBy: AlbumSortBy.createdAt,
+          sortBy: AlbumItemSortBy.createdAt,
           sortDir: SortDir.asc,
         }),
       });
