@@ -120,7 +120,12 @@ export class Authorization extends Entity<AuthorizationRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
-
+  mediaItemId(): EntityId | undefined {
+    return this.props.mediaItemId;
+  }
+  albumId(): EntityId | undefined {
+    return this.props.albumId;
+  }
   expiresAt(): Date | undefined {
     return this.props.expiresAt;
   }

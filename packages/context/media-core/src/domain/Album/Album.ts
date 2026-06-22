@@ -305,9 +305,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     expiresAt?: Date,
     operations?: Operation[],
   ): WriteResult<PublicLink> {
-    let publicLink = this.#publicLinks.find((x) =>
-      EnumArraysAreEqual(x.authorization().operations(), operations || []),
-    );
+    let publicLink = this.#publicLinks.find((x) => {
+      const exp = x.authorization().expiresAt();
+      return !x.authorization().revokedAt() && (!exp || exp > new Date());
+    });
+
     if (!publicLink) {
       // creating a new public link creates a new authorization/access_grant
       publicLink = PublicLink.create(

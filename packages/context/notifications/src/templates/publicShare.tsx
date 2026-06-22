@@ -2,7 +2,7 @@ import { Button, Section, Text } from '@react-email/components';
 import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
-import { APP_NAME } from './index.js';
+import { APP_NAME } from './constants.js';
 
 type PublicShareData = TemplateData['publicShare'];
 

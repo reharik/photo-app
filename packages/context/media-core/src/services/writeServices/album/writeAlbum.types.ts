@@ -1,4 +1,3 @@
-import { Operation } from '@packages/contracts';
 import { EntityId } from '../../../types';
 
 export type CreateAlbumCommand = {
@@ -87,13 +86,4 @@ export type AddMediaItemsToAlbumCommand = {
 export type AddMediaItemsToAlbumResult = {
   albumId: EntityId;
   albumItemIds: EntityId[];
-};
-
-export type GrantUserAuthorizationForAlbumCommand = {
-  viewerId: EntityId;
-  albumId: EntityId;
-  operations: Operation[];
-  grantedToHandle: string;
-  label?: string;
-  expiresAt?: Date;
 };

@@ -23,7 +23,7 @@ describe('build__NotificationService', () => {
           Component: () => null,
           getSubject: () => 'Welcome, Jane Doe',
         },
-        'share-invite': {
+        shareInvite: {
           Component: () => null,
           getSubject: () => 'You have been invited',
         },
@@ -34,7 +34,7 @@ describe('build__NotificationService', () => {
       },
     }));
 
-    jest.unstable_mockModule('@react-email/render', () => ({
+    jest.unstable_mockModule('@react-email/components', () => ({
       render: jest.fn(async () => '<html><body><p>Jane</p></body></html>'),
     }));
 

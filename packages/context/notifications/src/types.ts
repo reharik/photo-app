@@ -4,7 +4,7 @@ export type TemplateData = {
     lastName: string;
     appUrl: string;
   };
-  'share-invite': {
+  shareInvite: {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;

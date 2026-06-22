@@ -36,6 +36,10 @@ type _MediaCore_configAssert = _IocExpect<_MediaCore_config>;
 type _MediaCore_database =
   _MediaCoreExternalsPick['database'] extends MediaCoreExternals['database'] ? true : false;
 type _MediaCore_databaseAssert = _IocExpect<_MediaCore_database>;
+type _MediaCore_logger = _MediaCoreExternalsPick['logger'] extends MediaCoreExternals['logger']
+  ? true
+  : false;
+type _MediaCore_loggerAssert = _IocExpect<_MediaCore_logger>;
 type _MediaCore_mediaProcessingJobRepository =
   _MediaCoreExternalsPick['mediaProcessingJobRepository'] extends MediaCoreExternals['mediaProcessingJobRepository']
     ? true

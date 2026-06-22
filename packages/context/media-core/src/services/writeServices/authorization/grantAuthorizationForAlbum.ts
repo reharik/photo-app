@@ -1,18 +1,16 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { Knex } from 'knex';
-import { ensureUserExists, loadRequiredAlbum } from '../../../application/support/resourceLoaders';
+import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/types';
-import { GrantUserAuthorizationForAlbumCommand } from '../album/writeAlbum.types';
-import { GrantUserAuthorizationResult } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
+import { GrantUserAuthorizationCommand, GrantUserAuthorizationResult } from './grantTypes';
+import { inviteNonUsers, inviteUsers, segregateUsers } from './inviteUsersService';
 
 export interface GrantUserAuthorizationForAlbum extends WriteServiceBase {
-  (
-    input: GrantUserAuthorizationForAlbumCommand,
-  ): Promise<WriteResult<GrantUserAuthorizationResult>>;
+  (input: GrantUserAuthorizationCommand): Promise<WriteResult<GrantUserAuthorizationResult>>;
 }
 
 type GrantUserAuthorizationForAlbumDeps = {
@@ -29,11 +27,11 @@ export const build__GrantUserAuthorizationForAlbum = ({
   runInTransaction,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
   return async (
-    input: GrantUserAuthorizationForAlbumCommand,
+    input: GrantUserAuthorizationCommand,
     trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
-    const { viewerId, albumId, operations, grantedToHandle, label, expiresAt } = input;
-
+    const { viewerId, entityIds, grantedToHandles } = input;
+    const albumId = entityIds[0];
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
       return getResult;
@@ -48,52 +46,33 @@ export const build__GrantUserAuthorizationForAlbum = ({
     if (!granter) {
       return fail(AppErrorCollection.user.UserNotFound);
     }
-    const ensureUser = await ensureUserExists(grantedToHandle, userRepository);
-    if (!ensureUser.success) {
-      const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
-      if (!publicLinkResult.success) {
-        return publicLinkResult;
-      }
-      const publicLink = publicLinkResult.value;
-      await runInTransaction(trx, async (db) => {
-        await albumRepository.save(album, db);
-      });
+    const { existing, nonExisting } = await segregateUsers(grantedToHandles, userRepository);
+    const nonExistingResult = inviteNonUsers(nonExisting, album, input, album.title(), granter);
+    const existingResult = inviteUsers(existing, album, input, album.title(), granter);
 
-      return ok({
-        authorizationIds: [publicLink.id()],
-        inviteeEmail: grantedToHandle,
-        inviterName: granter?.fullName(),
-        albumTitle: album.title(),
-        tokenOrUserId: publicLink.linkToken(),
-        isPublicLink: true,
-      });
-    }
+    const result = {
+      authorizations: [...nonExistingResult.authorizations, ...existingResult.authorizations],
+      emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+      errors: existingResult.errors,
+      publicLinkFailure: nonExistingResult.publicLinkFailure,
+    };
 
-    const invitee = ensureUser.value;
-    const grantResult = album.grantAuthorization(
-      operations,
-      viewerId,
-      invitee.id(),
-      label,
-      expiresAt,
-    );
-    if (!grantResult.success) {
-      return grantResult;
+    if (!result.emailDTOs.length) {
+      return ok(result);
     }
 
     await runInTransaction(trx, async (db) => {
       await albumRepository.save(album, db);
-      await shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db);
-      await shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db);
+      await Promise.all(
+        existingResult.addedInvitees.flatMap((invitee) => [
+          shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db),
+          shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db),
+        ]),
+      );
     });
-
-    const authorizationId = grantResult.value.authorization.id();
-    return ok({
-      authorizationIds: [authorizationId],
-      inviteeEmail: grantedToHandle,
-      inviterName: granter?.fullName(),
-      albumTitle: album.title(),
-      tokenOrUserId: album.id(),
-    });
+    console.log(`************result************`);
+    console.log(result);
+    console.log(`********END result************`);
+    return ok(result);
   };
 };

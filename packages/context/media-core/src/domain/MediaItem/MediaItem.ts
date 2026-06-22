@@ -280,7 +280,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   grantAuthorization(
     operations: Operation[],
     actorId: ActorId,
-    grantedToUserId?: EntityId,
+    grantedToUserId: EntityId,
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{

@@ -3,8 +3,8 @@ import type { TemplateData, TemplateName } from '../types.js';
 import Digest, { subject as digestSubject } from './digest.js';
 import ForgotPassword, { subject as forgotPasswordSubject } from './forgotPassword.js';
 import PasswordReset, { subject as passwordResetSubject } from './passwordReset.js';
-import PublicShare, { subject as publicShareSubject } from './public-share.js';
-import ShareInvite, { subject as shareInviteSubject } from './share-invite.js';
+import PublicShare, { subject as publicShareSubject } from './publicShare.js';
+import ShareInvite, { subject as shareInviteSubject } from './shareInvite.js';
 import Welcome, { subject as welcomeSubject } from './welcome.js';
 
 type RegistryEntry<K extends TemplateName> = {
@@ -18,11 +18,9 @@ export type TemplateRegistry = {
 
 export const templateRegistry: TemplateRegistry = {
   welcome: { Component: Welcome, getSubject: welcomeSubject },
-  'share-invite': { Component: ShareInvite, getSubject: shareInviteSubject },
+  shareInvite: { Component: ShareInvite, getSubject: shareInviteSubject },
   digest: { Component: Digest, getSubject: digestSubject },
   passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
   forgotPassword: { Component: ForgotPassword, getSubject: forgotPasswordSubject },
   publicShare: { Component: PublicShare, getSubject: publicShareSubject },
 };
-
-export const APP_NAME = 'BetanaMe';

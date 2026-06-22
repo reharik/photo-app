@@ -60,3 +60,23 @@ export const fail = <T = void, E extends ContractError = ContractError>(
   success: false,
   error,
 });
+
+export type BatchResult<TIn, TOut, E = ContractError> = {
+  status: 'ok' | 'partial' | 'failed';
+  succeeded: TOut[];
+  failed: { item: TIn; error: E }[];
+};
+
+export const WriteToBatch = <TIn, TOut, E = ContractError>(
+  batch: BatchResult<TIn, TOut, E>,
+  result: WriteResult<TOut, E>,
+  item: TIn,
+) => {
+  if (result.success) {
+    batch.succeeded.push(result.value);
+    batch.status = batch.failed.length > 0 ? 'partial' : 'ok';
+  } else {
+    batch.failed.push({ item, error: result.error });
+    batch.status = batch.succeeded.length > 0 ? 'partial' : 'failed';
+  }
+};

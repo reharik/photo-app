@@ -1,10 +1,4 @@
-import {
-  MediaItemStatus,
-  MediaKind,
-  Operation,
-  ReactionEmoji,
-  ReactionTargetType,
-} from '@packages/contracts';
+import { MediaItemStatus, MediaKind, ReactionEmoji, ReactionTargetType } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 
@@ -120,22 +114,4 @@ export type UpdateMediaItemReactionsCommand = {
 
 export type UpdateMediaItemReactionsResult = {
   mediaItemId: EntityId;
-};
-
-export type GrantUserAuthorizationResult = {
-  authorizationIds: EntityId[];
-  inviteeEmail: string;
-  inviterName: string;
-  albumTitle: string;
-  tokenOrUserId: string;
-  isPublicLink?: boolean;
-};
-
-export type GrantUserAuthorizationForMediaItemsCommand = {
-  viewerId: EntityId;
-  mediaItemIds: EntityId[];
-  operations: Operation[];
-  grantedToHandle: string;
-  label?: string;
-  expiresAt?: Date;
 };

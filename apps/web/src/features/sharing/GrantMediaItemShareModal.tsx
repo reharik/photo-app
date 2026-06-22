@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client/react';
+import { Operation } from '@packages/contracts';
 import { useMemo, useState } from 'react';
 import {
   CreatePublicLinkForMediaItemsDocument,
@@ -7,7 +8,6 @@ import {
   GrantUserAuthorizationsForMediaItemsDocument,
   GrantUserAuthorizationsForMediaItemsInput,
   GrantUserAuthorizationsForMediaItemsMutation,
-  Operation,
   ShareContactType,
   ViewerShareContactsDocument,
 } from '../../graphql/generated/types';
@@ -18,6 +18,7 @@ import {
   type GrantSharePublicLinkFormValues,
   type GrantShareUserFormValues,
 } from './GrantShareForm';
+import { valueDisplayFromEnumMembers } from './shareGrantOptionMapping';
 
 type GrantMediaItemShareModalProps = {
   mediaItemIds: string[];
@@ -54,6 +55,11 @@ export const GrantMediaItemShareModal = ({
     [contactsQuery.data],
   );
 
+  const operationOptions = useMemo(
+    () => valueDisplayFromEnumMembers([Operation.download, Operation.comment]),
+    [],
+  );
+
   const handleSubmit = async (values: GrantShareUserFormValues): Promise<void> => {
     if (mediaItemIds.length === 0) {
       return;
@@ -61,8 +67,8 @@ export const GrantMediaItemShareModal = ({
 
     const input: GrantUserAuthorizationsForMediaItemsInput = {
       mediaItemIds,
-      operations: [Operation.download, Operation.comment],
-      grantedToHandle: values.handle,
+      operations: values.operations,
+      grantedToHandles: values.grantedToHandles,
       label: values.label,
       expiresAt: values.expiresAt,
     };
@@ -124,6 +130,7 @@ export const GrantMediaItemShareModal = ({
     >
       <GrantShareForm
         suggestions={suggestions}
+        operationOptions={operationOptions}
         onSubmit={handleSubmit}
         onCreatePublicLink={handleCreatePublicLink}
         isLoading={isLoading}

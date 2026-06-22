@@ -32,6 +32,8 @@ export * from './writeServices/album/unsetCoverMedia';
 export * from './writeServices/album/writeAlbum.types';
 export * from './writeServices/authorization/grantAuthorizationForAlbum';
 export * from './writeServices/authorization/grantAuthorizationForMediaItems';
+export * from './writeServices/authorization/grantTypes';
+export * from './writeServices/authorization/inviteUsersService';
 export * from './writeServices/comments/addComment';
 export * from './writeServices/comments/deleteComment';
 export * from './writeServices/comments/editComment';

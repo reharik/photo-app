@@ -39,7 +39,6 @@
     "@packages/contracts": "*",
     "@packages/infrastructure": "*",
     "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.0.7",
     "ioc-manifest": "^1.4.2",
     "react": "^19.0.0"
   },

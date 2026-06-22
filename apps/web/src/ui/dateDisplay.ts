@@ -30,7 +30,8 @@ const toDateTime = (value: Instant): DateTime => {
   if (typeof value === 'number') return DateTime.fromMillis(value);
   // ISO string. If it carries an offset/Z, Luxon keeps the right instant;
   // if it's offset-less, interpret as UTC (matches how we store taken_at).
-  return DateTime.fromISO(value, { zone: 'utc' });
+  if (typeof value === 'string') return DateTime.fromISO(value, { zone: 'utc' });
+  return value;
 };
 
 const LOCALE = 'en-US';

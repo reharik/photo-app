@@ -11,8 +11,8 @@ import {
   Text,
 } from '@react-email/components';
 import React from 'react';
-import { APP_NAME } from '.';
 import { TemplateData } from '../types';
+import { APP_NAME } from './constants.js';
 
 export type WelcomeEmailProps = {
   firstName?: string;

@@ -1,6 +1,6 @@
 import { ContractError, WriteResult, fail, ok } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
-import { render } from '@react-email/render';
+import { render } from '@react-email/components';
 import { createElement } from 'react';
 import { NotImplementedError } from './channels/sms.js';
 import { IocGeneratedCradle } from './generated/ioc-registry.types.js';

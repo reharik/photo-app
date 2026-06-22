@@ -1,6 +1,7 @@
 /* AUTO-GENERATED. DO NOT EDIT.
 Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
+import type { Logger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
@@ -175,6 +176,7 @@ export interface IocGeneratedCradle {
 export interface IocExternals {
   config: MediaStorageConfig;
   database: Knex;
+  logger: Logger;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
 }
 

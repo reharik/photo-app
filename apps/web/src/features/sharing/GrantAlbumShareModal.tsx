@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client/react';
+import { Operation } from '@packages/contracts';
 import { useMemo, useState } from 'react';
 
 import {
@@ -18,6 +19,7 @@ import {
   type GrantSharePublicLinkFormValues,
   type GrantShareUserFormValues,
 } from './GrantShareForm';
+import { valueDisplayFromEnumMembers } from './shareGrantOptionMapping';
 
 type GrantAlbumShareModalProps = {
   albumId: string;
@@ -50,11 +52,16 @@ export const GrantAlbumShareModal = ({
     [contactsQuery.data],
   );
 
+  const operationOptions = useMemo(
+    () => valueDisplayFromEnumMembers([Operation.download, Operation.comment]),
+    [],
+  );
+
   const handleSubmit = async (values: GrantShareUserFormValues): Promise<void> => {
     const input: GrantUserAuthorizationForAlbumInput = {
       albumId,
       operations: values.operations,
-      grantedToHandle: values.handle,
+      grantedToHandles: values.grantedToHandles,
       label: values.label,
       expiresAt: values.expiresAt,
     };
@@ -108,6 +115,7 @@ export const GrantAlbumShareModal = ({
     <AppModal onClose={onClose} title="Share album" closeOnBackdropClick={!isLoading}>
       <GrantShareForm
         suggestions={suggestions}
+        operationOptions={operationOptions}
         onSubmit={handleSubmit}
         onCreatePublicLink={handleCreatePublicLink}
         isLoading={isLoading}

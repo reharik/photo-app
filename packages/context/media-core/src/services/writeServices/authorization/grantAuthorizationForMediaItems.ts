@@ -1,13 +1,10 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
-import { dedupeIds } from '@packages/infrastructure';
+import { dedupeIds, Logger } from '@packages/infrastructure';
 import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
-import {
-  ensureUserExists,
-  loadRequiredMediaItem,
-} from '../../../application/support/resourceLoaders';
+import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
+import { Authorization } from '../../../domain';
 import { Album } from '../../../domain/Album/Album';
-import { Authorization } from '../../../domain/Authorization/Authorization';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -15,16 +12,17 @@ import { GrantRepository } from '../../../repositories/domainRepositories/grantR
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { ShareContactRepository } from '../../../repositories/readRepositories/types';
-import {
-  GrantUserAuthorizationForMediaItemsCommand,
-  GrantUserAuthorizationResult,
-} from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
+import {
+  GrantEmailDTO,
+  GrantUserAuthorizationCommand,
+  GrantUserAuthorizationResult,
+  InviteNonUsersResult,
+} from './grantTypes';
+import { inviteNonUsers, inviteUsersForMediaItems, segregateUsers } from './inviteUsersService';
 
 export interface GrantAuthorizationForMediaItems extends WriteServiceBase {
-  (
-    input: GrantUserAuthorizationForMediaItemsCommand,
-  ): Promise<WriteResult<GrantUserAuthorizationResult>>;
+  (input: GrantUserAuthorizationCommand): Promise<WriteResult<GrantUserAuthorizationResult>>;
 }
 
 type GrantAuthorizationForMediaItemsDeps = {
@@ -34,6 +32,7 @@ type GrantAuthorizationForMediaItemsDeps = {
   shareContactRepository: ShareContactRepository;
   runInTransaction: RunInTransaction;
   albumRepository: AlbumRepository;
+  logger: Logger;
 };
 
 /**
@@ -47,13 +46,14 @@ export const build__GrantAuthorizationForMediaItems = ({
   shareContactRepository,
   runInTransaction,
   albumRepository,
+  logger,
 }: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
   return async (
-    input: GrantUserAuthorizationForMediaItemsCommand,
+    input: GrantUserAuthorizationCommand,
     trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
-    const { viewerId, operations, grantedToHandle, label, expiresAt } = input;
-    const dedupedIds = dedupeIds(input.mediaItemIds);
+    const { viewerId, grantedToHandles, label } = input;
+    const dedupedIds = dedupeIds(input.entityIds);
 
     if (dedupedIds.length === 0) {
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);
@@ -77,8 +77,13 @@ export const build__GrantAuthorizationForMediaItems = ({
       mediaItems.push(loaded.value);
     }
 
-    const ensureUser = await ensureUserExists(grantedToHandle, userRepository);
-    if (!ensureUser.success) {
+    const { existing, nonExisting } = await segregateUsers(grantedToHandles, userRepository);
+    let nonExistingResult: InviteNonUsersResult = {
+      authorizations: [] as Authorization[],
+      emailDTOs: [] as GrantEmailDTO[],
+    };
+
+    if (nonExisting.length > 0) {
       const album = Album.create(
         {
           title: label ?? 'Public Link Album',
@@ -89,69 +94,65 @@ export const build__GrantAuthorizationForMediaItems = ({
       mediaItems.forEach((mediaItem) => {
         album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
       });
-
-      const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
-      if (!publicLinkResult.success) {
-        return publicLinkResult;
+      nonExistingResult = inviteNonUsers(nonExisting, album, input, album.title(), granter);
+      if (!nonExistingResult.publicLinkFailure) {
+        await runInTransaction(trx, async (db) => {
+          await albumRepository.save(album, db);
+        });
       }
-      const publicLink = publicLinkResult.value;
-      await runInTransaction(trx, async (db) => {
-        await albumRepository.save(album, db);
-      });
-
-      return ok({
-        authorizationIds: [publicLink.id()],
-        inviteeEmail: grantedToHandle,
-        inviterName: granter?.fullName(),
-        albumTitle: album.title(),
-        tokenOrUserId: publicLink.linkToken(),
-        isPublicLink: true,
-      });
     }
 
-    const invitee = ensureUser.value;
-    const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
-    for (const mediaItem of mediaItems) {
-      const result = mediaItem.grantAuthorization(
-        operations,
-        viewerId,
-        invitee.id(),
-        label,
-        expiresAt,
-      );
-      if (!result.success) {
-        return result;
-      }
-      grants.push({ mediaItem, authorization: result.value.authorization });
+    const existingResult = inviteUsersForMediaItems(existing, mediaItems, input, granter);
+    if (!existingResult.grants.length && !existingResult.addedInvitees.length) {
+      return ok({
+        authorizations: nonExistingResult.authorizations,
+        emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+        errors: existingResult.errors,
+        publicLinkFailure: nonExistingResult.publicLinkFailure,
+      });
     }
 
     await runInTransaction(trx, async (db) => {
-      for (const { mediaItem, authorization } of grants) {
+      for (const { mediaItem, authorization } of existingResult.grants) {
         await mediaItemRepository.save(mediaItem, db);
-
         await grantRepository.createGrant(
           {
             id: crypto.randomUUID(),
             mediaItemId: mediaItem.id(),
             accessGrantId: authorization.id(),
-            grantedToUser: invitee.id(),
+            grantedToUser: authorization.grantedToUser(),
             operations: authorization.operations(),
             createdAt: new Date(),
           },
           db,
         );
       }
-
-      await shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db);
-      await shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db);
+      await Promise.all(
+        existingResult.addedInvitees.flatMap((invitee) => [
+          shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db),
+          shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db),
+        ]),
+      );
     });
 
+    if (existingResult.errorDetail.length) {
+      logger.warn('partial media grant', {
+        failures: existingResult.errorDetail.map((d) => ({
+          userId: d.user.id(),
+          itemId: d.mediaItem.id(),
+          code: d.error.code,
+        })),
+      });
+    }
+
     return ok({
-      authorizationIds: grants.map((g) => g.authorization.id()),
-      inviteeEmail: invitee.email(),
-      inviterName: granter?.fullName(),
-      albumTitle: '',
-      tokenOrUserId: '',
+      authorizations: [
+        ...nonExistingResult.authorizations,
+        ...existingResult.grants.map((g) => g.authorization),
+      ],
+      emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+      errors: existingResult.errors,
+      publicLinkFailure: nonExistingResult.publicLinkFailure,
     });
   };
 };

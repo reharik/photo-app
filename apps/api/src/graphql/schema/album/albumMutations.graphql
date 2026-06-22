@@ -117,7 +117,7 @@ input DeleteAlbumItemsFromAlbumInput {
 input GrantUserAuthorizationForAlbumInput {
   albumId: ID!
   operations: [Operation!]!
-  grantedToHandle: String!
+  grantedToHandles: [String!]!
   label: String
   expiresAt: DateTime
 }

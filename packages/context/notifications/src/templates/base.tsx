@@ -11,8 +11,21 @@ import {
   Text,
 } from '@react-email/components';
 import { ReactElement, ReactNode } from 'react';
-import { APP_NAME } from '.';
-
+import { APP_NAME } from './constants.js';
+console.log('component types:', {
+  Body: typeof Body,
+  Container: typeof Container,
+  Head: typeof Head,
+  Heading: typeof Heading,
+  Hr: typeof Hr,
+  Html: typeof Html,
+  Link: typeof Link,
+  Preview: typeof Preview,
+  Section: typeof Section,
+  Text: typeof Text,
+  // ...every capitalized thing used as a JSX tag
+  // ...every capitalized thing used as a JSX tag
+});
 export type BaseEmailProps = {
   previewText: string;
   title: string;

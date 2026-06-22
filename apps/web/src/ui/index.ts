@@ -1,4 +1,6 @@
 // UI primitives barrel export
+export { MultiCombobox } from './MultiCombobox';
+export type { MultiComboboxOption, MultiComboboxProps } from './MultiCombobox';
 export { Combobox } from './Combobox';
 export type { ComboboxProps } from './Combobox';
 export { FormInput } from './FormInput';

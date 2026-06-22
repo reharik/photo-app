@@ -1,11 +1,11 @@
 services:
   localstack:
-    image: localstack/localstack:4.14
+    image: localstack/localstack:4.13
     ports:
       - "4566:4566"
       - "4510-4559:4510-4559"
     environment:
-      - SERVICES=ses,sns
+      - SERVICES=ses,sns,s3
       - DEFAULT_REGION=${AWS_REGION:-us-east-1}
       - DEBUG=1
       - DOCKER_HOST=unix:///var/run/docker.sock

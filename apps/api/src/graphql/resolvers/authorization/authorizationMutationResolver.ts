@@ -1,20 +1,19 @@
-import type {
-  GrantUserAuthorizationForAlbumCommand,
-  GrantUserAuthorizationForMediaItemsCommand,
-} from '@packages/media-core';
+import { WriteResult } from '@packages/contracts';
+import { GrantUserAuthorizationCommand } from '@packages/media-core';
 import { TemplateData } from '@packages/notifications';
 import { authenticatedResolver } from '../../context/contextWrappers';
-import type { Resolvers } from '../../generated/types.generated';
+import type { GrantUserAuthorizationPayload, Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     grantUserAuthorizationsForMediaItems: authenticatedResolver(async (_parent, args, ctx) => {
-      const command: GrantUserAuthorizationForMediaItemsCommand = {
+      const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
-        mediaItemIds: args.input.mediaItemIds,
+        entityIds: args.input.mediaItemIds,
         operations: args.input.operations,
-        grantedToHandle: args.input.grantedToHandle,
+        grantedToHandles: args.input.grantedToHandles,
         label: args.input.label ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
       };
@@ -26,37 +25,39 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
           errors: [toContractErrorPayload(result.error)],
         };
       }
+      const notifications = result.value.emailDTOs.map((emailDTO) => {
+        const inviteUrl = emailDTO.isPublicLink
+          ? `${ctx.config.clientUrl}/shared/photos`
+          : `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
+        const template = (
+          emailDTO.isPublicLink ? 'publicShare' : 'shareInvite'
+        ) as keyof TemplateData;
 
-      const { inviteeEmail, inviterName, albumTitle, tokenOrUserId, isPublicLink } = result.value;
-      const inviteUrl = isPublicLink
-        ? `${ctx.config.clientUrl}/shared/photos`
-        : `${ctx.config.clientUrl}/albums/${tokenOrUserId}`;
-      const template = (isPublicLink ? 'public-share' : 'share-invite') as keyof TemplateData;
-
-      await ctx.notificationService.notify({
-        to: inviteeEmail,
-        template,
-        data: {
-          inviterName,
-          resourceName: albumTitle,
-          inviteUrl,
-          signupUrl: `${ctx.config.clientUrl}/signup`,
-        },
+        return ctx.notificationService.notify({
+          to: emailDTO.inviteeEmail,
+          template,
+          data: {
+            inviterName: emailDTO.inviterName,
+            resourceName: emailDTO.title,
+            inviteUrl,
+            signupUrl: `${ctx.config.clientUrl}/signup`,
+          },
+        });
       });
-
+      await Promise.all(notifications);
       return {
         success: true,
-        authorizationIds: result.value.authorizationIds,
+        authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
         errors: [],
       };
     }),
 
     grantUserAuthorizationForAlbum: authenticatedResolver(async (_parent, args, ctx) => {
-      const command: GrantUserAuthorizationForAlbumCommand = {
+      const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
-        albumId: args.input.albumId,
+        entityIds: [args.input.albumId],
         operations: args.input.operations,
-        grantedToHandle: args.input.grantedToHandle,
+        grantedToHandles: args.input.grantedToHandles,
         label: args.input.label ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
       };
@@ -69,27 +70,34 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         };
       }
 
-      const { inviteeEmail, inviterName, albumTitle, tokenOrUserId, isPublicLink } = result.value;
-      const inviteUrl = isPublicLink
-        ? `${ctx.config.clientUrl}/shared/${tokenOrUserId}`
-        : `${ctx.config.clientUrl}/albums/${tokenOrUserId}`;
-      const template = (isPublicLink ? 'public-share' : 'share-invite') as keyof TemplateData;
+      const notifications = result.value.emailDTOs.map((emailDTO) => {
+        const inviteUrl = emailDTO.isPublicLink
+          ? `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`
+          : `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
+        const template = (
+          emailDTO.isPublicLink ? 'publicShare' : 'shareInvite'
+        ) as keyof TemplateData;
 
-      await ctx.notificationService.notify({
-        to: inviteeEmail,
-        template,
-        data: {
-          inviterName,
-          resourceName: albumTitle,
-          inviteUrl,
-          signupUrl: `${ctx.config.clientUrl}/signup`,
-        },
+        return ctx.notificationService.notify({
+          to: emailDTO.inviteeEmail,
+          template,
+          data: {
+            inviterName: emailDTO.inviterName,
+            resourceName: emailDTO.title,
+            inviteUrl,
+            signupUrl: `${ctx.config.clientUrl}/signup`,
+          },
+        });
       });
-      return {
+      await Promise.all(notifications);
+
+      const resultPayload: WriteResult<GrantUserAuthorizationPayload> = {
         success: true,
-        authorizationIds: result.value.authorizationIds,
-        errors: [],
+        value: {
+          authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
+        },
       };
+      return writeResultToPayload(resultPayload);
     }),
   },
 };
