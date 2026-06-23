@@ -25,7 +25,7 @@ const PublicShare = (data: PublicShareData): ReactElement => {
       </Section>
 
       <Section style={{ marginTop: '24px' }}>
-        <Button href={data.publicUrl} style={primaryButton}>
+        <Button href={data.inviteUrl} style={primaryButton}>
           View album
         </Button>
       </Section>
@@ -43,7 +43,7 @@ const PublicShare = (data: PublicShareData): ReactElement => {
 
       <Section style={{ marginTop: '32px' }}>
         <Text style={muted}>If the button doesn’t work, paste this link into your browser:</Text>
-        <Text style={linkFallback}>{data.publicUrl}</Text>
+        <Text style={linkFallback}>{data.inviteUrl}</Text>
       </Section>
     </BaseEmail>
   );

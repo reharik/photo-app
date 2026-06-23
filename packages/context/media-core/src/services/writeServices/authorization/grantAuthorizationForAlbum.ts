@@ -70,9 +70,6 @@ export const build__GrantUserAuthorizationForAlbum = ({
         ]),
       );
     });
-    console.log(`************result************`);
-    console.log(result);
-    console.log(`********END result************`);
     return ok(result);
   };
 };

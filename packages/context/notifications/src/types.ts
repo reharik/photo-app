@@ -27,7 +27,7 @@ export type TemplateData = {
   publicShare: {
     inviterName: string;
     resourceName: string;
-    publicUrl: string;
+    inviteUrl: string;
     signupUrl: string;
   };
 };
