@@ -47,7 +47,6 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
 
   const config = container.resolve('config') as Config;
   const baseGraphQLContextFactory = build__CreateGraphQLContext({
-    container,
     notificationService: noopNotificationService,
     config,
   });

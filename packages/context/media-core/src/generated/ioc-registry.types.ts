@@ -5,18 +5,17 @@ import type { Logger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
-import type {
-  RunInTransaction,
-  WithTransaction,
-} from '../infrastructure/repositories/runInTransaction.js';
+import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
 import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
+import type { ShareContactRepository } from '../repositories/domainRepositories/shareContactRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
 import type { GrantSync } from '../repositories/grantSync.js';
 import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
+import type { ShareContactReadRepository } from '../repositories/readRepositories/shareContactReadRepository.js';
 import type {
   AlbumMemberReadRepository,
   AlbumReadRepository,
@@ -27,7 +26,6 @@ import type {
   PublicAccessReadRepository,
   PublicMediaItemReadRepository,
   ReactionReadRepository,
-  ShareContactRepository,
   SharedWithMeReadRepository,
   UserReadRepository,
 } from '../repositories/readRepositories/types.js';
@@ -128,11 +126,12 @@ export interface IocGeneratedCradle {
     viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   };
   reorderAlbumItems: ReorderAlbumItems;
-  runInTransaction: RunInTransaction;
   setCoverMedia: SetCoverMedia;
+  shareContactReadRepository: ShareContactReadRepository;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
   toggleReaction: ToggleReaction;
+  unitOfWork: UnitOfWork;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;
   updateMediaItemTags: UpdateMediaItemTags;
@@ -146,7 +145,6 @@ export interface IocGeneratedCradle {
   viewerSharedContactsReadService: ViewerSharedContactsReadService;
   viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
   viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
-  withTransaction: WithTransaction;
   writeServices: {
     addAlbumItem: AddAlbumItem;
     addComment: AddComment;
@@ -193,5 +191,6 @@ export interface IocExternals {
  */
 export interface IocScopeProvided {
   publicLinkId: string;
+  uow: UnitOfWork;
   viewerId: string;
 }

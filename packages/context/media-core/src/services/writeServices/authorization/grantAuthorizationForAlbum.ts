@@ -1,10 +1,8 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { ShareContactRepository } from '../../../repositories/readRepositories/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantUserAuthorizationCommand, GrantUserAuthorizationResult } from './grantTypes';
 import { inviteNonUsers, inviteUsers, segregateUsers } from './inviteUsersService';
@@ -17,18 +15,15 @@ type GrantUserAuthorizationForAlbumDeps = {
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
   shareContactRepository: ShareContactRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__GrantUserAuthorizationForAlbum = ({
   albumRepository,
   userRepository,
   shareContactRepository,
-  runInTransaction,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
   return async (
     input: GrantUserAuthorizationCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, entityIds, grantedToHandles } = input;
     const albumId = entityIds[0];
@@ -61,15 +56,13 @@ export const build__GrantUserAuthorizationForAlbum = ({
       return ok(result);
     }
 
-    await runInTransaction(trx, async (db) => {
-      await albumRepository.save(album, db);
-      await Promise.all(
-        existingResult.addedInvitees.flatMap((invitee) => [
-          shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db),
-          shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db),
-        ]),
-      );
-    });
+    await albumRepository.save(album);
+    await Promise.all(
+      existingResult.addedInvitees.flatMap((invitee) => [
+        shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle()),
+        shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle()),
+      ]),
+    );
     return ok(result);
   };
 };

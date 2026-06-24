@@ -1,6 +1,7 @@
 import { Operation } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
-import type { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 
 export type GrantRecord = {
@@ -13,30 +14,34 @@ export type GrantRecord = {
   createdAt: Date;
 };
 
-export type GrantRepository = {
-  createGrant: (grant: GrantRecord, trx: Knex.Transaction) => Promise<void>;
-  createGrants: (grants: GrantRecord[], trx: Knex.Transaction) => Promise<void>;
+export interface GrantRepository extends RequestScopeLifeCycle {
+  createGrant: (grant: GrantRecord) => Promise<void>;
+  createGrants: (grants: GrantRecord[]) => Promise<void>;
   deleteGrantsByAccessGrantAndMediaItem: (
     authorizationIds: EntityId[],
     mediaItemIds: EntityId[],
-    trx: Knex.Transaction,
   ) => Promise<void>;
-  deleteGrantsBySourceId: (sourceId: EntityId, trx: Knex.Transaction) => Promise<void>;
-  deleteGrantsByAlbumId: (albumId: EntityId, trx: Knex.Transaction) => Promise<void>;
-};
+  deleteGrantsBySourceId: (sourceId: EntityId) => Promise<void>;
+  deleteGrantsByAlbumId: (albumId: EntityId) => Promise<void>;
+}
 
-export const build__GrantRepository = (): GrantRepository => ({
-  createGrant: async (grant: GrantRecord, trx: Knex.Transaction): Promise<void> => {
+type GrantRepositoryDeps = {
+  uow: UnitOfWork;
+};
+export const build__GrantRepository = ({ uow }: GrantRepositoryDeps): GrantRepository => ({
+  createGrant: async (grant: GrantRecord): Promise<void> => {
     const input = prepareForDatabase(grant);
-    await trx('grant')
+    await uow
+      ?.db()('grant')
       .insert(input)
       .onConflict(['mediaItemId', 'accessGrantId'])
       .merge(['operations']); // ← only this column updates on conflict;
   },
 
-  createGrants: async (grants: GrantRecord[], trx: Knex.Transaction): Promise<void> => {
+  createGrants: async (grants: GrantRecord[]): Promise<void> => {
     const input = prepareForDatabase(grants);
-    await trx('grant')
+    await uow
+      ?.db()('grant')
       .insert(input)
       .onConflict(['mediaItemId', 'accessGrantId'])
       .merge(['operations']); // ← only this column updates on conflict;
@@ -45,19 +50,19 @@ export const build__GrantRepository = (): GrantRepository => ({
   deleteGrantsByAccessGrantAndMediaItem: async (
     authorizationIds: EntityId[],
     mediaItemIds: EntityId[],
-    trx: Knex.Transaction,
   ): Promise<void> => {
-    await trx('grant')
+    await uow
+      ?.db()('grant')
       .whereIn('accessGrantId', authorizationIds)
       .whereIn('mediaItemId', mediaItemIds)
       .delete();
   },
 
-  deleteGrantsBySourceId: async (sourceId: EntityId, trx: Knex.Transaction): Promise<void> => {
-    await trx('grant').where({ sourceId }).delete();
+  deleteGrantsBySourceId: async (sourceId: EntityId): Promise<void> => {
+    await uow?.db()('grant').where({ sourceId }).delete();
   },
 
-  deleteGrantsByAlbumId: async (albumId: EntityId, trx: Knex.Transaction): Promise<void> => {
-    await trx('grant').where({ sourceAlbumId: albumId }).delete();
+  deleteGrantsByAlbumId: async (albumId: EntityId): Promise<void> => {
+    await uow?.db()('grant').where({ sourceAlbumId: albumId }).delete();
   },
 });

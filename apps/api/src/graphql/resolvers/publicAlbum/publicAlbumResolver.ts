@@ -1,5 +1,5 @@
 import { AlbumItemSortBy, CommentTargetType } from '@packages/contracts';
-import { authenticatedResolver, publicResolver } from '../../context/contextWrappers';
+import { authenticatedReadResolver, publicResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
 
@@ -21,7 +21,7 @@ const publicAlbumResolver: Pick<Resolvers, 'PublicAlbum'> = {
 
       return { nodes, totalCount, pageInfo: collectionInfo.pageInfo };
     }),
-    comments: authenticatedResolver(async (parent, args, ctx) => {
+    comments: authenticatedReadResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       const nodes = await ctx.agnosticReadServices.commentReadService.listComments({
         targetType: CommentTargetType.album,

@@ -7,8 +7,6 @@ import {
   User,
   WriteResult,
 } from '@packages/contracts';
-import { Knex } from 'knex';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import type { EntityId } from '../../../types/types';
@@ -25,27 +23,19 @@ export type ToggleReactionCommand = {
 export type ToggleReactionResult = { targetType: ReactionTargetType; targetId: EntityId };
 
 export interface ToggleReaction extends WriteServiceBase {
-  (
-    command: ToggleReactionCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<ToggleReactionResult>>;
+  (command: ToggleReactionCommand): Promise<WriteResult<ToggleReactionResult>>;
 }
 
 type ToggleReactionDeps = {
   commentRepository: CommentRepository;
   mediaItemRepository: MediaItemRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__ToggleReaction = ({
   commentRepository,
-  runInTransaction,
   mediaItemRepository,
 }: ToggleReactionDeps): ToggleReaction => {
-  return async (
-    command: ToggleReactionCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<ToggleReactionResult>> => {
+  return async (command: ToggleReactionCommand): Promise<WriteResult<ToggleReactionResult>> => {
     const { targetType, targetId, emoji, viewer } = command;
     const newReaction: Reaction = {
       id: crypto.randomUUID(),
@@ -66,18 +56,14 @@ export const build__ToggleReaction = ({
         return fail(AppErrorCollection.reaction.ReactionTargetNotFound);
       }
       mediaItem.toggleReaction(newReaction, viewer.id);
-      await runInTransaction(trx, async (db) => {
-        await mediaItemRepository.save(mediaItem, db);
-      });
+      await mediaItemRepository.save(mediaItem);
     } else {
       const comment = await commentRepository.getById(targetId);
       if (!comment) {
         return fail(AppErrorCollection.reaction.ReactionTargetNotFound);
       }
       comment.toggleReaction(newReaction, viewer.id);
-      await runInTransaction(trx, async (db) => {
-        await commentRepository.save(comment, db);
-      });
+      await commentRepository.save(comment);
     }
 
     return ok({ targetType, targetId });

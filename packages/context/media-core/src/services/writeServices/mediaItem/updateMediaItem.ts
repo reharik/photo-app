@@ -1,9 +1,7 @@
 import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
@@ -12,24 +10,18 @@ import {
 } from './writeMediaItem.types';
 
 export interface UpdateMediaItem extends WriteServiceBase {
-  (
-    input: UpdateMediaItemDetailsCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<UpdateMediaItemDetailsResult>>;
+  (input: UpdateMediaItemDetailsCommand): Promise<WriteResult<UpdateMediaItemDetailsResult>>;
 }
 
 type UpdateMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__UpdateMediaItem = ({
   mediaItemRepository,
-  runInTransaction,
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (
     input: UpdateMediaItemDetailsCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<UpdateMediaItemDetailsResult>> => {
     const { viewerId, mediaItemId, takenAt } = input;
 
@@ -59,7 +51,7 @@ export const build__UpdateMediaItem = ({
     if (!updateResult.success) {
       return updateResult;
     }
-    await runInTransaction(trx, async (db) => await mediaItemRepository.save(mediaItem, db));
+    await mediaItemRepository.save(mediaItem);
 
     return ok({
       mediaItemId: mediaItem.id(),

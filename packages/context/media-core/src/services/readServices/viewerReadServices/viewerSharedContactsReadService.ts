@@ -1,7 +1,5 @@
-import {
-  ShareContactRepository,
-  ShareContactSuggestion,
-} from '../../../repositories/readRepositories/types';
+import { ShareContactReadRepository } from '../../../repositories/readRepositories/shareContactReadRepository';
+import { ShareContactSuggestion } from '../../../repositories/readRepositories/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 
 export interface ViewerSharedContactsReadService extends ReadServiceBase {
@@ -9,17 +7,17 @@ export interface ViewerSharedContactsReadService extends ReadServiceBase {
 }
 
 type ViewerSharedContactsReadServiceDeps = {
-  shareContactRepository: ShareContactRepository;
+  shareContactReadRepository: ShareContactReadRepository;
   viewerId: string;
 };
 
 export const build__ViewerSharedContactsReadService = ({
-  shareContactRepository,
+  shareContactReadRepository,
   viewerId,
 }: ViewerSharedContactsReadServiceDeps): ViewerSharedContactsReadService => {
   return {
     getShareContacts: async (): Promise<ShareContactSuggestion[]> => {
-      return shareContactRepository.getShareSuggestions(viewerId);
+      return shareContactReadRepository.getShareSuggestions(viewerId);
     },
   };
 };

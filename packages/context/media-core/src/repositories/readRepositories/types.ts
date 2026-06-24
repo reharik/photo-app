@@ -203,16 +203,6 @@ export type ShareContactRow = {
   lastSharedAt: Date;
 };
 
-export type ShareContactRepository = {
-  upsertContact: (
-    userId: EntityId,
-    contactUserId: EntityId,
-    handle: string,
-    trx: Knex.Transaction,
-  ) => Promise<void>;
-  getShareSuggestions: (userId: EntityId) => Promise<ShareContactSuggestion[]>;
-};
-
 export type SharedWithMeMediaItemRow = NamespacedMediaItemRow & {
   grantId: EntityId;
   sharedBy: EntityId;

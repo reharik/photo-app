@@ -2,13 +2,13 @@ import type {
   CreatePublicLinkForAlbumCommand,
   CreatePublicLinkForMediaItemsCommand,
 } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
 const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    createPublicLinkForAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+    createPublicLinkForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: CreatePublicLinkForAlbumCommand = {
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
@@ -30,7 +30,7 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       };
     }),
 
-    createPublicLinkForMediaItems: authenticatedResolver(async (_parent, args, ctx) => {
+    createPublicLinkForMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: CreatePublicLinkForMediaItemsCommand = {
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,

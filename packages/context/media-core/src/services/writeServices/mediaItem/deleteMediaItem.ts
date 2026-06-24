@@ -1,10 +1,8 @@
 import { ok, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
@@ -13,17 +11,13 @@ import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMed
 import { DeleteMediaItemCommand, DeleteMediaItemResult } from './writeMediaItem.types';
 
 export interface DeleteMediaItem extends WriteServiceBase {
-  (
-    input: DeleteMediaItemCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<DeleteMediaItemResult>>;
+  (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>>;
 }
 
 type DeleteMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
-  runInTransaction: RunInTransaction;
   mediaStorage: MediaStorage;
 };
 
@@ -31,13 +25,9 @@ export const build__DeleteMediaItem = ({
   mediaItemRepository,
   albumRepository,
   albumReadRepository,
-  runInTransaction,
   mediaStorage,
 }: DeleteMediaItemDeps): DeleteMediaItem => {
-  return async (
-    input: DeleteMediaItemCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<DeleteMediaItemResult>> => {
+  return async (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>> => {
     const { viewerId, mediaItemId } = input;
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
     if (!getResult.success) {
@@ -48,18 +38,13 @@ export const build__DeleteMediaItem = ({
     if (!ensureResult.success) {
       return ensureResult;
     }
-    await runInTransaction(
-      trx,
-      async (db) =>
-        await deleteViewerOwnedMediaItemsFromLibraryInTransaction({
-          viewerId,
-          mediaItems: [mediaItem],
-          albumReadRepository,
-          albumRepository,
-          mediaItemRepository,
-          trx: db,
-        }),
-    );
+    await deleteViewerOwnedMediaItemsFromLibraryInTransaction({
+      viewerId,
+      mediaItems: [mediaItem],
+      albumReadRepository,
+      albumRepository,
+      mediaItemRepository,
+    });
 
     await deleteStoredAssetsForMediaItems(mediaStorage, [mediaItem]);
 

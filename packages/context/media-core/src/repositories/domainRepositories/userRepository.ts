@@ -1,20 +1,21 @@
-import type { Knex } from 'knex';
 import type { UserRecord } from '../../domain/User/User';
 import { User } from '../../domain/User/User';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import { persist } from './AggregateRepo';
 
-export type UserRepository = {
+export interface UserRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<User | undefined>;
   getByHandle: (handle: string) => Promise<User | undefined>;
-  save: (user: User, trx: Knex.Transaction) => Promise<void>;
-};
+  save: (user: User) => Promise<void>;
+}
 
-type UserRepositoryDeps = { database: Knex };
+type UserRepositoryDeps = { uow: UnitOfWork };
 
-export const build__UserRepository = ({ database }: UserRepositoryDeps): UserRepository => {
+export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserRepository => {
   const getById = async (id: EntityId): Promise<User | undefined> => {
-    const userRow = await database<UserRecord>('user').where({ id }).first();
+    const userRow = await uow.db()<UserRecord>('user').where({ id }).first();
 
     if (!userRow) {
       return;
@@ -25,7 +26,7 @@ export const build__UserRepository = ({ database }: UserRepositoryDeps): UserRep
 
   const getByHandle = async (handle: string): Promise<User | undefined> => {
     // using email for handle for now.
-    const userRow = await database<UserRecord>('user').where({ email: handle }).first();
+    const userRow = await uow.db()<UserRecord>('user').where({ email: handle }).first();
 
     if (!userRow) {
       return;
@@ -34,8 +35,8 @@ export const build__UserRepository = ({ database }: UserRepositoryDeps): UserRep
     return User.rehydrate(userRow);
   };
 
-  const save = async (user: User, trx: Knex.Transaction): Promise<void> => {
-    await persist(trx, user);
+  const save = async (user: User): Promise<void> => {
+    await persist(user, uow);
   };
 
   return {

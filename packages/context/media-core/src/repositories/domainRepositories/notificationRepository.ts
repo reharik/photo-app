@@ -1,24 +1,25 @@
 import { NotificationKindEnum } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 import type { NotificationRecord } from '../../domain/Notification/Notification';
 import { Notification } from '../../domain/Notification/Notification';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import { persist } from './AggregateRepo';
 
-export type NotificationRepository = {
+export interface NotificationRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<Notification | undefined>;
-  save: (notification: Notification, trx: Knex.Transaction) => Promise<void>;
-};
+  save: (notification: Notification) => Promise<void>;
+}
 
-type NotificationRepositoryDeps = { database: Knex };
+type NotificationRepositoryDeps = { uow: UnitOfWork };
 
 export const build__NotificationRepository = ({
-  database,
+  uow,
 }: NotificationRepositoryDeps): NotificationRepository => {
   const getById = async (id: EntityId): Promise<Notification | undefined> => {
     const notificationRow = await withEnumRevival(
-      database<NotificationRecord>('notification').where({ id }).first(),
+      uow.db()<NotificationRecord>('notification').where({ id }).first(),
       { notificationKind: NotificationKindEnum },
       { strict: true },
     );
@@ -30,8 +31,8 @@ export const build__NotificationRepository = ({
     return Notification.rehydrate(notificationRow);
   };
 
-  const save = async (notification: Notification, trx: Knex.Transaction): Promise<void> => {
-    await persist(trx, notification);
+  const save = async (notification: Notification): Promise<void> => {
+    await persist(notification, uow);
   };
 
   return {

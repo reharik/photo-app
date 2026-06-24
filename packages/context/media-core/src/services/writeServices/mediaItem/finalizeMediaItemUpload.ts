@@ -6,13 +6,11 @@ import {
   ok,
   WriteResult,
 } from '@packages/contracts';
-import { Knex } from 'knex';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/MediaProcessingJob/MediaProcessingJobRepository';
 
@@ -30,18 +28,15 @@ type FinalizeMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,
-  runInTransaction,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<FinalizeMediaItemUploadResult>> => {
     const { viewerId, mediaItemId } = input;
     const mediaItem = await mediaItemRepository.getById(mediaItemId);
@@ -82,9 +77,7 @@ export const build__FinalizeMediaItemUpload = ({
       return finalized;
     }
 
-    await runInTransaction(trx, async (db) => {
-      await mediaItemRepository.save(mediaItem, db);
-    });
+    await mediaItemRepository.save(mediaItem);
 
     if (mediaItem.kind().equals(MediaKind.photo)) {
       await mediaProcessingJobRepository.enqueueIfNoneActive({

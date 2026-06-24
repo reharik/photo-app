@@ -25,6 +25,7 @@ export default defineIocConfig({
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },
+
   registrations: {
     Knex: {
       $contract: { accessKey: 'database' },

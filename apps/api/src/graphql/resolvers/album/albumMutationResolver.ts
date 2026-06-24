@@ -1,5 +1,5 @@
 import type { AddMediaItemsToAlbumCommand, ReorderAlbumItemsCommand } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type {
   MutationAddMediaItemsToAlbumArgs,
   MutationReorderAlbumItemsArgs,
@@ -9,7 +9,7 @@ import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const albumResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    createAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+    createAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createAlbum({
         viewerId: ctx.viewer.id,
         title: args.input.title,
@@ -19,7 +19,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       return writeResultToPayload(result);
     }),
 
-    AddMediaItemsToAlbum: authenticatedResolver(
+    AddMediaItemsToAlbum: authenticatedWriteResolver(
       async (_parent, args: MutationAddMediaItemsToAlbumArgs, ctx) => {
         const command: AddMediaItemsToAlbumCommand = {
           viewerId: ctx.viewer.id,
@@ -31,7 +31,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         return writeResultToPayload(result);
       },
     ),
-    ReorderAlbumItems: authenticatedResolver(
+    ReorderAlbumItems: authenticatedWriteResolver(
       async (_parent, args: MutationReorderAlbumItemsArgs, ctx) => {
         const command: ReorderAlbumItemsCommand = {
           viewerId: ctx.viewer.id,
@@ -42,7 +42,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         return writeResultToPayload(result);
       },
     ),
-    DeleteAlbumItemsFromAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+    DeleteAlbumItemsFromAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteAlbumItems({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
@@ -52,7 +52,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       return writeResultToPayload(result);
     }),
 
-    SetCoverMedia: authenticatedResolver(async (_parent, args, ctx) => {
+    SetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.setCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
@@ -60,7 +60,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       });
       return writeResultToPayload(result);
     }),
-    UnsetCoverMedia: authenticatedResolver(async (_parent, args, ctx) => {
+    UnsetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.unsetCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,

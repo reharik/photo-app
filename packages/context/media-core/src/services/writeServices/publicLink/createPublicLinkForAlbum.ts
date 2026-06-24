@@ -1,7 +1,5 @@
 import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -18,24 +16,18 @@ export type CreatePublicLinkResponse = {
 };
 
 export interface CreatePublicLinkForAlbum extends WriteServiceBase {
-  (
-    input: CreatePublicLinkForAlbumCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (input: CreatePublicLinkForAlbumCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForAlbumDeps = {
   albumRepository: AlbumRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__CreatePublicLinkForAlbum = ({
   albumRepository,
-  runInTransaction,
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
     input: CreatePublicLinkForAlbumCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<CreatePublicLinkResponse>> => {
     const loadedAlbum = await loadRequiredAlbum(input.albumId, albumRepository);
     if (!loadedAlbum.success) {
@@ -53,9 +45,7 @@ export const build__CreatePublicLinkForAlbum = ({
     }
     const publicLink = publicLinkResult.value;
 
-    await runInTransaction(trx, async (db) => {
-      await albumRepository.save(album, db);
-    });
+    await albumRepository.save(album);
     return ok({ token: publicLink.linkToken() });
   };
 };

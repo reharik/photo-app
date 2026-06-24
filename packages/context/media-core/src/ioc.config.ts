@@ -17,10 +17,19 @@ export default defineIocConfig({
     ],
     factoryPrefix: 'build__',
   },
+  registrations: {
+    UnitOfWork: {
+      $contract: { accessKey: 'unitOfWork' },
+      unitOfWork: { lifetime: 'transient' },
+    },
+    GrantSync: {
+      grantSync: { lifetime: 'scoped' },
+    },
+  },
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },
-  scopeProvided: ['viewerId', 'publicLinkId'],
+  scopeProvided: ['viewerId', 'publicLinkId', 'uow'],
   groups: {
     publicReadServices: {
       kind: 'object',

@@ -8,12 +8,7 @@ import {
   User,
   WriteResult,
 } from '@packages/contracts';
-import { Knex } from 'knex';
 import { Comment } from '../../../domain';
-import {
-  unwrapOrThrow,
-  WithTransaction,
-} from '../../../infrastructure/repositories/runInTransaction';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
@@ -50,7 +45,6 @@ type AddCommentDeps = {
   userReadRepository: UserReadRepository;
   validateOperationService: ValidateOperationService;
   toggleReaction: ToggleReaction;
-  withTransaction: WithTransaction;
 };
 
 export const build__AddComment = ({
@@ -58,12 +52,8 @@ export const build__AddComment = ({
   userReadRepository,
   validateOperationService,
   toggleReaction,
-  withTransaction,
 }: AddCommentDeps): AddComment => {
-  return async (
-    command: AddCommentCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
       viewerId: command.authorId,
@@ -99,20 +89,14 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      return await withTransaction(trx, async (db) => {
-        await commentRepository.save(comment, db);
-        const result = await toggleReaction(
-          {
-            targetType: ReactionTargetType.mediaItem,
-            targetId: command.targetId,
-            emoji: ReactionEmoji.comment,
-            viewer: command.viewer,
-          },
-          db,
-        );
-        unwrapOrThrow(result);
-        return ok({ entityId: comment.id() });
+      await commentRepository.save(comment);
+      await toggleReaction({
+        targetType: ReactionTargetType.mediaItem,
+        targetId: command.targetId,
+        emoji: ReactionEmoji.comment,
+        viewer: command.viewer,
       });
+      return ok({ entityId: comment.id() });
     } else {
       // TODO: Look up viewer's display_name and avatar_url from the user table and
       //   snapshot them into the row (denormalized — do not join through user on reads).
@@ -129,20 +113,14 @@ export const build__AddComment = ({
         command.authorId,
       );
 
-      return await withTransaction(trx, async (db) => {
-        await commentRepository.save(comment, db);
-        const result = await toggleReaction(
-          {
-            targetType: ReactionTargetType.mediaItem,
-            targetId: command.targetId,
-            emoji: ReactionEmoji.comment,
-            viewer: command.viewer,
-          },
-          db,
-        );
-        unwrapOrThrow(result);
-        return ok({ entityId: comment.id() });
+      await commentRepository.save(comment);
+      await toggleReaction({
+        targetType: ReactionTargetType.mediaItem,
+        targetId: command.targetId,
+        emoji: ReactionEmoji.comment,
+        viewer: command.viewer,
       });
+      return ok({ entityId: comment.id() });
     }
   };
 };

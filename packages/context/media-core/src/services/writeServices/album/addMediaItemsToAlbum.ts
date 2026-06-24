@@ -1,13 +1,11 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
-import { Knex } from 'knex';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
   loadRequiredAlbum,
   loadRequiredReadOnlyMediaItems,
 } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
@@ -15,26 +13,20 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddMediaItemsToAlbumCommand, AddMediaItemsToAlbumResult } from './writeAlbum.types';
 
 export interface AddMediaItemsToAlbum extends WriteServiceBase {
-  (
-    input: AddMediaItemsToAlbumCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<AddMediaItemsToAlbumResult>>;
+  (input: AddMediaItemsToAlbumCommand): Promise<WriteResult<AddMediaItemsToAlbumResult>>;
 }
 
 type AddMediaItemsToAlbumDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
-  runInTransaction,
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {
   return async (
     input: AddMediaItemsToAlbumCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<AddMediaItemsToAlbumResult>> => {
     const { viewerId, newAlbum } = input;
     const mediaItemIds = dedupeIds(input.mediaItemIds);
@@ -84,7 +76,7 @@ export const build__AddMediaItemsToAlbum = ({
       albumItemIds.push(append.value.id());
     }
 
-    await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
+    await albumRepository.save(album);
 
     return ok({
       albumId: album.id(),

@@ -1,10 +1,10 @@
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
 const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    deleteAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+    deleteAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteAlbum({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,

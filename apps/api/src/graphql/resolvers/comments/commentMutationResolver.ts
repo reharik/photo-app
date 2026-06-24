@@ -3,13 +3,13 @@ import type {
   DeleteCommentCommand,
   EditCommentCommand,
 } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    addComment: authenticatedResolver(async (_parent, args, ctx) => {
+    addComment: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: AddCommentCommand = {
         authorId: ctx.viewer.id,
         targetType: args.input.targetType,
@@ -23,7 +23,7 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       return writeResultToPayload(result);
     }),
 
-    editComment: authenticatedResolver(async (_parent, args, ctx) => {
+    editComment: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: EditCommentCommand = {
         authorId: ctx.viewer.id,
         commentId: args.input.commentId,
@@ -34,7 +34,7 @@ const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       return writeResultToPayload(result);
     }),
 
-    deleteComment: authenticatedResolver(async (_parent, args, ctx) => {
+    deleteComment: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: DeleteCommentCommand = {
         authorId: ctx.viewer.id,
         commentId: args.input.commentId,

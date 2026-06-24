@@ -6,7 +6,6 @@ import {
 } from '../../../application/support/resourceLoaders';
 
 import { ok, WriteResult } from '@packages/contracts';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 
@@ -20,18 +19,13 @@ export interface AddAlbumItem extends WriteServiceBase {
 type AddAlbumItemDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
-  runInTransaction,
 }: AddAlbumItemDeps): AddAlbumItem => {
-  return async (
-    input: AddAlbumItemCommand,
-    trx: Knex.Transaction,
-  ): Promise<WriteResult<AddAlbumItemResult>> => {
+  return async (input: AddAlbumItemCommand): Promise<WriteResult<AddAlbumItemResult>> => {
     const { viewerId, albumId, mediaItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {
@@ -49,7 +43,7 @@ export const build__AddAlbumItem = ({
       return r3;
     }
     const albumItem = r3.value;
-    await runInTransaction(trx, async (db) => await albumRepository.save(album, db));
+    await albumRepository.save(album);
 
     return ok({
       albumId: album.id(),

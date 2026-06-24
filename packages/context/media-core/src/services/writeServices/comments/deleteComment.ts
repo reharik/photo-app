@@ -1,6 +1,4 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -16,17 +14,10 @@ export interface DeleteComment extends WriteServiceBase {
 
 type DeleteCommentDeps = {
   commentRepository: CommentRepository;
-  runInTransaction: RunInTransaction;
 };
 
-export const build__DeleteComment = ({
-  commentRepository,
-  runInTransaction,
-}: DeleteCommentDeps): DeleteComment => {
-  return async (
-    command: DeleteCommentCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<{ entityId: EntityId }>> => {
+export const build__DeleteComment = ({ commentRepository }: DeleteCommentDeps): DeleteComment => {
+  return async (command: DeleteCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
     const comment = await commentRepository.getById(command.commentId);
     if (!comment) {
       return fail(AppErrorCollection.comment.CommentNotFound);
@@ -35,9 +26,7 @@ export const build__DeleteComment = ({
       return fail(AppErrorCollection.comment.CanNotDeleteComment);
     }
     comment.markDeleted(command.authorId);
-    await runInTransaction(trx, async (db) => {
-      await commentRepository.save(comment, db);
-    });
+    await commentRepository.save(comment);
     return ok({ entityId: comment.id() });
   };
 };

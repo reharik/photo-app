@@ -8,11 +8,18 @@ import {
   type AppCradle,
 } from './di/generated/ioc-composed.js';
 
+export type UnitOfWork = {
+  start: () => Promise<void>;
+  commit: () => Promise<void>;
+  rollback: () => Promise<void>;
+};
+
 export type Cradle = AppCradle & {
   container: AwilixContainer<AppCradle>;
   viewerId: EntityId;
   viewer: User;
   publicLinkId: EntityId;
+  uow: UnitOfWork;
 };
 
 export const createAppContainer = (): AwilixContainer<Cradle> => {

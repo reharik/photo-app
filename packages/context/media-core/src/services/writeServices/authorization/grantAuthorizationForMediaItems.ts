@@ -1,17 +1,15 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { dedupeIds, Logger } from '@packages/infrastructure';
-import { Knex } from 'knex';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Authorization } from '../../../domain';
 import { Album } from '../../../domain/Album/Album';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { GrantRepository } from '../../../repositories/domainRepositories/grantRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
+import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { ShareContactRepository } from '../../../repositories/readRepositories/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   GrantEmailDTO,
@@ -30,7 +28,6 @@ type GrantAuthorizationForMediaItemsDeps = {
   userRepository: UserRepository;
   grantRepository: GrantRepository;
   shareContactRepository: ShareContactRepository;
-  runInTransaction: RunInTransaction;
   albumRepository: AlbumRepository;
   logger: Logger;
 };
@@ -44,13 +41,11 @@ export const build__GrantAuthorizationForMediaItems = ({
   userRepository,
   grantRepository,
   shareContactRepository,
-  runInTransaction,
   albumRepository,
   logger,
 }: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
   return async (
     input: GrantUserAuthorizationCommand,
-    trx?: Knex.Transaction,
   ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
     const { viewerId, grantedToHandles, label } = input;
     const dedupedIds = dedupeIds(input.entityIds);
@@ -96,9 +91,7 @@ export const build__GrantAuthorizationForMediaItems = ({
       });
       nonExistingResult = inviteNonUsers(nonExisting, album, input, album.title(), granter);
       if (!nonExistingResult.publicLinkFailure) {
-        await runInTransaction(trx, async (db) => {
-          await albumRepository.save(album, db);
-        });
+        await albumRepository.save(album);
       }
     }
 
@@ -112,28 +105,23 @@ export const build__GrantAuthorizationForMediaItems = ({
       });
     }
 
-    await runInTransaction(trx, async (db) => {
-      for (const { mediaItem, authorization } of existingResult.grants) {
-        await mediaItemRepository.save(mediaItem, db);
-        await grantRepository.createGrant(
-          {
-            id: crypto.randomUUID(),
-            mediaItemId: mediaItem.id(),
-            accessGrantId: authorization.id(),
-            grantedToUser: authorization.grantedToUser(),
-            operations: authorization.operations(),
-            createdAt: new Date(),
-          },
-          db,
-        );
-      }
-      await Promise.all(
-        existingResult.addedInvitees.flatMap((invitee) => [
-          shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle(), db),
-          shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle(), db),
-        ]),
-      );
-    });
+    for (const { mediaItem, authorization } of existingResult.grants) {
+      await mediaItemRepository.save(mediaItem);
+      await grantRepository.createGrant({
+        id: crypto.randomUUID(),
+        mediaItemId: mediaItem.id(),
+        accessGrantId: authorization.id(),
+        grantedToUser: authorization.grantedToUser(),
+        operations: authorization.operations(),
+        createdAt: new Date(),
+      });
+    }
+    await Promise.all(
+      existingResult.addedInvitees.flatMap((invitee) => [
+        shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle()),
+        shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle()),
+      ]),
+    );
 
     if (existingResult.errorDetail.length) {
       logger.warn('partial media grant', {

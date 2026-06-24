@@ -236,7 +236,7 @@ export const build__ProcessNextMediaImageJob = ({
         result: captureResult.kind === 'applied' ? 'applied' : `skipped:${captureResult.reason}`,
       });
 
-      await database.transaction(async (trx) => await mediaItemRepository.save(mediaItem, trx));
+      await mediaItemRepository.save(mediaItem);
       await finishSucceeded();
       logger.info('Media image processing job succeeded', {
         jobId: job.id,

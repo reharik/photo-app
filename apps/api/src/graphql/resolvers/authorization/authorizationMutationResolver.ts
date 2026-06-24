@@ -1,14 +1,14 @@
 import { WriteResult } from '@packages/contracts';
 import { GrantUserAuthorizationCommand } from '@packages/media-core';
 import { TemplateData } from '@packages/notifications';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { GrantUserAuthorizationPayload, Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    grantUserAuthorizationsForMediaItems: authenticatedResolver(async (_parent, args, ctx) => {
+    grantUserAuthorizationsForMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
         entityIds: args.input.mediaItemIds,
@@ -52,7 +52,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       };
     }),
 
-    grantUserAuthorizationForAlbum: authenticatedResolver(async (_parent, args, ctx) => {
+    grantUserAuthorizationForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
         entityIds: [args.input.albumId],

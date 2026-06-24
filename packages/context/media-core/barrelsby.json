@@ -4,7 +4,8 @@
     "./src/repositories",
     "./src/services",
     "./src/domain",
-    "./src/types"
+    "./src/types",
+    "./src/infrastructure"
   ],
   "location": "top",
   "structure": "flat",

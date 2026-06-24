@@ -4,7 +4,7 @@ import {
   SharedWithMeAlbumSortBy,
   SharedWithMeMediaItemSortBy,
 } from '@packages/contracts';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedReadResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { ViewerParent } from '../parentModels';
 import { standardizeCollectionInput } from '../standardizeInput';
@@ -12,14 +12,14 @@ import { standardizeCollectionInput } from '../standardizeInput';
 const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
   Query: {
     viewer: (_p, _a, ctx): ViewerParent | undefined => {
-      if (ctx.kind !== 'authenticated') {
+      if (ctx.kind !== 'authenticatedRead' && ctx.kind !== 'authenticatedWrite') {
         return undefined;
       }
       return ctx.viewer;
     },
   },
   Viewer: {
-    albums: authenticatedResolver(async (_parent, { input }, ctx) => {
+    albums: authenticatedReadResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<AlbumSortBy>(input.collectionInfo);
       const albumsRows =
         (await ctx.readServices.viewerAlbumReadService.listAlbums(collectionInfo)) || [];
@@ -30,16 +30,16 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         totalCount: albumsRows.totalCount,
       };
     }),
-    album: authenticatedResolver(async (_parent, { id }, ctx) => {
+    album: authenticatedReadResolver(async (_parent, { id }, ctx) => {
       return ctx.readServices.viewerAlbumReadService.getAlbum(id);
     }),
-    mediaItem: authenticatedResolver(async (_parent, { id }, ctx) => {
+    mediaItem: authenticatedReadResolver(async (_parent, { id }, ctx) => {
       return await ctx.readServices.viewerMediaItemReadService.getMediaItemForViewer({
         mediaItemId: id,
       });
     }),
 
-    mediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
+    mediaItems: authenticatedReadResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<MediaItemSortBy>(input.collectionInfo);
       const mediaItemsResult =
         await ctx.readServices.viewerMediaItemReadService.listMediaItems(collectionInfo);
@@ -51,10 +51,10 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         pageInfo: collectionInfo.pageInfo,
       };
     }),
-    shareContacts: authenticatedResolver(async (_parent, _args, ctx) => {
+    shareContacts: authenticatedReadResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerSharedContactsReadService.getShareContacts();
     }),
-    sharedWithMeMediaItems: authenticatedResolver(async (_parent, { input }, ctx) => {
+    sharedWithMeMediaItems: authenticatedReadResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<SharedWithMeMediaItemSortBy>(
         input.collectionInfo,
       );
@@ -68,7 +68,7 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         pageInfo: collectionInfo.pageInfo,
       };
     }),
-    sharedWithMeAlbums: authenticatedResolver(async (_parent, { input }, ctx) => {
+    sharedWithMeAlbums: authenticatedReadResolver(async (_parent, { input }, ctx) => {
       const collectionInfo = standardizeCollectionInput<SharedWithMeAlbumSortBy>(
         input.collectionInfo,
       );

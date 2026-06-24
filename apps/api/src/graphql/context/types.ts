@@ -11,28 +11,41 @@ type WriteServices = AppCradle['writeServices'];
 type AgnosticReadServices = AppCradle['agnosticReadServices'];
 
 type GraphQLContextShared = {
-  agnosticReadServices: AgnosticReadServices;
   config: Config;
 };
 
-export type AuthenticatedGraphQLContext = GraphQLContextShared & {
-  kind: 'authenticated';
-  viewer: User;
-  writeServices: WriteServices;
+export type AuthenticatedReadGraphQLContext = InitialAuthenticated & {
   readServices: ReadServices;
-  notificationService: NotificationService;
+  agnosticReadServices: AgnosticReadServices;
 };
 
-export type PublicGraphQLContext = GraphQLContextShared & {
-  kind: 'public';
+export type AuthenticatedWriteGraphQLContext = InitialAuthenticated & {
+  writeServices: WriteServices;
+};
+
+export type PublicGraphQLContext = InitialPublic & {
   publicReadServices: PublicReadServices;
+  agnosticReadServices: AgnosticReadServices;
+};
+
+export type InitialPublic = GraphQLContextShared & {
+  kind: 'public';
   publicLinkId: string;
 };
 
-export type GraphQLContext = AuthenticatedGraphQLContext | PublicGraphQLContext;
+export type InitialAuthenticated = GraphQLContextShared & {
+  kind: 'authenticated' | 'authenticatedRead' | 'authenticatedWrite';
+  viewer: User;
+  notificationService: NotificationService;
+};
+
+export type GraphQLContext =
+  | AuthenticatedReadGraphQLContext
+  | AuthenticatedWriteGraphQLContext
+  | PublicGraphQLContext;
 
 export type GraphQLInitialContext = YogaInitialContext & Koa.Context;
 
 export interface GraphQLContextFactory {
-  (initialContext: GraphQLInitialContext): AuthenticatedGraphQLContext | PublicGraphQLContext;
+  (initialContext: GraphQLInitialContext): InitialAuthenticated | InitialPublic;
 }

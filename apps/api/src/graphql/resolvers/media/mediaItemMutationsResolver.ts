@@ -2,7 +2,7 @@ import type {
   UpdateMediaItemDetailsCommand,
   UpdateMediaItemTagsCommand,
 } from '@packages/media-core';
-import { authenticatedResolver } from '../../context/contextWrappers';
+import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type {
   MutationUpdateMediaItemDetailsArgs,
   MutationUpdateMediaItemTagsArgs,
@@ -13,7 +13,7 @@ import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
-    createMediaUpload: authenticatedResolver(async (_parent, args, ctx) => {
+    createMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createMediaUpload({
         viewerId: ctx.viewer.id,
         kind: args.input.kind,
@@ -41,7 +41,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
       };
     }),
 
-    finalizeMediaUpload: authenticatedResolver(async (_parent, args, ctx) => {
+    finalizeMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.finalizeMediaItemUpload({
         viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
@@ -61,7 +61,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
       //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
       // };
     }),
-    deleteMediaItem: authenticatedResolver(async (_parent, args, ctx) => {
+    deleteMediaItem: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteMediaItem({
         viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
@@ -69,14 +69,14 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
 
       return writeResultToPayload(result);
     }),
-    deleteMediaItems: authenticatedResolver(async (_parent, args, ctx) => {
+    deleteMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteMediaItems({
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
       });
       return writeResultToPayload(result);
     }),
-    updateMediaItemDetails: authenticatedResolver(
+    updateMediaItemDetails: authenticatedWriteResolver(
       async (_parent, args: MutationUpdateMediaItemDetailsArgs, ctx) => {
         const input = args.input;
         const command: UpdateMediaItemDetailsCommand = {
@@ -88,7 +88,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         return writeResultToPayload(result);
       },
     ),
-    updateMediaItemTags: authenticatedResolver(
+    updateMediaItemTags: authenticatedWriteResolver(
       async (_parent, args: MutationUpdateMediaItemTagsArgs, ctx) => {
         const command: UpdateMediaItemTagsCommand = {
           viewerId: ctx.viewer.id,

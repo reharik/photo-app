@@ -1,14 +1,14 @@
 import { dedupeBy } from '@packages/infrastructure';
-import { Knex } from 'knex';
 import { Album } from '../domain/Album/Album';
 import { AlbumItem } from '../domain/Album/AlbumItem';
 import { Authorization } from '../domain/Authorization/Authorization';
 import { PublicLink } from '../domain/PublicLink/PublicLink';
+import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { GrantRepository } from './domainRepositories/grantRepository';
 
-export type GrantSync = {
-  syncGrants: (album: Album, trx: Knex.Transaction) => Promise<void>;
-};
+export interface GrantSync extends RequestScopeLifeCycle {
+  syncGrants: (album: Album) => Promise<void>;
+}
 
 export type GrantSyncDeps = {
   grantRepository: GrantRepository;
@@ -88,7 +88,7 @@ export const build__GrantSync = ({ grantRepository }: GrantSyncDeps): GrantSync 
   };
 
   return {
-    syncGrants: async (album: Album, trx: Knex.Transaction) => {
+    syncGrants: async (album: Album) => {
       const albumItems = album.childEntities().items.upsert as AlbumItem[];
       const authorizations = (
         album.childEntities().authorizations.upsert as Authorization[]
@@ -116,7 +116,7 @@ export const build__GrantSync = ({ grantRepository }: GrantSyncDeps): GrantSync 
       // builders intentionally overlap on (new item × dirty authz); dedupe resolves it.
       const dedupedGrants = dedupeBy(newGrants, [(x) => x.mediaItemId, (x) => x.accessGrantId]);
       if (dedupedGrants.length > 0) {
-        await grantRepository.createGrants(dedupedGrants, trx);
+        await grantRepository.createGrants(dedupedGrants);
       }
       const removedItems = album.childEntities().items.removed as AlbumItem[];
 
@@ -129,7 +129,6 @@ export const build__GrantSync = ({ grantRepository }: GrantSyncDeps): GrantSync 
       await grantRepository.deleteGrantsByAccessGrantAndMediaItem(
         allAuthorizationIds,
         removedItemIds,
-        trx,
       );
     },
   };

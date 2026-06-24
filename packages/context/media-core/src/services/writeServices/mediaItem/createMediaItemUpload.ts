@@ -1,12 +1,10 @@
 import { AppErrorCollection, fail, MediaAssetKind, ok, WriteResult } from '@packages/contracts';
-import { Knex } from 'knex';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { RunInTransaction } from '../../../infrastructure/repositories/runInTransaction';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -31,19 +29,14 @@ type CreateMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   albumRepository: AlbumRepository;
   mediaStorage: MediaStorage;
-  runInTransaction: RunInTransaction;
 };
 
 export const build__CreateMediaItemUpload = ({
   mediaItemRepository,
   albumRepository,
   mediaStorage,
-  runInTransaction,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
-  return async (
-    input: CreateMediaUploadCommand,
-    trx?: Knex.Transaction,
-  ): Promise<WriteResult<CreateMediaUploadResult>> => {
+  return async (input: CreateMediaUploadCommand): Promise<WriteResult<CreateMediaUploadResult>> => {
     const { viewerId, kind, mimeType, originalFileName, albumId } = input;
     const mediaItem = MediaItem.create(
       {
@@ -66,24 +59,22 @@ export const build__CreateMediaItemUpload = ({
       mimeType,
     });
 
-    return runInTransaction(trx, async (db) => {
-      await mediaItemRepository.save(mediaItem, db);
-      // If albumId is passed that means that we are adding media directly
-      // to the album.
-      if (albumId) {
-        const album = await albumRepository.getById(albumId, db);
-        if (!album) {
-          return fail(AppErrorCollection.album.AlbumNotFound);
-        }
-        album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
-        await albumRepository.save(album, db);
+    await mediaItemRepository.save(mediaItem);
+    // If albumId is passed that means that we are adding media directly
+    // to the album.
+    if (albumId) {
+      const album = await albumRepository.getById(albumId);
+      if (!album) {
+        return fail(AppErrorCollection.album.AlbumNotFound);
       }
-      return ok({
-        mediaItemId: mediaItem.id(),
-        status: mediaItem.status(),
-        uploadTarget,
-        albumId,
-      });
+      album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
+      await albumRepository.save(album);
+    }
+    return ok({
+      mediaItemId: mediaItem.id(),
+      status: mediaItem.status(),
+      uploadTarget,
+      albumId,
     });
   };
 };
