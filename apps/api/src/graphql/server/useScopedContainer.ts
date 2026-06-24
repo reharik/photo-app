@@ -1,3 +1,4 @@
+import { beginUnitOfWorkScope, endUnitOfWork } from '@packages/media-core';
 import { asValue, AwilixContainer } from 'awilix';
 import { DocumentNode, Kind, OperationDefinitionNode } from 'graphql';
 import { isAsyncIterable, type Plugin } from 'graphql-yoga';
@@ -17,27 +18,15 @@ export const useScopedContainer = (
 > => {
   return {
     async onExecute({ args, extendContext }) {
-      const scope = container.createScope();
       const op = getOperationType(args.document, args.operationName);
-      console.log(`************op************`);
-      console.log(op);
-      console.log(`********END op************`);
       if (op !== 'mutation') {
-        console.log(`************"QUERY"************`);
-        console.log('QUERY');
-        console.log(`********END "QUERY"************`);
+        const scope = container.createScope();
         const readContext = createReadContext(args.contextValue, scope);
-
-        console.log(`************readContext************`);
-        console.log(readContext.kind);
-        console.log(`********END readContext************`);
         extendContext(readContext);
         return;
       }
 
-      const unitOfWork = scope.resolve('unitOfWork');
-      await unitOfWork.start(); // await database.transaction()
-      scope.register({ uow: asValue(unitOfWork) });
+      const { scope, unitOfWork } = await beginUnitOfWorkScope(container);
       const writeServices = scope.resolve('writeServices');
       extendContext({ writeServices, kind: 'authenticatedWrite' });
 
@@ -49,11 +38,7 @@ export const useScopedContainer = (
             return;
           }
           // result is now narrowed to SingleExecutionResult — .errors works
-          if (result.errors?.length) {
-            await unitOfWork.rollback();
-          } else {
-            await unitOfWork.commit();
-          }
+          await endUnitOfWork(unitOfWork, !result.errors?.length);
         },
       };
     },

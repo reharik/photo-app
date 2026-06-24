@@ -1,7 +1,7 @@
 import type { Logger } from '@packages/infrastructure';
 
-import type { ProcessNextMediaDeletionJob } from './application/processNextMediaDeletionJob.js';
-import type { ProcessNextMediaImageJob } from './application/processNextMediaImageJob.js';
+import type { RunNextMediaDeletionJob } from './application/processNextMediaDeletionJob.js';
+import type { RunNextMediaImageJob } from './application/processNextMediaImageJob.js';
 import type { Config } from './config.js';
 
 const sleep = (ms: number): Promise<void> =>
@@ -20,15 +20,15 @@ const IDLE_HEARTBEAT_EVERY_CYCLES = 225;
 type RunMediaWorkerLoopDeps = {
   config: Config;
   logger: Logger;
-  processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
-  processNextMediaImageJob: ProcessNextMediaImageJob;
+  runNextMediaDeletionJob: RunNextMediaDeletionJob;
+  runNextMediaImageJob: RunNextMediaImageJob;
 };
 
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
-  processNextMediaDeletionJob,
-  processNextMediaImageJob,
+  runNextMediaDeletionJob,
+  runNextMediaImageJob,
 }: RunMediaWorkerLoopDeps): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
@@ -46,12 +46,12 @@ export const build__RunMediaWorkerLoop = ({
 
     while (!stopRequested) {
       try {
-        const deletionOutcome = await processNextMediaDeletionJob();
+        const deletionOutcome = await runNextMediaDeletionJob();
         if (deletionOutcome === 'processed') {
           idleCycles = 0;
           continue;
         }
-        const imageOutcome = await processNextMediaImageJob();
+        const imageOutcome = await runNextMediaImageJob();
         if (imageOutcome === 'processed') {
           idleCycles = 0;
           continue;

@@ -1,4 +1,4 @@
-import { AwilixContainer, createContainer } from 'awilix';
+import { asValue, AwilixContainer, createContainer, type NameAndRegistrationPair } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
 import type { Knex } from 'knex';
 import {
@@ -19,6 +19,9 @@ const initializeWorkerContainer = (): AwilixContainer<AppCradle> => {
   });
 
   registerIocFromManifest(_container, composedManifests, composedRegistrationOverrides);
+  _container.register({
+    container: asValue(_container),
+  } as NameAndRegistrationPair<AppCradle>);
 
   container = _container;
   return container;

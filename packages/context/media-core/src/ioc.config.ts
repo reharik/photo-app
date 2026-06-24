@@ -22,9 +22,6 @@ export default defineIocConfig({
       $contract: { accessKey: 'unitOfWork' },
       unitOfWork: { lifetime: 'transient' },
     },
-    GrantSync: {
-      grantSync: { lifetime: 'scoped' },
-    },
   },
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',

@@ -3,9 +3,16 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Logger } from '@packages/infrastructure';
 import type { MediaItemRepository, MediaStorage } from '@packages/media-core';
+import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
-import type { ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob.js';
-import type { ProcessNextMediaImageJob } from '../application/processNextMediaImageJob.js';
+import type {
+  ProcessNextMediaDeletionJob,
+  RunNextMediaDeletionJob,
+} from '../application/processNextMediaDeletionJob.js';
+import type {
+  ProcessNextMediaImageJob,
+  RunNextMediaImageJob,
+} from '../application/processNextMediaImageJob.js';
 import type { Config } from '../config.js';
 import type { KnexConfig } from '../knexfile.js';
 import type { MediaDeletionJobRepository } from '../repositories/domainRepositories/mediaDeletionJobRepository.js';
@@ -21,9 +28,12 @@ export interface IocGeneratedCradle {
   processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
   processNextMediaImageJob: ProcessNextMediaImageJob;
   runMediaWorkerLoop: RunMediaWorkerLoop;
+  runNextMediaDeletionJob: RunNextMediaDeletionJob;
+  runNextMediaImageJob: RunNextMediaImageJob;
 }
 
 export interface IocExternals {
+  container: AwilixContainer;
   logger: Logger;
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;

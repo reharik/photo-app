@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Logger } from '@packages/infrastructure';
 
-import type { ProcessNextMediaDeletionJob } from '../application/processNextMediaDeletionJob.js';
-import type { ProcessNextMediaImageJob } from '../application/processNextMediaImageJob.js';
+import type { RunNextMediaDeletionJob } from '../application/processNextMediaDeletionJob.js';
+import type { RunNextMediaImageJob } from '../application/processNextMediaImageJob.js';
 import type { Config } from '../config.js';
 import { build__RunMediaWorkerLoop } from '../runMediaWorkerLoop';
 
@@ -35,20 +35,20 @@ describe('build__RunMediaWorkerLoop', () => {
 
   describe('When a deletion job returns processed', () => {
     it('should poll again immediately without waiting for the interval', async () => {
-      const processNextMediaDeletionJob = jest
-        .fn<ProcessNextMediaDeletionJob>()
+      const runNextMediaDeletionJob = jest
+        .fn<RunNextMediaDeletionJob>()
         .mockResolvedValueOnce('processed')
         .mockResolvedValueOnce('idle');
-      const processNextMediaImageJob = jest
-        .fn<ProcessNextMediaImageJob>()
+      const runNextMediaImageJob = jest
+        .fn<RunNextMediaImageJob>()
         .mockResolvedValue('idle');
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const done = loop.start();
@@ -56,8 +56,8 @@ describe('build__RunMediaWorkerLoop', () => {
         await Promise.resolve();
       }
 
-      expect(processNextMediaDeletionJob).toHaveBeenCalledTimes(2);
-      expect(processNextMediaImageJob).toHaveBeenCalledTimes(1);
+      expect(runNextMediaDeletionJob).toHaveBeenCalledTimes(2);
+      expect(runNextMediaImageJob).toHaveBeenCalledTimes(1);
 
       loop.stop();
       await jest.runOnlyPendingTimersAsync();
@@ -67,10 +67,10 @@ describe('build__RunMediaWorkerLoop', () => {
 
   describe('When a job returns processed', () => {
     it('should poll again immediately without waiting for the interval', async () => {
-      const processNextMediaDeletionJob = jest
+      const runNextMediaDeletionJob = jest
         .fn<ProcessNextMediaDeletionJob>()
         .mockResolvedValue('idle');
-      const processNextMediaImageJob = jest
+      const runNextMediaImageJob = jest
         .fn<ProcessNextMediaImageJob>()
         .mockResolvedValueOnce('processed')
         .mockResolvedValueOnce('idle');
@@ -79,8 +79,8 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const done = loop.start();
@@ -88,8 +88,8 @@ describe('build__RunMediaWorkerLoop', () => {
         await Promise.resolve();
       }
 
-      expect(processNextMediaDeletionJob.mock.calls.length).toBeGreaterThanOrEqual(2);
-      expect(processNextMediaImageJob).toHaveBeenCalledTimes(2);
+      expect(runNextMediaDeletionJob.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(runNextMediaImageJob).toHaveBeenCalledTimes(2);
 
       loop.stop();
       await jest.runOnlyPendingTimersAsync();
@@ -99,10 +99,10 @@ describe('build__RunMediaWorkerLoop', () => {
 
   describe('When jobs stay idle', () => {
     it('should not log heartbeat until many consecutive idle polls', async () => {
-      const processNextMediaDeletionJob = jest
+      const runNextMediaDeletionJob = jest
         .fn<ProcessNextMediaDeletionJob>()
         .mockResolvedValue('idle');
-      const processNextMediaImageJob = jest
+      const runNextMediaImageJob = jest
         .fn<ProcessNextMediaImageJob>()
         .mockResolvedValue('idle');
       const logger = createMockLogger();
@@ -110,8 +110,8 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const done = loop.start();
@@ -130,10 +130,10 @@ describe('build__RunMediaWorkerLoop', () => {
     });
 
     it('should poll on the configured interval until stopped', async () => {
-      const processNextMediaDeletionJob = jest
+      const runNextMediaDeletionJob = jest
         .fn<ProcessNextMediaDeletionJob>()
         .mockResolvedValue('idle');
-      const processNextMediaImageJob = jest
+      const runNextMediaImageJob = jest
         .fn<ProcessNextMediaImageJob>()
         .mockResolvedValue('idle');
       const logger = createMockLogger();
@@ -141,13 +141,13 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const done = loop.start();
       await Promise.resolve();
-      expect(processNextMediaImageJob).toHaveBeenCalled();
+      expect(runNextMediaImageJob).toHaveBeenCalled();
 
       await jest.advanceTimersByTimeAsync(100);
       await Promise.resolve();
@@ -155,7 +155,7 @@ describe('build__RunMediaWorkerLoop', () => {
       await Promise.resolve();
 
       const totalCalls =
-        processNextMediaDeletionJob.mock.calls.length + processNextMediaImageJob.mock.calls.length;
+        runNextMediaDeletionJob.mock.calls.length + runNextMediaImageJob.mock.calls.length;
       expect(totalCalls).toBeGreaterThanOrEqual(3);
 
       loop.stop();
@@ -166,12 +166,12 @@ describe('build__RunMediaWorkerLoop', () => {
     });
   });
 
-  describe('When processNextMediaImageJob throws', () => {
+  describe('When runNextMediaImageJob throws', () => {
     it('should log and continue after the poll interval', async () => {
-      const processNextMediaDeletionJob = jest
+      const runNextMediaDeletionJob = jest
         .fn<ProcessNextMediaDeletionJob>()
         .mockResolvedValue('idle');
-      const processNextMediaImageJob = jest
+      const runNextMediaImageJob = jest
         .fn<ProcessNextMediaImageJob>()
         .mockRejectedValueOnce(new Error('boom'))
         .mockResolvedValue('idle');
@@ -180,8 +180,8 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 50 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const done = loop.start();
@@ -192,7 +192,7 @@ describe('build__RunMediaWorkerLoop', () => {
 
       expect(logger.error).toHaveBeenCalledWith('Media worker loop error', expect.any(Error));
       const totalCalls =
-        processNextMediaDeletionJob.mock.calls.length + processNextMediaImageJob.mock.calls.length;
+        runNextMediaDeletionJob.mock.calls.length + runNextMediaImageJob.mock.calls.length;
       expect(totalCalls).toBeGreaterThanOrEqual(2);
 
       loop.stop();
@@ -203,10 +203,10 @@ describe('build__RunMediaWorkerLoop', () => {
 
   describe('When start is called twice while the loop is already running', () => {
     it('should only log Media worker started once', async () => {
-      const processNextMediaDeletionJob = jest
+      const runNextMediaDeletionJob = jest
         .fn<ProcessNextMediaDeletionJob>()
         .mockResolvedValue('idle');
-      const processNextMediaImageJob = jest
+      const runNextMediaImageJob = jest
         .fn<ProcessNextMediaImageJob>()
         .mockResolvedValue('idle');
       const logger = createMockLogger();
@@ -214,8 +214,8 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10 } as Config,
         logger,
-        processNextMediaDeletionJob,
-        processNextMediaImageJob,
+        runNextMediaDeletionJob,
+        runNextMediaImageJob,
       });
 
       const first = loop.start();
