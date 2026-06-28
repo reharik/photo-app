@@ -5,6 +5,7 @@ import type { Logger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
+import type { DomainEventHandler, EventPublisher } from '../domain/domainEvents/eventPublisher.js';
 import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
@@ -14,7 +15,8 @@ import type { NotificationRepository } from '../repositories/domainRepositories/
 import type { ShareContactRepository } from '../repositories/domainRepositories/shareContactRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
 import type { GrantSync } from '../repositories/grantSync.js';
-import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
+import type { MediaDeletionJobRepository } from '../repositories/mediaDeletionJob/mediaDeletionJobRepository.js';
+import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
 import type { ShareContactReadRepository } from '../repositories/readRepositories/shareContactReadRepository.js';
 import type {
   AlbumMemberReadRepository,
@@ -29,6 +31,12 @@ import type {
   SharedWithMeReadRepository,
   UserReadRepository,
 } from '../repositories/readRepositories/types.js';
+import type { UnseenActivityRepository } from '../repositories/readRepositories/unseenActivityRepository.js';
+import type { SystemAlbumRepository } from '../repositories/systemRepositories/systemAlbumRepository.js';
+import type { SystemAuthorizationRepository } from '../repositories/systemRepositories/systemAuthorizationRepository.js';
+import type { SystemPendingNotificationRepository } from '../repositories/systemRepositories/systemPendingNotificationRepository.js';
+import type { SystemUnseenActivityRepository } from '../repositories/systemRepositories/systemUnseenActivityRepository.js';
+import type { SystemUserRepository } from '../repositories/systemRepositories/systemUserRepository.js';
 import type { CommentReadService } from '../services/readServices/comments/commentReadService.js';
 import type { ValidateOperationService } from '../services/readServices/mediaGrantService.js';
 import type { MediaItemOperationsService } from '../services/readServices/MediaItemOperationsService.js';
@@ -39,6 +47,7 @@ import type { ReadReactionService } from '../services/readServices/readReactionS
 import type { EnrichMediaItems } from '../services/readServices/viewerReadServices/enrichMediaItems.js';
 import type { ViewerAlbumReadService } from '../services/readServices/viewerReadServices/viewerAlbumReadService.js';
 import type { viewerAuthorizationsReadService } from '../services/readServices/viewerReadServices/viewerAuthorizationsReadService.js';
+import type { ViewerHasUnseenActivityService } from '../services/readServices/viewerReadServices/viewerHasUnseenActivityService.js';
 import type { ViewerMediaItemReadService } from '../services/readServices/viewerReadServices/viewerMediaItemReadService.js';
 import type { viewerReactionReadService } from '../services/readServices/viewerReadServices/viewerReactionReadService.js';
 import type { ViewerSharedContactsReadService } from '../services/readServices/viewerReadServices/viewerSharedContactsReadService.js';
@@ -57,6 +66,7 @@ import type { GrantAuthorizationForMediaItems } from '../services/writeServices/
 import type { AddComment } from '../services/writeServices/comments/addComment.js';
 import type { DeleteComment } from '../services/writeServices/comments/deleteComment.js';
 import type { EditComment } from '../services/writeServices/comments/editComment.js';
+import type { MarkActivitySeen } from '../services/writeServices/markActivitySeen.js';
 import type { CreateMediaUpload } from '../services/writeServices/mediaItem/createMediaItemUpload.js';
 import type { DeleteMediaItem } from '../services/writeServices/mediaItem/deleteMediaItem.js';
 import type { DeleteMediaItems } from '../services/writeServices/mediaItem/deleteMediaItems.js';
@@ -92,17 +102,23 @@ export interface IocGeneratedCradle {
   deleteComment: DeleteComment;
   deleteMediaItem: DeleteMediaItem;
   deleteMediaItems: DeleteMediaItems;
+  domainEventHandler: DomainEventHandler;
+  domainEventHandlers: ReadonlyArray<DomainEventHandler>;
   editComment: EditComment;
   enrichMediaItems: EnrichMediaItems;
+  eventPublisher: EventPublisher;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
   grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
   grantReadRepository: GrantReadRepository;
   grantRepository: GrantRepository;
   grantSync: GrantSync;
   grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
+  markActivitySeen: MarkActivitySeen;
+  mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemOperationsService: MediaItemOperationsService;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaItemRepository: MediaItemRepository;
+  mediaProcessingJobRepository: MediaProcessingJobRepository;
   mediaStorage: MediaStorage;
   notificationRepository: NotificationRepository;
   publicAccessReadRepository: PublicAccessReadRepository;
@@ -119,19 +135,28 @@ export interface IocGeneratedCradle {
   readServices: {
     viewerAlbumReadService: ViewerAlbumReadService;
     viewerAuthorizationsReadService: viewerAuthorizationsReadService;
+    viewerHasUnseenActivityService: ViewerHasUnseenActivityService;
     viewerMediaItemReadService: ViewerMediaItemReadService;
     viewerReactionReadService: viewerReactionReadService;
     viewerSharedContactsReadService: ViewerSharedContactsReadService;
     viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
     viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   };
+  recordPendingNotification: DomainEventHandler;
   reorderAlbumItems: ReorderAlbumItems;
   setCoverMedia: SetCoverMedia;
   shareContactReadRepository: ShareContactReadRepository;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
+  systemAlbumRepository: SystemAlbumRepository;
+  systemAuthorizationRepository: SystemAuthorizationRepository;
+  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemUnseenActivityRepository: SystemUnseenActivityRepository;
+  systemUserRepository: SystemUserRepository;
   toggleReaction: ToggleReaction;
   unitOfWork: UnitOfWork;
+  unseenActivityHandler: DomainEventHandler;
+  unseenActivityRepository: UnseenActivityRepository;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;
   updateMediaItemTags: UpdateMediaItemTags;
@@ -140,6 +165,7 @@ export interface IocGeneratedCradle {
   validateOperationService: ValidateOperationService;
   viewerAlbumReadService: ViewerAlbumReadService;
   viewerAuthorizationsReadService: viewerAuthorizationsReadService;
+  viewerHasUnseenActivityService: ViewerHasUnseenActivityService;
   viewerMediaItemReadService: ViewerMediaItemReadService;
   viewerReactionReadService: viewerReactionReadService;
   viewerSharedContactsReadService: ViewerSharedContactsReadService;
@@ -162,6 +188,7 @@ export interface IocGeneratedCradle {
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
     grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
+    markActivitySeen: MarkActivitySeen;
     reorderAlbumItems: ReorderAlbumItems;
     setCoverMedia: SetCoverMedia;
     toggleReaction: ToggleReaction;
@@ -175,7 +202,6 @@ export interface IocExternals {
   config: MediaStorageConfig;
   database: Knex;
   logger: Logger;
-  mediaProcessingJobRepository: MediaProcessingJobRepository;
 }
 
 /**

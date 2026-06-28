@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { CommentTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { ReactNode } from 'react';
 import {
   CommentsForPublicAlbumDocument,
@@ -19,7 +19,7 @@ export type UseCommentsForTargetResult = {
 const PAGE_SIZE = 50;
 
 type Props = {
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: string;
   isPublicAccess: boolean;
 };
@@ -30,12 +30,12 @@ export const useCommentsForTarget = ({
   isPublicAccess,
 }: Props): UseCommentsForTargetResult => {
   const skipViewerMediaItem =
-    isPublicAccess || !targetType.equals(CommentTargetType.mediaItem) || !targetId;
+    isPublicAccess || !targetType.equals(EntityType.mediaItem) || !targetId;
   const skipViewerAlbum =
-    isPublicAccess || !targetType.equals(CommentTargetType.album) || !targetId;
+    isPublicAccess || !targetType.equals(EntityType.album) || !targetId;
   const skipPublicMediaItem =
-    !isPublicAccess || !targetType.equals(CommentTargetType.mediaItem) || !targetId;
-  const skipPublicAlbum = !isPublicAccess || !targetType.equals(CommentTargetType.album);
+    !isPublicAccess || !targetType.equals(EntityType.mediaItem) || !targetId;
+  const skipPublicAlbum = !isPublicAccess || !targetType.equals(EntityType.album);
 
   const viewerMediaItemQuery = useQuery(CommentsForViewerMediaItemDocument, {
     variables: { mediaItemId: targetId, limit: PAGE_SIZE, offset: 0 },

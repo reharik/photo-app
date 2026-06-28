@@ -1,4 +1,5 @@
 import type { ActorId, EntityId } from '../types/types';
+import { DomainEvent, DomainEventKind, EventPayload } from './domainEvents/DomainEvent';
 import { serializeValue } from './utilities/serializeAggregates';
 
 export type ChildRow = {
@@ -35,6 +36,7 @@ export abstract class Entity<
   _isNew: boolean;
   _isDirty: boolean;
   _tableName: string;
+  _events: DomainEvent[] = [];
 
   #createdAt: Date;
   #updatedAt: Date;
@@ -126,5 +128,19 @@ export abstract class Entity<
    */
   protected persistenceExtras(): Record<string, unknown> {
     return {};
+  }
+
+  protected recordEvent<K extends DomainEventKind>(
+    kind: K,
+    payload: Omit<EventPayload<K>, 'kind'>,
+    actorId: EntityId,
+  ): void {
+    this._events.push({ ...payload, kind, occurredAt: new Date(), actorId } as DomainEvent);
+  }
+
+  pullEvents(): DomainEvent[] {
+    const events = [...this._events];
+    this._events = [];
+    return events;
   }
 }

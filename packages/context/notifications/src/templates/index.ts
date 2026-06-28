@@ -1,11 +1,11 @@
 import type { FC } from 'react';
-import type { TemplateData, TemplateName } from '../types.js';
-import Digest, { subject as digestSubject } from './digest.js';
-import ForgotPassword, { subject as forgotPasswordSubject } from './forgotPassword.js';
-import PasswordReset, { subject as passwordResetSubject } from './passwordReset.js';
-import PublicShare, { subject as publicShareSubject } from './publicShare.js';
-import ShareInvite, { subject as shareInviteSubject } from './shareInvite.js';
-import Welcome, { subject as welcomeSubject } from './welcome.js';
+import type { TemplateData, TemplateName } from '../types';
+import AlbumActivity, { subject as albumActivitySubject } from './albumActivity';
+import ForgotPassword, { subject as forgotPasswordSubject } from './forgotPassword';
+import PasswordReset, { subject as passwordResetSubject } from './passwordReset';
+import PublicShare, { subject as publicShareSubject } from './publicShare';
+import ShareInvite, { subject as shareInviteSubject } from './shareInvite';
+import Welcome, { subject as welcomeSubject } from './welcome';
 
 type RegistryEntry<K extends TemplateName> = {
   Component: FC<TemplateData[K]>;
@@ -19,7 +19,7 @@ export type TemplateRegistry = {
 export const templateRegistry: TemplateRegistry = {
   welcome: { Component: Welcome, getSubject: welcomeSubject },
   shareInvite: { Component: ShareInvite, getSubject: shareInviteSubject },
-  digest: { Component: Digest, getSubject: digestSubject },
+  albumActivity: { Component: AlbumActivity, getSubject: albumActivitySubject },
   passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
   forgotPassword: { Component: ForgotPassword, getSubject: forgotPasswordSubject },
   publicShare: { Component: PublicShare, getSubject: publicShareSubject },

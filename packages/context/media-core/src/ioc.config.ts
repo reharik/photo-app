@@ -22,12 +22,19 @@ export default defineIocConfig({
       $contract: { accessKey: 'unitOfWork' },
       unitOfWork: { lifetime: 'transient' },
     },
+    DomainEventHandler: {
+      unseenActivityHandler: { default: true }, // named to satisfy constraint
+    },
   },
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },
   scopeProvided: ['viewerId', 'publicLinkId', 'uow'],
   groups: {
+    domainEventHandlers: {
+      kind: 'collection',
+      baseType: 'DomainEventHandler',
+    },
     publicReadServices: {
       kind: 'object',
       baseType: 'PublicReadServiceBase',

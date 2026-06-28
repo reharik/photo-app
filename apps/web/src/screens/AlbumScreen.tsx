@@ -1,5 +1,5 @@
-import { useQuery } from '@apollo/client/react';
-import { AlbumItemSortBy, SortDir } from '@packages/contracts';
+import { useApolloClient, useQuery } from '@apollo/client/react';
+import { AlbumItemSortBy, EntityType, SortDir } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -10,11 +10,15 @@ import {
   AddMediaItemsToAlbumMutation,
   DeleteAlbumItemsFromAlbumDocument,
   DeleteAlbumItemsFromAlbumMutation,
+  MarkSeenDocument,
+  MarkSeenMutation,
   MediaItemSortBy,
   SetCoverMediaDocument,
   SetCoverMediaMutation,
   ViewerAlbumDetailDocument,
+  ViewerHasUnseenActivityDocument,
   ViewerLibraryDocument,
+  ViewerSharedWithMeAlbumsDocument,
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
@@ -30,6 +34,9 @@ export const AlbumScreen = () => {
   const addToAlbumMutation = useAppMutationState();
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
+  const markSeenMutation = useAppMutationState();
+  const apolloClient = useApolloClient();
+  const markedSeenAlbumIdRef = useRef<string | null>(null);
   const [groupBy, setGroupBy] = useState<AlbumGroupBy>('none');
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
   const sortParamsInitialized = useRef(false);
@@ -87,6 +94,41 @@ export const AlbumScreen = () => {
     void query.refetch(buildPageVariables(0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, sortDir]); // ONLY sort inputs — not query, not buildPageVariables
+
+  // Opening an album = seeing its activity. Fire markSeen once the detail
+  // resolves, once per album. On success, refetch the aggregate nav flag and the
+  // shared-album list so their unseen dots clear. Real failures are logged, not
+  // swallowed — the backend write is live.
+  const loadedAlbumId = albumData?.album?.id;
+  useEffect(() => {
+    if (loadedAlbumId == null || markedSeenAlbumIdRef.current === loadedAlbumId) {
+      return;
+    }
+    markedSeenAlbumIdRef.current = loadedAlbumId;
+
+    void (async () => {
+      const result = await markSeenMutation.execute(
+        {
+          mutation: MarkSeenDocument,
+          variables: {
+            targetType: EntityType.album,
+            targetId: loadedAlbumId,
+          },
+        },
+        (data: MarkSeenMutation) => ({ data: data.markSeen }),
+      );
+
+      if (!result.success) {
+        console.error('markSeen failed for album', loadedAlbumId, result.errors);
+        return;
+      }
+
+      void apolloClient.refetchQueries({
+        include: [ViewerHasUnseenActivityDocument, ViewerSharedWithMeAlbumsDocument],
+      });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedAlbumId]); // fire once per album; mutation/client are stable refs
 
   // replace the bare useQuery with the paginated hook
   const buildPickerVariables = useCallback(

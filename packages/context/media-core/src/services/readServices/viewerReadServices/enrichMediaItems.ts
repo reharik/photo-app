@@ -1,4 +1,4 @@
-import { ReactionTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import {
   MediaItemReadRepository,
@@ -49,7 +49,7 @@ export const build__EnrichMediaItems = ({
     // Viewer Reactions
     const viewerReactionRows = await reactionReadRepository.viewerReactionsForTargets({
       viewerId,
-      targetType: ReactionTargetType.mediaItem,
+      targetType: EntityType.mediaItem,
       targetIds: rows.map((r) => r.id),
     });
     const viewerReactionMap = groupByMapping(

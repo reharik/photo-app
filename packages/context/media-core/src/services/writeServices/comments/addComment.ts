@@ -1,10 +1,9 @@
 import {
   AppErrorCollection,
-  CommentTargetType,
+  EntityType,
   fail,
   ok,
   ReactionEmoji,
-  ReactionTargetType,
   User,
   WriteResult,
 } from '@packages/contracts';
@@ -26,7 +25,7 @@ export type AddCommentCommand = {
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
-  targetType: CommentTargetType;
+  targetType: EntityType;
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
@@ -91,7 +90,7 @@ export const build__AddComment = ({
 
       await commentRepository.save(comment);
       await toggleReaction({
-        targetType: ReactionTargetType.mediaItem,
+        targetType: EntityType.mediaItem,
         targetId: command.targetId,
         emoji: ReactionEmoji.comment,
         viewer: command.viewer,
@@ -115,7 +114,7 @@ export const build__AddComment = ({
 
       await commentRepository.save(comment);
       await toggleReaction({
-        targetType: ReactionTargetType.mediaItem,
+        targetType: EntityType.mediaItem,
         targetId: command.targetId,
         emoji: ReactionEmoji.comment,
         viewer: command.viewer,

@@ -30,6 +30,21 @@ enum SortDir {
 }
 
 """
+Single source of truth for "which kind of entity" — the polymorphic-association
+target axis shared by comments, reactions, and unseen-activity tracking.
+Members are exactly the AggregateRoot subclasses. Per-feature allowed subsets
+(e.g. reactions only target MEDIA_ITEM|COMMENT) are enforced in app code, not the
+type. Replaces the former CommentTargetType / ReactionTargetType / SeenTargetType.
+"""
+enum EntityType {
+  ALBUM
+  MEDIA_ITEM
+  COMMENT
+  USER
+  NOTIFICATION
+}
+
+"""
 Cursor-free paging window (offset-based). Used on output types.
 """
 type PageInfo {

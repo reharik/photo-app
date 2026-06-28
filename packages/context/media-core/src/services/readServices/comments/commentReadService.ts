@@ -1,4 +1,4 @@
-import { CommentTargetType, ReactionTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import {
   CommentReadRepository,
@@ -21,7 +21,7 @@ type CommentReadServiceDeps = {
 };
 
 type ListCommentsProps = {
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   collectionInfo: { pageInfo: PageInfo };
   viewerId?: EntityId;
@@ -39,7 +39,7 @@ export const build__CommentReadService = ({
     // Viewer Reactions
     const viewerReactionRows = await reactionReadRepository.viewerReactionsForTargets({
       viewerId,
-      targetType: ReactionTargetType.comment,
+      targetType: EntityType.comment,
       targetIds: rows.map((r) => r.id),
     });
     const viewerReactionMap = groupByMapping(

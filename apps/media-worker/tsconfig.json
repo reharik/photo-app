@@ -9,8 +9,10 @@
     "skipLibCheck": true,
     "strictNullChecks": true,
     "strict": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"],
-  "exclude": ["dist", "node_modules", "src/tests/**", "**/*.tests.ts"]
+  "exclude": ["dist", "node_modules", "src/tests/**", "**/*.tests.ts", "../../**/dist/**"] // <-- catches packages/*/dist anywhere up the tree
 }

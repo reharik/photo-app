@@ -1,0 +1,6 @@
+query ViewerHasUnseenActivity {
+  viewer {
+    id
+    hasUnseenActivity
+  }
+}

@@ -1,4 +1,4 @@
-import { MediaItemStatus, MediaKind, ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { MediaItemStatus, MediaKind, ReactionEmoji, EntityType } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 
@@ -91,7 +91,7 @@ export type UpdateMediaItemTagsResult = {
 export type Reaction = {
   id?: string;
   targetId: EntityId;
-  targetType: ReactionTargetType;
+  targetType: EntityType;
   userId: EntityId;
   firstName?: string;
   lastName?: string;

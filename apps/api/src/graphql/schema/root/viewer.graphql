@@ -17,6 +17,7 @@ type Viewer {
   ): SharedWithMeMediaItemCollectionPayload!
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
+  hasUnseenActivity: Boolean!
 }
 
 type DeleteAlbumResponse {

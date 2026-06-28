@@ -24,8 +24,8 @@ describe('extractCaptureTime', () => {
     it('should return null for both fields', async () => {
       const result = await extractCaptureTime(Buffer.from('not-an-image'));
 
-      assert.equal(result.takenAtUtc, null);
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtc, undefined);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 
@@ -39,9 +39,10 @@ describe('extractCaptureTime', () => {
       const buffer = await fs.readFile(heicFixture);
       const result = await extractCaptureTime(buffer);
 
-      assert.equal(result.takenAtUtc === null || result.takenAtUtc instanceof Date, true);
+      assert.equal(result.takenAtUtc === undefined || result.takenAtUtc instanceof Date, true);
       assert.equal(
-        result.takenAtUtcOffsetMinutes === null || typeof result.takenAtUtcOffsetMinutes === 'number',
+        result.takenAtUtcOffsetMinutes === undefined ||
+          typeof result.takenAtUtcOffsetMinutes === 'number',
         true,
       );
     });

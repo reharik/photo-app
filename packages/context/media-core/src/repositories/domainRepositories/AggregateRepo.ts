@@ -1,23 +1,31 @@
 // repository-helpers.ts
 
-import type { AggregateRoot } from '../../domain/AggregateRoot';
+import { AggregateRoot } from '../../domain';
 import type { Entity, VOCollection } from '../../domain/Entity';
 import { serializeValue } from '../../domain/utilities/serializeAggregates';
 import { UnitOfWork } from '../../infrastructure';
 
-export const persistRoot = async <T extends AggregateRoot<Record<string, unknown>>>(
+export const persistRoot = async <T extends Entity<Record<string, unknown>>>(
   tableName: string,
-  aggregate: T,
+  entity: T,
   uow: UnitOfWork,
 ): Promise<void> => {
-  const row = aggregate.toPersistence();
-  if (aggregate.isNew()) {
+  const row = entity.toPersistence();
+  if (entity.isNew()) {
     await uow.db()(tableName).insert(row);
-  } else if (aggregate.isDirty()) {
+  } else if (entity.isDirty()) {
     await uow.db()(tableName).where({ id: row.id }).update(row);
   }
 };
-export const persist = async <T extends Entity<Record<string, unknown>>>(
+export const persist = async <T extends AggregateRoot<Record<string, unknown>>>(
+  aggregate: T,
+  uow: UnitOfWork,
+): Promise<void> => {
+  await persistRecursion(aggregate, uow);
+  uow.collectEvents(aggregate.flushEvents());
+};
+
+export const persistRecursion = async <T extends Entity<Record<string, unknown>>>(
   entity: T,
   uow: UnitOfWork,
 ): Promise<void> => {
@@ -29,7 +37,7 @@ export const persist = async <T extends Entity<Record<string, unknown>>>(
   const children = entity.childEntities();
   for (const current of Object.values(children)) {
     for (const child of current.upsert) {
-      await persist(child, uow);
+      await persistRecursion(child, uow);
     }
     for (const removedChild of current.removed) {
       await removeRecursive(removedChild, uow);

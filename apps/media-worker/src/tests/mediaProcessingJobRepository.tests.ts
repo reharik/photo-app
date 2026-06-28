@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaProcessingJobStatus } from '@packages/media-core';
+import { MediaItemStatus } from '@packages/contracts';
+import { build__MediaProcessingJobRepository } from '@packages/media-core';
 import { DatabaseError } from 'pg';
 
 import type { AppCradle } from '../generated/ioc-composed.js';
-import { build__MediaProcessingJobRepository } from '../repositories/domainRepositories/mediaProcessingJobRepository';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -29,7 +29,7 @@ describe('build__MediaProcessingJobRepository', () => {
         expect(inserts[0]).toEqual(
           expect.objectContaining({
             mediaItemId: 'mid-1',
-            status: MediaProcessingJobStatus.pending,
+            status: MediaItemStatus.pending.value,
             attemptCount: 0,
             createdBy: ACTOR_ID,
             updatedBy: ACTOR_ID,
@@ -96,7 +96,7 @@ describe('build__MediaProcessingJobRepository', () => {
 
         expect(updates[0]).toEqual(
           expect.objectContaining({
-            status: MediaProcessingJobStatus.succeeded,
+            status: MediaItemStatus.succeeded.value,
             updatedBy: ACTOR_ID,
           }),
         );
@@ -185,7 +185,7 @@ describe('build__MediaProcessingJobRepository', () => {
         const updatedRow = {
           id: jobId,
           mediaItemId,
-          status: MediaProcessingJobStatus.processing,
+          status: MediaItemStatus.processing.value,
           attemptCount: 1,
           availableAt: new Date(),
           createdAt: new Date(),
@@ -204,7 +204,11 @@ describe('build__MediaProcessingJobRepository', () => {
             return {
               where: () => ({
                 update: () => ({
-                  returning: () => Promise.resolve([updatedRow]),
+                  // `withEnumRevival` attaches a queryContext to the builder and
+                  // returns it; the mock resolves to the rows from there.
+                  returning: () => ({
+                    queryContext: () => Promise.resolve([updatedRow]),
+                  }),
                 }),
               }),
             };

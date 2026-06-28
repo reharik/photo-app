@@ -1,11 +1,13 @@
+import { useQuery } from '@apollo/client/react';
 import { Menu } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { ViewerHasUnseenActivityDocument } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
-import { Navigation, type NavigationItem } from './Navigation';
+import { isNavigationParent, Navigation, type NavigationItem } from './Navigation';
 import { Profile } from './Profile';
 
 const MOBILE_SHELL = '(max-width: 768px)';
@@ -34,6 +36,24 @@ export const AppShell = () => {
   const isMobileShell = useMediaQuery(MOBILE_SHELL);
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const navRef = useRef<HTMLElement | null>(null);
+
+  // Aggregate unseen-activity flag drives the dot on the "Shared" nav item.
+  // Errors degrade to `false` so a failing query never breaks navigation.
+  const unseenQuery = useQuery(ViewerHasUnseenActivityDocument, {
+    fetchPolicy: 'cache-and-network',
+    nextFetchPolicy: 'cache-and-network',
+  });
+  const hasUnseenActivity = unseenQuery.data?.viewer?.hasUnseenActivity ?? false;
+
+  const navLinks = useMemo<NavigationItem[]>(
+    () =>
+      NAV_LINKS.map((item) =>
+        isNavigationParent(item) && item.label === 'Shared'
+          ? { ...item, hasUnseen: hasUnseenActivity }
+          : item,
+      ),
+    [hasUnseenActivity],
+  );
 
   useEffect(() => {
     setOpenMenu(null);
@@ -114,7 +134,7 @@ export const AppShell = () => {
                 aria-labelledby="app-shell-nav-trigger"
               >
                 <Navigation
-                  links={NAV_LINKS}
+                  links={navLinks}
                   variant="stacked"
                   onLinkClick={() => {
                     setOpenMenu(null);
@@ -127,7 +147,7 @@ export const AppShell = () => {
           <SCNavContent>
             <SCAppNavigation>
               <WordmarkLink to="/">Harik family</WordmarkLink>
-              <Navigation links={NAV_LINKS} variant="inline" />
+              <Navigation links={navLinks} variant="inline" />
             </SCAppNavigation>
             <NavActions>
               {/* Search affordance deferred — see Zeta search PR */}

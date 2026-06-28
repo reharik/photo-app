@@ -153,6 +153,11 @@ export const theme: DefaultTheme = {
     textInfo: colors.blue_dark,
     textWarning: colors.yellow_dark,
 
+    /* ── Notifications ────────────────────────────────────── */
+    // Unseen-activity dot (cards, nav, future media items). Semantic alias of
+    // the `notify` primitive — its own token so it stays put if `error` retunes.
+    unseen: colors.notify,
+
     /* ── Loading ──────────────────────────────────────────── */
     loadingDot: colors.gray_70,
     loadingSpinner: colors.clay,

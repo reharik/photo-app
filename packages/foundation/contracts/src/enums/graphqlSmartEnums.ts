@@ -21,7 +21,7 @@ const albumSortByInput = {
   createdAt: { column: 'created_at', table: 'album', nullsLast: 'false' },
   title: { column: 'title', table: 'album', nullsLast: 'true' },
 } as const;
-const commentTargetTypeInput = ['album', 'mediaItem'] as const;
+const entityTypeInput = ['album', 'comment', 'mediaItem', 'notification', 'user'] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = {
@@ -35,26 +35,31 @@ const mediaItemStatusInput = [
   'pending',
   'processing',
   'ready',
+  'succeeded',
   'uploaded',
 ] as const;
 const mediaKindInput = ['photo', 'video'] as const;
-const reactionTargetTypeInput = ['comment', 'mediaItem'] as const;
-const sharedWithMeAlbumSortByInput = { sharedAt: { column: 'created_at' } } as const;
-const sharedWithMeMediaItemSortByInput = { sharedAt: { column: 'created_at' } } as const;
+const sharedWithMeAlbumSortByInput = {
+  sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
+} as const;
+const sharedWithMeMediaItemSortByInput = {
+  sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
+} as const;
 const sortDirInput = ['asc', 'desc'] as const;
+const unseenActivityTypeInput = ['itemAdded'] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
-export type CommentTargetType = Enumeration<typeof CommentTargetType>;
+export type EntityType = Enumeration<typeof EntityType>;
 export type MediaAssetKind = Enumeration<typeof MediaAssetKind>;
 export type MediaAssetStatus = Enumeration<typeof MediaAssetStatus>;
 export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
 export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
 export type MediaKind = Enumeration<typeof MediaKind>;
-export type ReactionTargetType = Enumeration<typeof ReactionTargetType>;
 export type SharedWithMeAlbumSortBy = Enumeration<typeof SharedWithMeAlbumSortBy>;
 export type SharedWithMeMediaItemSortBy = Enumeration<typeof SharedWithMeMediaItemSortBy>;
 export type SortDir = Enumeration<typeof SortDir>;
+export type UnseenActivityType = Enumeration<typeof UnseenActivityType>;
 
 export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumItemSortBy', {
   input: albumItemSortByInput,
@@ -64,8 +69,8 @@ export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
   input: albumSortByInput,
   serializeAs: 'value',
 });
-export const CommentTargetType = enumeration<typeof commentTargetTypeInput>('CommentTargetType', {
-  input: commentTargetTypeInput,
+export const EntityType = enumeration<typeof entityTypeInput>('EntityType', {
+  input: entityTypeInput,
   serializeAs: 'value',
 });
 export const MediaAssetKind = enumeration<typeof mediaAssetKindInput>('MediaAssetKind', {
@@ -88,10 +93,6 @@ export const MediaKind = enumeration<typeof mediaKindInput>('MediaKind', {
   input: mediaKindInput,
   serializeAs: 'value',
 });
-export const ReactionTargetType = enumeration<typeof reactionTargetTypeInput>(
-  'ReactionTargetType',
-  { input: reactionTargetTypeInput, serializeAs: 'value' },
-);
 export const SharedWithMeAlbumSortBy = enumeration<typeof sharedWithMeAlbumSortByInput>(
   'SharedWithMeAlbumSortBy',
   { input: sharedWithMeAlbumSortByInput, serializeAs: 'value' },
@@ -104,12 +105,16 @@ export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
   input: sortDirInput,
   serializeAs: 'value',
 });
+export const UnseenActivityType = enumeration<typeof unseenActivityTypeInput>(
+  'UnseenActivityType',
+  { input: unseenActivityTypeInput, serializeAs: 'value' },
+);
 
 export const enumRegistry = {
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
-  CommentTargetType,
+  EntityType,
   ErrorCategory,
   MediaAssetKind,
   MediaAssetStatus,
@@ -118,8 +123,8 @@ export const enumRegistry = {
   MediaKind,
   Operation,
   ReactionEmoji,
-  ReactionTargetType,
   SharedWithMeAlbumSortBy,
   SharedWithMeMediaItemSortBy,
   SortDir,
+  UnseenActivityType,
 } as const;

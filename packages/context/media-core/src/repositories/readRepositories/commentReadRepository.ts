@@ -1,4 +1,4 @@
-import { CommentTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { EntityId, PageInfo } from '../../types/types';
 import type { CommentReadRepository, DBCommentRow, ReadRepositoryDeps } from './types';
@@ -26,7 +26,7 @@ export const build__CommentReadRepository = ({
     targetId,
     collectionInfo,
   }: {
-    targetType: CommentTargetType;
+    targetType: EntityType;
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }): Promise<DBCommentRow[]> => {
@@ -41,7 +41,7 @@ export const build__CommentReadRepository = ({
         .limit(pageInfo.limit)
         .offset(pageInfo.offset),
 
-      { targetType: CommentTargetType },
+      { targetType: EntityType },
       { strict: true },
     );
   },
@@ -55,7 +55,7 @@ export const build__CommentReadRepository = ({
         .select(...commentSelectColumns)
         .where('id', commentId)
         .first<DBCommentRow>(...commentSelectColumns),
-      { targetType: CommentTargetType },
+      { targetType: EntityType },
       { strict: true },
     );
   },

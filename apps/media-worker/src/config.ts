@@ -30,6 +30,8 @@ export type Config = {
   s3DownloadUrlTtlSeconds: number;
   s3DownloadUrlSigningBucketSeconds: number;
   mediaWorkerPollIntervalMs: number;
+  notificationSweepIntervalMs: number;
+  clientUrl: string;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -83,6 +85,10 @@ export const createConfigFromEnv = (): Config => {
     mediaWorkerPollIntervalMs: process.env.MEDIA_WORKER_POLL_MS
       ? Number(process.env.MEDIA_WORKER_POLL_MS)
       : 2000,
+    notificationSweepIntervalMs: process.env.NOTIFICATION_SWEEP_INTERVAL_MS
+      ? Number(process.env.NOTIFICATION_SWEEP_INTERVAL_MS)
+      : 300000, // 5 minutes
+    clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   };
 };
 

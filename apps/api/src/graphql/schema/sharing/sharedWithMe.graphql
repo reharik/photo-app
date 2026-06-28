@@ -3,12 +3,16 @@ type SharedWithMeMediaItemType implements Node {
   sharedAt: DateTime!
   sharedBy: ID!
   mediaItem: MediaItem!
+  sharedByFirstName: String!
+  sharedByLastName: String!
 }
 
 type SharedWithMeMediaAlbumType implements Node {
   id: ID!
   sharedAt: DateTime!
   sharedBy: ID!
+  sharedByFirstName: String!
+  sharedByLastName: String!
   album: Album!
 }
 
@@ -25,7 +29,14 @@ type SharedWithMeMediaItemCollectionPayload {
 }
 
 enum SharedWithMeMediaItemSortBy {
-  SHARED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  SHARED_AT
+    @enumMeta(
+      props: [
+        { name: "column", value: "created_at" }
+        { name: "table", value: "access_grant" }
+        { name: "nullsLast", value: "true" }
+      ]
+    )
 }
 
 input SharedWithMeAlbumCollectionInput {
@@ -41,5 +52,12 @@ type SharedWithMeAlbumCollectionPayload {
 }
 
 enum SharedWithMeAlbumSortBy {
-  SHARED_AT @enumMeta(props: [{ name: "column", value: "created_at" }])
+  SHARED_AT
+    @enumMeta(
+      props: [
+        { name: "column", value: "created_at" }
+        { name: "table", value: "access_grant" }
+        { name: "nullsLast", value: "true" }
+      ]
+    )
 }

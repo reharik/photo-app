@@ -1,11 +1,6 @@
-enum CommentTargetType {
-  MEDIA_ITEM
-  ALBUM
-}
-
 type Comment {
   id: ID!
-  targetType: CommentTargetType!
+  targetType: EntityType!
   targetId: ID!
   parentCommentId: ID
   authorId: ID!

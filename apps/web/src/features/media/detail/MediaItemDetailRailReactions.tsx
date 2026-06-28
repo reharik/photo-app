@@ -1,4 +1,4 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { type JSX } from 'react';
@@ -26,7 +26,7 @@ export const MediaItemDetailRailReactions = ({
   const toggleMutation = useAppMutationState();
   const { handleToggle } = useReactionHandlers(
     mediaItemId,
-    ReactionTargetType.mediaItem,
+    EntityType.mediaItem,
     toggleMutation,
     viewerReactions,
     onRefetch != null ? () => void onRefetch() : undefined,

@@ -1,9 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaDeletionJobStatus } from '@packages/media-core';
+import { MediaItemStatus } from '@packages/contracts';
+import { build__MediaDeletionJobRepository } from '@packages/media-core';
 import { DatabaseError } from 'pg';
 
 import type { AppCradle } from '../generated/ioc-composed.js';
-import { build__MediaDeletionJobRepository } from '../repositories/domainRepositories/mediaDeletionJobRepository';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -34,7 +34,7 @@ describe('build__MediaDeletionJobRepository', () => {
           expect.objectContaining({
             mediaItemId: 'mid-1',
             storageKey: 'media/u1/m1',
-            status: MediaDeletionJobStatus.pending,
+            status: MediaItemStatus.pending.value,
             attemptCount: 0,
             createdBy: ACTOR_ID,
             updatedBy: ACTOR_ID,
@@ -90,7 +90,7 @@ describe('build__MediaDeletionJobRepository', () => {
 
         expect(updates[0]).toEqual(
           expect.objectContaining({
-            status: MediaDeletionJobStatus.pending,
+            status: MediaItemStatus.pending.value,
             availableAt: when,
             startedAt: null,
             updatedBy: ACTOR_ID,

@@ -21,8 +21,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "db/**/*.ts",
-    "../../packages/context/notifications/src/**/*.tsx"
+    "db/**/*.ts"
   ],
   "exclude": [
     "jest.*",

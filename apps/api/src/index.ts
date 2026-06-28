@@ -5,6 +5,12 @@ import type { Knex } from 'knex';
 import { Cradle, createAppContainer } from './container';
 import type { Server } from './server';
 
+import {
+  registerDomainEventHandlers,
+  type DomainEventHandler,
+  type EventPublisher,
+} from '@packages/media-core';
+
 const attachGlobalHandlers = (
   database: Knex,
   logger: Logger,
@@ -54,6 +60,9 @@ const bootstrap = async () => {
   const database = container.resolve<Knex>('database');
   const logger = container.resolve<Logger>('logger');
   const server = container.resolve<Server>('server');
+  const eventPublisher = container.resolve<EventPublisher>('eventPublisher');
+  const domainEventHandlers = container.resolve<DomainEventHandler[]>('domainEventHandlers');
+  registerDomainEventHandlers(eventPublisher, domainEventHandlers);
   attachGlobalHandlers(database, logger, server, container); // ← container now passed
   await server.start();
 };

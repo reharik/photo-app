@@ -1,11 +1,11 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { useReactionHandlers } from '../../hooks/useReactionHandlers';
 import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 import { ReactionButton } from './ReactionButton';
 
 type Props = {
-  targetType: ReactionTargetType;
+  targetType: EntityType;
   targetId: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
@@ -42,7 +42,7 @@ export const ReactionsContainer = ({
         )
   ).filter(
     (emoji) =>
-      !(emoji.equals(ReactionEmoji.comment) && targetType.equals(ReactionTargetType.comment)),
+      !(emoji.equals(ReactionEmoji.comment) && targetType.equals(EntityType.comment)),
   );
 
   return (

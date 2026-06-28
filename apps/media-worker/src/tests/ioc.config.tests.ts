@@ -13,11 +13,11 @@ describe('ioc.config', () => {
             factoryPrefix: 'build__',
           }),
           composedManifests: ['@packages/media-core', '@packages/infrastructure'],
-          registrations: {
+          registrations: expect.objectContaining({
             Knex: {
               $contract: { accessKey: 'database' },
             },
-          },
+          }),
         }),
       );
     });

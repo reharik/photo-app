@@ -18,7 +18,7 @@ import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
 import { MediaItem } from '../domain/MediaItem/MediaItem';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
-import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository';
+import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 import type { DBMediaItemRow } from '../services/readServices/types';
 import { EntityId } from '../types/types';
 import { TEST_VIEWER_A_ID, TEST_VIEWER_B_ID, TEST_VIEWER_ONLY_ID } from './testViewerIds';

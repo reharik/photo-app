@@ -1,4 +1,4 @@
-import { ReactionTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import type { Knex } from 'knex';
 
 import type { ReactionReadRepository } from '../../../repositories/readRepositories/types';
@@ -8,7 +8,7 @@ import { ViewerReaction } from '../types';
 
 export interface viewerReactionReadService extends ReadServiceBase {
   getReactionStateForTargets: (args: {
-    targetType: ReactionTargetType;
+    targetType: EntityType;
     targetIds: EntityId[];
   }) => Promise<Map<EntityId, ViewerReaction[]>>;
 }
@@ -28,7 +28,7 @@ export const build__viewerReactionReadService = ({
       targetType,
       targetIds,
     }: {
-      targetType: ReactionTargetType;
+      targetType: EntityType;
       targetIds: EntityId[];
     }): Promise<Map<EntityId, ViewerReaction[]>> => {
       const result = new Map<EntityId, ViewerReaction[]>();

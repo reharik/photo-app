@@ -12,7 +12,7 @@ import {
   MediaItemStatus,
   MediaKind,
   ok,
-  ReactionTargetType,
+  EntityType,
   WriteResult,
 } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
@@ -401,7 +401,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     if (reaction) {
       this.#removedReactions.push({
         targetId: this.id(),
-        targetType: ReactionTargetType.mediaItem.value,
+        targetType: EntityType.mediaItem.value,
         userId: item.userId,
         emoji: item.emoji.value,
       });
@@ -411,7 +411,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
         ...item,
         id: crypto.randomUUID(),
         targetId: this.id(),
-        targetType: ReactionTargetType.mediaItem,
+        targetType: EntityType.mediaItem,
         updatedBy: actorId,
         updatedAt: new Date(),
       };

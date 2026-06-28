@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { logMediaWorkerStartup } from '../application/logMediaWorkerStartup';
+import { logMediaWorkerStartup } from '../tasks/mediaWorkers/logMediaWorkerStartup';
 import type { Config } from '../config';
 
 describe('logMediaWorkerStartup', () => {

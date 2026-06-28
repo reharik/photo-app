@@ -27,7 +27,7 @@ describe('computeCaptureInstant', () => {
       const result = computeCaptureInstant('2024:03:10 12:00:00', undefined);
 
       assert.equal(result.takenAtUtc?.toISOString(), '2024-03-10T12:00:00.000Z');
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 
@@ -35,8 +35,8 @@ describe('computeCaptureInstant', () => {
     it('should return null for both fields', () => {
       const result = computeCaptureInstant('not-a-date', '+03:00');
 
-      assert.equal(result.takenAtUtc, null);
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtc, undefined);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 
@@ -44,8 +44,8 @@ describe('computeCaptureInstant', () => {
     it('should return null for both fields', () => {
       const result = computeCaptureInstant(undefined, undefined);
 
-      assert.equal(result.takenAtUtc, null);
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtc, undefined);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 
@@ -62,8 +62,8 @@ describe('computeCaptureInstant', () => {
     it('should return null for both fields', () => {
       const result = computeCaptureInstant(undefined, '+03:00');
 
-      assert.equal(result.takenAtUtc, null);
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtc, undefined);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 
@@ -72,7 +72,7 @@ describe('computeCaptureInstant', () => {
       const result = computeCaptureInstant('2024:07:15 18:45:30', '+3:00');
 
       assert.equal(result.takenAtUtc?.toISOString(), '2024-07-15T18:45:30.000Z');
-      assert.equal(result.takenAtUtcOffsetMinutes, null);
+      assert.equal(result.takenAtUtcOffsetMinutes, undefined);
     });
   });
 });

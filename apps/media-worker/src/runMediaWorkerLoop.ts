@@ -1,8 +1,9 @@
 import type { Logger } from '@packages/infrastructure';
-
-import type { RunNextMediaDeletionJob } from './application/processNextMediaDeletionJob.js';
-import type { RunNextMediaImageJob } from './application/processNextMediaImageJob.js';
 import type { Config } from './config.js';
+import { IocGeneratedCradle } from './generated/ioc-registry.types';
+import type { WorkerTask } from './types.js';
+
+type WorkerTasks = IocGeneratedCradle['workerTasks'];
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -14,25 +15,43 @@ export type RunMediaWorkerLoop = {
   stop: () => void;
 };
 
+/**
+ * Run one pass over the priority-ordered task list: run the first DUE task,
+ * stopping at the first 'processed' (restart-from-top semantics). Returns true
+ * iff a task did work. Tasks that are not due, or that ran but returned 'idle',
+ * both fall through without counting as work. A thrown run() propagates to the
+ * caller's try/catch and skips the remaining tasks this pass.
+ */
+export const runWorkerTasksOnce = async (tasks: WorkerTask[]): Promise<boolean> => {
+  for (const task of tasks) {
+    if (!(await task.due())) {
+      continue;
+    }
+    const outcome = await task.run();
+    if (outcome === 'processed') {
+      return true;
+    }
+  }
+  return false;
+};
+
 /** Log an idle heartbeat at info roughly every 30s at the default 2s poll interval. */
 const IDLE_HEARTBEAT_EVERY_CYCLES = 225;
 
 type RunMediaWorkerLoopDeps = {
   config: Config;
   logger: Logger;
-  runNextMediaDeletionJob: RunNextMediaDeletionJob;
-  runNextMediaImageJob: RunNextMediaImageJob;
+  workerTasks: WorkerTasks;
 };
 
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
-  runNextMediaDeletionJob,
-  runNextMediaImageJob,
+  workerTasks,
 }: RunMediaWorkerLoopDeps): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
-
+  const orderedTasks = [...workerTasks].sort((a, b) => a.order - b.order);
   const start = async (): Promise<void> => {
     if (running) {
       return;
@@ -46,13 +65,8 @@ export const build__RunMediaWorkerLoop = ({
 
     while (!stopRequested) {
       try {
-        const deletionOutcome = await runNextMediaDeletionJob();
-        if (deletionOutcome === 'processed') {
-          idleCycles = 0;
-          continue;
-        }
-        const imageOutcome = await runNextMediaImageJob();
-        if (imageOutcome === 'processed') {
+        const didWork = await runWorkerTasksOnce(orderedTasks);
+        if (didWork) {
           idleCycles = 0;
           continue;
         }

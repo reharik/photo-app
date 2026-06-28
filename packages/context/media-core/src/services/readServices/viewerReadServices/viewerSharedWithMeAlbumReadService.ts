@@ -68,6 +68,8 @@ export const build__ViewerSharedWithMeAlbumReadService = ({
       id: row.grantId,
       sharedAt: row.sharedAt,
       sharedBy: row.sharedBy,
+      sharedByFirstName: row.sharedByFirstName,
+      sharedByLastName: row.sharedByLastName,
       album: buildAlbumProjection(row, coverMedia),
     };
   };

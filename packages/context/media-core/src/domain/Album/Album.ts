@@ -115,6 +115,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     );
     this.#items.push(albumItem);
     this.touch(actorId);
+    this.recordEvent(
+      'mediaItemAddedToAlbum',
+      { albumId: this.id(), mediaItemId: albumItem.mediaItemId() },
+      actorId,
+    );
     return ok(albumItem);
   }
 
@@ -256,6 +261,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
       );
       this.#authorizations.push(authorization);
       this.touch(actorId);
+      // TODO add event here so we can see when a new album has been shared
       return ok({ authorization });
     }
 

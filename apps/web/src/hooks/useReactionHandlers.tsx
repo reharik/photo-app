@@ -1,4 +1,4 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import { useNavigate } from 'react-router-dom';
 import {
   AddReactionDocument,
@@ -13,7 +13,7 @@ const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
 
 export const useReactionHandlers = (
   targetId: string,
-  targetType: ReactionTargetType,
+  targetType: EntityType,
   toggleMutation: UseAppMutationStateResult,
   viewerReactions?: ViewerReactionVM[],
   onRefetch?: () => void,

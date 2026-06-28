@@ -2,13 +2,9 @@ import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { Album } from '../domain/Album/Album.js';
-import {
-  build__RunInTransaction,
-  type RunInTransaction,
-} from '../infrastructure/repositories/runInTransaction.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
-import type { MediaProcessingJobRepository } from '../repositories/MediaProcessingJob/MediaProcessingJobRepository.js';
+import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
 import type { MediaItemReadRepository } from '../repositories/readRepositories/types.js';
 import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem.js';
 import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum.js';
@@ -16,6 +12,10 @@ import { build__CreateAlbum } from '../services/writeServices/album/createAlbum.
 import { build__CreateMediaItemUpload } from '../services/writeServices/mediaItem/createMediaItemUpload.js';
 import { build__FinalizeMediaItemUpload } from '../services/writeServices/mediaItem/finalizeMediaItemUpload.js';
 
+// Stand-in transaction handle. The write services no longer own a transaction
+// primitive (the unit-of-work refactor moved that to the caller), but the
+// repository test doubles in these specs still accept an optional `trx`
+// argument, so this sentinel is threaded through their `save(...)` calls.
 export const testTrx = {} as Knex.Transaction;
 
 export const createTestDatabase = (): Knex => {
@@ -26,14 +26,11 @@ export const createTestDatabase = (): Knex => {
 
 export type WriteTestHarness = {
   database: Knex;
-  runInTransaction: RunInTransaction;
 };
 
 export const createWriteTestHarness = (): WriteTestHarness => {
-  const database = createTestDatabase();
   return {
-    database,
-    runInTransaction: build__RunInTransaction({ database }),
+    database: createTestDatabase(),
   };
 };
 
@@ -45,8 +42,11 @@ const createEmptyAlbumRepository = (): AlbumRepository => ({
   delete: async () => {},
 });
 
+// The `_harness` parameter is retained on these builders as a stable seam (it
+// carries the fake database / `testTrx`); the services themselves no longer take
+// a transaction dependency.
 export const createUploadService = (
-  harness: WriteTestHarness,
+  _harness: WriteTestHarness,
   mediaItemRepository: MediaItemRepository,
   mediaStorage: MediaStorage,
   albumRepository: AlbumRepository = createEmptyAlbumRepository(),
@@ -55,11 +55,10 @@ export const createUploadService = (
     mediaItemRepository,
     albumRepository,
     mediaStorage,
-    runInTransaction: harness.runInTransaction,
   });
 
 export const createFinalizeService = (
-  harness: WriteTestHarness,
+  _harness: WriteTestHarness,
   mediaItemRepository: MediaItemRepository,
   mediaStorage: MediaStorage,
   mediaProcessingJobRepository: MediaProcessingJobRepository,
@@ -68,33 +67,29 @@ export const createFinalizeService = (
     mediaItemRepository,
     mediaStorage,
     mediaProcessingJobRepository,
-    runInTransaction: harness.runInTransaction,
   });
 
-export const createAlbumService = (harness: WriteTestHarness, albumRepository: AlbumRepository) =>
+export const createAlbumService = (_harness: WriteTestHarness, albumRepository: AlbumRepository) =>
   build__CreateAlbum({
     albumRepository,
-    runInTransaction: harness.runInTransaction,
   });
 
 export const createAddAlbumItemService = (
-  harness: WriteTestHarness,
+  _harness: WriteTestHarness,
   albumRepository: AlbumRepository,
   mediaItemReadRepository: MediaItemReadRepository,
 ) =>
   build__AddAlbumItem({
     albumRepository,
     mediaItemReadRepository,
-    runInTransaction: harness.runInTransaction,
   });
 
 export const createAddMediaItemsToAlbumService = (
-  harness: WriteTestHarness,
+  _harness: WriteTestHarness,
   albumRepository: AlbumRepository,
   mediaItemReadRepository: MediaItemReadRepository,
 ) =>
   build__AddMediaItemsToAlbum({
     albumRepository,
     mediaItemReadRepository,
-    runInTransaction: harness.runInTransaction,
   });

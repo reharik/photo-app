@@ -1,4 +1,4 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { EntityId } from '../../types/types';
 import type { DbReactionRow, ReactionReadRepository, ReadRepositoryDeps } from './types';
@@ -10,7 +10,7 @@ export const build__ReactionReadRepository = ({
     targetType,
     targetId,
   }: {
-    targetType: ReactionTargetType;
+    targetType: EntityType;
     targetId: EntityId;
   }): Promise<number> => {
     const result = await database('reaction')
@@ -29,7 +29,7 @@ export const build__ReactionReadRepository = ({
     targetIds,
   }: {
     viewerId: EntityId;
-    targetType: ReactionTargetType;
+    targetType: EntityType;
     targetIds: EntityId[];
   }): Promise<DbReactionRow[]> => {
     if (targetIds.length === 0) {

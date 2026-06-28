@@ -6,14 +6,23 @@ import {
   MediaKind,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 import {
   AlbumItemWithMediaRow,
   AlbumWithCoverRow,
   PagedList,
 } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
-import { toPagedResult } from '../repositoryHelpers';
+import {
+  toPagedResult,
+  withAlbumCoverItem,
+  withAlbumItemCount,
+  withAlbumItemViewableByMemberOrItemGrant,
+  withCollectionInfo,
+  withUnseenAlbumFlag,
+  withViewableByMemberOrAlbumGrant,
+  withViewerMembership,
+} from '../queryHelpers';
+import { withActiveShareLink } from '../queryHelpers/withActiveShareLink';
 import type { AlbumIdRow, AlbumReadRepository, ReadRepositoryDeps } from './types';
 
 const mediaItemSelectColumns = [
@@ -35,22 +44,14 @@ const mediaItemSelectColumns = [
   'mediaItem.reactionCounts as mediaItemReactionCounts',
 ];
 
-const albumWithCoverSelectColumns = [
+const publicAlbumFields = [
   'album.id as id',
   'album.title as title',
   'album.createdAt as createdAt',
   'album.updatedAt as updatedAt',
-  'albumMember.role as viewerMemberRole',
-  ...mediaItemSelectColumns,
 ];
 
-const publicAlbumWithCoverSelectColumns = [
-  'album.id as id',
-  'album.title as title',
-  'album.createdAt as createdAt',
-  'album.updatedAt as updatedAt',
-  ...mediaItemSelectColumns,
-];
+const albumFields = [...publicAlbumFields, 'albumMember.role as viewerMemberRole'];
 
 const albumItemWithMediaSelectColumns = [
   'albumItem.id',
@@ -59,44 +60,6 @@ const albumItemWithMediaSelectColumns = [
   'albumItem.updatedAt',
   ...mediaItemSelectColumns,
 ];
-
-const whereAlbumViewableByMemberOrAlbumGrant =
-  (db: Knex, viewerId: string) =>
-  (w: {
-    where: (col: string, val: string) => void;
-    orWhereExists: (sub: Knex.QueryBuilder) => void;
-  }): void => {
-    w.where('albumMember.userId', viewerId);
-    w.orWhereExists(
-      db
-        .select(db.raw('1'))
-        .from('accessGrant as ag2')
-        .whereNull('ag2.revokedAt')
-        .where((inner) => {
-          inner.whereNull('ag2.expiresAt').orWhere('ag2.expiresAt', '>', db.raw('now()'));
-        })
-        .where('ag2.grantedToUser', viewerId)
-        .whereNotNull('ag2.albumId')
-        .whereNull('ag2.mediaItemId')
-        .where('ag2.albumId', db.ref('album.id')),
-    );
-  };
-
-const whereActiveShareLinkGrant =
-  (db: Knex, albumId: string, publicLinkId: string) =>
-  (qb: Knex.QueryBuilder): void => {
-    qb.whereExists(
-      db
-        .select(db.raw('1'))
-        .from('accessGrant as ag')
-        .where('ag.albumId', albumId)
-        .where('ag.shareLinkId', publicLinkId)
-        .whereNull('ag.revokedAt')
-        .andWhere((expiry) => {
-          expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', db.raw('now()'));
-        }),
-    );
-  };
 
 export const build__AlbumReadRepository = ({
   database,
@@ -108,39 +71,23 @@ export const build__AlbumReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
   }): Promise<PagedList<AlbumWithCoverRow>> => {
-    const rows = (await withEnumRevival(
+    const rows = await withEnumRevival(
       database('album')
-        .leftJoin('albumMember', (join) => {
-          join
-            .on('albumMember.albumId', 'album.id')
-            .on('albumMember.userId', database.raw('?', [viewerId]));
-        })
-        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-        .leftJoin(
-          database('album_item')
-            .select('album_id')
-            .count('* as item_count')
-            .groupBy('album_id')
-            .as('item_counts'),
-          'item_counts.album_id',
-          'album.id',
-        )
-        .select(...albumWithCoverSelectColumns)
-        .select(database.raw('COALESCE(item_counts.item_count, 0)::int AS "itemCount"'))
-        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
+        .modify(withViewerMembership(database, viewerId))
+        .modify(withAlbumCoverItem)
+        .modify(withAlbumItemCount(database))
+        .modify(withUnseenAlbumFlag(database, viewerId))
+        .modify(withCollectionInfo(database, collectionInfo))
+        .select<(AlbumWithCoverRow & { totalCount: number })[]>(...albumFields)
         .where('albumMember.userId', viewerId)
-        .andWhere('album.isPublicLinkAlbum', false)
-        .orderBy(`album.${collectionInfo.sortBy.column}`, collectionInfo.sortDir.value)
-        .orderBy('album.id', 'asc')
-        .limit(collectionInfo.pageInfo.limit)
-        .offset(collectionInfo.pageInfo.offset),
+        .andWhere('album.isPublicLinkAlbum', false),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
         viewerMemberRole: AlbumMemberRole,
       },
       { strict: true },
-    )) as (AlbumWithCoverRow & { totalCount: number })[];
+    );
     return toPagedResult(rows);
   },
 
@@ -153,23 +100,12 @@ export const build__AlbumReadRepository = ({
   }): Promise<AlbumWithCoverRow | undefined> => {
     return withEnumRevival(
       database<AlbumWithCoverRow>('album')
-        .leftJoin('albumMember', (join) => {
-          join
-            .on('albumMember.albumId', 'album.id')
-            .on('albumMember.userId', database.raw('?', [viewerId]));
-        })
-        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-        .select(
-          database('album_item')
-            .count('* as item_count')
-            .where('album_item.album_id', albumId)
-            .as('itemCount'),
-        )
-        .select(...albumWithCoverSelectColumns)
+        .modify(withViewerMembership(database, viewerId))
+        .modify(withAlbumCoverItem)
+        .modify(withAlbumItemCount(database))
+        .select(...albumFields)
         .where('album.id', albumId)
-        .andWhere((b) => {
-          whereAlbumViewableByMemberOrAlbumGrant(database, viewerId)(b);
-        })
+        .modify(withViewableByMemberOrAlbumGrant(database, viewerId))
         .first<AlbumWithCoverRow>(),
       {
         mediaItemKind: MediaKind,
@@ -191,38 +127,13 @@ export const build__AlbumReadRepository = ({
     const rows = (await withEnumRevival(
       database('albumItem')
         .innerJoin('album', 'albumItem.albumId', 'album.id')
-        .leftJoin('albumMember', (join) => {
-          join
-            .on('albumMember.albumId', 'album.id')
-            .on('albumMember.userId', database.raw('?', [viewerId]));
-        })
+        .modify(withViewerMembership(database, viewerId))
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('album.id', albumId)
         .andWhere('mediaItem.status', MediaItemStatus.ready)
-        .andWhere((b) => {
-          b.where('albumMember.userId', viewerId).orWhereExists(function () {
-            this.select('*')
-              .from('grant')
-              .whereRaw('?? = ??', ['grant.mediaItemId', 'albumItem.mediaItemId'])
-              .whereRaw('?? = ?', ['grant.grantedToUser', viewerId]);
-          });
-        })
+        .modify(withAlbumItemViewableByMemberOrItemGrant(database, viewerId))
         .select(...albumItemWithMediaSelectColumns)
-        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .orderBy(
-          `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
-          collectionInfo.sortDir.value,
-          collectionInfo.sortBy.nullsLast === 'true'
-            ? 'last'
-            : collectionInfo.sortBy.nullsLast === 'false'
-              ? 'first'
-              : (() => {
-                  throw new Error(`bad nullsLast`);
-                })(),
-        )
-        .orderBy('albumItem.id', 'asc')
-        .limit(collectionInfo.pageInfo.limit)
-        .offset(collectionInfo.pageInfo.offset),
+        .modify(withCollectionInfo(database, collectionInfo)),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
@@ -252,18 +163,11 @@ export const build__AlbumReadRepository = ({
   }): Promise<AlbumWithCoverRow | undefined> => {
     return withEnumRevival(
       database<AlbumWithCoverRow>('album')
-        .leftJoin('mediaItem', 'mediaItem.id', 'album.coverMediaId')
-        .select(
-          database('album_item')
-            .count('* as item_count')
-            .where('album_item.album_id', albumId)
-            .as('itemCount'),
-        )
+        .modify(withAlbumCoverItem)
+        .modify(withAlbumItemCount(database))
         .where('album.id', albumId)
-        .where((b) => {
-          whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
-        })
-        .select<AlbumWithCoverRow>(...publicAlbumWithCoverSelectColumns)
+        .modify(withActiveShareLink(database, albumId, publicLinkId))
+        .select<AlbumWithCoverRow>(...publicAlbumFields)
         .first(),
       {
         mediaItemKind: MediaKind,
@@ -282,38 +186,24 @@ export const build__AlbumReadRepository = ({
     publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<PagedList<AlbumItemWithMediaRow>> => {
-    const rows = (await withEnumRevival(
-      database('albumItem')
-        .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
-        .where('albumItem.albumId', albumId)
-        .where('mediaItem.status', MediaItemStatus.ready.value)
-        .where((b) => {
-          whereActiveShareLinkGrant(database, albumId, publicLinkId)(b);
-        })
-        .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
-          ...albumItemWithMediaSelectColumns,
-        )
-        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
-        .orderBy(
-          `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
-          collectionInfo.sortDir.value,
-          collectionInfo.sortBy.nullsLast === 'true'
-            ? 'last'
-            : collectionInfo.sortBy.nullsLast === 'false'
-              ? 'first'
-              : (() => {
-                  throw new Error(`bad nullsLast`);
-                })(),
-        )
-        .orderBy('albumItem.id', 'asc')
-        .limit(collectionInfo.pageInfo.limit)
-        .offset(collectionInfo.pageInfo.offset),
+    const query = database('albumItem')
+      .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+      .where('albumItem.albumId', albumId)
+      .where('mediaItem.status', MediaItemStatus.ready.value)
+      .modify(withActiveShareLink(database, albumId, publicLinkId))
+      .modify(withCollectionInfo(database, collectionInfo))
+      .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
+        ...albumItemWithMediaSelectColumns,
+      );
+
+    const rows = await withEnumRevival(
+      query,
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
       },
       { strict: true },
-    )) as (AlbumItemWithMediaRow & { totalCount: number })[];
+    );
 
     return toPagedResult(rows);
   },

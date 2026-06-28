@@ -12,7 +12,7 @@ import {
   MediaStorage,
 } from '../../../application/media/MediaStorage';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { MediaProcessingJobRepository } from '../../../repositories/MediaProcessingJob/MediaProcessingJobRepository';
+import { MediaProcessingJobRepository } from '../../../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {

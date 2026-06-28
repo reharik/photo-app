@@ -5,7 +5,7 @@ import {
   MediaKind,
   Operation,
   ReactionEmoji,
-  ReactionTargetType,
+  EntityType,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
@@ -55,9 +55,9 @@ export const build__MediaItemRepository = ({
     const reactionRows = await withEnumRevival(
       uow
         .db()<ReactionRecord>('reaction')
-        .where({ targetId: id, targetType: ReactionTargetType.mediaItem })
+        .where({ targetId: id, targetType: EntityType.mediaItem })
         .orderBy('createdAt', 'asc'),
-      { emoji: ReactionEmoji, targetType: ReactionTargetType },
+      { emoji: ReactionEmoji, targetType: EntityType },
       { strict: true },
     );
 

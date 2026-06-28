@@ -3,7 +3,7 @@ import {
   fail,
   ok,
   ReactionEmoji,
-  ReactionTargetType,
+  EntityType,
   User,
   WriteResult,
 } from '@packages/contracts';
@@ -14,13 +14,13 @@ import { Reaction } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type ToggleReactionCommand = {
-  targetType: ReactionTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   emoji: ReactionEmoji;
   viewer: User;
 };
 
-export type ToggleReactionResult = { targetType: ReactionTargetType; targetId: EntityId };
+export type ToggleReactionResult = { targetType: EntityType; targetId: EntityId };
 
 export interface ToggleReaction extends WriteServiceBase {
   (command: ToggleReactionCommand): Promise<WriteResult<ToggleReactionResult>>;
@@ -50,7 +50,7 @@ export const build__ToggleReaction = ({
       updatedBy: viewer.id,
       updatedAt: new Date(),
     };
-    if (targetType.equals(ReactionTargetType.mediaItem)) {
+    if (targetType.equals(EntityType.mediaItem)) {
       const mediaItem = await mediaItemRepository.getById(targetId);
       if (!mediaItem) {
         return fail(AppErrorCollection.reaction.ReactionTargetNotFound);

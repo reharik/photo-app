@@ -2,7 +2,7 @@ import {
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
-  CommentTargetType,
+  EntityType,
   MediaItemSortBy,
   MediaItemStatus,
   MediaKind,
@@ -116,6 +116,8 @@ export type SharedWithMeItemProjection = {
   id: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
+  sharedByFirstName: string;
+  sharedByLastName: string;
   mediaItem: MediaItemProjection;
 };
 
@@ -123,6 +125,8 @@ export type SharedWithMeAlbumProjection = {
   id: EntityId;
   sharedAt: Date;
   sharedBy: EntityId;
+  sharedByFirstName: string;
+  sharedByLastName: string;
   album: AlbumProjection;
 };
 
@@ -234,7 +238,7 @@ export type PublicMediaItemProjection = Omit<DBPublicMediaItemRow, 'reactionCoun
 
 export type CommentRow = {
   id: EntityId;
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId?: EntityId;

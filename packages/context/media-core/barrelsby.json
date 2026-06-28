@@ -5,7 +5,8 @@
     "./src/services",
     "./src/domain",
     "./src/types",
-    "./src/infrastructure"
+    "./src/infrastructure",
+    "./src/repositories/queryHelpers"
   ],
   "location": "top",
   "structure": "flat",

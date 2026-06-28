@@ -4,7 +4,7 @@
  *
  */
 
-import { ok, ReactionTargetType, WriteResult, type CommentTargetType } from '@packages/contracts';
+import { EntityType, ok, WriteResult } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { DBReactionCounts } from '../../services/readServices/types';
 import { Reaction } from '../../services/writeServices/mediaItem/writeMediaItem.types';
@@ -18,7 +18,7 @@ export type CommentReactionRecord = Omit<Reaction, 'id'> & {
 
 export type CommentRecord = {
   id: EntityId;
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId: EntityId;
@@ -29,7 +29,7 @@ export type CommentRecord = {
 } & AuditRecord;
 
 export type CommentProps = {
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId: EntityId;
@@ -41,7 +41,7 @@ export type CommentProps = {
 };
 
 export type CreateCommentInput = {
-  targetType: CommentTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId: EntityId;
@@ -121,7 +121,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     this.touch(actorId);
   }
 
-  targetType(): CommentTargetType {
+  targetType(): EntityType {
     return this.props.targetType;
   }
 
@@ -144,7 +144,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     if (reaction) {
       this.#removedReactions.push({
         targetId: this.id(),
-        targetType: ReactionTargetType.comment.value,
+        targetType: EntityType.comment.value,
         userId: item.userId,
         emoji: item.emoji.value,
       });
@@ -154,7 +154,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
         ...item,
         id: crypto.randomUUID(),
         targetId: this.id(),
-        targetType: ReactionTargetType.comment,
+        targetType: EntityType.comment,
         updatedBy: actorId,
         updatedAt: new Date(),
       };

@@ -1,4 +1,4 @@
-import { CommentTargetType, ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { CommentRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
 import { Comment } from '../../domain/Comment/Comment';
@@ -17,7 +17,7 @@ export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): Commen
   const getById = async (id: EntityId): Promise<Comment | undefined> => {
     const comment = await withEnumRevival(
       uow.db()<CommentRecord>('comment').where({ id }).first(),
-      { targetType: CommentTargetType },
+      { targetType: EntityType },
       { strict: true },
     );
 
@@ -28,9 +28,9 @@ export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): Commen
     const reactionRows = await withEnumRevival(
       uow
         .db()<ReactionRecord>('reaction')
-        .where({ targetId: id, targetType: ReactionTargetType.comment })
+        .where({ targetId: id, targetType: EntityType.comment })
         .orderBy('createdAt', 'asc'),
-      { emoji: ReactionEmoji, targetType: ReactionTargetType },
+      { emoji: ReactionEmoji, targetType: EntityType },
       { strict: true },
     );
 

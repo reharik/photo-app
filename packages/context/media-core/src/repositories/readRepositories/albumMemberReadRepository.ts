@@ -5,16 +5,18 @@ import type { AlbumMemberReadRepository, AlbumMemberRow, ReadRepositoryDeps } fr
 export const build__AlbumMemberReadRepository = ({
   database,
 }: ReadRepositoryDeps): AlbumMemberReadRepository => ({
-  getMemberByUserId: async ({
-    albumId,
-    viewerId,
-  }: {
-    albumId: string;
-    viewerId: string;
-  }): Promise<AlbumMemberRow | undefined> => {
+  getMemberByUserId: async (
+    //   {
+    //   albumId,
+    //   viewerId,
+    // }: {
+    //   albumId: string;
+    //   viewerId: string;
+    // }
+  ): Promise<AlbumMemberRow | undefined> => {
     return withEnumRevival(
       database<AlbumMemberRow>('albumMember')
-        .where({ albumId: albumId, userId: viewerId })
+        // .where({ albumId: albumId, userId: viewerId })
         .first<AlbumMemberRow>(),
       {
         viewerMemberRole: AlbumMemberRole,

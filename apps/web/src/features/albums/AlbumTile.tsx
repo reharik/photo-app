@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
+import { UnseenDot } from '../../ui/UnseenDot';
 import type { AlbumSummaryVM } from '../../viewModels/';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 
@@ -38,6 +39,7 @@ export const AlbumTile = ({ album }: AlbumTileProps) => {
               <Camera size={28} strokeWidth={1.75} aria-hidden />
             </CoverPlaceholder>
           )}
+          {album.hasUnseen ? <UnseenDot /> : null}
         </Cover>
         <Caption>
           <Title>{album.title}</Title>
@@ -64,6 +66,7 @@ const ThumbLink = styled(Link)`
 `;
 
 const Cover = styled.div`
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   flex-shrink: 0;

@@ -1,4 +1,4 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { JSX } from 'react';
@@ -9,7 +9,7 @@ import { ReactionCountsVM, ViewerReactionVM } from '../../viewModels/';
 
 type Props = {
   emoji: ReactionEmoji;
-  targetType: ReactionTargetType;
+  targetType: EntityType;
   targetId?: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];

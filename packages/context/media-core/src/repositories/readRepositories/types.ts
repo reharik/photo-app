@@ -2,10 +2,9 @@ import {
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
-  CommentTargetType,
+  EntityType,
   Operation,
   ReactionEmoji,
-  ReactionTargetType,
   User,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
@@ -157,7 +156,7 @@ export type AlbumMemberReadRepository = {
 
 export type ReactionRecord = {
   id: EntityId;
-  targetType: ReactionTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   userId: EntityId;
   emoji: ReactionEmoji;
@@ -169,7 +168,7 @@ export type DBCommentRow = Omit<CommentRow, 'reactionCounts'> & {
 
 export type CommentReadRepository = {
   getCommentsForTarget: (args: {
-    targetType: CommentTargetType;
+    targetType: EntityType;
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }) => Promise<DBCommentRow[]>;
@@ -177,10 +176,10 @@ export type CommentReadRepository = {
 };
 
 export type ReactionReadRepository = {
-  countForTarget: (args: { targetType: ReactionTargetType; targetId: EntityId }) => Promise<number>;
+  countForTarget: (args: { targetType: EntityType; targetId: EntityId }) => Promise<number>;
   viewerReactionsForTargets: (args: {
     viewerId: EntityId;
-    targetType: ReactionTargetType;
+    targetType: EntityType;
     targetIds: EntityId[];
   }) => Promise<DbReactionRow[]>;
 };
@@ -217,6 +216,7 @@ export type SharedAlbumRow = {
   sharedBy: EntityId;
   sharedByFirstName: string;
   sharedByLastName: string;
+  hasUnseen: boolean;
 } & AlbumWithCoverRow;
 
 export type SharedWithMeReadRepository = {

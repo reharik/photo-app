@@ -1,4 +1,4 @@
-import { ReactionTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
 import { useViewer } from '../../hooks/useViewer';
@@ -98,7 +98,7 @@ export const CommentRow = ({
         {onRefetchComments ? (
           <ReactionsContainer
             targetId={comment.id}
-            targetType={ReactionTargetType.comment}
+            targetType={EntityType.comment}
             reactionCounts={comment.reactionCounts}
             viewerReactions={comment.viewerReactions}
             canReact

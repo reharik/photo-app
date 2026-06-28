@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { CommentTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { type JSX, useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
@@ -66,7 +66,7 @@ export const CommentsForViewerMediaItemContainer = ({
             input: {
               body,
               parentCommentId,
-              targetType: CommentTargetType.mediaItem,
+              targetType: EntityType.mediaItem,
               targetId: mediaItemId,
             },
           },

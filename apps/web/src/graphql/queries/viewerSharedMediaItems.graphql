@@ -18,6 +18,8 @@ fragment SharedWithMeMediaItem on SharedWithMeMediaItemType {
   id
   sharedAt
   sharedBy
+  sharedByFirstName
+  sharedByLastName
   mediaItem {
     ...MediaItemSummary
   }

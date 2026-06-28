@@ -1,4 +1,4 @@
-import { ReactionEmoji, ReactionTargetType } from '@packages/contracts';
+import { ReactionEmoji, EntityType } from '@packages/contracts';
 import { Heart, MessageCircleMore } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import styled from 'styled-components';
@@ -90,7 +90,7 @@ const InteractiveReactionPill = ({
   const toggleMutation = useAppMutationState();
   const { handleToggle } = useReactionHandlers(
     itemId,
-    ReactionTargetType.mediaItem,
+    EntityType.mediaItem,
     toggleMutation,
     viewerReactions ?? [],
     onReactionsRefetch,

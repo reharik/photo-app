@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { Readable } from 'node:stream';
 
-import { readStreamToBuffer } from '../application/readStreamToBuffer';
+import { readStreamToBuffer } from '../tasks/mediaWorkers/readStreamToBuffer';
 
 describe('readStreamToBuffer', () => {
   describe('When the stream emits Buffer chunks', () => {

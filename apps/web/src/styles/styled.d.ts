@@ -132,6 +132,9 @@ declare module 'styled-components' {
       textInfo: string;
       textWarning: string;
 
+      /* Notifications */
+      unseen: string;
+
       /* Loading */
       loadingDot: string;
       loadingSpinner: string;

@@ -19,6 +19,14 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         errors: result.success ? [] : [toContractErrorPayload(result.error)],
       };
     }),
+    markSeen: authenticatedWriteResolver((_parent, args, ctx) => {
+      const { targetType, targetId } = args;
+      return ctx.writeServices.markActivitySeen({
+        targetType,
+        targetId,
+        viewerId: ctx.viewer.id,
+      });
+    }),
   },
 };
 

@@ -24,7 +24,11 @@ export default {
   },
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: ['<rootDir>/src/tests/setup.ts'],
-  testMatch: ['**/tests/**/*.tests.ts', '**/?(*.)+(spec|test).?([mc])[jt]s?(x)'],
+  // Jest owns `*.tests.ts`; single-`test` files (`*.test.ts`, e.g. the exif
+  // suites) run under node:test via `node --test` (see project.json), so keep
+  // them out of jest to avoid double-running / runner-API clashes.
+  testMatch: ['**/tests/**/*.tests.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '\\.test\\.ts$'],
   transformIgnorePatterns: [
     'node_modules/(?!(@reharik/smart-enum|@reharik/smart-enum-knex|case-anything|@network|koa|@koa|only|http-errors|statuses)/)',
   ],

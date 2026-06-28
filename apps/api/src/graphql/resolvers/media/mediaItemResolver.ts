@@ -1,4 +1,4 @@
-import { CommentTargetType } from '@packages/contracts';
+import { EntityType } from '@packages/contracts';
 import { authenticatedReadResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 
@@ -16,7 +16,7 @@ const mediaItemResolvers: Resolvers = {
     comments: authenticatedReadResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       const comments = await ctx.agnosticReadServices.commentReadService.listComments({
-        targetType: CommentTargetType.mediaItem,
+        targetType: EntityType.mediaItem,
         targetId: parent.id,
         collectionInfo,
         viewerId: ctx.viewer?.id,

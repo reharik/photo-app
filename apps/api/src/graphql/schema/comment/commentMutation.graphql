@@ -17,7 +17,7 @@ input AddCommentInput {
   """
   Ignored when parentCommentId is set; the service copies target from the parent.
   """
-  targetType: CommentTargetType!
+  targetType: EntityType!
   """
   Ignored when parentCommentId is set; the service copies target from the parent.
   """

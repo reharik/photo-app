@@ -9,13 +9,9 @@ export type TemplateData = {
     resourceName: string;
     inviteUrl: string;
   };
-  digest: {
-    firstName: string;
-    lastName: string;
-    periodLabel: string;
-    summaryLine: string;
-    highlights: { title: string; detail: string }[];
-    digestUrl: string;
+  albumActivity: {
+    albumTitles: string[];
+    viewUrl: string;
   };
   passwordReset: {
     firstName: string;

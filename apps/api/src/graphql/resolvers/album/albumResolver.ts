@@ -1,4 +1,4 @@
-import { AlbumItemSortBy, CommentTargetType } from '@packages/contracts';
+import { AlbumItemSortBy, EntityType } from '@packages/contracts';
 import { authenticatedReadResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
@@ -23,7 +23,7 @@ const albumResolvers: Resolvers = {
     comments: authenticatedReadResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       const nodes = await ctx.agnosticReadServices.commentReadService.listComments({
-        targetType: CommentTargetType.album,
+        targetType: EntityType.album,
         targetId: parent.id,
         collectionInfo,
         viewerId: ctx.viewer?.id,

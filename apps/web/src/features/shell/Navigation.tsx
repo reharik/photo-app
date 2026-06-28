@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { AnchoredMenu } from '../../ui/AnchoredMenu';
+import { UnseenDot } from '../../ui/UnseenDot';
 
 export type NavigationChildItem = {
   label: string;
@@ -18,6 +19,8 @@ export type NavigationLinkItem = {
 export type NavigationParentItem = {
   label: string;
   children: NavigationChildItem[];
+  /** Show the aggregate unseen-activity dot on this parent's trigger. */
+  hasUnseen?: boolean;
 };
 
 export type NavigationItem = NavigationLinkItem | NavigationParentItem;
@@ -99,6 +102,7 @@ const NavigationParentInline = ({ item, onLinkClick }: NavigationParentInlinePro
       >
         {item.label}
       </ParentTrigger>
+      {item.hasUnseen ? <UnseenDot size={7} top={4} right={-2} /> : null}
       <AnchoredMenu
         open={menuOpen}
         anchorRef={triggerRef}
@@ -150,6 +154,7 @@ const NavigationParentStacked = ({ item, onLinkClick }: NavigationParentStackedP
       >
         {item.label}
       </StackedParentButton>
+      {item.hasUnseen ? <UnseenDot size={7} top={12} right={8} /> : null}
       {expanded ? (
         <StackedChildren>
           {item.children.map((child) => {
@@ -333,6 +338,7 @@ const MenuNavLink = styled(NavLink)`
 `;
 
 const StackedParentWrap = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;

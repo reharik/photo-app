@@ -102,4 +102,11 @@ export const colors = {
   teal_dark: '#306967',
   teal_darker: '#234E4D',
   teal_darkest: '#163131',
+
+  // ── Notification ─────────────────────────────────────────────────
+  // Unseen-activity dot. A vivid warm red (HSL ≈ 4°, 65%, 51%) tuned to the
+  // warm palette but punchier than the terracotta `red`, so a tiny corner dot
+  // still pops over photo covers. Deliberately its own value — NOT the error
+  // red — so retuning `error` never shifts the unseen indicator.
+  notify: '#D83A2E',
 } as const;

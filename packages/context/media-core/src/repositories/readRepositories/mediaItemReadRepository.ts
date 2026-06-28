@@ -6,7 +6,7 @@ import {
   PagedList,
 } from '../../services/readServices/types';
 import { EntityId } from '../../types/types';
-import { toPagedResult } from '../repositoryHelpers';
+import { toPagedResult } from '../queryHelpers';
 import type { MediaItemReadRepository, MediaItemTagRow, ReadRepositoryDeps } from './types';
 
 const DBmediaItemRowFields = [
