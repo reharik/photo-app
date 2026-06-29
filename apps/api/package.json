@@ -40,9 +40,9 @@
     "@koa/cors": "^5.0.0",
     "@koa/router": "^13.1.0",
     "@packages/contracts": "*",
-    "@packages/notifications": "*",
     "@packages/infrastructure": "*",
     "@packages/media-core": "*",
+    "@packages/notifications": "*",
     "@reharik/smart-enum": "^0.4.6",
     "@reharik/smart-enum-knex": "^0.0.3",
     "awilix": "^12.1.1",
@@ -57,7 +57,8 @@
     "koa": "2.16.2",
     "koa-body": "^6.0.1",
     "luxon": "^3.7.2",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "sql-formatter": "^15.8.2"
   },
   "devDependencies": {
     "@eddeee888/gcg-typescript-resolver-files": "^0.15.0",

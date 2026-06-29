@@ -216,7 +216,6 @@ export type SharedAlbumRow = {
   sharedBy: EntityId;
   sharedByFirstName: string;
   sharedByLastName: string;
-  hasUnseen: boolean;
 } & AlbumWithCoverRow;
 
 export type SharedWithMeReadRepository = {

@@ -49,6 +49,8 @@ export type Config = {
   fromName: string;
   clientUrl: string;
   appName: string;
+  isProduction: boolean;
+  isDevelopment: boolean;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -73,6 +75,7 @@ export const createConfigFromEnv = (): Config => {
   const nodeEnv = getValidValue<NodeEnv>(process.env.NODE_ENV || 'development', nodeEnvs);
 
   const isProduction = nodeEnv === 'production' || nodeEnv === 'prod';
+  const isDevelopment = nodeEnv === 'development';
   const warnings: string[] = [];
 
   if (isProduction && process.env.JWT_SECRET === 'your-secret-key-here') {
@@ -133,6 +136,8 @@ export const createConfigFromEnv = (): Config => {
     fromName: process.env.FROM_NAME || '',
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     appName: process.env.APP_NAME || 'BetanaMe',
+    isProduction,
+    isDevelopment,
   };
 };
 

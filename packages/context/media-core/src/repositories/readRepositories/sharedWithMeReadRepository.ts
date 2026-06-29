@@ -95,6 +95,7 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))
       .modify(withActiveGrants(database, viewerId))
+      .modify(withUnseenAlbumFlag(database, viewerId))
       .andWhere('album.isPublicLinkAlbum', false)
       .select<SharedAlbumRow>(...albumFields)
       .where('album.id', albumId);

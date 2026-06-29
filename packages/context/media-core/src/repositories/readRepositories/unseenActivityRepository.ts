@@ -18,6 +18,8 @@ export const build__UnseenActivityRepository = ({
   // viewer. Keyed on target_type + target_id only — opening an album must not
   // leave per-mediaItem (comment) dots behind, and vice versa.
   markSeen: async (targetType, targetId, viewerId) => {
-    await database('unseenActivity').delete().where({ targetType, targetId, viewerId });
+    await database('unseenActivity')
+      .delete()
+      .where({ targetType: targetType.value, targetId, viewerId });
   },
 });

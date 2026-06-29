@@ -1,4 +1,4 @@
-import { ok, EntityType, WriteResult } from '@packages/contracts';
+import { EntityType, ok, WriteResult } from '@packages/contracts';
 import { UnseenActivityRepository } from '../../repositories/readRepositories/unseenActivityRepository';
 import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';

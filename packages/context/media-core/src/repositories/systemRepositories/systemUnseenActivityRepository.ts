@@ -1,4 +1,5 @@
 import { EntityType, UnseenActivityType } from '@packages/contracts';
+import { prepareForDatabase } from '@reharik/smart-enum';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
@@ -35,7 +36,7 @@ export const build__SystemUnseenActivityRepository = ({
 }: SystemUnseenActivityRepositoryDeps): SystemUnseenActivityRepository => ({
   upsertActivityRow: async (upsert: UnseenActivity) => {
     return database('unseenActivity')
-      .insert({ ...upsert })
+      .insert(prepareForDatabase({ ...upsert }))
       .onConflict(['viewerId', 'albumId', 'targetType', 'targetId', 'activityKind'])
       .ignore();
   },
