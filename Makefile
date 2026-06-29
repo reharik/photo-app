@@ -36,6 +36,10 @@ docker/dev/build:
 docker/dev/up:
 	$(compose_dev) up --build;
 
+docker/dev/up/no-cache:
+	$(compose_dev) build --no-cache
+	$(compose_dev) up
+	
 docker/dev/down:
 	$(compose_dev) down --rmi local --remove-orphans --volumes
 
