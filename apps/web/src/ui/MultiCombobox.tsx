@@ -1,6 +1,16 @@
-import { useCombobox, useMultipleSelection } from 'downshift';
-import React, { useLayoutEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useRef, useState } from 'react';
+import type { Key, Selection } from 'react-aria-components';
+import {
+  Button,
+  ComboBox,
+  Input,
+  ListBox,
+  ListBoxItem,
+  Popover,
+  Tag,
+  TagGroup,
+  TagList,
+} from 'react-aria-components';
 import styled from 'styled-components';
 
 export type MultiComboboxOption = {
@@ -24,59 +34,51 @@ type MultiComboboxProps = {
   customValueLabel?: (input: string) => string;
 };
 
-type ListOption = { kind: 'item'; item: MultiComboboxOption } | { kind: 'custom'; value: string };
+/** Sentinel key for the synthetic "create custom value" row injected into the list. */
+const CUSTOM_KEY = '__multicombobox_custom__';
+
+type ListItem = {
+  id: string;
+  label: string;
+  isCustom: boolean;
+  option?: MultiComboboxOption;
+};
 
 const DEFAULT_EMPTY_MESSAGE = 'No results.';
-const PANEL_OFFSET_PX = 4;
 const defaultCustomValueLabel = (input: string): string => `Add "${input}"`;
 
 const includesValue = (list: readonly MultiComboboxOption[], item: MultiComboboxOption): boolean =>
   list.some((entry) => entry.value === item.value);
 
-type BuildComboboxItemsResult = {
-  comboboxItems: ListOption[];
-  customOption: ListOption | null;
-};
-
-const buildComboboxItems = (
+const buildListItems = (
   rawInputValue: string,
   catalogItems: readonly MultiComboboxOption[],
+  selected: readonly MultiComboboxOption[],
   allowCustom: boolean,
-): BuildComboboxItemsResult => {
+  customValueLabel: (input: string) => string,
+): ListItem[] => {
   const query = rawInputValue.trim().toLowerCase();
-  const filteredItems =
-    query === ''
-      ? [...catalogItems]
-      : catalogItems.filter((item) => item.display.toLowerCase().includes(query));
+  const selectedKeys = new Set(selected.map((entry) => entry.value));
+
+  const filtered = catalogItems
+    .filter((item) => !selectedKeys.has(item.value))
+    .filter((item) => query === '' || item.display.toLowerCase().includes(query));
 
   const hasExactMatch =
     query !== '' && catalogItems.some((item) => item.display.trim().toLowerCase() === query);
 
-  const customOption: ListOption | null =
-    allowCustom && rawInputValue.trim() && !hasExactMatch
-      ? { kind: 'custom', value: rawInputValue.trim() }
-      : null;
+  const items: ListItem[] = filtered.map((option) => ({
+    id: option.value,
+    label: option.display,
+    isCustom: false,
+    option,
+  }));
 
-  const comboboxItems: ListOption[] = [
-    ...filteredItems.map((item) => ({ kind: 'item' as const, item })),
-    ...(customOption ? [customOption] : []),
-  ];
-
-  return { comboboxItems, customOption };
-};
-
-/** Option X: when a custom row exists, highlight it; otherwise the top catalog match. */
-const resolveHighlightedIndex = (
-  comboboxItems: readonly ListOption[],
-  customOption: ListOption | null,
-): number => {
-  if (comboboxItems.length === 0) {
-    return -1;
+  if (allowCustom && rawInputValue.trim() && !hasExactMatch) {
+    items.push({ id: CUSTOM_KEY, label: customValueLabel(rawInputValue.trim()), isCustom: true });
   }
-  if (customOption != null) {
-    return comboboxItems.length - 1;
-  }
-  return 0;
+
+  return items;
 };
 
 export const MultiCombobox = ({
@@ -96,243 +98,168 @@ export const MultiCombobox = ({
 }: MultiComboboxProps): React.ReactElement => {
   const [inputValue, setInputValue] = useState('');
   const [localValidationError, setLocalValidationError] = useState<string | undefined>(undefined);
-  const [menuCoords, setMenuCoords] = useState<
-    { top: number; left: number; width: number } | undefined
-  >(undefined);
-  const triggerRef = React.useRef<HTMLDivElement>(null);
-  const inputId = React.useId();
+  // The popover anchors to the whole field box (tags + input), not just the input.
+  const fieldBoxRef = useRef<HTMLDivElement>(null);
+
   const displayError = error ?? localValidationError;
   const hasError = Boolean(displayError);
 
-  const selectedItems = React.useMemo(() => [...value], [value]);
+  const listItems = buildListItems(inputValue, items, value, allowCustomValue, customValueLabel);
 
-  const { getSelectedItemProps, getDropdownProps, removeSelectedItem } = useMultipleSelection({
-    selectedItems,
-    onSelectedItemsChange: ({ selectedItems: nextSelectedItems }) => {
-      onChange(nextSelectedItems ?? []);
-    },
-    itemToKey: (item) => (item == null ? '' : item.value),
-  });
-
-  const { comboboxItems } = buildComboboxItems(inputValue, items, allowCustomValue);
-
-  const itemToString = (option: ListOption | null): string => {
-    if (!option) {
-      return '';
+  /** Add a catalog/custom option, with dedup backstop. Always clears the input. */
+  const addOption = (option: MultiComboboxOption): void => {
+    if (!includesValue(value, option)) {
+      onChange([...value, option]);
     }
-    return option.kind === 'item' ? option.item.display : option.value;
-  };
-
-  const addItem = (item: MultiComboboxOption): void => {
-    if (includesValue(value, item)) {
-      return;
-    }
-    onChange([...value, item]);
-  };
-
-  const handleSelectOption = (option: ListOption): void => {
-    if (option.kind === 'item') {
-      addItem(option.item);
-      setLocalValidationError(undefined);
-      return;
-    }
-
-    if (!createCustomItem) {
-      return;
-    }
-
-    const trimmed = option.value;
-    const validationMessage = validateEntry?.(trimmed);
-    if (validationMessage) {
-      setLocalValidationError(validationMessage);
-      setInputValue(trimmed);
-      return;
-    }
-
-    addItem(createCustomItem(trimmed));
+    setInputValue('');
     setLocalValidationError(undefined);
   };
 
-  const {
-    isOpen,
-    highlightedIndex,
-    getMenuProps,
-    getInputProps,
-    getItemProps,
-    selectItem,
-    closeMenu,
-  } = useCombobox<ListOption>({
-    items: comboboxItems,
-    inputValue,
-    itemToString,
-    onInputValueChange: ({ inputValue: nextInputValue }) => {
-      setInputValue(nextInputValue ?? '');
-      setLocalValidationError(undefined);
-    },
-    onSelectedItemChange: ({ selectedItem: nextSelectedItem }) => {
-      if (!nextSelectedItem) {
-        return;
-      }
-      handleSelectOption(nextSelectedItem);
-    },
-    stateReducer: (state, actionAndChanges) => {
-      const { changes, type } = actionAndChanges;
-      switch (type) {
-        case useCombobox.stateChangeTypes.InputChange: {
-          const { comboboxItems: nextItems, customOption: nextCustomOption } = buildComboboxItems(
-            changes.inputValue ?? '',
-            items,
-            allowCustomValue,
-          );
-          return {
-            ...changes,
-            highlightedIndex: resolveHighlightedIndex(nextItems, nextCustomOption),
-          };
-        }
-        case useCombobox.stateChangeTypes.InputClick: {
-          if (!changes.isOpen) {
-            return changes;
-          }
-          const { comboboxItems: nextItems, customOption: nextCustomOption } = buildComboboxItems(
-            state.inputValue,
-            items,
-            allowCustomValue,
-          );
-          return {
-            ...changes,
-            highlightedIndex: resolveHighlightedIndex(nextItems, nextCustomOption),
-          };
-        }
-        case useCombobox.stateChangeTypes.ItemClick:
-        case useCombobox.stateChangeTypes.InputKeyDownEnter:
-          if (changes.selectedItem != null) {
-            return {
-              ...changes,
-              isOpen: true,
-              inputValue: '',
-            };
-          }
-          return changes;
-        default:
-          return changes;
-      }
-    },
-  });
-
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      setMenuCoords(undefined);
+  /** Commit free-text custom value (validation gate). Keeps input on validation failure. */
+  const commitCustom = (raw: string): void => {
+    const trimmed = raw.trim();
+    if (!trimmed || !allowCustomValue || !createCustomItem) {
       return;
     }
+    const validationMessage = validateEntry?.(trimmed);
+    if (validationMessage) {
+      setLocalValidationError(validationMessage);
+      return;
+    }
+    addOption(createCustomItem(trimmed));
+  };
 
-    const updatePosition = (): void => {
-      const anchor = triggerRef.current;
-      if (anchor == null) {
-        return;
-      }
-      const rect = anchor.getBoundingClientRect();
-      setMenuCoords({
-        top: rect.bottom + PANEL_OFFSET_PX,
-        left: rect.left,
-        width: rect.width,
-      });
-    };
+  const handleSelectionChange = (key: Key | null): void => {
+    // Custom-value blur paths surface as null here — handled by onBlur instead.
+    if (key == null) {
+      return;
+    }
+    if (key === CUSTOM_KEY) {
+      commitCustom(inputValue);
+      return;
+    }
+    const picked = listItems.find((entry) => entry.id === key)?.option;
+    if (picked) {
+      addOption(picked);
+    }
+  };
 
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-    return () => {
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [isOpen]);
-
-  const showEmpty = isOpen && comboboxItems.length === 0;
-
-  const inputProps = getInputProps({
-    ...getDropdownProps({
-      id: inputId,
-      disabled,
-      placeholder,
-      autoComplete: 'off',
-      name: 'new-password',
-    }),
-    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'Tab' && highlightedIndex >= 0) {
-        selectItem(comboboxItems[highlightedIndex] ?? null);
-      }
-    },
-  });
-
-  const menuProps = getMenuProps(
-    {
-      'aria-hidden': !isOpen,
-    },
-    { suppressRefError: true },
-  );
-
-  const portaledMenu =
-    isOpen && menuCoords != null
-      ? createPortal(
-          <MenuList
-            {...menuProps}
-            $open={isOpen}
-            $top={menuCoords.top}
-            $left={menuCoords.left}
-            $width={menuCoords.width}
-          >
-            {comboboxItems.map((option, index) => (
-              <MenuItem
-                key={option.kind === 'item' ? option.item.value : `custom-${option.value}`}
-                {...getItemProps({ item: option, index })}
-                $highlighted={highlightedIndex === index}
-                $selected={option.kind === 'item' && includesValue(value, option.item)}
-              >
-                {option.kind === 'item' ? option.item.display : customValueLabel(option.value)}
-              </MenuItem>
-            ))}
-            {showEmpty ? <EmptyMessage>{emptyMessage}</EmptyMessage> : null}
-          </MenuList>,
-          document.body,
-        )
-      : null;
+  const handleRemove = (keys: Selection): void => {
+    if (keys === 'all') {
+      onChange([]);
+      return;
+    }
+    onChange(value.filter((entry) => !keys.has(entry.value)));
+  };
 
   return (
     <FieldWrapper>
-      {label ? <LabelWrapper htmlFor={inputId}>{label}</LabelWrapper> : null}
+      {label ? <FieldLabel>{label}</FieldLabel> : null}
       {hint ? <Hint>{hint}</Hint> : null}
-      <InputWrap>
-        <TriggerWrap ref={triggerRef} $hasError={hasError} $disabled={Boolean(disabled)}>
-          {selectedItems.map((selectedItem, index) => (
-            <SelectedPill
-              key={selectedItem.value}
-              {...getSelectedItemProps({ selectedItem, index })}
-            >
-              <PillLabel>{selectedItem.display}</PillLabel>
-              <RemoveButton
-                type="button"
-                aria-label={`Remove ${selectedItem.display}`}
-                disabled={disabled}
-                onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                  event.stopPropagation();
-                  removeSelectedItem(selectedItem);
-                }}
-              >
-                ×
-              </RemoveButton>
-            </SelectedPill>
-          ))}
-          <InlineInput
-            {...inputProps}
-            onBlur={(event: React.FocusEvent<HTMLInputElement>) => {
-              inputProps.onBlur?.(event);
-              closeMenu();
-            }}
+      <FieldBox ref={fieldBoxRef} $hasError={hasError} $disabled={Boolean(disabled)}>
+        {/*
+          The TagGroup MUST be a sibling of the ComboBox, not nested inside it: RAC's Tag
+          and ListBox both read the same ListStateContext, so a TagGroup rendered under a
+          ComboBox resolves the combobox's list state and crashes on its tag items.
+        */}
+        <StyledTagGroup
+          aria-label={label ? `Selected ${label}` : 'Selected items'}
+          onRemove={handleRemove}
+        >
+          <TagList items={value} renderEmptyState={() => null}>
+            {(item: MultiComboboxOption) => (
+              // Raw Tag — styled() would change its type and break RAC collection detection.
+              <Tag id={item.value} textValue={item.display} className="mc-tag">
+                <PillLabel>{item.display}</PillLabel>
+                <RemoveButton
+                  slot="remove"
+                  aria-label={`Remove ${item.display}`}
+                  isDisabled={disabled}
+                >
+                  ×
+                </RemoveButton>
+              </Tag>
+            )}
+          </TagList>
+        </StyledTagGroup>
+        <ContentsComboBox
+          aria-label={label}
+          // selection always flows into the tag list; the combobox never holds a selection
+          selectedKey={null}
+          inputValue={inputValue}
+          onInputChange={(next) => {
+            setInputValue(next);
+            setLocalValidationError(undefined);
+          }}
+          onSelectionChange={handleSelectionChange}
+          // OUR allowCustomValue is modelled via the injected custom row + blur-commit below;
+          // RAC's own flag stays off so the first option auto-focuses for Enter-to-commit.
+          allowsCustomValue={false}
+          allowsEmptyCollection
+          // Open on focus so predefined options are visible without typing.
+          menuTrigger="focus"
+          isDisabled={disabled}
+        >
+          <StyledInput
+            placeholder={placeholder}
             aria-invalid={hasError}
+            onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+              // Backspace on an empty input removes the most recently added tag.
+              if (event.key === 'Backspace' && inputValue === '' && value.length > 0) {
+                event.preventDefault();
+                onChange(value.slice(0, -1));
+                return;
+              }
+              if (event.key !== 'Enter') {
+                return;
+              }
+              // Never let Enter submit the enclosing form from this field.
+              event.preventDefault();
+              // If the user arrow-focused an option, let RAC select it (onSelectionChange).
+              if (event.currentTarget.getAttribute('aria-activedescendant')) {
+                return;
+              }
+              // Otherwise commit the typed value (RAC does not auto-focus the first row).
+              if (!inputValue.trim()) {
+                return;
+              }
+              const query = inputValue.trim().toLowerCase();
+              const exact = listItems.find(
+                (entry) => !entry.isCustom && entry.label.trim().toLowerCase() === query,
+              );
+              const target = exact ?? listItems.find((entry) => entry.isCustom) ?? listItems[0];
+              if (target?.isCustom) {
+                commitCustom(inputValue);
+              } else if (target?.option) {
+                addOption(target.option);
+              }
+            }}
+            onBlur={() => {
+              if (allowCustomValue) {
+                // Commit-on-blur: turn a pending valid custom entry into a tag.
+                // No-op on empty input (e.g. just after a selection cleared it).
+                if (inputValue.trim()) {
+                  commitCustom(inputValue);
+                }
+              } else if (inputValue) {
+                // List-only field: discard un-committed filter text on blur.
+                setInputValue('');
+                setLocalValidationError(undefined);
+              }
+            }}
           />
-        </TriggerWrap>
-        {portaledMenu}
-      </InputWrap>
+          <StyledPopover triggerRef={fieldBoxRef}>
+            <StyledListBox items={listItems} renderEmptyState={() => <Empty>{emptyMessage}</Empty>}>
+              {(item: ListItem) => (
+                // Raw ListBoxItem (see Tag note) — styled via .mc-item on the parent.
+                <ListBoxItem id={item.id} textValue={item.label} className="mc-item">
+                  {item.label}
+                </ListBoxItem>
+              )}
+            </StyledListBox>
+          </StyledPopover>
+        </ContentsComboBox>
+      </FieldBox>
       {displayError ? <ErrorMessage>{displayError}</ErrorMessage> : null}
     </FieldWrapper>
   );
@@ -344,7 +271,7 @@ const FieldWrapper = styled.div`
   gap: ${({ theme }) => theme.spacing(0.5)};
 `;
 
-const LabelWrapper = styled.label`
+const FieldLabel = styled.span`
   font-size: ${({ theme }) => theme.fontSize._14};
   color: ${({ theme }) => theme.color.label};
 `;
@@ -356,11 +283,7 @@ const Hint = styled.p`
   color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;
 
-const InputWrap = styled.div`
-  position: relative;
-`;
-
-const TriggerWrap = styled.div<{ $hasError: boolean; $disabled: boolean }>`
+const FieldBox = styled.div<{ $hasError: boolean; $disabled: boolean }>`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -384,17 +307,27 @@ const TriggerWrap = styled.div<{ $hasError: boolean; $disabled: boolean }>`
   }
 `;
 
-const SelectedPill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(0.5)};
-  padding: 2px 4px 2px 8px;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.color.selectionBg};
-  color: ${({ theme }) => theme.color.selectionText};
-  font-size: ${({ theme }) => theme.fontSize._12};
-  line-height: 1.4;
-  max-width: 100%;
+// Pills flow inline with the input inside FieldBox; the wrappers themselves render no box.
+const StyledTagGroup = styled(TagGroup)`
+  display: contents;
+
+  .mc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing(0.5)};
+    padding: 2px 4px 2px 8px;
+    border-radius: 999px;
+    background: ${({ theme }) => theme.color.selectionBg};
+    color: ${({ theme }) => theme.color.selectionText};
+    font-size: ${({ theme }) => theme.fontSize._12};
+    line-height: 1.4;
+    max-width: 100%;
+    outline: none;
+  }
+`;
+
+const ContentsComboBox = styled(ComboBox)`
+  display: contents;
 `;
 
 const PillLabel = styled.span`
@@ -403,7 +336,7 @@ const PillLabel = styled.span`
   white-space: nowrap;
 `;
 
-const RemoveButton = styled.button`
+const RemoveButton = styled(Button)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -418,17 +351,17 @@ const RemoveButton = styled.button`
   line-height: 1;
   cursor: pointer;
 
-  &:disabled {
+  &[data-disabled] {
     cursor: not-allowed;
     opacity: 0.5;
   }
 
-  &:hover:not(:disabled) {
+  &[data-hovered] {
     background: rgba(0, 0, 0, 0.08);
   }
 `;
 
-const InlineInput = styled.input`
+const StyledInput = styled(Input)`
   flex: 1 1 120px;
   min-width: 80px;
   border: 0;
@@ -442,18 +375,17 @@ const InlineInput = styled.input`
     color: ${({ theme }) => theme.color.inputPlaceholder};
   }
 
-  &:disabled {
+  &[data-disabled] {
     color: ${({ theme }) => theme.color.inputDisabledText};
     cursor: not-allowed;
   }
 `;
 
-const MenuList = styled.ul<{ $open: boolean; $top: number; $left: number; $width: number }>`
-  position: fixed;
-  top: ${({ $top }) => $top}px;
-  left: ${({ $left }) => $left}px;
-  width: ${({ $width }) => $width}px;
-  z-index: 1000;
+const StyledPopover = styled(Popover)`
+  width: var(--trigger-width);
+`;
+
+const StyledListBox = styled(ListBox)`
   margin: 0;
   padding: ${({ theme }) => theme.spacing(0.5)} 0;
   list-style: none;
@@ -463,27 +395,27 @@ const MenuList = styled.ul<{ $open: boolean; $top: number; $left: number; $width
   box-shadow: ${({ theme }) => theme.boxShadow.md};
   max-height: ${({ theme }) => theme.spacing(32)};
   overflow-y: auto;
-  display: ${({ $open }) => ($open ? 'block' : 'none')};
-`;
+  outline: none;
 
-const MenuItem = styled.li<{ $highlighted: boolean; $selected: boolean }>`
-  padding: ${({ theme }) => theme.spacing(1.25)} ${({ theme }) => theme.spacing(1.5)};
-  font-size: ${({ theme }) => theme.fontSize._14};
-  cursor: pointer;
-  background: ${({ theme, $highlighted, $selected }) => {
-    if ($highlighted) {
-      return theme.color.bodyElevated;
-    }
-    if ($selected) {
-      return theme.color.selectionBg;
-    }
-    return 'transparent';
-  }};
-  color: ${({ theme, $selected }) =>
-    $selected ? theme.color.selectionText : theme.color.bodyText};
-`;
+  .mc-item {
+    padding: ${({ theme }) => theme.spacing(1.25)} ${({ theme }) => theme.spacing(1.5)};
+    font-size: ${({ theme }) => theme.fontSize._14};
+    color: ${({ theme }) => theme.color.bodyText};
+    cursor: pointer;
+    outline: none;
+  }
 
-const EmptyMessage = styled.li`
+  .mc-item[data-focused] {
+    background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  .mc-item[data-selected] {
+    background: ${({ theme }) => theme.color.selectionBg};
+    color: ${({ theme }) => theme.color.selectionText};
+  }
+` as typeof ListBox;
+
+const Empty = styled.div`
   padding: ${({ theme }) => theme.spacing(1.25)} ${({ theme }) => theme.spacing(1.5)};
   color: ${({ theme }) => theme.color.bodyTextMuted};
   font-size: ${({ theme }) => theme.fontSize._14};
