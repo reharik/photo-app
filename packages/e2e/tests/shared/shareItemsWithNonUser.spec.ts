@@ -30,7 +30,7 @@ test.describe('Share individual items with an email that is not a user', () => {
       await selection.clickAction('Share');
 
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 photos' });
-      await shareDialog.getByLabel('Recipient').fill(recipientEmail);
+      await shareDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail);
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 

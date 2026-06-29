@@ -38,7 +38,7 @@ test.describe('Share an album with an email that is not a user', () => {
 
       await userA.page.getByRole('button', { name: 'Share album' }).click();
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-      await shareDialog.getByLabel('Recipient').fill(recipientEmail);
+      await shareDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail);
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 

@@ -30,4 +30,5 @@ type MarkSeenPayload {
 # separate so this never gets conflated with "which entity".
 enum UnseenActivityType {
   ITEM_ADDED
+  ALBUM_SHARED
 }

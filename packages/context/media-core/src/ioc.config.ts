@@ -23,7 +23,7 @@ export default defineIocConfig({
       unitOfWork: { lifetime: 'transient' },
     },
     DomainEventHandler: {
-      unseenActivityHandler: { default: true }, // named to satisfy constraint
+      mediaItemAddedToAlbumHandler: { default: true }, // named to satisfy constraint
     },
   },
   lifetimeMarkers: {

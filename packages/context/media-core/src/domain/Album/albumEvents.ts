@@ -6,3 +6,9 @@ export interface MediaItemAddedToAlbum extends DomainEventBase {
   mediaItemId: EntityId;
   albumId: EntityId;
 }
+
+export interface AlbumSharedWithUser extends DomainEventBase {
+  kind: 'albumSharedWithUser';
+  userId: EntityId;
+  albumId: EntityId;
+}

@@ -88,6 +88,7 @@ export interface IocGeneratedCradle {
   albumMemberReadRepository: AlbumMemberReadRepository;
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
+  albumSharedWithUserHandler: DomainEventHandler;
   authorizationReadRepository: AuthorizationReadRepository;
   commentReadRepository: CommentReadRepository;
   commentReadService: CommentReadService;
@@ -115,6 +116,7 @@ export interface IocGeneratedCradle {
   grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
   markActivitySeen: MarkActivitySeen;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
+  mediaItemAddedToAlbumHandler: DomainEventHandler;
   mediaItemOperationsService: MediaItemOperationsService;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaItemRepository: MediaItemRepository;
@@ -155,7 +157,6 @@ export interface IocGeneratedCradle {
   systemUserRepository: SystemUserRepository;
   toggleReaction: ToggleReaction;
   unitOfWork: UnitOfWork;
-  unseenActivityHandler: DomainEventHandler;
   unseenActivityRepository: UnseenActivityRepository;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;

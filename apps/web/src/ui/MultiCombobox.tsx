@@ -11,7 +11,7 @@ import {
   TagGroup,
   TagList,
 } from 'react-aria-components';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 
 export type MultiComboboxOption = {
   value: string;
@@ -46,6 +46,35 @@ type ListItem = {
 
 const DEFAULT_EMPTY_MESSAGE = 'No results.';
 const defaultCustomValueLabel = (input: string): string => `Add "${input}"`;
+
+/**
+ * Categorical pill palette — the theme's six accent/avatar hues. Each uses the
+ * saturated `_lighter` tint as background with the `_darkest` variant for text, so
+ * the chips read bold and clearly distinct while keeping AA-readable, per-hue
+ * foregrounds. Theme tokens only. Status hues (error/success/etc.) are not used as
+ * semantic signals here — these are drawn from the categorical avatar set.
+ */
+const PILL_PALETTE = [
+  { bg: 'clay_lighter', text: 'clay_darkest' },
+  { bg: 'blue_lighter', text: 'blue_darkest' },
+  { bg: 'green_lighter', text: 'green_darkest' },
+  { bg: 'purple_lighter', text: 'purple_darkest' },
+  { bg: 'teal_lighter', text: 'teal_darkest' },
+  { bg: 'yellow_lighter', text: 'yellow_darkest' },
+] as const;
+
+/**
+ * Stable 32-bit string hash → palette index. Pure function of the value, so a given
+ * option always maps to the same colour across renders and reloads, and adding or
+ * removing pills never recolours the others.
+ */
+const pillPaletteIndex = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (Math.imul(hash, 31) + value.charCodeAt(i)) >>> 0;
+  }
+  return hash % PILL_PALETTE.length;
+};
 
 const includesValue = (list: readonly MultiComboboxOption[], item: MultiComboboxOption): boolean =>
   list.some((entry) => entry.value === item.value);
@@ -96,6 +125,7 @@ export const MultiCombobox = ({
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
   customValueLabel = defaultCustomValueLabel,
 }: MultiComboboxProps): React.ReactElement => {
+  const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
   const [localValidationError, setLocalValidationError] = useState<string | undefined>(undefined);
   // The popover anchors to the whole field box (tags + input), not just the input.
@@ -167,19 +197,33 @@ export const MultiCombobox = ({
           onRemove={handleRemove}
         >
           <TagList items={value} renderEmptyState={() => null}>
-            {(item: MultiComboboxOption) => (
-              // Raw Tag — styled() would change its type and break RAC collection detection.
-              <Tag id={item.value} textValue={item.display} className="mc-tag">
-                <PillLabel>{item.display}</PillLabel>
-                <RemoveButton
-                  slot="remove"
-                  aria-label={`Remove ${item.display}`}
-                  isDisabled={disabled}
+            {(item: MultiComboboxOption) => {
+              // Deterministic colour from the value: same value → same pill colour.
+              const pill = PILL_PALETTE[pillPaletteIndex(item.value)];
+              return (
+                // Raw Tag — styled() would change its type and break RAC collection detection.
+                <Tag
+                  id={item.value}
+                  textValue={item.display}
+                  className="mc-tag"
+                  style={
+                    {
+                      '--pill-bg': theme.color[pill.bg],
+                      '--pill-text': theme.color[pill.text],
+                    } as React.CSSProperties
+                  }
                 >
-                  ×
-                </RemoveButton>
-              </Tag>
-            )}
+                  <PillLabel>{item.display}</PillLabel>
+                  <RemoveButton
+                    slot="remove"
+                    aria-label={`Remove ${item.display}`}
+                    isDisabled={disabled}
+                  >
+                    ×
+                  </RemoveButton>
+                </Tag>
+              );
+            }}
           </TagList>
         </StyledTagGroup>
         <ContentsComboBox
@@ -317,8 +361,8 @@ const StyledTagGroup = styled(TagGroup)`
     gap: ${({ theme }) => theme.spacing(0.5)};
     padding: 2px 4px 2px 8px;
     border-radius: 999px;
-    background: ${({ theme }) => theme.color.selectionBg};
-    color: ${({ theme }) => theme.color.selectionText};
+    background: var(--pill-bg);
+    color: var(--pill-text);
     font-size: ${({ theme }) => theme.fontSize._12};
     line-height: 1.4;
     max-width: 100%;
