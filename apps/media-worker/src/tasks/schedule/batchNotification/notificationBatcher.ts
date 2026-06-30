@@ -7,8 +7,9 @@ import {
   SystemUserRepository,
 } from '@packages/media-core';
 import { NotificationPayload, NotificationService } from '@packages/notifications';
-import { Config } from '../../config';
-import { WorkerTaskOutcome } from '../../types';
+import { Config } from '../../../config';
+import { WorkerTaskOutcome } from '../../../types';
+import { cleanUp, RowOutcome } from '../outcomeCleanup';
 
 export type NotificationBatcher = () => Promise<'idle' | 'processed'>;
 
@@ -22,8 +23,6 @@ type NotificationBatcherDeps = {
   config: Config;
 };
 
-const QUIET_WINDOW_MINUTES = 60;
-
 export const build__NotificationBatcher = ({
   logger,
   notificationService,
@@ -33,65 +32,61 @@ export const build__NotificationBatcher = ({
   systemAuthorizationRepository,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
+  const QUIET_WINDOW_MINUTES = config.isProduction ? 60 : 5;
+
   return async (): Promise<WorkerTaskOutcome> => {
     const rows =
       await systemPendingNotificationRepository.claimNotificationBatch(QUIET_WINDOW_MINUTES);
+    logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
     if (!rows.length) {
       return 'idle';
     }
+
     const recipientMap = groupByMapping(rows, (x) => x.recipientId);
     const albumMap = groupByMapping(rows, (x) => x.aggregateId);
 
     const userIds = [...recipientMap.keys()];
     const albumIds = [...albumMap.keys()];
 
-    const recipients = await systemUserRepository.getUsersEmail(userIds);
-    const recipientEmailMap = indexBy(recipients);
-
+    const recipients = await systemUserRepository.getUserContacts(userIds);
     const albumTitles = await systemAlbumRepository.getAlbumTitlesById(albumIds);
-    const albumTitleMap = indexBy(albumTitles);
-
     const albumAuths = await systemAuthorizationRepository.getAuthorizationsByAlbumId(albumIds);
+
+    const recipientEmailMap = indexBy(recipients);
+    const albumTitleMap = indexBy(albumTitles);
     const authMap = groupByMapping(albumAuths, (x) => x.grantedToUser);
 
-    const emailPayloads: (NotificationPayload<'albumActivity'> & { id: string })[] = [];
-    for (const [recipientId, authRows] of authMap) {
+    const outcomes: RowOutcome[] = [];
+    for (const [recipientId, rowsForRecipient] of recipientMap) {
+      // drive off claimed rows
+      const authRows = authMap.get(recipientId) ?? [];
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
-        logger.warn(`User with id: ${recipientId} does not have an email address`);
-        continue;
-      } // or collect to a dead-letter / log
-      const albumTitles = authRows.map((x) => albumTitleMap.get(x.albumId)?.title).filter(notEmpty);
-      if (!albumTitles.length) {
+        logger.warn(`User ${recipientId} has no email`);
+        for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
         continue;
       }
-      emailPayloads.push({
-        to: recipientEmail.emailAddress,
+      const emailsAlbumTitles = authRows
+        .map((x) => albumTitleMap.get(x.albumId)?.title)
+        .filter(notEmpty);
+      if (!emailsAlbumTitles.length) {
+        for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
+        continue;
+      }
+      const payload: NotificationPayload<'albumActivity'> = {
+        to: recipientEmail.email,
         template: 'albumActivity',
-        data: { albumTitles, viewUrl: config.clientUrl },
+        data: { albumTitles: emailsAlbumTitles, viewUrl: config.clientUrl },
         channels: ['email'],
-        id: recipientId,
-      });
+      };
+      const r = await notificationService.notify(payload);
+      const result = r.success ? 'sent' : 'failed';
+      for (const row of rowsForRecipient) outcomes.push({ row, result }); // one send → fan its fate across all its rows
     }
-    const results = await Promise.allSettled(
-      emailPayloads.map((x) => notificationService.notify(x)),
-    );
-
-    // rows to delete: sent recipients' rows + rows that were orphaned (revoked/no-access/deleted-album)
-    // rows to keep: failed-send recipients' rows
-    const failedRecipientIds = emailPayloads
-      .filter((_, i) => results[i].status === 'rejected')
-      .map((p) => p.id);
-    const allFailedRows = failedRecipientIds.flatMap((x) => recipientMap.get(x)).filter(notEmpty);
-    const bumpRowsIds = allFailedRows.filter((x) => x.attempts < 4).map((x) => x.id);
-    const deleteFailedRowIds = allFailedRows.filter((x) => x.attempts === 4).map((x) => x.id);
-    const deleteSuccessfulRowIds = rows
-      .filter((row) => !failedRecipientIds.includes(row.recipientId))
-      .map((x) => x.id);
-    const deleteIds = [...deleteSuccessfulRowIds, ...deleteFailedRowIds];
+    const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     await systemPendingNotificationRepository.deleteCompletedRecords(deleteIds);
-    await systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowsIds);
-
-    return deleteIds.length ? 'processed' : 'idle';
+    await systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
+    logs.forEach((x) => logger.info(x));
+    return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };
 };

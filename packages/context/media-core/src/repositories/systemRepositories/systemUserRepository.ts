@@ -2,23 +2,26 @@ import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
 export type SystemUserRepository = {
-  getUsersEmail: (userIds: EntityId[]) => Promise<UserEmail[]>;
+  getUserContacts: (userIds: EntityId[]) => Promise<UserContact[]>;
 };
 
 export type SystemUserRepositoryDeps = {
   database: Knex;
 };
 
-type UserEmail = {
+type UserContact = {
   id: EntityId;
-  emailAddress: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
 };
-const UserFields = ['id', 'email'];
+
+const UserFields = ['id', 'email', 'firstName', 'lastName'];
 
 export const build__SystemUserRepository = ({
   database,
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
-  getUsersEmail: (userIds: EntityId[]) => {
+  getUserContacts: (userIds: EntityId[]) => {
     return database('User').select(UserFields).whereIn('id', userIds);
   },
 });

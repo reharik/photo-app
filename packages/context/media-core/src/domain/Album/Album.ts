@@ -225,7 +225,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   grantAuthorization(
     operations: Operation[],
     actorId: ActorId,
-    grantedToUserId?: EntityId,
+    grantedToUserId: EntityId,
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{
@@ -261,7 +261,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
       );
       this.#authorizations.push(authorization);
       this.touch(actorId);
-      // TODO add event here so we can see when a new album has been shared
+      this.recordEvent(
+        'albumSharedWithUser',
+        { userId: grantedToUserId, albumId: this.id() },
+        actorId,
+      );
       return ok({ authorization });
     }
 

@@ -1,4 +1,4 @@
-import { WorkerTask } from '../../types';
+import { WorkerTask } from '../../../types';
 import { RunNextMediaDeletionJob } from './processNextMediaDeletionJob';
 import { RunNextMediaImageJob } from './processNextMediaImageJob';
 
@@ -14,7 +14,7 @@ export const build__MediaDeletionTask = ({
   runNextMediaDeletionJob,
 }: MediaDeletionTaskDeps): WorkerTask => ({
   name: 'media-deletion',
-  due: () => true,
+  type: 'queue',
   run: runNextMediaDeletionJob,
   order: 100,
 });
@@ -27,7 +27,7 @@ export const build__MediaImageTask = ({
   runNextMediaImageJob,
 }: MediaImageTaskDeps): WorkerTask => ({
   name: 'media-image',
-  due: () => true,
+  type: 'queue',
   run: runNextMediaImageJob,
   order: 200,
 });

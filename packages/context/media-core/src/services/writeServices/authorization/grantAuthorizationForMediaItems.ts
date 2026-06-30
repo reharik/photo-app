@@ -95,11 +95,11 @@ export const build__GrantAuthorizationForMediaItems = ({
       }
     }
 
-    const existingResult = inviteUsersForMediaItems(existing, mediaItems, input, granter);
+    const existingResult = inviteUsersForMediaItems(existing, mediaItems, input);
     if (!existingResult.grants.length && !existingResult.addedInvitees.length) {
       return ok({
         authorizations: nonExistingResult.authorizations,
-        emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+        emailDTOs: nonExistingResult.emailDTOs,
         errors: existingResult.errors,
         publicLinkFailure: nonExistingResult.publicLinkFailure,
       });
@@ -138,7 +138,7 @@ export const build__GrantAuthorizationForMediaItems = ({
         ...nonExistingResult.authorizations,
         ...existingResult.grants.map((g) => g.authorization),
       ],
-      emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+      emailDTOs: nonExistingResult.emailDTOs,
       errors: existingResult.errors,
       publicLinkFailure: nonExistingResult.publicLinkFailure,
     });

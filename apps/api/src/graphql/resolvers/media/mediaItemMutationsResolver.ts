@@ -47,19 +47,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         mediaItemId: args.input.mediaItemId,
       });
       return writeResultToPayload(result);
-
-      // return {
-      //   data: result.success
-      //     ? {
-      //         mediaItemId: result.value.mediaItemId,
-      //         status: result.value.status,
-      //         mimeType: result.value.mimeType,
-      //         size: result.value.size,
-      //         kind: result.value.kind,
-      //       }
-      //     : undefined,
-      //   errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      // };
     }),
     deleteMediaItem: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteMediaItem({

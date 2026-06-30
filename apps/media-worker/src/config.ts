@@ -30,8 +30,11 @@ export type Config = {
   s3DownloadUrlTtlSeconds: number;
   s3DownloadUrlSigningBucketSeconds: number;
   mediaWorkerPollIntervalMs: number;
-  notificationSweepIntervalMs: number;
+  slowSweepIntervalMS: number;
+  fastSweepIntervalMS: number;
   clientUrl: string;
+  isProduction: boolean;
+  isDevelopment: boolean;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -56,6 +59,7 @@ export const createConfigFromEnv = (): Config => {
   const nodeEnv = getValidValue<NodeEnv>(process.env.NODE_ENV || 'development', nodeEnvs);
 
   const isProduction = nodeEnv === 'production' || nodeEnv === 'prod';
+  const isDevelopment = nodeEnv === 'development';
 
   return {
     nodeEnv,
@@ -85,10 +89,15 @@ export const createConfigFromEnv = (): Config => {
     mediaWorkerPollIntervalMs: process.env.MEDIA_WORKER_POLL_MS
       ? Number(process.env.MEDIA_WORKER_POLL_MS)
       : 2000,
-    notificationSweepIntervalMs: process.env.NOTIFICATION_SWEEP_INTERVAL_MS
-      ? Number(process.env.NOTIFICATION_SWEEP_INTERVAL_MS)
+    slowSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
+      ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
       : 300000, // 5 minutes
+    fastSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
+      ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
+      : 3600000, //  1hour
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    isProduction,
+    isDevelopment,
   };
 };
 

@@ -135,7 +135,10 @@ export abstract class Entity<
     payload: Omit<EventPayload<K>, 'kind'>,
     actorId: EntityId,
   ): void {
-    this._events.push({ ...payload, kind, occurredAt: new Date(), actorId } as DomainEvent);
+    this._events.push({ ...payload, kind, occurredAt: new Date(), actorId } as Extract<
+      DomainEvent,
+      { kind: K }
+    >);
   }
 
   pullEvents(): DomainEvent[] {

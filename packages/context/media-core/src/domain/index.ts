@@ -10,6 +10,7 @@ export * from './Album/AlbumMember';
 export * from './Album/albumEvents';
 export * from './Album/albumItemOrder';
 export * from './Album/eventHandlers/albumSharedWithUser';
+export * from './Album/eventHandlers/albumSharedWithUserEmail';
 export * from './Album/eventHandlers/mediaItemAddedToAlbumHandler';
 export * from './Album/eventHandlers/recordPendingNotification';
 export * from './Authorization/Authorization';

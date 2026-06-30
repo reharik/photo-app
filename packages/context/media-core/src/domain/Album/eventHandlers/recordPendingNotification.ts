@@ -1,3 +1,4 @@
+import { EntityType } from '@packages/contracts';
 import { SystemAuthorizationRepository } from '../../../repositories/systemRepositories/systemAuthorizationRepository';
 import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
@@ -24,7 +25,7 @@ export const build__RecordPendingNotification = ({
         channel: 'email',
         kind: 'albumActivity',
         recipientId: x.grantedToUser,
-        aggregateType: 'album',
+        aggregateType: EntityType.album,
         aggregateId: event.albumId,
         attempts: 0,
       }),

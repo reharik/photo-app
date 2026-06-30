@@ -3,6 +3,7 @@ import { Authorization, MediaItem, PublicLink, User } from '../../../domain';
 import { ActorId, EntityId } from '../../../types/types';
 
 export type GrantEmailDTO = {
+  template: string;
   inviteeEmail: string;
   inviterName: string;
   title: string;
@@ -51,7 +52,7 @@ export type InviteNonUsersResult = {
 
 export type InviteUsersForMediaItemsResult = {
   grants: { mediaItem: MediaItem; authorization: Authorization }[];
-  emailDTOs: GrantEmailDTO[];
+  // emailDTOs: GrantEmailDTO[];
   errors: { user: User; error: ContractError }[]; // user-facing: zero-success users
   errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[]; // log only
   addedInvitees: User[];

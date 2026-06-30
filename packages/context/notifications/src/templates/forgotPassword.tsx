@@ -1,8 +1,10 @@
 import { Section, Text } from '@react-email/components';
+import * as React from 'react';
 import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+void React;
 
 type ForgotPasswordData = TemplateData['forgotPassword'];
 

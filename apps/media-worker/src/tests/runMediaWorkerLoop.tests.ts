@@ -240,10 +240,10 @@ describe('runWorkerTasksOnce', () => {
       return 'processed';
     });
 
-    const didWork = await runWorkerTasksOnce([
-      task('first', () => true, first),
-      task('second', () => true, second),
-    ]);
+    const didWork = await runWorkerTasksOnce(
+      [task('first', () => true, first), task('second', () => true, second)],
+      createMockLogger(),
+    );
 
     expect(didWork).toBe(true);
     expect(calls).toEqual(['first', 'second']);
@@ -253,10 +253,10 @@ describe('runWorkerTasksOnce', () => {
     const first = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
     const second = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
 
-    const didWork = await runWorkerTasksOnce([
-      task('first', () => true, first),
-      task('second', () => true, second),
-    ]);
+    const didWork = await runWorkerTasksOnce(
+      [task('first', () => true, first), task('second', () => true, second)],
+      createMockLogger(),
+    );
 
     expect(didWork).toBe(true);
     expect(first).toHaveBeenCalledTimes(1);
@@ -266,7 +266,7 @@ describe('runWorkerTasksOnce', () => {
   it('treats a not-due task as no work and falls through (run never called)', async () => {
     const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
 
-    const didWork = await runWorkerTasksOnce([task('scheduled', () => false, run)]);
+    const didWork = await runWorkerTasksOnce([task('scheduled', () => false, run)], createMockLogger());
 
     expect(didWork).toBe(false);
     expect(run).not.toHaveBeenCalled();
@@ -275,7 +275,7 @@ describe('runWorkerTasksOnce', () => {
   it('treats a due task that returns idle as no work and falls through', async () => {
     const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
 
-    const didWork = await runWorkerTasksOnce([task('queue', () => true, run)]);
+    const didWork = await runWorkerTasksOnce([task('queue', () => true, run)], createMockLogger());
 
     expect(didWork).toBe(false);
     expect(run).toHaveBeenCalledTimes(1);

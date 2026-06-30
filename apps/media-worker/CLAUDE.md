@@ -11,9 +11,9 @@ repos, and UoW conventions; this file is the worker-specific tier.
 ```ts
 export type WorkerTask = {
   name: string;
-  due: () => boolean | Promise<boolean>;   // cheap gate before run()
-  run: () => Promise<WorkerTaskOutcome>;   // 'processed' | 'idle'
-  order: number;                            // lower = higher priority
+  due: () => boolean | Promise<boolean>; // cheap gate before run()
+  run: () => Promise<WorkerTaskOutcome>; // 'processed' | 'idle'
+  order: number; // lower = higher priority
 };
 ```
 
@@ -26,7 +26,7 @@ export type WorkerTask = {
   - **Queue tasks**: `due: () => true` — the claim inside `run()` is itself the
     work-probe.
   - **Scheduled tasks**: gate on an interval (`intervalGate(intervalMs)` closure,
-    e.g. `notificationSweepIntervalMs`, default 5 min).
+    e.g. `slowSweepIntervalMS`, default 5 min).
 
 ### Registration & discovery
 
@@ -93,7 +93,8 @@ orchestrator — it claims on the singleton DB and runs storage I/O (S3)
 **outside** the transaction; the `build__ProcessNext*Job` processor (scoped, extends
 `WorkerJobProcessorBase`) holds only the transactional load/save run inside the UoW
 scope. **Storage I/O is not transactional with the DB** — hence the idempotent-delete
-+ retry design on the deletion side.
+
+- retry design on the deletion side.
 
 ## Boot (`main.ts` / `container.ts`)
 

@@ -8,10 +8,10 @@ export type WorkerTaskOutcome = 'processed' | 'idle';
  */
 export type WorkerTask = {
   name: string;
-  /** Cheap gate: should run() be attempted this pass? Queue tasks: () => true
-   *  (the claim inside run() is itself the work-probe). Scheduled tasks gate on
-   *  an interval. A task that is not due is skipped and does NOT count as work. */
-  due: () => boolean | Promise<boolean>;
+  type: 'schedule' | 'queue';
+  // Which cadence should be used for this task Cadences are predefined ms durations.
+  // Only a schedule type would have a Cadence. a queue drains on every interval
+  cadence?: 'fast' | 'slow';
   /** Do one unit of work. 'processed' resets the idle backoff and restarts the
    *  pass from the highest-priority task; 'idle' falls through to the next task. */
   run: () => Promise<WorkerTaskOutcome>;
@@ -20,5 +20,5 @@ export type WorkerTask = {
    *  top — so the lowest-`order` due task always gets first claim each cycle.
    *  Keep these values spaced (e.g. 100, 200) to leave room to insert tasks
    *  between existing ones without renumbering. */
-  order: number;
+  order?: number;
 };

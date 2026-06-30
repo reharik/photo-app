@@ -40,6 +40,8 @@ export const build__ViewerSharedWithMeMediaItemReadService = ({
         id: sharedItem.grantId,
         sharedAt: sharedItem.sharedAt,
         sharedBy: sharedItem.sharedBy,
+        sharedByFirstName: sharedItem.sharedByFirstName,
+        sharedByLastName: sharedItem.sharedByLastName,
         mediaItem: mediaItemsMap.get(sharedItem.mediaItemId)!,
       }));
 

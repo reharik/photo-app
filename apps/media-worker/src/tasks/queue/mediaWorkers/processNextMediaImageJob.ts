@@ -13,9 +13,9 @@ import {
 } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 
-import type { Config } from '../../config.js';
-import { extractCaptureTime } from '../../infrastructure/exif/extractCaptureTime.js';
-import type { AppCradle } from '../../generated/ioc-composed.js';
+import type { Config } from '../../../config.js';
+import { extractCaptureTime } from '../../../infrastructure/exif/extractCaptureTime.js';
+import type { AppCradle } from '../../../generated/ioc-composed.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator.js';
 import { readStreamToBuffer } from './readStreamToBuffer.js';

@@ -88,6 +88,7 @@ export interface IocGeneratedCradle {
   albumMemberReadRepository: AlbumMemberReadRepository;
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
+  albumSharedWithUserEmailHandler: DomainEventHandler;
   albumSharedWithUserHandler: DomainEventHandler;
   authorizationReadRepository: AuthorizationReadRepository;
   commentReadRepository: CommentReadRepository;

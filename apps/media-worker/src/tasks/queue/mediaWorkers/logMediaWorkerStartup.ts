@@ -2,7 +2,7 @@ import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Logger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 
-import type { Config } from '../../config';
+import type { Config } from '../../../config';
 
 const serializeProbeError = (e: unknown): string => {
   if (e instanceof Error) {

@@ -1,3 +1,5 @@
+import { EntityType } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { DateTime } from 'luxon';
 import { EntityId } from '../../types';
@@ -5,6 +7,7 @@ import { EntityId } from '../../types';
 export type SystemPendingNotificationRepository = {
   upsertRecipientRow: (upsert: PendingNotificationInput) => Promise<number[]>;
   claimNotificationBatch: (window: number) => Promise<PendingNotification[]>;
+  claimIndividualNotifications: (window: number) => Promise<PendingNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
   bumpRecordAttemptsByIds: (ids: string[]) => Promise<void>;
 };
@@ -13,15 +16,16 @@ export type SystemPendingNotificationRepositoryDeps = {
   database: Knex;
 };
 
-type PendingNotification = {
+export type PendingNotification = {
   id: string;
   channel: 'email' | 'sms';
   kind: string;
   recipientId: EntityId;
-  aggregateType: string;
+  aggregateType: EntityType;
   aggregateId: EntityId;
   dirtySince: DateTime;
   attempts: number;
+  actorId: EntityId;
 };
 const pendingNotificationFields = [
   'id',
@@ -32,9 +36,10 @@ const pendingNotificationFields = [
   'aggregateId',
   'dirtySince',
   'attempts',
+  'actorId',
 ];
 
-type PendingNotificationInput = Omit<PendingNotification, 'dirtySince'>;
+type PendingNotificationInput = Omit<PendingNotification, 'dirtySince' | 'actorId'>;
 
 export const build__SystemPendingNotificationRepository = ({
   database,
@@ -46,9 +51,28 @@ export const build__SystemPendingNotificationRepository = ({
       .merge({ dirtySince: database.fn.now() });
   },
   claimNotificationBatch: (windowMinutes: number) => {
-    return database('pendingNotification')
-      .select(pendingNotificationFields)
-      .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]));
+    return withEnumRevival(
+      database('pendingNotification')
+        .select(pendingNotificationFields)
+        .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
+        .andWhere({ kind: 'albumActivity' }),
+      {
+        aggregateType: EntityType,
+      },
+      { strict: true },
+    );
+  },
+  claimIndividualNotifications: (windowMinutes: number) => {
+    return withEnumRevival(
+      database('pendingNotification')
+        .select(pendingNotificationFields)
+        .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
+        .andWhere({ kind: 'albumActivity' }),
+      {
+        aggregateType: EntityType,
+      },
+      { strict: true },
+    );
   },
   deleteCompletedRecords: async (ids: string[]): Promise<void> => {
     if (ids.length === 0) {

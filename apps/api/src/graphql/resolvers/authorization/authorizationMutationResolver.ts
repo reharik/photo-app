@@ -26,16 +26,11 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         };
       }
       const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = emailDTO.isPublicLink
-          ? `${ctx.config.clientUrl}/shared/photos`
-          : `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
-        const template = (
-          emailDTO.isPublicLink ? 'publicShare' : 'shareInvite'
-        ) as keyof TemplateData;
+        const inviteUrl = `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
 
         return ctx.notificationService.notify({
           to: emailDTO.inviteeEmail,
-          template,
+          template: emailDTO.template as keyof TemplateData,
           data: {
             inviterName: emailDTO.inviterName,
             resourceName: emailDTO.title,
@@ -62,7 +57,6 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         expiresAt: args.input.expiresAt ?? undefined,
       };
       const result = await ctx.writeServices.grantUserAuthorizationForAlbum(command);
-
       if (!result.success) {
         return {
           success: false,
@@ -71,16 +65,11 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       }
 
       const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = emailDTO.isPublicLink
-          ? `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`
-          : `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
-        const template = (
-          emailDTO.isPublicLink ? 'publicShare' : 'shareInvite'
-        ) as keyof TemplateData;
+        const inviteUrl = `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
 
         return ctx.notificationService.notify({
           to: emailDTO.inviteeEmail,
-          template,
+          template: emailDTO.template as keyof TemplateData,
           data: {
             inviterName: emailDTO.inviterName,
             resourceName: emailDTO.title,
@@ -89,8 +78,10 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
           },
         });
       });
-      await Promise.all(notifications);
-
+      const fu = await Promise.all(notifications);
+      console.log(`************fu************`);
+      console.log(JSON.stringify(fu, null, 4));
+      console.log(`********END fu************`);
       const resultPayload: WriteResult<GrantUserAuthorizationPayload> = {
         success: true,
         value: {

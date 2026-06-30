@@ -1,7 +1,8 @@
 import type { Logger } from '@packages/infrastructure';
 import type { Config } from './config.js';
 import { IocGeneratedCradle } from './generated/ioc-registry.types';
-import type { WorkerTask } from './types.js';
+import { IntervalGate } from './intervalGate.js';
+import type { WorkerTaskOutcome } from './types.js';
 
 type WorkerTasks = IocGeneratedCradle['workerTasks'];
 
@@ -22,12 +23,19 @@ export type RunMediaWorkerLoop = {
  * both fall through without counting as work. A thrown run() propagates to the
  * caller's try/catch and skips the remaining tasks this pass.
  */
-export const runWorkerTasksOnce = async (tasks: WorkerTask[]): Promise<boolean> => {
+export const runWorkerTasksOnce = async (tasks: WorkerTasks, logger: Logger): Promise<boolean> => {
+  if (tasks.length === 0) {
+    return false;
+  }
   for (const task of tasks) {
-    if (!(await task.due())) {
-      continue;
+    let outcome: WorkerTaskOutcome;
+    try {
+      outcome = await task.run();
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      logger.error(`[mediaWorker] task "${task.name}" threw`, err);
+      throw e;
     }
-    const outcome = await task.run();
     if (outcome === 'processed') {
       return true;
     }
@@ -41,17 +49,16 @@ const IDLE_HEARTBEAT_EVERY_CYCLES = 225;
 type RunMediaWorkerLoopDeps = {
   config: Config;
   logger: Logger;
-  workerTasks: WorkerTasks;
+  intervalGate: IntervalGate;
 };
 
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
-  workerTasks,
+  intervalGate,
 }: RunMediaWorkerLoopDeps): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
-  const orderedTasks = [...workerTasks].sort((a, b) => a.order - b.order);
   const start = async (): Promise<void> => {
     if (running) {
       return;
@@ -65,7 +72,13 @@ export const build__RunMediaWorkerLoop = ({
 
     while (!stopRequested) {
       try {
-        const didWork = await runWorkerTasksOnce(orderedTasks);
+        // get all tasks that are due (queue tasks are always due)
+        // execute them in a priority order, this means run all due tasks
+        // in a loop. Execute the highest priority and return. loop again
+        // till there is no more work to be done. Then fall through to the
+        // sleep.
+        const tasks = intervalGate.getTasksDue();
+        const didWork = await runWorkerTasksOnce(tasks, logger);
         if (didWork) {
           idleCycles = 0;
           continue;

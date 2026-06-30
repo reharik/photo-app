@@ -51,6 +51,7 @@ export const inviteNonUsers = (
   return {
     authorizations: [linkResult.value.authorization()],
     emailDTOs: nonExisting.map((handle) => ({
+      template: 'publicShare',
       inviteeEmail: handle,
       inviterName: granter.fullName(),
       title: title,
@@ -64,16 +65,16 @@ export const inviteUsers = (
   existing: User[],
   entity: GrantAuthorizationInterface,
   input: GrantUserAuthorizationCommand,
-  title: string,
-  granter: User,
+  // title: string,
+  // granter: User,
 ): {
   authorizations: Authorization[];
-  emailDTOs: GrantEmailDTO[];
+  // emailDTOs: GrantEmailDTO[];
   errors: { user: User; error: ContractError }[];
   addedInvitees: User[];
 } => {
   const authorizations: Authorization[] = [];
-  const emailDTOs: GrantEmailDTO[] = [];
+  // const emailDTOs: GrantEmailDTO[] = [];
   const errors: { user: User; error: ContractError }[] = [];
   const addedInvitees: User[] = [];
 
@@ -88,27 +89,28 @@ export const inviteUsers = (
     if (result.success) {
       addedInvitees.push(user);
       authorizations.push(result.value.authorization);
-      emailDTOs.push({
-        inviteeEmail: user.email(),
-        inviterName: granter.fullName(),
-        title,
-        tokenOrUserId: entity.id(),
-      });
+
+      // The grantAuthorizatoin should fire an domain event for the email
+      // emailDTOs.push({
+      //   inviteeEmail: user.email(),
+      //   inviterName: granter.fullName(),
+      //   title,
+      //   tokenOrUserId: entity.id(),
+      // });
     } else {
       errors.push({ user, error: result.error });
     }
   }
-  return { authorizations, emailDTOs, errors, addedInvitees };
+  return { authorizations, errors, addedInvitees };
 };
 
 export const inviteUsersForMediaItems = (
   existing: User[],
   mediaItems: MediaItem[],
   input: GrantUserAuthorizationCommand,
-  granter: User,
+  // granter: User,
 ): InviteUsersForMediaItemsResult => {
   const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
-  const emailDTOs: GrantEmailDTO[] = [];
   const errors: { user: User; error: ContractError }[] = [];
   const errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[] = [];
   const addedInvitees: User[] = [];
@@ -136,18 +138,17 @@ export const inviteUsersForMediaItems = (
       }
     }
 
-    // One source of truth: `granted` drives BOTH email and user-facing error.
     if (granted) {
       addedInvitees.push(user);
-      emailDTOs.push({
-        inviteeEmail: user.email(),
-        inviterName: granter.fullName(),
-        title: input.label ?? '',
-      });
+      // emailDTOs.push({
+      //   inviteeEmail: user.email(),
+      //   inviterName: granter.fullName(),
+      //   title: input.label ?? '',
+      // });
     } else if (firstError) {
       errors.push({ user, error: firstError }); // zero successes → surfaced; partial → log only
     }
   }
 
-  return { grants, emailDTOs, errors, errorDetail, addedInvitees };
+  return { grants, errors, errorDetail, addedInvitees };
 };

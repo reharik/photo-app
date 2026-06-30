@@ -43,16 +43,16 @@ export const build__GrantUserAuthorizationForAlbum = ({
     }
     const { existing, nonExisting } = await segregateUsers(grantedToHandles, userRepository);
     const nonExistingResult = inviteNonUsers(nonExisting, album, input, album.title(), granter);
-    const existingResult = inviteUsers(existing, album, input, album.title(), granter);
+    const existingResult = inviteUsers(existing, album, input); //, album.title(), granter);
 
     const result = {
       authorizations: [...nonExistingResult.authorizations, ...existingResult.authorizations],
-      emailDTOs: [...nonExistingResult.emailDTOs, ...existingResult.emailDTOs],
+      emailDTOs: nonExistingResult.emailDTOs,
       errors: existingResult.errors,
       publicLinkFailure: nonExistingResult.publicLinkFailure,
     };
 
-    if (!result.emailDTOs.length) {
+    if (result.errors.length > 0 || result.publicLinkFailure) {
       return ok(result);
     }
 

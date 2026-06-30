@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { DomainEventHandler, registerDomainEventHandlers } from '@packages/media-core';
 import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import { destroyWorkerContainer, initializeWorkerContainer } from './container';
-import { logMediaWorkerStartup } from './tasks/mediaWorkers/logMediaWorkerStartup';
+import { logMediaWorkerStartup } from './tasks/queue/mediaWorkers/logMediaWorkerStartup';
 setDefaultSerializationMode('value');
 
 // then the rest of your app bootstrap

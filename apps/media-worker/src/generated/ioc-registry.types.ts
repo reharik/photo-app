@@ -16,27 +16,32 @@ import type { NotificationService } from '@packages/notifications';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import type { Config } from '../config.js';
+import type { IntervalGate } from '../intervalGate.js';
 import type { KnexConfig } from '../knexfile.js';
 import type { RunMediaWorkerLoop } from '../runMediaWorkerLoop.js';
 import type {
   ProcessNextMediaDeletionJob,
   RunNextMediaDeletionJob,
-} from '../tasks/mediaWorkers/processNextMediaDeletionJob.js';
+} from '../tasks/queue/mediaWorkers/processNextMediaDeletionJob.js';
 import type {
   ProcessNextMediaImageJob,
   RunNextMediaImageJob,
-} from '../tasks/mediaWorkers/processNextMediaImageJob.js';
-import type { NotificationBatcher } from '../tasks/notificationWorkers/notificationBatcher.js';
+} from '../tasks/queue/mediaWorkers/processNextMediaImageJob.js';
+import type { NotificationBatcher } from '../tasks/schedule/batchNotification/notificationBatcher.js';
+import type { FastSweepNotification } from '../tasks/schedule/individualNotification/fastSweepNotification.js';
 import type { WorkerTask } from '../types.js';
 
 export interface IocGeneratedCradle {
   config: Config;
   database: Knex;
+  fastSweepNotification: FastSweepNotification;
+  fastSweepNotificationTask: WorkerTask;
+  intervalGate: IntervalGate;
   knexConfig: KnexConfig;
   mediaDeletionTask: WorkerTask;
   mediaImageTask: WorkerTask;
   notificationBatcher: NotificationBatcher;
-  notificationSweepTask: WorkerTask;
+  notificationBatchTask: WorkerTask;
   processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
   processNextMediaImageJob: ProcessNextMediaImageJob;
   runMediaWorkerLoop: RunMediaWorkerLoop;

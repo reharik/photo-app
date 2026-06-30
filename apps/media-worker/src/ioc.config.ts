@@ -31,7 +31,7 @@ export default defineIocConfig({
       $contract: { accessKey: 'database' },
     },
     WorkerTask: {
-      notificationSweepTask: { default: true }, // this is just so I can reuse the interface then group
+      notificationBatchTask: { default: true }, // this is just so I can reuse the interface then group
     },
   },
   groups: {

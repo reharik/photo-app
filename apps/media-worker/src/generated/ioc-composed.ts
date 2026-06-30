@@ -68,7 +68,7 @@ export const composedRegistrationOverrides = {
   ],
   contracts: {
     WorkerTask: {
-      defaultImplementation: 'notificationSweepTask',
+      defaultImplementation: 'notificationBatchTask',
     },
   },
 } as const satisfies ComposedRegistrationOverrides;
