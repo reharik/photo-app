@@ -131,7 +131,11 @@ export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailSe
 
         return ok({ messageId });
       } catch (error) {
-        logger.error('Error sending email', { error });
+        logger.error('Error sending email', {
+          to: input.to,
+          subject: input.subject,
+          error,
+        });
         return fail(ContractError.EmailSendFailed);
       }
     },

@@ -26,7 +26,9 @@ export const build__MediaItemAddedToAlbumHandler = ({
     ]);
 
     const mutations = authorizations
-      .filter((x) => x.grantedToUser !== event.actorId)
+      // authorization is not a public token auth
+      //  and it is not pointed at the person who just added the image
+      .filter((x) => x.grantedToUser && x.grantedToUser !== event.actorId)
       .map((x) =>
         systemUnseenActivityRepository.upsertActivityRow({
           id: crypto.randomUUID(),

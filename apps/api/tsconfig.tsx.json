@@ -1,0 +1,18 @@
+{
+  // Dev-runtime tsconfig for tsx ONLY (wired via TSX_TSCONFIG_PATH in nodemon.json).
+  // tsx resolves ONE tsconfig from cwd and applies its compilerOptions only to files
+  // matched by `include`. The real tsconfig.json's include is scoped to this app's
+  // src, so the raw `.tsx` email templates pulled in from @packages/notifications via
+  // the `development` export condition are NOT matched -> esbuild falls back to its
+  // default classic JSX (React.createElement) and throws "React is not defined" at
+  // render time (the templates target the automatic runtime and don't import React).
+  // Broadening `include` here to cover the package sources makes jsx:react-jsx apply
+  // to them. This file is NOT used by tsc/typecheck/build -- it only steers tsx.
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx"
+  ]
+}

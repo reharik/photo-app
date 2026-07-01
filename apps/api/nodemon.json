@@ -12,6 +12,7 @@
   ],
   "exec": "node --conditions=development --import tsx src/index.ts",
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "TSX_TSCONFIG_PATH": "tsconfig.tsx.json"
   }
 }

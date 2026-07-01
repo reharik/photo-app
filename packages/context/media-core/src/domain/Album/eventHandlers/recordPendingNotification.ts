@@ -19,17 +19,21 @@ export const build__RecordPendingNotification = ({
       event.albumId,
     ]);
 
-    const mutations = recipients.map((x) =>
-      systemPendingNotificationRepository.upsertRecipientRow({
-        id: crypto.randomUUID(),
-        channel: 'email',
-        kind: 'albumActivity',
-        recipientId: x.grantedToUser,
-        aggregateType: EntityType.album,
-        aggregateId: event.albumId,
-        attempts: 0,
-      }),
-    );
+    const mutations = recipients
+      // authorization is not a public token auth
+      //  and it is not pointed at the person who just added the image
+      .filter((x) => x.grantedToUser && x.grantedToUser !== event.actorId)
+      .map((x) =>
+        systemPendingNotificationRepository.upsertRecipientRow({
+          id: crypto.randomUUID(),
+          channel: 'email',
+          kind: 'albumActivity',
+          recipientId: x.grantedToUser,
+          aggregateType: EntityType.album,
+          aggregateId: event.albumId,
+          attempts: 0,
+        }),
+      );
     await Promise.all(mutations);
   },
 });

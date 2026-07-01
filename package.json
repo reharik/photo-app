@@ -32,6 +32,7 @@
     "clean:all": "nx run-many --target=clean --all",
     "clean:dist": "nx reset && nx run-many --target=clean --all",
     "email:dev": "npx react-email dev --dir packages/context/notifications/src/templates",
+    "email:clean": "curl -X DELETE http://localhost:4566/_aws/ses",
     "gen:enums": "nx gen-enums contracts",
     "gen:ioc:all": "nx run-many --target=gen-ioc --all",
     "gen:ioc:api": "nx gen-ioc api",

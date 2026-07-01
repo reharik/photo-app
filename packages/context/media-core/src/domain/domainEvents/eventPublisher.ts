@@ -25,20 +25,26 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
   return {
     register: (kind: DomainEvent['kind'], handler: DomainEventProcessor) => {
       const list = handlers.get(kind) ?? [];
+      logger.info(`[DomainEventPublisher] domainEventHandler registered: ${kind}`);
       list.push(handler);
       handlers.set(kind, list);
     },
     publish: async (events: DomainEvent[]) => {
       for (const event of events) {
         const list = handlers.get(event.kind) ?? [];
+        const handlerNameList = [];
         for (const handler of list) {
+          handlerNameList.push(handler.name);
           try {
             await handler(event);
           } catch (err) {
-            logger.error('event handler failed', { kind: event.kind, err });
+            logger.error('event handler failed', { kind: event.kind, handler: handler.name, err });
             // swallow — post-commit, work is durable, one handler failing ≠ failure
           }
         }
+        logger.info(
+          `[DomainEventPublisher] event: ${JSON.stringify(event, null, 4)} passed to [${handlerNameList.join(', ')}]`,
+        );
       }
     },
   };

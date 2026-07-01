@@ -96,6 +96,7 @@ export const build__GrantAuthorizationForMediaItems = ({
     }
 
     const existingResult = inviteUsersForMediaItems(existing, mediaItems, input);
+    // if nothing happened in inviteUsers then we're done, return
     if (!existingResult.grants.length && !existingResult.addedInvitees.length) {
       return ok({
         authorizations: nonExistingResult.authorizations,

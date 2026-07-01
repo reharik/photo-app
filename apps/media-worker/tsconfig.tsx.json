@@ -1,0 +1,15 @@
+{
+  // Dev-runtime tsconfig for tsx ONLY (wired via TSX_TSCONFIG_PATH in nodemon.json).
+  // See apps/api/tsconfig.tsx.json for the full rationale: the worker's notification
+  // sweep renders the same @packages/notifications `.tsx` templates, so without a
+  // matched tsconfig tsx emits classic JSX and throws "React is not defined" on send.
+  // Broadening `include` to cover the package sources makes jsx:react-jsx apply.
+  // This file is NOT used by tsc/typecheck/build -- it only steers tsx.
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "../../packages/**/*.ts",
+    "../../packages/**/*.tsx"
+  ]
+}

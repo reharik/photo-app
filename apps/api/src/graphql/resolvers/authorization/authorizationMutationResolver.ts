@@ -26,7 +26,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         };
       }
       const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
+        const inviteUrl = `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`;
 
         return ctx.notificationService.notify({
           to: emailDTO.inviteeEmail,
@@ -65,7 +65,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       }
 
       const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = `${ctx.config.clientUrl}/albums/${emailDTO.tokenOrUserId}`;
+        const inviteUrl = `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`;
 
         return ctx.notificationService.notify({
           to: emailDTO.inviteeEmail,
