@@ -1,40 +1,38 @@
-import { EntityType } from '@packages/contracts';
-import { SystemAuthorizationRepository } from '../../../repositories/systemRepositories/systemAuthorizationRepository';
 import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
-import { MediaItemAddedToAlbum } from '../albumEvents';
+import { ResolveActivity } from './resolveActivity';
 
 type UnseenActivityEmailHandlerDeps = {
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
-  systemAuthorizationRepository: SystemAuthorizationRepository;
+  resolveActivity: ResolveActivity;
 };
 
 export const build__UnseenActivityEmailHandler = ({
   systemPendingNotificationRepository,
-  systemAuthorizationRepository,
-}: UnseenActivityEmailHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
-  name: 'UnseenActivityEmailHandler',
-  handles: ['mediaItemAddedToAlbum'],
-  processor: async (event: MediaItemAddedToAlbum) => {
-    const recipients = await systemAuthorizationRepository.getAuthorizationsByAlbumId([
-      event.albumId,
-    ]);
-
-    const mutations = recipients
-      // authorization is not a public token auth
-      //  and it is not pointed at the person who just added the image
-      .filter((x) => x.grantedToUser && x.grantedToUser !== event.actorId)
-      .map((x) =>
+  resolveActivity,
+}: UnseenActivityEmailHandlerDeps): DomainEventHandler<
+  'mediaItemAddedToAlbum' | 'albumSharedWithUser'
+> => ({
+  name: 'UnseenActivityEmail',
+  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser'],
+  processor: async (event) => {
+    const { recipients, targetType, albumId } = await resolveActivity(event);
+    // event.kind → pending-notification `kind`. STEP 0 found both source
+    // handlers wrote the same 'albumActivity' kind, so the map is constant for
+    // both mediaItemAddedToAlbum and albumSharedWithUser.
+    const kind = 'albumActivity';
+    await Promise.all(
+      recipients.map((recipientId) =>
         systemPendingNotificationRepository.upsertRecipientRow({
           id: crypto.randomUUID(),
           channel: 'email',
-          kind: 'albumActivity',
-          recipientId: x.grantedToUser,
-          aggregateType: EntityType.album,
-          aggregateId: event.albumId,
+          kind,
+          recipientId,
+          aggregateType: targetType,
+          aggregateId: albumId,
           attempts: 0,
         }),
-      );
-    await Promise.all(mutations);
+      ),
+    );
   },
 });

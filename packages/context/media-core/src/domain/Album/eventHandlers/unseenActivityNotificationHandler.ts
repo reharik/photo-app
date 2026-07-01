@@ -1,45 +1,38 @@
-import { EntityType, UnseenActivityType } from '@packages/contracts';
-import { SystemAuthorizationRepository } from '../../../repositories/systemRepositories/systemAuthorizationRepository';
+import { UnseenActivityType } from '@packages/contracts';
 import { SystemUnseenActivityRepository } from '../../../repositories/systemRepositories/systemUnseenActivityRepository';
-import { EntityId } from '../../../types';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
-import { MediaItemAddedToAlbum } from '../albumEvents';
-
-export interface ActivityEvent {
-  targetId: EntityId;
-  albumId?: EntityId;
-}
+import { ResolveActivity } from './resolveActivity';
 
 type UnseenActivityNotificationHandlerDeps = {
   systemUnseenActivityRepository: SystemUnseenActivityRepository;
-  systemAuthorizationRepository: SystemAuthorizationRepository;
+  resolveActivity: ResolveActivity;
 };
 
 export const build__UnseenActivityNotificationHandler = ({
   systemUnseenActivityRepository,
-  systemAuthorizationRepository,
-}: UnseenActivityNotificationHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
+  resolveActivity,
+}: UnseenActivityNotificationHandlerDeps): DomainEventHandler<
+  'mediaItemAddedToAlbum' | 'albumSharedWithUser'
+> => ({
   name: 'UnseenActivityNotification',
-  handles: ['mediaItemAddedToAlbum'],
-  processor: async (event: MediaItemAddedToAlbum) => {
-    const authorizations = await systemAuthorizationRepository.getAuthorizationsByAlbumId([
-      event.albumId,
-    ]);
-
-    const mutations = authorizations
-      // authorization is not a public token auth
-      //  and it is not pointed at the person who just added the image
-      .filter((x) => x.grantedToUser && x.grantedToUser !== event.actorId)
-      .map((x) =>
+  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser'],
+  processor: async (event) => {
+    const { recipients, targetType, targetId, albumId } = await resolveActivity(event);
+    const activityKind =
+      event.kind === 'mediaItemAddedToAlbum'
+        ? UnseenActivityType.itemAdded
+        : UnseenActivityType.albumShared;
+    await Promise.all(
+      recipients.map((viewerId) =>
         systemUnseenActivityRepository.upsertActivityRow({
           id: crypto.randomUUID(),
-          viewerId: x.grantedToUser,
-          targetType: EntityType.album,
-          targetId: event.albumId,
-          albumId: event.albumId,
-          activityKind: UnseenActivityType.itemAdded,
+          viewerId,
+          targetType,
+          targetId,
+          albumId,
+          activityKind,
         }),
-      );
-    await Promise.all(mutations);
+      ),
+    );
   },
 });

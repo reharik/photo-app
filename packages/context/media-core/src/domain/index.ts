@@ -9,8 +9,6 @@ export * from './Album/AlbumItem';
 export * from './Album/AlbumMember';
 export * from './Album/albumEvents';
 export * from './Album/albumItemOrder';
-export * from './Album/eventHandlers/albumSharedWithUser';
-export * from './Album/eventHandlers/albumSharedWithUserEmail';
 export * from './Album/eventHandlers/resolveActivity';
 export * from './Album/eventHandlers/unseenActivityEmailHandler';
 export * from './Album/eventHandlers/unseenActivityNotificationHandler';
