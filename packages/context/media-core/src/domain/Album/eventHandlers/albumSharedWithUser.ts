@@ -10,6 +10,7 @@ type AlbumSharedWithUserHandlerDeps = {
 export const build__AlbumSharedWithUserHandler = ({
   systemUnseenActivityRepository,
 }: AlbumSharedWithUserHandlerDeps): DomainEventHandler<'albumSharedWithUser'> => ({
+  name: 'AlbumSharedWithUser',
   handles: ['albumSharedWithUser'],
   processor: async (event: AlbumSharedWithUser) => {
     await systemUnseenActivityRepository.upsertActivityRow({

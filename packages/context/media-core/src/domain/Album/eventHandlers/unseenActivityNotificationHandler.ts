@@ -19,7 +19,7 @@ export const build__UnseenActivityNotificationHandler = ({
   systemUnseenActivityRepository,
   systemAuthorizationRepository,
 }: UnseenActivityNotificationHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
-  name: 'mediaItemAddedToAlbum',
+  name: 'UnseenActivityNotification',
   handles: ['mediaItemAddedToAlbum'],
   processor: async (event: MediaItemAddedToAlbum) => {
     const authorizations = await systemAuthorizationRepository.getAuthorizationsByAlbumId([

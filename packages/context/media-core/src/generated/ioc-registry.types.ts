@@ -5,6 +5,7 @@ import type { Logger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
+import type { ResolveActivity } from '../domain/Album/eventHandlers/resolveActivity.js';
 import type { DomainEventHandler, EventPublisher } from '../domain/domainEvents/eventPublisher.js';
 import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
@@ -117,7 +118,6 @@ export interface IocGeneratedCradle {
   grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
   markActivitySeen: MarkActivitySeen;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
-  mediaItemAddedToAlbumHandler: DomainEventHandler;
   mediaItemOperationsService: MediaItemOperationsService;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaItemRepository: MediaItemRepository;
@@ -145,8 +145,8 @@ export interface IocGeneratedCradle {
     viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
     viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
   };
-  recordPendingNotification: DomainEventHandler;
   reorderAlbumItems: ReorderAlbumItems;
+  resolveActivity: ResolveActivity;
   setCoverMedia: SetCoverMedia;
   shareContactReadRepository: ShareContactReadRepository;
   shareContactRepository: ShareContactRepository;
@@ -158,6 +158,8 @@ export interface IocGeneratedCradle {
   systemUserRepository: SystemUserRepository;
   toggleReaction: ToggleReaction;
   unitOfWork: UnitOfWork;
+  unseenActivityEmailHandler: DomainEventHandler;
+  unseenActivityNotificationHandler: DomainEventHandler;
   unseenActivityRepository: UnseenActivityRepository;
   unsetCoverMedia: UnsetCoverMedia;
   updateMediaItem: UpdateMediaItem;

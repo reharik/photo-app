@@ -10,6 +10,7 @@ type AlbumSharedWithUserEmailHandlerDeps = {
 export const build__AlbumSharedWithUserEmailHandler = ({
   systemPendingNotificationRepository,
 }: AlbumSharedWithUserEmailHandlerDeps): DomainEventHandler<'albumSharedWithUser'> => ({
+  name: 'AlbumSharedWithUserEmail',
   handles: ['albumSharedWithUser'],
   processor: async (event: AlbumSharedWithUser) => {
     await systemPendingNotificationRepository.upsertRecipientRow({
