@@ -1,4 +1,5 @@
 import { User } from '@packages/contracts';
+import type { Logger } from '@packages/infrastructure';
 import type { NotificationService } from '@packages/notifications';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type Koa from 'koa';
@@ -12,6 +13,7 @@ type AgnosticReadServices = AppCradle['agnosticReadServices'];
 
 type GraphQLContextShared = {
   config: Config;
+  logger: Logger;
 };
 
 export type AuthenticatedReadGraphQLContext = InitialAuthenticated & {

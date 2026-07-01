@@ -9,7 +9,7 @@ import {
 import { NotificationPayload, NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
 import { WorkerTaskOutcome } from '../../../types';
-import { cleanUp, RowOutcome } from '../outcomeCleanup';
+import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
 export type FastSweepNotification = () => Promise<'idle' | 'processed'>;
 
@@ -81,6 +81,8 @@ export const build__FastSweepNotification = ({
     }
 
     // end function break out
+
+    logger.info('[notification-send] send loop complete', summarizeOutcomes(outcomes));
 
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     await systemPendingNotificationRepository.deleteCompletedRecords(deleteIds);

@@ -7,8 +7,8 @@ import type { IocGeneratedContainerManifest, IocModuleNamespace } from 'ioc-mani
 import * as ioc_application_media_s3MediaStorage from '../application/media/s3MediaStorage.js';
 import * as ioc_domain_Album_eventHandlers_albumSharedWithUser from '../domain/Album/eventHandlers/albumSharedWithUser.js';
 import * as ioc_domain_Album_eventHandlers_albumSharedWithUserEmail from '../domain/Album/eventHandlers/albumSharedWithUserEmail.js';
-import * as ioc_domain_Album_eventHandlers_mediaItemAddedToAlbumHandler from '../domain/Album/eventHandlers/mediaItemAddedToAlbumHandler.js';
-import * as ioc_domain_Album_eventHandlers_recordPendingNotification from '../domain/Album/eventHandlers/recordPendingNotification.js';
+import * as ioc_domain_Album_eventHandlers_recordPendingNotification from '../domain/Album/eventHandlers/unseenActivityEmailHandler.js';
+import * as ioc_domain_Album_eventHandlers_mediaItemAddedToAlbumHandler from '../domain/Album/eventHandlers/unseenActivityNotificationHandler.js';
 import * as ioc_domain_domainEvents_eventPublisher from '../domain/domainEvents/eventPublisher.js';
 import * as ioc_infrastructure_repositories_unitOfWork from '../infrastructure/repositories/unitOfWork.js';
 import * as ioc_repositories_domainRepositories_albumRepository from '../repositories/domainRepositories/albumRepository.js';

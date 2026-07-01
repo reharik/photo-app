@@ -72,6 +72,13 @@ export const build__NotificationService = ({
       const { email, phone } = resolveRecipients(payload.to);
       const availableChannels = resolveChannels(payload.channels, email, phone);
 
+      logger.debug('[@packages/notifications] notify start', {
+        template: payload.template,
+        channels: availableChannels ?? [],
+        hasEmail: Boolean(email),
+        hasPhone: Boolean(phone),
+      });
+
       if (!availableChannels) {
         const error =
           'No recipient address: provide a non-empty email or phone, or pass non-empty `channels`';
@@ -177,6 +184,11 @@ export const build__NotificationService = ({
         }
       }
 
+      logger.debug('[@packages/notifications] notify sent', {
+        template: payload.template,
+        channels: availableChannels,
+        messageIds: ids,
+      });
       return ok(ids.join('|'));
     },
   };

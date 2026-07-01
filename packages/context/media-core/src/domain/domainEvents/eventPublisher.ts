@@ -6,6 +6,7 @@ export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['ki
 ) => Promise<void>;
 
 export type DomainEventHandler<K extends DomainEvent['kind'] = DomainEvent['kind']> = {
+  name: string;
   handles: K[];
   processor: DomainEventProcessor<K>;
 };

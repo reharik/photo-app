@@ -2,6 +2,17 @@ import { PendingNotification } from '@packages/media-core';
 
 export type RowOutcome = { row: PendingNotification; result: 'sent' | 'failed' | 'skipped' };
 
+// Roll a batch of per-row outcomes into counts for a single summary log line, so a sweep's
+// result is legible without reading every per-row line.
+export const summarizeOutcomes = (
+  outcomes: RowOutcome[],
+): { total: number; sent: number; failed: number; skipped: number } => ({
+  total: outcomes.length,
+  sent: outcomes.filter((x) => x.result === 'sent').length,
+  failed: outcomes.filter((x) => x.result === 'failed').length,
+  skipped: outcomes.filter((x) => x.result === 'skipped').length,
+});
+
 export const cleanUp = (outcomes: RowOutcome[]) => {
   // rows to delete: sent recipients' rows + rows that were orphaned (revoked/no-access/deleted-album)
   // rows to keep: failed-send recipients' rows

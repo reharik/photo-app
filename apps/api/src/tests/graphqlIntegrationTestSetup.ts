@@ -46,9 +46,11 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
   registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
 
   const config = container.resolve('config') as Config;
+  const logger = container.resolve('logger');
   const baseGraphQLContextFactory = build__CreateGraphQLContext({
     notificationService: noopNotificationService,
     config,
+    logger,
   });
 
   container.register({
@@ -68,6 +70,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
           publicReadServices: scope.resolve('publicReadServices'),
           agnosticReadServices: scope.resolve('agnosticReadServices'),
           config,
+          logger,
         };
       }
     }),

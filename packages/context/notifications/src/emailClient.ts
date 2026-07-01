@@ -131,11 +131,27 @@ export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailSe
 
         return ok({ messageId });
       } catch (error) {
-        logger.error('Error sending email', {
+        // AWS SDK errors carry the useful bits (service error name, HTTP status) on the
+        // error itself and on `$metadata`, none of which survive a plain object log.
+        const sdkError = error as {
+          name?: string;
+          message?: string;
+          $metadata?: { httpStatusCode?: number; requestId?: string };
+        };
+        const meta = {
           to: input.to,
           subject: input.subject,
-          error,
-        });
+          from: input.fromEmail,
+          errorName: sdkError.name,
+          errorMessage: sdkError.message ?? String(error),
+          httpStatusCode: sdkError.$metadata?.httpStatusCode,
+          awsRequestId: sdkError.$metadata?.requestId,
+        };
+        if (error instanceof Error) {
+          logger.error('Error sending email', error, meta);
+        } else {
+          logger.error('Error sending email', meta);
+        }
         return fail(ContractError.EmailSendFailed);
       }
     },

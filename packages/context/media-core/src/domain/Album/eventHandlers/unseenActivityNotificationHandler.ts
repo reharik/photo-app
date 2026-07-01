@@ -10,15 +10,16 @@ export interface ActivityEvent {
   albumId?: EntityId;
 }
 
-type MediaItemAddedToAlbumHandlerDeps = {
+type UnseenActivityNotificationHandlerDeps = {
   systemUnseenActivityRepository: SystemUnseenActivityRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
 };
 
-export const build__MediaItemAddedToAlbumHandler = ({
+export const build__UnseenActivityNotificationHandler = ({
   systemUnseenActivityRepository,
   systemAuthorizationRepository,
-}: MediaItemAddedToAlbumHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
+}: UnseenActivityNotificationHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
+  name: 'mediaItemAddedToAlbum',
   handles: ['mediaItemAddedToAlbum'],
   processor: async (event: MediaItemAddedToAlbum) => {
     const authorizations = await systemAuthorizationRepository.getAuthorizationsByAlbumId([

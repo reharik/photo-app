@@ -9,7 +9,7 @@ import {
 import { NotificationPayload, NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
 import { WorkerTaskOutcome } from '../../../types';
-import { cleanUp, RowOutcome } from '../outcomeCleanup';
+import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
 export type NotificationBatcher = () => Promise<'idle' | 'processed'>;
 
@@ -83,6 +83,8 @@ export const build__NotificationBatcher = ({
       const result = r.success ? 'sent' : 'failed';
       for (const row of rowsForRecipient) outcomes.push({ row, result }); // one send → fan its fate across all its rows
     }
+    logger.info('[notificationBatcher] send loop complete', summarizeOutcomes(outcomes));
+
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     await systemPendingNotificationRepository.deleteCompletedRecords(deleteIds);
     await systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);

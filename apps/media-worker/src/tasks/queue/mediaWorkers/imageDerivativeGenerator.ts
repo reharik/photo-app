@@ -1,3 +1,4 @@
+import type { Logger } from '@packages/infrastructure';
 import sharp from 'sharp';
 
 const DISPLAY_MAX_EDGE = 1600;
@@ -76,15 +77,42 @@ const resizeToDerivative = async (
   };
 };
 
+// Each derivative step can throw (HEIC decode, sharp resize, OOM on a huge image). Without a
+// stage label the job runner's top-level catch just says "processing failed" with no clue which
+// step broke. Wrap each step so a failure is logged and rethrown with the stage in its message.
+const runStage = async <T>(
+  stage: string,
+  fn: () => Promise<T>,
+  logger?: Logger,
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error) {
+      logger?.error(`Image derivative stage "${stage}" failed`, e, { stage });
+    } else {
+      logger?.error(`Image derivative stage "${stage}" failed`, { stage, err: message });
+    }
+    throw new Error(`image derivative stage "${stage}" failed: ${message}`);
+  }
+};
+
 export const generateImageDerivatives = async (
   originalBuffer: Buffer,
+  logger?: Logger,
 ): Promise<ImageDerivatives> => {
   let workingBuffer = originalBuffer;
   let replacementOriginal: GeneratedDerivative | undefined;
 
-  const heicConverter = await loadHeicConverterModule();
-  if (await heicConverter.isHeic(originalBuffer)) {
-    const result = await heicConverter.convertHeicToJpeg(originalBuffer, { quality: 0.95 });
+  const heicConverter = await runStage('load_heic_module', () => loadHeicConverterModule(), logger);
+  const isHeic = await runStage('detect_heic', () => heicConverter.isHeic(originalBuffer), logger);
+  if (isHeic) {
+    const result = await runStage(
+      'heic_convert',
+      () => heicConverter.convertHeicToJpeg(originalBuffer, { quality: 0.95 }),
+      logger,
+    );
     workingBuffer = result.outputBuffer;
     replacementOriginal = {
       buffer: result.outputBuffer,
@@ -95,7 +123,15 @@ export const generateImageDerivatives = async (
     };
   }
 
-  const display = await resizeToDerivative(workingBuffer, DISPLAY_MAX_EDGE);
-  const thumbnail = await resizeToDerivative(workingBuffer, THUMBNAIL_MAX_EDGE);
+  const display = await runStage(
+    'resize_display',
+    () => resizeToDerivative(workingBuffer, DISPLAY_MAX_EDGE),
+    logger,
+  );
+  const thumbnail = await runStage(
+    'resize_thumbnail',
+    () => resizeToDerivative(workingBuffer, THUMBNAIL_MAX_EDGE),
+    logger,
+  );
   return { display, thumbnail, replacementOriginal };
 };

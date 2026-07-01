@@ -4,15 +4,16 @@ import { SystemPendingNotificationRepository } from '../../../repositories/syste
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { MediaItemAddedToAlbum } from '../albumEvents';
 
-type RecordPendingNotificationDeps = {
+type UnseenActivityEmailHandlerDeps = {
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
 };
 
-export const build__RecordPendingNotification = ({
+export const build__UnseenActivityEmailHandler = ({
   systemPendingNotificationRepository,
   systemAuthorizationRepository,
-}: RecordPendingNotificationDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
+}: UnseenActivityEmailHandlerDeps): DomainEventHandler<'mediaItemAddedToAlbum'> => ({
+  name: 'UnseenActivityEmailHandler',
   handles: ['mediaItemAddedToAlbum'],
   processor: async (event: MediaItemAddedToAlbum) => {
     const recipients = await systemAuthorizationRepository.getAuthorizationsByAlbumId([

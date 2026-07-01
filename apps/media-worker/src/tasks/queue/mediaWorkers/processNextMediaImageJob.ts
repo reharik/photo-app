@@ -131,7 +131,7 @@ const runImageStoragePipeline = async ({
     mimeType: streamResult.mimeType,
   });
   const [derivatives, capture] = await Promise.all([
-    generateImageDerivatives(originalBuffer),
+    generateImageDerivatives(originalBuffer, logger),
     extractCaptureTime(originalBuffer),
   ]);
 
