@@ -23,8 +23,11 @@ export type Config = {
   logLevel: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug';
   logJsonFilePath?: string;
   awsRegion: string;
+  awsEndpoint?: string;
   awsAccessKeyId?: string;
   awsSecretAccessKey?: string;
+  fromEmail: string;
+  fromName: string;
   s3Bucket: string;
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
@@ -74,8 +77,11 @@ export const createConfigFromEnv = (): Config => {
       (isProduction ? 'info' : 'debug'),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
+    awsEndpoint: process.env.AWS_ENDPOINT?.trim() || undefined,
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
     awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,
+    fromEmail: process.env.FROM_EMAIL || '',
+    fromName: process.env.FROM_NAME || '',
     s3Bucket: process.env.S3_BUCKET || 'photoshare-dev-media',
     s3UploadUrlTtlSeconds: process.env.S3_UPLOAD_URL_TTL_SECONDS
       ? Number(process.env.S3_UPLOAD_URL_TTL_SECONDS)
@@ -91,10 +97,10 @@ export const createConfigFromEnv = (): Config => {
       : 2000,
     slowSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
       ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
-      : 300000, // 5 minutes
+      : 3600000, //  1hour
     fastSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
       ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
-      : 3600000, //  1hour
+      : 60000, // 1 minutes
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     isProduction,
     isDevelopment,

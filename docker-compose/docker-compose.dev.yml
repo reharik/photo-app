@@ -50,7 +50,10 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
       # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
-      AWS_ENDPOINT: ''
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      FROM_EMAIL: test@example.com
+      FROM_NAME: BetanaMe Dev
     volumes:
       - ./apps/media-worker:/app/apps/media-worker
       - /app/apps/media-worker/node_modules

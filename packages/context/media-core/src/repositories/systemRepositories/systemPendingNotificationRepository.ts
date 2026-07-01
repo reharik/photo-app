@@ -19,16 +19,34 @@ export type SystemPendingNotificationRepositoryDeps = {
 export type PendingNotificationKind = 'albumShared' | 'itemAdded' | 'itemShared';
 export type NotificationCadence = 'immediate' | 'batched';
 
-export const NOTIFICATION_CADENCE = {
-  albumShared: 'immediate',
-  itemAdded: 'batched',
-  itemShared: 'immediate',
-} satisfies Record<PendingNotificationKind, NotificationCadence>;
+// Template names are owned by the notifications context (its `TemplateName`).
+// They are mirrored here as a local literal union on purpose: media-core must
+// not depend on @packages/notifications (independent sibling contexts). The
+// worker — which composes both — maps this to the real TemplateName at send
+// time. `null` = no template wired for this kind yet.
+export type NotificationTemplate = 'shareInvite' | 'albumActivity';
+
+export type NotificationRouting = {
+  cadence: NotificationCadence;
+  template: NotificationTemplate | null;
+};
+
+export const NOTIFICATION_ROUTING = {
+  albumShared: { cadence: 'immediate', template: 'shareInvite' },
+  itemAdded: { cadence: 'batched', template: 'albumActivity' },
+  // TODO(phaseB): itemShared has no producer or template yet. shareInvite is
+  // album-specific copy ("View album", /album/ url), so a single-item share
+  // needs its own template/copy before this can be non-null.
+  itemShared: { cadence: 'immediate', template: null },
+} satisfies Record<PendingNotificationKind, NotificationRouting>;
 
 export const kindsByCadence = (c: NotificationCadence): PendingNotificationKind[] =>
-  (Object.keys(NOTIFICATION_CADENCE) as PendingNotificationKind[]).filter(
-    (k) => NOTIFICATION_CADENCE[k] === c,
+  (Object.keys(NOTIFICATION_ROUTING) as PendingNotificationKind[]).filter(
+    (k) => NOTIFICATION_ROUTING[k].cadence === c,
   );
+
+export const templateForKind = (k: PendingNotificationKind): NotificationTemplate | null =>
+  NOTIFICATION_ROUTING[k].template;
 
 export type PendingNotification = {
   id: string;
@@ -53,14 +71,18 @@ const pendingNotificationFields = [
   'actorId',
 ];
 
-type PendingNotificationInput = Omit<PendingNotification, 'dirtySince' | 'actorId'>;
+type PendingNotificationInput = Omit<PendingNotification, 'dirtySince'>;
 
 export const build__SystemPendingNotificationRepository = ({
   database,
 }: SystemPendingNotificationRepositoryDeps): SystemPendingNotificationRepository => ({
   upsertRecipientRow: async (upsert: PendingNotificationInput) => {
     return database('pendingNotification')
-      .insert({ ...upsert, dirtySince: database.fn.now() })
+      .insert({
+        ...upsert,
+        aggregateType: upsert.aggregateType.value,
+        dirtySince: database.fn.now(),
+      })
       .onConflict(['channel', 'kind', 'recipientId', 'aggregateType', 'aggregateId'])
       .merge({ dirtySince: database.fn.now() });
   },

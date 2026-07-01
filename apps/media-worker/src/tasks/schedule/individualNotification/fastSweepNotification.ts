@@ -5,6 +5,7 @@ import {
   SystemAuthorizationRepository,
   SystemPendingNotificationRepository,
   SystemUserRepository,
+  templateForKind,
 } from '@packages/media-core';
 import { NotificationPayload, NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
@@ -57,6 +58,19 @@ export const build__FastSweepNotification = ({
     const outcomes: RowOutcome[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+
+      // Registry-driven template selection by kind. Only kinds routed to the
+      // shareInvite template have a wired send path here; itemShared
+      // (template: null) and any future immediate kind are skipped until their
+      // copy exists — do not send the album-specific shareInvite for them.
+      const template = templateForKind(row.kind);
+      if (template !== 'shareInvite') {
+        outcomes.push({ row, result: 'skipped' });
+        logger.warn(
+          `[notification-send] no immediate send path for kind '${row.kind}' (template=${template})`,
+        );
+        continue;
+      }
 
       const recipientEmail = userMap.get(row.recipientId)?.email;
       if (!recipientEmail) {

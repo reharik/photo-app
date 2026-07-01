@@ -36,6 +36,7 @@ export const build__UnseenActivityEmailHandler = ({
           aggregateType: targetType,
           aggregateId: albumId,
           attempts: 0,
+          actorId: event.actorId,
         }),
       ),
     );
