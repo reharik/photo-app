@@ -3,7 +3,7 @@ import { SystemAuthorizationRepository } from '../../../repositories/systemRepos
 import { EntityId } from '../../../types';
 import { DomainEvent } from '../../domainEvents/DomainEvent';
 
-const assertNever = (x: never): never => {
+export const assertNever = (x: never): never => {
   throw new Error(`Unexpected object: ${JSON.stringify(x)}`);
 };
 

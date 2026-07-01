@@ -16,10 +16,24 @@ export type SystemPendingNotificationRepositoryDeps = {
   database: Knex;
 };
 
+export type PendingNotificationKind = 'albumShared' | 'itemAdded' | 'itemShared';
+export type NotificationCadence = 'immediate' | 'batched';
+
+export const NOTIFICATION_CADENCE = {
+  albumShared: 'immediate',
+  itemAdded: 'batched',
+  itemShared: 'immediate',
+} satisfies Record<PendingNotificationKind, NotificationCadence>;
+
+export const kindsByCadence = (c: NotificationCadence): PendingNotificationKind[] =>
+  (Object.keys(NOTIFICATION_CADENCE) as PendingNotificationKind[]).filter(
+    (k) => NOTIFICATION_CADENCE[k] === c,
+  );
+
 export type PendingNotification = {
   id: string;
   channel: 'email' | 'sms';
-  kind: string;
+  kind: PendingNotificationKind;
   recipientId: EntityId;
   aggregateType: EntityType;
   aggregateId: EntityId;
@@ -55,7 +69,7 @@ export const build__SystemPendingNotificationRepository = ({
       database('pendingNotification')
         .select(pendingNotificationFields)
         .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
-        .andWhere({ kind: 'albumActivity' }),
+        .whereIn('kind', kindsByCadence('batched')),
       {
         aggregateType: EntityType,
       },
@@ -67,7 +81,7 @@ export const build__SystemPendingNotificationRepository = ({
       database('pendingNotification')
         .select(pendingNotificationFields)
         .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
-        .andWhere({ kind: 'albumActivity' }),
+        .whereIn('kind', kindsByCadence('immediate')),
       {
         aggregateType: EntityType,
       },

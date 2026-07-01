@@ -1,6 +1,9 @@
-import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
+import {
+  PendingNotificationKind,
+  SystemPendingNotificationRepository,
+} from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
-import { ResolveActivity } from './resolveActivity';
+import { assertNever, ResolveActivity } from './resolveActivity';
 
 type UnseenActivityEmailHandlerDeps = {
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
@@ -17,10 +20,12 @@ export const build__UnseenActivityEmailHandler = ({
   handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser'],
   processor: async (event) => {
     const { recipients, targetType, albumId } = await resolveActivity(event);
-    // event.kind → pending-notification `kind`. STEP 0 found both source
-    // handlers wrote the same 'albumActivity' kind, so the map is constant for
-    // both mediaItemAddedToAlbum and albumSharedWithUser.
-    const kind = 'albumActivity';
+    const kind: PendingNotificationKind =
+      event.kind === 'albumSharedWithUser'
+        ? 'albumShared'
+        : event.kind === 'mediaItemAddedToAlbum'
+          ? 'itemAdded'
+          : assertNever(event);
     await Promise.all(
       recipients.map((recipientId) =>
         systemPendingNotificationRepository.upsertRecipientRow({
