@@ -25,27 +25,28 @@ type MultiComboboxProps = {
   allowCustomValue?: boolean;
   createCustomItem?: (input: string) => MultiComboboxOption;
   validateEntry?: (input: string) => string | undefined;
+  /**
+   * Characters that commit the current input as a custom value when typed (and split
+   * pasted text into multiple values). E.g. `[',', ' ']` lets `a@x.com b@y.com` or a
+   * pasted list become individual pills. Only active when `allowCustomValue` +
+   * `createCustomItem` are set; each committed token still passes `validateEntry`.
+   */
+  separators?: readonly string[];
   placeholder?: string;
   disabled?: boolean;
   error?: string;
   label?: string;
   hint?: string;
   emptyMessage?: string;
-  customValueLabel?: (input: string) => string;
 };
-
-/** Sentinel key for the synthetic "create custom value" row injected into the list. */
-const CUSTOM_KEY = '__multicombobox_custom__';
 
 type ListItem = {
   id: string;
   label: string;
-  isCustom: boolean;
-  option?: MultiComboboxOption;
+  option: MultiComboboxOption;
 };
 
 const DEFAULT_EMPTY_MESSAGE = 'No results.';
-const defaultCustomValueLabel = (input: string): string => `Add "${input}"`;
 
 /**
  * Categorical pill palette — the theme's six accent/avatar hues. Each uses the
@@ -79,35 +80,60 @@ const pillPaletteIndex = (value: string): number => {
 const includesValue = (list: readonly MultiComboboxOption[], item: MultiComboboxOption): boolean =>
   list.some((entry) => entry.value === item.value);
 
+const escapeForCharClass = (char: string): string => char.replace(/[\]\\^-]/g, '\\$&');
+
+/**
+ * Regex that splits pasted text on any configured separator plus all whitespace
+ * (so newline/tab-delimited paste also works). Returns null when no separators are
+ * configured. Whitespace is always included since a value with a space is never a
+ * single token in a separator-enabled field.
+ */
+const buildSeparatorRegex = (separators: readonly string[]): RegExp | null => {
+  if (separators.length === 0) {
+    return null;
+  }
+  const nonWhitespace = separators.filter((sep) => !/\s/.test(sep)).map(escapeForCharClass);
+  return new RegExp(`[\\s${nonWhitespace.join('')}]+`);
+};
+
+/**
+ * Pure typeahead list: the catalog options that aren't already selected and match the
+ * query. No synthetic "add this" row — custom values are committed via
+ * keyboard/paste/blur — so the popover only appears when there's a real suggestion and
+ * never covers the field's error text while free text is being typed.
+ */
 const buildListItems = (
   rawInputValue: string,
   catalogItems: readonly MultiComboboxOption[],
   selected: readonly MultiComboboxOption[],
-  allowCustom: boolean,
-  customValueLabel: (input: string) => string,
 ): ListItem[] => {
   const query = rawInputValue.trim().toLowerCase();
   const selectedKeys = new Set(selected.map((entry) => entry.value));
 
-  const filtered = catalogItems
+  return catalogItems
     .filter((item) => !selectedKeys.has(item.value))
-    .filter((item) => query === '' || item.display.toLowerCase().includes(query));
+    .filter((item) => query === '' || item.display.toLowerCase().includes(query))
+    .map((option) => ({ id: option.value, label: option.display, option }));
+};
 
-  const hasExactMatch =
-    query !== '' && catalogItems.some((item) => item.display.trim().toLowerCase() === query);
-
-  const items: ListItem[] = filtered.map((option) => ({
-    id: option.value,
-    label: option.display,
-    isCustom: false,
-    option,
-  }));
-
-  if (allowCustom && rawInputValue.trim() && !hasExactMatch) {
-    items.push({ id: CUSTOM_KEY, label: customValueLabel(rawInputValue.trim()), isCustom: true });
+/**
+ * Renders `text` with the first case-insensitive occurrence of `query` wrapped for
+ * emphasis — the standard typeahead affordance showing what the input matched. Mirrors
+ * the substring filter in buildListItems.
+ */
+const HighlightMatch = ({ text, query }: { text: string; query: string }): React.ReactElement => {
+  const needle = query.trim().toLowerCase();
+  const index = needle ? text.toLowerCase().indexOf(needle) : -1;
+  if (index === -1) {
+    return <>{text}</>;
   }
-
-  return items;
+  return (
+    <>
+      {text.slice(0, index)}
+      <Match>{text.slice(index, index + needle.length)}</Match>
+      {text.slice(index + needle.length)}
+    </>
+  );
 };
 
 export const MultiCombobox = ({
@@ -117,16 +143,17 @@ export const MultiCombobox = ({
   allowCustomValue = false,
   createCustomItem,
   validateEntry,
+  separators = [],
   placeholder,
   disabled,
   error,
   label,
   hint,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
-  customValueLabel = defaultCustomValueLabel,
 }: MultiComboboxProps): React.ReactElement => {
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const [localValidationError, setLocalValidationError] = useState<string | undefined>(undefined);
   // The popover anchors to the whole field box (tags + input), not just the input.
   const fieldBoxRef = useRef<HTMLDivElement>(null);
@@ -134,7 +161,19 @@ export const MultiCombobox = ({
   const displayError = error ?? localValidationError;
   const hasError = Boolean(displayError);
 
-  const listItems = buildListItems(inputValue, items, value, allowCustomValue, customValueLabel);
+  const listItems = buildListItems(inputValue, items, value);
+
+  // RAC's ComboBox manages its own open state (useComboBoxState hard-forces isOpen to
+  // undefined, so it can't be controlled). Instead we lean on menuTrigger="focus" +
+  // no allowsEmptyCollection: it opens on focus and auto-closes when nothing matches.
+  // This mirror of "is the suggestion popover covering the field?" is only used to hide
+  // the error text while the dropdown sits over it.
+  const suggestionsOpen = isFocused && listItems.length > 0;
+
+  // Separator/paste committing only makes sense when we can actually build custom values.
+  const separatorEnabled = allowCustomValue && Boolean(createCustomItem) && separators.length > 0;
+  const separatorKeys = new Set(separators);
+  const separatorRegex = buildSeparatorRegex(separators);
 
   /** Add a catalog/custom option, with dedup backstop. Always clears the input. */
   const addOption = (option: MultiComboboxOption): void => {
@@ -143,6 +182,20 @@ export const MultiCombobox = ({
     }
     setInputValue('');
     setLocalValidationError(undefined);
+  };
+
+  /** Add several options in one onChange (dedup vs current value and each other). */
+  const addOptions = (options: MultiComboboxOption[]): void => {
+    if (options.length === 0) {
+      return;
+    }
+    const next = [...value];
+    for (const option of options) {
+      if (!includesValue(next, option)) {
+        next.push(option);
+      }
+    }
+    onChange(next);
   };
 
   /** Commit free-text custom value (validation gate). Keeps input on validation failure. */
@@ -159,13 +212,68 @@ export const MultiCombobox = ({
     addOption(createCustomItem(trimmed));
   };
 
+  /**
+   * Commit the current input via Enter or a separator key: an exact catalog match wins,
+   * otherwise a validated custom value (allowCustomValue fields), otherwise — for
+   * list-only fields — the best current match. No-op on empty input.
+   */
+  const commitInput = (): void => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) {
+      return;
+    }
+    const query = trimmed.toLowerCase();
+    const exact = listItems.find((entry) => entry.label.trim().toLowerCase() === query);
+    if (exact) {
+      addOption(exact.option);
+    } else if (allowCustomValue) {
+      commitCustom(inputValue);
+    } else if (listItems[0]) {
+      addOption(listItems[0].option);
+    }
+  };
+
+  /**
+   * Paste-to-pills: split pasted text (combined with any text already typed) on the
+   * configured separators, commit every token that validates, and leave the rest —
+   * unparsed/invalid tokens — in the input for the user to fix. If nothing validates,
+   * fall through to the browser's default paste so the field just fills normally.
+   */
+  const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>): void => {
+    if (!separatorEnabled || !separatorRegex || !createCustomItem) {
+      return;
+    }
+    const pasted = event.clipboardData.getData('text');
+    if (!pasted) {
+      return;
+    }
+    const tokens = (inputValue + pasted)
+      .split(separatorRegex)
+      .map((token) => token.trim())
+      .filter(Boolean);
+
+    const toCommit: MultiComboboxOption[] = [];
+    const leftovers: string[] = [];
+    for (const token of tokens) {
+      if (validateEntry?.(token)) {
+        leftovers.push(token);
+      } else {
+        toCommit.push(createCustomItem(token));
+      }
+    }
+
+    if (toCommit.length === 0) {
+      return; // nothing valid — let the default paste populate the input
+    }
+    event.preventDefault();
+    addOptions(toCommit);
+    setInputValue(leftovers.join(' '));
+    setLocalValidationError(undefined);
+  };
+
   const handleSelectionChange = (key: Key | null): void => {
     // Custom-value blur paths surface as null here — handled by onBlur instead.
     if (key == null) {
-      return;
-    }
-    if (key === CUSTOM_KEY) {
-      commitCustom(inputValue);
       return;
     }
     const picked = listItems.find((entry) => entry.id === key)?.option;
@@ -236,22 +344,32 @@ export const MultiCombobox = ({
             setLocalValidationError(undefined);
           }}
           onSelectionChange={handleSelectionChange}
-          // OUR allowCustomValue is modelled via the injected custom row + blur-commit below;
-          // RAC's own flag stays off so the first option auto-focuses for Enter-to-commit.
+          // OUR allowCustomValue is modelled via keyboard/paste/blur commit below; RAC's
+          // own flag stays off so selection always flows through onSelectionChange.
           allowsCustomValue={false}
-          allowsEmptyCollection
-          // Open on focus so predefined options are visible without typing.
+          // Open on focus so the recent/suggested options show on click or tab-in. With
+          // no allowsEmptyCollection, RAC auto-closes the popover when the query matches
+          // nothing — so free text never sits under an open dropdown. After a commit
+          // clears the input, RAC reopens it with the remaining options.
           menuTrigger="focus"
           isDisabled={disabled}
         >
           <StyledInput
             placeholder={placeholder}
             aria-invalid={hasError}
+            onFocus={() => setIsFocused(true)}
             onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
               // Backspace on an empty input removes the most recently added tag.
               if (event.key === 'Backspace' && inputValue === '' && value.length > 0) {
                 event.preventDefault();
                 onChange(value.slice(0, -1));
+                return;
+              }
+              // A configured separator (e.g. "," or space) commits the typed value as a
+              // pill instead of being entered as a character.
+              if (separatorEnabled && separatorKeys.has(event.key)) {
+                event.preventDefault();
+                commitInput();
                 return;
               }
               if (event.key !== 'Enter') {
@@ -264,21 +382,11 @@ export const MultiCombobox = ({
                 return;
               }
               // Otherwise commit the typed value (RAC does not auto-focus the first row).
-              if (!inputValue.trim()) {
-                return;
-              }
-              const query = inputValue.trim().toLowerCase();
-              const exact = listItems.find(
-                (entry) => !entry.isCustom && entry.label.trim().toLowerCase() === query,
-              );
-              const target = exact ?? listItems.find((entry) => entry.isCustom) ?? listItems[0];
-              if (target?.isCustom) {
-                commitCustom(inputValue);
-              } else if (target?.option) {
-                addOption(target.option);
-              }
+              commitInput();
             }}
+            onPaste={handlePaste}
             onBlur={() => {
+              setIsFocused(false);
               if (allowCustomValue) {
                 // Commit-on-blur: turn a pending valid custom entry into a tag.
                 // No-op on empty input (e.g. just after a selection cleared it).
@@ -297,14 +405,19 @@ export const MultiCombobox = ({
               {(item: ListItem) => (
                 // Raw ListBoxItem (see Tag note) — styled via .mc-item on the parent.
                 <ListBoxItem id={item.id} textValue={item.label} className="mc-item">
-                  {item.label}
+                  <HighlightMatch text={item.label} query={inputValue} />
                 </ListBoxItem>
               )}
             </StyledListBox>
           </StyledPopover>
         </ContentsComboBox>
       </FieldBox>
-      {displayError ? <ErrorMessage>{displayError}</ErrorMessage> : null}
+      {/*
+        The popover renders directly below the field, over this error line. Only show the
+        error when the suggestion dropdown isn't covering it — when nothing matches, RAC
+        closes the dropdown and the error becomes visible.
+      */}
+      {displayError && !suggestionsOpen ? <ErrorMessage>{displayError}</ErrorMessage> : null}
     </FieldWrapper>
   );
 };
@@ -419,6 +532,11 @@ const StyledInput = styled(Input)`
     color: ${({ theme }) => theme.color.inputPlaceholder};
   }
 
+  /* Keep the invalid text visibly red until the user edits it (clears the error). */
+  &[aria-invalid='true'] {
+    color: ${({ theme }) => theme.color.formError};
+  }
+
   &[data-disabled] {
     color: ${({ theme }) => theme.color.inputDisabledText};
     cursor: not-allowed;
@@ -463,6 +581,12 @@ const Empty = styled.div`
   padding: ${({ theme }) => theme.spacing(1.25)} ${({ theme }) => theme.spacing(1.5)};
   color: ${({ theme }) => theme.color.bodyTextMuted};
   font-size: ${({ theme }) => theme.fontSize._14};
+`;
+
+// The typed-substring emphasis inside each suggestion (clay accent, via link token).
+const Match = styled.span`
+  font-weight: ${({ theme }) => theme.weight.medium};
+  color: ${({ theme }) => theme.color.link};
 `;
 
 const ErrorMessage = styled.div`

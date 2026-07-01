@@ -12,10 +12,18 @@ const isValidPhone = (value: string): boolean => {
 
 type LoginLocationState = {
   successMessage?: string;
+  returnTo?: string;
 };
 
+// Only accept a same-origin internal path — guards against open-redirect via
+// crafted router state.
+const safeReturnTo = (value: string | undefined): string =>
+  value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+
 export const LoggedOutScreen = () => {
-  const [isSignup, setIsSignup] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isSignup, setIsSignup] = useState(location.pathname === '/signup');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -26,9 +34,8 @@ export const LoggedOutScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, signup } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const successMessage = (location.state as LoginLocationState | undefined)?.successMessage;
+  const locationState = location.state as LoginLocationState | undefined;
+  const successMessage = locationState?.successMessage;
 
   const trimmedPhone = phone.trim();
   const showSmsOptIn = trimmedPhone.length > 0;
@@ -90,7 +97,7 @@ export const LoggedOutScreen = () => {
         }
       }
 
-      await navigate('/', { replace: true });
+      await navigate(safeReturnTo(locationState?.returnTo), { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {

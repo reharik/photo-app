@@ -6,6 +6,7 @@ import { HomeScreen } from '../../screens/HomeScreen';
 import { ForgotPasswordScreen } from '../../screens/ForgotPasswordScreen';
 import { LoggedOutScreen } from '../../screens/LoggedOutScreen';
 import { MediaItemScreen } from '../../screens/MediaItemScreen';
+import { NotFoundScreen } from '../../screens/NotFoundScreen';
 import { PublicAccessScreen } from '../../screens/PublicAccessScreen';
 import { PublicMediaItemScreen } from '../../screens/PublicMediaItemScreen';
 import { SharedAlbumsListScreen } from '../../screens/SharedAlbumsListScreen';
@@ -33,6 +34,7 @@ export const AppRouter = () => {
         }
       />
       <Route path="/login" element={<LoggedOutScreen />} />
+      <Route path="/signup" element={<LoggedOutScreen />} />
       <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
       <Route element={<RequireViewer />}>
         <Route element={<AppShell />}>
@@ -46,6 +48,7 @@ export const AppRouter = () => {
           <Route path="/shared/albums" element={<SharedAlbumsListScreen />} />
         </Route>
       </Route>
+      <Route path="*" element={<NotFoundScreen />} />
     </Routes>
   );
 };

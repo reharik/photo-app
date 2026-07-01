@@ -1,13 +1,17 @@
 import styled from 'styled-components';
 import { useViewer } from '../hooks/useViewer';
 
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 export const RequireViewer = () => {
   const { viewer, loading, error } = useViewer();
+  const location = useLocation();
 
   if (loading) return <LoadingShell />;
-  if (error || !viewer) return <Navigate to="/login" replace />;
+  if (error || !viewer)
+    return (
+      <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />
+    );
 
   return <Outlet context={{ viewer }} />;
 };

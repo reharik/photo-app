@@ -82,7 +82,7 @@ export const build__FastSweepNotification = ({
       const inviter = userMap.get(row.actorId);
       const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}` : '';
       const album = albumTitleMap.get(row.aggregateId);
-      const inviteUrl = `${config.clientUrl}/album/${album?.id}`;
+      const inviteUrl = `${config.clientUrl}/albums/${album?.id}`;
 
       const payload: NotificationPayload<'shareInvite'> = {
         to: recipientEmail,

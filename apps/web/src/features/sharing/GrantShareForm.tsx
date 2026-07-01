@@ -176,6 +176,7 @@ export const GrantShareForm = ({
           allowCustomValue
           validateEntry={validateRecipientEntry}
           createCustomItem={createRecipientItem}
+          separators={[',', ' ']}
           placeholder="user@example.com or @handle"
           disabled={isLoading}
           error={recipientsError}
