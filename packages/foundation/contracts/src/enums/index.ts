@@ -11,6 +11,7 @@ export * from './graphqlSmartEnums';
 export * from './notificationKind';
 export * from './operation';
 export * from './operationCatalog';
+export * from './pendingNotificationKind';
 export * from './reactionEmojis';
 export * from './resourceType';
 export * from './subjectType';

@@ -56,7 +56,7 @@ export type AddMediaItemsToNewAlbumOptions = {
    * after the modal closes (albumId will be empty).
    */
   navigateToAlbum?: boolean;
-  /** Library uses "{N} photos selected"; album screens use "{N} selected". */
+  /** Library uses "{N} items selected"; album screens use "{N} selected". */
   toolbarVariant?: SelectionToolbarVariant;
 };
 

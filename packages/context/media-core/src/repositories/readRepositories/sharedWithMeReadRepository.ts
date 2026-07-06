@@ -38,6 +38,7 @@ export const build__SharedWithMeReadRepository = ({
     collectionInfo: SharedWithMeMediaItemCollectionInfo;
   }): Promise<PagedList<SharedWithMeMediaItemRow>> => {
     const query = database('accessGrant')
+      .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
       .modify(withGrantedBy('mediaItem'))
       .modify(withActiveGrants(database, viewerId))
       .modify(withCollectionInfo(database, collectionInfo))

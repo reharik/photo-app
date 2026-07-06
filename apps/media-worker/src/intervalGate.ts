@@ -1,3 +1,4 @@
+import { NotificationCadence } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { Config } from './config';
 import { IocGeneratedCradle } from './generated/ioc-registry.types';
@@ -19,14 +20,13 @@ export const build__IntervalGate = ({
   const slowSweepSet = {
     lastRun: 0,
     interval: config.slowSweepIntervalMS,
-    tasks: workerTasks.filter((x) => x.cadence && x.cadence === 'slow'),
+    tasks: workerTasks.filter((x) => x.cadence && x.cadence.equals(NotificationCadence.batched)),
   };
   const fastSweepSet = {
     lastRun: 0,
     interval: config.fastSweepIntervalMS,
-    tasks: workerTasks.filter((x) => x.cadence && x.cadence === 'fast'),
+    tasks: workerTasks.filter((x) => x.cadence && x.cadence.equals(NotificationCadence.immediate)),
   };
-
   const getTasksDue = () => {
     const now = Date.now();
     const queueTasks = workerTasks.filter((x) => x.type === 'queue');

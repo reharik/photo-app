@@ -30,14 +30,16 @@ export default defineIocConfig({
     Knex: {
       $contract: { accessKey: 'database' },
     },
-    WorkerTask: {
-      notificationBatchTask: { default: true }, // this is just so I can reuse the interface then group
-    },
   },
   groups: {
     workerTasks: {
       kind: 'collection',
       baseType: 'WorkerTask',
+    },
+    fastSweepNotificationStrategies: {
+      kind: 'collection',
+      baseType: 'FastSweepNotificationStrategy',
+      baseTypeArg: 'TemplateName',
     },
   },
 });

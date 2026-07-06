@@ -29,17 +29,32 @@ import type {
 } from '../tasks/queue/mediaWorkers/processNextMediaImageJob.js';
 import type { NotificationBatcher } from '../tasks/schedule/batchNotification/notificationBatcher.js';
 import type { FastSweepNotification } from '../tasks/schedule/individualNotification/fastSweepNotification.js';
+import type { FastSweepNotificationStrategy } from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.js';
 import type { WorkerTask } from '../types.js';
 
 export interface IocGeneratedCradle {
+  albumSharedStrategy: FastSweepNotificationStrategy<'albumShareInvite'>;
+  albumSharedWithNonUserStrategy: FastSweepNotificationStrategy<'albumGuestInvite'>;
   config: Config;
-  database: Knex;
+  database: Knex<any, any[]>;
   fastSweepNotification: FastSweepNotification;
+  fastSweepNotificationStrategies: ReadonlyArray<
+    FastSweepNotificationStrategy<
+      | 'albumShareInvite'
+      | 'albumGuestInvite'
+      | 'itemShareInvite'
+      | 'welcome'
+      | 'albumActivity'
+      | 'passwordReset'
+      | 'forgotPassword'
+    >
+  >;
   fastSweepNotificationTask: WorkerTask;
   intervalGate: IntervalGate;
   knexConfig: KnexConfig;
   mediaDeletionTask: WorkerTask;
   mediaImageTask: WorkerTask;
+  mediaItemsSharedStrategy: FastSweepNotificationStrategy<'itemShareInvite'>;
   notificationBatcher: NotificationBatcher;
   notificationBatchTask: WorkerTask;
   processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
@@ -47,12 +62,25 @@ export interface IocGeneratedCradle {
   runMediaWorkerLoop: RunMediaWorkerLoop;
   runNextMediaDeletionJob: RunNextMediaDeletionJob;
   runNextMediaImageJob: RunNextMediaImageJob;
-  workerTask: WorkerTask;
   workerTasks: ReadonlyArray<WorkerTask>;
 }
 
+export type FastSweepNotificationStrategies = ReadonlyArray<
+  FastSweepNotificationStrategy<
+    | 'albumShareInvite'
+    | 'albumGuestInvite'
+    | 'itemShareInvite'
+    | 'welcome'
+    | 'albumActivity'
+    | 'passwordReset'
+    | 'forgotPassword'
+  >
+>;
+
+export type WorkerTasks = ReadonlyArray<WorkerTask>;
+
 export interface IocExternals {
-  container: AwilixContainer;
+  container: AwilixContainer<any>;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemRepository: MediaItemRepository;

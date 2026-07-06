@@ -18,10 +18,8 @@ export const LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT = '56px';
 
 const MOBILE_TOOLBAR_MEDIA = `(max-width: ${MaxWidthBreakpoint.Mobile}px)`;
 
-const findAction = (
-  actions: GalleryActionItems[],
-  label: string,
-): GalleryActionItems | undefined => actions.find((a) => a.label === label);
+const findAction = (actions: GalleryActionItems[], label: string): GalleryActionItems | undefined =>
+  actions.find((a) => a.label === label);
 
 export const LibrarySelectionToolbar = ({
   count,
@@ -41,11 +39,10 @@ export const LibrarySelectionToolbar = ({
       ? '1 selected'
       : `${count} selected`
     : count === 1
-      ? '1 photo selected'
-      : `${count} photos selected`;
+      ? '1 item selected'
+      : `${count} items selected`;
 
-  const showOverflowMenu =
-    isMobileToolbar || deleteAction != null || addToAlbumAction != null;
+  const showOverflowMenu = isMobileToolbar || deleteAction != null || addToAlbumAction != null;
 
   useEffect(() => {
     if (!overflowOpen) {

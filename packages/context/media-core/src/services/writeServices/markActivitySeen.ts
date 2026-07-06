@@ -14,6 +14,8 @@ export interface MarkActivitySeen extends WriteServiceBase {
 }
 
 type MarkActivitySeenDeps = {
+  viewerId: EntityId;
+
   unseenActivityRepository: UnseenActivityRepository;
 };
 

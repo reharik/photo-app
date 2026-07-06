@@ -1,6 +1,7 @@
 type Mutation {
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   markSeen(targetType: EntityType!, targetId: ID!): MarkSeenPayload!
+  deleteShareContact(handle: String!): DeleteShareContactResponse
 }
 
 type DeleteAlbumResponse {
@@ -10,6 +11,15 @@ type DeleteAlbumResponse {
 
 type DeleteAlbumPayload {
   albumId: ID!
+}
+
+type DeleteShareContactResponse {
+  data: DeleteShareContactPayload
+  errors: [ContractError!]
+}
+
+type DeleteShareContactPayload {
+  handle: String!
 }
 
 input DeleteAlbumInput {
@@ -31,4 +41,5 @@ type MarkSeenPayload {
 enum UnseenActivityType {
   ITEM_ADDED
   ALBUM_SHARED
+  ITEM_SHARED
 }

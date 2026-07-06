@@ -1,5 +1,10 @@
 import { EntityId } from '../../types';
-import { AlbumSharedWithUser, MediaItemAddedToAlbum } from '../Album/albumEvents';
+import {
+  AlbumSharedWithNonUser,
+  AlbumSharedWithUser,
+  MediaItemAddedToAlbum,
+} from '../Album/albumEvents';
+import { MediaItemsSharedWithUser } from '../MediaItem/mediaItemEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
 
@@ -13,4 +18,5 @@ export interface DomainEventBase {
   actorId: EntityId;
 }
 
-export type DomainEvent = DomainEventBase & (MediaItemAddedToAlbum | AlbumSharedWithUser);
+export type DomainEvent = DomainEventBase &
+  (MediaItemAddedToAlbum | AlbumSharedWithUser | MediaItemsSharedWithUser | AlbumSharedWithNonUser);

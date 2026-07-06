@@ -4,7 +4,18 @@ export type TemplateData = {
     lastName: string;
     appUrl: string;
   };
-  shareInvite: {
+  albumShareInvite: {
+    inviterName: string;
+    resourceName: string;
+    inviteUrl: string;
+  };
+  albumGuestInvite: {
+    inviterName: string;
+    resourceName: string;
+    inviteUrl: string;
+    signupUrl: string;
+  };
+  itemShareInvite: {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
@@ -19,12 +30,6 @@ export type TemplateData = {
   forgotPassword: {
     code: string;
     firstName: string;
-  };
-  publicShare: {
-    inviterName: string;
-    resourceName: string;
-    inviteUrl: string;
-    signupUrl: string;
   };
 };
 

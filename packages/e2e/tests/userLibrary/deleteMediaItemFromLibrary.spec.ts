@@ -16,7 +16,7 @@ test.describe('User Library', () => {
         toolbarVariant: 'library',
         expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 photos selected');
+      await expect(selection.toolbar).toContainText('2 items selected');
 
       await selection.toolbar.getByRole('button', { name: 'More actions' }).click();
       await userA.page.getByRole('menuitem', { name: 'Delete from library' }).click();

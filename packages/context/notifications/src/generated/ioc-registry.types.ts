@@ -20,6 +20,11 @@ export interface IocGeneratedCradle {
   smsChannel: SmsChannel;
 }
 
+export type Channels = {
+  emailChannel: EmailChannel;
+  smsChannel: SmsChannel;
+};
+
 export interface IocExternals {
   config: EmailConfig;
   logger: Logger;

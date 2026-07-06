@@ -29,7 +29,8 @@ export const cleanUp = (outcomes: RowOutcome[]) => {
     (x) => `[pending_notification_row] row ${x} -> failed to send, too many attempts`,
   );
   const skippedLogs = deleteSkippedRowIds.map(
-    (x) => `[pending_notification_row] row ${x} -> failed to send, no recipient email address`,
+    (x) =>
+      `[pending_notification_row] row ${x} -> failed to send, either no active albums or no recipient email address`,
   );
   const okLogs = deleteSuccessfulRowIds.map(
     (x) => `[pending_notification_row] row ${x} -> successfully sent`,

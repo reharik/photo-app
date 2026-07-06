@@ -25,7 +25,7 @@ export const PhotoDetailsDisclosure = ({
         aria-expanded={expanded}
         onClick={() => setExpanded((open) => !open)}
       >
-        <ToggleLabel>Photo details</ToggleLabel>
+        <ToggleLabel>Item details</ToggleLabel>
         <Chevron aria-hidden $expanded={expanded}>
           ›
         </Chevron>

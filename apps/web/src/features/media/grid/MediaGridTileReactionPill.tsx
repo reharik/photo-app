@@ -33,7 +33,8 @@ export const MediaGridTileReactionPill = ({
 }: MediaGridTileReactionPillProps) => {
   const heartCount = getReactionCount(reactionCounts, ReactionEmoji.heart);
   const commentCount = getReactionCount(reactionCounts, ReactionEmoji.comment);
-  const showPill = canReact || heartCount > 0 || commentCount > 0;
+  const hasReactions = heartCount > 0 || commentCount > 0;
+  const showPill = canReact || hasReactions;
 
   if (!showPill) {
     return null;
@@ -45,6 +46,7 @@ export const MediaGridTileReactionPill = ({
         itemId={itemId}
         heartCount={heartCount}
         commentCount={commentCount}
+        hasReactions={hasReactions}
         viewerReactions={viewerReactions}
         buildTileHref={buildTileHref}
         onReactionsRefetch={onReactionsRefetch}
@@ -53,7 +55,7 @@ export const MediaGridTileReactionPill = ({
   }
 
   return (
-    <ReactionHoverPill $interactive={false} aria-hidden>
+    <ReactionHoverPill $interactive={false} $alwaysVisible={hasReactions} aria-hidden>
       {heartCount > 0 ? (
         <DisplayStat>
           <DisplayHeartIcon size={11} strokeWidth={2} aria-hidden />
@@ -74,6 +76,7 @@ type InteractiveReactionPillProps = {
   itemId: string;
   heartCount: number;
   commentCount: number;
+  hasReactions: boolean;
   viewerReactions?: ViewerReactionVM[];
   buildTileHref: (itemId: string) => string;
   onReactionsRefetch?: () => void;
@@ -83,6 +86,7 @@ const InteractiveReactionPill = ({
   itemId,
   heartCount,
   commentCount,
+  hasReactions,
   viewerReactions,
   buildTileHref,
   onReactionsRefetch,
@@ -103,7 +107,7 @@ const InteractiveReactionPill = ({
   const commentAriaLabel = commentCount > 0 ? `${commentCount} comments` : 'View comments';
 
   return (
-    <ReactionHoverPill $interactive>
+    <ReactionHoverPill $interactive $alwaysVisible={hasReactions}>
       <IconHitTarget
         type="button"
         aria-label={heartAriaLabel}
@@ -138,7 +142,7 @@ const InteractiveReactionPill = ({
 };
 
 /** Exported for tile hover selector in {@link MediaGridTile}. */
-export const ReactionHoverPill = styled.div<{ $interactive: boolean }>`
+export const ReactionHoverPill = styled.div<{ $interactive: boolean; $alwaysVisible: boolean }>`
   position: absolute;
   left: ${({ theme }) => theme.spacing(0.75)};
   bottom: ${({ theme }) => theme.spacing(0.75)};
@@ -153,7 +157,7 @@ export const ReactionHoverPill = styled.div<{ $interactive: boolean }>`
   font-weight: ${({ theme }) => theme.weight.medium};
   line-height: 1.2;
   pointer-events: ${({ $interactive }) => ($interactive ? 'auto' : 'none')};
-  opacity: 0;
+  opacity: ${({ $alwaysVisible }) => ($alwaysVisible ? 1 : 0)};
   transition: opacity 150ms ease;
 `;
 

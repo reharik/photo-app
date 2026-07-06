@@ -2,8 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '../../features/shell/AppShell';
 import { AlbumScreen } from '../../screens/AlbumScreen';
 import { AlbumsListScreen } from '../../screens/AlbumsListScreen';
-import { HomeScreen } from '../../screens/HomeScreen';
 import { ForgotPasswordScreen } from '../../screens/ForgotPasswordScreen';
+import { HomeScreen } from '../../screens/HomeScreen';
 import { LoggedOutScreen } from '../../screens/LoggedOutScreen';
 import { MediaItemScreen } from '../../screens/MediaItemScreen';
 import { NotFoundScreen } from '../../screens/NotFoundScreen';
@@ -43,8 +43,8 @@ export const AppRouter = () => {
           <Route path="/media/:mediaId" element={<MediaItemScreen />} />
           <Route path="/albums" element={<AlbumsListScreen />} />
           <Route path="/albums/:albumId" element={<AlbumScreen />} />
-          <Route path="/shared-with-me" element={<Navigate to="/shared/photos" replace />} />
-          <Route path="/shared/photos" element={<SharedWithMeScreen />} />
+          <Route path="/shared-with-me" element={<Navigate to="/shared/items" replace />} />
+          <Route path="/shared/items" element={<SharedWithMeScreen />} />
           <Route path="/shared/albums" element={<SharedAlbumsListScreen />} />
         </Route>
       </Route>

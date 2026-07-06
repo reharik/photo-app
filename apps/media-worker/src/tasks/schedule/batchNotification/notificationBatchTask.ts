@@ -1,3 +1,4 @@
+import { NotificationCadence } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { Config } from '../../../config';
 import { WorkerTask } from '../../../types';
@@ -14,6 +15,6 @@ export const build__NotificationBatchTask = ({
 }: NotificationBatchTaskDeps): WorkerTask => ({
   name: 'notificationBatcher',
   type: 'schedule',
-  cadence: 'slow',
+  cadence: NotificationCadence.batched,
   run: async () => notificationBatcher(),
 });

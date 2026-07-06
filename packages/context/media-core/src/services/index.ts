@@ -32,6 +32,7 @@ export * from './writeServices/album/reorderAlbumItems';
 export * from './writeServices/album/setCoverMedia';
 export * from './writeServices/album/unsetCoverMedia';
 export * from './writeServices/album/writeAlbum.types';
+export * from './writeServices/authorization/deleteShareContactService';
 export * from './writeServices/authorization/grantAuthorizationForAlbum';
 export * from './writeServices/authorization/grantAuthorizationForMediaItems';
 export * from './writeServices/authorization/grantTypes';

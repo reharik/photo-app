@@ -22,9 +22,6 @@ export default defineIocConfig({
       $contract: { accessKey: 'unitOfWork' },
       unitOfWork: { lifetime: 'transient' },
     },
-    DomainEventHandler: {
-      unseenActivityNotificationHandler: { default: true }, // named to satisfy constraint
-    },
   },
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',

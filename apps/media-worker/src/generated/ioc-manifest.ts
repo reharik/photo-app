@@ -15,9 +15,31 @@ import * as ioc_tasks_queue_mediaWorkers_processNextMediaImageJob from '../tasks
 import * as ioc_tasks_schedule_batchNotification_notificationBatcher from '../tasks/schedule/batchNotification/notificationBatcher.js';
 import * as ioc_tasks_schedule_batchNotification_notificationBatchTask from '../tasks/schedule/batchNotification/notificationBatchTask.js';
 import * as ioc_tasks_schedule_individualNotification_fastSweepNotification from '../tasks/schedule/individualNotification/fastSweepNotification.js';
+import * as ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_albumSharedStrategy from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedStrategy.js';
+import * as ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_albumSharedWithNonUserStrategy from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.js';
+import * as ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_mediaItemsSharedStrategy from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/mediaItemsSharedStrategy.js';
 import * as ioc_tasks_schedule_individualNotification_fastSweepNotificationTask from '../tasks/schedule/individualNotification/fastSweepNotificationTask.js';
 
 type IocManifestGroupRoots = {
+  readonly fastSweepNotificationStrategies: {
+    readonly kind: 'collection';
+    readonly baseType: 'FastSweepNotificationStrategy';
+    readonly baseTypeId: '/home/reharik/Development/photoapp/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy';
+    readonly members: readonly [
+      {
+        readonly contractName: 'FastSweepNotificationStrategy';
+        readonly registrationKey: 'albumSharedStrategy';
+      },
+      {
+        readonly contractName: 'FastSweepNotificationStrategy';
+        readonly registrationKey: 'albumSharedWithNonUserStrategy';
+      },
+      {
+        readonly contractName: 'FastSweepNotificationStrategy';
+        readonly registrationKey: 'mediaItemsSharedStrategy';
+      },
+    ];
+  };
   readonly workerTasks: {
     readonly kind: 'collection';
     readonly baseType: 'WorkerTask';
@@ -49,6 +71,9 @@ export const iocManifest = {
     ioc_tasks_schedule_batchNotification_notificationBatcher,
     ioc_tasks_schedule_batchNotification_notificationBatchTask,
     ioc_tasks_schedule_individualNotification_fastSweepNotification,
+    ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_albumSharedStrategy,
+    ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_albumSharedWithNonUserStrategy,
+    ioc_tasks_schedule_individualNotification_fastSweepNotificationStrategies_mediaItemsSharedStrategy,
     ioc_tasks_schedule_individualNotification_fastSweepNotificationTask,
   ] as const satisfies readonly IocModuleNamespace[],
 
@@ -78,6 +103,50 @@ export const iocManifest = {
         lifetime: 'singleton',
         moduleIndex: 10,
         default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['Config'],
+      },
+    },
+    FastSweepNotificationStrategy: {
+      albumSharedStrategy: {
+        exportName: 'build__AlbumSharedStrategy',
+        registrationKey: 'albumSharedStrategy',
+        modulePath:
+          'tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedStrategy.ts',
+        relImport:
+          '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedStrategy.js',
+        contractName: 'FastSweepNotificationStrategy',
+        implementationName: 'albumSharedStrategy',
+        lifetime: 'singleton',
+        moduleIndex: 11,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['Config'],
+      },
+      albumSharedWithNonUserStrategy: {
+        exportName: 'build__AlbumSharedWithNonUserStrategy',
+        registrationKey: 'albumSharedWithNonUserStrategy',
+        modulePath:
+          'tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.ts',
+        relImport:
+          '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.js',
+        contractName: 'FastSweepNotificationStrategy',
+        implementationName: 'albumSharedWithNonUserStrategy',
+        lifetime: 'singleton',
+        moduleIndex: 12,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['Config'],
+      },
+      mediaItemsSharedStrategy: {
+        exportName: 'build__MediaItemsSharedStrategy',
+        registrationKey: 'mediaItemsSharedStrategy',
+        modulePath:
+          'tasks/schedule/individualNotification/fastSweepNotificationStrategies/mediaItemsSharedStrategy.ts',
+        relImport:
+          '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/mediaItemsSharedStrategy.js',
+        contractName: 'FastSweepNotificationStrategy',
+        implementationName: 'mediaItemsSharedStrategy',
+        lifetime: 'singleton',
+        moduleIndex: 13,
         discoveredBy: 'naming',
         dependencyContractNames: ['Config'],
       },
@@ -226,7 +295,7 @@ export const iocManifest = {
         contractName: 'WorkerTask',
         implementationName: 'fastSweepNotificationTask',
         lifetime: 'singleton',
-        moduleIndex: 11,
+        moduleIndex: 14,
         discoveredBy: 'naming',
         dependencyContractNames: ['FastSweepNotification'],
       },
@@ -263,13 +332,33 @@ export const iocManifest = {
         implementationName: 'notificationBatchTask',
         lifetime: 'singleton',
         moduleIndex: 9,
-        default: true,
         discoveredBy: 'naming',
-        configOverridesApplied: ['default'],
         dependencyContractNames: ['NotificationBatcher'],
       },
     },
   },
+  // fastSweepNotificationStrategies
+  fastSweepNotificationStrategies: {
+    kind: 'collection',
+    baseType: 'FastSweepNotificationStrategy',
+    baseTypeId:
+      '/home/reharik/Development/photoapp/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy',
+    members: [
+      {
+        contractName: 'FastSweepNotificationStrategy',
+        registrationKey: 'albumSharedStrategy',
+      },
+      {
+        contractName: 'FastSweepNotificationStrategy',
+        registrationKey: 'albumSharedWithNonUserStrategy',
+      },
+      {
+        contractName: 'FastSweepNotificationStrategy',
+        registrationKey: 'mediaItemsSharedStrategy',
+      },
+    ],
+  },
+
   // workerTasks
   workerTasks: {
     kind: 'collection',

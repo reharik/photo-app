@@ -1,6 +1,5 @@
 import { WriteResult } from '@packages/contracts';
 import { GrantUserAuthorizationCommand } from '@packages/media-core';
-import { TemplateData } from '@packages/notifications';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { GrantUserAuthorizationPayload, Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
@@ -25,21 +24,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
           errors: [toContractErrorPayload(result.error)],
         };
       }
-      const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`;
 
-        return ctx.notificationService.notify({
-          to: emailDTO.inviteeEmail,
-          template: emailDTO.template as keyof TemplateData,
-          data: {
-            inviterName: emailDTO.inviterName,
-            resourceName: emailDTO.title,
-            inviteUrl,
-            signupUrl: `${ctx.config.clientUrl}/signup`,
-          },
-        });
-      });
-      await Promise.all(notifications);
       return {
         success: true,
         authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
@@ -64,24 +49,6 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         };
       }
 
-      const notifications = result.value.emailDTOs.map((emailDTO) => {
-        const inviteUrl = `${ctx.config.clientUrl}/shared/${emailDTO.tokenOrUserId}`;
-
-        return ctx.notificationService.notify({
-          to: emailDTO.inviteeEmail,
-          template: emailDTO.template as keyof TemplateData,
-          data: {
-            inviterName: emailDTO.inviterName,
-            resourceName: emailDTO.title,
-            inviteUrl,
-            signupUrl: `${ctx.config.clientUrl}/signup`,
-          },
-        });
-      });
-      const fu = await Promise.all(notifications);
-      console.log(`************fu************`);
-      console.log(JSON.stringify(fu, null, 4));
-      console.log(`********END fu************`);
       const resultPayload: WriteResult<GrantUserAuthorizationPayload> = {
         success: true,
         value: {

@@ -11,12 +11,15 @@ import {
   TagGroup,
   TagList,
 } from 'react-aria-components';
+import { Trash2 } from 'lucide-react';
 import styled, { useTheme } from 'styled-components';
 
 export type MultiComboboxOption = {
   value: string;
   display: string;
 };
+
+const DEFAULT_DELETE_ITEM_LABEL = 'Remove';
 
 type MultiComboboxProps = {
   value: readonly MultiComboboxOption[];
@@ -38,6 +41,14 @@ type MultiComboboxProps = {
   label?: string;
   hint?: string;
   emptyMessage?: string;
+  /**
+   * When set, each suggestion row shows a delete affordance that calls this with the
+   * row's `value`. Used to remove a saved suggestion from history (not the current
+   * selection). Rows are only the popup catalog items, so this never appears on pills.
+   */
+  onDeleteItem?: (value: string) => void;
+  /** Accessible label + desktop tooltip for the per-row delete control. */
+  deleteItemLabel?: string;
 };
 
 type ListItem = {
@@ -150,6 +161,8 @@ export const MultiCombobox = ({
   label,
   hint,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
+  onDeleteItem,
+  deleteItemLabel = DEFAULT_DELETE_ITEM_LABEL,
 }: MultiComboboxProps): React.ReactElement => {
   const theme = useTheme();
   const [inputValue, setInputValue] = useState('');
@@ -157,6 +170,13 @@ export const MultiCombobox = ({
   const [localValidationError, setLocalValidationError] = useState<string | undefined>(undefined);
   // The popover anchors to the whole field box (tags + input), not just the input.
   const fieldBoxRef = useRef<HTMLDivElement>(null);
+  // Delete-vs-select guard: RAC ComboBox selects an option on press-UP, which our
+  // trash button's onClick can't reliably cancel (the click is swallowed while the
+  // press-up selection still fires — the row would silently become a recipient pill).
+  // So we delete on pointer-down and stamp the row's key here; handleSelectionChange
+  // drops the matching press-up selection. Keyed (not a bare bool) so a stale value is
+  // harmless — it only ever suppresses re-selecting the exact row we just deleted.
+  const suppressSelectKeyRef = useRef<Key | null>(null);
 
   const displayError = error ?? localValidationError;
   const hasError = Boolean(displayError);
@@ -274,6 +294,12 @@ export const MultiCombobox = ({
   const handleSelectionChange = (key: Key | null): void => {
     // Custom-value blur paths surface as null here — handled by onBlur instead.
     if (key == null) {
+      return;
+    }
+    // Drop the press-up selection that RAC fires when the trash button was pressed
+    // (see suppressSelectKeyRef) so deleting a suggestion never also selects it.
+    if (key === suppressSelectKeyRef.current) {
+      suppressSelectKeyRef.current = null;
       return;
     }
     const picked = listItems.find((entry) => entry.id === key)?.option;
@@ -406,6 +432,50 @@ export const MultiCombobox = ({
                 // Raw ListBoxItem (see Tag note) — styled via .mc-item on the parent.
                 <ListBoxItem id={item.id} textValue={item.label} className="mc-item">
                   <HighlightMatch text={item.label} query={inputValue} />
+                  {onDeleteItem ? (
+                    <DeleteContactButton
+                      type="button"
+                      className="mc-delete"
+                      aria-label={deleteItemLabel}
+                      title={deleteItemLabel}
+                      disabled={disabled}
+                      // Stamp the row key so handleSelectionChange drops the press-up
+                      // selection RAC fires for THIS row. Don't delete yet: deleting here
+                      // would reflow the list mid-gesture and slide the next row under the
+                      // pointer, so RAC's press-up would select THAT row instead.
+                      onPointerDown={(event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        suppressSelectKeyRef.current = item.id;
+                      }}
+                      // Delete on pointer-UP, deferred a microtask so it runs AFTER RAC has
+                      // resolved (and we've suppressed) the press-up selection — the row
+                      // under the pointer stays this item the whole gesture, so no neighbour
+                      // gets selected. (Mouse/touch path; keyboard is handled in onClick.)
+                      onPointerUp={(event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        if (disabled) {
+                          return;
+                        }
+                        const { id } = item;
+                        queueMicrotask(() => onDeleteItem(id));
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        // Keyboard activation (Enter/Space) arrives as a click with
+                        // detail 0 and no preceding pointer events — delete here for
+                        // keyboard users. Mouse clicks (detail >= 1) are already handled
+                        // by onPointerUp; just neutralise them.
+                        if (!disabled && event.detail === 0) {
+                          onDeleteItem(item.id);
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} strokeWidth={2} aria-hidden />
+                    </DeleteContactButton>
+                  ) : null}
                 </ListBoxItem>
               )}
             </StyledListBox>
@@ -518,6 +588,40 @@ const RemoveButton = styled(Button)`
   }
 `;
 
+// Native <button> (not RAC Button) so onPointerDown/onClick are plain DOM handlers we
+// can stopPropagation on — that's what keeps the trash from triggering row selection.
+// Visuals mirror the pill RemoveButton; hover turns it destructive (formError).
+const DeleteContactButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: ${({ theme }) => theme.spacing(2.5)};
+  height: ${({ theme }) => theme.spacing(2.5)};
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.bodyTextMuted};
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+    color: ${({ theme }) => theme.color.formError};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.inputBorderFocus};
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+`;
+
 const StyledInput = styled(Input)`
   flex: 1 1 120px;
   min-width: 80px;
@@ -560,6 +664,10 @@ const StyledListBox = styled(ListBox)`
   outline: none;
 
   .mc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: ${({ theme }) => theme.spacing(1)};
     padding: ${({ theme }) => theme.spacing(1.25)} ${({ theme }) => theme.spacing(1.5)};
     font-size: ${({ theme }) => theme.fontSize._14};
     color: ${({ theme }) => theme.color.bodyText};
@@ -574,6 +682,37 @@ const StyledListBox = styled(ListBox)`
   .mc-item[data-selected] {
     background: ${({ theme }) => theme.color.selectionBg};
     color: ${({ theme }) => theme.color.selectionText};
+  }
+
+  /*
+    Delete affordance visibility — mirrors the hover-vs-touch precedent used across the
+    app (MediaGridSelectionToggle, CommentActions). Hover devices reveal it on row
+    hover or keyboard (virtual) focus; touch devices, which have no hover, show it
+    always. Base rule keeps it visible for any device matching neither query.
+  */
+  .mc-delete {
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    .mc-delete {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease;
+    }
+
+    .mc-item:hover .mc-delete,
+    .mc-item[data-focused] .mc-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .mc-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 ` as typeof ListBox;
 

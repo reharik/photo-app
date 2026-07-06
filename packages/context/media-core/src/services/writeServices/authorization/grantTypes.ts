@@ -1,5 +1,12 @@
 import { ContractError, Operation, WriteResult } from '@packages/contracts';
-import { Authorization, MediaItem, PublicLink, User } from '../../../domain';
+import {
+  AlbumSharedWithNonUser,
+  Authorization,
+  MediaItem,
+  MediaItemsSharedWithUser,
+  PublicLink,
+  User,
+} from '../../../domain';
 import { ActorId, EntityId } from '../../../types/types';
 
 export type GrantEmailDTO = {
@@ -13,7 +20,6 @@ export type GrantEmailDTO = {
 
 export type GrantUserAuthorizationResult = {
   authorizations: Authorization[];
-  emailDTOs: GrantEmailDTO[];
   errors: { user: User; error: ContractError }[];
   publicLinkFailure?: { handles: string[]; error: ContractError };
 };
@@ -46,7 +52,7 @@ export interface GrantAuthorizationInterface {
 
 export type InviteNonUsersResult = {
   authorizations: Authorization[];
-  emailDTOs: GrantEmailDTO[];
+  serviceEvents: AlbumSharedWithNonUser[];
   publicLinkFailure?: { handles: string[]; error: ContractError };
 };
 
@@ -56,4 +62,5 @@ export type InviteUsersForMediaItemsResult = {
   errors: { user: User; error: ContractError }[]; // user-facing: zero-success users
   errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[]; // log only
   addedInvitees: User[];
+  serviceEvents: MediaItemsSharedWithUser[];
 };

@@ -16,7 +16,7 @@ test.describe('Foundation tests', () => {
         toolbarVariant: 'library',
         expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 photos selected');
+      await expect(selection.toolbar).toContainText('2 items selected');
 
       await addMediaItemsToNewAlbum(userA.page, 'lovely_new_album', [a.id, b.id], {
         alreadySelected: true,

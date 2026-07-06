@@ -44,11 +44,11 @@ const authorizationFields = [
 export const build__SystemAuthorizationRepository = ({
   database,
 }: SystemAuthorizationRepositoryDeps): SystemAuthorizationRepository => ({
-  getAuthorizationsByAlbumId: (albumId: EntityId[]): Promise<AuthorizationRow[]> => {
+  getAuthorizationsByAlbumId: (albumIds: EntityId[]): Promise<AuthorizationRow[]> => {
     return withEnumRevival(
       database('access_grant')
         .select<AuthorizationRow[]>(authorizationFields)
-        .whereIn('albumId', albumId)
+        .whereIn('albumId', albumIds)
         .whereNull('accessGrant.revokedAt')
         .where((b) => {
           b.whereNull('accessGrant.expiresAt').orWhere(

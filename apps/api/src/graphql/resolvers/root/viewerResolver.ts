@@ -85,6 +85,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     hasUnseenActivity: authenticatedReadResolver(async (_parent, args, ctx) => {
       return ctx.readServices.viewerHasUnseenActivityService.getUnseenActivity();
     }),
+    unseenSharedActivity: authenticatedReadResolver(async (_parent, args, ctx) => {
+      return ctx.readServices.viewerHasUnseenActivityService.getUnseenActivitySummary();
+    }),
   },
 };
 

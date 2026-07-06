@@ -32,22 +32,26 @@ export const build__NotificationBatcher = ({
   systemAuthorizationRepository,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
-  const QUIET_WINDOW_MINUTES = config.isProduction ? 60 : 5;
-
   return async (): Promise<WorkerTaskOutcome> => {
-    const rows =
-      await systemPendingNotificationRepository.claimNotificationBatch(QUIET_WINDOW_MINUTES);
+    const rows = await systemPendingNotificationRepository.claimNotificationBatch(
+      config.debounceEmailWindowSeconds,
+    );
     logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
     if (!rows.length) {
       return 'idle';
     }
-
-    const recipientMap = groupByMapping(rows, (x) => x.recipientId);
+    const bad = rows.filter((r) => !notEmpty(r.recipientId));
+    if (bad.length) {
+      logger.error(`[batcher] claimed ${bad.length} null-recipient row(s) — cadence filter leak`);
+    }
+    const recipientMap = groupByMapping(
+      rows.filter((r) => notEmpty(r.recipientId)),
+      (x) => x.recipientId,
+    );
     const albumMap = groupByMapping(rows, (x) => x.aggregateId);
 
-    const userIds = [...recipientMap.keys()];
+    const userIds = [...recipientMap.keys()].filter(notEmpty);
     const albumIds = [...albumMap.keys()];
-
     const recipients = await systemUserRepository.getUserContacts(userIds);
     const albumTitles = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumAuths = await systemAuthorizationRepository.getAuthorizationsByAlbumId(albumIds);
@@ -59,13 +63,14 @@ export const build__NotificationBatcher = ({
     const outcomes: RowOutcome[] = [];
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       // drive off claimed rows
-      const authRows = authMap.get(recipientId) ?? [];
-      const recipientEmail = recipientEmailMap.get(recipientId);
+      const authRows = authMap.get(recipientId!) ?? [];
+      const recipientEmail = recipientEmailMap.get(recipientId!);
       if (!recipientEmail) {
         logger.warn(`User ${recipientId} has no email`);
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
         continue;
       }
+
       const emailsAlbumTitles = authRows
         .map((x) => albumTitleMap.get(x.albumId)?.title)
         .filter(notEmpty);
@@ -79,8 +84,10 @@ export const build__NotificationBatcher = ({
         data: { albumTitles: emailsAlbumTitles, viewUrl: config.clientUrl },
         channels: ['email'],
       };
+
       const r = await notificationService.notify(payload);
       const result = r.success ? 'sent' : 'failed';
+
       for (const row of rowsForRecipient) outcomes.push({ row, result }); // one send → fan its fate across all its rows
     }
     logger.info('[notificationBatcher] send loop complete', summarizeOutcomes(outcomes));

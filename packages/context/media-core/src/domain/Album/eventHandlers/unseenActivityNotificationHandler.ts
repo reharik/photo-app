@@ -1,6 +1,6 @@
-import { UnseenActivityType } from '@packages/contracts';
 import { SystemUnseenActivityRepository } from '../../../repositories/systemRepositories/systemUnseenActivityRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
+import { UNSEEN_KIND_BY_EVENT } from './mapEventKindToActionKind';
 import { ResolveActivity } from './resolveActivity';
 
 type UnseenActivityNotificationHandlerDeps = {
@@ -8,20 +8,22 @@ type UnseenActivityNotificationHandlerDeps = {
   resolveActivity: ResolveActivity;
 };
 
+// OK. Gotta go, what's left is
+// * update resolveActivity to take both new events
+// * update handlers to take both new events
+// * update fastSweepNotificationTask to handle both new events
+// * add/update e2e tests
 export const build__UnseenActivityNotificationHandler = ({
   systemUnseenActivityRepository,
   resolveActivity,
 }: UnseenActivityNotificationHandlerDeps): DomainEventHandler<
-  'mediaItemAddedToAlbum' | 'albumSharedWithUser'
+  'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
 > => ({
   name: 'UnseenActivityNotification',
-  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser'],
+  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
-    const { recipients, targetType, targetId, albumId } = await resolveActivity(event);
-    const activityKind =
-      event.kind === 'mediaItemAddedToAlbum'
-        ? UnseenActivityType.itemAdded
-        : UnseenActivityType.albumShared;
+    const { recipients, targetType, targetId } = await resolveActivity(event);
+    const activityKind = UNSEEN_KIND_BY_EVENT[event.kind];
     await Promise.all(
       recipients.map((viewerId) =>
         systemUnseenActivityRepository.upsertActivityRow({
@@ -29,7 +31,6 @@ export const build__UnseenActivityNotificationHandler = ({
           viewerId,
           targetType,
           targetId,
-          albumId,
           activityKind,
         }),
       ),

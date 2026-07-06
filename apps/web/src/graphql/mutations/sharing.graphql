@@ -19,3 +19,14 @@ mutation GrantUserAuthorizationForAlbum($input: GrantUserAuthorizationForAlbumIn
     }
   }
 }
+
+mutation DeleteShareContact($handle: String!) {
+  deleteShareContact(handle: $handle) {
+    data {
+      handle
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

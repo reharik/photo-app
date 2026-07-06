@@ -1,6 +1,7 @@
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -27,7 +28,11 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerId: ctx.viewer.id,
       });
     }),
+    deleteShareContact: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const { handle } = args;
+      const result = await ctx.writeServices.deleteShareContactService(handle, ctx.viewer.id);
+      return writeResultToPayload(result);
+    }),
   },
 };
-
 export default viewerMutationResolvers;

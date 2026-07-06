@@ -12,6 +12,9 @@ services:
     volumes:
       - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
+      # Init hook: re-verifies the SES sender identity on every boot (state is
+      # ephemeral and `make docker/dev/down` wipes the data volume).
+      - ./infra/config/localstack/init/ready.d:/etc/localstack/init/ready.d
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 10s

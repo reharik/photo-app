@@ -10,6 +10,7 @@ export type UserSession = {
   context: BrowserContext;
   page: Page;
   userId: string;
+  box: true;
 };
 
 type Fixtures = {
@@ -34,7 +35,7 @@ const makeSession = async (browser: Browser, user: TestUser): Promise<UserSessio
   const context = await browser.newContext();
   const page = await context.newPage();
   const userId = await getUserIdByEmail(user.email);
-  return { user, context, page, userId };
+  return { user, context, page, userId, box: true };
 };
 
 export const test = base.extend<Fixtures>({

@@ -1,5 +1,6 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
+import { UnitOfWork } from '../../../infrastructure';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
@@ -15,12 +16,14 @@ type GrantUserAuthorizationForAlbumDeps = {
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
   shareContactRepository: ShareContactRepository;
+  uow: UnitOfWork;
 };
 
 export const build__GrantUserAuthorizationForAlbum = ({
   albumRepository,
   userRepository,
   shareContactRepository,
+  uow,
 }: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
   return async (
     input: GrantUserAuthorizationCommand,
@@ -42,27 +45,29 @@ export const build__GrantUserAuthorizationForAlbum = ({
       return fail(AppErrorCollection.user.UserNotFound);
     }
     const { existing, nonExisting } = await segregateUsers(grantedToHandles, userRepository);
-    const nonExistingResult = inviteNonUsers(nonExisting, album, input, album.title(), granter);
+    const nonExistingResult = inviteNonUsers(nonExisting, album, input, granter);
     const existingResult = inviteUsers(existing, album, input); //, album.title(), granter);
 
     const result = {
       authorizations: [...nonExistingResult.authorizations, ...existingResult.authorizations],
-      emailDTOs: nonExistingResult.emailDTOs,
       errors: existingResult.errors,
       publicLinkFailure: nonExistingResult.publicLinkFailure,
     };
-
-    if (result.errors.length > 0 || result.publicLinkFailure) {
+    // we don't want to return without saving if only publicLinkFailure
+    if (result.errors.length > 0) {
       return ok(result);
     }
-
+    uow.collectEvents(nonExistingResult.serviceEvents);
     await albumRepository.save(album);
-    await Promise.all(
-      existingResult.addedInvitees.flatMap((invitee) => [
-        shareContactRepository.upsertContact(viewerId, invitee.id(), invitee.handle()),
-        shareContactRepository.upsertContact(invitee.id(), viewerId, granter.handle()),
+    await Promise.all([
+      ...existingResult.addedInvitees.flatMap((invitee) => [
+        shareContactRepository.upsertContact(invitee.handle(), viewerId, invitee.id()),
+        shareContactRepository.upsertContact(granter.handle(), invitee.id(), viewerId),
       ]),
-    );
+      ...nonExistingResult.serviceEvents.map((event) =>
+        shareContactRepository.upsertContact(event.recipientAddress, viewerId),
+      ),
+    ]);
     return ok(result);
   };
 };

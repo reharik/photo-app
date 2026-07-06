@@ -62,6 +62,7 @@ import * as ioc_services_writeServices_album_deleteAlbumItems from '../services/
 import * as ioc_services_writeServices_album_reorderAlbumItems from '../services/writeServices/album/reorderAlbumItems.js';
 import * as ioc_services_writeServices_album_setCoverMedia from '../services/writeServices/album/setCoverMedia.js';
 import * as ioc_services_writeServices_album_unsetCoverMedia from '../services/writeServices/album/unsetCoverMedia.js';
+import * as ioc_services_writeServices_authorization_deleteShareContactService from '../services/writeServices/authorization/deleteShareContactService.js';
 import * as ioc_services_writeServices_authorization_grantAuthorizationForAlbum from '../services/writeServices/authorization/grantAuthorizationForAlbum.js';
 import * as ioc_services_writeServices_authorization_grantAuthorizationForMediaItems from '../services/writeServices/authorization/grantAuthorizationForMediaItems.js';
 import * as ioc_services_writeServices_comments_addComment from '../services/writeServices/comments/addComment.js';
@@ -216,6 +217,10 @@ type IocManifestGroupRoots = {
         readonly contractName: 'DeleteMediaItems';
         readonly registrationKey: 'deleteMediaItems';
       };
+      readonly deleteShareContactService: {
+        readonly contractName: 'DeleteShareContactService';
+        readonly registrationKey: 'deleteShareContactService';
+      };
       readonly editComment: {
         readonly contractName: 'EditComment';
         readonly registrationKey: 'editComment';
@@ -326,6 +331,7 @@ export const iocManifest = {
     ioc_services_writeServices_album_reorderAlbumItems,
     ioc_services_writeServices_album_setCoverMedia,
     ioc_services_writeServices_album_unsetCoverMedia,
+    ioc_services_writeServices_authorization_deleteShareContactService,
     ioc_services_writeServices_authorization_grantAuthorizationForAlbum,
     ioc_services_writeServices_authorization_grantAuthorizationForMediaItems,
     ioc_services_writeServices_comments_addComment,
@@ -368,7 +374,7 @@ export const iocManifest = {
         contractName: 'AddComment',
         implementationName: 'addComment',
         lifetime: 'scoped',
-        moduleIndex: 60,
+        moduleIndex: 61,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -523,7 +529,7 @@ export const iocManifest = {
         contractName: 'CreateMediaUpload',
         implementationName: 'createMediaItemUpload',
         lifetime: 'scoped',
-        moduleIndex: 64,
+        moduleIndex: 65,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository', 'MediaItemRepository', 'MediaStorage'],
@@ -538,7 +544,7 @@ export const iocManifest = {
         contractName: 'CreatePublicLinkForAlbum',
         implementationName: 'createPublicLinkForAlbum',
         lifetime: 'scoped',
-        moduleIndex: 70,
+        moduleIndex: 71,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['AlbumRepository'],
@@ -553,7 +559,7 @@ export const iocManifest = {
         contractName: 'CreatePublicLinkForMediaItems',
         implementationName: 'createPublicLinkForMediaItems',
         lifetime: 'scoped',
-        moduleIndex: 71,
+        moduleIndex: 72,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -602,7 +608,7 @@ export const iocManifest = {
         contractName: 'DeleteComment',
         implementationName: 'deleteComment',
         lifetime: 'scoped',
-        moduleIndex: 61,
+        moduleIndex: 62,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['CommentRepository'],
@@ -617,7 +623,7 @@ export const iocManifest = {
         contractName: 'DeleteMediaItem',
         implementationName: 'deleteMediaItem',
         lifetime: 'scoped',
-        moduleIndex: 65,
+        moduleIndex: 66,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -637,7 +643,7 @@ export const iocManifest = {
         contractName: 'DeleteMediaItems',
         implementationName: 'deleteMediaItems',
         lifetime: 'scoped',
-        moduleIndex: 66,
+        moduleIndex: 67,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -647,6 +653,21 @@ export const iocManifest = {
           'MediaItemRepository',
           'MediaStorage',
         ],
+      },
+    },
+    DeleteShareContactService: {
+      deleteShareContactService: {
+        exportName: 'build__DeleteShareContactService',
+        registrationKey: 'deleteShareContactService',
+        modulePath: 'services/writeServices/authorization/deleteShareContactService.ts',
+        relImport: '../services/writeServices/authorization/deleteShareContactService.js',
+        contractName: 'DeleteShareContactService',
+        implementationName: 'deleteShareContactService',
+        lifetime: 'scoped',
+        moduleIndex: 58,
+        default: true,
+        discoveredBy: 'naming',
+        dependencyContractNames: ['ShareContactRepository'],
       },
     },
     DomainEventHandler: {
@@ -671,9 +692,7 @@ export const iocManifest = {
         implementationName: 'unseenActivityNotificationHandler',
         lifetime: 'singleton',
         moduleIndex: 3,
-        default: true,
         discoveredBy: 'naming',
-        configOverridesApplied: ['default'],
         dependencyContractNames: ['ResolveActivity', 'SystemUnseenActivityRepository'],
       },
     },
@@ -686,7 +705,7 @@ export const iocManifest = {
         contractName: 'EditComment',
         implementationName: 'editComment',
         lifetime: 'scoped',
-        moduleIndex: 62,
+        moduleIndex: 63,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['CommentRepository'],
@@ -735,7 +754,7 @@ export const iocManifest = {
         contractName: 'FinalizeMediaItemUpload',
         implementationName: 'finalizeMediaItemUpload',
         lifetime: 'scoped',
-        moduleIndex: 67,
+        moduleIndex: 68,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -754,7 +773,7 @@ export const iocManifest = {
         contractName: 'GrantAuthorizationForMediaItems',
         implementationName: 'grantAuthorizationForMediaItems',
         lifetime: 'scoped',
-        moduleIndex: 59,
+        moduleIndex: 60,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: [
@@ -762,6 +781,7 @@ export const iocManifest = {
           'GrantRepository',
           'MediaItemRepository',
           'ShareContactRepository',
+          'UnitOfWork',
           'UserRepository',
         ],
       },
@@ -819,10 +839,15 @@ export const iocManifest = {
         contractName: 'GrantUserAuthorizationForAlbum',
         implementationName: 'grantUserAuthorizationForAlbum',
         lifetime: 'scoped',
-        moduleIndex: 58,
+        moduleIndex: 59,
         default: true,
         discoveredBy: 'naming',
-        dependencyContractNames: ['AlbumRepository', 'ShareContactRepository', 'UserRepository'],
+        dependencyContractNames: [
+          'AlbumRepository',
+          'ShareContactRepository',
+          'UnitOfWork',
+          'UserRepository',
+        ],
       },
     },
     MarkActivitySeen: {
@@ -834,7 +859,7 @@ export const iocManifest = {
         contractName: 'MarkActivitySeen',
         implementationName: 'markActivitySeen',
         lifetime: 'scoped',
-        moduleIndex: 63,
+        moduleIndex: 64,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['UnseenActivityRepository'],
@@ -1209,7 +1234,7 @@ export const iocManifest = {
         contractName: 'ToggleReaction',
         implementationName: 'toggleReaction',
         lifetime: 'scoped',
-        moduleIndex: 72,
+        moduleIndex: 73,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['CommentRepository', 'MediaItemRepository'],
@@ -1269,7 +1294,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItem',
         implementationName: 'updateMediaItem',
         lifetime: 'scoped',
-        moduleIndex: 68,
+        moduleIndex: 69,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository'],
@@ -1284,7 +1309,7 @@ export const iocManifest = {
         contractName: 'UpdateMediaItemTags',
         implementationName: 'updateMediaItemTags',
         lifetime: 'scoped',
-        moduleIndex: 69,
+        moduleIndex: 70,
         default: true,
         discoveredBy: 'naming',
         dependencyContractNames: ['MediaItemRepository'],
@@ -1617,6 +1642,10 @@ export const iocManifest = {
       deleteMediaItems: {
         contractName: 'DeleteMediaItems',
         registrationKey: 'deleteMediaItems',
+      },
+      deleteShareContactService: {
+        contractName: 'DeleteShareContactService',
+        registrationKey: 'deleteShareContactService',
       },
       editComment: {
         contractName: 'EditComment',

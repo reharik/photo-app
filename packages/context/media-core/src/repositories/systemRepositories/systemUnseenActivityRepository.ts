@@ -17,7 +17,6 @@ type UnseenActivity = {
   viewerId: EntityId;
   targetType: EntityType;
   targetId: EntityId;
-  albumId: EntityId;
   activityKind: UnseenActivityType;
 };
 // waiting for query
@@ -27,7 +26,6 @@ type UnseenActivity = {
 //   'viewerId',
 //   'targetType',
 //   'targetId',
-//   'albumId',
 //   'unseenActivityType',
 // ];
 
@@ -37,7 +35,7 @@ export const build__SystemUnseenActivityRepository = ({
   upsertActivityRow: async (upsert: UnseenActivity) => {
     return database('unseenActivity')
       .insert(prepareForDatabase({ ...upsert }))
-      .onConflict(['viewerId', 'albumId', 'targetType', 'targetId', 'activityKind'])
+      .onConflict(['viewerId', 'targetType', 'targetId', 'activityKind'])
       .ignore();
   },
 

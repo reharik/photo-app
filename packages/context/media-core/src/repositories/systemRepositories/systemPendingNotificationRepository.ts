@@ -1,4 +1,4 @@
-import { EntityType } from '@packages/contracts';
+import { EntityType, NotificationCadence, PendingNotificationKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { DateTime } from 'luxon';
@@ -16,9 +16,6 @@ export type SystemPendingNotificationRepositoryDeps = {
   database: Knex;
 };
 
-export type PendingNotificationKind = 'albumShared' | 'itemAdded' | 'itemShared';
-export type NotificationCadence = 'immediate' | 'batched';
-
 // Template names are owned by the notifications context (its `TemplateName`).
 // They are mirrored here as a local literal union on purpose: media-core must
 // not depend on @packages/notifications (independent sibling contexts). The
@@ -26,33 +23,12 @@ export type NotificationCadence = 'immediate' | 'batched';
 // time. `null` = no template wired for this kind yet.
 export type NotificationTemplate = 'shareInvite' | 'albumActivity';
 
-export type NotificationRouting = {
-  cadence: NotificationCadence;
-  template: NotificationTemplate | null;
-};
-
-export const NOTIFICATION_ROUTING = {
-  albumShared: { cadence: 'immediate', template: 'shareInvite' },
-  itemAdded: { cadence: 'batched', template: 'albumActivity' },
-  // TODO(phaseB): itemShared has no producer or template yet. shareInvite is
-  // album-specific copy ("View album", /album/ url), so a single-item share
-  // needs its own template/copy before this can be non-null.
-  itemShared: { cadence: 'immediate', template: null },
-} satisfies Record<PendingNotificationKind, NotificationRouting>;
-
-export const kindsByCadence = (c: NotificationCadence): PendingNotificationKind[] =>
-  (Object.keys(NOTIFICATION_ROUTING) as PendingNotificationKind[]).filter(
-    (k) => NOTIFICATION_ROUTING[k].cadence === c,
-  );
-
-export const templateForKind = (k: PendingNotificationKind): NotificationTemplate | null =>
-  NOTIFICATION_ROUTING[k].template;
-
 export type PendingNotification = {
   id: string;
   channel: 'email' | 'sms';
   kind: PendingNotificationKind;
-  recipientId: EntityId;
+  recipientId?: EntityId;
+  recipientAddress?: string;
   aggregateType: EntityType;
   aggregateId: EntityId;
   dirtySince: DateTime;
@@ -64,6 +40,7 @@ const pendingNotificationFields = [
   'channel',
   'kind',
   'recipientId',
+  'recipientAddress',
   'aggregateType',
   'aggregateId',
   'dirtySince',
@@ -80,31 +57,51 @@ export const build__SystemPendingNotificationRepository = ({
     return database('pendingNotification')
       .insert({
         ...upsert,
+        kind: upsert.kind.value,
         aggregateType: upsert.aggregateType.value,
         dirtySince: database.fn.now(),
       })
-      .onConflict(['channel', 'kind', 'recipientId', 'aggregateType', 'aggregateId'])
+      .onConflict([
+        'channel',
+        'kind',
+        'recipientId',
+        'recipientAddress',
+        'aggregateType',
+        'aggregateId',
+      ])
       .merge({ dirtySince: database.fn.now() });
   },
-  claimNotificationBatch: (windowMinutes: number) => {
+  claimNotificationBatch: (windowSeconds: number) => {
     return withEnumRevival(
       database('pendingNotification')
         .select(pendingNotificationFields)
-        .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
-        .whereIn('kind', kindsByCadence('batched')),
+        .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
+        .whereIn(
+          'kind',
+          PendingNotificationKind.items()
+            .filter((x) => x.cadence.equals(NotificationCadence.batched))
+            .map((x) => x.value),
+        ),
       {
+        kind: PendingNotificationKind,
         aggregateType: EntityType,
       },
       { strict: true },
     );
   },
-  claimIndividualNotifications: (windowMinutes: number) => {
+  claimIndividualNotifications: (windowSeconds: number) => {
     return withEnumRevival(
       database('pendingNotification')
         .select(pendingNotificationFields)
-        .where('dirtySince', '<', database.raw('now() - make_interval(mins => ?)', [windowMinutes]))
-        .whereIn('kind', kindsByCadence('immediate')),
+        .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
+        .whereIn(
+          'kind',
+          PendingNotificationKind.items()
+            .filter((x) => x.cadence.equals(NotificationCadence.immediate))
+            .map((x) => x.value),
+        ),
       {
+        kind: PendingNotificationKind,
         aggregateType: EntityType,
       },
       { strict: true },

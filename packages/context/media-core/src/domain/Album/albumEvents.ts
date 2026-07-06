@@ -12,3 +12,9 @@ export interface AlbumSharedWithUser extends DomainEventBase {
   userId: EntityId;
   albumId: EntityId;
 }
+
+export interface AlbumSharedWithNonUser extends DomainEventBase {
+  kind: 'albumSharedWithNonUser';
+  recipientAddress: string;
+  token: string;
+}

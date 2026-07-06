@@ -19,6 +19,7 @@ import {
   type GrantShareUserFormValues,
 } from './GrantShareForm';
 import { valueDisplayFromEnumMembers } from './shareGrantOptionMapping';
+import { useDeleteShareContact } from './useDeleteShareContact';
 
 type GrantMediaItemShareModalProps = {
   mediaItemIds: string[];
@@ -27,8 +28,7 @@ type GrantMediaItemShareModalProps = {
   onClose: () => void;
 };
 
-const buildTitle = (count: number): string =>
-  count === 1 ? 'Share photo' : `Share ${count} photos`;
+const buildTitle = (count: number): string => (count === 1 ? 'Share item' : `Share ${count} items`);
 
 export const GrantMediaItemShareModal = ({
   mediaItemIds,
@@ -44,6 +44,8 @@ export const GrantMediaItemShareModal = ({
     // publicLinkErrors,
     execute: createPublicLinkForMediaItems,
   } = useAppMutationState();
+
+  const { deleteContact } = useDeleteShareContact(onErrorToast);
 
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-first',
@@ -133,6 +135,7 @@ export const GrantMediaItemShareModal = ({
         operationOptions={operationOptions}
         onSubmit={handleSubmit}
         onCreatePublicLink={handleCreatePublicLink}
+        onDeleteContact={deleteContact}
         isLoading={isLoading}
         errors={errors}
         createdToken={createdToken}

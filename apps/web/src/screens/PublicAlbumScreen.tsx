@@ -17,8 +17,8 @@ export const PublicAlbumScreen = () => {
     (offset: number) => ({
       collectionInfo: {
         pageInfo: { limit: 20, offset },
-        sortBy: AlbumItemSortBy.createdAt,
-        sortDir: SortDir.desc,
+        sortBy: AlbumItemSortBy.orderIndex,
+        sortDir: SortDir.asc,
       },
     }),
     [],

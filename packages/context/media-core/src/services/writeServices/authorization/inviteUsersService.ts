@@ -1,10 +1,16 @@
 import { ContractError } from '@packages/contracts';
-import { Authorization, MediaItem, User } from '../../../domain';
+import {
+  Album,
+  AlbumSharedWithNonUser,
+  Authorization,
+  MediaItem,
+  MediaItemsSharedWithUser,
+  User,
+} from '../../../domain';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import {} from '../mediaItem/writeMediaItem.types';
 import {
   GrantAuthorizationInterface,
-  GrantEmailDTO,
   GrantUserAuthorizationCommand,
   InviteUsersForMediaItemsResult,
 } from './grantTypes';
@@ -28,35 +34,34 @@ export const segregateUsers = async (
 
 export const inviteNonUsers = (
   nonExisting: string[],
-  entity: GrantAuthorizationInterface,
+  album: Album,
   input: GrantUserAuthorizationCommand,
-  title: string,
   granter: User,
 ): {
   authorizations: Authorization[];
-  emailDTOs: GrantEmailDTO[];
+  serviceEvents: AlbumSharedWithNonUser[];
   publicLinkFailure?: { handles: string[]; error: ContractError }; // branch-level
 } => {
   if (nonExisting.length === 0) {
-    return { authorizations: [], emailDTOs: [] };
+    return { authorizations: [], serviceEvents: [] };
   }
-  const linkResult = entity.grantPublicLink(input.viewerId, input.expiresAt, input.operations);
+  const linkResult = album.grantPublicLink(input.viewerId, input.expiresAt, input.operations);
   if (!linkResult.success) {
     return {
       authorizations: [],
-      emailDTOs: [],
+      serviceEvents: [],
       publicLinkFailure: { handles: nonExisting, error: linkResult.error },
     };
   }
   return {
     authorizations: [linkResult.value.authorization()],
-    emailDTOs: nonExisting.map((handle) => ({
-      template: 'publicShare',
-      inviteeEmail: handle,
-      inviterName: granter.fullName(),
-      title: title,
-      tokenOrUserId: linkResult.value.linkToken(),
-      isPublicLink: true,
+    serviceEvents: nonExisting.map((handle) => ({
+      kind: 'albumSharedWithNonUser',
+      recipientAddress: handle,
+      albumId: album.id(),
+      occurredAt: new Date(),
+      token: linkResult.value.linkToken(),
+      actorId: granter.id(),
     })),
   };
 };
@@ -65,16 +70,12 @@ export const inviteUsers = (
   existing: User[],
   entity: GrantAuthorizationInterface,
   input: GrantUserAuthorizationCommand,
-  // title: string,
-  // granter: User,
 ): {
   authorizations: Authorization[];
-  // emailDTOs: GrantEmailDTO[];
   errors: { user: User; error: ContractError }[];
   addedInvitees: User[];
 } => {
   const authorizations: Authorization[] = [];
-  // const emailDTOs: GrantEmailDTO[] = [];
   const errors: { user: User; error: ContractError }[] = [];
   const addedInvitees: User[] = [];
 
@@ -89,14 +90,6 @@ export const inviteUsers = (
     if (result.success) {
       addedInvitees.push(user);
       authorizations.push(result.value.authorization);
-
-      // The grantAuthorizatoin should fire an domain event for the email
-      // emailDTOs.push({
-      //   inviteeEmail: user.email(),
-      //   inviterName: granter.fullName(),
-      //   title,
-      //   tokenOrUserId: entity.id(),
-      // });
     } else {
       errors.push({ user, error: result.error });
     }
@@ -108,19 +101,20 @@ export const inviteUsersForMediaItems = (
   existing: User[],
   mediaItems: MediaItem[],
   input: GrantUserAuthorizationCommand,
-  // granter: User,
 ): InviteUsersForMediaItemsResult => {
   const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
   const errors: { user: User; error: ContractError }[] = [];
   const errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[] = [];
+  const serviceEvents: MediaItemsSharedWithUser[] = [];
   const addedInvitees: User[] = [];
 
   for (const user of existing) {
     // ← email/invitee axis (outer, once per user)
     let granted = false;
     let firstError: ContractError | undefined;
-
+    const mediaItemIds = [];
     for (const mediaItem of mediaItems) {
+      mediaItemIds.push(mediaItem.id());
       // ← authorization axis (inner, N×M)
       const result = mediaItem.grantAuthorization(
         input.operations,
@@ -140,15 +134,17 @@ export const inviteUsersForMediaItems = (
 
     if (granted) {
       addedInvitees.push(user);
-      // emailDTOs.push({
-      //   inviteeEmail: user.email(),
-      //   inviterName: granter.fullName(),
-      //   title: input.label ?? '',
-      // });
+      serviceEvents.push({
+        kind: 'mediaItemsSharedWithUser',
+        userId: user.id(),
+        mediaItemIds,
+        occurredAt: new Date(),
+        actorId: input.viewerId,
+      });
     } else if (firstError) {
       errors.push({ user, error: firstError }); // zero successes → surfaced; partial → log only
     }
   }
 
-  return { grants, errors, errorDetail, addedInvitees };
+  return { grants, errors, errorDetail, serviceEvents, addedInvitees };
 };

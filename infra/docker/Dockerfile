@@ -16,8 +16,22 @@ RUN mkdir -p /manifests && \
       -exec cp --parents {} /manifests/ \; && \
     cp package-lock.json /manifests/
 
+# === npm-pinned base images ===
+# node:20 ships npm 10, but package-lock.json is authored by npm 11 on dev hosts;
+# npm 10's `npm ci` then rejects a perfectly valid lock as "out of sync". So pin
+# npm 11 once here. Because this layer sits ABOVE the manifests copy, its cache
+# key is just (base image + this line) — it builds once and is reused by every
+# downstream `npm ci` stage; dep changes never re-run it. Keep the version in
+# lockstep with the root package.json "packageManager" field. (There is no
+# official node:20 image bundling npm 11, hence the one-time global install.)
+FROM node:20 AS node-npm11
+RUN npm install -g npm@11.6.2
+
+FROM node:20-slim AS node-slim-npm11
+RUN npm install -g npm@11.6.2
+
 # === Build stage ===
-FROM node:20 AS builder
+FROM node-npm11 AS builder
 WORKDIR /app
 ENV NX_DAEMON=false
 
@@ -60,7 +74,7 @@ RUN if [ -f "apps/${SERVICE_NAME}/src/scripts/serverStartUpProd.sh" ]; then \
   fi
 
 # === Production dependencies (runtime node_modules without devDependencies) ===
-FROM node:20 AS deps-prod
+FROM node-npm11 AS deps-prod
 WORKDIR /app
 COPY --from=manifests /manifests/ ./
 # --ignore-scripts: postinstall runs ts-patch install, but ts-patch is a
@@ -91,7 +105,7 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
 # === Dev (docker compose: source mounted over apps/ and packages/) ===
-FROM node:20-slim AS dev
+FROM node-slim-npm11 AS dev
 WORKDIR /app
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}

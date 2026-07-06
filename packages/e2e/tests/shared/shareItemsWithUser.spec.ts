@@ -1,5 +1,10 @@
 import { loginViaUi } from '../../fixtures/auth';
 import {
+  clearLocalStackSesMessages,
+  findSesMessageForRecipient,
+  retrieveLocalStackSesMessages,
+} from '../../fixtures/localstackSes';
+import {
   expectMediaItemLoaded,
   expectMediaTileNotSelectable,
   mediaTile,
@@ -19,6 +24,7 @@ test.describe('Share individual items with an existing user', () => {
       userB,
       grabTestImages,
       uniqueSuffix,
+      request,
     }) => {
       const [a, b, c] = await setup(grabTestImages, userA, 3);
 
@@ -26,16 +32,49 @@ test.describe('Share individual items with an existing user', () => {
         toolbarVariant: 'library',
         expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 photos selected');
+      await expect(selection.toolbar).toContainText('2 items selected');
       await selection.clickAction('Share');
 
-      const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 photos' });
-      await shareDialog.getByRole('combobox', { name: 'Recipients' }).fill(userB.user.email);
+      const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 items' });
+      const recipientInput = shareDialog.getByRole('combobox', { name: 'Recipients' });
+      await recipientInput.fill(userB.user.email);
+      // The MultiCombobox only counts a recipient once it's committed to a pill; Enter
+      // commits the typed email.
+      await recipientInput.press('Enter');
+      await expect(
+        shareDialog.getByRole('button', { name: `Remove ${userB.user.email.toLowerCase()}` }),
+      ).toBeVisible();
+      // Clear SES so the email assertion below only sees the message this share produces,
+      // not a leftover from an earlier test.
+      await clearLocalStackSesMessages();
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
+      await test.step('USER B: is emailed about the shared items', async () => {
+        // Item-sharing with an existing user should notify them by email. This test
+        // never sends any other email to User B, so a recipient match is sufficient.
+        // TODO: tighten the match to the item-share template's distinctive copy once
+        // that template exists (see NOTIFICATION_ROUTING.itemShared, currently null).
+        await expect
+          .poll(
+            async () => {
+              const messages = await retrieveLocalStackSesMessages(request);
+              return Boolean(findSesMessageForRecipient(messages, userB.user.email));
+            },
+            { timeout: 30_000 },
+          )
+          .toBe(true);
+      });
+
       await loginViaUi(userB.page, userB.user);
-      await userB.page.goto('/shared/photos');
+
+      await test.step('USER B: sees the unseen-activity dot for the newly shared items', async () => {
+        // The share should light the aggregate unseen-activity dot on the "Shared" nav
+        // item (role=status, aria-label "Unseen activity") before B opens the items.
+        await expect(userB.page.getByRole('status', { name: 'Unseen activity' })).toBeVisible();
+      });
+
+      await userB.page.goto('/shared/items');
 
       const itemA = mediaTile(userB.page, a.id);
       await expect(itemA).toBeVisible();
@@ -47,7 +86,7 @@ test.describe('Share individual items with an existing user', () => {
 
       await userB.page.getByTestId(`media-tile-${a.id}`).getByRole('link').first().click();
       await expect(userB.page).toHaveURL(new RegExp(`/media/${a.id}`));
-      await reactToItem(userB.page, userB.page);
+      await reactToItem(userB.page, userB.page.locator('body'));
 
       const rootBody = `Root comment ${uniqueSuffix}`;
 

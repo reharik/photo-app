@@ -12,10 +12,8 @@ type AlbumSelectionActionsProps = {
 
 const MOBILE_ACTIONS_MEDIA = `(max-width: ${MaxWidthBreakpoint.Mobile}px)`;
 
-const findAction = (
-  actions: GalleryActionItems[],
-  label: string,
-): GalleryActionItems | undefined => actions.find((a) => a.label === label);
+const findAction = (actions: GalleryActionItems[], label: string): GalleryActionItems | undefined =>
+  actions.find((a) => a.label === label);
 
 export const AlbumSelectionActions = ({
   selectionCount,
@@ -30,8 +28,8 @@ export const AlbumSelectionActions = ({
       ? '1 selected'
       : `${selectionCount} selected`
     : selectionCount === 1
-      ? '1 photo selected'
-      : `${selectionCount} photos selected`;
+      ? '1 item selected'
+      : `${selectionCount} items selected`;
 
   if (isMobileActions) {
     return (

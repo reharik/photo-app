@@ -68,7 +68,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async (): Promise<void> => {
     await apiFetch('/auth/logout', { method: 'POST' });
-    await apolloClient.resetStore();
+    // clearStore (not resetStore): drop all cached data WITHOUT refetching active
+    // queries. resetStore would immediately re-run every authenticated query against
+    // the now-unauthenticated session, each throwing "Invalid access mode" server-side.
+    await apolloClient.clearStore();
   };
 
   return (

@@ -46,7 +46,7 @@ const sharedWithMeMediaItemSortByInput = {
   sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
 } as const;
 const sortDirInput = ['asc', 'desc'] as const;
-const unseenActivityTypeInput = ['albumShared', 'itemAdded'] as const;
+const unseenActivityTypeInput = ['albumShared', 'itemAdded', 'itemShared'] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;

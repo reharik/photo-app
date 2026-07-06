@@ -1,3 +1,4 @@
+import { NotificationCadence } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { Config } from '../../../config';
 import { WorkerTask } from '../../../types';
@@ -14,6 +15,6 @@ export const build__FastSweepNotificationTask = ({
 }: FastSweepNotificationTaskDeps): WorkerTask => ({
   name: 'fastSweepNotification',
   type: 'schedule',
-  cadence: 'fast',
+  cadence: NotificationCadence.immediate,
   run: async () => fastSweepNotification(),
 });

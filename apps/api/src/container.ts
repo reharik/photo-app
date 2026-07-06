@@ -14,13 +14,14 @@ export type UnitOfWork = {
   rollback: () => Promise<void>;
 };
 
-export type Cradle = AppCradle & {
+export type CradleExtras = {
   container: AwilixContainer<AppCradle>;
   viewerId: EntityId;
   viewer: User;
   publicLinkId: EntityId;
   uow: UnitOfWork;
 };
+export type Cradle = AppCradle & CradleExtras;
 
 export const createAppContainer = (): AwilixContainer<Cradle> => {
   const container = createContainer<Cradle>({ injectionMode: 'PROXY' });

@@ -28,6 +28,8 @@ type GrantShareFormProps = {
   onSubmit: (input: GrantShareUserFormValues) => Promise<void>;
   /** When set, shows a "Create shareable link" path that does not require a handle. */
   onCreatePublicLink?: (input: GrantSharePublicLinkFormValues) => Promise<void>;
+  /** Remove a saved recipient suggestion from history (by handle). */
+  onDeleteContact?: (handle: string) => void;
   isLoading: boolean;
   errors: AppError[];
   createdToken?: string;
@@ -78,6 +80,7 @@ export const GrantShareForm = ({
   operationOptions,
   onSubmit,
   onCreatePublicLink,
+  onDeleteContact,
   isLoading,
   errors,
   createdToken,
@@ -180,6 +183,8 @@ export const GrantShareForm = ({
           placeholder="user@example.com or @handle"
           disabled={isLoading}
           error={recipientsError}
+          onDeleteItem={onDeleteContact}
+          deleteItemLabel="Remove from saved contacts"
         />
         <MultiCombobox
           label="Additional Permissions"

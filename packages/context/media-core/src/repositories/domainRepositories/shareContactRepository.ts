@@ -8,16 +8,17 @@ export type ShareContactRepositoryDeps = {
 };
 
 export interface ShareContactRepository extends RequestScopeLifeCycle {
-  upsertContact: (userId: EntityId, contactUserId: EntityId, handle: string) => Promise<void>;
+  upsertContact: (handle: string, userId: EntityId, contactUserId?: EntityId) => Promise<void>;
+  deleteContact: (handle: string, viewerId: EntityId) => Promise<void>;
 }
 
 export const build__ShareContactRepository = ({
   uow,
 }: ShareContactRepositoryDeps): ShareContactRepository => ({
   upsertContact: async (
-    userId: EntityId,
-    contactUserId: EntityId,
     handle: string,
+    userId: EntityId,
+    contactUserId?: EntityId,
   ): Promise<void> => {
     await uow
       .db()<ShareContactRow>('shareContact')
@@ -27,7 +28,10 @@ export const build__ShareContactRepository = ({
         handle,
         lastSharedAt: new Date(),
       })
-      .onConflict(['user_id', 'contact_user_id'])
+      .onConflict(['user_id', 'handle'])
       .merge(['handle', 'lastSharedAt']);
+  },
+  deleteContact: async (handle: string, viewerId: EntityId) => {
+    await uow.db()('shareContact').delete().where({ userId: viewerId, handle: handle });
   },
 });

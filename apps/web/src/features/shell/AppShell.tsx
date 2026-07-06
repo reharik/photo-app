@@ -19,9 +19,9 @@ const NAV_LINKS: NavigationItem[] = [
     label: 'Shared',
     children: [
       {
-        label: 'Photos',
-        to: '/shared/photos',
-        activePaths: ['/shared/photos', '/shared-with-me'],
+        label: 'Items',
+        to: '/shared/items',
+        activePaths: ['/shared/items', '/shared-with-me'],
       },
       { label: 'Albums', to: '/shared/albums' },
     ],
@@ -44,15 +44,32 @@ export const AppShell = () => {
     nextFetchPolicy: 'cache-and-network',
   });
   const hasUnseenActivity = unseenQuery.data?.viewer?.hasUnseenActivity ?? false;
+  const unseenMediaItems = unseenQuery.data?.viewer?.unseenSharedActivity?.mediaItems ?? false;
+  const unseenAlbums = unseenQuery.data?.viewer?.unseenSharedActivity?.albums ?? false;
 
   const navLinks = useMemo<NavigationItem[]>(
     () =>
-      NAV_LINKS.map((item) =>
-        isNavigationParent(item) && item.label === 'Shared'
-          ? { ...item, hasUnseen: hasUnseenActivity }
-          : item,
-      ),
-    [hasUnseenActivity],
+      NAV_LINKS.map((item) => {
+        if (!isNavigationParent(item) || item.label !== 'Shared') {
+          return item;
+        }
+        // Aggregate dot on the parent; per-category dots on the children so you can
+        // see whether the activity is in shared photos or shared albums.
+        return {
+          ...item,
+          hasUnseen: hasUnseenActivity,
+          children: item.children.map((child) => {
+            if (child.to === '/shared/items') {
+              return { ...child, hasUnseen: unseenMediaItems };
+            }
+            if (child.to === '/shared/albums') {
+              return { ...child, hasUnseen: unseenAlbums };
+            }
+            return child;
+          }),
+        };
+      }),
+    [hasUnseenActivity, unseenMediaItems, unseenAlbums],
   );
 
   useEffect(() => {

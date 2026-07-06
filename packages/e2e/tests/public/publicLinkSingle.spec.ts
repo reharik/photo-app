@@ -18,10 +18,10 @@ test.describe('Create a public link for a single media item', () => {
       const selection = await selectMediaItems(userA.page, [a.id], {
         expectActions: ['Share', 'Add to album', 'Delete from library'],
       });
-      await expect(selection.toolbar).toContainText('1 photo selected');
+      await expect(selection.toolbar).toContainText('1 item selected');
       await selection.clickAction('Share');
 
-      const shareDialog = userA.page.getByRole('dialog', { name: 'Share photo' });
+      const shareDialog = userA.page.getByRole('dialog', { name: 'Share item' });
 
       await shareDialog.getByRole('button', { name: 'Create shareable link' }).click();
 

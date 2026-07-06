@@ -38,7 +38,13 @@ test.describe('Share an album with an email that is not a user', () => {
 
       await userA.page.getByRole('button', { name: 'Share album' }).click();
       const shareDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-      await shareDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail);
+      const recipientInput = shareDialog.getByRole('combobox', { name: 'Recipients' });
+      await recipientInput.fill(recipientEmail);
+      // Commit the typed email to a recipient pill before submitting.
+      await recipientInput.press('Enter');
+      await expect(
+        shareDialog.getByRole('button', { name: `Remove ${recipientEmail.toLowerCase()}` }),
+      ).toBeVisible();
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
@@ -83,6 +89,21 @@ test.describe('Share an album with an email that is not a user', () => {
 
       await anonPage.goto(buildPublicMediaDetailUrl(shareUrl, c.id));
       await expectPublicMediaUnavailable(anonPage);
+
+      await test.step('USER A: shared email is saved as a recipient suggestion', async () => {
+        // Sharing with a non-user saves the email as one of User A's share contacts,
+        // so it should surface in the Recipients dropdown the next time A shares.
+        // Done last so the open dialog needs no teardown.
+        await userA.page.getByRole('button', { name: 'Share album' }).click();
+        const reopenedDialog = userA.page.getByRole('dialog', { name: 'Share album' });
+        await reopenedDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail.toLowerCase());
+        // The suggestion popover renders in a portal at the document body (not inside the
+        // dialog), so query options at page level. Its accessible name also includes the
+        // row's "Remove from saved contacts" control, so match on text content.
+        await expect(
+          userA.page.getByRole('option').filter({ hasText: recipientEmail.toLowerCase() }),
+        ).toBeVisible();
+      });
     });
   });
 });

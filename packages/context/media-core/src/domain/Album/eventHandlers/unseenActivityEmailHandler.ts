@@ -1,9 +1,7 @@
-import {
-  PendingNotificationKind,
-  SystemPendingNotificationRepository,
-} from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
+import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
-import { assertNever, ResolveActivity } from './resolveActivity';
+import { NOTIFICATION_KIND_BY_EVENT } from './mapEventKindToActionKind';
+import { ResolveActivity } from './resolveActivity';
 
 type UnseenActivityEmailHandlerDeps = {
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
@@ -14,18 +12,13 @@ export const build__UnseenActivityEmailHandler = ({
   systemPendingNotificationRepository,
   resolveActivity,
 }: UnseenActivityEmailHandlerDeps): DomainEventHandler<
-  'mediaItemAddedToAlbum' | 'albumSharedWithUser'
+  'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
 > => ({
   name: 'UnseenActivityEmail',
-  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser'],
+  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
-    const { recipients, targetType, albumId } = await resolveActivity(event);
-    const kind: PendingNotificationKind =
-      event.kind === 'albumSharedWithUser'
-        ? 'albumShared'
-        : event.kind === 'mediaItemAddedToAlbum'
-          ? 'itemAdded'
-          : assertNever(event);
+    const { recipients, targetType, targetId } = await resolveActivity(event);
+    const kind = NOTIFICATION_KIND_BY_EVENT[event.kind];
     await Promise.all(
       recipients.map((recipientId) =>
         systemPendingNotificationRepository.upsertRecipientRow({
@@ -34,7 +27,7 @@ export const build__UnseenActivityEmailHandler = ({
           kind,
           recipientId,
           aggregateType: targetType,
-          aggregateId: albumId,
+          aggregateId: targetId,
           attempts: 0,
           actorId: event.actorId,
         }),

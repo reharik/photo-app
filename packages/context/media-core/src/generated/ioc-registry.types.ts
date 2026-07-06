@@ -62,6 +62,7 @@ import type { DeleteAlbumItems } from '../services/writeServices/album/deleteAlb
 import type { ReorderAlbumItems } from '../services/writeServices/album/reorderAlbumItems.js';
 import type { SetCoverMedia } from '../services/writeServices/album/setCoverMedia.js';
 import type { UnsetCoverMedia } from '../services/writeServices/album/unsetCoverMedia.js';
+import type { DeleteShareContactService } from '../services/writeServices/authorization/deleteShareContactService.js';
 import type { GrantUserAuthorizationForAlbum } from '../services/writeServices/authorization/grantAuthorizationForAlbum.js';
 import type { GrantAuthorizationForMediaItems } from '../services/writeServices/authorization/grantAuthorizationForMediaItems.js';
 import type { AddComment } from '../services/writeServices/comments/addComment.js';
@@ -103,7 +104,7 @@ export interface IocGeneratedCradle {
   deleteComment: DeleteComment;
   deleteMediaItem: DeleteMediaItem;
   deleteMediaItems: DeleteMediaItems;
-  domainEventHandler: DomainEventHandler;
+  deleteShareContactService: DeleteShareContactService;
   domainEventHandlers: ReadonlyArray<DomainEventHandler>;
   editComment: EditComment;
   enrichMediaItems: EnrichMediaItems;
@@ -186,6 +187,7 @@ export interface IocGeneratedCradle {
     deleteComment: DeleteComment;
     deleteMediaItem: DeleteMediaItem;
     deleteMediaItems: DeleteMediaItems;
+    deleteShareContactService: DeleteShareContactService;
     editComment: EditComment;
     finalizeMediaItemUpload: FinalizeMediaItemUpload;
     grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
@@ -200,9 +202,59 @@ export interface IocGeneratedCradle {
   };
 }
 
+export type AgnosticReadServices = {
+  commentReadService: CommentReadService;
+  publicAccessReadService: PublicAccessReadService;
+};
+
+export type DomainEventHandlers = ReadonlyArray<DomainEventHandler>;
+
+export type PublicReadServices = {
+  publicAlbumReadService: PublicAlbumReadService;
+  publicMediaItemReadService: PublicMediaItemReadService;
+};
+
+export type ReadServices = {
+  viewerAlbumReadService: ViewerAlbumReadService;
+  viewerAuthorizationsReadService: viewerAuthorizationsReadService;
+  viewerHasUnseenActivityService: ViewerHasUnseenActivityService;
+  viewerMediaItemReadService: ViewerMediaItemReadService;
+  viewerReactionReadService: viewerReactionReadService;
+  viewerSharedContactsReadService: ViewerSharedContactsReadService;
+  viewerSharedWithMeAlbumReadService: ViewerSharedWithMeAlbumReadService;
+  viewerSharedWithMeMediaItemReadService: ViewerSharedWithMeMediaItemReadService;
+};
+
+export type WriteServices = {
+  addAlbumItem: AddAlbumItem;
+  addComment: AddComment;
+  addMediaItemsToAlbum: AddMediaItemsToAlbum;
+  createAlbum: CreateAlbum;
+  createMediaUpload: CreateMediaUpload;
+  createPublicLinkForAlbum: CreatePublicLinkForAlbum;
+  createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
+  deleteAlbum: DeleteAlbum;
+  deleteAlbumItems: DeleteAlbumItems;
+  deleteComment: DeleteComment;
+  deleteMediaItem: DeleteMediaItem;
+  deleteMediaItems: DeleteMediaItems;
+  deleteShareContactService: DeleteShareContactService;
+  editComment: EditComment;
+  finalizeMediaItemUpload: FinalizeMediaItemUpload;
+  grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
+  grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
+  markActivitySeen: MarkActivitySeen;
+  reorderAlbumItems: ReorderAlbumItems;
+  setCoverMedia: SetCoverMedia;
+  toggleReaction: ToggleReaction;
+  unsetCoverMedia: UnsetCoverMedia;
+  updateMediaItem: UpdateMediaItem;
+  updateMediaItemTags: UpdateMediaItemTags;
+};
+
 export interface IocExternals {
   config: MediaStorageConfig;
-  database: Knex;
+  database: Knex<any, any[]>;
   logger: Logger;
 }
 

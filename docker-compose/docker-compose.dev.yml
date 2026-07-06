@@ -54,6 +54,10 @@ services:
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
       FROM_NAME: BetanaMe Dev
+      # for e2e testing
+      SLOW_SWEEP_INTERVAL_MS: 5000
+      FAST_SWEEP_INTERVAL_MS: 5000
+      DEBOUNCE_EMAIL_WINDOW_SECONDS: 5
     volumes:
       - ./apps/media-worker:/app/apps/media-worker
       - /app/apps/media-worker/node_modules

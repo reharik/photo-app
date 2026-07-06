@@ -15,7 +15,7 @@ type AuthorizationType {
 }
 
 type ShareContactType {
-  userId: ID!
+  userId: ID
   handle: String!
 }
 

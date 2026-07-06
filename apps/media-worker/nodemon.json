@@ -2,6 +2,7 @@
   "watch": ["src", "../../packages"],
   "ext": "ts,js,json",
   "ignore": [
+    "**/packages/e2e/**",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "**/dist/**",

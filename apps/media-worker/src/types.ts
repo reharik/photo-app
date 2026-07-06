@@ -1,3 +1,5 @@
+import { NotificationCadence } from '@packages/contracts';
+
 export type WorkerTaskOutcome = 'processed' | 'idle';
 
 /**
@@ -11,7 +13,7 @@ export type WorkerTask = {
   type: 'schedule' | 'queue';
   // Which cadence should be used for this task Cadences are predefined ms durations.
   // Only a schedule type would have a Cadence. a queue drains on every interval
-  cadence?: 'fast' | 'slow';
+  cadence?: NotificationCadence;
   /** Do one unit of work. 'processed' resets the idle backoff and restarts the
    *  pass from the highest-priority task; 'idle' falls through to the next task. */
   run: () => Promise<WorkerTaskOutcome>;

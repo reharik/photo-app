@@ -7,14 +7,14 @@ import { APP_NAME } from './constants.js';
 type AlbumActivityData = TemplateData['albumActivity'];
 
 export const subject = (data: AlbumActivityData): string => {
-  const count = data.albumTitles.length;
+  const count = data.albumTitles?.length;
   return count === 1
     ? `New activity in “${data.albumTitles[0]}”`
     : `New activity in ${count} of your shared albums`;
 };
 
 const AlbumActivity = (data: AlbumActivityData): ReactElement => {
-  const count = data.albumTitles.length;
+  const count = data.albumTitles?.length;
   return (
     <BaseEmail
       previewText={`There's new activity in your shared albums on ${APP_NAME}.`}
@@ -28,7 +28,7 @@ const AlbumActivity = (data: AlbumActivityData): ReactElement => {
       </Section>
 
       <Section>
-        {data.albumTitles.map((title, i) => (
+        {data.albumTitles?.map((title, i) => (
           <Text key={i} style={albumItem}>
             <strong>{title}</strong>
           </Text>

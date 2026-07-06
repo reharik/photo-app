@@ -18,8 +18,12 @@ export const Profile = (props: ProfileProps) => {
   const navigate = useNavigate();
 
   const handleLogout = async (): Promise<void> => {
+    // Navigate to the public login route *before* clearing the session. logout()
+    // resets the Apollo store, which nulls the viewer and would otherwise trigger
+    // RequireViewer's deep-link bounce — capturing the current protected path as
+    // `returnTo` and sending the next user who logs in back to it.
+    await navigate('/login', { replace: true });
     await logout();
-    await navigate('/', { replace: true });
   };
 
   if (variant === 'mobile') {

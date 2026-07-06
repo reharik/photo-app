@@ -35,6 +35,7 @@ export type Config = {
   mediaWorkerPollIntervalMs: number;
   slowSweepIntervalMS: number;
   fastSweepIntervalMS: number;
+  debounceEmailWindowSeconds: number;
   clientUrl: string;
   isProduction: boolean;
   isDevelopment: boolean;
@@ -97,10 +98,13 @@ export const createConfigFromEnv = (): Config => {
       : 2000,
     slowSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
       ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
-      : 3600000, //  1hour
+      : 3600000, //  1 hour
     fastSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
       ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
       : 60000, // 1 minutes
+    debounceEmailWindowSeconds: process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS
+      ? Number(process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS)
+      : 3600,
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     isProduction,
     isDevelopment,

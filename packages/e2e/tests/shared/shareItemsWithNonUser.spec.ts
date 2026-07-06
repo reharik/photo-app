@@ -26,11 +26,17 @@ test.describe('Share individual items with an email that is not a user', () => {
         toolbarVariant: 'library',
         expectActions: ['Share', 'Add to album'],
       });
-      await expect(selection.toolbar).toContainText('2 photos selected');
+      await expect(selection.toolbar).toContainText('2 items selected');
       await selection.clickAction('Share');
 
-      const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 photos' });
-      await shareDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail);
+      const shareDialog = userA.page.getByRole('dialog', { name: 'Share 2 items' });
+      const recipientInput = shareDialog.getByRole('combobox', { name: 'Recipients' });
+      await recipientInput.fill(recipientEmail);
+      // Commit the typed email to a recipient pill before submitting.
+      await recipientInput.press('Enter');
+      await expect(
+        shareDialog.getByRole('button', { name: `Remove ${recipientEmail.toLowerCase()}` }),
+      ).toBeVisible();
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 

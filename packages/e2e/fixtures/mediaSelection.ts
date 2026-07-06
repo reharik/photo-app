@@ -36,7 +36,7 @@ export type SelectMediaItemsOptions = {
    * (e.g. an "Add album item" modal on the album screen).
    */
   scope?: Locator;
-  /** Library and album grids use "{N} photos selected"; pickers use "{N} selected". */
+  /** Library and album grids use "{N} items selected"; pickers use "{N} selected". */
   toolbarVariant?: SelectionToolbarVariant;
   /** Warm-light toolbars use "Cancel"; legacy toolbars use "Clear selection". */
   clearButtonLabel?: ClearSelectionButtonLabel;
@@ -51,8 +51,8 @@ export const selectionCountLabel = (
 ): string =>
   variant === 'library' || variant === 'album'
     ? count === 1
-      ? '1 photo selected'
-      : `${count} photos selected`
+      ? '1 item selected'
+      : `${count} items selected`
     : count === 1
       ? '1 selected'
       : `${count} selected`;

@@ -20,6 +20,7 @@ import {
   type GrantShareUserFormValues,
 } from './GrantShareForm';
 import { valueDisplayFromEnumMembers } from './shareGrantOptionMapping';
+import { useDeleteShareContact } from './useDeleteShareContact';
 
 type GrantAlbumShareModalProps = {
   albumId: string;
@@ -42,6 +43,8 @@ export const GrantAlbumShareModal = ({
   } = useAppMutationState();
 
   const [createdToken, setCreatedToken] = useState<string | undefined>(undefined);
+
+  const { deleteContact } = useDeleteShareContact(onErrorToast);
 
   const contactsQuery = useQuery(ViewerShareContactsDocument, {
     fetchPolicy: 'cache-and-network',
@@ -118,6 +121,7 @@ export const GrantAlbumShareModal = ({
         operationOptions={operationOptions}
         onSubmit={handleSubmit}
         onCreatePublicLink={handleCreatePublicLink}
+        onDeleteContact={deleteContact}
         isLoading={isLoading}
         errors={errors}
         createdToken={createdToken}

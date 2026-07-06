@@ -7,16 +7,21 @@ export const assertNever = (x: never): never => {
   throw new Error(`Unexpected object: ${JSON.stringify(x)}`);
 };
 
-type ActivityEvent = Extract<
+export type ActivityEvent = Extract<
   DomainEvent,
-  { kind: 'mediaItemAddedToAlbum' | 'albumSharedWithUser' }
+  {
+    kind:
+      | 'mediaItemAddedToAlbum'
+      | 'albumSharedWithUser'
+      | 'mediaItemsSharedWithUser'
+      | 'albumSharedWithNonUser';
+  }
 >;
 
 export type ResolvedActivity = {
   recipients: EntityId[];
   targetType: EntityType;
   targetId: EntityId;
-  albumId: EntityId;
 };
 
 export type ResolveActivity = (event: ActivityEvent) => Promise<ResolvedActivity>;
@@ -37,7 +42,6 @@ export const build__ResolveActivity =
             .map((a) => a.grantedToUser),
           targetType: EntityType.album,
           targetId: event.albumId,
-          albumId: event.albumId,
         };
       }
       case 'albumSharedWithUser':
@@ -45,7 +49,18 @@ export const build__ResolveActivity =
           recipients: [event.userId],
           targetType: EntityType.album,
           targetId: event.albumId,
-          albumId: event.albumId,
+        };
+      case 'mediaItemsSharedWithUser':
+        return {
+          recipients: [event.userId],
+          targetType: EntityType.mediaItem,
+          targetId: event.mediaItemIds[0],
+        };
+      case 'albumSharedWithNonUser':
+        return {
+          recipients: [event.recipientAddress],
+          targetType: EntityType.album,
+          targetId: event.token,
         };
       default:
         return assertNever(event);

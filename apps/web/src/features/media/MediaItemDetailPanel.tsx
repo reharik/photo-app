@@ -195,7 +195,7 @@ export const MediaItemDetailPanel = forwardRef<
           <BottomSheet
             open={activeMobileSheet === 'info'}
             onClose={handleMobileSheetClose}
-            ariaLabel="Photo information"
+            ariaLabel="Media Item information"
           >
             <SheetContentZone>
               {railFields}

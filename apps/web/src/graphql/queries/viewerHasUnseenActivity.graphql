@@ -2,5 +2,9 @@ query ViewerHasUnseenActivity {
   viewer {
     id
     hasUnseenActivity
+    unseenSharedActivity {
+      mediaItems
+      albums
+    }
   }
 }

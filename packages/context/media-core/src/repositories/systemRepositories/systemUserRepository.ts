@@ -9,7 +9,7 @@ export type SystemUserRepositoryDeps = {
   database: Knex;
 };
 
-type UserContact = {
+export type UserContact = {
   id: EntityId;
   email: string;
   firstName?: string;

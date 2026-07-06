@@ -8,6 +8,8 @@ export type NavigationChildItem = {
   label: string;
   to: string;
   activePaths?: string[];
+  /** Show an unseen-activity dot on this specific child row. */
+  hasUnseen?: boolean;
 };
 
 export type NavigationLinkItem = {
@@ -121,6 +123,7 @@ const NavigationParentInline = ({ item, onLinkClick }: NavigationParentInlinePro
             }}
           >
             {child.label}
+            {child.hasUnseen ? <UnseenDot size={7} top={12} right={8} /> : null}
           </MenuNavLink>
         ))}
       </AnchoredMenu>
@@ -171,6 +174,7 @@ const NavigationParentStacked = ({ item, onLinkClick }: NavigationParentStackedP
                 }}
               >
                 {child.label}
+                {child.hasUnseen ? <UnseenDot size={7} top={12} right={8} /> : null}
               </StyledNavLink>
             );
           })}
@@ -250,6 +254,7 @@ const StyledNavLinks = styled.div<{ $stacked: boolean }>`
 `;
 
 const navLinkTextCss = css<{ $active: boolean }>`
+  position: relative;
   color: ${({ $active, theme }) =>
     $active ? theme.color.bodyText : theme.color.bodyTextMuted};
   font-size: ${({ theme }) => theme.fontSize._13};
@@ -313,9 +318,11 @@ const ParentTrigger = styled.button<{ $active: boolean }>`
 `;
 
 const MenuNavLink = styled(NavLink)`
+  position: relative;
   display: block;
   width: 100%;
-  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(2.5)}
+    ${({ theme }) => theme.spacing(0.75)} ${({ theme }) => theme.spacing(1.5)};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.sm};
   background: transparent;

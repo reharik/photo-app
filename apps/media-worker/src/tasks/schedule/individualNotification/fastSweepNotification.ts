@@ -1,14 +1,13 @@
 import { notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
-  SystemAlbumRepository,
-  SystemAuthorizationRepository,
+  PendingNotification,
   SystemPendingNotificationRepository,
   SystemUserRepository,
-  templateForKind,
 } from '@packages/media-core';
-import { NotificationPayload, NotificationService } from '@packages/notifications';
+import { NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
+import { FastSweepNotificationStrategies } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
@@ -19,9 +18,8 @@ type FastSweepNotificationDeps = {
   notificationService: NotificationService;
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
   systemUserRepository: SystemUserRepository;
-  systemAlbumRepository: SystemAlbumRepository;
-  systemAuthorizationRepository: SystemAuthorizationRepository;
   config: Config;
+  fastSweepNotificationStrategies: FastSweepNotificationStrategies;
 };
 
 export const build__FastSweepNotification = ({
@@ -29,72 +27,49 @@ export const build__FastSweepNotification = ({
   notificationService,
   systemPendingNotificationRepository,
   systemUserRepository,
-  systemAlbumRepository,
   config,
+  fastSweepNotificationStrategies,
 }: FastSweepNotificationDeps): FastSweepNotification => {
-  const QUIET_WINDOW_MINUTES = config.isProduction ? 60 : 5;
+  const hydrateUsers = async (rows: PendingNotification[]) => {
+    const ids = rows.flatMap((x) => [x.actorId, x.recipientId]).filter(notEmpty);
+    const uniqueIds = new Set(ids);
+    const users = await systemUserRepository.getUserContacts([...uniqueIds]);
+    return indexBy(users);
+  };
 
   return async (): Promise<WorkerTaskOutcome> => {
-    const rows =
-      await systemPendingNotificationRepository.claimIndividualNotifications(QUIET_WINDOW_MINUTES);
+    const rows = await systemPendingNotificationRepository.claimIndividualNotifications(
+      config.debounceEmailWindowSeconds,
+    );
     logger.info(`[notification-send] claimed ${rows.length} row(s)`);
     if (!rows.length) {
       return 'idle';
     }
-    const recipientMap = groupByMapping(rows, (x) => x.recipientId);
-    // break this out into functions starting here when next fastSweep shape comes
-    const albumMap = groupByMapping(rows, (x) => x.aggregateId);
-
-    const userIds = [...recipientMap.keys()];
-    const albumIds = [...albumMap.keys()];
-    const actorIds = new Set(rows.map((x) => x.actorId).filter(notEmpty));
-
-    const users = await systemUserRepository.getUserContacts([...userIds, ...actorIds]);
-    const albumTitles = await systemAlbumRepository.getAlbumTitlesById(albumIds);
-
-    const userMap = indexBy(users);
-    const albumTitleMap = indexBy(albumTitles);
-
     const outcomes: RowOutcome[] = [];
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
 
-      // Registry-driven template selection by kind. Only kinds routed to the
-      // shareInvite template have a wired send path here; itemShared
-      // (template: null) and any future immediate kind are skipped until their
-      // copy exists — do not send the album-specific shareInvite for them.
-      const template = templateForKind(row.kind);
-      if (template !== 'shareInvite') {
-        outcomes.push({ row, result: 'skipped' });
-        logger.warn(
-          `[notification-send] no immediate send path for kind '${row.kind}' (template=${template})`,
-        );
+    const userMap = await hydrateUsers(rows);
+    const byKind = groupByMapping(rows, (x) => x.kind.value);
+    const promises = [];
+    for (const [kind, kindRows] of byKind) {
+      const strategy = fastSweepNotificationStrategies.find((s) => s.kind.value === kind);
+      if (!strategy) {
+        kindRows.forEach((row) => [...outcomes, { row, result: 'skipped' }]);
+        logger.warn(`[notification-send] no strategy for kind '${kind}'`);
         continue;
       }
-
-      const recipientEmail = userMap.get(row.recipientId)?.email;
-      if (!recipientEmail) {
-        outcomes.push({ row, result: 'skipped' });
-        logger.warn(`User with id: ${row.recipientId} does not have an email address`);
-        continue;
-      }
-
-      const inviter = userMap.get(row.actorId);
-      const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}` : '';
-      const album = albumTitleMap.get(row.aggregateId);
-      const inviteUrl = `${config.clientUrl}/albums/${album?.id}`;
-
-      const payload: NotificationPayload<'shareInvite'> = {
-        to: recipientEmail,
-        template: 'shareInvite',
-        data: { inviterName, resourceName: album?.title ?? '', inviteUrl },
-        channels: ['email'],
-      };
-      const r = await notificationService.notify(payload);
-      outcomes.push({ row, result: r.success ? 'sent' : 'failed' });
+      promises.push(strategy.execute(kindRows, userMap));
     }
+    const results = (await Promise.all(promises)).flat();
 
-    // end function break out
+    // execute per-kind batch
+    for (const r of results) {
+      if (r.kind === 'skipped') {
+        outcomes.push({ row: r.row, result: 'skipped' });
+        continue;
+      }
+      const sent = await notificationService.notify(r.payload);
+      outcomes.push({ row: r.row, result: sent.success ? 'sent' : 'failed' });
+    }
 
     logger.info('[notification-send] send loop complete', summarizeOutcomes(outcomes));
 

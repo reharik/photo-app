@@ -39,6 +39,12 @@ export const retrieveLocalStackSesMessages = async (
   request: APIRequestContext,
 ): Promise<SesMessage[]> => {
   const response = await request.get(LOCALSTACK_SES_URL);
+  // LocalStack lazily initializes the SES message-store route, so a fresh
+  // container can 404 this endpoint until SES has been exercised. Treat that as
+  // "no messages yet" so an `expect.poll` retries instead of aborting.
+  if (response.status() === 404) {
+    return [];
+  }
   if (!response.ok()) {
     throw new Error(
       `Failed to retrieve SES messages: ${response.status()} ${response.statusText()}`,
@@ -50,6 +56,10 @@ export const retrieveLocalStackSesMessages = async (
 
 export const clearLocalStackSesMessages = async (): Promise<void> => {
   const response = await fetch(LOCALSTACK_SES_URL, { method: 'DELETE' });
+  // A cold SES route may 404 before it's initialized — nothing to clear yet.
+  if (response.status === 404) {
+    return;
+  }
   if (!response.ok) {
     throw new Error(`Failed to clear SES messages: ${response.status} ${response.statusText}`);
   }
@@ -58,16 +68,26 @@ export const clearLocalStackSesMessages = async (): Promise<void> => {
 export const findSesMessageForRecipient = (
   messages: SesMessage[],
   recipientEmail: string,
-): SesMessage | undefined =>
-  messages.find((message) => {
-    if (message.Destination?.ToAddresses?.includes(recipientEmail)) {
-      return true;
+  text?: string,
+): SesMessage | undefined => {
+  const email = recipientEmail.toLocaleLowerCase();
+  return messages.find((message) => {
+    // SendRawEmail messages carry no Destination in LocalStack — the only recipient
+    // signal is the raw `To:` header — so check both paths.
+    const recipientMatches =
+      (message.Destination?.ToAddresses?.includes(email) ?? false) ||
+      (message.RawData ? rawDataRecipientMatches(message.RawData, email) : false);
+    if (!recipientMatches) {
+      return false;
     }
-    if (message.RawData) {
-      return rawDataRecipientMatches(message.RawData, recipientEmail);
-    }
-    return false;
+    // The text filter must apply regardless of how the recipient matched, or a
+    // different email to the same recipient (e.g. the share invite) wins the find.
+    return !text || getSesMessageSearchableParts(message).some((part) => part.includes(text));
   });
+};
+
+export const sesMessageBodyIncludes = (message: SesMessage, text: string): boolean =>
+  getSesMessageSearchableParts(message).some((part) => part.includes(text));
 
 export const extractShareInviteUrl = (
   message: SesMessage,

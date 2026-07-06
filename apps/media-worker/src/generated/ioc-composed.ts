@@ -66,9 +66,4 @@ export const composedRegistrationOverrides = {
     '@packages/infrastructure',
     '@packages/notifications',
   ],
-  contracts: {
-    WorkerTask: {
-      defaultImplementation: 'notificationBatchTask',
-    },
-  },
 } as const satisfies ComposedRegistrationOverrides;
