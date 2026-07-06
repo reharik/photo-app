@@ -5,11 +5,8 @@ import type { Knex } from 'knex';
 import { Cradle, createAppContainer } from './container';
 import type { Server } from './server';
 
-import {
-  registerDomainEventHandlers,
-  type DomainEventHandler,
-  type EventPublisher,
-} from '@packages/media-core';
+import { registerDomainEventHandlers, type EventPublisher } from '@packages/media-core';
+import { DomainEventHandlers } from '@packages/media-core/iocTypes';
 
 const attachGlobalHandlers = (
   database: Knex,
@@ -61,7 +58,7 @@ const bootstrap = async () => {
   const logger = container.resolve<Logger>('logger');
   const server = container.resolve<Server>('server');
   const eventPublisher = container.resolve<EventPublisher>('eventPublisher');
-  const domainEventHandlers = container.resolve<DomainEventHandler[]>('domainEventHandlers');
+  const domainEventHandlers = container.resolve<DomainEventHandlers>('domainEventHandlers');
   registerDomainEventHandlers(eventPublisher, domainEventHandlers);
   attachGlobalHandlers(database, logger, server, container); // ← container now passed
   await server.start();

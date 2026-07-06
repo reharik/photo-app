@@ -34,6 +34,7 @@ export type PendingNotification = {
   dirtySince: DateTime;
   attempts: number;
   actorId: EntityId;
+  data?: { token: string };
 };
 const pendingNotificationFields = [
   'id',
@@ -46,6 +47,7 @@ const pendingNotificationFields = [
   'dirtySince',
   'attempts',
   'actorId',
+  'data',
 ];
 
 type PendingNotificationInput = Omit<PendingNotification, 'dirtySince'>;

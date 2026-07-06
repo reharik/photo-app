@@ -22,6 +22,7 @@ export type ResolvedActivity = {
   recipients: EntityId[];
   targetType: EntityType;
   targetId: EntityId;
+  token?: string;
 };
 
 export type ResolveActivity = (event: ActivityEvent) => Promise<ResolvedActivity>;
@@ -60,7 +61,8 @@ export const build__ResolveActivity =
         return {
           recipients: [event.recipientAddress],
           targetType: EntityType.album,
-          targetId: event.token,
+          targetId: event.albumId,
+          token: event.token,
         };
       default:
         return assertNever(event);

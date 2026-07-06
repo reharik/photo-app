@@ -80,7 +80,7 @@ export type FastSweepNotificationStrategies = ReadonlyArray<
 export type WorkerTasks = ReadonlyArray<WorkerTask>;
 
 export interface IocExternals {
-  container: AwilixContainer<any>;
+  container: AwilixContainer<IocGeneratedCradle>;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemRepository: MediaItemRepository;

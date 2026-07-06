@@ -86,7 +86,7 @@
   },
   "dependencies": {
     "@reharik/smart-enum": "^0.4.6",
-    "ioc-manifest": "^2.3.4",
+    "ioc-manifest": "^2.3.5",
     "knip": "^6.4.1"
   },
   "devDependencies": {

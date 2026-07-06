@@ -11,7 +11,7 @@ type MediaItemsSharedStrategyDeps = {
 export const build__MediaItemsSharedStrategy = ({
   config,
 }: MediaItemsSharedStrategyDeps): FastSweepNotificationStrategy<'itemShareInvite'> => ({
-  kind: PendingNotificationKind.albumShared,
+  kind: PendingNotificationKind.itemShared,
   execute: async (
     rows: PendingNotification[],
     userMap: Map<string, UserContact>,

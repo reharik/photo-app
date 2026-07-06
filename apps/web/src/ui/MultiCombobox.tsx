@@ -1,3 +1,4 @@
+import { Trash2 } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import type { Key, Selection } from 'react-aria-components';
 import {
@@ -11,7 +12,6 @@ import {
   TagGroup,
   TagList,
 } from 'react-aria-components';
-import { Trash2 } from 'lucide-react';
 import styled, { useTheme } from 'styled-components';
 
 export type MultiComboboxOption = {
@@ -139,11 +139,11 @@ const HighlightMatch = ({ text, query }: { text: string; query: string }): React
     return <>{text}</>;
   }
   return (
-    <>
+    <div>
       {text.slice(0, index)}
       <Match>{text.slice(index, index + needle.length)}</Match>
       {text.slice(index + needle.length)}
-    </>
+    </div>
   );
 };
 
@@ -726,6 +726,7 @@ const Empty = styled.div`
 const Match = styled.span`
   font-weight: ${({ theme }) => theme.weight.medium};
   color: ${({ theme }) => theme.color.link};
+  background-color: ${({ theme }) => theme.color.yellow_lighter};
 `;
 
 const ErrorMessage = styled.div`

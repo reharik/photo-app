@@ -105,7 +105,14 @@ export interface IocGeneratedCradle {
   deleteMediaItem: DeleteMediaItem;
   deleteMediaItems: DeleteMediaItems;
   deleteShareContactService: DeleteShareContactService;
-  domainEventHandlers: ReadonlyArray<DomainEventHandler>;
+  domainEventHandlers: ReadonlyArray<
+    DomainEventHandler<
+      | 'mediaItemAddedToAlbum'
+      | 'albumSharedWithUser'
+      | 'mediaItemsSharedWithUser'
+      | 'albumSharedWithNonUser'
+    >
+  >;
   editComment: EditComment;
   enrichMediaItems: EnrichMediaItems;
   eventPublisher: EventPublisher;
@@ -207,7 +214,14 @@ export type AgnosticReadServices = {
   publicAccessReadService: PublicAccessReadService;
 };
 
-export type DomainEventHandlers = ReadonlyArray<DomainEventHandler>;
+export type DomainEventHandlers = ReadonlyArray<
+  DomainEventHandler<
+    | 'mediaItemAddedToAlbum'
+    | 'albumSharedWithUser'
+    | 'mediaItemsSharedWithUser'
+    | 'albumSharedWithNonUser'
+  >
+>;
 
 export type PublicReadServices = {
   publicAlbumReadService: PublicAlbumReadService;

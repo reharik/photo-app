@@ -13,7 +13,7 @@ export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
 }: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'albumGuestInvite'> => ({
-  kind: PendingNotificationKind.albumShared,
+  kind: PendingNotificationKind.guestAlbumShared,
   execute: async (
     rows: PendingNotification[],
     userMap: Map<string, UserContact>,
@@ -23,8 +23,9 @@ export const build__AlbumSharedWithNonUserStrategy = ({
     const albumMap = indexBy(albums);
     return rows.map((row) => {
       const recipientEmail = row.recipientAddress;
-      if (!recipientEmail) {
-        return { row, kind: 'skipped', reason: 'no recipient email' };
+      const token = row.data?.token;
+      if (!recipientEmail || !token) {
+        return { row, kind: 'skipped', reason: 'no recipient email or token' };
       }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.aggregateId);
@@ -38,7 +39,7 @@ export const build__AlbumSharedWithNonUserStrategy = ({
           data: {
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',
             resourceName: album?.title ?? '',
-            inviteUrl: `${config.clientUrl}/shared/${row.aggregateId}`,
+            inviteUrl: `${config.clientUrl}/shared/${token}`,
             signupUrl: `${config.clientUrl}/signup`,
           },
         },

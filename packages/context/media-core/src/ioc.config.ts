@@ -31,6 +31,7 @@ export default defineIocConfig({
     domainEventHandlers: {
       kind: 'collection',
       baseType: 'DomainEventHandler',
+      baseTypeArg: 'DomainEventKind',
     },
     publicReadServices: {
       kind: 'object',

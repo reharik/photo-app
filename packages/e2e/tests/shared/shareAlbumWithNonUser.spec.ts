@@ -10,10 +10,7 @@ import {
   retrieveLocalStackSesMessages,
 } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
-import {
-  buildPublicMediaDetailUrl,
-  expectPublicMediaUnavailable,
-} from '../../fixtures/navigation';
+import { buildPublicMediaDetailUrl, expectPublicMediaUnavailable } from '../../fixtures/navigation';
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
@@ -57,6 +54,7 @@ test.describe('Share an album with an email that is not a user', () => {
             if (!message) {
               return false;
             }
+
             resolvedShareUrl = extractShareInviteUrl(message, env.webBaseUrl) ?? '';
             return resolvedShareUrl.length > 0;
           },
@@ -96,7 +94,9 @@ test.describe('Share an album with an email that is not a user', () => {
         // Done last so the open dialog needs no teardown.
         await userA.page.getByRole('button', { name: 'Share album' }).click();
         const reopenedDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-        await reopenedDialog.getByRole('combobox', { name: 'Recipients' }).fill(recipientEmail.toLowerCase());
+        await reopenedDialog
+          .getByRole('combobox', { name: 'Recipients' })
+          .fill(recipientEmail.toLowerCase());
         // The suggestion popover renders in a portal at the document body (not inside the
         // dialog), so query options at page level. Its accessible name also includes the
         // row's "Remove from saved contacts" control, so match on text content.

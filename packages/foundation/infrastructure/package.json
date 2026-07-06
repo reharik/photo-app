@@ -33,7 +33,7 @@
     "test": "nx test infrastructure"
   },
   "dependencies": {
-    "ioc-manifest": "^2.3.4",
+    "ioc-manifest": "^2.3.5",
     "winston": "^3.15.0"
   },
   "devDependencies": {

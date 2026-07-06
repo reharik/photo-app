@@ -38,7 +38,7 @@ Batch targets use them: `build:apps` = `tag:scope:apps`, `build:packages` =
 
 ## IoC (the `ioc-manifest` package)
 
-Build-time codegen DI over an Awilix PROXY container. Package: `ioc-manifest` v2.3.4
+Build-time codegen DI over an Awilix PROXY container. Package: `ioc-manifest` v2.3.5
 (the `ioc-manifest-0.1.0.tgz` at repo root is a stale tarball — ignore it). Policy
 lives in one `ioc.config.ts` per project (`defineIocConfig`). CLI binary: `ioc`
 (`generate` / `inspect` / `validate`).

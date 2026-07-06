@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 
-import { DomainEventHandler, registerDomainEventHandlers } from '@packages/media-core';
+import { registerDomainEventHandlers } from '@packages/media-core';
+import { DomainEventHandlers } from '@packages/media-core/iocTypes';
 import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import { destroyWorkerContainer, initializeWorkerContainer } from './container';
 import { logMediaWorkerStartup } from './tasks/queue/mediaWorkers/logMediaWorkerStartup';
@@ -16,7 +17,7 @@ const bootstrap = async (): Promise<void> => {
   const database = container.resolve('database');
   const runMediaWorkerLoop = container.resolve('runMediaWorkerLoop');
   const eventPublisher = container.resolve('eventPublisher');
-  const domainEventHandlers = container.resolve<DomainEventHandler[]>('domainEventHandlers');
+  const domainEventHandlers = container.resolve<DomainEventHandlers>('domainEventHandlers');
   registerDomainEventHandlers(eventPublisher, domainEventHandlers);
   await logMediaWorkerStartup({ config, logger, database });
 

@@ -1,4 +1,5 @@
 import { Logger } from '@packages/infrastructure';
+import { DomainEventHandlers } from '../../generated/ioc-registry.types';
 import { DomainEvent } from './DomainEvent';
 
 export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['kind']> = (
@@ -12,7 +13,7 @@ export type DomainEventHandler<K extends DomainEvent['kind'] = DomainEvent['kind
 };
 
 export type EventPublisher = {
-  register: (kind: DomainEvent['kind'], handler: DomainEventProcessor) => void;
+  register: (kind: DomainEvent['kind'], handler: DomainEventHandler) => void;
   publish: (events: DomainEvent[]) => Promise<void>;
 };
 
@@ -21,10 +22,10 @@ interface EventPublisherDeps {
 }
 
 export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPublisher => {
-  const handlers = new Map<DomainEvent['kind'], DomainEventProcessor[]>();
+  const handlers = new Map<DomainEvent['kind'], DomainEventHandler[]>();
 
   return {
-    register: (kind: DomainEvent['kind'], handler: DomainEventProcessor) => {
+    register: (kind: DomainEvent['kind'], handler: DomainEventHandler) => {
       const list = handlers.get(kind) ?? [];
       logger.info(`[DomainEventPublisher] domainEventHandler registered: ${kind}`);
       list.push(handler);
@@ -37,7 +38,7 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
         for (const handler of list) {
           handlerNameList.push(handler.name);
           try {
-            await handler(event);
+            await handler.processor(event);
           } catch (err) {
             logger.error('event handler failed', { kind: event.kind, handler: handler.name, err });
             // swallow — post-commit, work is durable, one handler failing ≠ failure
@@ -53,11 +54,11 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
 
 export const registerDomainEventHandlers = (
   eventPublisher: EventPublisher,
-  domainEventHandlers: DomainEventHandler[],
+  domainEventHandlers: DomainEventHandlers,
 ) => {
   for (const handler of domainEventHandlers) {
     for (const kind of handler.handles) {
-      eventPublisher.register(kind, handler.processor);
+      eventPublisher.register(kind, handler);
     }
   }
 };
