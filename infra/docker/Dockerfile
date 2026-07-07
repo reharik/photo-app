@@ -8,7 +8,7 @@
 # Extracts every package.json (and the lockfile) into a clean dir so npm ci
 # can plan the workspace install without dragging in the rest of the source.
 # This stage rebuilds on any source change but is cheap (just file copying).
-FROM node:20 AS manifests
+FROM node:22 AS manifests
 WORKDIR /src
 COPY . .
 RUN mkdir -p /manifests && \
@@ -24,10 +24,10 @@ RUN mkdir -p /manifests && \
 # downstream `npm ci` stage; dep changes never re-run it. Keep the version in
 # lockstep with the root package.json "packageManager" field. (There is no
 # official node:20 image bundling npm 11, hence the one-time global install.)
-FROM node:20 AS node-npm11
+FROM node:22 AS node-npm11
 RUN npm install -g npm@11.6.2
 
-FROM node:20-slim AS node-slim-npm11
+FROM node:22-slim AS node-slim-npm11
 RUN npm install -g npm@11.6.2
 
 # === Build stage ===
@@ -83,7 +83,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --ignore-scripts
 
 # === Runtime: Node apps (api, media-worker) ===
-FROM node:20-slim AS runtime-node
+FROM node:22-slim AS runtime-node
 WORKDIR /app
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}

@@ -294,6 +294,9 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: enable corepack
+        run: corepack enable  
+          
       - name: Install dependencies
         run: npm ci
 
