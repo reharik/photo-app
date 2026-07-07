@@ -294,8 +294,11 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - name: npm v
-        run: npm -v
-        
+        run: |
+          node -v
+          npm -v
+          which npm
+
       - name: enable corepack
         run: corepack enable  
           
