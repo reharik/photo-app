@@ -48,6 +48,11 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const nonExistingResult = inviteNonUsers(nonExisting, album, input, granter);
     const existingResult = inviteUsers(existing, album, input); //, album.title(), granter);
 
+    // getPendingAndActiveUsers
+    // createPendingUsers -- where they don't exist
+    // invite all of them
+    // for each pending user
+
     const result = {
       authorizations: [...nonExistingResult.authorizations, ...existingResult.authorizations],
       errors: existingResult.errors,

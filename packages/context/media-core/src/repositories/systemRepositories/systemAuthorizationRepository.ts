@@ -4,7 +4,10 @@ import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
 export type SystemAuthorizationRepository = {
-  getAuthorizationsByAlbumId: (albumId: EntityId[]) => Promise<AuthorizationRow[]>;
+  getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<AuthorizationRow[]>;
+  getAuthorizationsByIds: (ids: EntityId[]) => Promise<AuthorizationRow[]>;
+  pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[]) => Promise<void>;
+  upsertGrants: (input: UpsertInput[]) => Promise<void>;
 };
 
 export type SystemAuthorizationRepositoryDeps = {
@@ -41,6 +44,14 @@ const authorizationFields = [
   'updatedBy',
 ];
 
+export type UpsertInput = {
+  accessGrantId: EntityId;
+  mediaItemId: EntityId;
+  operations: string[];
+  createdBy: EntityId;
+  updatedBy: EntityId;
+};
+
 export const build__SystemAuthorizationRepository = ({
   database,
 }: SystemAuthorizationRepositoryDeps): SystemAuthorizationRepository => ({
@@ -60,5 +71,23 @@ export const build__SystemAuthorizationRepository = ({
       { operation: Operation },
       { strict: true },
     );
+  },
+  getAuthorizationsByIds: (ids: EntityId[]): Promise<AuthorizationRow[]> => {
+    return withEnumRevival(
+      database('access_grant').select<AuthorizationRow[]>(authorizationFields).whereIn('id', ids),
+      { operation: Operation },
+      { strict: true },
+    );
+  },
+  pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[]) => {
+    const del = database('grant').where({ accessGrantId: authId });
+    if (keepIds.length) del.whereNotIn('mediaItemId', keepIds);
+    return del.delete(); // empty desired → deletes ALL this auth's grants (correct)
+  },
+  upsertGrants: async (input: UpsertInput[]) => {
+    await database('grant')
+      .insert(input)
+      .onConflict(['accessGrantId', 'mediaItemId'])
+      .merge(['operations', 'updatedBy']);
   },
 });

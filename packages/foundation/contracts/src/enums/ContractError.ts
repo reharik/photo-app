@@ -491,9 +491,23 @@ const contractErrorInput = {
     area: ErrorArea.auth,
     retryable: false,
   },
-  InvalidPasswordResetCode: {
-    code: 'INVALID_PASSWORD_RESET_CODE',
-    display: 'Invalid password reset code',
+  InvalidEmailVerificationCode: {
+    code: 'INVALID_EMAIL_VERIFICATION_CODE',
+    display: 'Invalid email verification code',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  InvalidPhoneNumber: {
+    code: 'INVALID_PHONE_NUMBER',
+    display: 'Invalid phone number',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  ErrorActivatingUser: {
+    code: 'ERROR_ACTIVATING_USER',
+    display: 'Error activating user',
     category: ErrorCategory.domain,
     area: ErrorArea.auth,
     retryable: false,

@@ -113,6 +113,7 @@ export const inviteUsersForMediaItems = (
     let granted = false;
     let firstError: ContractError | undefined;
     const mediaItemIds = [];
+    const authorizationIds = [];
     for (const mediaItem of mediaItems) {
       mediaItemIds.push(mediaItem.id());
       // ← authorization axis (inner, N×M)
@@ -125,6 +126,7 @@ export const inviteUsersForMediaItems = (
       );
       if (result.success) {
         grants.push({ mediaItem, authorization: result.value.authorization });
+        authorizationIds.push(result.value.authorization.id());
         granted = true;
       } else {
         errorDetail.push({ user, mediaItem, error: result.error });
@@ -140,6 +142,7 @@ export const inviteUsersForMediaItems = (
         mediaItemIds,
         occurredAt: new Date(),
         actorId: input.viewerId,
+        authorizationIds,
       });
     } else if (firstError) {
       errors.push({ user, error: firstError }); // zero successes → surfaced; partial → log only

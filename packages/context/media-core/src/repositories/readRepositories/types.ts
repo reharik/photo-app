@@ -29,6 +29,8 @@ export type ReadRepositoryDeps = { database: Knex };
 export type AuthorizationRow = {
   id: EntityId;
   grantedToUser?: EntityId;
+  albumId?: EntityId;
+  mediaItemId?: EntityId;
   operations: Operation[];
   description?: string;
   expiresAt?: Date;

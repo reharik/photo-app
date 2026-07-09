@@ -263,7 +263,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
       this.touch(actorId);
       this.recordEvent(
         'albumSharedWithUser',
-        { userId: grantedToUserId, albumId: this.id() },
+        { userId: grantedToUserId, albumId: this.id(), authorizationId: authorization.id() },
         actorId,
       );
       return ok({ authorization });

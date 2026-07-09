@@ -3,12 +3,22 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { APP_NAME, APP_TAGLINE } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
+import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
+import {
+  CODE_SENT_MESSAGE,
+  REQUEST_CODE_FAILURE_MESSAGE,
+  setPasswordErrorMessage,
+} from '../features/auth/authMessages';
 import { FormInput } from '../ui/FormInput';
 
 const isValidPhone = (value: string): boolean => {
   const digits = value.replace(/\D/g, '');
   return digits.length >= 10 && digits.length <= 15;
 };
+
+// Signup is a two-step, email-first flow: verify the email (send a code) BEFORE any
+// password is collected, then finish with code + password (+ names) in one call.
+type SignupStep = 'email' | 'details';
 
 type LoginLocationState = {
   successMessage?: string;
@@ -24,27 +34,36 @@ export const LoggedOutScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSignup, setIsSignup] = useState(location.pathname === '/signup');
+  const [signupStep, setSignupStep] = useState<SignupStep>('email');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [smsOptIn, setSmsOptIn] = useState(false);
+  const [info, setInfo] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login, requestEmailVerification, completeAuth } = useAuth();
   const locationState = location.state as LoginLocationState | undefined;
   const successMessage = locationState?.successMessage;
 
+  const trimmedEmail = email.trim();
   const trimmedPhone = phone.trim();
   const showSmsOptIn = trimmedPhone.length > 0;
 
   const resetSignupFields = () => {
+    setSignupStep('email');
     setFirstName('');
     setLastName('');
+    setCode('');
+    setPassword('');
     setPhone('');
     setSmsOptIn(false);
+    setInfo(undefined);
   };
 
   const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,44 +76,89 @@ export const LoggedOutScreen = () => {
 
   const toggleAuthMode = () => {
     setError(undefined);
+    setInfo(undefined);
     if (isSignup) {
       resetSignupFields();
     }
     setIsSignup(!isSignup);
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Step 1 (signup): verify the email by sending a code. Existence-blind — we advance
+  // to the details step regardless of whether the email is new, taken, or garbage, and
+  // never surface anything that would reveal which. Only a genuine transport fault is
+  // shown, and its copy says nothing about account existence.
+  const sendSignupCode = async (): Promise<boolean> => {
+    const result = await requestEmailVerification(trimmedEmail);
+    if (!result.ok) {
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
+      return false;
+    }
+    setInfo(CODE_SENT_MESSAGE);
+    return true;
+  };
+
+  const handleSignupEmailSubmit = async () => {
     setError(undefined);
     setIsLoading(true);
-
     try {
-      if (isSignup) {
-        if (trimmedPhone.length > 0 && !isValidPhone(trimmedPhone)) {
-          setError('Enter a valid phone number or leave the field blank.');
-          return;
-        }
+      if (await sendSignupCode()) {
+        setSignupStep('details');
+      }
+    } catch {
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        const result = await signup({
-          email: email.trim(),
-          password,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          ...(trimmedPhone.length > 0 ? { phone: trimmedPhone } : {}),
-          smsOptIn: trimmedPhone.length > 0 && smsOptIn,
-        });
+  const handleSignupResend = async () => {
+    setError(undefined);
+    setCode('');
+    setIsResending(true);
+    try {
+      await sendSignupCode();
+    } catch {
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
-        if (!result.ok) {
-          setError(result.message);
-          return;
-        }
-      } else {
-        const result = await login(email.trim(), password);
+  // Step 2 (signup): verify the code AND set the password in one call, carrying the
+  // names so the backend knows this is the signup door. On success the session cookie
+  // is set and the viewer hydrated — land in the app, never a "now log in" screen.
+  const handleSignupDetailsSubmit = async () => {
+    setError(undefined);
 
-        if (!result.ok) {
-          setError(result.message);
-          return;
-        }
+    if (code.length !== CODE_LENGTH) {
+      setError('Enter the 6-digit code from your email.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (trimmedPhone.length > 0 && !isValidPhone(trimmedPhone)) {
+      setError('Enter a valid phone number or leave the field blank.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await completeAuth({
+        email: trimmedEmail,
+        code,
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        ...(trimmedPhone.length > 0 ? { phone: trimmedPhone } : {}),
+        smsOptIn: trimmedPhone.length > 0 && smsOptIn,
+      });
+
+      if (!result.ok) {
+        // Code-level failure: friendly copy, stay on the code step to retry/resend.
+        setError(setPasswordErrorMessage(result.reason));
+        return;
       }
 
       await navigate(safeReturnTo(locationState?.returnTo), { replace: true });
@@ -103,6 +167,43 @@ export const LoggedOutScreen = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleBackToEmail = () => {
+    setSignupStep('email');
+    setCode('');
+    setError(undefined);
+    setInfo(undefined);
+  };
+
+  const handleLoginSubmit = async () => {
+    setError(undefined);
+    setIsLoading(true);
+    try {
+      const result = await login(trimmedEmail, password);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      await navigate(safeReturnTo(locationState?.returnTo), { replace: true });
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isSignup) {
+      await handleLoginSubmit();
+      return;
+    }
+    if (signupStep === 'email') {
+      await handleSignupEmailSubmit();
+      return;
+    }
+    await handleSignupDetailsSubmit();
   };
 
   return (
@@ -138,13 +239,48 @@ export const LoggedOutScreen = () => {
             <AuthHeader>
               <AuthTitle>{isSignup ? 'Create Account' : 'Welcome Back'}</AuthTitle>
               <AuthSubtitle>
-                {isSignup ? 'Create your account to get started.' : 'Welcome back.'}
+                {!isSignup
+                  ? 'Welcome back.'
+                  : signupStep === 'email'
+                    ? "Enter your email and we'll send you a code to get started."
+                    : 'Enter the code we sent, then choose your details and password.'}
               </AuthSubtitle>
             </AuthHeader>
 
             <Form onSubmit={handleSubmit} $isSignup={isSignup}>
-              {isSignup && (
+              {isSignup && signupStep === 'email' && (
+                <FormInput
+                  id="signup-email"
+                  label="Email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  data-testid="login-email"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                    setEmail(event.target.value)
+                  }
+                  required
+                  autoComplete="email"
+                />
+              )}
+
+              {isSignup && signupStep === 'details' && (
                 <>
+                  <StepBackRow>
+                    Code sent to <strong>{trimmedEmail}</strong>.{' '}
+                    <StepBackLink type="button" onClick={handleBackToEmail}>
+                      Change
+                    </StepBackLink>
+                  </StepBackRow>
+                  {info && <InfoMessage>{info}</InfoMessage>}
+                  <VerificationStep
+                    idPrefix="signup"
+                    code={code}
+                    onCodeChange={setCode}
+                    onResend={handleSignupResend}
+                    isResending={isResending}
+                    disabled={isLoading}
+                  />
                   <NameRow>
                     <FormInput
                       id="signup-first-name"
@@ -171,19 +307,6 @@ export const LoggedOutScreen = () => {
                       autoComplete="family-name"
                     />
                   </NameRow>
-                  <FormInput
-                    id="signup-email"
-                    label="Email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    data-testid="login-email"
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-                      setEmail(event.target.value)
-                    }
-                    required
-                    autoComplete="email"
-                  />
                   <FormInput
                     id="signup-password"
                     label="Password"
@@ -273,7 +396,13 @@ export const LoggedOutScreen = () => {
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
               <SubmitButton type="submit" disabled={isLoading}>
-                {isLoading ? 'Loading...' : isSignup ? 'Create Account' : 'Sign In'}
+                {isLoading
+                  ? 'Loading...'
+                  : !isSignup
+                    ? 'Sign In'
+                    : signupStep === 'email'
+                      ? 'Continue'
+                      : 'Create Account'}
               </SubmitButton>
             </Form>
 
@@ -505,6 +634,36 @@ const SuccessMessage = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.md};
   color: ${({ theme }) => theme.color.alertSuccessText};
   font-size: 14px;
+`;
+
+const InfoMessage = styled.div`
+  padding: ${({ theme }) => theme.spacing(2)};
+  background: ${({ theme }) => theme.color.alertInfo};
+  border: 1px solid ${({ theme }) => theme.color.alertInfoText};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: ${({ theme }) => theme.color.alertInfoText};
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
+const StepBackRow = styled.div`
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 14px;
+`;
+
+const StepBackLink = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.color.link};
+  font-size: 14px;
+  padding: 0;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.linkHover};
+  }
 `;
 
 const ForgotPasswordRow = styled.div`

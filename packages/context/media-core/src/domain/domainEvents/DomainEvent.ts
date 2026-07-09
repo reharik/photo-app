@@ -3,8 +3,11 @@ import {
   AlbumSharedWithNonUser,
   AlbumSharedWithUser,
   MediaItemAddedToAlbum,
+  MediaItemRemovedFromAlbum,
 } from '../Album/albumEvents';
+import { AuthorizationExpired, AuthorizationRevoked } from '../Authorization/authorizationEvents';
 import { MediaItemsSharedWithUser } from '../MediaItem/mediaItemEvents';
+import { PendingUserActivated } from '../User/userEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
 
@@ -19,4 +22,13 @@ export interface DomainEventBase {
 }
 
 export type DomainEvent = DomainEventBase &
-  (MediaItemAddedToAlbum | AlbumSharedWithUser | MediaItemsSharedWithUser | AlbumSharedWithNonUser);
+  (
+    | MediaItemAddedToAlbum
+    | MediaItemRemovedFromAlbum
+    | AlbumSharedWithUser
+    | MediaItemsSharedWithUser
+    | AlbumSharedWithNonUser
+    | AuthorizationExpired
+    | AuthorizationRevoked
+    | PendingUserActivated
+  );

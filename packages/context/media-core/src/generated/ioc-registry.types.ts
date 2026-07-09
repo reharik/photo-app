@@ -10,6 +10,7 @@ import type { DomainEventHandler, EventPublisher } from '../domain/domainEvents/
 import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
+import type { EmailVerificationRepository } from '../repositories/domainRepositories/emailVerificationRepository.js';
 import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
@@ -114,6 +115,7 @@ export interface IocGeneratedCradle {
     >
   >;
   editComment: EditComment;
+  emailVerificationRepository: EmailVerificationRepository;
   enrichMediaItems: EnrichMediaItems;
   eventPublisher: EventPublisher;
   finalizeMediaItemUpload: FinalizeMediaItemUpload;

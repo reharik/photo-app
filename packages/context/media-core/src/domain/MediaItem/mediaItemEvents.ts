@@ -5,4 +5,5 @@ export interface MediaItemsSharedWithUser extends DomainEventBase {
   kind: 'mediaItemsSharedWithUser';
   userId: EntityId;
   mediaItemIds: EntityId[];
+  authorizationIds: EntityId[];
 }

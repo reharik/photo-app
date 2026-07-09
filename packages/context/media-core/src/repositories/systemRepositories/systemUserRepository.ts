@@ -1,8 +1,10 @@
+import { UserStatus } from '@packages/contracts';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
 export type SystemUserRepository = {
   getUserContacts: (userIds: EntityId[]) => Promise<UserContact[]>;
+  getActiveUsers: (userIds: EntityId[]) => Promise<UserContact[]>;
 };
 
 export type SystemUserRepositoryDeps = {
@@ -23,5 +25,11 @@ export const build__SystemUserRepository = ({
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
   getUserContacts: (userIds: EntityId[]) => {
     return database('User').select(UserFields).whereIn('id', userIds);
+  },
+  getActiveUsers: (userIds: EntityId[]) => {
+    return database('User')
+      .select<UserContact[]>(UserFields)
+      .whereIn('id', userIds)
+      .andWhere({ userStatus: UserStatus.active.value });
   },
 });

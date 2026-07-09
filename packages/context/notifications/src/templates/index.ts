@@ -3,7 +3,7 @@ import type { TemplateData, TemplateName } from '../types';
 import AlbumActivity, { subject as albumActivitySubject } from './albumActivity';
 import AlbumGuestInvite, { subject as albumGuestInviteSubject } from './albumGuestInvite';
 import AlbumShareInvite, { subject as albumShareInviteSubject } from './albumShareInvite';
-import ForgotPassword, { subject as forgotPasswordSubject } from './forgotPassword';
+import EmailVerification, { subject as emailVerificationSubject } from './emailVerification';
 import ItemShareInvite, { subject as itemShareInviteSubject } from './itemShareInvite';
 import PasswordReset, { subject as passwordResetSubject } from './passwordReset';
 import Welcome, { subject as welcomeSubject } from './welcome';
@@ -24,5 +24,5 @@ export const templateRegistry: TemplateRegistry = {
   itemShareInvite: { Component: ItemShareInvite, getSubject: itemShareInviteSubject },
   albumActivity: { Component: AlbumActivity, getSubject: albumActivitySubject },
   passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
-  forgotPassword: { Component: ForgotPassword, getSubject: forgotPasswordSubject },
+  emailVerification: { Component: EmailVerification, getSubject: emailVerificationSubject },
 };

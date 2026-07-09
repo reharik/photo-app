@@ -4,59 +4,21 @@
  * References other aggregates by ID only; does not own collections of albums, media, comments, or notifications.
  */
 
+import { UserStatus } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { AuditRecord } from '../Entity';
-
-export type UserProps = {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  postalCode?: string;
-  state?: string;
-  country?: string;
-  passwordHash?: string;
-  lastLoginAt?: Date;
-  emailVerified?: boolean;
-};
-
-export type UserRecord = {
-  id: EntityId;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  postalCode?: string;
-  state?: string;
-  country?: string;
-  passwordHash?: string;
-  lastLoginAt?: Date;
-  emailVerified?: boolean;
-} & AuditRecord;
-
-export type CreateUserInput = {
-  email: string;
-  firstName: string;
-  lastName: string;
-};
+import { CreateUserInput, UserProps, UserRecord } from './types';
 
 export class User extends AggregateRoot<UserRecord> {
   protected props: UserProps;
-
+  public readonly kind = 'active' as const;
   private constructor(actorId: ActorId, props: UserProps, id?: EntityId) {
     super(id, actorId, 'user');
     this.props = props;
   }
 
   static create(input: CreateUserInput, actorId: ActorId): User {
-    return new User(actorId, input);
+    return new User(actorId, { ...input, userStatus: UserStatus.pending }, actorId);
   }
 
   static rehydrate(record: UserRecord): User {
@@ -71,7 +33,7 @@ export class User extends AggregateRoot<UserRecord> {
     return this.props.email;
   }
 
-  rename(firstName: string, lastName: string, actorId: ActorId): void {
+  updateUserName(firstName: string, lastName: string, actorId: ActorId): void {
     this.props.firstName = firstName;
     this.props.lastName = lastName;
     this.touch(actorId);
@@ -104,19 +66,20 @@ export class User extends AggregateRoot<UserRecord> {
     this.touch(actorId);
   }
 
+  setPassword(passwordHash: string, actorId: ActorId): void {
+    this.props.passwordHash = passwordHash;
+    this.touch(actorId);
+  }
+
   recordLogin(actorId: ActorId): void {
     this.props.lastLoginAt = new Date();
     this.touch(actorId);
   }
 
-  markEmailVerified(actorId: ActorId): void {
-    this.props.emailVerified = true;
-    this.touch(actorId);
-  }
-  firstName(): string {
+  firstName(): string | undefined {
     return this.props.firstName;
   }
-  lastName(): string {
+  lastName(): string | undefined {
     return this.props.lastName;
   }
   fullName(): string {
@@ -124,5 +87,11 @@ export class User extends AggregateRoot<UserRecord> {
   }
   email(): string {
     return this.props.email;
+  }
+  userStatus(): UserStatus {
+    return this.props.userStatus;
+  }
+  isNew(): boolean {
+    return this._isNew;
   }
 }

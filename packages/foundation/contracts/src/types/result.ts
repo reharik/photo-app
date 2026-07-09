@@ -46,8 +46,7 @@ import { ContractError } from '../enums/ContractError';
  */
 
 export type WriteResult<T = void, E = ContractError> =
-  | { success: true; value: T }
-  | { success: false; error: E };
+  { success: true; value: T } | { success: false; error: E };
 
 export const ok = <T, E extends ContractError = ContractError>(value: T): WriteResult<T, E> => ({
   success: true,

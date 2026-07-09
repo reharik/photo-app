@@ -4,45 +4,38 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+
 void React;
 
-type ForgotPasswordData = TemplateData['forgotPassword'];
+type EmailVerificationData = TemplateData['emailVerification'];
 
 export const subject = (): string => {
-  return 'Your password reset code';
+  return `Your ${APP_NAME} verification code`;
 };
 
-const ForgotPassword = (data: ForgotPasswordData): ReactElement => {
-  const greetingName = data.firstName?.trim() || 'there';
-
+const EmailVerification = (data: EmailVerificationData): ReactElement => {
   return (
     <BaseEmail
-      previewText={`Your ${APP_NAME} password reset code is ${data.code}.`}
-      title={'Reset your password'}
+      previewText={`Your ${APP_NAME} verification code is ${data.code}.`}
+      title={'Your verification code'}
     >
       <Section>
-        <Text style={paragraph}>Hi {greetingName},</Text>
-        <Text style={paragraph}>
-          We received a request to reset your {APP_NAME} password. Enter the code below to continue:
-        </Text>
+        <Text style={paragraph}>Enter this code to continue:</Text>
       </Section>
-
       <Section style={{ marginTop: '24px', marginBottom: '24px' }}>
         <Text style={codeStyle}>{data.code}</Text>
       </Section>
-
       <Section>
         <Text style={paragraph}>This code expires in 10 minutes.</Text>
         <Text style={muted}>
-          If you didn&apos;t request a password reset, you can safely ignore this email — your
-          password won&apos;t change.
+          If you didn&apos;t request this, you can safely ignore this email.
         </Text>
       </Section>
     </BaseEmail>
   );
 };
 
-export default ForgotPassword;
+export default EmailVerification;
 
 const paragraph = {
   color: '#3f3f46',

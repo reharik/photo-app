@@ -27,9 +27,8 @@ export type TemplateData = {
   passwordReset: {
     firstName: string;
   };
-  forgotPassword: {
+  emailVerification: {
     code: string;
-    firstName: string;
   };
 };
 
