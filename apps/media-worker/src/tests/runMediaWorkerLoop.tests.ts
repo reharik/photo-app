@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { NotificationCadence } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 
 import type { Config } from '../config.js';
+import { build__IntervalGate, type IntervalGate } from '../intervalGate';
 import { build__RunMediaWorkerLoop, runWorkerTasksOnce } from '../runMediaWorkerLoop';
 import type { WorkerTask, WorkerTaskOutcome } from '../types.js';
 
@@ -23,12 +25,19 @@ const createMockLogger = (): MockLogger => ({
   verbose: jest.fn(),
 });
 
-/** An always-due WorkerTask whose run() is the supplied mock. */
+/** An always-due queue WorkerTask whose run() is the supplied mock. */
 const makeTask = (
   name: string,
   order: number,
   run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
-): WorkerTask => ({ name, order, due: () => true, run });
+): WorkerTask => ({ name, order, type: 'queue', run });
+
+/**
+ * Stub IntervalGate returning a fixed due-list — the loop resolves its tasks through
+ * `intervalGate.getTasksDue()`, so the loop tests inject the due tasks this way (the
+ * real due-gating is covered in the build__IntervalGate describe below).
+ */
+const makeGate = (tasks: WorkerTask[]): IntervalGate => ({ getTasksDue: () => tasks });
 
 describe('build__RunMediaWorkerLoop', () => {
   beforeEach(() => {
@@ -51,7 +60,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const done = loop.start();
@@ -82,7 +94,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const done = loop.start();
@@ -108,7 +123,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const done = loop.start();
@@ -134,7 +152,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const done = loop.start();
@@ -172,7 +193,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 50 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const done = loop.start();
@@ -205,7 +229,10 @@ describe('build__RunMediaWorkerLoop', () => {
       const loop = build__RunMediaWorkerLoop({
         config: { mediaWorkerPollIntervalMs: 10 } as Config,
         logger,
-        workerTasks: [makeTask('deletion', 100, deletionRun), makeTask('image', 200, imageRun)],
+        intervalGate: makeGate([
+          makeTask('deletion', 100, deletionRun),
+          makeTask('image', 200, imageRun),
+        ]),
       });
 
       const first = loop.start();
@@ -223,13 +250,15 @@ describe('build__RunMediaWorkerLoop', () => {
 });
 
 describe('runWorkerTasksOnce', () => {
+  // runWorkerTasksOnce runs whatever due-list it is handed, in array order — the
+  // due-gating (queue vs scheduled/cadence) now lives in IntervalGate.getTasksDue,
+  // tested separately below.
   const task = (
     name: string,
-    due: () => boolean | Promise<boolean>,
     run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
-  ): WorkerTask => ({ name, due, run, order: 0 });
+  ): WorkerTask => ({ name, type: 'queue', run, order: 0 });
 
-  it('runs tasks in priority order, stopping at the first that processes', async () => {
+  it('runs tasks in order, stopping at the first that processes', async () => {
     const calls: string[] = [];
     const first = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
       calls.push('first');
@@ -241,7 +270,7 @@ describe('runWorkerTasksOnce', () => {
     });
 
     const didWork = await runWorkerTasksOnce(
-      [task('first', () => true, first), task('second', () => true, second)],
+      [task('first', first), task('second', second)],
       createMockLogger(),
     );
 
@@ -254,7 +283,7 @@ describe('runWorkerTasksOnce', () => {
     const second = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
 
     const didWork = await runWorkerTasksOnce(
-      [task('first', () => true, first), task('second', () => true, second)],
+      [task('first', first), task('second', second)],
       createMockLogger(),
     );
 
@@ -263,21 +292,52 @@ describe('runWorkerTasksOnce', () => {
     expect(second).not.toHaveBeenCalled();
   });
 
-  it('treats a not-due task as no work and falls through (run never called)', async () => {
-    const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
-
-    const didWork = await runWorkerTasksOnce([task('scheduled', () => false, run)], createMockLogger());
-
-    expect(didWork).toBe(false);
-    expect(run).not.toHaveBeenCalled();
-  });
-
   it('treats a due task that returns idle as no work and falls through', async () => {
     const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
 
-    const didWork = await runWorkerTasksOnce([task('queue', () => true, run)], createMockLogger());
+    const didWork = await runWorkerTasksOnce([task('queue', run)], createMockLogger());
 
     expect(didWork).toBe(false);
     expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('build__IntervalGate', () => {
+  const noopRun = (): jest.Mock<() => Promise<WorkerTaskOutcome>> =>
+    jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
+
+  const queueTask = (name: string, order: number): WorkerTask => ({
+    name,
+    order,
+    type: 'queue',
+    run: noopRun(),
+  });
+
+  const scheduleTask = (
+    name: string,
+    order: number,
+    cadence: NotificationCadence,
+  ): WorkerTask => ({ name, order, type: 'schedule', cadence, run: noopRun() });
+
+  // Long sweep windows so the gates are open on the first call and closed on the
+  // immediate second call (elapsed ≈ 0 ms « interval).
+  const config = { slowSweepIntervalMS: 1_000_000, fastSweepIntervalMS: 1_000_000 } as Config;
+
+  it('always returns queue tasks and includes scheduled tasks only while their gate is open', () => {
+    const gate = build__IntervalGate({
+      logger: createMockLogger(),
+      config,
+      workerTasks: [
+        queueTask('deletion', 100),
+        scheduleTask('fast-sweep', 200, NotificationCadence.immediate),
+        scheduleTask('slow-sweep', 300, NotificationCadence.batched),
+      ],
+    });
+
+    // First call: both gates open (lastRun starts at 0) → all three, ordered by `order`.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'fast-sweep', 'slow-sweep']);
+
+    // Immediate second call: the sweep gates just fired, so only the always-due queue task remains.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion']);
   });
 });

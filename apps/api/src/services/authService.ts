@@ -139,11 +139,11 @@ export const build__AuthService = ({
         let template: 'welcome' | 'passwordReset';
         console.dir(user, { depth: null, getters: true });
         if (!user) {
-          template = 'welcome';
           user = DomainUser.create(
             { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
             randomUUID(),
           );
+          template = 'welcome';
           // this else is ugly, true, but it's the only true way we can handle the three cases.
           // we can't pass the new user in and have activate set the pw because that also sets the template
         } else {

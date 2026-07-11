@@ -7,12 +7,7 @@ import { getDb } from './db';
 export const cleanupOwnedRows = async (ownerId: string): Promise<void> => {
   const db = getDb();
 
-  await db('share_link_grant')
-    .whereIn('share_link_id', db('share_link').select('id').where({ created_by: ownerId }))
-    .delete();
-
   await db('access_grant').where({ granted_by: ownerId }).delete();
-  await db('share_link').where({ created_by: ownerId }).delete();
 
   await db('comment')
     .where({ created_by: ownerId })

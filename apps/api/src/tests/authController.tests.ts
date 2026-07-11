@@ -1,10 +1,23 @@
+/**
+ * RAI-76: Rewritten for the post-refactor controller. The old
+ * forgotPassword/resetPassword handlers are gone; the controller now exposes
+ * login, logout, emailVerification, setPassword, me, publicAccess and depends on
+ * `authQueryService` (login/verifyEmail), a `rateLimiter`, and the IoC
+ * `container` (setPassword opens a uow scope and resolves the scoped
+ * `authService`). These are unit tests: the container + services are faked, so
+ * `beginUnitOfWorkScope` runs against a stub scope. The real DB behavior of
+ * verifyCodeAndSetPassword is covered in the integration tests.
+ */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ContractError, fail, ok } from '@packages/contracts';
-import type { Logger } from '@packages/infrastructure';
+import { fail, ok, ContractError } from '@packages/contracts';
+import type { Logger, RateLimiter, RateLimitResult } from '@packages/infrastructure';
+import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
 import { build__AuthController } from '../controllers/authController.js';
 import type { AuthService } from '../services/authService.js';
+import type { AuthQueryService } from '../services/authQueryService.js';
+import type { Cradle } from '../container.js';
 
 const logger = {
   debug: jest.fn(),
@@ -15,143 +28,254 @@ const logger = {
   verbose: jest.fn(),
 } satisfies Logger;
 
-const createCtx = (body: Record<string, unknown>): Context => {
+const allowed: RateLimitResult = { allowed: true, remaining: 4, retryAfterMs: null };
+const denied: RateLimitResult = { allowed: false, remaining: 0, retryAfterMs: 60_000 };
+
+const createCtx = (body: Record<string, unknown>, state: Record<string, unknown> = {}): Context => {
   return {
     request: { body },
     status: 0,
     body: undefined,
     ip: '127.0.0.1',
     app: { env: 'test' },
-    state: {},
+    state,
+    cookies: { set: jest.fn() },
   } as unknown as Context;
 };
 
 describe('build__AuthController', () => {
-  let authService: jest.Mocked<Pick<AuthService, 'forgotPassword' | 'resetPassword'>>;
+  let authQueryService: jest.Mocked<Pick<AuthQueryService, 'login' | 'verifyEmail'>>;
+  let rateLimiter: jest.Mocked<RateLimiter>;
+  let authService: jest.Mocked<Pick<AuthService, 'verifyCodeAndSetPassword'>>;
+  let uowStart: jest.Mock;
   let authController: ReturnType<typeof build__AuthController>;
 
   beforeEach(() => {
-    authService = {
-      forgotPassword: jest.fn<AuthService['forgotPassword']>(),
-      resetPassword: jest.fn<AuthService['resetPassword']>(),
+    authQueryService = {
+      login: jest.fn<AuthQueryService['login']>(),
+      verifyEmail: jest.fn<AuthQueryService['verifyEmail']>(),
     };
+    rateLimiter = {
+      consume: jest.fn<RateLimiter['consume']>().mockResolvedValue(allowed),
+    };
+    authService = {
+      verifyCodeAndSetPassword: jest.fn<AuthService['verifyCodeAndSetPassword']>(),
+    };
+    uowStart = jest.fn(async () => undefined);
+
+    // Minimal fake container: beginUnitOfWorkScope() calls createScope(),
+    // resolve('unitOfWork'), unitOfWork.start(), register(), then the controller
+    // resolves 'authService' from that same scope.
+    const scope = {
+      resolve: (key: string) => {
+        if (key === 'unitOfWork') return { start: uowStart };
+        if (key === 'authService') return authService;
+        throw new Error(`unexpected resolve(${key})`);
+      },
+      register: jest.fn(),
+    };
+    const container = {
+      createScope: () => scope,
+    } as unknown as AwilixContainer<Cradle>;
+
     authController = build__AuthController({
-      authService: authService as unknown as AuthService,
+      authQueryService: authQueryService as unknown as AuthQueryService,
+      container,
       logger,
+      rateLimiter,
     });
   });
 
-  describe('forgotPassword', () => {
-    describe('When email is missing', () => {
-      it('should return 200 with a generic message without calling the service', async () => {
-        const ctx = createCtx({});
-
-        await authController.forgotPassword(ctx);
-
-        expect(authService.forgotPassword).not.toHaveBeenCalled();
-        expect(ctx.status).toBe(200);
-        expect(ctx.body).toEqual({
-          message: "If an account exists for that email, we've sent a reset code.",
-        });
-      });
+  describe('login', () => {
+    it('returns 400 when email or password is missing', async () => {
+      const ctx = createCtx({ email: '', password: '' });
+      await authController.login(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Email and password are required' });
+      expect(authQueryService.login).not.toHaveBeenCalled();
     });
 
-    describe('When email is provided', () => {
-      it('should return 200 with a generic message after requesting a reset', async () => {
-        authService.forgotPassword.mockResolvedValue(ok(undefined));
-        const ctx = createCtx({ email: 'user@example.test' });
+    it('returns 400 when the login rate limit is exceeded', async () => {
+      rateLimiter.consume.mockResolvedValueOnce(denied);
+      const ctx = createCtx({ email: 'User@Example.test', password: 'secret123' });
+      await authController.login(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Too many attempts' });
+      expect(authQueryService.login).not.toHaveBeenCalled();
+    });
 
-        await authController.forgotPassword(ctx);
+    it('returns 401 for invalid credentials', async () => {
+      authQueryService.login.mockResolvedValue(undefined);
+      const ctx = createCtx({ email: 'User@Example.test', password: 'wrong' });
+      await authController.login(ctx);
+      expect(authQueryService.login).toHaveBeenCalledWith({
+        email: 'user@example.test',
+        password: 'wrong',
+      });
+      expect(ctx.status).toBe(401);
+      expect(ctx.body).toEqual({ error: 'Invalid email or password' });
+    });
 
-        expect(authService.forgotPassword).toHaveBeenCalledWith('user@example.test');
-        expect(ctx.status).toBe(200);
-        expect(ctx.body).toEqual({
-          message: "If an account exists for that email, we've sent a reset code.",
-        });
+    it('sets the auth cookie and returns 200 with the user on success', async () => {
+      const user = {
+        id: 'u1',
+        email: 'user@example.test',
+        name: 'User',
+        isActive: true,
+        displayName: 'User',
+        isAuthenticated: true,
+      };
+      authQueryService.login.mockResolvedValue({ user, token: 'jwt-token' });
+      const ctx = createCtx({ email: 'user@example.test', password: 'secret123' });
+      await authController.login(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({ user });
+      expect(ctx.cookies.set).toHaveBeenCalledWith(
+        'token',
+        'jwt-token',
+        expect.objectContaining({ httpOnly: true }),
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('clears the cookie and returns 200', () => {
+      const ctx = createCtx({});
+      authController.logout(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({ message: 'Logged out successfully' });
+      expect(ctx.cookies.set).toHaveBeenCalledWith(
+        'token',
+        '',
+        expect.objectContaining({ maxAge: 0 }),
+      );
+    });
+  });
+
+  describe('emailVerification', () => {
+    it('returns a generic 200 without issuing a code for an invalid email', async () => {
+      const ctx = createCtx({ email: 'not-an-email' });
+      await authController.emailVerification(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({
+        message: 'We have sent you an email with a verification code.',
+      });
+      expect(authQueryService.verifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('returns a generic 200 without issuing a code when rate limited', async () => {
+      rateLimiter.consume.mockResolvedValueOnce(allowed).mockResolvedValueOnce(denied);
+      const ctx = createCtx({ email: 'user@example.test' });
+      await authController.emailVerification(ctx);
+      expect(ctx.status).toBe(200);
+      expect(authQueryService.verifyEmail).not.toHaveBeenCalled();
+    });
+
+    it('issues a verification code for a valid, non-throttled email', async () => {
+      authQueryService.verifyEmail.mockResolvedValue(ok(undefined));
+      const ctx = createCtx({ email: '  User@Example.test  ' });
+      await authController.emailVerification(ctx);
+      expect(authQueryService.verifyEmail).toHaveBeenCalledWith('user@example.test');
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({
+        message: 'We have sent you an email with a verification code.',
       });
     });
   });
 
-  describe('resetPassword', () => {
-    describe('When required fields are missing', () => {
-      it('should return 400', async () => {
-        const ctx = createCtx({ email: 'user@example.test', password: 'newPassword9' });
-
-        await authController.resetPassword(ctx);
-
-        expect(authService.resetPassword).not.toHaveBeenCalled();
-        expect(ctx.status).toBe(400);
-        expect(ctx.body).toEqual({ error: 'Email, password, and code are required' });
-      });
+  describe('setPassword', () => {
+    it('returns 400 when email, password, or code is missing', async () => {
+      const ctx = createCtx({ email: 'user@example.test', password: 'newPassword9' });
+      await authController.setPassword(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Email, password, and code are required' });
+      expect(authService.verifyCodeAndSetPassword).not.toHaveBeenCalled();
     });
 
-    describe('When the password is too short', () => {
-      it('should return 400', async () => {
-        const ctx = createCtx({
-          email: 'user@example.test',
-          password: 'short',
-          code: '123456',
-        });
-
-        await authController.resetPassword(ctx);
-
-        expect(authService.resetPassword).not.toHaveBeenCalled();
-        expect(ctx.status).toBe(400);
-        expect(ctx.body).toEqual({ error: 'Password must be at least 8 characters long' });
-      });
+    it('returns 400 when the password is too short', async () => {
+      const ctx = createCtx({ email: 'user@example.test', password: 'short', code: '123456' });
+      await authController.setPassword(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Password must be at least 8 characters long' });
+      expect(authService.verifyCodeAndSetPassword).not.toHaveBeenCalled();
     });
 
-    describe('When the reset code is invalid', () => {
-      it('should return 400 with the contract error display message', async () => {
-        authService.resetPassword.mockResolvedValue(fail(ContractError.InvalidPasswordResetCode));
-        const ctx = createCtx({
+    it('opens a uow scope, resolves authService, and returns 400 on a domain failure', async () => {
+      authService.verifyCodeAndSetPassword.mockResolvedValue(
+        fail(ContractError.InvalidEmailVerificationCode),
+      );
+      const ctx = createCtx({
+        email: 'user@example.test',
+        password: 'newPassword9',
+        code: '000000',
+        firstName: 'Given',
+        lastName: 'Family',
+      });
+      await authController.setPassword(ctx);
+      expect(uowStart).toHaveBeenCalledTimes(1);
+      expect(authService.verifyCodeAndSetPassword).toHaveBeenCalledWith(
+        expect.objectContaining({
           email: 'user@example.test',
           password: 'newPassword9',
           code: '000000',
-        });
-
-        await authController.resetPassword(ctx);
-
-        expect(authService.resetPassword).toHaveBeenCalledWith(
-          'user@example.test',
-          'newPassword9',
-          '000000',
-        );
-        expect(ctx.status).toBe(400);
-        expect(ctx.body).toEqual({ error: ContractError.InvalidPasswordResetCode.display });
-      });
+          firstName: 'Given',
+          lastName: 'Family',
+        }),
+      );
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: ContractError.InvalidEmailVerificationCode });
     });
 
-    describe('When there are too many attempts', () => {
-      it('should return 429', async () => {
-        authService.resetPassword.mockResolvedValue(fail(ContractError.TooManyAttempts));
-        const ctx = createCtx({
-          email: 'user@example.test',
-          password: 'newPassword9',
-          code: '123456',
-        });
-
-        await authController.resetPassword(ctx);
-
-        expect(ctx.status).toBe(429);
-        expect(ctx.body).toEqual({ error: ContractError.TooManyAttempts.display });
+    it('sets the auth cookie and returns 200 on success', async () => {
+      authService.verifyCodeAndSetPassword.mockResolvedValue(ok({ token: 'session-jwt' }));
+      const ctx = createCtx({
+        email: 'user@example.test',
+        password: 'newPassword9',
+        code: '123456',
       });
+      await authController.setPassword(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({ message: 'Operation completed successfully', email: 'user@example.test' });
+      expect(ctx.cookies.set).toHaveBeenCalledWith(
+        'token',
+        'session-jwt',
+        expect.objectContaining({ httpOnly: true }),
+      );
+    });
+  });
+
+  describe('me', () => {
+    it('returns 401 when there is no authenticated user', () => {
+      const ctx = createCtx({});
+      authController.me(ctx);
+      expect(ctx.status).toBe(401);
+      expect(ctx.body).toEqual({ error: 'Not authenticated' });
     });
 
-    describe('When the reset succeeds', () => {
-      it('should return 200 with a success message', async () => {
-        authService.resetPassword.mockResolvedValue(ok(undefined));
-        const ctx = createCtx({
-          email: 'user@example.test',
-          password: 'newPassword9',
-          code: '123456',
-        });
+    it('returns the sanitized user (no passwordHash) when authenticated', () => {
+      const ctx = createCtx(
+        {},
+        { user: { id: 'u1', email: 'user@example.test', passwordHash: 'secret-hash' } },
+      );
+      authController.me(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({ user: { id: 'u1', email: 'user@example.test' } });
+    });
+  });
 
-        await authController.resetPassword(ctx);
+  describe('publicAccess', () => {
+    it('returns 400 when no public access token is present', () => {
+      const ctx = createCtx({});
+      authController.publicAccess(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ success: false, error: 'A public access token is required' });
+    });
 
-        expect(ctx.status).toBe(200);
-        expect(ctx.body).toEqual({ message: 'Password reset successfully' });
-      });
+    it('returns 200 when a public access id is present on state', () => {
+      const ctx = createCtx({}, { publicAccessId: 'pub-1' });
+      authController.publicAccess(ctx);
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toEqual({ success: true });
     });
   });
 });

@@ -281,7 +281,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         albumId,
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({
-          pageInfo: { limit: 1, offset: 0 },
+          pageInfo: { limit: 2, offset: 0 },
           sortBy: AlbumItemSortBy.createdAt,
           sortDir: SortDir.asc,
         }),
@@ -293,7 +293,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         albumId,
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({
-          pageInfo: { limit: 1, offset: 1 },
+          pageInfo: { limit: 2, offset: 1 },
           sortBy: AlbumItemSortBy.createdAt,
           sortDir: SortDir.asc,
         }),

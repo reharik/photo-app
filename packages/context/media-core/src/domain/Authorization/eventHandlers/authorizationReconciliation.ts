@@ -59,9 +59,6 @@ export const build__AuthorizationReconciliation = ({
         })),
       );
     }
-    console.log(`************grants************`);
-    console.log(grants);
-    console.log(`********END grants************`);
     await Promise.all(pruningPromises);
     await systemGrantRepository.upsertGrants(grants);
   },
