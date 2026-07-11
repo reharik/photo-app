@@ -1,12 +1,21 @@
 APP_NAME := betaname
 ENV_NAME ?= dev
+
+# Per-clone overrides (git-ignored). A secondary working copy drops in a
+# Makefile.local that sets `ENV_NAME := <name>` and points EXTRA_DEV_FILES at a
+# local port-remap compose file — giving it a fully separate stack (distinct
+# COMPOSE_PROJECT_NAME => own containers/network/volumes). Primary has no
+# Makefile.local, so this is a no-op there.
+-include Makefile.local
+
 COMPOSE_PROJECT_NAME := $(APP_NAME)-$(ENV_NAME)
 
 BASE_FILES := -f infra/config/docker-compose/base.yml
 
 DEV_FILES := \
 	-f infra/config/docker-compose/dev.yml \
-	-f docker-compose/docker-compose.dev.yml
+	-f docker-compose/docker-compose.dev.yml \
+	$(EXTRA_DEV_FILES)
 
 define compose_dev
 APP_NAME=$(APP_NAME) \
