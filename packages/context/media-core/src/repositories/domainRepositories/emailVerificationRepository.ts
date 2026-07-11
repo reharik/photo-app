@@ -13,7 +13,6 @@ export type emailVerificationRow = {
 
 export interface EmailVerificationRepository extends RequestScopeLifeCycle {
   getValidVerification: (email: string) => Promise<emailVerificationRow>;
-  bumpValidationAttempts: (id: EntityId) => Promise<number>;
   completeConsumption: (id: EntityId) => Promise<void>;
 }
 
@@ -28,9 +27,6 @@ export const build__EmailVerificationRepository = ({
       .where({ email, consumedAt: null })
       .andWhere('expiresAt', '>', uow.db().fn.now())
       .first<emailVerificationRow>();
-  },
-  bumpValidationAttempts: async (id: string) => {
-    return uow.db()('emailVerification').where({ id }).increment('attemptCount', 1);
   },
   completeConsumption: (id: EntityId) => {
     return uow.db()('emailVerification').where({ id }).update({ consumedAt: uow.db().fn.now() });

@@ -1,52 +1,35 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { ActorId, EntityId } from '../../types/types';
-import { AuditRecord, Entity } from '../Entity';
+import { Entity } from '../Entity';
+import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type AuthorizationProps = {
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
-  grantedToUser?: EntityId;
-  linkToken?: string;
-  operations: Operation[];
-  grantedBy: EntityId;
-  label?: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-} & AuditRecord;
-
-export type AuthorizationRecord = {
-  id: string;
-  mediaItemId?: string;
-  albumId?: string;
-  grantedToUser?: string;
-  linkToken?: string;
-  grantedBy: EntityId;
-  operations: Operation[];
-  label?: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-} & AuditRecord;
-
-export type CreateAuthorizationInput = {
-  operations: Operation[];
-  grantedToUser?: EntityId;
-  grantedBy: EntityId;
-  label?: string;
-  expiresAt?: Date;
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
+export type UserAuthorizationProps = Omit<AuthorizationProps, 'linkToken' | 'grantedToUser'> & {
+  grantedToUser: EntityId;
+  linkToken: undefined;
 };
 
-export class Authorization extends Entity<AuthorizationRecord> {
-  protected props: AuthorizationProps;
+export type UserAuthorizationRecord = Omit<AuthorizationRecord, 'linkToken' | 'grantedToUser'> & {
+  grantedToUser: EntityId;
+  linkToken: undefined;
+};
 
-  private constructor(actorId: ActorId, props: AuthorizationProps, id?: EntityId) {
+export type CreateUserAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
+  grantedToUser: EntityId;
+};
+
+export const isUserAuthRecord = (r: AuthorizationRecord): r is UserAuthorizationRecord =>
+  r.grantedToUser != null && r.linkToken == null;
+
+export class UserAuthorization extends Entity<UserAuthorizationRecord> {
+  protected props: UserAuthorizationProps;
+
+  private constructor(actorId: ActorId, props: UserAuthorizationProps, id?: EntityId) {
     super(id, actorId, 'access_grant');
     this.props = props;
   }
 
-  static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
-    return new Authorization(actorId, {
+  static create(input: CreateUserAuthorizationInput, actorId: ActorId): UserAuthorization {
+    return new UserAuthorization(actorId, {
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: actorId,
@@ -61,21 +44,18 @@ export class Authorization extends Entity<AuthorizationRecord> {
       expiresAt: input.expiresAt,
       mediaItemId: input.mediaItemId,
       albumId: input.albumId,
+      linkToken: undefined,
     });
   }
 
-  static rehydrate(record: AuthorizationRecord): Authorization {
-    const asset = new Authorization(record.createdBy, record, record.id);
+  static rehydrate(record: UserAuthorizationRecord): UserAuthorization {
+    const asset = new UserAuthorization(record.createdBy, record, record.id);
     asset.rehydrateAudit(record);
     return asset;
   }
-  grantedToUser(): EntityId | undefined {
+  grantedToUser(): EntityId {
     return this.props.grantedToUser;
   }
-  linkToken(): string | undefined {
-    return this.props.linkToken;
-  }
-  // This is so we can set the id after creating the public link
 
   operations(): Operation[] {
     return this.props.operations;

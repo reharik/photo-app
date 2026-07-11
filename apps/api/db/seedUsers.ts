@@ -9,6 +9,7 @@ export type SeedUserRow = {
   email: string;
   firstName: string;
   lastName: string;
+  userStatus: string;
 };
 
 /**
@@ -21,24 +22,28 @@ export const SEED_USER_ROWS: SeedUserRow[] = [
     email: 'harik.raif@gmail.com',
     firstName: 'Raif',
     lastName: 'Harik',
+    userStatus: 'ACTIVE',
   },
   {
     id: '11111111-1111-4111-8111-111111111002',
     email: 'bubba.jones@gmail.com',
     firstName: 'Bubba',
     lastName: 'Jones',
+    userStatus: 'ACTIVE',
   },
   {
     id: '11111111-1111-4111-8111-111111111003',
     email: 'tester.one@gmail.com',
     firstName: 'E2e',
     lastName: 'Owner',
+    userStatus: 'ACTIVE',
   },
   {
     id: '11111111-1111-4111-8111-111111111004',
     email: 'two.tester@gmail.com',
     firstName: 'E2e',
     lastName: 'Recipient',
+    userStatus: 'ACTIVE',
   },
 ];
 
@@ -57,6 +62,7 @@ export const ensureSeedUsers = async (knex: Knex): Promise<void> => {
         emailVerified: true,
         createdBy: row.id,
         updatedBy: row.id,
+        userStatus: row.userStatus,
       })
       .onConflict('id')
       .merge({
@@ -65,6 +71,7 @@ export const ensureSeedUsers = async (knex: Knex): Promise<void> => {
         lastName: row.lastName,
         passwordHash,
         emailVerified: true,
+        userStatus: row.userStatus,
         updatedBy: row.id,
       });
   }

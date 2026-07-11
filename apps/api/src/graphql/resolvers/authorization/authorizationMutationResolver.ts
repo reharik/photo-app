@@ -27,7 +27,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
 
       return {
         success: true,
-        authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
+        userIds: result.value.invitedUsers.map((x) => x.id()),
         errors: [],
       };
     }),
@@ -52,7 +52,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       const resultPayload: WriteResult<GrantUserAuthorizationPayload> = {
         success: true,
         value: {
-          authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
+          userIds: result.value.invitedUsers.map((u) => u.id()),
         },
       };
       return writeResultToPayload(resultPayload);

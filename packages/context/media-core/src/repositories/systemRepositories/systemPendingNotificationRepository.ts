@@ -27,8 +27,7 @@ export type PendingNotification = {
   id: string;
   channel: 'email' | 'sms';
   kind: PendingNotificationKind;
-  recipientId?: EntityId;
-  recipientAddress?: string;
+  recipientId: EntityId;
   aggregateType: EntityType;
   aggregateId: EntityId;
   dirtySince: DateTime;
@@ -41,7 +40,6 @@ const pendingNotificationFields = [
   'channel',
   'kind',
   'recipientId',
-  'recipientAddress',
   'aggregateType',
   'aggregateId',
   'dirtySince',
@@ -63,14 +61,7 @@ export const build__SystemPendingNotificationRepository = ({
         aggregateType: upsert.aggregateType.value,
         dirtySince: database.fn.now(),
       })
-      .onConflict([
-        'channel',
-        'kind',
-        'recipientId',
-        'recipientAddress',
-        'aggregateType',
-        'aggregateId',
-      ])
+      .onConflict(['channel', 'kind', 'recipientId', 'aggregateType', 'aggregateId'])
       .merge({ dirtySince: database.fn.now() });
   },
   claimNotificationBatch: (windowSeconds: number) => {

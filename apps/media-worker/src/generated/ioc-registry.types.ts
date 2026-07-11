@@ -46,7 +46,7 @@ export interface IocGeneratedCradle {
       | 'welcome'
       | 'albumActivity'
       | 'passwordReset'
-      | 'forgotPassword'
+      | 'emailVerification'
     >
   >;
   fastSweepNotificationTask: WorkerTask;
@@ -73,7 +73,7 @@ export type FastSweepNotificationStrategies = ReadonlyArray<
     | 'welcome'
     | 'albumActivity'
     | 'passwordReset'
-    | 'forgotPassword'
+    | 'emailVerification'
   >
 >;
 

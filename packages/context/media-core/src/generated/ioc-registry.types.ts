@@ -6,17 +6,16 @@ import type { Knex } from 'knex';
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { MediaStorageConfig } from '../application/media/s3MediaStorage.js';
 import type { ResolveActivity } from '../domain/Album/eventHandlers/resolveActivity.js';
+import type { ResolveAuthorizations } from '../domain/Authorization/eventHandlers/resolveAuthorizations.js';
 import type { DomainEventHandler, EventPublisher } from '../domain/domainEvents/eventPublisher.js';
 import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
 import type { EmailVerificationRepository } from '../repositories/domainRepositories/emailVerificationRepository.js';
-import type { GrantRepository } from '../repositories/domainRepositories/grantRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
 import type { ShareContactRepository } from '../repositories/domainRepositories/shareContactRepository.js';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository.js';
-import type { GrantSync } from '../repositories/grantSync.js';
 import type { MediaDeletionJobRepository } from '../repositories/mediaDeletionJob/mediaDeletionJobRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
 import type { ShareContactReadRepository } from '../repositories/readRepositories/shareContactReadRepository.js';
@@ -34,8 +33,11 @@ import type {
   UserReadRepository,
 } from '../repositories/readRepositories/types.js';
 import type { UnseenActivityRepository } from '../repositories/readRepositories/unseenActivityRepository.js';
+import type { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository.js';
 import type { SystemAlbumRepository } from '../repositories/systemRepositories/systemAlbumRepository.js';
 import type { SystemAuthorizationRepository } from '../repositories/systemRepositories/systemAuthorizationRepository.js';
+import type { SystemEmailVerificationRepository } from '../repositories/systemRepositories/systemEmailVerificationRepository.js';
+import type { SystemGrantRepository } from '../repositories/systemRepositories/systemGrantRepository.js';
 import type { SystemPendingNotificationRepository } from '../repositories/systemRepositories/systemPendingNotificationRepository.js';
 import type { SystemUnseenActivityRepository } from '../repositories/systemRepositories/systemUnseenActivityRepository.js';
 import type { SystemUserRepository } from '../repositories/systemRepositories/systemUserRepository.js';
@@ -92,6 +94,7 @@ export interface IocGeneratedCradle {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   authorizationReadRepository: AuthorizationReadRepository;
+  authorizationReconciliation: DomainEventHandler;
   commentReadRepository: CommentReadRepository;
   commentReadService: CommentReadService;
   commentRepository: CommentRepository;
@@ -111,7 +114,11 @@ export interface IocGeneratedCradle {
       | 'mediaItemAddedToAlbum'
       | 'albumSharedWithUser'
       | 'mediaItemsSharedWithUser'
-      | 'albumSharedWithNonUser'
+      | 'albumSharedWithPublicLink'
+      | 'authorizationExpired'
+      | 'authorizationRevoked'
+      | 'mediaItemRemovedFromAlbum'
+      | 'pendingUserActivated'
     >
   >;
   editComment: EditComment;
@@ -121,8 +128,6 @@ export interface IocGeneratedCradle {
   finalizeMediaItemUpload: FinalizeMediaItemUpload;
   grantAuthorizationForMediaItems: GrantAuthorizationForMediaItems;
   grantReadRepository: GrantReadRepository;
-  grantRepository: GrantRepository;
-  grantSync: GrantSync;
   grantUserAuthorizationForAlbum: GrantUserAuthorizationForAlbum;
   markActivitySeen: MarkActivitySeen;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
@@ -155,12 +160,16 @@ export interface IocGeneratedCradle {
   };
   reorderAlbumItems: ReorderAlbumItems;
   resolveActivity: ResolveActivity;
+  resolveAuthorizations: ResolveAuthorizations;
   setCoverMedia: SetCoverMedia;
   shareContactReadRepository: ShareContactReadRepository;
   shareContactRepository: ShareContactRepository;
   sharedWithMeReadRepository: SharedWithMeReadRepository;
+  systemAlbumItemRepository: SystemAlbumItemRepository;
   systemAlbumRepository: SystemAlbumRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
+  systemEmailVerificationRepository: SystemEmailVerificationRepository;
+  systemGrantRepository: SystemGrantRepository;
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
   systemUnseenActivityRepository: SystemUnseenActivityRepository;
   systemUserRepository: SystemUserRepository;
@@ -221,7 +230,11 @@ export type DomainEventHandlers = ReadonlyArray<
     | 'mediaItemAddedToAlbum'
     | 'albumSharedWithUser'
     | 'mediaItemsSharedWithUser'
-    | 'albumSharedWithNonUser'
+    | 'albumSharedWithPublicLink'
+    | 'authorizationExpired'
+    | 'authorizationRevoked'
+    | 'mediaItemRemovedFromAlbum'
+    | 'pendingUserActivated'
   >
 >;
 

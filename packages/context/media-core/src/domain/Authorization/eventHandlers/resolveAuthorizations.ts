@@ -1,32 +1,34 @@
+import { assertNever, match } from '@packages/contracts';
 import { groupByMapping, indexByUnique } from '@packages/infrastructure';
 import {
-  AuthorizationRow,
+  PublicLinkAuthorizationRow,
   SystemAuthorizationRepository,
   SystemUserRepository,
+  UserAuthorizationRow,
 } from '../../../repositories';
 import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
 import { EntityId } from '../../../types';
 import { DomainEvent } from '../../domainEvents/DomainEvent';
 
-export const assertNever = (x: never): never => {
-  throw new Error(`Unexpected object: ${JSON.stringify(x)}`);
-};
-
 export type AuthorizationEvent = Extract<
   DomainEvent,
   {
     kind:
-      | 'mediaItemAddedToAlbum'
+      | 'albumSharedWithPublicLink'
       | 'albumSharedWithUser'
-      | 'mediaItemsSharedWithUser'
-      | 'mediaItemRemovedFromAlbum'
-      | 'pendingUserActivated'
+      | 'authorizationExpired'
       | 'authorizationRevoked'
-      | 'authorizationExpired';
+      | 'mediaItemAddedToAlbum'
+      | 'mediaItemRemovedFromAlbum'
+      | 'mediaItemsSharedWithUser'
+      | 'pendingUserActivated';
   }
 >;
 
-type AuthorizationEntry = { authorization: AuthorizationRow; mediaItemIds: EntityId[] };
+type AuthorizationEntry = {
+  authorization: PublicLinkAuthorizationRow | UserAuthorizationRow;
+  mediaItemIds: EntityId[];
+};
 type AuthorizationMap = Map<string, AuthorizationEntry>;
 
 export type ResolvedAuthorizations = { authorizationMap: AuthorizationMap };
@@ -47,21 +49,34 @@ export const build__ResolveAuthorizations = ({
   systemAuthorizationRepository,
   systemUserRepository,
 }: ResolveAuthorizationsDeps): ResolveAuthorizations => {
-  const buildMap = (
-    authorizations: AuthorizationRow[],
+  const getMediaItemIds = (
+    authorization: PublicLinkAuthorizationRow | UserAuthorizationRow,
     itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
-  ): AuthorizationMap =>
-    new Map(
-      authorizations
-        .filter((a) => a.grantedToUser)
-        .map((authorization) => [
-          authorization.id,
-          {
-            authorization,
-            mediaItemIds: itemsByAlbum.get(authorization.albumId)?.map((x) => x.mediaItemId) ?? [],
-          },
-        ]),
+  ): EntityId[] => {
+    return match(
+      authorization.target,
+      {
+        album: (t, m) => m.get(t.albumId)?.map((x) => x.mediaItemId) ?? [],
+        mediaItem: (t) => [t.mediaItemId],
+      },
+      itemsByAlbum,
     );
+  };
+
+  const buildMap = (
+    authorizations: (PublicLinkAuthorizationRow | UserAuthorizationRow)[],
+    itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
+  ): AuthorizationMap => {
+    return new Map(
+      authorizations.map((authorization) => [
+        authorization.id,
+        {
+          authorization,
+          mediaItemIds: getMediaItemIds(authorization, itemsByAlbum),
+        },
+      ]),
+    );
+  };
   const isActive = async (userId: EntityId): Promise<boolean> =>
     (await systemUserRepository.getActiveUsers([userId])).length > 0;
 
@@ -69,71 +84,89 @@ export const build__ResolveAuthorizations = ({
     switch (event.kind) {
       case 'mediaItemRemovedFromAlbum':
       case 'mediaItemAddedToAlbum': {
-        const auths = await systemAuthorizationRepository.getAuthorizationsByAlbumId([
-          event.albumId,
-        ]);
+        const { publicLinkAuthorizations, userAuthorizations } =
+          await systemAuthorizationRepository.getAuthorizationsByAlbumId([event.albumId]);
+
         const activeUserMap = indexByUnique(
-          await systemUserRepository.getActiveUsers(auths.map((a) => a.grantedToUser)),
+          await systemUserRepository.getActiveUsers(userAuthorizations.map((a) => a.grantedToUser)),
         );
-        const active = auths.filter((a) => activeUserMap.has(a.grantedToUser)); // multi-user filter
+
+        const activeUserAuths = userAuthorizations.filter((a) =>
+          activeUserMap.has(a.grantedToUser),
+        ); // multi-user filter
         const itemsByAlbum = groupByMapping(
           await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
           (x) => x.albumId,
         );
-        return { authorizationMap: buildMap(active, itemsByAlbum) };
+        return {
+          authorizationMap: buildMap(
+            [...activeUserAuths, ...publicLinkAuthorizations],
+            itemsByAlbum,
+          ),
+        };
       }
 
       case 'albumSharedWithUser': {
         if (!(await isActive(event.userId))) {
           return empty();
         }
-        const auths = await systemAuthorizationRepository.getAuthorizationsByIds([
+        const { userAuthorizations } = await systemAuthorizationRepository.getAuthorizationsByIds([
           event.authorizationId,
         ]);
         const itemsByAlbum = groupByMapping(
           await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
           (x) => x.albumId,
         );
-        return { authorizationMap: buildMap(auths, itemsByAlbum) };
+        return { authorizationMap: buildMap(userAuthorizations, itemsByAlbum) };
       }
 
-      case 'pendingUserActivated': {
-        if (!(await isActive(event.userId))) {
-          return empty();
-        }
-        const auths = await systemAuthorizationRepository.getAuthorizationsByIds(
-          event.authorizationIds,
-        );
+      case 'albumSharedWithPublicLink': {
+        const { publicLinkAuthorizations } =
+          await systemAuthorizationRepository.getAuthorizationsByIds([event.authorizationId]);
         const itemsByAlbum = groupByMapping(
-          await systemAlbumItemRepository.getItemsByAlbumIds(auths.map((a) => a.albumId)),
+          await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
           (x) => x.albumId,
         );
-        return { authorizationMap: buildMap(auths, itemsByAlbum) };
+        return { authorizationMap: buildMap(publicLinkAuthorizations, itemsByAlbum) };
       }
 
       case 'mediaItemsSharedWithUser': {
         if (!(await isActive(event.userId))) {
           return empty();
         }
-        const auths = await systemAuthorizationRepository.getAuthorizationsByIds(
+        const { userAuthorizations } = await systemAuthorizationRepository.getAuthorizationsByIds(
           event.authorizationIds,
         );
         return {
-          authorizationMap: new Map(
-            auths.map((a) => [a.id, { authorization: a, mediaItemIds: event.mediaItemIds }]),
-          ),
+          authorizationMap: buildMap(userAuthorizations, new Map()),
         };
+      }
+
+      case 'pendingUserActivated': {
+        if (!(await isActive(event.userId))) {
+          return empty();
+        }
+        const { userAuthorizations } = await systemAuthorizationRepository.getAuthorizationsByIds(
+          event.authorizationIds,
+        );
+        const itemsByAlbum = groupByMapping(
+          await systemAlbumItemRepository.getItemsByAlbumIds(
+            userAuthorizations.flatMap((a) =>
+              a.target.kind === 'album' ? [a.target.albumId] : [],
+            ),
+          ),
+          (x) => x.albumId,
+        );
+        return { authorizationMap: buildMap(userAuthorizations, itemsByAlbum) };
       }
 
       case 'authorizationExpired':
       case 'authorizationRevoked': {
-        const auths = await systemAuthorizationRepository.getAuthorizationsByIds([
-          event.authorizationId,
-        ]);
+        const { userAuthorizations, publicLinkAuthorizations } =
+          await systemAuthorizationRepository.getAuthorizationsByIds([event.authorizationId]);
+        const all = [...userAuthorizations, ...publicLinkAuthorizations];
         return {
-          authorizationMap: new Map(
-            auths.map((a) => [a.id, { authorization: a, mediaItemIds: [] }]),
-          ),
+          authorizationMap: new Map(all.map((a) => [a.id, { authorization: a, mediaItemIds: [] }])),
         };
       }
       default: {
@@ -142,19 +175,3 @@ export const build__ResolveAuthorizations = ({
     }
   };
 };
-
-/*
-definite trigger list:
-
-albumShared (active or pending grantee)
-mediaItemShared (active or pending grantee)
-mediaItemAddedToAlbum
-mediaItemRemovedFromAlbum
-pendingUserActivated
-authorizationRevoked
-
-
-Conditional / needs-a-decision:
-7. authorizationExpired — no natural event; sweep or lazy?
-8. authorizationOperationsChanged — only if operations become editable
-*/

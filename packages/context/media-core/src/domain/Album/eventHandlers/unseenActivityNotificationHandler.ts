@@ -1,3 +1,4 @@
+import { UserStatus } from '@packages/contracts';
 import { SystemUnseenActivityRepository } from '../../../repositories/systemRepositories/systemUnseenActivityRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { UNSEEN_KIND_BY_EVENT } from './mapEventKindToActionKind';
@@ -24,16 +25,19 @@ export const build__UnseenActivityNotificationHandler = ({
   processor: async (event) => {
     const { recipients, targetType, targetId } = await resolveActivity(event);
     const activityKind = UNSEEN_KIND_BY_EVENT[event.kind];
+
     await Promise.all(
-      recipients.map((viewerId) =>
-        systemUnseenActivityRepository.upsertActivityRow({
-          id: crypto.randomUUID(),
-          viewerId,
-          targetType,
-          targetId,
-          activityKind,
-        }),
-      ),
+      recipients
+        .filter((x) => x.userStatus.equals(UserStatus.active))
+        .map((recipient) =>
+          systemUnseenActivityRepository.upsertActivityRow({
+            id: crypto.randomUUID(),
+            viewerId: recipient.id,
+            targetType,
+            targetId,
+            activityKind,
+          }),
+        ),
     );
   },
 });

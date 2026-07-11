@@ -51,6 +51,11 @@ type _InfrastructureExternalsPick = Pick<AppCradle, keyof InfrastructureExternal
 type _Infrastructure_config =
   _InfrastructureExternalsPick['config'] extends InfrastructureExternals['config'] ? true : false;
 type _Infrastructure_configAssert = _IocExpect<_Infrastructure_config>;
+type _Infrastructure_database =
+  _InfrastructureExternalsPick['database'] extends InfrastructureExternals['database']
+    ? true
+    : false;
+type _Infrastructure_databaseAssert = _IocExpect<_Infrastructure_database>;
 // If any assertion below is `false`, run `ioc validate` for a detailed per-key explanation.
 type _NotificationsExternalsPick = Pick<AppCradle, keyof NotificationsExternals>;
 type _Notifications_config =

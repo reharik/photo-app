@@ -19,9 +19,8 @@ export interface AlbumSharedWithUser extends DomainEventBase {
   authorizationId: EntityId;
 }
 
-export interface AlbumSharedWithNonUser extends DomainEventBase {
-  kind: 'albumSharedWithNonUser';
-  recipientAddress: string;
-  albumId: string;
-  token: string;
+export interface AlbumSharedWithPublicLink extends DomainEventBase {
+  kind: 'albumSharedWithPublicLink';
+  albumId: EntityId;
+  authorizationId: EntityId;
 }

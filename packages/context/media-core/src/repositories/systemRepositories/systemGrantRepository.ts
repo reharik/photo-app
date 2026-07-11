@@ -11,12 +11,11 @@ export type SystemGrantRepositoryDeps = {
 };
 
 export type UpsertGrantInput = {
+  id: EntityId;
   accessGrantId: EntityId;
   mediaItemId: EntityId;
-  grantedToUser: EntityId;
+  grantedToUser?: EntityId;
   operations: string[];
-  createdBy: EntityId;
-  updatedBy: EntityId;
 };
 
 export const build__SystemGrantRepository = ({
@@ -28,9 +27,10 @@ export const build__SystemGrantRepository = ({
     return del.delete(); // empty desired → deletes ALL this auth's grants (correct)
   },
   upsertGrants: async (input: UpsertGrantInput[]) => {
+    if (input.length === 0) return;
     await database('grant')
       .insert(input)
       .onConflict(['accessGrantId', 'mediaItemId'])
-      .merge(['operations', 'updatedBy']);
+      .merge(['operations']);
   },
 });

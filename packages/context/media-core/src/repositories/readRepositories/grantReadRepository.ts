@@ -16,10 +16,9 @@ export const build__GrantReadRepository = ({
         .where('granted_to_user', input.viewerId)
         .first();
     }
-    return database('shareLink')
-      .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')
+    return database('accessGrant')
       .join('grant', 'accessGrant.id', 'grant.accessGrantId')
-      .where('shareLink.linkToken', input.token)
+      .where('accessGrant.linkToken', input.token)
       .where('grant.mediaItemId', input.mediaItemId)
       .first();
   },

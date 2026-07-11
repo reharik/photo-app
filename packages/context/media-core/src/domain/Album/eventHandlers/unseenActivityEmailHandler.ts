@@ -1,3 +1,4 @@
+import { UserStatus } from '@packages/contracts';
 import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { NOTIFICATION_KIND_BY_EVENT } from './mapEventKindToActionKind';
@@ -12,31 +13,26 @@ export const build__UnseenActivityEmailHandler = ({
   systemPendingNotificationRepository,
   resolveActivity,
 }: UnseenActivityEmailHandlerDeps): DomainEventHandler<
-  | 'mediaItemAddedToAlbum'
-  | 'albumSharedWithUser'
-  | 'mediaItemsSharedWithUser'
-  | 'albumSharedWithNonUser'
+  'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
 > => ({
   name: 'UnseenActivityEmail',
-  handles: [
-    'mediaItemAddedToAlbum',
-    'albumSharedWithUser',
-    'mediaItemsSharedWithUser',
-    'albumSharedWithNonUser',
-  ],
+  handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
     const { recipients, targetType, targetId, token } = await resolveActivity(event);
     const kind = NOTIFICATION_KIND_BY_EVENT[event.kind];
+    let filteredRecipients = recipients;
+    if (event.kind === 'mediaItemAddedToAlbum') {
+      filteredRecipients = recipients.filter((x) => x.userStatus.equals(UserStatus.active));
+    }
     await Promise.all(
-      recipients.map((recipientId) => {
-        const identifier =
-          'recipientAddress' in event ? { recipientAddress: recipientId } : { recipientId };
+      filteredRecipients.map((recipient) => {
         const tokenValue = token ? { data: { token } } : {};
         return systemPendingNotificationRepository.upsertRecipientRow({
           id: crypto.randomUUID(),
           channel: 'email',
           kind,
-          ...identifier,
+          // this table has the recipient email on it and that probably needs to go.
+          recipientId: recipient.id,
           aggregateType: targetType,
           aggregateId: targetId,
           attempts: 0,

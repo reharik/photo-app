@@ -1,6 +1,5 @@
 import { Operation } from '@packages/contracts';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
-import { PublicLinkChildRecords, PublicLinkRecord } from '../../domain/PublicLink/PublicLink';
 
 export type PublicLinkWithAuthorizationRaw = {
   id: string;
@@ -75,27 +74,5 @@ export const authorizationRawToAuthorizationRecord = (
     updatedAt: row.authorizationUpdatedAt,
     createdBy: row.authorizationCreatedBy,
     updatedBy: row.authorizationUpdatedBy,
-  };
-};
-
-export const publicLinkWithAuthorizationRawToPublicLink = (
-  row: PublicLinkWithAuthorizationRaw,
-): { publicLink: PublicLinkRecord; publicLinkChildRecords: PublicLinkChildRecords } => {
-  return {
-    publicLink: {
-      id: row.id,
-      albumId: row.albumId,
-      linkToken: row.linkToken,
-      grantedBy: row.grantedBy,
-      expiresAt: row.expiresAt,
-      revokedAt: row.revokedAt,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      createdBy: row.createdBy,
-      updatedBy: row.updatedBy,
-    },
-    publicLinkChildRecords: {
-      authorization: authorizationRawToAuthorizationRecord(row),
-    },
   };
 };

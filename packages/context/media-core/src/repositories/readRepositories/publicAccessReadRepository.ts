@@ -9,11 +9,15 @@ export const build__PublicAccessReadRepository = ({
   database,
 }: ReadRepositoryDeps): PublicAccessReadRepository => ({
   getPublicAccessIdByToken: async (token: string) => {
-    const publicAccess = await database<PublicAccessIdRow>('shareLink')
-      .where('shareLink.linkToken', token)
-      .whereNull('shareLink.revokedAt')
+    const publicAccess = await database<PublicAccessIdRow>('accessGrant')
+      .where('accessGrant.linkToken', token)
+      .whereNull('accessGrant.revokedAt')
       .where((b) => {
-        b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
+        b.whereNull('accessGrant.expiresAt').orWhere(
+          'accessGrant.expiresAt',
+          '>',
+          database.fn.now(),
+        );
       })
       .first<PublicAccessIdRow>('id as publicAccessId');
     if (!publicAccess) {

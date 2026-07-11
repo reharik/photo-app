@@ -5,6 +5,7 @@ import {
   UpsertGrantInput,
 } from '../../../repositories/systemRepositories/systemGrantRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
+import { isUserAuthRecord } from '../UserAuthorization';
 import { ResolveAuthorizations } from './resolveAuthorizations';
 
 type AuthorizationReconciliationDeps = {
@@ -18,45 +19,49 @@ export const build__AuthorizationReconciliation = ({
   systemGrantRepository,
   resolveAuthorizations,
 }: AuthorizationReconciliationDeps): DomainEventHandler<
-  | 'mediaItemAddedToAlbum'
+  | 'albumSharedWithPublicLink'
   | 'albumSharedWithUser'
-  | 'mediaItemsSharedWithUser'
-  | 'mediaItemRemovedFromAlbum'
-  | 'pendingUserActivated'
-  | 'authorizationRevoked'
   | 'authorizationExpired'
+  | 'authorizationRevoked'
+  | 'mediaItemAddedToAlbum'
+  | 'mediaItemRemovedFromAlbum'
+  | 'mediaItemsSharedWithUser'
+  | 'pendingUserActivated'
 > => ({
   name: 'AuthorizationReconciliation',
   handles: [
-    'mediaItemAddedToAlbum',
+    'albumSharedWithPublicLink',
     'albumSharedWithUser',
-    'mediaItemsSharedWithUser',
-    'mediaItemRemovedFromAlbum',
-    'pendingUserActivated',
-    'authorizationRevoked',
     'authorizationExpired',
+    'authorizationRevoked',
+    'mediaItemAddedToAlbum',
+    'mediaItemRemovedFromAlbum',
+    'mediaItemsSharedWithUser',
+    'pendingUserActivated',
   ],
   processor: async (event) => {
     const resolved = await resolveAuthorizations(event);
     const pruningPromises = [];
     const grants: UpsertGrantInput[] = [];
     for (const { authorization, mediaItemIds } of resolved.authorizationMap.values()) {
+      const isUserAuth = isUserAuthRecord(authorization);
       pruningPromises.push(
         systemGrantRepository.pruneGrantsForAuthorization(authorization.id, mediaItemIds),
       );
 
       grants.push(
         ...mediaItemIds.map((mediaItemId) => ({
+          id: crypto.randomUUID(),
           accessGrantId: authorization.id,
           mediaItemId: mediaItemId,
-          // this is guaranteed by the resolver
-          grantedToUser: authorization.grantedToUser!,
+          grantedToUser: isUserAuth ? authorization.grantedToUser : undefined,
           operations: authorization.operations.map((x) => x.value),
-          createdBy: event.actorId,
-          updatedBy: event.actorId,
         })),
       );
     }
+    console.log(`************grants************`);
+    console.log(grants);
+    console.log(`********END grants************`);
     await Promise.all(pruningPromises);
     await systemGrantRepository.upsertGrants(grants);
   },

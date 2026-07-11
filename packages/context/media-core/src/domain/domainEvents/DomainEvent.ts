@@ -1,6 +1,6 @@
 import { EntityId } from '../../types';
 import {
-  AlbumSharedWithNonUser,
+  AlbumSharedWithPublicLink,
   AlbumSharedWithUser,
   MediaItemAddedToAlbum,
   MediaItemRemovedFromAlbum,
@@ -27,7 +27,7 @@ export type DomainEvent = DomainEventBase &
     | MediaItemRemovedFromAlbum
     | AlbumSharedWithUser
     | MediaItemsSharedWithUser
-    | AlbumSharedWithNonUser
+    | AlbumSharedWithPublicLink
     | AuthorizationExpired
     | AuthorizationRevoked
     | PendingUserActivated

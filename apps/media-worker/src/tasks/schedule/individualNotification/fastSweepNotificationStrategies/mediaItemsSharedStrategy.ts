@@ -17,9 +17,6 @@ export const build__MediaItemsSharedStrategy = ({
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'itemShareInvite'>[]> => {
     return rows.map((row) => {
-      if (!row.recipientId) {
-        return { row, kind: 'skipped', reason: 'no recipient id' };
-      }
       const recipientEmail = userMap.get(row.recipientId)?.email;
       if (!recipientEmail) {
         return { row, kind: 'skipped', reason: 'no recipient email' };

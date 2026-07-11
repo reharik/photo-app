@@ -1,86 +1,52 @@
-import { ContractError } from '@packages/contracts';
-import {
-  Album,
-  AlbumSharedWithNonUser,
-  Authorization,
-  MediaItem,
-  MediaItemsSharedWithUser,
-  User,
-} from '../../../domain';
+import { ContractError, notEmpty } from '@packages/contracts';
+import { Album, MediaItem, MediaItemsSharedWithUser, PendingUser, User } from '../../../domain';
+import { UserAuthorization } from '../../../domain/Authorization/UserAuthorization';
+import { ShareContactRepository } from '../../../repositories';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
+import { EntityId } from '../../../types';
 import {} from '../mediaItem/writeMediaItem.types';
-import {
-  GrantAuthorizationInterface,
-  GrantUserAuthorizationCommand,
-  InviteUsersForMediaItemsResult,
-} from './grantTypes';
+import { GrantUserAuthorizationCommand, InviteUsersForMediaItemsResult } from './grantTypes';
 
-export const segregateUsers = async (
+export const getOrCreateAllUsers = async (
   grantedToHandles: string[],
   userRepository: UserRepository,
+  actorId: EntityId,
 ) => {
-  const existing: User[] = [];
-  const nonExisting: string[] = [];
-  for (const handle of grantedToHandles) {
-    const user = await userRepository.getByHandle(handle);
-    if (user) {
-      existing.push(user);
-    } else {
-      nonExisting.push(handle);
-    }
-  }
-  return { existing, nonExisting };
+  const users = await userRepository.getPendingAndActiveUsersByHandle(grantedToHandles);
+
+  const foundHandles = new Set(users.map((u) => u.email())); // whatever the handle field is
+  const newPendingUsers = grantedToHandles
+    .filter((h) => !foundHandles.has(h))
+    .map((x) => PendingUser.create({ email: x, firstName: '', lastName: '' }, actorId));
+  await Promise.all(newPendingUsers.map((x) => userRepository.save(x)));
+  return [...users, ...newPendingUsers];
 };
 
-export const inviteNonUsers = (
-  nonExisting: string[],
-  album: Album,
-  input: GrantUserAuthorizationCommand,
+export const saveNewShareContacts = async (
+  users: (User | PendingUser)[],
   granter: User,
-): {
-  authorizations: Authorization[];
-  serviceEvents: AlbumSharedWithNonUser[];
-  publicLinkFailure?: { handles: string[]; error: ContractError }; // branch-level
-} => {
-  if (nonExisting.length === 0) {
-    return { authorizations: [], serviceEvents: [] };
-  }
-  const linkResult = album.grantPublicLink(input.viewerId, input.expiresAt, input.operations);
-  if (!linkResult.success) {
-    return {
-      authorizations: [],
-      serviceEvents: [],
-      publicLinkFailure: { handles: nonExisting, error: linkResult.error },
-    };
-  }
-  return {
-    authorizations: [linkResult.value.authorization()],
-    serviceEvents: nonExisting.map((handle) => ({
-      kind: 'albumSharedWithNonUser',
-      recipientAddress: handle,
-      albumId: album.id(),
-      occurredAt: new Date(),
-      token: linkResult.value.linkToken(),
-      actorId: granter.id(),
-    })),
-  };
+  shareContactRepository: ShareContactRepository,
+) => {
+  const newShareContactPromises = users.flatMap((invitee) => [
+    shareContactRepository.upsertContact(invitee.email(), granter.id(), invitee.id()),
+    shareContactRepository.upsertContact(granter.handle(), invitee.id(), granter.id()),
+  ]);
+  await Promise.all(newShareContactPromises);
 };
 
 export const inviteUsers = (
-  existing: User[],
-  entity: GrantAuthorizationInterface,
+  users: (User | PendingUser)[],
+  album: Album,
   input: GrantUserAuthorizationCommand,
 ): {
-  authorizations: Authorization[];
-  errors: { user: User; error: ContractError }[];
-  addedInvitees: User[];
+  errors: { user: User | PendingUser; error: ContractError }[];
+  invitedUsers: (User | PendingUser)[];
 } => {
-  const authorizations: Authorization[] = [];
-  const errors: { user: User; error: ContractError }[] = [];
-  const addedInvitees: User[] = [];
+  const errors: { user: User | PendingUser; error: ContractError }[] = [];
+  const invitedUsers: (User | PendingUser)[] = [];
 
-  for (const user of existing) {
-    const result = entity.grantAuthorization(
+  for (const user of users) {
+    const result = album.grantAuthorization(
       input.operations,
       input.viewerId,
       user.id(),
@@ -88,13 +54,12 @@ export const inviteUsers = (
       input.expiresAt,
     );
     if (result.success) {
-      addedInvitees.push(user);
-      authorizations.push(result.value.authorization);
+      invitedUsers.push(user);
     } else {
       errors.push({ user, error: result.error });
     }
   }
-  return { authorizations, errors, addedInvitees };
+  return { errors, invitedUsers };
 };
 
 export const inviteUsersForMediaItems = (
@@ -102,20 +67,16 @@ export const inviteUsersForMediaItems = (
   mediaItems: MediaItem[],
   input: GrantUserAuthorizationCommand,
 ): InviteUsersForMediaItemsResult => {
-  const grants: { mediaItem: MediaItem; authorization: Authorization }[] = [];
   const errors: { user: User; error: ContractError }[] = [];
   const errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[] = [];
   const serviceEvents: MediaItemsSharedWithUser[] = [];
-  const addedInvitees: User[] = [];
+  const authorizations: UserAuthorization[] = [];
 
   for (const user of existing) {
     // ← email/invitee axis (outer, once per user)
-    let granted = false;
-    let firstError: ContractError | undefined;
-    const mediaItemIds = [];
-    const authorizationIds = [];
+    const userAuthz: UserAuthorization[] = [];
+    const userErrors = [];
     for (const mediaItem of mediaItems) {
-      mediaItemIds.push(mediaItem.id());
       // ← authorization axis (inner, N×M)
       const result = mediaItem.grantAuthorization(
         input.operations,
@@ -125,29 +86,29 @@ export const inviteUsersForMediaItems = (
         input.expiresAt,
       );
       if (result.success) {
-        grants.push({ mediaItem, authorization: result.value.authorization });
-        authorizationIds.push(result.value.authorization.id());
-        granted = true;
+        // grants.push({ mediaItem, authorization: result.value.authorization });
+        userAuthz.push(result.value.authorization);
       } else {
-        errorDetail.push({ user, mediaItem, error: result.error });
-        firstError ??= result.error;
+        userErrors.push({ user, mediaItem, error: result.error });
       }
     }
 
-    if (granted) {
-      addedInvitees.push(user);
+    if (userAuthz.length > 0) {
+      authorizations.push(...userAuthz);
       serviceEvents.push({
         kind: 'mediaItemsSharedWithUser',
         userId: user.id(),
-        mediaItemIds,
+        mediaItemIds: userAuthz.map((x) => x.mediaItemId()).filter(notEmpty),
         occurredAt: new Date(),
         actorId: input.viewerId,
-        authorizationIds,
+        authorizationIds: userAuthz.map((x) => x.id()),
       });
-    } else if (firstError) {
-      errors.push({ user, error: firstError }); // zero successes → surfaced; partial → log only
+    }
+    if (userErrors.length > 0) {
+      errors.push({ user, error: userErrors[0].error }); // zero successes → surfaced; partial → log only
+      errorDetail.push(...userErrors);
     }
   }
 
-  return { grants, errors, errorDetail, serviceEvents, addedInvitees };
+  return { errors, errorDetail, serviceEvents, authorizations };
 };

@@ -1,6 +1,7 @@
-import { Operation, UserStatus } from '@packages/contracts';
+import { notEmpty, Operation, UserStatus } from '@packages/contracts';
+import { groupByMapping } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { AuthorizationRecord } from '../../domain';
+import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
 import { PendingUser } from '../../domain/User/PendingUser';
 import { UserRecord } from '../../domain/User/types';
 import { User } from '../../domain/User/User';
@@ -13,6 +14,7 @@ export interface UserRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<User | undefined>;
   getByHandle: (handle: string) => Promise<User | undefined>;
   getUserByEmail: (email: string) => Promise<User | PendingUser | undefined>;
+  getPendingAndActiveUsersByHandle: (handles: string[]) => Promise<(User | PendingUser)[]>;
   save: (user: User | PendingUser) => Promise<void>;
 }
 
@@ -40,6 +42,38 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     return User.rehydrate(userRow);
   };
 
+  const getPendingAndActiveUsersByHandle = async (
+    handles: string[],
+  ): Promise<(User | PendingUser)[]> => {
+    const users = await withEnumRevival(
+      uow.db()<UserRecord>('user').whereIn('email', handles),
+      { userStatus: UserStatus },
+      { strict: true },
+    );
+
+    const pendingIds = users
+      .filter((x) => x.userStatus.equals(UserStatus.pending))
+      .map((x) => x.id);
+
+    const authorizationRows = await withEnumRevival(
+      uow
+        .db()<UserAuthorizationRecord>('access_grant')
+        .whereIn('grantedToUser', pendingIds)
+        .orderBy('createdAt', 'asc'),
+      { operation: Operation },
+      { strict: true },
+    );
+    const authzMap = groupByMapping(authorizationRows, (x) => x.grantedToUser);
+
+    return users
+      .filter(notEmpty)
+      .map((x) =>
+        x.userStatus.equals(UserStatus.active)
+          ? User.rehydrate(x)
+          : PendingUser.rehydrate(x, { authorizations: authzMap.get(x.id) ?? [] }),
+      );
+  };
+
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email }).first<UserRecord>(),
@@ -55,7 +89,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     }
     const authorizationRows = await withEnumRevival(
       uow
-        .db()<AuthorizationRecord>('access_grant')
+        .db()<UserAuthorizationRecord>('access_grant')
         .where({ grantedToUser: userRow.id })
         .orderBy('createdAt', 'asc'),
       { operation: Operation },
@@ -72,6 +106,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     getById,
     getByHandle,
     getUserByEmail,
+    getPendingAndActiveUsersByHandle,
     save,
   };
 };

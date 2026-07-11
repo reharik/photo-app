@@ -19,7 +19,7 @@ export const build__Router = ({
   router.post('/login', authController.login);
   router.post('/logout', authController.logout);
   router.post('/email-verification', authController.emailVerification);
-  router.post('/setPassword', authController.setPassword);
+  router.post('/set-password', authController.setPassword);
   router.post('/publicAccess', tokenHandshakeMiddleware, authController.publicAccess);
 
   // Protected routes

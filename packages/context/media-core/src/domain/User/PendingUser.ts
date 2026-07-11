@@ -1,7 +1,7 @@
 import { ContractError, fail, ok, UserStatus, WriteResult } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
+import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
 import { CreateUserInput, UserRecord } from './types';
 
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };
@@ -15,14 +15,14 @@ export type PendingUserProps = {
   userStatus: UserStatus;
 };
 export type PendingUserChildRecords = {
-  authorizations: AuthorizationRecord[];
+  authorizations: UserAuthorizationRecord[];
 };
 
 export class PendingUser extends AggregateRoot<UserRecord> {
   protected props: PendingUserProps;
   public readonly kind = 'pending' as const;
 
-  #authorizations: Authorization[] = [];
+  #authorizations: UserAuthorization[] = [];
 
   private constructor(actorId: ActorId, props: PendingUserProps, id?: EntityId) {
     super(id, actorId, 'user');
@@ -37,7 +37,7 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     const pendingUser = new PendingUser(record.createdBy, record, record.id);
     pendingUser.rehydrateAudit(record);
     pendingUser.#authorizations = childRecords.authorizations.map((r) =>
-      Authorization.rehydrate(r),
+      UserAuthorization.rehydrate(r),
     );
 
     return pendingUser;
@@ -64,7 +64,11 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
-  isNew(): boolean {
-    return this._isNew;
+  email(): string {
+    return this.props.email;
+  }
+
+  userStatus(): UserStatus {
+    return this.props.userStatus;
   }
 }

@@ -1,15 +1,19 @@
 import {
+  EntityType,
   MediaAssetKind,
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
   Operation,
   ReactionEmoji,
-  EntityType,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
+import {
+  isUserAuthRecord,
+  UserAuthorizationRecord,
+} from '../../domain/Authorization/UserAuthorization';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import {
   MediaItem,
@@ -80,19 +84,31 @@ export const build__MediaItemRepository = ({
       { operations: Operation },
       { strict: true },
     );
+    const userAuthorizationRows: UserAuthorizationRecord[] = [];
+    for (const row of authorizationRows) {
+      if (isUserAuthRecord(row)) userAuthorizationRows.push(row);
+      else throw new Error(`Authorization ${row.id} violates grantedToUser XOR linkToken`);
+    }
 
     const tagRows = await uow
       .db()('mediaItemTag')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
       .where('mediaItemTag.mediaItemId', id)
-      .select<
-        MediaItemTagRecord[]
-      >(['mediaItemTag.id', 'mediaItemTag.mediaItemId', 'userTag.id as userTagId', 'mediaItemTag.createdBy', 'mediaItemTag.createdAt', 'mediaItemTag.updatedBy', 'mediaItemTag.updatedAt', 'userTag.label'])
+      .select<MediaItemTagRecord[]>([
+        'mediaItemTag.id',
+        'mediaItemTag.mediaItemId',
+        'userTag.id as userTagId',
+        'mediaItemTag.createdBy',
+        'mediaItemTag.createdAt',
+        'mediaItemTag.updatedBy',
+        'mediaItemTag.updatedAt',
+        'userTag.label',
+      ])
       .orderBy('userTag.label', 'asc');
 
     const childRecords = {
       assets: assetRows,
-      authorizations: authorizationRows,
+      authorizations: userAuthorizationRows,
       tags: tagRows,
       reactions: reactionRows,
     };

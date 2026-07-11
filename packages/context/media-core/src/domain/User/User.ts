@@ -9,6 +9,9 @@ import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { CreateUserInput, UserProps, UserRecord } from './types';
 
+export const isActiveUserRecord = (r: UserRecord): r is UserRecord =>
+  r.userStatus.equals(UserStatus.active);
+
 export class User extends AggregateRoot<UserRecord> {
   protected props: UserProps;
   public readonly kind = 'active' as const;

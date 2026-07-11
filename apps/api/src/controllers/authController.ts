@@ -1,8 +1,11 @@
 import { type User } from '@packages/contracts';
 import type { Logger, RateLimiter } from '@packages/infrastructure';
+import { beginUnitOfWorkScope } from '@packages/media-core';
+import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
-import type { AuthService } from '../services/authService.js';
+import type { Cradle } from '../container.js';
+import type { AuthQueryService } from '../services/authQueryService.js';
 
 export interface AuthController {
   login: (ctx: Context) => Promise<Context>;
@@ -14,13 +17,15 @@ export interface AuthController {
 }
 
 type AuthControllerDeps = {
-  authService: AuthService;
+  authQueryService: AuthQueryService;
+  container: AwilixContainer<Cradle>;
   logger: Logger;
   rateLimiter: RateLimiter;
 };
 
 export const build__AuthController = ({
-  authService,
+  authQueryService,
+  container,
   logger,
   rateLimiter,
 }: AuthControllerDeps): AuthController => ({
@@ -51,7 +56,7 @@ export const build__AuthController = ({
       return ctx; // silently skip. no code sent. blind 200 still returned by controller.
     }
 
-    const result = await authService.login({ email: normalizedEmail, password });
+    const result = await authQueryService.login({ email: normalizedEmail, password });
     if (!result) {
       logger.warn('Login attempt failed from controller', {
         normalizedEmail,
@@ -131,7 +136,7 @@ export const build__AuthController = ({
       return ctx; // silently skip. no code sent. blind 200 still returned by controller.
     }
 
-    await authService.verifyEmail(normalizedEmail);
+    await authQueryService.verifyEmail(normalizedEmail);
 
     ctx.status = 200;
     ctx.body = { message: 'We have sent you an email with a verification code.' };
@@ -170,7 +175,12 @@ export const build__AuthController = ({
       return ctx;
     }
 
-    const result = await authService.verifyCodeAndSetPassword({
+    // Start + register the uow on a fresh scope, but do NOT wrap in withUnitOfWork:
+    // verifyCodeAndSetPassword owns finalization (commit on success, rollback on failure),
+    // so an unconditional endUnitOfWork here would wrongly commit the failure paths.
+    const { scope } = await beginUnitOfWorkScope(container);
+    const svc = scope.resolve('authService');
+    const result = await svc.verifyCodeAndSetPassword({
       email,
       password,
       code,

@@ -1,5 +1,5 @@
 import { useApolloClient } from '@apollo/client/react';
-import { SignupInput, User } from '@packages/contracts';
+import { User } from '@packages/contracts';
 import React, { createContext, ReactNode, useContext } from 'react';
 import { authClient } from '../features/auth/authClient';
 import type {
@@ -15,7 +15,6 @@ type TokenActionResult = { success: boolean; error?: string };
 
 interface AuthContextType {
   login: (email: string, password: string) => Promise<AuthActionResult>;
-  signup: (input: SignupInput) => Promise<AuthActionResult>;
   publicAccess: (token: string) => Promise<TokenActionResult>;
   logout: () => Promise<void>;
   // Unified email → code → password flow, shared by BOTH doors (signup + forgot).
@@ -45,22 +44,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { ok: false, message: data.error };
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : 'Login failed' };
-    }
-  };
-
-  const signup = async (input: SignupInput): Promise<AuthActionResult> => {
-    try {
-      const data = await apiFetch<{ user: User }>('/auth/signup', {
-        method: 'POST',
-        body: input,
-      });
-      if (data.success) {
-        await apolloClient.query({ query: ViewerDocument, fetchPolicy: 'network-only' });
-        return { ok: true };
-      }
-      return { ok: false, message: data.error };
-    } catch (error) {
-      return { ok: false, message: error instanceof Error ? error.message : 'Signup failed' };
     }
   };
 
@@ -110,7 +93,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         login,
-        signup,
         publicAccess,
         logout,
         requestEmailVerification,

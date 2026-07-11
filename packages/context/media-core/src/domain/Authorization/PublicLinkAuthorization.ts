@@ -1,52 +1,49 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
-import { AuditRecord, Entity } from '../Entity';
+import { Entity } from '../Entity';
+import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type AuthorizationProps = {
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
-  grantedToUser?: EntityId;
-  linkToken?: string;
-  operations: Operation[];
-  grantedBy: EntityId;
-  label?: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-} & AuditRecord;
-
-export type AuthorizationRecord = {
-  id: string;
-  mediaItemId?: string;
-  albumId?: string;
-  grantedToUser?: string;
-  linkToken?: string;
-  grantedBy: EntityId;
-  operations: Operation[];
-  label?: string;
-  expiresAt?: Date;
-  revokedAt?: Date;
-} & AuditRecord;
-
-export type CreateAuthorizationInput = {
-  operations: Operation[];
-  grantedToUser?: EntityId;
-  grantedBy: EntityId;
-  label?: string;
-  expiresAt?: Date;
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
+export type PublicLinkAuthorizationProps = Omit<
+  AuthorizationProps,
+  'linkToken' | 'grantedToUser'
+> & {
+  grantedToUser: undefined;
+  linkToken: string;
 };
 
-export class Authorization extends Entity<AuthorizationRecord> {
-  protected props: AuthorizationProps;
+export type PublicLinkAuthorizationRecord = Omit<
+  AuthorizationRecord,
+  'linkToken' | 'grantedToUser'
+> & {
+  grantedToUser: undefined;
+  linkToken: string;
+};
 
-  private constructor(actorId: ActorId, props: AuthorizationProps, id?: EntityId) {
+export type CreatePublicLinkAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
+  grantedToUser: undefined;
+};
+
+export const isPublicLinkAuthRecord = (
+  r: AuthorizationRecord,
+): r is PublicLinkAuthorizationRecord => r.linkToken != null && r.grantedToUser == null;
+
+export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecord> {
+  protected props: PublicLinkAuthorizationProps;
+  public readonly kind = 'publicLink' as const;
+
+  private constructor(actorId: ActorId, props: PublicLinkAuthorizationProps, id?: EntityId) {
     super(id, actorId, 'access_grant');
     this.props = props;
   }
 
-  static create(input: CreateAuthorizationInput, actorId: ActorId): Authorization {
-    return new Authorization(actorId, {
+  static create(
+    input: CreatePublicLinkAuthorizationInput,
+    actorId: ActorId,
+  ): PublicLinkAuthorization {
+    const linkToken = crypto.randomBytes(16).toString('hex');
+
+    return new PublicLinkAuthorization(actorId, {
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: actorId,
@@ -55,28 +52,23 @@ export class Authorization extends Entity<AuthorizationRecord> {
       // WE WILL EVENTUALLY ADD PERMS INTO THE FORM
 
       operations: [Operation.download, Operation.comment],
-      grantedToUser: input.grantedToUser,
+      linkToken,
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
       mediaItemId: input.mediaItemId,
       albumId: input.albumId,
+      grantedToUser: undefined,
     });
   }
 
-  static rehydrate(record: AuthorizationRecord): Authorization {
-    const asset = new Authorization(record.createdBy, record, record.id);
+  static rehydrate(record: PublicLinkAuthorizationRecord): PublicLinkAuthorization {
+    const asset = new PublicLinkAuthorization(record.createdBy, record, record.id);
     asset.rehydrateAudit(record);
     return asset;
   }
-  grantedToUser(): EntityId | undefined {
-    return this.props.grantedToUser;
-  }
-  linkToken(): string | undefined {
-    return this.props.linkToken;
-  }
-  // This is so we can set the id after creating the public link
 
+  // This is so we can set the id after creating the public link
   operations(): Operation[] {
     return this.props.operations;
   }
@@ -90,6 +82,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
   label(): string | undefined {
     return this.props.label;
   }
+
   updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
@@ -130,5 +123,8 @@ export class Authorization extends Entity<AuthorizationRecord> {
   }
   createdAt(): Date | undefined {
     return this.props.createdAt;
+  }
+  linkToken(): string {
+    return this.props.linkToken;
   }
 }

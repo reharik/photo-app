@@ -1,4 +1,5 @@
 import { UserStatus } from '@packages/contracts';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
@@ -16,20 +17,29 @@ export type UserContact = {
   email: string;
   firstName?: string;
   lastName?: string;
+  userStatus: UserStatus;
 };
 
-const UserFields = ['id', 'email', 'firstName', 'lastName'];
+const UserFields = ['id', 'email', 'firstName', 'lastName', 'userStatus'];
 
 export const build__SystemUserRepository = ({
   database,
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
   getUserContacts: (userIds: EntityId[]) => {
-    return database('User').select(UserFields).whereIn('id', userIds);
+    return withEnumRevival(
+      database('User').select(UserFields).whereIn('id', userIds),
+      { userStatus: UserStatus },
+      { strict: true },
+    );
   },
   getActiveUsers: (userIds: EntityId[]) => {
-    return database('User')
-      .select<UserContact[]>(UserFields)
-      .whereIn('id', userIds)
-      .andWhere({ userStatus: UserStatus.active.value });
+    return withEnumRevival(
+      database('User')
+        .select<UserContact[]>(UserFields)
+        .whereIn('id', userIds)
+        .andWhere({ userStatus: UserStatus.active.value }),
+      { userStatus: UserStatus },
+      { strict: true },
+    );
   },
 });

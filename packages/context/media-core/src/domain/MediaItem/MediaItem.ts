@@ -23,8 +23,8 @@ import {
 } from '../../services/writeServices/mediaItem/writeMediaItem.types';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
+import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
 import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 
@@ -67,7 +67,7 @@ export type MediaItemRecord = MediaItemProps & {
 export type MediaItemChildRecords = {
   assets: MediaAssetRecord[];
   tags: MediaItemTagRecord[];
-  authorizations: AuthorizationRecord[];
+  authorizations: UserAuthorizationRecord[];
   reactions: MediaItemReactionRecord[];
 };
 
@@ -88,9 +88,9 @@ export type CreateMediaItemInput = {
 export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
   #assets: MediaAsset[] = [];
-  #authorizations: Authorization[] = [];
+  #authorizations: UserAuthorization[] = [];
   #removedAssets: MediaAsset[] = [];
-  #removedAuthorizations: Authorization[] = [];
+  #removedAuthorizations: UserAuthorization[] = [];
   #tags: MediaItemTag[] = [];
   #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
   #addedTags: Omit<MediaItemTag, 'label'>[] = [];
@@ -139,7 +139,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
     mediaItem.rehydrateAudit(record);
     mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
-    mediaItem.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
+    mediaItem.#authorizations = childRecords.authorizations.map((r) =>
+      UserAuthorization.rehydrate(r),
+    );
     mediaItem.#tags = [...(childRecords.tags ?? [])];
     mediaItem.#reactions = [...(childRecords.reactions ?? [])];
     mediaItem.#computedReactionCounts();
@@ -274,7 +276,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     };
   }
 
-  getAuthorizations(): Authorization[] {
+  getAuthorizations(): UserAuthorization[] {
     return this.#authorizations;
   }
   grantAuthorization(
@@ -284,9 +286,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{
-    authorization: Authorization;
+    authorization: UserAuthorization;
   }> {
-    const result = grantAuthorizationValidation(this, grantedToUserId, undefined, label, expiresAt);
+    const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
     if (!result.success) {
       return result;
     }
@@ -296,11 +298,10 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       (s) => s.grantedToUser() === grantedToUserId,
     );
     if (!existingAuthorization) {
-      const authorization = Authorization.create(
+      const authorization = UserAuthorization.create(
         {
           operations,
           grantedToUser: grantedToUserId,
-          publicLinkId: undefined,
           grantedBy: actorId,
           label,
           expiresAt,
