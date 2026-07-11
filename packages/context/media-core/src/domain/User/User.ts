@@ -21,7 +21,7 @@ export class User extends AggregateRoot<UserRecord> {
   }
 
   static create(input: CreateUserInput, actorId: ActorId): User {
-    return new User(actorId, { ...input, userStatus: UserStatus.pending }, actorId);
+    return new User(actorId, { ...input, userStatus: UserStatus.pending });
   }
 
   static rehydrate(record: UserRecord): User {

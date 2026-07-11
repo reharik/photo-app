@@ -39,6 +39,10 @@ apps/web/src/graphql/generated/*
 *.tar.gz
 backups/
 
+# Per-clone dev-stack overrides (secondary working copy only; see Makefile)
+Makefile.local
+docker-compose/docker-compose.local.yml
+
 # Docker volumes (if running locally)
 pgdata/
 caddy_data/

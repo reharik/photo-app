@@ -1,8 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 
-const mockSend = jest.fn<() => Promise<{ MessageId?: string }>>();
+import { build__EmailClient } from '../emailClient.js';
+// @aws-sdk/client-ses is statically mocked via moduleNameMapper (see jest.config.js);
+// this is that same mock module, so setting its send here controls the client.
+import { __resetSesSend, __setSesSend } from './__mocks__/awsSdkClientSes.js';
 
 const logger = {
   debug: jest.fn(),
@@ -14,36 +17,18 @@ const logger = {
 } satisfies Logger;
 
 describe('build__EmailClient', () => {
-  let build__EmailClient: typeof import('../emailClient.js').build__EmailClient;
-
-  beforeAll(async () => {
-    jest.unstable_mockModule('@aws-sdk/client-ses', () => ({
-      SESClient: class {
-        send = mockSend;
-      },
-      SendRawEmailCommand: class {
-        public readonly input: unknown;
-
-        public constructor(input: unknown) {
-          this.input = input;
-        }
-      },
-    }));
-
-    ({ build__EmailClient } = await import('../emailClient.js'));
-  });
-
   beforeEach(() => {
-    mockSend.mockReset();
+    __resetSesSend();
   });
 
   describe('When SES accepts the message', () => {
     it('should return the provider message id', async () => {
-      mockSend.mockResolvedValue({ MessageId: 'msg-123' });
+      const send = jest.fn(async () => ({ MessageId: 'msg-123' }));
+      __setSesSend(send);
 
       const emailClient = build__EmailClient({
         logger,
-        emailConfig: {
+        config: {
           fromEmail: 'sender@example.com',
           fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
@@ -63,17 +48,19 @@ describe('build__EmailClient', () => {
       if (result.success) {
         expect(result.value.messageId).toBe('msg-123');
       }
-      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(send).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('When SES rejects the message', () => {
     it('should return EmailSendFailed', async () => {
-      mockSend.mockRejectedValue(new Error('SES unavailable'));
+      __setSesSend(async () => {
+        throw new Error('SES unavailable');
+      });
 
       const emailClient = build__EmailClient({
         logger,
-        emailConfig: {
+        config: {
           fromEmail: 'sender@example.com',
           fromName: '',
           awsRegion: 'us-east-1',

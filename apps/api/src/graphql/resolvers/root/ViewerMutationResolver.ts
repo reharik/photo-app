@@ -22,6 +22,9 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     }),
     markSeen: authenticatedWriteResolver((_parent, args, ctx) => {
       const { targetType, targetId } = args;
+      console.log(`************"here"************`);
+      console.log('here');
+      console.log(`********END "here"************`);
       return ctx.writeServices.markActivitySeen({
         targetType,
         targetId,
