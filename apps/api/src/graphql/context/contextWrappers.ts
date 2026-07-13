@@ -64,11 +64,11 @@ const resultIndicatesFailure = (result: unknown): boolean => {
   if (typeof result !== 'object' || result === null) {
     return false;
   }
-  if ('success' in result && (result as { success: unknown }).success === false) {
+  if ('success' in result && result.success === false) {
     return true;
   }
   if ('errors' in result) {
-    const errors = (result as { errors: unknown }).errors;
+    const errors = result.errors;
     return Array.isArray(errors) && errors.length > 0;
   }
   return false;

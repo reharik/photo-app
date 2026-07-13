@@ -12,13 +12,15 @@
  *    with that error (no partial user set is returned).
  *  - merge: existing users and freshly-created pending users are both returned.
  */
+import assert from 'node:assert';
+
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, ok } from '@packages/contracts';
 
-import { getOrCreateAllUsers } from '@packages/media-core';
 import type { PendingUser, User } from '@packages/media-core';
-import type { CreateUserWriteService } from '../services/writeServices/user/createUserWriteService';
+import { getOrCreateAllUsers } from '@packages/media-core';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository';
+import type { CreateUserWriteService } from '../services/writeServices/user/createUserWriteService';
 
 const ACTOR = 'actor-1';
 
@@ -43,7 +45,7 @@ const makeHarness = (existing: (User | PendingUser)[]): Harness => {
     getAllUsersByEmail,
     createUser,
     userRepository: { getAllUsersByEmail } as unknown as UserRepository,
-    createUserWriteService: createUser as unknown as CreateUserWriteService,
+    createUserWriteService: createUser,
   };
 };
 
@@ -85,9 +87,8 @@ describe('getOrCreateAllUsers', () => {
       expect(result.success).toBe(true);
       // The existing user satisfied the request — no shadow user was created.
       expect(h.createUser).not.toHaveBeenCalled();
-      if (result.success) {
-        expect(result.value).toHaveLength(1);
-      }
+      assert(result.success);
+      expect(result.value).toHaveLength(1);
     });
   });
 
@@ -104,9 +105,8 @@ describe('getOrCreateAllUsers', () => {
       // Deduped BEFORE lookup and creation: one normalized email, one create call.
       expect(h.getAllUsersByEmail).toHaveBeenCalledWith(['a@x.com']);
       expect(h.createUser).toHaveBeenCalledTimes(1);
-      if (result.success) {
-        expect(result.value).toHaveLength(1);
-      }
+      assert(result.success);
+      expect(result.value).toHaveLength(1);
     });
   });
 
@@ -127,9 +127,8 @@ describe('getOrCreateAllUsers', () => {
       );
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.InvalidEmail)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.InvalidEmail)).toBe(true);
     });
   });
 
@@ -147,20 +146,23 @@ describe('getOrCreateAllUsers', () => {
       expect(result.success).toBe(true);
       expect(h.createUser).toHaveBeenCalledTimes(1);
       expect(h.createUser).toHaveBeenCalledWith(expect.objectContaining({ email: 'new@x.com' }));
-      if (result.success) {
-        const emails = result.value.map((u) => u.email()).sort();
-        expect(emails).toEqual(['existing@x.com', 'new@x.com']);
-      }
+      assert(result.success);
+      const emails = result.value.map((u) => u.email()).sort();
+      expect(emails).toEqual(['existing@x.com', 'new@x.com']);
     });
 
     it('creates no users and returns an empty set for an empty recipient list', async () => {
-      const result = await getOrCreateAllUsers([], h.userRepository, h.createUserWriteService, ACTOR);
+      const result = await getOrCreateAllUsers(
+        [],
+        h.userRepository,
+        h.createUserWriteService,
+        ACTOR,
+      );
 
       expect(result.success).toBe(true);
       expect(h.createUser).not.toHaveBeenCalled();
-      if (result.success) {
-        expect(result.value).toEqual([]);
-      }
+      assert(result.success);
+      expect(result.value).toEqual([]);
     });
   });
 });
