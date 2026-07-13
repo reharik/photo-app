@@ -1,3 +1,4 @@
+import { ok } from '@packages/contracts';
 import type {
   UpdateMediaItemDetailsCommand,
   UpdateMediaItemTagsCommand,
@@ -8,8 +9,6 @@ import type {
   MutationUpdateMediaItemTagsArgs,
   Resolvers,
 } from '../../generated/types.generated';
-import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
-import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -21,47 +20,41 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         originalFileName: args.input.originalFileName ?? undefined,
         albumId: args.input.albumId ?? undefined,
       });
+      if (!result.success) {
+        return result;
+      }
 
-      return {
-        data: result.success
-          ? {
-              mediaItemId: result.value.mediaItemId,
-              status: result.value.status,
-              uploadInstructions: {
-                method: result.value.uploadTarget.method,
-                url: result.value.uploadTarget.url,
-                headers: (result.value.uploadTarget.headers ?? []).map((h) => ({
-                  key: h.name,
-                  value: h.value,
-                })),
-              },
-            }
-          : undefined,
-        errors: result.success ? [] : [toContractErrorPayload(result.error)],
-      };
+      return ok({
+        mediaItemId: result.value.mediaItemId,
+        status: result.value.status,
+        uploadInstructions: {
+          method: result.value.uploadTarget.method,
+          url: result.value.uploadTarget.url,
+          headers: (result.value.uploadTarget.headers ?? []).map((h) => ({
+            key: h.name,
+            value: h.value,
+          })),
+        },
+      });
     }),
 
     finalizeMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.finalizeMediaItemUpload({
+      return ctx.writeServices.finalizeMediaItemUpload({
         viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
       });
-      return writeResultToPayload(result);
     }),
     deleteMediaItem: authenticatedWriteResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.deleteMediaItem({
+      return ctx.writeServices.deleteMediaItem({
         viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
       });
-
-      return writeResultToPayload(result);
     }),
     deleteMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.deleteMediaItems({
+      return ctx.writeServices.deleteMediaItems({
         viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
       });
-      return writeResultToPayload(result);
     }),
     updateMediaItemDetails: authenticatedWriteResolver(
       async (_parent, args: MutationUpdateMediaItemDetailsArgs, ctx) => {
@@ -71,8 +64,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
           viewerId: ctx.viewer.id,
         };
 
-        const result = await ctx.writeServices.updateMediaItem(command);
-        return writeResultToPayload(result);
+        return ctx.writeServices.updateMediaItem(command);
       },
     ),
     updateMediaItemTags: authenticatedWriteResolver(
@@ -82,8 +74,7 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
           mediaItemId: args.input.mediaItemId,
           tags: args.input.tags,
         };
-        const result = await ctx.writeServices.updateMediaItemTags(command);
-        return writeResultToPayload(result);
+        return ctx.writeServices.updateMediaItemTags(command);
       },
     ),
   },

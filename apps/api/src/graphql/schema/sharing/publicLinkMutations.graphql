@@ -23,6 +23,5 @@ type CreatePublicLinkPayload {
 
 type CreatePublicLinkResponse {
   errors: [ContractError!]
-  success: Boolean!
   data: CreatePublicLinkPayload
 }

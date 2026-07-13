@@ -1,5 +1,7 @@
+import type { WriteResult } from '@packages/contracts';
 import type { GraphQLResolveInfo } from 'graphql';
 import type { ResolverFn } from '../generated/types.generated';
+import { MutationPayload, writeResultToPayload } from '../util/writeResultToPayload';
 import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
@@ -53,31 +55,17 @@ export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext 
   return ctx;
 };
 
-// A mutation "fails as data": the failure rides in the returned payload, never the
-// GraphQL `errors` channel. Write resolvers return heterogeneous shapes — a raw
-// WriteResult ({ success:false, error }), the mapped MutationPayload ({ data, errors[] }),
-// or a hand-built payload ({ success, errors[] }) — so we check BOTH signals: an explicit
-// `success: false` OR a non-empty `errors` array. Any success case (success:true, or
-// errors:[] / no errors key) reads as no-failure. We must NOT move these failures onto the
-// GraphQL errors channel — the client contract depends on them staying in the payload.
-const resultIndicatesFailure = (result: unknown): boolean => {
-  if (typeof result !== 'object' || result === null) {
-    return false;
-  }
-  if ('success' in result && result.success === false) {
-    return true;
-  }
-  if ('errors' in result) {
-    const errors = result.errors;
-    return Array.isArray(errors) && errors.length > 0;
-  }
-  return false;
-};
-
+// Write resolvers return a WriteResult<T> — never a hand-built payload. This wrapper owns
+// the single mapping to the GraphQL `{ data, errors }` envelope (writeResultToPayload) AND
+// the rollback decision, so neither can drift per-resolver. A mutation "fails as data": the
+// failure rides in the returned payload's `errors`, never the GraphQL `errors` channel — the
+// client contract depends on failures staying in the payload. The typed `result.success`
+// discriminant replaces the former envelope-scan heuristic; a resolver that returns anything
+// other than WriteResult<T> now fails typecheck.
 export const authenticatedWriteResolver =
-  <TParent, TArgs, TResult>(
-    resolver: ResolverFn<TResult, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
-  ): ResolverFn<TResult, TParent, GraphQLContext, TArgs> =>
+  <TParent, TArgs, TValue>(
+    resolver: ResolverFn<WriteResult<TValue>, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
+  ): ResolverFn<MutationPayload<TValue>, TParent, GraphQLContext, TArgs> =>
   async (parent, args, ctx, info) => {
     let authCtx: AuthenticatedWriteGraphQLContext;
     try {
@@ -89,11 +77,10 @@ export const authenticatedWriteResolver =
     const result = await resolver(parent, args, authCtx, info);
     // Signal intent only — the boundary (useScopedContainer) owns the actual rollback.
     // Latching to true; any single failed field rolls back the whole per-request uow.
-    if (resultIndicatesFailure(result)) {
+    if (!result.success) {
       authCtx.uow.shouldRollback = true;
     }
-    // Return the payload verbatim so the failure still flows to the client as data.
-    return result;
+    return writeResultToPayload(result);
   };
 
 export const authenticatedReadResolver =

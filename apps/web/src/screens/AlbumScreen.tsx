@@ -115,7 +115,7 @@ export const AlbumScreen = () => {
             targetId: loadedAlbumId,
           },
         },
-        (data: MarkSeenMutation) => ({ data: data.markSeen }),
+        (data: MarkSeenMutation) => data.markSeen,
       );
 
       if (!result.success) {

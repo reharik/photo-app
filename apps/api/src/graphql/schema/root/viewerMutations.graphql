@@ -1,6 +1,6 @@
 type Mutation {
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
-  markSeen(targetType: EntityType!, targetId: ID): MarkSeenPayload!
+  markSeen(targetType: EntityType!, targetId: ID): MarkSeenResponse!
   deleteShareContact(handle: String!): DeleteShareContactResponse
 }
 

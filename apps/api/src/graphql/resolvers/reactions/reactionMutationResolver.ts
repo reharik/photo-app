@@ -1,7 +1,6 @@
 import type { ToggleReactionCommand } from '@packages/media-core';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
-import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -10,8 +9,7 @@ const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         ...args.input,
         viewer: ctx.viewer,
       };
-      const result = await ctx.writeServices.toggleReaction(command);
-      return writeResultToPayload(result);
+      return ctx.writeServices.toggleReaction(command);
     }),
 
     removeReaction: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -19,8 +17,7 @@ const reactionMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         ...args.input,
         viewer: ctx.viewer,
       };
-      const result = await ctx.writeServices.toggleReaction(command);
-      return writeResultToPayload(result);
+      return ctx.writeServices.toggleReaction(command);
     }),
   },
 };

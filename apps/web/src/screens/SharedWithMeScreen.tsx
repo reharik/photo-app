@@ -69,7 +69,7 @@ export const SharedWithMeScreen = () => {
             targetType: EntityType.mediaItem,
           },
         },
-        (data: MarkSeenMutation) => ({ data: data.markSeen }),
+        (data: MarkSeenMutation) => data.markSeen,
       );
 
       if (!result.success) {
