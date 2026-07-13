@@ -455,8 +455,14 @@ const checkProjectJsonRequiredTargets = (): CheckResult => {
       }
     }
 
-    if (project.name === 'contracts' && !targetNames.has('codegen')) {
-      violations.push(`${label}: contracts must have codegen target`);
+    // contracts' codegen target is named "gen-enums" (see its project.json and the
+    // codegen chain in CLAUDE.md); accept either name.
+    if (
+      project.name === 'contracts' &&
+      !targetNames.has('codegen') &&
+      !targetNames.has('gen-enums')
+    ) {
+      violations.push(`${label}: contracts must have a codegen target (codegen or gen-enums)`);
     }
   }
 
@@ -845,6 +851,11 @@ const checkNxScopeTags = (): CheckResult => {
       continue;
     }
     const tags = readJson<{ tags?: string[] }>(projectPath).tags ?? [];
+    // media-core deliberately carries scope:media (not scope:packages) so it is
+    // excluded from tag:scope:packages batch targets — documented in CLAUDE.md.
+    if (tags.includes('scope:media')) {
+      continue;
+    }
     if (!tags.includes('scope:packages')) {
       violations.push(`${rel(projectPath)}: tags must include "scope:packages"`);
     }
