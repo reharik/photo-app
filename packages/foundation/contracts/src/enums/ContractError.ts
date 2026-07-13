@@ -512,6 +512,27 @@ const contractErrorInput = {
     area: ErrorArea.auth,
     retryable: false,
   },
+  PartialShareFailure: {
+    code: 'PARTIAL_SHARE_FAILURE',
+    display: 'Partial share failure',
+    category: ErrorCategory.domain,
+    area: ErrorArea.user,
+    retryable: false,
+  },
+  UserAlreadyExists: {
+    code: 'USER_ALREADY_EXISTS',
+    display: 'User already exists',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  InvalidEmail: {
+    code: 'INVALID_EMAIL',
+    display: 'Invalid email',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

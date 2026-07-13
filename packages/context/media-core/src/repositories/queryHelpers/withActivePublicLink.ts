@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
 
-export const withActiveShareLink =
+export const withActivePublicLink =
   (db: Knex, albumId: string, publicLinkId: string) =>
   (qb: Knex.QueryBuilder): void => {
     qb.whereExists(

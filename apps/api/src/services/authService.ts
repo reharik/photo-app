@@ -11,6 +11,7 @@ import {
   User as DomainUser,
   EmailVerificationRepository,
   EntityId,
+  PendingUser,
   SystemEmailVerificationRepository,
   UnitOfWork,
   UserRepository,
@@ -139,7 +140,7 @@ export const build__AuthService = ({
         let template: 'welcome' | 'passwordReset';
         console.dir(user, { depth: null, getters: true });
         if (!user) {
-          user = DomainUser.create(
+          user = PendingUser.create(
             { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
             randomUUID(),
           );

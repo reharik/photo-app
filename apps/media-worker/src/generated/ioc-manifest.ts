@@ -24,7 +24,7 @@ type IocManifestGroupRoots = {
   readonly fastSweepNotificationStrategies: {
     readonly kind: 'collection';
     readonly baseType: 'FastSweepNotificationStrategy';
-    readonly baseTypeId: '/home/reharik/Development/photoapp/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy';
+    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy';
     readonly members: readonly [
       {
         readonly contractName: 'FastSweepNotificationStrategy';
@@ -43,7 +43,7 @@ type IocManifestGroupRoots = {
   readonly workerTasks: {
     readonly kind: 'collection';
     readonly baseType: 'WorkerTask';
-    readonly baseTypeId: '/home/reharik/Development/photoapp/apps/media-worker/src/types.ts:WorkerTask';
+    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/types.ts:WorkerTask';
     readonly members: readonly [
       {
         readonly contractName: 'WorkerTask';
@@ -342,7 +342,7 @@ export const iocManifest = {
     kind: 'collection',
     baseType: 'FastSweepNotificationStrategy',
     baseTypeId:
-      '/home/reharik/Development/photoapp/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy',
+      '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy',
     members: [
       {
         contractName: 'FastSweepNotificationStrategy',
@@ -363,7 +363,7 @@ export const iocManifest = {
   workerTasks: {
     kind: 'collection',
     baseType: 'WorkerTask',
-    baseTypeId: '/home/reharik/Development/photoapp/apps/media-worker/src/types.ts:WorkerTask',
+    baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/types.ts:WorkerTask',
     members: [
       {
         contractName: 'WorkerTask',

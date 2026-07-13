@@ -17,6 +17,12 @@ export default defineConfig(({ mode }) => {
     return env[key] || defaults[key] || '';
   };
 
+  // Per-clone overrides (secondary working copy sets these in a git-ignored
+  // apps/web/.env.local). Defaults keep the primary clone on 5173 / :3001.
+  const devPort = Number(getEnv('VITE_PORT')) || 5173;
+  const hmrPort = Number(getEnv('VITE_HMR_PORT')) || 5174;
+  const proxyTarget = getEnv('VITE_PROXY_TARGET') || 'http://localhost:3001';
+
   return {
     root: __dirname,
     cacheDir: '../node_modules/.vite/web',
@@ -37,20 +43,20 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     server: {
-      port: 5173,
+      port: devPort,
       host: true,
       hmr: {
-        port: 5174,
+        port: hmrPort,
       },
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: proxyTarget,
           changeOrigin: true,
         },
         // Proxy only concrete media asset fetches (e.g. /media/:mediaId/:variant)
         // so SPA routes like /media keep resolving to index.html on refresh.
         '^/media/[^/]+/[^/]+$': {
-          target: 'http://localhost:3001',
+          target: proxyTarget,
           changeOrigin: true,
         },
       },

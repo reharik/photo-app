@@ -7,7 +7,7 @@
 import { UserStatus } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { CreateUserInput, UserProps, UserRecord } from './types';
+import { UserProps, UserRecord } from './types';
 
 export const isActiveUserRecord = (r: UserRecord): r is UserRecord =>
   r.userStatus.equals(UserStatus.active);
@@ -19,11 +19,7 @@ export class User extends AggregateRoot<UserRecord> {
     super(id, actorId, 'user');
     this.props = props;
   }
-
-  static create(input: CreateUserInput, actorId: ActorId): User {
-    return new User(actorId, { ...input, userStatus: UserStatus.pending });
-  }
-
+  // There is no create for user.  one must create a PendingUser and then activate;
   static rehydrate(record: UserRecord): User {
     const user = new User(record.createdBy, record, record.id);
     user.rehydrateAudit(record);

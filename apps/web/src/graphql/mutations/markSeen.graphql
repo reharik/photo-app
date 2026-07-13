@@ -1,5 +1,5 @@
-mutation MarkSeen($targetType: EntityType!, $targetId: ID!) {
-  markSeen(targetType: $targetType, targetId: $targetId) {
+mutation MarkSeen($targetType: EntityType!, $targetId: ID) {
+  markSeen(targetId: $targetId, targetType: $targetType) {
     success
   }
 }

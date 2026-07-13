@@ -5,7 +5,7 @@ import { WriteServiceBase } from './writeServiceBaseType';
 
 export type MarkActivitySeenInput = {
   targetType: EntityType;
-  targetId: EntityId;
+  targetId?: EntityId;
   viewerId: EntityId;
 };
 
@@ -24,7 +24,7 @@ export const build__MarkActivitySeen = ({
 }: MarkActivitySeenDeps): MarkActivitySeen => {
   return async (input: MarkActivitySeenInput): Promise<WriteResult<{ success: boolean }>> => {
     const { targetType, targetId, viewerId } = input;
-    await unseenActivityRepository.markSeen(targetType, targetId, viewerId);
+    await unseenActivityRepository.markSeen(targetType, viewerId, targetId);
 
     return ok({ success: true });
   };

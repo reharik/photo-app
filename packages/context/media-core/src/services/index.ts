@@ -51,3 +51,4 @@ export * from './writeServices/mediaItem/writeMediaItem.types';
 export * from './writeServices/publicLink/createPublicLinkForAlbum';
 export * from './writeServices/publicLink/createPublicLinkForMediaItems';
 export * from './writeServices/reactions/toggleReaction';
+export * from './writeServices/user/createUserWriteService';

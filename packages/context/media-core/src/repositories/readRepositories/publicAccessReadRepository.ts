@@ -26,11 +26,15 @@ export const build__PublicAccessReadRepository = ({
     return publicAccess;
   },
   getPublicAccessById: async (publicAccessId: string) => {
-    const publicAccess = await database('shareLink')
-      .where('shareLink.id', publicAccessId)
-      .whereNull('shareLink.revokedAt')
+    const publicAccess = await database('accessGrant')
+      .where('accessGrant.id', publicAccessId)
+      .whereNull('accessGrant.revokedAt')
       .where((b) => {
-        b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now());
+        b.whereNull('accessGrant.expiresAt').orWhere(
+          'accessGrant.expiresAt',
+          '>',
+          database.fn.now(),
+        );
       })
       .first<PublicAccessRow>();
     if (!publicAccess) {
@@ -39,14 +43,9 @@ export const build__PublicAccessReadRepository = ({
     return publicAccess;
   },
   canAccessMediaWithLink: async ({ token, mediaItemId }) => {
-    const q = database('shareLink')
-      .join('accessGrant', 'accessGrant.shareLinkId', 'shareLink.id')
+    const q = database('accessGrant')
       .join('grant', 'accessGrant.id', 'grant.accessGrantId')
-      .where('shareLink.linkToken', token)
-      .whereNull('shareLink.revokedAt')
-      .where((b) =>
-        b.whereNull('shareLink.expiresAt').orWhere('shareLink.expiresAt', '>', database.fn.now()),
-      )
+      .where('accessGrant.linkToken', token)
       .whereNull('accessGrant.revokedAt')
       .where((b) =>
         b

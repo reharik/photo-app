@@ -6,7 +6,7 @@ import {
   MediaItemRemovedFromAlbum,
 } from '../Album/albumEvents';
 import { AuthorizationExpired, AuthorizationRevoked } from '../Authorization/authorizationEvents';
-import { MediaItemsSharedWithUser } from '../MediaItem/mediaItemEvents';
+import { MediaItemsSharedWithUser, PublicLinkSharedWithUser } from '../MediaItem/mediaItemEvents';
 import { PendingUserActivated } from '../User/userEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
@@ -31,4 +31,5 @@ export type DomainEvent = DomainEventBase &
     | AuthorizationExpired
     | AuthorizationRevoked
     | PendingUserActivated
+    | PublicLinkSharedWithUser
   );

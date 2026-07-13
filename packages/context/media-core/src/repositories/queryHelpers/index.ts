@@ -4,7 +4,7 @@
 
 export * from './toPagedResult';
 export * from './withActiveGrants';
-export * from './withActiveShareLink';
+export * from './withActivePublicLink';
 export * from './withAlbumCoverItem';
 export * from './withAlbumItemCount';
 export * from './withCollectionInfo';

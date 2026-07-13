@@ -16,7 +16,7 @@ export * from './mediaDeletionJob/mediaDeletionJobRepository';
 export * from './mediaProcessingJob/mediaProcessingJobRepository';
 export * from './queryHelpers/toPagedResult';
 export * from './queryHelpers/withActiveGrants';
-export * from './queryHelpers/withActiveShareLink';
+export * from './queryHelpers/withActivePublicLink';
 export * from './queryHelpers/withAlbumCoverItem';
 export * from './queryHelpers/withAlbumItemCount';
 export * from './queryHelpers/withCollectionInfo';

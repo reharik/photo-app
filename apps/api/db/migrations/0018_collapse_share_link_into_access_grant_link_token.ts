@@ -21,7 +21,7 @@ import type { Knex } from 'knex';
  *
  * ⚠️ ATOMIC CHANGESET — this migration MUST deploy together with the code that reads `link_token`
  * instead of `share_link_id` / the `share_link` table. Every one of these breaks the moment it runs:
- *   - queryHelpers/withActiveShareLink.ts            (ag.shareLinkId = publicLinkId)
+ *   - queryHelpers/withActivePublicLink.ts            (ag.shareLinkId = publicLinkId)
  *   - readRepositories/publicMediaItemReadRepository (accessGrant.shareLinkId = publicLinkId)
  *   - readRepositories/authorizationReadRepository   (ag.share_link_id = publicLinkId)
  *   - readRepositories/publicAccessReadRepository    (joins/queries the share_link table)

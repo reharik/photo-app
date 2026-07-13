@@ -34,6 +34,19 @@ export const cleanupOwnedRows = async (ownerId: string): Promise<void> => {
   await db('share_contact').where({ contact_user_id: ownerId }).delete();
 };
 
+/**
+ * Removes the shadow (pending) recipient user created when a share targets an email
+ * that isn't yet a user. The non-user share specs reuse a fixed recipient email, so
+ * without this the first spec's shadow user lingers and changes the second spec's
+ * share path (an existing pending user instead of a fresh one), breaking whichever
+ * runs second. Every FK into `user` is ON DELETE CASCADE, so deleting the row also
+ * clears its grants, share-contacts, and pending notifications. Runs before each such
+ * test so it's resilient to leftovers from a prior/interrupted run too.
+ */
+export const cleanupRecipientByEmail = async (email: string): Promise<void> => {
+  await getDb()('user').whereRaw('lower(email) = ?', email.toLowerCase()).delete();
+};
+
 /** Cleans up grant rows where `granted_to_user` is the recipient. */
 export const cleanupGrantsToRecipient = async (recipientId: string): Promise<void> => {
   const db = getDb();

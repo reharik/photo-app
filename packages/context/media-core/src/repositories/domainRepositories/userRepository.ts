@@ -14,7 +14,7 @@ export interface UserRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<User | undefined>;
   getByHandle: (handle: string) => Promise<User | undefined>;
   getUserByEmail: (email: string) => Promise<User | PendingUser | undefined>;
-  getPendingAndActiveUsersByHandle: (handles: string[]) => Promise<(User | PendingUser)[]>;
+  getAllUsersByEmail: (handles: string[]) => Promise<(User | PendingUser)[]>;
   save: (user: User | PendingUser) => Promise<void>;
 }
 
@@ -42,11 +42,14 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     return User.rehydrate(userRow);
   };
 
-  const getPendingAndActiveUsersByHandle = async (
-    handles: string[],
-  ): Promise<(User | PendingUser)[]> => {
+  const getAllUsersByEmail = async (handles: string[]): Promise<(User | PendingUser)[]> => {
     const users = await withEnumRevival(
-      uow.db()<UserRecord>('user').whereIn('email', handles),
+      uow
+        .db()<UserRecord>('user')
+        .whereIn(
+          'email',
+          handles.map((x) => x.trim().toLowerCase()),
+        ),
       { userStatus: UserStatus },
       { strict: true },
     );
@@ -76,7 +79,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
 
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
     const userRow = await withEnumRevival(
-      uow.db()('user').where({ email }).first<UserRecord>(),
+      uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
       { userStatus: UserStatus },
       { strict: true },
     );
@@ -106,7 +109,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     getById,
     getByHandle,
     getUserByEmail,
-    getPendingAndActiveUsersByHandle,
+    getAllUsersByEmail,
     save,
   };
 };

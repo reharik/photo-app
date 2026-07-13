@@ -13,7 +13,7 @@ type IocManifestGroupRoots = {
   readonly channels: {
     readonly kind: 'object';
     readonly baseType: 'Channel';
-    readonly baseTypeId: '/home/reharik/Development/photoapp/packages/context/notifications/src/channels/email.ts:Channel';
+    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/notifications/src/channels/email.ts:Channel';
     readonly members: {
       readonly emailChannel: {
         readonly contractName: 'EmailChannel';
@@ -101,7 +101,7 @@ export const iocManifest = {
     kind: 'object',
     baseType: 'Channel',
     baseTypeId:
-      '/home/reharik/Development/photoapp/packages/context/notifications/src/channels/email.ts:Channel',
+      '/home/reharik/Development/photoapp-cc/packages/context/notifications/src/channels/email.ts:Channel',
     members: {
       emailChannel: {
         contractName: 'EmailChannel',

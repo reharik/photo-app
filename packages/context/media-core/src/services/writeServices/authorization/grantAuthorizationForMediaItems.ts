@@ -1,20 +1,21 @@
-import { AppErrorCollection, fail, ok, UserStatus, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, ContractError, fail, ok, WriteResult } from '@packages/contracts';
 import { dedupeIds, indexBy, Logger } from '@packages/infrastructure';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
+import { PendingUser, PublicLinkSharedWithUser } from '../../../domain';
 import { Album } from '../../../domain/Album/Album';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
-import { User } from '../../../domain/User/User';
 import { UnitOfWork } from '../../../infrastructure';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
+import { CreateUserWriteService } from '../user/createUserWriteService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantUserAuthorizationCommand, GrantUserAuthorizationResult } from './grantTypes';
 import {
   getOrCreateAllUsers,
-  inviteUsers,
+  invitePendingUsers,
   inviteUsersForMediaItems,
   saveNewShareContacts,
 } from './inviteUsersService';
@@ -28,6 +29,7 @@ type GrantAuthorizationForMediaItemsDeps = {
   userRepository: UserRepository;
   shareContactRepository: ShareContactRepository;
   albumRepository: AlbumRepository;
+  createUserWriteService: CreateUserWriteService;
   logger: Logger;
   uow: UnitOfWork;
 };
@@ -41,6 +43,7 @@ export const build__GrantAuthorizationForMediaItems = ({
   userRepository,
   shareContactRepository,
   albumRepository,
+  createUserWriteService,
   logger,
   uow,
 }: GrantAuthorizationForMediaItemsDeps): GrantAuthorizationForMediaItems => {
@@ -74,10 +77,18 @@ export const build__GrantAuthorizationForMediaItems = ({
     }
 
     // invitations
-    const users = await getOrCreateAllUsers(grantedToHandles, userRepository, input.viewerId);
-    const pendingUsers = users.filter((x) => x.userStatus().equals(UserStatus.pending));
-    const existingUsers = users.filter((x) => x.userStatus().equals(UserStatus.active)) as User[];
-
+    const userResult = await getOrCreateAllUsers(
+      grantedToHandles,
+      userRepository,
+      createUserWriteService,
+      input.viewerId,
+    );
+    if (!userResult.success) {
+      return userResult;
+    }
+    const users = userResult.value;
+    const pendingUsers = users.filter((u): u is PendingUser => u.kind === 'pending');
+    let pendingUserServiceEvents: PublicLinkSharedWithUser[] = [];
     if (pendingUsers.length > 0) {
       const album = Album.create(
         {
@@ -89,30 +100,28 @@ export const build__GrantAuthorizationForMediaItems = ({
       mediaItems.forEach((mediaItem) => {
         album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
       });
-      const pendingUserInviteResults = inviteUsers(pendingUsers, album, input);
-      await saveNewShareContacts(
-        pendingUserInviteResults.invitedUsers,
-        granter,
-        shareContactRepository,
-      );
-
-      await albumRepository.save(album);
+      const pendingUserInviteResult = invitePendingUsers(pendingUsers, album, input, logger);
+      if (!pendingUserInviteResult.success) {
+        logger.warn('PendingUser mediaItem invite failed', {
+          failures: pendingUsers.map((d) => ({
+            userId: d.id(),
+            itemIds: mediaItems.map((x) => x.id()),
+            error: pendingUserInviteResult.error,
+          })),
+        });
+      } else {
+        await albumRepository.save(album);
+        pendingUserServiceEvents = pendingUserInviteResult.value;
+      }
     }
 
-    const existingResult = inviteUsersForMediaItems(existingUsers, mediaItems, input);
-    // if nothing happened in inviteUsers then we're done, return
-    if (existingResult.authorizations.length === 0) {
-      return ok({
-        invitedUsers: pendingUsers,
-        errors: existingResult.errors,
-      });
-    }
+    const mediaItemInviteResult = inviteUsersForMediaItems(users, mediaItems, input, logger);
 
-    const existingUserMap = indexBy(existingUsers, (x) => x.id());
+    const userMap = indexBy(users, (x) => x.id());
     const mediaItemMap = indexBy(mediaItems, (x) => x.id());
 
     // --- media items: throw on a miss instead of `!` ---
-    const mediaItemPromises = existingResult.authorizations.flatMap((authz) => {
+    const mediaItemPromises = mediaItemInviteResult.authorizations.flatMap((authz) => {
       const mediaItemId = authz.mediaItemId();
       if (!mediaItemId) return [];
       const item = mediaItemMap.get(mediaItemId);
@@ -121,13 +130,13 @@ export const build__GrantAuthorizationForMediaItems = ({
     });
     await Promise.all(mediaItemPromises);
 
-    uow.collectEvents(existingResult.serviceEvents);
+    uow.collectEvents([...mediaItemInviteResult.serviceEvents, ...pendingUserServiceEvents]);
 
     // --- resolve the invitee for each user-authorization, ONCE ---
-    const invitees = existingResult.authorizations.flatMap((authz) => {
+    const invitees = mediaItemInviteResult.authorizations.flatMap((authz) => {
       const userId = authz.grantedToUser();
       if (!userId) return []; // public-link auth — expected, skip
-      const invitee = existingUserMap.get(userId);
+      const invitee = userMap.get(userId);
       if (!invitee) {
         throw new Error(`No resolved user ${userId} for authorization ${authz.id()}`);
       }
@@ -136,9 +145,9 @@ export const build__GrantAuthorizationForMediaItems = ({
 
     await saveNewShareContacts(invitees, granter, shareContactRepository);
 
-    if (existingResult.errorDetail.length) {
+    if (mediaItemInviteResult.errorDetail.length) {
       logger.warn('partial media grant', {
-        failures: existingResult.errorDetail.map((d) => ({
+        failures: mediaItemInviteResult.errorDetail.map((d) => ({
           userId: d.user.id(),
           itemId: d.mediaItem.id(),
           code: d.error.code,
@@ -146,9 +155,13 @@ export const build__GrantAuthorizationForMediaItems = ({
       });
     }
 
-    return ok({
-      invitedUsers: users,
-      errors: existingResult.errors,
-    });
+    // ALL-OR-NOTHING GUARD — remove when client surfaces partial `errors` to the user.
+    // Until the share UI renders the errors array, a partial failure is a silent
+    // lie ("shared!" when it wasn't), so we fail the whole op. See RAI-XX.
+    if (mediaItemInviteResult.errors.length > 0) {
+      return fail(ContractError.PartialShareFailure); // rolls back uow
+    }
+
+    return ok({ invitedUsers: invitees, errors: mediaItemInviteResult.errors });
   };
 };

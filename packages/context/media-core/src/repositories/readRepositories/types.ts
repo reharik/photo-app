@@ -120,7 +120,7 @@ export type AlbumReadRepository = {
   }: {
     mediaItemId: string;
   }) => Promise<AlbumIdRow[]>;
-  getAlbumForShareLink: ({
+  getAlbumForPublicLink: ({
     albumId,
     publicLinkId,
   }: {
@@ -128,7 +128,7 @@ export type AlbumReadRepository = {
     publicLinkId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
   /** Album items for public share-link viewing (no membership check). READY media only. */
-  listAlbumItemsForShareLink: ({
+  listAlbumItemsForPublicLink: ({
     albumId,
     publicLinkId,
     collectionInfo,

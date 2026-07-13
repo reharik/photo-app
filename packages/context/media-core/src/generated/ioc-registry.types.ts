@@ -81,6 +81,7 @@ import type { UpdateMediaItemTags } from '../services/writeServices/mediaItem/up
 import type { CreatePublicLinkForAlbum } from '../services/writeServices/publicLink/createPublicLinkForAlbum.js';
 import type { CreatePublicLinkForMediaItems } from '../services/writeServices/publicLink/createPublicLinkForMediaItems.js';
 import type { ToggleReaction } from '../services/writeServices/reactions/toggleReaction.js';
+import type { CreateUserWriteService } from '../services/writeServices/user/createUserWriteService.js';
 
 export interface IocGeneratedCradle {
   addAlbumItem: AddAlbumItem;
@@ -103,6 +104,7 @@ export interface IocGeneratedCradle {
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
   createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
+  createUserWriteService: CreateUserWriteService;
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteComment: DeleteComment;
@@ -119,6 +121,7 @@ export interface IocGeneratedCradle {
       | 'authorizationRevoked'
       | 'mediaItemRemovedFromAlbum'
       | 'pendingUserActivated'
+      | 'publicLinkSharedWithUser'
     >
   >;
   editComment: EditComment;
@@ -140,6 +143,7 @@ export interface IocGeneratedCradle {
   publicAccessReadRepository: PublicAccessReadRepository;
   publicAccessReadService: PublicAccessReadService;
   publicAlbumReadService: PublicAlbumReadService;
+  publicLinkEmailHandler: DomainEventHandler;
   publicMediaItemReadRepository: PublicMediaItemReadRepository;
   publicMediaItemReadService: PublicMediaItemReadService;
   publicReadServices: {
@@ -200,6 +204,7 @@ export interface IocGeneratedCradle {
     createMediaUpload: CreateMediaUpload;
     createPublicLinkForAlbum: CreatePublicLinkForAlbum;
     createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
+    createUserWriteService: CreateUserWriteService;
     deleteAlbum: DeleteAlbum;
     deleteAlbumItems: DeleteAlbumItems;
     deleteComment: DeleteComment;
@@ -235,6 +240,7 @@ export type DomainEventHandlers = ReadonlyArray<
     | 'authorizationRevoked'
     | 'mediaItemRemovedFromAlbum'
     | 'pendingUserActivated'
+    | 'publicLinkSharedWithUser'
   >
 >;
 
@@ -262,6 +268,7 @@ export type WriteServices = {
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
   createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
+  createUserWriteService: CreateUserWriteService;
   deleteAlbum: DeleteAlbum;
   deleteAlbumItems: DeleteAlbumItems;
   deleteComment: DeleteComment;

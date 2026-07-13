@@ -156,19 +156,12 @@ test.describe('Signup (email → code → password)', () => {
     await expectLoggedIn(anonPage);
   });
 
-  // SKIPPED (known-failing feature): sharing an INDIVIDUAL item with a non-existing
-  // user doesn't surface that item in the recipient's "Shared with me" after activation.
-  // Root cause is on the READ side, not the write chain (verified end-to-end in the DB):
-  //   - The share mints a public-link album (isPublicLinkAlbum=true) holding the item and
-  //     an ALBUM-scoped access_grant (albumId set, mediaItemId NULL) to the pending user.
-  //   - Activation DOES materialize the per-item `grant` row (media_item + grantedToUser).
-  //   - But sharedWithMeReadRepository surfaces neither: getMediaItemsSharedWithMe joins
-  //     `mediaItem.id = accessGrant.mediaItemId` (NULL here, so the album-scoped grant is
-  //     dropped), and getAlbumsSharedWithMe filters `album.isPublicLinkAlbum = false`
-  //     (excludes this album). Item-shares to EXISTING users use an item-scoped grant, so
-  //     they show up — which is why that path works. Un-skip once the read side surfaces
-  //     public-link-album / album-scoped grants for activated users.
-  test.skip('pending-user activation materializes the shadow user and their grants', async ({
+  // Sharing an INDIVIDUAL item with a not-yet-registered email and then activating that
+  // account surfaces the item in the recipient's "Shared with me". This previously failed
+  // on the read side (the item's grant was album-scoped on a public-link album, which
+  // getMediaItemsSharedWithMe/getAlbumsSharedWithMe both dropped); the grants-from-domain-
+  // events refactor now materializes the item-scoped grant on activation, so it works.
+  test('pending-user activation materializes the shadow user and their grants', async ({
     userA,
     anonPage,
     request,

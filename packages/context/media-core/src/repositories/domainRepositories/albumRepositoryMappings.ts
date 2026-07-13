@@ -44,20 +44,6 @@ export const authorizationSelectColumns = [
   'accessGrant.updatedBy as authorizationUpdatedBy',
 ];
 
-export const publicLinkSelectColumns = [
-  'shareLink.id as id',
-  'shareLink.albumId as albumId',
-  'shareLink.linkToken as linkToken',
-  'shareLink.grantedBy as grantedBy',
-  'shareLink.expiresAt as expiresAt',
-  'shareLink.revokedAt as revokedAt',
-  'shareLink.createdAt as createdAt',
-  'shareLink.updatedAt as updatedAt',
-  'shareLink.createdBy as createdBy',
-  'shareLink.updatedBy as updatedBy',
-  ...authorizationSelectColumns,
-];
-
 export const authorizationRawToAuthorizationRecord = (
   row: AuthorizationRaw,
 ): AuthorizationRecord => {

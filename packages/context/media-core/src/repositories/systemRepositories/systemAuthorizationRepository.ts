@@ -59,6 +59,7 @@ const authorizationFields = [
   'albumId',
   'grantedBy',
   'grantedToUser',
+  'linkToken',
   'operations',
   'expiresAt',
   'revokedAt',

@@ -331,9 +331,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       this.touch(actorId);
       return ok({ authorization: existingAuthorization });
     }
-
-    return fail(AppErrorCollection.album.NoActionProvidedOnAuthorizationCommand);
+    return ok({ authorization: existingAuthorization });
   }
+
   revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
     const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
     if (!authorization) {

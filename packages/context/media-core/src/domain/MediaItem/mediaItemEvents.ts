@@ -7,3 +7,9 @@ export interface MediaItemsSharedWithUser extends DomainEventBase {
   mediaItemIds: EntityId[];
   authorizationIds: EntityId[];
 }
+
+export interface PublicLinkSharedWithUser extends DomainEventBase {
+  kind: 'publicLinkSharedWithUser';
+  userId: EntityId;
+  publicLinkAuthorizationId: EntityId;
+}
