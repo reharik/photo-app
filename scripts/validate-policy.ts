@@ -708,9 +708,12 @@ const checkSmartEnumEslintRule = (): CheckResult => {
 };
 
 // --- Rule 14: generated paths in .gitignore ---
+// NOTE: contracts' graphqlSmartEnums.ts is intentionally NOT listed here. Although it is a
+// codegen output, it lives in a foundation package that every other package consumes AS SOURCE
+// (tsconfig paths / jest moduleNameMapper), so it is committed and must be present in a fresh
+// checkout before any typecheck/test — like the hand-authored enums beside it.
 const GENERATED_PATHS = [
   'apps/api/src/graphql/generated/',
-  'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts',
   'apps/api/src/di/generated/',
   'apps/media-worker/src/di/generated/',
   'packages/context/media-core/src/di/generated/',
@@ -719,8 +722,6 @@ const GENERATED_PATHS = [
 
 const SAMPLE_FILES_PER_PATH: Record<string, string> = {
   'apps/api/src/graphql/generated/': 'apps/api/src/graphql/generated/schema.graphql',
-  'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts':
-    'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts',
   'apps/api/src/di/generated/': 'apps/api/src/di/generated/ioc-manifest.ts',
   'apps/media-worker/src/di/generated/': 'apps/media-worker/src/di/generated/ioc-manifest.ts',
   'packages/context/media-core/src/di/generated/':
