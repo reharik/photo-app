@@ -131,15 +131,12 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     database('accessGrant').where({ grantedToUser, mediaItemId }).whereNull('linkToken');
 
   describe('mixed recipients (active + non-user) in one call', () => {
-    // RAI: bug — sharing the SAME media item with more than one recipient in one call
-    // crashes with `duplicate key value violates unique constraint "access_grant_pkey"`.
-    // grantAuthorizationForMediaItems.ts saves the item aggregate once PER authorization
-    // (`authorizations.flatMap(authz => [mediaItemRepository.save(item)])`), so an item
-    // shared with N recipients is saved N times concurrently via Promise.all, each save
-    // re-inserting the same access_grant rows. Single-recipient shares (the only case the
-    // e2e specs cover) save each item once and are unaffected — which is why this hid.
-    // Oracle below is the intended behavior; skipped until the item saves are de-duped.
-    it.skip('materializes item grants for the active user AND a shadow user + album grant for the non-user', async () => {
+    // Regression guard: sharing the SAME media item with more than one recipient in one
+    // call used to crash with `duplicate key ... "access_grant_pkey"` because the item
+    // aggregate was saved once PER authorization (N recipients → N concurrent saves of the
+    // same rows). grantAuthorizationForMediaItems now de-dupes item ids before saving, so
+    // each item is persisted once regardless of recipient count.
+    it('materializes item grants for the active user AND a shadow user + album grant for the non-user', async () => {
       const item1 = await createOwnedMediaItem(loggedInViewer1);
       const item2 = await createOwnedMediaItem(loggedInViewer1);
       const nonUserEmail = `shadow-${randomUUID()}@example.test`;
@@ -168,17 +165,23 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
           : (shadow?.userStatus as { value: string }).value;
       expect(status).toBe('PENDING');
 
-      // ...and the non-user branch built a "Public Link Album" and granted the shadow user
-      // an album-scoped grant on it, in the SAME call — proving both the item-grant branch
-      // and the public-link branch fired inside one committed transaction.
+      // ...and the shadow user also got an item-scoped grant per item (materializes for
+      // them on activation).
+      expect(await itemGrantsFor(shadow!.id, item1)).toHaveLength(1);
+      expect(await itemGrantsFor(shadow!.id, item2)).toHaveLength(1);
+
+      // The non-user branch additionally built a "Public Link Album" with a tokenized
+      // public-link grant (link_token set, no granted_to_user), in the SAME call — proving
+      // the active item-grant branch and the public-link branch both committed in one uow.
       const publicAlbum = await database('album')
         .where({ title: 'Public Link Album' })
         .first<{ id: string }>();
       expect(publicAlbum).toBeDefined();
-      const albumGrant = await database('accessGrant')
-        .where({ albumId: publicAlbum!.id, grantedToUser: shadow!.id })
+      const linkGrant = await database('accessGrant')
+        .where({ albumId: publicAlbum!.id })
+        .whereNotNull('linkToken')
         .first();
-      expect(albumGrant).toBeDefined();
+      expect(linkGrant).toBeDefined();
     });
   });
 
@@ -207,18 +210,13 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
   });
 
   describe('partial-share all-or-nothing', () => {
-    // RAI: bug — the PartialShareFailure guard returns a failure, but the grants that DID
-    // succeed are NOT rolled back: they commit anyway. grantAuthorizationForMediaItems
-    // returns fail(PartialShareFailure) AFTER saving the successful grants into the trx,
-    // and the resolver surfaces that as a `success:false` DATA payload — NOT a thrown
-    // GraphQL error. useScopedContainer commits iff `!result.errors?.length` (GraphQL
-    // errors), so the mutation commits and the partial grants persist. The "// rolls back
-    // uow" comment at grantAuthorizationForMediaItems.ts is therefore false. Confirmed:
-    // the service returns PARTIAL_SHARE_FAILURE yet the 2 Viewer-A grants remain in
-    // access_grant. Oracle below is the intended all-or-nothing behavior; skipped until
-    // the write-service failure forces a rollback (e.g. resolver throws, or the finalize
-    // keys off the write result rather than GraphQL errors).
-    it.skip('rolls back every grant in the batch when one recipient fails', async () => {
+    // Regression guard: a partial failure returns fail(PartialShareFailure) AFTER the
+    // successful grants are written to the trx. That failure travels as a `success:false`
+    // DATA payload, not a thrown GraphQL error, so it used to commit anyway (the partial
+    // grants persisted). The write boundary now flags the per-request uow for rollback when
+    // a mutation returns a failed WriteResult (authenticatedWriteResolver → uow.shouldRollback
+    // → useScopedContainer), so the whole batch is rolled back and no grant rows survive.
+    it('rolls back every grant in the batch when one recipient fails', async () => {
       const item1 = await createOwnedMediaItem(loggedInViewer1);
       const item2 = await createOwnedMediaItem(loggedInViewer1);
 

@@ -28,7 +28,9 @@ export const useScopedContainer = (
 
       const { scope, unitOfWork } = await beginUnitOfWorkScope(container);
       const writeServices = scope.resolve('writeServices');
-      extendContext({ writeServices, kind: 'authenticatedWrite' });
+      // Thread the same uow instance into the context so authenticatedWriteResolver can
+      // flag it for rollback on a failed WriteResult; the predicate below reads it back.
+      extendContext({ writeServices, uow: unitOfWork, kind: 'authenticatedWrite' });
 
       return {
         async onExecuteDone({ result }) {
@@ -37,8 +39,12 @@ export const useScopedContainer = (
             // commit or rollback? see note below
             return;
           }
-          // result is now narrowed to SingleExecutionResult — .errors works
-          await endUnitOfWork(unitOfWork, !result.errors?.length);
+          // result is now narrowed to SingleExecutionResult — .errors works.
+          // Commit only if there was NO GraphQL error AND no mutation field flagged the
+          // uow for rollback. Failures travel as data in the payload (fail-as-data), so
+          // they never reach result.errors — authenticatedWriteResolver detects them and
+          // sets uow.shouldRollback. Any single failed field rolls back the whole request.
+          await endUnitOfWork(unitOfWork, !result.errors?.length && !unitOfWork.shouldRollback);
         },
       };
     },

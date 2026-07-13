@@ -225,9 +225,10 @@ source "fixed" to make it pass.
 
 Scope approved: all four gap sets (new-user E6, `getOrCreateAllUsers` unit, partial-share
 rollback, mixed-recipient + ownership) + source cleanup. B1 was fixed by the repo owner
-(added the `user.activate()` call to the new-user path). Rule honored: **no source was
-edited to make a failing test pass** — tests that surfaced real bugs are committed `.skip`
-with `// RAI: bug` notes and logged below.
+(added the `user.activate()` call to the new-user path). The two share tests initially
+surfaced real bugs and were committed `.skip` with `// RAI: bug` notes (I did not edit source
+to make them pass); the owner then fixed both bugs, so those tests are now **un-skipped and
+passing** as regression guards. See "Bugs found during hardening" below.
 
 ## Source cleanup (done)
 
@@ -243,35 +244,42 @@ with `// RAI: bug` notes and logged below.
 | new-user E6 notify-rejection post-commit | integration | `authPasswordReset.integration.tests.ts` | **un-skipped, passes** |
 | `getOrCreateAllUsers`: normalize / dedup / all-or-nothing / merge / empty | unit | `packages/context/media-core/src/tests/getOrCreateAllUsers.tests.ts` (new) | **6 pass** |
 | share item you don't own → rejected, no grant rows | integration | `graphql.shareGrants.integration.tests.ts` (new) | **passes** |
-| mixed recipients (active + non-user) in one call | integration | `graphql.shareGrants.integration.tests.ts` (new) | **`.skip` — RAI bug #1** |
-| partial-share all-or-nothing rollback | integration | `graphql.shareGrants.integration.tests.ts` (new) | **`.skip` — RAI bug #2** |
+| mixed recipients (active + non-user) in one call | integration | `graphql.shareGrants.integration.tests.ts` (new) | **passes** (bug #1 fixed — now a regression guard) |
+| partial-share all-or-nothing rollback | integration | `graphql.shareGrants.integration.tests.ts` (new) | **passes** (bug #2 fixed — now a regression guard) |
 
 Verification (against local Postgres on :5443): api unit **29 pass**; media-core unit
-**49 pass** (incl. the 6 new); api integration **47 pass, 6 skip** (2 are the RAI-bug tests
-above), **0 fail**. B1 fix directly confirmed — the new-user E6 tests now show the
+**49 pass** (incl. the 6 new); api integration **49 pass, 4 skip, 0 fail** (3 of 4 full-suite
+runs clean; one run flaked in the unrelated `deleteFlows` suite — a known shared-pool race,
+14/14 in isolation). B1 fix directly confirmed — the new-user E6 tests show the
 `pendingUserActivated` event firing and the row persisted `ACTIVE`.
 
-## Possible bugs found during hardening (NOT fixed — reported per instruction)
+## Bugs found during hardening — both since FIXED by the repo owner (verified)
 
-- **RAI bug #1 — sharing one media item with >1 recipient in a single call crashes.**
-  `grantAuthorizationForMediaItems.ts` saves the item aggregate **once per authorization**
-  (`authorizations.flatMap(authz => [mediaItemRepository.save(item)])`), so an item shared
-  with N recipients issues N concurrent `save`s of the same aggregate via `Promise.all`,
-  each re-inserting the same `access_grant` rows →
-  `duplicate key value violates unique constraint "access_grant_pkey"`. The whole share
-  fails with an internal error. The e2e specs only ever share with a **single** recipient
-  (each item saved once), which is why this was never seen. Fix direction: de-dupe items
-  before saving (save each distinct item once, after all authorizations are attached).
+Reported first as `.skip` + `// RAI: bug` per the Phase 2 rule; the owner then implemented
+fixes, and the two tests are now **un-skipped and passing** as regression guards.
 
-- **RAI bug #2 — `PartialShareFailure` does not roll back; partial grants commit.**
-  On a partial failure the service returns `fail(PartialShareFailure)` *after* the
-  successful grants are written to the trx. The resolver surfaces that as a `success:false`
-  **data payload**, not a thrown GraphQL error; `useScopedContainer.ts:41` commits iff
-  `!result.errors?.length` (GraphQL errors only), so the uow **commits** and the "rolled
-  back" grants persist. Confirmed at the DB: service returns `PARTIAL_SHARE_FAILURE` yet the
-  successful recipient's `access_grant` rows remain. The `// rolls back uow` comment at
-  `grantAuthorizationForMediaItems.ts:162` is false. Fix direction: make a write-result
-  failure force a rollback (resolver throws, or finalize keys off the write result).
+- **RAI bug #1 (FIXED) — sharing one media item with >1 recipient in a single call crashed.**
+  `grantAuthorizationForMediaItems.ts` saved the item aggregate **once per authorization**,
+  so an item shared with N recipients issued N concurrent `save`s of the same aggregate,
+  each re-inserting the same rows → `duplicate key ... "access_grant_pkey"`. The e2e specs
+  only share with a single recipient (each item saved once), which is why it hid.
+  **Fix:** de-dupe the authorized media-item ids (`new Set(...map(mediaItemId))`) and save
+  each distinct item once (`grantAuthorizationForMediaItems.ts:130-138`). Verified: a mixed
+  2-item / 2-recipient share now commits 5 grants (2 item grants for the active user, 2 for
+  the shadow user, 1 tokenized public-link grant) with no crash.
+
+- **RAI bug #2 (FIXED) — `PartialShareFailure` did not roll back; partial grants committed.**
+  The service returns `fail(PartialShareFailure)` *after* the successful grants are written;
+  the resolver surfaces that as a `success:false` **data payload**, not a GraphQL error, so
+  the old `useScopedContainer` commit predicate (`!result.errors?.length`) committed anyway.
+  **Fix:** a per-request `uow.shouldRollback` flag — `authenticatedWriteResolver` now detects
+  a fail-as-data result (`success:false` or non-empty `errors[]`) and sets it, and
+  `useScopedContainer` commits only if `!result.errors?.length && !uow.shouldRollback`
+  (`unitOfWork.ts`, `contextWrappers.ts`, `useScopedContainer.ts`, `types.ts`). Verified: a
+  partial share now returns `PARTIAL_SHARE_FAILURE` **and** leaves zero `access_grant` rows.
+  Note: this is a broad boundary change — *every* mutation returning a failed WriteResult now
+  rolls back its uow. The full integration suite stays green under it, but it's worth a
+  focused eye in review since it changes commit semantics for all write mutations.
 
 - **Test-infra gap (fixed) — integration tests ran a stale `media-core` build.**
   `apps/api`'s DI composed manifest imports factories via the `@packages/media-core/iocManifest`

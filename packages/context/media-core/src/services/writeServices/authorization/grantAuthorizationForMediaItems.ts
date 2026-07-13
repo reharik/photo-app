@@ -167,7 +167,9 @@ export const build__GrantAuthorizationForMediaItems = ({
     // Until the share UI renders the errors array, a partial failure is a silent
     // lie ("shared!" when it wasn't), so we fail the whole op. See RAI-XX.
     if (mediaItemInviteResult.errors.length > 0) {
-      return fail(ContractError.PartialShareFailure); // rolls back uow
+      // Fail-as-data: the GraphQL write boundary detects this failed WriteResult and
+      // rolls back the uow (this service does not roll back itself).
+      return fail(ContractError.PartialShareFailure);
     }
 
     return ok({ invitedUsers: invitees, errors: mediaItemInviteResult.errors });
