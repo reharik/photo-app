@@ -39,12 +39,12 @@
     "@packages/contracts": "*",
     "@packages/infrastructure": "*",
     "@react-email/components": "^1.0.12",
-    "ioc-manifest": "^2.3.5",
+    "ioc-manifest": "^2.3.6",
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@jest/globals": "^30.4.1",
-    "@types/node": "^24.13.3",
+    "@types/node": "^22.0.0",
     "@types/react": "^19.0.10",
     "typescript": "^5.9.2"
   }

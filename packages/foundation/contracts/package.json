@@ -29,7 +29,7 @@
     "@graphql-codegen/cli": "^6.2.1",
     "@reharik/graphql-codegen-smart-enum": "^0.3.8",
     "@reharik/graphql-codegen-smart-enum-preset": "^0.1.2",
-    "@types/node": "^24.9.1",
+    "@types/node": "^22.0.0",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.2.1",
     "graphql": "^16.13.1",
