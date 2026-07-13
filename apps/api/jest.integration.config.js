@@ -9,6 +9,16 @@ export default {
   displayName: 'api-integration',
   moduleNameMapper: {
     ...apiJestConfig.moduleNameMapper,
+    // The base config maps `@packages/media-core` (the main entry) to source, but the DI
+    // composed manifest imports factories via the `/iocManifest` + `/iocTypes` subpaths,
+    // whose package `exports` resolve to the built `dist`. Because `test-integration` has
+    // no `dependsOn: build`, that left the container running a possibly-stale media-core
+    // build (masking source bugs). Map the subpaths to source too so integration tests
+    // always exercise current media-core source, consistent with the main-entry mapping.
+    '^@packages/media-core/iocManifest$':
+      '<rootDir>/../../packages/context/media-core/src/generated/ioc-manifest.ts',
+    '^@packages/media-core/iocTypes$':
+      '<rootDir>/../../packages/context/media-core/src/generated/ioc-registry.types.ts',
     '^@react-email/tailwind$': '<rootDir>/src/tests/__mocks__/reactEmailTailwind.js',
     '^koa$': '<rootDir>/src/tests/__mocks__/koa.js',
   },

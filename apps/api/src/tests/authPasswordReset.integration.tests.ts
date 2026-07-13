@@ -259,17 +259,13 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   });
 
   describe('E6 — success (new user)', () => {
-    // RAI-76: possible source bug — a brand-new signup never persists the user row.
-    // authService.ts:143 calls `DomainUser.create({...}, randomUUID())`; User.create
-    // (media-core User.ts:23-25) forwards that id into `new User(actorId, props, id)`,
-    // and the Entity ctor (Entity.ts:54) sets `_isNew = id == null` → false. create()
-    // also never touch()es, so `_isDirty` stays false. persistRoot (AggregateRepo.ts:14-18)
-    // therefore does NEITHER insert NOR update: the service returns ok({token}) with no
-    // user row written, so the "logged-in" user cannot subsequently log in. (PendingUser.create
-    // passes no id → isNew true, so the shadow-user activation path is unaffected.)
-    // These two tests assert the CORRECT oracle (E6: user saved atomically) and are skipped
-    // until the source is fixed — see REVIEW.md "Possible source bugs".
-    it.skip('atomically creates the active user and consumes the verification, notifying AFTER commit', async () => {
+    // RAI-76: the earlier new-user-not-persisted bug is fixed. The new-user branch
+    // (authService.ts) now creates a PendingUser via PendingUser.create (no id → isNew
+    // true, so the row persists) AND calls activate(), flipping userStatus → ACTIVE and
+    // setting the password. These tests assert that end state: the new user is saved
+    // ACTIVE + password-usable, the verification is consumed atomically, and notify fires
+    // AFTER commit.
+    it('atomically creates the active user and consumes the verification, notifying AFTER commit', async () => {
       const email = 'rai76-new@example.test';
       await seedVerification(email);
 
@@ -297,8 +293,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       expect(observations[0]!.committedVerificationConsumed).toBe(true);
     });
 
-    // RAI-76: skipped for the same new-user-not-persisted source bug documented above.
-    it.skip('a notify REJECTION does not roll back the committed user (throws post-commit)', async () => {
+    it('a notify REJECTION does not roll back the committed user (throws post-commit)', async () => {
       const email = 'rai76-new@example.test';
       await seedVerification(email);
       notifyImpl = async () => {

@@ -1,4 +1,11 @@
-import { AppErrorCollection, ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  ContractError,
+  fail,
+  notEmpty,
+  ok,
+  WriteResult,
+} from '@packages/contracts';
 import { dedupeIds, indexBy, Logger } from '@packages/infrastructure';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
@@ -120,13 +127,14 @@ export const build__GrantAuthorizationForMediaItems = ({
     const userMap = indexBy(users, (x) => x.id());
     const mediaItemMap = indexBy(mediaItems, (x) => x.id());
 
+    const authorizedMediaItemIds = [
+      ...new Set(mediaItemInviteResult.authorizations.map((x) => x.mediaItemId())),
+    ].filter(notEmpty);
     // --- media items: throw on a miss instead of `!` ---
-    const mediaItemPromises = mediaItemInviteResult.authorizations.flatMap((authz) => {
-      const mediaItemId = authz.mediaItemId();
-      if (!mediaItemId) return [];
-      const item = mediaItemMap.get(mediaItemId);
-      if (!item) throw new Error(`No media item ${mediaItemId} for authorization ${authz.id()}`);
-      return [mediaItemRepository.save(item)];
+    const mediaItemPromises = authorizedMediaItemIds.map((id) => {
+      const item = mediaItemMap.get(id);
+      if (!item) throw new Error(`No media item ${id} for authorization}`);
+      return mediaItemRepository.save(item);
     });
     await Promise.all(mediaItemPromises);
 
