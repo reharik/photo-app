@@ -16,18 +16,19 @@
  *  E6 success                  → user saved AND verification consumed ATOMICALLY;
  *                                notify fires AFTER commit
  */
-import { asValue } from 'awilix';
 import { ContractError, ok } from '@packages/contracts';
 import { beginUnitOfWorkScope } from '@packages/media-core';
 import type { NotificationService } from '@packages/notifications';
-import bcrypt from 'bcryptjs';
 import type { AwilixContainer } from 'awilix';
+import { asValue } from 'awilix';
+import bcrypt from 'bcryptjs';
 import type { Knex } from 'knex';
 import { DateTime } from 'luxon';
+import assert from 'node:assert';
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { AppCradle } from '../di/generated/ioc-composed.js';
 import type { SignupInput } from '@packages/contracts';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
@@ -60,13 +61,17 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   let notifyImpl: NotificationService['notify'];
 
   const cleanup = async (): Promise<void> => {
-    await database('emailVerification').whereIn('email', [...TEST_EMAILS]).del();
-    await database('user').whereIn('email', [...TEST_EMAILS]).del();
+    await database('emailVerification')
+      .whereIn('email', [...TEST_EMAILS])
+      .del();
+    await database('user')
+      .whereIn('email', [...TEST_EMAILS])
+      .del();
   };
 
   beforeAll(async () => {
     const setup = await setupGraphqlIntegrationTests();
-    container = setup.container as unknown as AwilixContainer<AppCradle>;
+    container = setup.container;
     database = container.resolve('database');
 
     // Spy notification service: records the COMMITTED db state at the moment notify
@@ -74,8 +79,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
     // committed user row / consumed verification visible here proves ordering.
     const spy: NotificationService = {
       notify: async (payload) => {
-        const email =
-          typeof payload.to === 'string' ? payload.to : (payload.to.email ?? '');
+        const email = typeof payload.to === 'string' ? payload.to : (payload.to.email ?? '');
         const userRow = await database('user').where({ email }).first();
         const verificationRow = await database('emailVerification')
           .where({ email })
@@ -150,7 +154,9 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   };
 
   /** Mirror the controller: fresh uow scope, resolve the scoped authService, run the write. */
-  const runVerify = (creds: SignupInput): Promise<Awaited<ReturnType<AppCradle['authService']['verifyCodeAndSetPassword']>>> =>
+  const runVerify = (
+    creds: SignupInput,
+  ): Promise<Awaited<ReturnType<AppCradle['authService']['verifyCodeAndSetPassword']>>> =>
     (async () => {
       const { scope } = await beginUnitOfWorkScope(container);
       const svc = scope.resolve('authService');
@@ -186,9 +192,8 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const result = await runVerify(baseCreds(email));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       expect(await getUser(email)).toBeUndefined();
       expect(observations).toHaveLength(0);
     });
@@ -202,9 +207,8 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const result = await runVerify(baseCreds(email));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
       const verification = await getVerification(email);
       // Lockout returns BEFORE the bad-code bump, so the counter is untouched...
       expect(verification?.attemptCount).toBe(3);
@@ -223,9 +227,8 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const result = await runVerify(baseCreds(email, { code: '000000' }));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       // The bump is an autocommit gateway OUTSIDE the uow — it must survive the rollback.
       const verification = await getVerification(email);
       expect(verification?.attemptCount).toBe(1);
@@ -245,9 +248,8 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const result = await runVerify(baseCreds(email, { phone: '123' }));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeUndefined();
       const user = await getUser(email);
@@ -276,25 +278,24 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const result = await runVerify(baseCreds(email));
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(typeof result.value.token).toBe('string');
-        expect(result.value.token.length).toBeGreaterThan(0);
-      }
+      assert(result.success);
+      expect(typeof result.value.token).toBe('string');
+      expect(result.value.token.length).toBeGreaterThan(0);
 
       // Atomic: user persisted AND verification consumed in the same committed uow.
       const user = await getUser(email);
       expect(user).toBeDefined();
       expect(statusValue(user?.userStatus)).toBe('ACTIVE');
-      expect(await bcrypt.compare('newPassword9', user!.passwordHash!)).toBe(true);
+      expect(await bcrypt.compare('newPassword9', user.passwordHash!)).toBe(true);
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeDefined();
 
       // notify fired once, AFTER commit (committed user + consumed verification visible),
       // with the new-user 'welcome' template.
       expect(observations).toHaveLength(1);
-      expect(observations[0]!.template).toBe('welcome');
-      expect(observations[0]!.committedUserVisible).toBe(true);
-      expect(observations[0]!.committedVerificationConsumed).toBe(true);
+      expect(observations[0].template).toBe('welcome');
+      expect(observations[0].committedUserVisible).toBe(true);
+      expect(observations[0].committedVerificationConsumed).toBe(true);
     });
 
     // RAI-76: skipped for the same new-user-not-persisted source bug documented above.
@@ -327,16 +328,16 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
 
       expect(result.success).toBe(true);
       const user = await getUser(email);
-      expect(await bcrypt.compare('newPassword9', user!.passwordHash!)).toBe(true);
-      expect(await bcrypt.compare('oldPassword1', user!.passwordHash!)).toBe(false);
+      expect(await bcrypt.compare('newPassword9', user.passwordHash!)).toBe(true);
+      expect(await bcrypt.compare('oldPassword1', user.passwordHash!)).toBe(false);
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeDefined();
       expect(observations).toHaveLength(1);
-      expect(observations[0]!.template).toBe('passwordReset');
-      expect(observations[0]!.committedUserVisible).toBe(true);
+      expect(observations[0].template).toBe('passwordReset');
+      expect(observations[0].committedUserVisible).toBe(true);
       // The verification is consumed INSIDE the uow; its being visibly-consumed at
       // notify time proves notify ran AFTER commit (not before).
-      expect(observations[0]!.committedVerificationConsumed).toBe(true);
+      expect(observations[0].committedVerificationConsumed).toBe(true);
     });
   });
 });

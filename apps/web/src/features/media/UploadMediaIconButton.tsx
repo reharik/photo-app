@@ -1,5 +1,4 @@
 import { Plus } from 'lucide-react';
-import styled from 'styled-components';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 import { UploadMediaTrigger } from './UploadMediaTrigger';
 

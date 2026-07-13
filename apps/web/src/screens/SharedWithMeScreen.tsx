@@ -1,16 +1,15 @@
+import { useApolloClient, useQuery } from '@apollo/client/react';
 import { EntityType, SharedWithMeMediaItemSortBy, SortDir } from '@packages/contracts';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { SharedWithMeSection } from '../features/sharedWithMe/SharedWithMeSection';
 import {
   MarkSeenDocument,
   MarkSeenMutation,
   ViewerHasUnseenActivityDocument,
-  ViewerSharedWithMeAlbumsDocument,
   ViewerSharedWithMeMediaItemsDocument,
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
-import { useApolloClient, useQuery } from '@apollo/client/react';
 
 import { useAppMutationState } from '../hooks/useAppMutation';
 

@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, ok } from '@packages/contracts';
 import type { EmailService } from '../emailClient.js';
@@ -30,9 +32,8 @@ describe('build__EmailChannel', () => {
       });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe(ContractError.EmailNotConfigured);
-      }
+      assert(!result.success);
+      expect(result.error).toBe(ContractError.EmailNotConfigured);
       expect(sendEmail).not.toHaveBeenCalled();
     });
   });
@@ -68,9 +69,8 @@ describe('build__EmailChannel', () => {
         text: 'Hello',
       });
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.value.messageId).toBe('msg-456');
-      }
+      assert(result.success);
+      expect(result.value.messageId).toBe('msg-456');
     });
   });
 });

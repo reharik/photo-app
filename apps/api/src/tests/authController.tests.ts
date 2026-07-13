@@ -9,15 +9,15 @@
  * verifyCodeAndSetPassword is covered in the integration tests.
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fail, ok, ContractError } from '@packages/contracts';
+import { ContractError, fail, ok } from '@packages/contracts';
 import type { Logger, RateLimiter, RateLimitResult } from '@packages/infrastructure';
 import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
-import { build__AuthController } from '../controllers/authController.js';
-import type { AuthService } from '../services/authService.js';
-import type { AuthQueryService } from '../services/authQueryService.js';
 import type { Cradle } from '../container.js';
+import { build__AuthController } from '../controllers/authController.js';
+import type { AuthQueryService } from '../services/authQueryService.js';
+import type { AuthService } from '../services/authService.js';
 
 const logger = {
   debug: jest.fn(),
@@ -42,6 +42,10 @@ const createCtx = (body: Record<string, unknown>, state: Record<string, unknown>
     cookies: { set: jest.fn() },
   } as unknown as Context;
 };
+
+// `ctx.cookies.set` is typed as a Koa Cookies method, so referencing it directly
+// trips @typescript-eslint/unbound-method. Read it through a plain-function shape.
+const cookieSetOf = (ctx: Context): jest.Mock => (ctx.cookies as unknown as { set: jest.Mock }).set;
 
 describe('build__AuthController', () => {
   let authQueryService: jest.Mocked<Pick<AuthQueryService, 'login' | 'verifyEmail'>>;
@@ -130,7 +134,7 @@ describe('build__AuthController', () => {
       await authController.login(ctx);
       expect(ctx.status).toBe(200);
       expect(ctx.body).toEqual({ user });
-      expect(ctx.cookies.set).toHaveBeenCalledWith(
+      expect(cookieSetOf(ctx)).toHaveBeenCalledWith(
         'token',
         'jwt-token',
         expect.objectContaining({ httpOnly: true }),
@@ -144,7 +148,7 @@ describe('build__AuthController', () => {
       authController.logout(ctx);
       expect(ctx.status).toBe(200);
       expect(ctx.body).toEqual({ message: 'Logged out successfully' });
-      expect(ctx.cookies.set).toHaveBeenCalledWith(
+      expect(cookieSetOf(ctx)).toHaveBeenCalledWith(
         'token',
         '',
         expect.objectContaining({ maxAge: 0 }),
@@ -235,8 +239,11 @@ describe('build__AuthController', () => {
       });
       await authController.setPassword(ctx);
       expect(ctx.status).toBe(200);
-      expect(ctx.body).toEqual({ message: 'Operation completed successfully', email: 'user@example.test' });
-      expect(ctx.cookies.set).toHaveBeenCalledWith(
+      expect(ctx.body).toEqual({
+        message: 'Operation completed successfully',
+        email: 'user@example.test',
+      });
+      expect(cookieSetOf(ctx)).toHaveBeenCalledWith(
         'token',
         'session-jwt',
         expect.objectContaining({ httpOnly: true }),

@@ -1,6 +1,8 @@
+import assert from 'node:assert';
+
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import type { Logger } from '@packages/infrastructure';
-import { isLocalStackAvailable } from '../test/localstack.js';
+import { isLocalStackAvailable } from './localstack.js';
 
 const logger = {
   debug: () => undefined,
@@ -46,9 +48,8 @@ describe('LocalStack email integration', () => {
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.value.messageId.length).toBeGreaterThan(0);
-      }
+      assert(result.success);
+      expect(result.value.messageId.length).toBeGreaterThan(0);
     });
   });
 });

@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
@@ -5,6 +7,7 @@ import type { Logger } from '@packages/infrastructure';
 import { build__EmailClient } from '../emailClient.js';
 // @aws-sdk/client-ses is statically mocked via moduleNameMapper (see jest.config.js);
 // this is that same mock module, so setting its send here controls the client.
+// eslint-disable-next-line jest/no-mocks-import -- the control helpers (__setSesSend/__resetSesSend) exist only in this mapped mock module; the real @aws-sdk path can't expose them.
 import { __resetSesSend, __setSesSend } from './__mocks__/awsSdkClientSes.js';
 
 const logger = {
@@ -45,9 +48,8 @@ describe('build__EmailClient', () => {
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.value.messageId).toBe('msg-123');
-      }
+      assert(result.success);
+      expect(result.value.messageId).toBe('msg-123');
       expect(send).toHaveBeenCalledTimes(1);
     });
   });
@@ -75,9 +77,8 @@ describe('build__EmailClient', () => {
       });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe(ContractError.EmailSendFailed);
-      }
+      assert(!result.success);
+      expect(result.error).toBe(ContractError.EmailSendFailed);
     });
   });
 });

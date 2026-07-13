@@ -10,6 +10,8 @@
  * E3 bad code → reject+rollback + attempt bump; E4 activate fails → rollback;
  * E6 success → save+consume then commit then notify (in that order).
  */
+import assert from 'node:assert';
+
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, ok } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
@@ -85,25 +87,25 @@ const makeHarness = (): Harness => {
       order.push('consume');
     },
   );
-  const bumpValidationAttempts = jest.fn<SystemEmailVerificationRepository['bumpValidationAttempts']>(
-    async () => {
-      order.push('bump');
-      return 1;
-    },
-  );
+  const bumpValidationAttempts = jest.fn<
+    SystemEmailVerificationRepository['bumpValidationAttempts']
+  >(async () => {
+    order.push('bump');
+    return 1;
+  });
 
   const service = build__AuthService({
     logger,
     config,
-    notificationService: { notify } as unknown as NotificationService,
+    notificationService: { notify },
     userRepository: { getUserByEmail, save } as unknown as UserRepository,
     emailVerificationRepository: {
       getValidVerification,
       completeConsumption,
-    } as unknown as EmailVerificationRepository,
+    },
     systemEmailVerificationRepository: {
       bumpValidationAttempts,
-    } as unknown as SystemEmailVerificationRepository,
+    },
     uow: uow as unknown as UnitOfWork,
   });
 
@@ -153,9 +155,8 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       const result = await h.service.verifyCodeAndSetPassword(creds());
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       expect(h.uow.rollback).toHaveBeenCalledTimes(1);
       expect(h.uow.commit).not.toHaveBeenCalled();
       expect(h.save).not.toHaveBeenCalled();
@@ -165,14 +166,13 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
   describe('E2 — attemptCount >= 3', () => {
     it('rejects with TooManyAttempts, rolls back, and does NOT bump the counter', async () => {
-      h.getValidVerification.mockResolvedValue(validRow({ attemptCount: 3 }) as never);
+      h.getValidVerification.mockResolvedValue(validRow({ attemptCount: 3 }));
 
       const result = await h.service.verifyCodeAndSetPassword(creds());
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
       expect(h.bumpValidationAttempts).not.toHaveBeenCalled();
       expect(h.uow.rollback).toHaveBeenCalledTimes(1);
       expect(h.uow.commit).not.toHaveBeenCalled();
@@ -182,14 +182,13 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
   describe('E3 — bad code', () => {
     it('bumps the attempt counter (out-of-band) BEFORE rolling back, and rejects', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
 
       const result = await h.service.verifyCodeAndSetPassword(creds({ code: 'WRONG' }));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       expect(h.bumpValidationAttempts).toHaveBeenCalledWith(VALID_ID);
       // bump is awaited before the rollback so it is durable regardless of the trx.
       expect(h.order).toEqual(['bump', 'rollback']);
@@ -200,7 +199,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
   describe('E4 — pending user activate() fails', () => {
     it('rolls back with ErrorActivatingUser and never saves or consumes', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
       const pendingUser = {
         kind: 'pending' as const,
         id: () => 'pending-user-1',
@@ -211,9 +210,8 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       const result = await h.service.verifyCodeAndSetPassword(creds({ phone: '123' }));
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
-      }
+      assert(!result.success);
+      expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
       expect(h.uow.rollback).toHaveBeenCalledTimes(1);
       expect(h.uow.commit).not.toHaveBeenCalled();
       expect(h.save).not.toHaveBeenCalled();
@@ -223,14 +221,13 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
   describe('E6 — success (new user)', () => {
     it('saves + consumes, then commits, then notifies — in that order', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
 
       const result = await h.service.verifyCodeAndSetPassword(creds());
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(typeof result.value.token).toBe('string');
-      }
+      assert(result.success);
+      expect(typeof result.value.token).toBe('string');
       // Ordering oracle: write + consume happen inside the uow, THEN commit, THEN notify.
       expect(h.order).toEqual(['save', 'consume', 'commit', 'notify']);
       expect(h.uow.rollback).not.toHaveBeenCalled();
@@ -240,7 +237,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     });
 
     it('a notify RESULT failure still returns ok and does not roll back', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
       h.notify.mockResolvedValue(fail(ContractError.noRecipientsProvided));
 
       const result = await h.service.verifyCodeAndSetPassword(creds());
@@ -251,7 +248,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     });
 
     it('a notify REJECTION propagates but does NOT roll back the committed uow', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
       h.notify.mockImplementation(async () => {
         throw new Error('SES exploded');
       });
@@ -265,7 +262,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
   describe('pre-commit throw', () => {
     it('rolls back and rethrows when a write throws before commit', async () => {
-      h.getValidVerification.mockResolvedValue(validRow() as never);
+      h.getValidVerification.mockResolvedValue(validRow());
       h.save.mockImplementation(async () => {
         throw new Error('db write failed');
       });

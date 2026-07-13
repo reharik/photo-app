@@ -21,7 +21,7 @@ type SesMessagesResponse = {
   messages?: SesMessage[];
 };
 
-const SHARE_INVITE_PATH_PATTERN = /\/shared\/[^\s"'<>\)]+/;
+const SHARE_INVITE_PATH_PATTERN = /\/shared\/[^\s"'<>)]+/;
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

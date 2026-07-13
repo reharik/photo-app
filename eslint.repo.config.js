@@ -16,7 +16,14 @@ const nxDepConstraints = [
   },
 ];
 
-const repoIgnores = ['**/_typia/**', '**/dist/**', '**/graphqlSmartEnums.ts'];
+const repoIgnores = [
+  '**/_typia/**',
+  '**/dist/**',
+  '**/graphqlSmartEnums.ts',
+  '**/generated/**',
+  '**/*.ioc-manifest.generated.ts',
+  '**/*.ioc-registry.types.ts',
+];
 
 /**
  * Test-only file globs. Kept in sync: main config ignores these; `eslint.test.config.js` lints them.

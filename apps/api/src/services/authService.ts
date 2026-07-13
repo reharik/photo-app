@@ -8,7 +8,6 @@ import {
 } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import {
-  User as DomainUser,
   EmailVerificationRepository,
   EntityId,
   PendingUser,
