@@ -1,5 +1,6 @@
 import { User } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
+import type { UnitOfWork } from '@packages/media-core';
 import type { NotificationService } from '@packages/notifications';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type Koa from 'koa';
@@ -23,6 +24,10 @@ export type AuthenticatedReadGraphQLContext = InitialAuthenticated & {
 
 export type AuthenticatedWriteGraphQLContext = InitialAuthenticated & {
   writeServices: WriteServices;
+  // The per-request unit of work, threaded in so the write-resolver wrapper can flag
+  // it for rollback when a mutation returns a failed WriteResult (fail-as-data). Same
+  // instance the boundary (useScopedContainer) reads at commit time.
+  uow: UnitOfWork;
 };
 
 export type PublicGraphQLContext = InitialPublic & {

@@ -137,13 +137,20 @@ export const build__AuthService = ({
         // Hash password
         const passwordHash = await bcrypt.hash(password, 12);
         let template: 'welcome' | 'passwordReset';
-        console.dir(user, { depth: null, getters: true });
         if (!user) {
           user = PendingUser.create(
             { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
             randomUUID(),
           );
           template = 'welcome';
+          const activateResult = user.activate(
+            { firstName, lastName, phone, passwordHash },
+            user.id(),
+          );
+          if (!activateResult.success) {
+            await uow.rollback();
+            return fail(ContractError.ErrorActivatingUser);
+          }
           // this else is ugly, true, but it's the only true way we can handle the three cases.
           // we can't pass the new user in and have activate set the pw because that also sets the template
         } else {

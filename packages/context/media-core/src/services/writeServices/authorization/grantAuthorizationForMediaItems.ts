@@ -1,4 +1,11 @@
-import { AppErrorCollection, ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  ContractError,
+  fail,
+  notEmpty,
+  ok,
+  WriteResult,
+} from '@packages/contracts';
 import { dedupeIds, indexBy, Logger } from '@packages/infrastructure';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
@@ -120,13 +127,14 @@ export const build__GrantAuthorizationForMediaItems = ({
     const userMap = indexBy(users, (x) => x.id());
     const mediaItemMap = indexBy(mediaItems, (x) => x.id());
 
+    const authorizedMediaItemIds = [
+      ...new Set(mediaItemInviteResult.authorizations.map((x) => x.mediaItemId())),
+    ].filter(notEmpty);
     // --- media items: throw on a miss instead of `!` ---
-    const mediaItemPromises = mediaItemInviteResult.authorizations.flatMap((authz) => {
-      const mediaItemId = authz.mediaItemId();
-      if (!mediaItemId) return [];
-      const item = mediaItemMap.get(mediaItemId);
-      if (!item) throw new Error(`No media item ${mediaItemId} for authorization ${authz.id()}`);
-      return [mediaItemRepository.save(item)];
+    const mediaItemPromises = authorizedMediaItemIds.map((id) => {
+      const item = mediaItemMap.get(id);
+      if (!item) throw new Error(`No media item ${id} for authorization}`);
+      return mediaItemRepository.save(item);
     });
     await Promise.all(mediaItemPromises);
 
@@ -159,7 +167,9 @@ export const build__GrantAuthorizationForMediaItems = ({
     // Until the share UI renders the errors array, a partial failure is a silent
     // lie ("shared!" when it wasn't), so we fail the whole op. See RAI-XX.
     if (mediaItemInviteResult.errors.length > 0) {
-      return fail(ContractError.PartialShareFailure); // rolls back uow
+      // Fail-as-data: the GraphQL write boundary detects this failed WriteResult and
+      // rolls back the uow (this service does not roll back itself).
+      return fail(ContractError.PartialShareFailure);
     }
 
     return ok({ invitedUsers: invitees, errors: mediaItemInviteResult.errors });

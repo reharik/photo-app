@@ -20,7 +20,6 @@ export interface AuthQueryService {
   login: (credentials: LoginInput) => Promise<AuthResponse | undefined>;
   verifyEmail: (email: string) => Promise<WriteResult<void>>;
   hashPassword: (password: string) => Promise<string>;
-  // publicAccess: (token: string) => Promise<{ publicAccessId: string; albumId: string } | undefined>;
 }
 
 type UserRow = User & {
@@ -124,36 +123,6 @@ export const build__AuthQueryService = ({
 
     return ok(undefined);
   },
-
-  // publicAccess: async (token: string) => {
-  //   const hashedToken = hashToken(token);
-  //   console.log('[VALIDATE] token:', JSON.stringify(token));
-  //   console.log('[VALIDATE] hash:', hashedToken);
-  //   console.log(`************"FU"************`);
-  //   console.log('FU');
-  //   console.log(`********END "FU"************`);
-  //   const authenticated = await database('accessGrant')
-  //     .where({ linkToken: hashedToken })
-  //     .whereNull('revokedAt')
-  //     .where((b) => {
-  //       b.whereNull('expiresAt').orWhere('expiresAt', '>', database.fn.now());
-  //     })
-  //     .first<{ publicAccessId: EntityId; albumId: EntityId } | undefined>([
-  //       'id as publicAccessId',
-  //       'albumId',
-  //     ]);
-
-  //   if (!authenticated) {
-  //     logger.warn('Authentication attempt failed: token not found ');
-  //     return undefined;
-  //   }
-
-  //   logger.info('token verified successfully', {
-  //     id: authenticated.publicAccessId,
-  //   });
-
-  //   return authenticated;
-  // },
 
   hashPassword: async (password: string) => {
     return bcrypt.hash(password, 12);
