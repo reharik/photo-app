@@ -28,6 +28,8 @@ jobs:
       - run: npm run check:policy
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run lint:all
       - name: Check formatting
         run: npm run format:check
@@ -52,6 +54,8 @@ jobs:
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run test:ci
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -81,6 +85,8 @@ jobs:
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run build:all
       - name: Build production frontend
         run: npm run build:web
