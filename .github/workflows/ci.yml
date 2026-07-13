@@ -21,6 +21,8 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+               - name: Install proper npm
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - run: npm run check:deps
       - run: npm run check:policy
@@ -46,6 +48,7 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
@@ -74,6 +77,7 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
