@@ -47,9 +47,7 @@ export type InitialAuthenticated = GraphQLContextShared & {
 };
 
 export type GraphQLContext =
-  | AuthenticatedReadGraphQLContext
-  | AuthenticatedWriteGraphQLContext
-  | PublicGraphQLContext;
+  AuthenticatedReadGraphQLContext | AuthenticatedWriteGraphQLContext | PublicGraphQLContext;
 
 export type GraphQLInitialContext = YogaInitialContext & Koa.Context;
 

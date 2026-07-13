@@ -9,7 +9,7 @@ Three layers — **never skip one, never hardcode a color in a component**.
 
 1. `src/styles/colors.ts` — primitive palette (raw hex). **Do not import directly
    from components** (the file says so). Scales: `base, _light, _lighter, _lightest,
-   _dark, _darker, _darkest`; neutrals are a numbered gray scale (`gray_10` lightest →
+_dark, _darker, _darkest`; neutrals are a numbered gray scale (`gray_10` lightest →
    `gray_90` primary text).
 2. `src/styles/theme.ts` — maps primitives to **semantic tokens** under
    `theme.color.*` (e.g. `theme.color.primaryButtonBg`, `theme.color.textMuted`).
@@ -23,6 +23,7 @@ outside `src/styles/` and `/generated/`.** New code: prefer `theme.weight.medium
 over `semi`/`bold`. Spacing is `theme.spacing(n)` = `n*8px`.
 
 **Avoid these legacy escape hatches** (they work but are marked for removal):
+
 - `theme.color` spreads `...colors`, so `theme.color.gray_50` resolves — but that's
   the "primitive escape hatch (legacy — avoid in new code)".
 - `theme.colors.*` / `theme.radius.*` / `theme.shadow.*` are backward-compat aliases.

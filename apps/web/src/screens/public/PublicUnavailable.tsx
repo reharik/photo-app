@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import { PanelBody, PanelTitle, SoftPanel } from '../../ui/QueryErrorState';
 
 const TITLE = "This album isn't available";
-const MESSAGE =
-  'This link may have been turned off, or the album may no longer exist.';
+const MESSAGE = 'This link may have been turned off, or the album may no longer exist.';
 
 export const PublicUnavailable = (): JSX.Element => {
   const titleId = useId();

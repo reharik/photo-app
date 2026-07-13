@@ -11,14 +11,14 @@
 import { ok } from '@packages/contracts';
 import type { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
-import knexFactory from 'knex';
 import type { Knex } from 'knex';
+import knexFactory from 'knex';
 import { randomUUID } from 'node:crypto';
 
 import { createConfigFromEnv } from '../config.js';
 import { build__KnexConfig } from '../knexfile.js';
-import { build__AuthQueryService } from '../services/authQueryService.js';
 import type { AuthQueryService } from '../services/authQueryService.js';
+import { build__AuthQueryService } from '../services/authQueryService.js';
 
 const TEST_EMAILS = ['rai76-login@example.test', 'rai76-verify@example.test'] as const;
 
@@ -31,8 +31,12 @@ describe('AuthQueryService (integration)', () => {
   let service: AuthQueryService;
 
   const cleanup = async (): Promise<void> => {
-    await database('emailVerification').whereIn('email', [...TEST_EMAILS]).del();
-    await database('user').whereIn('email', [...TEST_EMAILS]).del();
+    await database('emailVerification')
+      .whereIn('email', [...TEST_EMAILS])
+      .del();
+    await database('user')
+      .whereIn('email', [...TEST_EMAILS])
+      .del();
   };
 
   beforeAll(async () => {

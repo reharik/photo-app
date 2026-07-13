@@ -1,8 +1,8 @@
 import { JSX, type ReactNode } from 'react';
 import styled from 'styled-components';
+import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
 import { MobileViewerActionBar } from './MobileViewerActionBar';
 import type { MobileViewerSheet } from './mediaViewerTypes';
-import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
 import { viewerChromeVisibility } from './viewerChromeVisibility';
 
 type MediaViewerMobileProps = {

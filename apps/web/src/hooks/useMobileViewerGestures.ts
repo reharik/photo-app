@@ -136,15 +136,7 @@ export const useMobileViewerGestures = ({
         onToggleChrome();
       }, SINGLE_TAP_DELAY_MS);
     },
-    [
-      canNavigate,
-      clearSingleTapTimer,
-      enabled,
-      onDismiss,
-      onNavigate,
-      onToggleChrome,
-      zoomActive,
-    ],
+    [canNavigate, clearSingleTapTimer, enabled, onDismiss, onNavigate, onToggleChrome, zoomActive],
   );
 
   const onPointerCancel = useCallback(

@@ -4,12 +4,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('unseen_activity', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
 
-    table
-      .uuid('viewer_id')
-      .notNullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('CASCADE');
+    table.uuid('viewer_id').notNullable().references('id').inTable('user').onDelete('CASCADE');
 
     // nullable rollup hint
     table.uuid('album_id').nullable();

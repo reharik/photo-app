@@ -81,7 +81,11 @@ const waitForVerificationCode = async (
 /** Fill the details step and submit. */
 const submitDetails = async (
   page: Page,
-  { code, firstName = 'Given', lastName = 'Family' }: { code: string; firstName?: string; lastName?: string },
+  {
+    code,
+    firstName = 'Given',
+    lastName = 'Family',
+  }: { code: string; firstName?: string; lastName?: string },
 ): Promise<void> => {
   await page.getByTestId('signup-code').fill(code);
   await page.locator('#signup-first-name').fill(firstName);
@@ -109,7 +113,9 @@ test.describe('Signup (email → code → password)', () => {
     await startSignup(anonPage, email);
 
     // Existence-blind: regardless of the email, the UI advances to the code step.
-    await expect(anonPage.getByText('a 6-digit code is on its way', { exact: false })).toBeVisible();
+    await expect(
+      anonPage.getByText('a 6-digit code is on its way', { exact: false }),
+    ).toBeVisible();
   });
 
   test('an invalid code is rejected and keeps the user on the code step', async ({ anonPage }) => {

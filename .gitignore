@@ -31,6 +31,11 @@ packages/foundation/contracts/src/enums/graphqlSmartEnums.ts
 
 apps/web/src/graphql/generated/*
 
+# Transient artifacts (test output, captured stdout, nx graph dumps)
+/test-results
+/graph.json
+/stdout.json
+
 
 # Private keys and certificates
 *.pem

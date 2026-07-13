@@ -1,9 +1,7 @@
 import { JSX } from 'react';
 import styled from 'styled-components';
 
-export const CommentsEmptyHint = (): JSX.Element => (
-  <Hint>Be the first to say something</Hint>
-);
+export const CommentsEmptyHint = (): JSX.Element => <Hint>Be the first to say something</Hint>;
 
 const Hint = styled.p`
   margin: 0;

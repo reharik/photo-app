@@ -34,10 +34,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     if (this.state.hasError) {
       return (
         <Page>
-          <QueryErrorState
-            error={this.state.error}
-            onRetry={() => window.location.reload()}
-          />
+          <QueryErrorState error={this.state.error} onRetry={() => window.location.reload()} />
         </Page>
       );
     }

@@ -12,8 +12,7 @@ export const SharedAlbumsListScreen = () => {
 
   const { data: sharedAlbums, content } = getQueryRenderState({
     query,
-    select: (data) =>
-      (data.viewer?.sharedWithMeAlbums?.nodes ?? []).map((node) => node.album),
+    select: (data) => (data.viewer?.sharedWithMeAlbums?.nodes ?? []).map((node) => node.album),
   });
 
   if (!sharedAlbums) {

@@ -125,15 +125,17 @@ const sizeStyles = ($size: ButtonSize, $variant: ButtonVariant): ReturnType<type
             : `${theme.spacing(0.75)} ${theme.spacing(2)}`};
       }
 
-      ${$variant === 'ghost'
-        ? css`
-            padding: ${({ theme }) => `${theme.spacing(0.75)} ${theme.spacing(1)}`};
-            min-width: 0;
-            flex-shrink: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          `
-        : ''}
+      ${
+        $variant === 'ghost'
+          ? css`
+              padding: ${({ theme }) => `${theme.spacing(0.75)} ${theme.spacing(1)}`};
+              min-width: 0;
+              flex-shrink: 1;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            `
+          : ''
+      }
 
       ${$variant === 'primary' ? primarySmall : ''}
     `;

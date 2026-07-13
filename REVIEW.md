@@ -36,7 +36,7 @@ refactor. Source is read-only; only test files touched. No commits.
   handle on `globalThis.__photoappTestKnex`, and seeds stable users via
   `ensureTestViewerUsers`. `jestGlobalTeardown` destroys that knex pool.
   - Per-test cleanup: `resetIntegrationTestDb` → `resetDb` (raw `TRUNCATE ...
-    RESTART IDENTITY CASCADE`) then re-seed viewer users.
+RESTART IDENTITY CASCADE`) then re-seed viewer users.
   - Stable user ids in `testViewerIds.ts`; seeded by `ensureTestViewerUsers.ts`
     (`ON CONFLICT (id) DO NOTHING`).
   - Running DB: docker `betaname-dev-db-1`, host port **5433** (`apps/api/.env`
@@ -113,7 +113,7 @@ refactor. Source is read-only; only test files touched. No commits.
 
 ---
 
-## Stream 1 — Compile floor  ✅ green
+## Stream 1 — Compile floor ✅ green
 
 Baseline: `nx typecheck api` was RED — ~40 errors, ALL from the two red files
 (the base `tsconfig.json` includes `src/**/*.ts`, so test files ARE typechecked).
@@ -135,11 +135,12 @@ Baseline: `nx typecheck api` was RED — ~40 errors, ALL from the two red files
 
 ---
 
-## Stream 2 — Unit/integration coverage  ✅
+## Stream 2 — Unit/integration coverage ✅
 
 New/updated files and results (run: `nx test api` unit, `nx run api:test-integration`):
 
 Unit (`jest.config.js`) — **29 passed / 29**:
+
 - `authController.tests.ts` (rewritten) — 16 tests: login (missing fields, rate
   limit, bad creds, success+cookie), logout, emailVerification (invalid email,
   rate limited, issues code), setPassword (missing fields, short password, domain
@@ -155,6 +156,7 @@ Unit (`jest.config.js`) — **29 passed / 29**:
   wrong-secret → undefined; valid token but user gone → undefined.
 
 Integration (`jest.integration.config.js`, real Postgres :5433) — **10 passed, 2 skipped**:
+
 - `authQueryService.integration.tests.ts` (new) — 5 passed: login success
   (user+token, passwordHash stripped), wrong password → undefined, unknown user →
   undefined; verifyEmail stores a fresh live code; verifyEmail invalidates the
@@ -181,10 +183,11 @@ verification consumed) at notify time to prove notify runs post-commit.
 
 ---
 
-## Stream 3 — E2E  ✅ (partial — primary flow blocked by source bug)
+## Stream 3 — E2E ✅ (partial — primary flow blocked by source bug)
 
 `packages/e2e/tests/auth/signup.spec.ts` (new). Run against the live app —
 **2 passed, 3 skipped**:
+
 - ✅ email step sends a code and advances to the code step (existence-blind).
 - ✅ an invalid code is rejected ("That code isn't right.") and keeps the user on
   the code step — the bad-code half of "bad code then correct code", and it
@@ -221,7 +224,7 @@ was already modified before this run and I did not touch it).
    `password_reset` (dropped in `0017`), `share_link_grant`, and `share_link`
    (both dropped in `0018`) from the `TRUNCATE` list, and added
    `email_verification` + `rate_limit_event`. The helper referenced tables that no
-   longer exist, so it threw against the migrated DB and broke *every* integration
+   longer exist, so it threw against the migrated DB and broke _every_ integration
    test at runtime. Clearly-correct schema-sync. Effect: the full integration
    suite went from 34 failing → 1 failing (the unrelated `collectionPaging` case).
 3. **Fixed the stale shared helper `ensureTestViewerUsers.ts`** (test file): added
@@ -297,7 +300,7 @@ was already modified before this run and I did not touch it).
   - code validation / invalid-code rejection → E1/E3 (integration + unit) and the
     e2e bad-code test.
   - attempt lockout (`>= 3`) → E2 (integration + unit).
-  - attempt-counter increment on bad code → E3 (integration asserts it *persists*
+  - attempt-counter increment on bad code → E3 (integration asserts it _persists_
     across rollback; unit asserts the bump call ordering).
   - atomic "consume the code + set the password" → E6 existing-active-user
     (integration) and the unit ordering test.

@@ -1,9 +1,9 @@
 import {
   AppErrorCollection,
+  EntityType,
   fail,
   ok,
   ReactionEmoji,
-  EntityType,
   User,
   WriteResult,
 } from '@packages/contracts';

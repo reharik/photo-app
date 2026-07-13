@@ -19,10 +19,7 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react"
   },
-  "include": [
-    "src/**/*.ts",
-    "db/**/*.ts"
-  ],
+  "include": ["src/**/*.ts", "db/**/*.ts"],
   "exclude": [
     "jest.*",
     "dist",

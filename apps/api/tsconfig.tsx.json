@@ -9,10 +9,5 @@
   // Broadening `include` here to cover the package sources makes jsx:react-jsx apply
   // to them. This file is NOT used by tsc/typecheck/build -- it only steers tsx.
   "extends": "./tsconfig.json",
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "../../packages/**/*.ts",
-    "../../packages/**/*.tsx"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../../packages/**/*.ts", "../../packages/**/*.tsx"]
 }

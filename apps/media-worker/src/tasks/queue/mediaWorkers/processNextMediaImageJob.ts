@@ -14,11 +14,11 @@ import {
 import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../../../config.js';
-import { extractCaptureTime } from '../../../infrastructure/exif/extractCaptureTime.js';
 import type { AppCradle } from '../../../generated/ioc-composed.js';
-import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
+import { extractCaptureTime } from '../../../infrastructure/exif/extractCaptureTime.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator.js';
 import { readStreamToBuffer } from './readStreamToBuffer.js';
+import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 
 export type ProcessNextMediaImageJobResult = 'processed' | 'idle';
 

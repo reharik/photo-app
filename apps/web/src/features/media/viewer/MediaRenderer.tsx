@@ -24,13 +24,7 @@ const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
   return mimeType.startsWith('video/');
 };
 
-export const MediaRenderer = ({
-  id,
-  kind,
-  mimeType,
-  displayUrl,
-  imageAlt,
-}: MediaRendererProps) => {
+export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: MediaRendererProps) => {
   if (isPhotoLike(kind, mimeType)) {
     return <ImageRenderer id={id} src={displayUrl} alt={imageAlt} />;
   }

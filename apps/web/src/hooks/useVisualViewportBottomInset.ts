@@ -6,8 +6,7 @@ const computeBottomInset = (): number => {
     return 0;
   }
 
-  const inset =
-    window.innerHeight - (visualViewport.height + visualViewport.offsetTop);
+  const inset = window.innerHeight - (visualViewport.height + visualViewport.offsetTop);
   return Math.max(0, inset);
 };
 

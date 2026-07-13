@@ -253,10 +253,12 @@ describe('runWorkerTasksOnce', () => {
   // runWorkerTasksOnce runs whatever due-list it is handed, in array order — the
   // due-gating (queue vs scheduled/cadence) now lives in IntervalGate.getTasksDue,
   // tested separately below.
-  const task = (
-    name: string,
-    run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
-  ): WorkerTask => ({ name, type: 'queue', run, order: 0 });
+  const task = (name: string, run: jest.Mock<() => Promise<WorkerTaskOutcome>>): WorkerTask => ({
+    name,
+    type: 'queue',
+    run,
+    order: 0,
+  });
 
   it('runs tasks in order, stopping at the first that processes', async () => {
     const calls: string[] = [];
@@ -313,11 +315,13 @@ describe('build__IntervalGate', () => {
     run: noopRun(),
   });
 
-  const scheduleTask = (
-    name: string,
-    order: number,
-    cadence: NotificationCadence,
-  ): WorkerTask => ({ name, order, type: 'schedule', cadence, run: noopRun() });
+  const scheduleTask = (name: string, order: number, cadence: NotificationCadence): WorkerTask => ({
+    name,
+    order,
+    type: 'schedule',
+    cadence,
+    run: noopRun(),
+  });
 
   // Long sweep windows so the gates are open on the first call and closed on the
   // immediate second call (elapsed ≈ 0 ms « interval).

@@ -1,4 +1,4 @@
-import { ReactionEmoji, EntityType } from '@packages/contracts';
+import { EntityType, ReactionEmoji } from '@packages/contracts';
 import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { JSX } from 'react';

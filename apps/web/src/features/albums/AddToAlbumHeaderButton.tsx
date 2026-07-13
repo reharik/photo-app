@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { AnchoredMenu } from '../../ui/AnchoredMenu';
 import { Button } from '../../ui/Button';
-import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 import { UploadMediaTrigger } from '../media/UploadMediaTrigger';
+import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 
 type AddToAlbumHeaderButtonProps = {
   albumId: string;

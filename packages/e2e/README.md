@@ -6,14 +6,14 @@ Playwright end-to-end tests for the photo app. This package is a **test runner**
 
 Bring up the stack **before** running tests. Playwright does not start services for you.
 
-| Requirement        | Default / notes                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------ |
-| **Web**            | `http://localhost:5173` — `npm run dev:web`                                                            |
-| **API**            | `http://localhost:3001` — `npm run dev:api`                                                            |
-| **media-worker**   | Background image processing for uploads — `npm run dev:worker` (or equivalent)                         |
-| **Postgres**       | Same database as the API (`apps/api/.env`; e2e reads that file via `fixtures/env.ts`)                  |
+| Requirement        | Default / notes                                                                                                                                                                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Web**            | `http://localhost:5173` — `npm run dev:web`                                                                                                                                                          |
+| **API**            | `http://localhost:3001` — `npm run dev:api`                                                                                                                                                          |
+| **media-worker**   | Background image processing for uploads — `npm run dev:worker` (or equivalent)                                                                                                                       |
+| **Postgres**       | Same database as the API (`apps/api/.env`; e2e reads that file via `fixtures/env.ts`)                                                                                                                |
 | **Seed data**      | Playwright `globalSetup` upserts e2e users from `apps/api/db/seedUsers.ts` (`tester.one@gmail.com`, `two.tester@gmail.com`); run `npm run db:seed:local --workspace=@app/api` once for full dev seed |
-| **Object storage** | Whatever the API is configured for (S3 or local); uploads in tests go through the UI                   |
+| **Object storage** | Whatever the API is configured for (S3 or local); uploads in tests go through the UI                                                                                                                 |
 
 Override URLs and DB settings with `E2E_WEB_BASE_URL`, `E2E_API_BASE_URL`, and the same `POSTGRES_*` keys the API uses.
 

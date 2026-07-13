@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { logMediaWorkerStartup } from '../tasks/queue/mediaWorkers/logMediaWorkerStartup';
 import type { Config } from '../config';
+import { logMediaWorkerStartup } from '../tasks/queue/mediaWorkers/logMediaWorkerStartup';
 
 describe('logMediaWorkerStartup', () => {
   describe('When probes succeed', () => {
