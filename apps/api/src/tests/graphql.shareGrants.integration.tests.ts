@@ -167,8 +167,8 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
 
       // ...and the shadow user also got an item-scoped grant per item (materializes for
       // them on activation).
-      expect(await itemGrantsFor(shadow!.id, item1)).toHaveLength(1);
-      expect(await itemGrantsFor(shadow!.id, item2)).toHaveLength(1);
+      expect(await itemGrantsFor(shadow.id, item1)).toHaveLength(1);
+      expect(await itemGrantsFor(shadow.id, item2)).toHaveLength(1);
 
       // The non-user branch additionally built a "Public Link Album" with a tokenized
       // public-link grant (link_token set, no granted_to_user), in the SAME call — proving
@@ -178,7 +178,7 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
         .first<{ id: string }>();
       expect(publicAlbum).toBeDefined();
       const linkGrant = await database('accessGrant')
-        .where({ albumId: publicAlbum!.id })
+        .where({ albumId: publicAlbum.id })
         .whereNotNull('linkToken')
         .first();
       expect(linkGrant).toBeDefined();
