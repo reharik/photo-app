@@ -116,7 +116,7 @@ jobs:
       - name: Generate GraphQL types & smart-enums
         run: npm run gen:gql:all
       - name: DB migrate
-        run: npm run db:migrate:local
+        run: npm run db:migrate
       - name: Integration tests (real Postgres)
         run: npm run test:integration:api
 
