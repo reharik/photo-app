@@ -4,7 +4,6 @@ import type {
 } from '@packages/media-core';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
-import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
 const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -16,18 +15,7 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         expiresAt: args.input.expiresAt ?? undefined,
       };
 
-      const result = await ctx.writeServices.createPublicLinkForAlbum(command);
-      if (!result.success) {
-        return {
-          success: false,
-          errors: [toContractErrorPayload(result.error)],
-        };
-      }
-
-      return {
-        success: true,
-        data: { token: result.value.token },
-      };
+      return ctx.writeServices.createPublicLinkForAlbum(command);
     }),
 
     createPublicLinkForMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -38,18 +26,7 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         expiresAt: args.input.expiresAt ?? undefined,
       };
 
-      const result = await ctx.writeServices.createPublicLinkForMediaItems(command);
-      if (!result.success) {
-        return {
-          success: false,
-          errors: [toContractErrorPayload(result.error)],
-        };
-      }
-
-      return {
-        success: true,
-        data: { token: result.value.token },
-      };
+      return ctx.writeServices.createPublicLinkForMediaItems(command);
     }),
   },
 };

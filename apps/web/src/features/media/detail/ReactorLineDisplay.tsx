@@ -111,7 +111,10 @@ export const ReactorLineDisplay = ({ reactorLine }: ReactorLineDisplayProps): JS
           onMouseLeave={handleLineMouseLeave}
         >
           {nameLine}
-          <PopoverWrap onMouseEnter={handlePopoverMouseEnter} onMouseLeave={handlePopoverMouseLeave}>
+          <PopoverWrap
+            onMouseEnter={handlePopoverMouseEnter}
+            onMouseLeave={handlePopoverMouseLeave}
+          >
             <ReactorOverflowPopover
               reactors={allReactors}
               isOpen={popoverOpen}

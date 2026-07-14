@@ -59,7 +59,7 @@ const bootstrap = async () => {
   const server = container.resolve<Server>('server');
   const eventPublisher = container.resolve<EventPublisher>('eventPublisher');
   const domainEventHandlers = container.resolve<DomainEventHandlers>('domainEventHandlers');
-  registerDomainEventHandlers(eventPublisher, domainEventHandlers);
+  registerDomainEventHandlers(eventPublisher, domainEventHandlers, logger);
   attachGlobalHandlers(database, logger, server, container); // ← container now passed
   await server.start();
 };

@@ -22,9 +22,6 @@ export const build__AlbumSharedStrategy = ({
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
     return rows.map((row) => {
-      if (!row.recipientId) {
-        return { row, kind: 'skipped', reason: 'no recipient id' };
-      }
       const recipientEmail = userMap.get(row.recipientId)?.email;
       if (!recipientEmail) {
         return { row, kind: 'skipped', reason: 'no recipient email' };

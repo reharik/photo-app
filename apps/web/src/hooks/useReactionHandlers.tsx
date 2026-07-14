@@ -1,4 +1,4 @@
-import { ReactionEmoji, EntityType } from '@packages/contracts';
+import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { useNavigate } from 'react-router-dom';
 import {
   AddReactionDocument,

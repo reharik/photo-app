@@ -1,13 +1,13 @@
-import { ContractError, Operation, WriteResult } from '@packages/contracts';
+import { ContractError, Operation } from '@packages/contracts';
 import {
-  AlbumSharedWithNonUser,
-  Authorization,
   MediaItem,
   MediaItemsSharedWithUser,
-  PublicLink,
+  PendingUser,
+  PublicLinkSharedWithUser,
   User,
 } from '../../../domain';
-import { ActorId, EntityId } from '../../../types/types';
+import { UserAuthorization } from '../../../domain/Authorization/UserAuthorization';
+import { EntityId } from '../../../types/types';
 
 export type GrantEmailDTO = {
   template: string;
@@ -19,8 +19,8 @@ export type GrantEmailDTO = {
 };
 
 export type GrantUserAuthorizationResult = {
-  authorizations: Authorization[];
-  errors: { user: User; error: ContractError }[];
+  invitedUsers: (User | PendingUser)[];
+  errors: { user: User | PendingUser; error: ContractError }[];
   publicLinkFailure?: { handles: string[]; error: ContractError };
 };
 
@@ -33,34 +33,12 @@ export type GrantUserAuthorizationCommand = {
   expiresAt?: Date;
 };
 
-export interface GrantAuthorizationInterface {
-  id(): EntityId;
-  grantPublicLink(
-    actorId: ActorId,
-    expiresAt?: Date,
-    operations?: Operation[],
-  ): WriteResult<PublicLink>;
-
-  grantAuthorization(
-    operations: Operation[],
-    actorId: ActorId,
-    grantedToUserId?: EntityId,
-    label?: string,
-    expiresAt?: Date,
-  ): WriteResult<{ authorization: Authorization }>;
-}
-
-export type InviteNonUsersResult = {
-  authorizations: Authorization[];
-  serviceEvents: AlbumSharedWithNonUser[];
-  publicLinkFailure?: { handles: string[]; error: ContractError };
-};
-
 export type InviteUsersForMediaItemsResult = {
-  grants: { mediaItem: MediaItem; authorization: Authorization }[];
+  // grants: { mediaItem: MediaItem; authorization: Authorization }[];
   // emailDTOs: GrantEmailDTO[];
-  errors: { user: User; error: ContractError }[]; // user-facing: zero-success users
-  errorDetail: { user: User; mediaItem: MediaItem; error: ContractError }[]; // log only
-  addedInvitees: User[];
-  serviceEvents: MediaItemsSharedWithUser[];
+  errors: { user: PendingUser | User; error: ContractError }[]; // user-facing: zero-success users
+  errorDetail: { user: PendingUser | User; mediaItem: MediaItem; error: ContractError }[]; // log only
+  // addedInvitees: User[];
+  serviceEvents: (MediaItemsSharedWithUser | PublicLinkSharedWithUser)[];
+  authorizations: UserAuthorization[];
 };

@@ -1,12 +1,14 @@
+import assert from 'node:assert';
+
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, ok } from '@packages/contracts';
 import type { EmailService } from '../emailClient.js';
 
-describe('build__emailChannel', () => {
-  let build__emailChannel: typeof import('../channels/email.js').build__emailChannel;
+describe('build__EmailChannel', () => {
+  let build__EmailChannel: typeof import('../channels/email.js').build__EmailChannel;
 
   beforeAll(async () => {
-    ({ build__emailChannel } = await import('../channels/email.js'));
+    ({ build__EmailChannel } = await import('../channels/email.js'));
   });
 
   describe('When FROM_EMAIL is not configured', () => {
@@ -14,8 +16,8 @@ describe('build__emailChannel', () => {
       const sendEmail = jest.fn<EmailService['sendEmail']>();
       const emailClient: EmailService = { sendEmail };
 
-      const channel = build__emailChannel({
-        emailConfig: {
+      const channel = build__EmailChannel({
+        config: {
           fromEmail: '',
           fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
@@ -30,9 +32,8 @@ describe('build__emailChannel', () => {
       });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe(ContractError.EmailNotConfigured);
-      }
+      assert(!result.success);
+      expect(result.error).toBe(ContractError.EmailNotConfigured);
       expect(sendEmail).not.toHaveBeenCalled();
     });
   });
@@ -43,8 +44,8 @@ describe('build__emailChannel', () => {
         .fn<EmailService['sendEmail']>()
         .mockResolvedValue(ok({ messageId: 'msg-456' }));
 
-      const channel = build__emailChannel({
-        emailConfig: {
+      const channel = build__EmailChannel({
+        config: {
           fromEmail: 'notifications@example.com',
           fromName: 'BetanaMe',
           awsRegion: 'us-east-1',
@@ -68,9 +69,8 @@ describe('build__emailChannel', () => {
         text: 'Hello',
       });
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.value.messageId).toBe('msg-456');
-      }
+      assert(result.success);
+      expect(result.value.messageId).toBe('msg-456');
     });
   });
 });

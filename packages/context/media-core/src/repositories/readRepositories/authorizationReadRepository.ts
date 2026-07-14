@@ -92,7 +92,7 @@ export const build__AuthorizationReadRepository = ({
       database('grant as g')
         .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
         .whereIn('g.media_item_id', mediaItemIds)
-        .where('ag.share_link_id', publicLinkId)
+        .where('ag.id', publicLinkId)
         .whereNull('ag.revoked_at')
         .where((expiry) => {
           expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', database.fn.now());

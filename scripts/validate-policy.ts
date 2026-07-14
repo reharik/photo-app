@@ -455,8 +455,14 @@ const checkProjectJsonRequiredTargets = (): CheckResult => {
       }
     }
 
-    if (project.name === 'contracts' && !targetNames.has('codegen')) {
-      violations.push(`${label}: contracts must have codegen target`);
+    // contracts' codegen target is named "gen-enums" (see its project.json and the
+    // codegen chain in CLAUDE.md); accept either name.
+    if (
+      project.name === 'contracts' &&
+      !targetNames.has('codegen') &&
+      !targetNames.has('gen-enums')
+    ) {
+      violations.push(`${label}: contracts must have a codegen target (codegen or gen-enums)`);
     }
   }
 
@@ -702,9 +708,12 @@ const checkSmartEnumEslintRule = (): CheckResult => {
 };
 
 // --- Rule 14: generated paths in .gitignore ---
+// NOTE: contracts' graphqlSmartEnums.ts is intentionally NOT listed here. Although it is a
+// codegen output, it lives in a foundation package that every other package consumes AS SOURCE
+// (tsconfig paths / jest moduleNameMapper), so it is committed and must be present in a fresh
+// checkout before any typecheck/test — like the hand-authored enums beside it.
 const GENERATED_PATHS = [
   'apps/api/src/graphql/generated/',
-  'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts',
   'apps/api/src/di/generated/',
   'apps/media-worker/src/di/generated/',
   'packages/context/media-core/src/di/generated/',
@@ -713,8 +722,6 @@ const GENERATED_PATHS = [
 
 const SAMPLE_FILES_PER_PATH: Record<string, string> = {
   'apps/api/src/graphql/generated/': 'apps/api/src/graphql/generated/schema.graphql',
-  'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts':
-    'packages/foundation/contracts/src/enums/graphqlSmartEnums.ts',
   'apps/api/src/di/generated/': 'apps/api/src/di/generated/ioc-manifest.ts',
   'apps/media-worker/src/di/generated/': 'apps/media-worker/src/di/generated/ioc-manifest.ts',
   'packages/context/media-core/src/di/generated/':
@@ -845,6 +852,11 @@ const checkNxScopeTags = (): CheckResult => {
       continue;
     }
     const tags = readJson<{ tags?: string[] }>(projectPath).tags ?? [];
+    // media-core deliberately carries scope:media (not scope:packages) so it is
+    // excluded from tag:scope:packages batch targets — documented in CLAUDE.md.
+    if (tags.includes('scope:media')) {
+      continue;
+    }
     if (!tags.includes('scope:packages')) {
       violations.push(`${rel(projectPath)}: tags must include "scope:packages"`);
     }

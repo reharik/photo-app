@@ -16,3 +16,4 @@ export * from './reactionEmojis';
 export * from './resourceType';
 export * from './subjectType';
 export * from './userRole';
+export * from './userStatus';

@@ -1,4 +1,4 @@
-import { notEmpty } from '@packages/contracts';
+import { EntityType, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
   SystemAlbumRepository,
@@ -44,11 +44,13 @@ export const build__NotificationBatcher = ({
     if (bad.length) {
       logger.error(`[batcher] claimed ${bad.length} null-recipient row(s) — cadence filter leak`);
     }
+    const albumRows = rows.filter((x) => x.aggregateType.equals(EntityType.album));
+
     const recipientMap = groupByMapping(
-      rows.filter((r) => notEmpty(r.recipientId)),
+      albumRows.filter((r) => notEmpty(r.recipientId)),
       (x) => x.recipientId,
     );
-    const albumMap = groupByMapping(rows, (x) => x.aggregateId);
+    const albumMap = groupByMapping(albumRows, (x) => x.aggregateId);
 
     const userIds = [...recipientMap.keys()].filter(notEmpty);
     const albumIds = [...albumMap.keys()];
@@ -58,13 +60,13 @@ export const build__NotificationBatcher = ({
 
     const recipientEmailMap = indexBy(recipients);
     const albumTitleMap = indexBy(albumTitles);
-    const authMap = groupByMapping(albumAuths, (x) => x.grantedToUser);
+    const authMap = groupByMapping(albumAuths.userAuthorizations, (x) => x.grantedToUser);
 
     const outcomes: RowOutcome[] = [];
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       // drive off claimed rows
-      const authRows = authMap.get(recipientId!) ?? [];
-      const recipientEmail = recipientEmailMap.get(recipientId!);
+      const authRows = authMap.get(recipientId) ?? [];
+      const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
         logger.warn(`User ${recipientId} has no email`);
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
@@ -72,7 +74,11 @@ export const build__NotificationBatcher = ({
       }
 
       const emailsAlbumTitles = authRows
-        .map((x) => albumTitleMap.get(x.albumId)?.title)
+        .map((x) => {
+          if (x.target.kind === 'album') {
+            return albumTitleMap.get(x.target.albumId)?.title;
+          }
+        })
         .filter(notEmpty);
       if (!emailsAlbumTitles.length) {
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });

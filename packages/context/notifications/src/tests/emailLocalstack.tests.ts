@@ -1,6 +1,8 @@
+import assert from 'node:assert';
+
 import { beforeAll, describe, expect, it } from '@jest/globals';
 import type { Logger } from '@packages/infrastructure';
-import { isLocalStackAvailable } from '../test/localstack.js';
+import { isLocalStackAvailable } from './localstack.js';
 
 const logger = {
   debug: () => undefined,
@@ -14,12 +16,12 @@ const logger = {
 describe('LocalStack email integration', () => {
   let localStackAvailable = false;
   let build__EmailClient: typeof import('../emailClient.js').build__EmailClient;
-  let build__emailChannel: typeof import('../channels/email.js').build__emailChannel;
+  let build__EmailChannel: typeof import('../channels/email.js').build__EmailChannel;
 
   beforeAll(async () => {
     localStackAvailable = await isLocalStackAvailable();
     ({ build__EmailClient } = await import('../emailClient.js'));
-    ({ build__emailChannel } = await import('../channels/email.js'));
+    ({ build__EmailChannel } = await import('../channels/email.js'));
   });
 
   describe('When LocalStack SES is running', () => {
@@ -35,8 +37,8 @@ describe('LocalStack email integration', () => {
         awsEndpoint: process.env.AWS_ENDPOINT?.trim() || 'http://localhost:4566',
       };
 
-      const emailClient = build__EmailClient({ logger, emailConfig });
-      const emailChannel = build__emailChannel({ emailConfig, emailClient });
+      const emailClient = build__EmailClient({ logger, config: emailConfig });
+      const emailChannel = build__EmailChannel({ config: emailConfig, emailClient });
 
       const result = await emailChannel.sendEmail({
         to: 'recipient@example.com',
@@ -46,9 +48,8 @@ describe('LocalStack email integration', () => {
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.value.messageId.length).toBeGreaterThan(0);
-      }
+      assert(result.success);
+      expect(result.value.messageId.length).toBeGreaterThan(0);
     });
   });
 });

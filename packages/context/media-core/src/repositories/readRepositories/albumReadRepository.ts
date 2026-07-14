@@ -22,7 +22,7 @@ import {
   withViewableByMemberOrAlbumGrant,
   withViewerMembership,
 } from '../queryHelpers';
-import { withActiveShareLink } from '../queryHelpers/withActiveShareLink';
+import { withActivePublicLink } from '../queryHelpers/withActivePublicLink';
 import type { AlbumIdRow, AlbumReadRepository, ReadRepositoryDeps } from './types';
 
 const mediaItemSelectColumns = [
@@ -154,7 +154,7 @@ export const build__AlbumReadRepository = ({
       .distinct({ id: 'album.id' });
   },
 
-  getAlbumForShareLink: async ({
+  getAlbumForPublicLink: async ({
     albumId,
     publicLinkId,
   }: {
@@ -166,7 +166,7 @@ export const build__AlbumReadRepository = ({
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
         .where('album.id', albumId)
-        .modify(withActiveShareLink(database, albumId, publicLinkId))
+        .modify(withActivePublicLink(database, albumId, publicLinkId))
         .select<AlbumWithCoverRow>(...publicAlbumFields)
         .first(),
       {
@@ -177,7 +177,7 @@ export const build__AlbumReadRepository = ({
     );
   },
 
-  listAlbumItemsForShareLink: async ({
+  listAlbumItemsForPublicLink: async ({
     albumId,
     publicLinkId,
     collectionInfo,
@@ -190,7 +190,7 @@ export const build__AlbumReadRepository = ({
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
       .where('albumItem.albumId', albumId)
       .where('mediaItem.status', MediaItemStatus.ready.value)
-      .modify(withActiveShareLink(database, albumId, publicLinkId))
+      .modify(withActivePublicLink(database, albumId, publicLinkId))
       .modify(withCollectionInfo(database, collectionInfo))
       .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
         ...albumItemWithMediaSelectColumns,

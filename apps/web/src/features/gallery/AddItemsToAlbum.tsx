@@ -6,8 +6,7 @@ import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { Combobox } from '../../ui/Combobox';
 
 export type AddToAlbumSubmitTarget =
-  | { kind: 'existing'; albumId: string }
-  | { kind: 'new'; title: string };
+  { kind: 'existing'; albumId: string } | { kind: 'new'; title: string };
 
 type AddItemsToAlbumProps = {
   onClose: () => void;

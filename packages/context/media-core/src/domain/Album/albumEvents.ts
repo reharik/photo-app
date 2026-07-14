@@ -7,15 +7,20 @@ export interface MediaItemAddedToAlbum extends DomainEventBase {
   albumId: EntityId;
 }
 
+export interface MediaItemRemovedFromAlbum extends DomainEventBase {
+  kind: 'mediaItemRemovedFromAlbum';
+  mediaItemId: EntityId;
+  albumId: EntityId;
+}
 export interface AlbumSharedWithUser extends DomainEventBase {
   kind: 'albumSharedWithUser';
   userId: EntityId;
   albumId: EntityId;
+  authorizationId: EntityId;
 }
 
-export interface AlbumSharedWithNonUser extends DomainEventBase {
-  kind: 'albumSharedWithNonUser';
-  recipientAddress: string;
-  albumId: string;
-  token: string;
+export interface AlbumSharedWithPublicLink extends DomainEventBase {
+  kind: 'albumSharedWithPublicLink';
+  albumId: EntityId;
+  authorizationId: EntityId;
 }

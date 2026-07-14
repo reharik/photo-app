@@ -1,5 +1,7 @@
+import type { WriteResult } from '@packages/contracts';
 import type { GraphQLResolveInfo } from 'graphql';
 import type { ResolverFn } from '../generated/types.generated';
+import { MutationPayload, writeResultToPayload } from '../util/writeResultToPayload';
 import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
@@ -53,11 +55,18 @@ export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext 
   return ctx;
 };
 
+// Write resolvers return a WriteResult<T> — never a hand-built payload. This wrapper owns
+// the single mapping to the GraphQL `{ data, errors }` envelope (writeResultToPayload) AND
+// the rollback decision, so neither can drift per-resolver. A mutation "fails as data": the
+// failure rides in the returned payload's `errors`, never the GraphQL `errors` channel — the
+// client contract depends on failures staying in the payload. The typed `result.success`
+// discriminant replaces the former envelope-scan heuristic; a resolver that returns anything
+// other than WriteResult<T> now fails typecheck.
 export const authenticatedWriteResolver =
-  <TParent, TArgs, TResult>(
-    resolver: ResolverFn<TResult, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
-  ): ResolverFn<TResult, TParent, GraphQLContext, TArgs> =>
-  (parent, args, ctx, info) => {
+  <TParent, TArgs, TValue>(
+    resolver: ResolverFn<WriteResult<TValue>, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
+  ): ResolverFn<MutationPayload<TValue>, TParent, GraphQLContext, TArgs> =>
+  async (parent, args, ctx, info) => {
     let authCtx: AuthenticatedWriteGraphQLContext;
     try {
       authCtx = requireAuthenticatedWriteContext(ctx);
@@ -65,7 +74,13 @@ export const authenticatedWriteResolver =
       logContextRejection(ctx, info, 'authenticatedWrite', err);
       throw err;
     }
-    return resolver(parent, args, authCtx, info);
+    const result = await resolver(parent, args, authCtx, info);
+    // Signal intent only — the boundary (useScopedContainer) owns the actual rollback.
+    // Latching to true; any single failed field rolls back the whole per-request uow.
+    if (!result.success) {
+      authCtx.uow.shouldRollback = true;
+    }
+    return writeResultToPayload(result);
   };
 
 export const authenticatedReadResolver =

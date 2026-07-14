@@ -1,10 +1,5 @@
 import { MediaKind } from '@packages/contracts';
-import {
-  useLayoutEffect,
-  useRef,
-  useState,
-  type MutableRefObject,
-} from 'react';
+import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaViewerKeyboard } from '../../../hooks/useMediaViewerKeyboard';
@@ -147,11 +142,7 @@ export const MediaViewer = ({
         ) : !canNavigate ? (
           <MediaViewerSingle media={media} />
         ) : (
-          <MediaViewerDesktopNav
-            media={media}
-            onNavigate={onNavigate}
-            canNavigate={canNavigate}
-          />
+          <MediaViewerDesktopNav media={media} onNavigate={onNavigate} canNavigate={canNavigate} />
         )}
       </ViewerShell>
     </ViewerRoot>

@@ -80,11 +80,7 @@ const resizeToDerivative = async (
 // Each derivative step can throw (HEIC decode, sharp resize, OOM on a huge image). Without a
 // stage label the job runner's top-level catch just says "processing failed" with no clue which
 // step broke. Wrap each step so a failure is logged and rethrown with the stage in its message.
-const runStage = async <T>(
-  stage: string,
-  fn: () => Promise<T>,
-  logger?: Logger,
-): Promise<T> => {
+const runStage = async <T>(stage: string, fn: () => Promise<T>, logger?: Logger): Promise<T> => {
   try {
     return await fn();
   } catch (e) {

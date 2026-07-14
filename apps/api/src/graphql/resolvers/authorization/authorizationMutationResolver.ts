@@ -1,9 +1,7 @@
-import { WriteResult } from '@packages/contracts';
+import { ok } from '@packages/contracts';
 import { GrantUserAuthorizationCommand } from '@packages/media-core';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
-import type { GrantUserAuthorizationPayload, Resolvers } from '../../generated/types.generated';
-import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
-import { writeResultToPayload } from '../../util/writeResultToPayload';
+import type { Resolvers } from '../../generated/types.generated';
 
 const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -17,19 +15,11 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         expiresAt: args.input.expiresAt ?? undefined,
       };
       const result = await ctx.writeServices.grantAuthorizationForMediaItems(command);
-
       if (!result.success) {
-        return {
-          success: false,
-          errors: [toContractErrorPayload(result.error)],
-        };
+        return result;
       }
 
-      return {
-        success: true,
-        authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
-        errors: [],
-      };
+      return ok({ userIds: result.value.invitedUsers.map((x) => x.id()) });
     }),
 
     grantUserAuthorizationForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -43,19 +33,10 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
       };
       const result = await ctx.writeServices.grantUserAuthorizationForAlbum(command);
       if (!result.success) {
-        return {
-          success: false,
-          errors: [toContractErrorPayload(result.error)],
-        };
+        return result;
       }
 
-      const resultPayload: WriteResult<GrantUserAuthorizationPayload> = {
-        success: true,
-        value: {
-          authorizationIds: result.value.authorizations.map((authorization) => authorization.id()),
-        },
-      };
-      return writeResultToPayload(resultPayload);
+      return ok({ userIds: result.value.invitedUsers.map((u) => u.id()) });
     }),
   },
 };

@@ -29,6 +29,8 @@ export type ReadRepositoryDeps = { database: Knex };
 export type AuthorizationRow = {
   id: EntityId;
   grantedToUser?: EntityId;
+  albumId?: EntityId;
+  mediaItemId?: EntityId;
   operations: Operation[];
   description?: string;
   expiresAt?: Date;
@@ -118,7 +120,7 @@ export type AlbumReadRepository = {
   }: {
     mediaItemId: string;
   }) => Promise<AlbumIdRow[]>;
-  getAlbumForShareLink: ({
+  getAlbumForPublicLink: ({
     albumId,
     publicLinkId,
   }: {
@@ -126,7 +128,7 @@ export type AlbumReadRepository = {
     publicLinkId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
   /** Album items for public share-link viewing (no membership check). READY media only. */
-  listAlbumItemsForShareLink: ({
+  listAlbumItemsForPublicLink: ({
     albumId,
     publicLinkId,
     collectionInfo,

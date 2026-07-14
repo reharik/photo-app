@@ -15,7 +15,7 @@ test.describe('Media Viewer', () => {
       await expect(userA.page).toHaveURL(new RegExp(`/media/${item.id}(\\?.*)?$`));
       await expect(userA.page.getByLabel('Media viewer')).toBeVisible();
 
-      await reactToItem(userA.page, userA.page);
+      await reactToItem(userA.page, userA.page.locator('body'));
 
       const title = `E2E title ${uniqueSuffix}`;
       const description = `E2E description ${uniqueSuffix}`;

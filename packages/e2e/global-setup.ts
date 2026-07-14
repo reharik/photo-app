@@ -1,3 +1,4 @@
+// eslint-disable-next-line @nx/enforce-module-boundaries -- e2e setup seeds the api's users directly; apps/api exposes no package entry for this helper.
 import { ensureSeedUsers } from '../../apps/api/db/seedUsers';
 
 import { closeDb, getDb } from './fixtures/db';

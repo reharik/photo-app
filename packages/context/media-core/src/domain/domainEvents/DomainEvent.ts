@@ -1,10 +1,13 @@
 import { EntityId } from '../../types';
 import {
-  AlbumSharedWithNonUser,
+  AlbumSharedWithPublicLink,
   AlbumSharedWithUser,
   MediaItemAddedToAlbum,
+  MediaItemRemovedFromAlbum,
 } from '../Album/albumEvents';
-import { MediaItemsSharedWithUser } from '../MediaItem/mediaItemEvents';
+import { AuthorizationExpired, AuthorizationRevoked } from '../Authorization/authorizationEvents';
+import { MediaItemsSharedWithUser, PublicLinkSharedWithUser } from '../MediaItem/mediaItemEvents';
+import { PendingUserActivated } from '../User/userEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
 
@@ -19,4 +22,14 @@ export interface DomainEventBase {
 }
 
 export type DomainEvent = DomainEventBase &
-  (MediaItemAddedToAlbum | AlbumSharedWithUser | MediaItemsSharedWithUser | AlbumSharedWithNonUser);
+  (
+    | MediaItemAddedToAlbum
+    | MediaItemRemovedFromAlbum
+    | AlbumSharedWithUser
+    | MediaItemsSharedWithUser
+    | AlbumSharedWithPublicLink
+    | AuthorizationExpired
+    | AuthorizationRevoked
+    | PendingUserActivated
+    | PublicLinkSharedWithUser
+  );

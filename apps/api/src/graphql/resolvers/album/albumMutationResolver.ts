@@ -5,7 +5,6 @@ import type {
   MutationReorderAlbumItemsArgs,
   Resolvers,
 } from '../../generated/types.generated';
-import { writeResultToPayload } from '../../util/writeResultToPayload';
 
 const albumResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -16,7 +15,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         description: args.input.description,
       });
 
-      return writeResultToPayload(result);
+      return result;
     }),
 
     AddMediaItemsToAlbum: authenticatedWriteResolver(
@@ -28,7 +27,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
           newAlbum: args.input.newAlbum ?? undefined,
         };
         const result = await ctx.writeServices.addMediaItemsToAlbum(command);
-        return writeResultToPayload(result);
+        return result;
       },
     ),
     ReorderAlbumItems: authenticatedWriteResolver(
@@ -39,7 +38,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
           albumItemIds: args.input.albumItemIds,
         };
         const result = await ctx.writeServices.reorderAlbumItems(command);
-        return writeResultToPayload(result);
+        return result;
       },
     ),
     DeleteAlbumItemsFromAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -49,7 +48,7 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         albumItemIds: args.input.albumItemIds,
       });
 
-      return writeResultToPayload(result);
+      return result;
     }),
 
     SetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -58,14 +57,14 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         albumId: args.input.albumId,
         albumItemId: args.input.albumItemId,
       });
-      return writeResultToPayload(result);
+      return result;
     }),
     UnsetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.unsetCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
       });
-      return writeResultToPayload(result);
+      return result;
     }),
   },
 };

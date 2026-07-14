@@ -10,10 +10,13 @@ import {
 import { EnumArraysAreEqual } from '@packages/infrastructure';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { Authorization, AuthorizationRecord } from '../Authorization/Authorization';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
+import {
+  PublicLinkAuthorization,
+  PublicLinkAuthorizationRecord,
+} from '../Authorization/PublicLinkAuthorization';
+import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
 import type { AuditRecord, ChildEntities } from '../Entity';
-import { PublicLink, PublicLinkChildRecords, PublicLinkRecord } from '../PublicLink/PublicLink';
 import { reorderAlbumItems } from '../utilities/reorderAlbumItems';
 import { AlbumItem, AlbumItemRecord } from './AlbumItem';
 import { ALBUM_ITEM_ORDER_GAP, ALBUM_ITEM_ORDER_INITIAL } from './albumItemOrder';
@@ -33,8 +36,8 @@ export type AlbumRecord = AlbumProps & { id: EntityId } & AuditRecord;
 export type AlbumChildRecords = {
   items: AlbumItemRecord[];
   members: AlbumMemberRecord[];
-  authorizations: AuthorizationRecord[];
-  publicLinks: { publicLink: PublicLinkRecord; publicLinkChildRecords: PublicLinkChildRecords }[];
+  authorizations: UserAuthorizationRecord[];
+  publicLinks: PublicLinkAuthorizationRecord[];
 };
 
 export class Album extends AggregateRoot<AlbumRecord> {
@@ -42,12 +45,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
   #items: AlbumItem[] = [];
   #members: AlbumMember[] = [];
-  #authorizations: Authorization[] = [];
-  #publicLinks: PublicLink[] = [];
+  #authorizations: UserAuthorization[] = [];
+  #publicLinks: PublicLinkAuthorization[] = [];
   #removedItems: AlbumItem[] = [];
   #removedMembers: AlbumMember[] = [];
-  #removedAuthorizations: Authorization[] = [];
-  #removedPublicLinks: PublicLink[] = [];
+  #removedAuthorizations: UserAuthorization[] = [];
+  #removedPublicLinks: PublicLinkAuthorization[] = [];
 
   private constructor(actorId: ActorId, props: AlbumProps, id?: EntityId) {
     super(id, actorId, 'album');
@@ -80,10 +83,8 @@ export class Album extends AggregateRoot<AlbumRecord> {
     album.rehydrateAudit(record);
     album.#items = childRecords.items.map((r) => AlbumItem.rehydrate(r));
     album.#members = childRecords.members.map((r) => AlbumMember.rehydrate(r));
-    album.#authorizations = childRecords.authorizations.map((r) => Authorization.rehydrate(r));
-    album.#publicLinks = childRecords.publicLinks.map((r) =>
-      PublicLink.rehydrate(r.publicLink, r.publicLinkChildRecords),
-    );
+    album.#authorizations = childRecords.authorizations.map((r) => UserAuthorization.rehydrate(r));
+    album.#publicLinks = childRecords.publicLinks.map((r) => PublicLinkAuthorization.rehydrate(r));
     return album;
   }
 
@@ -186,9 +187,10 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (coverWasThisMedia) {
       this.props.coverMediaId = null;
     }
-    if (coverWasThisMedia) {
-      this.touch(actorId);
-    }
+    // if (coverWasThisMedia) {
+    this.touch(actorId);
+    // }
+    this.recordEvent('mediaItemRemovedFromAlbum', { albumId: this.id(), mediaItemId }, actorId);
     return ok(undefined);
   }
 
@@ -207,6 +209,13 @@ export class Album extends AggregateRoot<AlbumRecord> {
       : null;
     this.#removedItems = [...this.#removedItems, ...found];
     this.touch(actorId);
+    found.forEach((x) =>
+      this.recordEvent(
+        'mediaItemRemovedFromAlbum',
+        { albumId: this.id(), mediaItemId: x.mediaItemId() },
+        actorId,
+      ),
+    );
     return ok(undefined);
   }
 
@@ -219,7 +228,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   getMediaItemIds(): EntityId[] {
     return this.#items.map((i) => i.mediaItemId());
   }
-  getAuthorizations(): Authorization[] {
+  getAuthorizations(): UserAuthorization[] {
     return this.#authorizations;
   }
   grantAuthorization(
@@ -229,15 +238,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
     label?: string,
     expiresAt?: Date,
   ): WriteResult<{
-    authorization: Authorization;
+    authorization: UserAuthorization;
   }> {
-    const result = grantAuthorizationValidation(
-      this,
-      grantedToUserId,
-      undefined, // publicLink link has it's own command
-      label,
-      expiresAt,
-    );
+    const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
     if (!result.success) {
       return result;
     }
@@ -247,11 +250,10 @@ export class Album extends AggregateRoot<AlbumRecord> {
       (s) => s.grantedToUser() === grantedToUserId,
     );
     if (!existingAuthorization) {
-      const authorization = Authorization.create(
+      const authorization = UserAuthorization.create(
         {
           operations,
           grantedToUser: grantedToUserId,
-          publicLinkId: undefined,
           grantedBy: actorId,
           label,
           expiresAt,
@@ -263,7 +265,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
       this.touch(actorId);
       this.recordEvent(
         'albumSharedWithUser',
-        { userId: grantedToUserId, albumId: this.id() },
+        { userId: grantedToUserId, albumId: this.id(), authorizationId: authorization.id() },
         actorId,
       );
       return ok({ authorization });
@@ -290,6 +292,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
         return updatedOperations;
       }
       this.touch(actorId);
+      // not handling yet. implement please
+      // this.recordEvent(
+      //   'authorizationOperationsUpdated',
+      //   { authorizationId: existingAuthorization.id() },
+      //   actorId,
+      // );
     }
     return ok({ authorization: existingAuthorization });
   }
@@ -303,10 +311,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return result;
     }
     this.touch(actorId);
+    this.recordEvent('authorizationRevoked', { authorizationId: authorizationId }, actorId);
     return ok(undefined);
   }
 
-  getPublicLinks(): PublicLink[] {
+  getPublicLinks(): PublicLinkAuthorization[] {
     return this.#publicLinks;
   }
 
@@ -314,18 +323,19 @@ export class Album extends AggregateRoot<AlbumRecord> {
     actorId: ActorId,
     expiresAt?: Date,
     operations?: Operation[],
-  ): WriteResult<PublicLink> {
+  ): WriteResult<PublicLinkAuthorization> {
     let publicLink = this.#publicLinks.find((x) => {
-      const exp = x.authorization().expiresAt();
-      return !x.authorization().revokedAt() && (!exp || exp > new Date());
+      const exp = x.expiresAt();
+      return !x.revokedAt() && (!exp || exp > new Date());
     });
 
     if (!publicLink) {
       // creating a new public link creates a new authorization/access_grant
-      publicLink = PublicLink.create(
+      publicLink = PublicLinkAuthorization.create(
         {
           operations: operations ?? [],
           grantedBy: actorId,
+          grantedToUser: undefined,
           label: undefined,
           expiresAt,
           albumId: this.id(),
@@ -334,6 +344,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
       );
       this.#publicLinks.push(publicLink);
       this.touch(actorId);
+      this.recordEvent(
+        'albumSharedWithPublicLink',
+        { albumId: this.id(), authorizationId: publicLink.id() },
+        actorId,
+      );
+
       return ok(publicLink);
     }
     if (expiresAt && publicLink.expiresAt() !== expiresAt) {
@@ -351,11 +367,12 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (!publicLink) {
       return fail(AppErrorCollection.authorization.PublicLinkNotFound);
     }
-    const result = publicLink.revokePublicLink(actorId);
+    const result = publicLink.revokeAuthorization(actorId);
     if (!result.success) {
       return result;
     }
     this.touch(actorId);
+    this.recordEvent('authorizationRevoked', { authorizationId: publicLink.id() }, actorId);
     return ok(undefined);
   }
 

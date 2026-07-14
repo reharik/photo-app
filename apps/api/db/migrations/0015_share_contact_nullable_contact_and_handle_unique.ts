@@ -35,9 +35,7 @@ export async function up(knex: Knex): Promise<void> {
   //    time that no duplicate (user_id, handle) rows exist, so this applies
   //    cleanly. If a duplicate is introduced before this runs, apply will fail
   //    here rather than silently dedupe — intentional.
-  await knex.raw(
-    `ALTER TABLE ${TABLE} ADD CONSTRAINT ${UNIQUE_NAME} UNIQUE (user_id, handle)`,
-  );
+  await knex.raw(`ALTER TABLE ${TABLE} ADD CONSTRAINT ${UNIQUE_NAME} UNIQUE (user_id, handle)`);
 }
 
 export async function down(knex: Knex): Promise<void> {

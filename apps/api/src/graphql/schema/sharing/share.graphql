@@ -25,5 +25,5 @@ type GrantUserAuthorizationResult {
 }
 
 type GrantUserAuthorizationPayload {
-  authorizationIds: [ID!]!
+  userIds: [ID!]!
 }

@@ -27,7 +27,6 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
   return {
     register: (kind: DomainEvent['kind'], handler: DomainEventHandler) => {
       const list = handlers.get(kind) ?? [];
-      logger.info(`[DomainEventPublisher] domainEventHandler registered: ${kind}`);
       list.push(handler);
       handlers.set(kind, list);
     },
@@ -55,10 +54,16 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
 export const registerDomainEventHandlers = (
   eventPublisher: EventPublisher,
   domainEventHandlers: DomainEventHandlers,
+  logger: Logger,
 ) => {
+  const handlerNames = new Set();
   for (const handler of domainEventHandlers) {
     for (const kind of handler.handles) {
+      handlerNames.add(kind);
       eventPublisher.register(kind, handler);
     }
   }
+  logger.info(
+    `[DomainEventPublisher] domainEventHandlers registered: ${[...handlerNames].join('\n')}`,
+  );
 };

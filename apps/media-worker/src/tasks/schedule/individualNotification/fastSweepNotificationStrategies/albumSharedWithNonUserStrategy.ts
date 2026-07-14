@@ -22,7 +22,7 @@ export const build__AlbumSharedWithNonUserStrategy = ({
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
     return rows.map((row) => {
-      const recipientEmail = row.recipientAddress;
+      const recipientEmail = userMap.get(row.recipientId)?.email;
       const token = row.data?.token;
       if (!recipientEmail || !token) {
         return { row, kind: 'skipped', reason: 'no recipient email or token' };

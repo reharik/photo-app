@@ -48,7 +48,7 @@ export const build__PublicAlbumReadService = ({
 
   return {
     getAlbum: async (albumId: string): Promise<PublicAlbumProjection | undefined> => {
-      const row = await albumReadRepository.getAlbumForShareLink({ albumId, publicLinkId });
+      const row = await albumReadRepository.getAlbumForPublicLink({ albumId, publicLinkId });
       if (!row) {
         return undefined;
       }
@@ -74,7 +74,7 @@ export const build__PublicAlbumReadService = ({
       albumId: string;
       collectionInfo: PublicAlbumItemCollectionInfo;
     }): Promise<PagedList<PublicAlbumItemProjection>> => {
-      const albumItemsResult = await albumReadRepository.listAlbumItemsForShareLink({
+      const albumItemsResult = await albumReadRepository.listAlbumItemsForPublicLink({
         albumId,
         publicLinkId,
         collectionInfo,

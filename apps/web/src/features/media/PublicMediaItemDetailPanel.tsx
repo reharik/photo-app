@@ -1,8 +1,8 @@
 import { ReactionEmoji } from '@packages/contracts';
 import { forwardRef, useCallback, useImperativeHandle } from 'react';
 import styled from 'styled-components';
-import { BottomSheet } from '../../ui/BottomSheet';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { BottomSheet } from '../../ui/BottomSheet';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
 import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
 import { MediaKindRailLabel } from './detail/MediaKindRailLabel';

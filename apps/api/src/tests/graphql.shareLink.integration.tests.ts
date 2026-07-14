@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { buildMediaItemBaseStorageKey, hashToken } from '@packages/media-core';
+import { buildMediaItemBaseStorageKey } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 

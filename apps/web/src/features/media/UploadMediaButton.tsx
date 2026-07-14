@@ -21,13 +21,7 @@ export const UploadMediaButton = ({
   return (
     <UploadMediaTrigger albumId={albumId} setAppErrors={setAppErrors} multiple={multiple}>
       {({ onPick, isUploading }) => (
-        <Button
-          type="button"
-          variant="primary"
-          size="large"
-          loading={isUploading}
-          onClick={onPick}
-        >
+        <Button type="button" variant="primary" size="large" loading={isUploading} onClick={onPick}>
           <UploadButtonLabelWide>{text || 'Upload Media'}</UploadButtonLabelWide>
           <UploadButtonLabelNarrow>{shortText || 'Upload'}</UploadButtonLabelNarrow>
         </Button>
@@ -49,4 +43,3 @@ const UploadButtonLabelNarrow = styled.span`
     display: inline;
   }
 `;
-

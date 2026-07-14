@@ -1,10 +1,10 @@
 import styled from 'styled-components';
 import { EmptyState } from '../../ui/EmptyState';
 import { AlbumSummaryVM } from '../../viewModels/';
+import { AlbumTile } from '../albums/AlbumTile';
 import { ALBUM_LIST_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import type { MultiSelectProps } from '../media/grid/types';
-import { AlbumTile } from '../albums/AlbumTile';
 
 const noopMultiSelect: MultiSelectProps = {
   isSelected: () => false,

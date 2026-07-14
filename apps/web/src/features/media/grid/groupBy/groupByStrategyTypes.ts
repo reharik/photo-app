@@ -1,10 +1,5 @@
 export type MediaGridDateBucketKey =
-  | 'today'
-  | 'yesterday'
-  | 'lastWeek'
-  | 'thisMonth'
-  | `month:${number}:${number}`
-  | `year:${number}`;
+  'today' | 'yesterday' | 'lastWeek' | 'thisMonth' | `month:${number}:${number}` | `year:${number}`;
 
 export type MediaGridGroupBy = 'lastName' | 'fullName' | 'createdDate' | 'takenDate';
 export type GroupResult<T> = {

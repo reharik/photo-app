@@ -6,7 +6,7 @@ export type AuthorizationProps = {
   mediaItemId?: EntityId;
   albumId?: EntityId;
   grantedToUser?: EntityId;
-  shareLinkId?: EntityId;
+  linkToken?: string;
   operations: Operation[];
   grantedBy: EntityId;
   label?: string;
@@ -19,7 +19,7 @@ export type AuthorizationRecord = {
   mediaItemId?: string;
   albumId?: string;
   grantedToUser?: string;
-  shareLinkId?: string;
+  linkToken?: string;
   grantedBy: EntityId;
   operations: Operation[];
   label?: string;
@@ -29,7 +29,6 @@ export type AuthorizationRecord = {
 
 export type CreateAuthorizationInput = {
   operations: Operation[];
-  publicLinkId?: EntityId;
   grantedToUser?: EntityId;
   grantedBy: EntityId;
   label?: string;
@@ -57,7 +56,6 @@ export class Authorization extends Entity<AuthorizationRecord> {
 
       operations: [Operation.download, Operation.comment],
       grantedToUser: input.grantedToUser,
-      shareLinkId: input.publicLinkId,
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
@@ -74,13 +72,11 @@ export class Authorization extends Entity<AuthorizationRecord> {
   grantedToUser(): EntityId | undefined {
     return this.props.grantedToUser;
   }
-  publicLinkId(): EntityId | undefined {
-    return this.props.shareLinkId;
+  linkToken(): string | undefined {
+    return this.props.linkToken;
   }
   // This is so we can set the id after creating the public link
-  setPublicLinkId(publicLinkId: EntityId): void {
-    this.props.shareLinkId = publicLinkId;
-  }
+
   operations(): Operation[] {
     return this.props.operations;
   }

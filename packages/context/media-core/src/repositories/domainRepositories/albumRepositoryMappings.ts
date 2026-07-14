@@ -1,6 +1,5 @@
 import { Operation } from '@packages/contracts';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
-import { PublicLinkChildRecords, PublicLinkRecord } from '../../domain/PublicLink/PublicLink';
 
 export type PublicLinkWithAuthorizationRaw = {
   id: string;
@@ -45,20 +44,6 @@ export const authorizationSelectColumns = [
   'accessGrant.updatedBy as authorizationUpdatedBy',
 ];
 
-export const publicLinkSelectColumns = [
-  'shareLink.id as id',
-  'shareLink.albumId as albumId',
-  'shareLink.linkToken as linkToken',
-  'shareLink.grantedBy as grantedBy',
-  'shareLink.expiresAt as expiresAt',
-  'shareLink.revokedAt as revokedAt',
-  'shareLink.createdAt as createdAt',
-  'shareLink.updatedAt as updatedAt',
-  'shareLink.createdBy as createdBy',
-  'shareLink.updatedBy as updatedBy',
-  ...authorizationSelectColumns,
-];
-
 export const authorizationRawToAuthorizationRecord = (
   row: AuthorizationRaw,
 ): AuthorizationRecord => {
@@ -75,27 +60,5 @@ export const authorizationRawToAuthorizationRecord = (
     updatedAt: row.authorizationUpdatedAt,
     createdBy: row.authorizationCreatedBy,
     updatedBy: row.authorizationUpdatedBy,
-  };
-};
-
-export const publicLinkWithAuthorizationRawToPublicLink = (
-  row: PublicLinkWithAuthorizationRaw,
-): { publicLink: PublicLinkRecord; publicLinkChildRecords: PublicLinkChildRecords } => {
-  return {
-    publicLink: {
-      id: row.id,
-      albumId: row.albumId,
-      linkToken: row.linkToken,
-      grantedBy: row.grantedBy,
-      expiresAt: row.expiresAt,
-      revokedAt: row.revokedAt,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      createdBy: row.createdBy,
-      updatedBy: row.updatedBy,
-    },
-    publicLinkChildRecords: {
-      authorization: authorizationRawToAuthorizationRecord(row),
-    },
   };
 };

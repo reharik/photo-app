@@ -25,6 +25,7 @@ export interface LoginInput {
 export interface SignupInput {
   email: string;
   password: string;
+  code: string;
   firstName: string;
   lastName: string;
   phone?: string;

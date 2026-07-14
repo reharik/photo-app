@@ -1,0 +1,43 @@
+# CI e2e override — layered LAST, on top of base.yml + dev.yml +
+# docker-compose/docker-compose.dev.yml. Purpose:
+#
+#   1. Make `docker compose up --no-build` work. The `dev` Dockerfile target is
+#      generic (same image for api + worker; the service `command:` selects the
+#      app). We pre-build ONE image in the workflow (buildx + type=gha cache) and
+#      tag it ${APP_NAME}-api:dev. api already resolves that via `image:`; the
+#      worker has only `build:` and no `image:`, so pin it to the same tag here.
+#
+#   2. Route S3 -> REAL AWS while SES stays on LocalStack. The app already splits
+#      these (only the SES client reads AWS_ENDPOINT; the S3 client never does),
+#      so we just inject real-AWS credentials from GitHub OIDC into the
+#      containers. `configure-aws-credentials` exports them to the runner env;
+#      compose interpolates them here into the container environment. SES ignores
+#      these creds (it pins its own dummy test/test when AWS_ENDPOINT is set).
+#
+#   3. Drop the `~/.aws` bind mount (doesn't exist on the CI runner).
+services:
+  api:
+    image: ${APP_NAME}-api:dev
+    environment:
+      # Real AWS for S3 (default endpoint). SES still -> LocalStack via
+      # AWS_ENDPOINT from apps/api/.env. These come from the OIDC role.
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${CI_E2E_BUCKET}
+
+  media-worker:
+    # Reuse the single pre-built dev image (identical to api's).
+    image: ${APP_NAME}-api:dev
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${CI_E2E_BUCKET}
+    # Replace the dev volume list to drop `~/.aws:/root/.aws:ro` (absent in CI).
+    volumes: !override
+      - ./apps/media-worker:/app/apps/media-worker
+      - /app/apps/media-worker/node_modules
+      - ./packages:/app/packages

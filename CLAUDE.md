@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 Conventions and gotchas for this repo. Rules and incantations that aren't obvious
-from reading one file. Read the code for the *what*; this file is the *why* and
-the *don't-trip-over-this*.
+from reading one file. Read the code for the _what_; this file is the _why_ and
+the _don't-trip-over-this_.
 
 Nested files: [`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md)
 (task-runner / QueueClaimable / no-viewer tier),
@@ -14,16 +14,16 @@ Nested files: [`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md)
 
 Nx monorepo, Knex/Postgres. Two-tier packages.
 
-| Dir | package name | role |
-|---|---|---|
-| `apps/api` | `@app/api` | GraphQL API |
-| `apps/media-worker` | `@app/media-worker` | generic background task-runner (see nested CLAUDE.md) |
-| `apps/web` | `@app/web` | React/Vite frontend |
-| `packages/context/media-core` | `@packages/media-core` | core bounded context (domain, repos, UoW) |
-| `packages/context/notifications` | `@packages/notifications` | notifications context |
-| `packages/context/heic-converter` | `@packages/heic-converter` | HEIC conversion |
-| `packages/foundation/contracts` | `@packages/contracts` | smart-enums, error types (codegen target) |
-| `packages/foundation/infrastructure` | `@packages/infrastructure` | shared primitives |
+| Dir                                  | package name               | role                                                  |
+| ------------------------------------ | -------------------------- | ----------------------------------------------------- |
+| `apps/api`                           | `@app/api`                 | GraphQL API                                           |
+| `apps/media-worker`                  | `@app/media-worker`        | generic background task-runner (see nested CLAUDE.md) |
+| `apps/web`                           | `@app/web`                 | React/Vite frontend                                   |
+| `packages/context/media-core`        | `@packages/media-core`     | core bounded context (domain, repos, UoW)             |
+| `packages/context/notifications`     | `@packages/notifications`  | notifications context                                 |
+| `packages/context/heic-converter`    | `@packages/heic-converter` | HEIC conversion                                       |
+| `packages/foundation/contracts`      | `@packages/contracts`      | smart-enums, error types (codegen target)             |
+| `packages/foundation/infrastructure` | `@packages/infrastructure` | shared primitives                                     |
 
 `packages/context/*` = app-specific bounded contexts. `packages/foundation/*` =
 primitives. **DDD primitives (`Entity`, `AggregateRoot`) live in `media-core`, NOT
@@ -71,11 +71,13 @@ export const build__MediaDeletionJobRepository = (
 ### Lifetimes are set at REGISTRATION, not resolution
 
 Lifetime is baked into the generated manifest. Resolution precedence:
+
 1. explicit `registrations[Contract][impl].lifetime` in `ioc.config.ts`
 2. a **lifetime-marker** base interface on the return type
 3. **default = `singleton`** — anything unmarked is a singleton.
 
 Lifetime markers (nominal "brand" interfaces; extend one and you get its lifetime):
+
 - `RequestScopeLifeCycle` → `scoped` (defined in media-core's `readServiceBaseType.ts`).
   Domain repos and request-scoped read/write services extend it.
 - `WorkerJobProcessorBase` → `scoped` (worker only; per-job processors).
@@ -89,7 +91,7 @@ first-resolved instance and reuses it across all scopes forever.
 
 - **scoped → singleton: fine** (depending on a longer-lived dep).
 - **singleton → scoped: BUILD ERROR.** Codegen's lifetime-inversion check fails the
-  build: *"A singleton freezes its scoped dependency at first construction."*
+  build: _"A singleton freezes its scoped dependency at first construction."_
 - singleton → transient: warning only.
 
 Escape hatch (not currently used in this repo): `allowLifetimeInversion: true` or
@@ -101,6 +103,7 @@ nothing singleton consumes them. Keep it that way.
 
 Groups collect contracts by base type; **members keep their own lifetimes** (a group
 is not a lifetime mechanism). In media-core's `ioc.config.ts`:
+
 - `writeServices` (`WriteServiceBase`, scoped), `readServices` (`ReadServiceBase`,
   scoped), `publicReadServices` (scoped) — request-scoped.
 - `agnosticReadServices` (`AgnosticReadServiceBase`) — **singleton**, deliberately
@@ -114,7 +117,7 @@ request time (treated as scoped by the inversion checker).
 **The `default` registration.** When a contract (interface) has more than one
 implementation, exactly one must be marked `default: true` so a plain injection of
 that contract knows which to use. This also applies to an interface that exists
-*only* to group — it's never injected individually, but it still needs a default, so
+_only_ to group — it's never injected individually, but it still needs a default, so
 one member is chosen arbitrarily (e.g. the worker's `WorkerTask`, see nested CLAUDE.md).
 
 ### Gen commands — run after adding/renaming/moving/deleting a `build__` factory or editing `ioc.config.ts`
@@ -128,6 +131,7 @@ committed and marked DO NOT EDIT. Regenerate and commit them.
 - `npm run gen:api` → `nx gen-gql api && nx gen-ioc api` (GraphQL + IoC together).
 
 Diagnostics (read-only, never write):
+
 - `ioc:discovery:*` (`ioc inspect --discovery`) — re-runs discovery from **source**;
   use to debug why a factory isn't picked up (prints skip reasons).
 - `ioc:inspect:*` (`ioc inspect`) — prints the **committed manifest** (lifetimes, groups).
@@ -174,6 +178,7 @@ from the barrel, not generated.
 ### Adding/changing an enum value — end to end
 
 Schema-driven enum:
+
 1. Edit the GraphQL SDL under `apps/api/src/graphql/schema/**` (use SCREAMING_SNAKE).
 2. `npm run gen:gql:api` — regenerates the API `schema.graphql` snapshot + types.
 3. `npm run gen:enums` — regenerates `graphqlSmartEnums.ts` from that snapshot.
@@ -191,17 +196,17 @@ Four kinds. **Classify by how it gets its db handle and whether it's viewer-gate
 the folder name can lie** (the worker's job-queue repos sit in `domainRepositories/`
 but are table gateways).
 
-| Kind | Folder | Naming | Lifetime | DB handle | Viewer-gated |
-|---|---|---|---|---|---|
-| Domain/aggregate (write) | `domainRepositories/` | `<Agg>Repository` | scoped | `uow.db()` (the trx) | No |
-| Read | `readRepositories/` | `<X>ReadRepository` | singleton | raw `database` Knex | **Yes** (`viewerId` + queryHelpers) |
-| Table-gateway (queues/bookkeeping) | varies | `<X>JobRepository` etc. | singleton | raw `database` (own short trx for claim) | No (`actorId` for audit only) |
-| System (quarantined) | `systemRepositories/` | `System<X>Repository` | singleton | raw `database` | **No, by design** |
+| Kind                               | Folder                | Naming                  | Lifetime  | DB handle                                | Viewer-gated                        |
+| ---------------------------------- | --------------------- | ----------------------- | --------- | ---------------------------------------- | ----------------------------------- |
+| Domain/aggregate (write)           | `domainRepositories/` | `<Agg>Repository`       | scoped    | `uow.db()` (the trx)                     | No                                  |
+| Read                               | `readRepositories/`   | `<X>ReadRepository`     | singleton | raw `database` Knex                      | **Yes** (`viewerId` + queryHelpers) |
+| Table-gateway (queues/bookkeeping) | varies                | `<X>JobRepository` etc. | singleton | raw `database` (own short trx for claim) | No (`actorId` for audit only)       |
+| System (quarantined)               | `systemRepositories/` | `System<X>Repository`   | singleton | raw `database`                           | **No, by design**                   |
 
 - **Domain repos** are the write path: scoped (extend `RequestScopeLifeCycle`),
   query through `uow.db()`, persist aggregates via `persist(aggregate, uow)` in
   `AggregateRepo.ts` (which drains domain events into the UoW). Access control
-  happens in services *above* them, not here.
+  happens in services _above_ them, not here.
 - **Read repos** are viewer-gated: every method takes `viewerId` and applies an
   access filter via `.modify(withViewableByMemberOrAlbumGrant(db, viewerId))` etc.
   Method names encode the gate (`getAlbumForViewer`, `...ForShareLink`).
@@ -225,9 +230,9 @@ Reusable Knex query-builder pieces in
 ```ts
 database('album')
   .modify(withViewerMembership(database, viewerId))
-  .modify(withAlbumCoverItem)              // some are the modifier directly (no deps)
-  .modify(withCollectionInfo(database, collectionInfo))  // standard pagination fragment
-  .select(...albumFields)
+  .modify(withAlbumCoverItem) // some are the modifier directly (no deps)
+  .modify(withCollectionInfo(database, collectionInfo)) // standard pagination fragment
+  .select(...albumFields);
 ```
 
 Convention: **bundle join + select together** in one fragment (e.g.
@@ -237,11 +242,12 @@ Convention: **bundle join + select together** in one fragment (e.g.
 
 **Access-control fragments are the security-critical reusable ones** — change these
 with care:
+
 - `withActiveGrants` / `activeGrantChecks` — defines an "active grant": granted to
   the viewer, `revokedAt` null, not expired. Composable with table aliases.
 - `withViewableByMemberOrAlbumGrant` — the viewability gate: row is visible if the
   viewer is an album member OR an active album-scoped grant exists.
-- `withActiveShareLink` — the public/unauthenticated path (share-link token).
+- `withActivePublicLink` — the public/unauthenticated path (share-link token).
 
 ---
 
@@ -256,7 +262,7 @@ with care:
   `collectEvents()` buffers; `commit()` does **commit-THEN-publish**:
   ```ts
   await trx?.commit();
-  await eventPublisher.publish(events);   // AFTER commit
+  await eventPublisher.publish(events); // AFTER commit
   ```
 - **Event publishing is lossy / best-effort.** `eventPublisher.publish` runs handlers
   post-commit in a try/catch that **swallows failures** — no outbox, no retry. If a

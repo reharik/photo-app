@@ -31,8 +31,7 @@ export const useCommentsForTarget = ({
 }: Props): UseCommentsForTargetResult => {
   const skipViewerMediaItem =
     isPublicAccess || !targetType.equals(EntityType.mediaItem) || !targetId;
-  const skipViewerAlbum =
-    isPublicAccess || !targetType.equals(EntityType.album) || !targetId;
+  const skipViewerAlbum = isPublicAccess || !targetType.equals(EntityType.album) || !targetId;
   const skipPublicMediaItem =
     !isPublicAccess || !targetType.equals(EntityType.mediaItem) || !targetId;
   const skipPublicAlbum = !isPublicAccess || !targetType.equals(EntityType.album);

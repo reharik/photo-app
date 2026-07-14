@@ -58,8 +58,7 @@ export const MediaGridTile = ({
   /** Used for data-testid on the thumbnail. */
   const testId = item.id;
   const placeholderIcon = placeholderIconForKind(item.kind);
-  const showThumbnailImage =
-    item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
+  const showThumbnailImage = item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
 
   useEffect(() => {
     setThumbLoadFailed(false);
@@ -97,8 +96,7 @@ export const MediaGridTile = ({
     </>
   );
 
-  const handleActivate =
-    onBeforeNavigate != null ? () => onBeforeNavigate(item.id) : undefined;
+  const handleActivate = onBeforeNavigate != null ? () => onBeforeNavigate(item.id) : undefined;
 
   return (
     <TileRoot>

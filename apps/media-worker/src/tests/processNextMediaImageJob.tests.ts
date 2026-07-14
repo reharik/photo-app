@@ -3,7 +3,7 @@ import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import type { MediaItemRepository } from '@packages/media-core';
 import { MediaItem } from '@packages/media-core';
 
-import { build__ProcessNextMediaImageJob } from '../tasks/mediaWorkers/processNextMediaImageJob.js';
+import { build__ProcessNextMediaImageJob } from '../tasks/queue/mediaWorkers/processNextMediaImageJob.js';
 
 const ACTOR_ID = '11111111-1111-4111-8111-111111111111';
 const MEDIA_ITEM_ID = '33333333-3333-4333-8333-333333333333';

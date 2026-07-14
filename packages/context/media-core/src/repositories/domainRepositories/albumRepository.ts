@@ -4,16 +4,18 @@ import { Album, type AlbumRecord } from '../../domain/Album/Album';
 import type { AlbumItemRecord } from '../../domain/Album/AlbumItem';
 import type { AlbumMemberRecord } from '../../domain/Album/AlbumMember';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
+import {
+  isPublicLinkAuthRecord,
+  PublicLinkAuthorizationRecord,
+} from '../../domain/Authorization/PublicLinkAuthorization';
+import {
+  isUserAuthRecord,
+  UserAuthorizationRecord,
+} from '../../domain/Authorization/UserAuthorization';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types/types';
-import { GrantSync } from '../grantSync';
 import { persist } from './AggregateRepo';
-import {
-  publicLinkSelectColumns,
-  PublicLinkWithAuthorizationRaw,
-  publicLinkWithAuthorizationRawToPublicLink,
-} from './albumRepositoryMappings';
 
 export interface AlbumRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<Album | undefined>;
@@ -23,13 +25,9 @@ export interface AlbumRepository extends RequestScopeLifeCycle {
 
 type AlbumRepositoryDeps = {
   uow: UnitOfWork;
-  grantSync: GrantSync;
 };
 
-export const build__AlbumRepository = ({
-  grantSync,
-  uow,
-}: AlbumRepositoryDeps): AlbumRepository => {
+export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepository => {
   const getById = async (id: EntityId): Promise<Album | undefined> => {
     const albumRow = await uow.db()<AlbumRecord>('album').where({ id }).first();
     if (!albumRow) return undefined;
@@ -55,30 +53,25 @@ export const build__AlbumRepository = ({
       { strict: true },
     );
 
-    const publicLinkRows = await withEnumRevival(
-      uow
-        .db()('share_link')
-        .innerJoin('access_grant', 'share_link.id', 'access_grant.share_link_id')
-        .select<PublicLinkWithAuthorizationRaw[]>(...publicLinkSelectColumns)
-        .where({ 'share_link.albumId': id })
-        .orderBy('share_link.createdAt', 'asc'),
-      { operation: Operation },
-      { strict: true },
-    );
+    const userAuthorizationRows: UserAuthorizationRecord[] = [];
+    const publicLinkRows: PublicLinkAuthorizationRecord[] = [];
 
-    const publicLinks = publicLinkRows.map(publicLinkWithAuthorizationRawToPublicLink);
+    for (const row of authorizationRows) {
+      if (isUserAuthRecord(row)) userAuthorizationRows.push(row);
+      else if (isPublicLinkAuthRecord(row)) publicLinkRows.push(row);
+      else throw new Error(`Authorization ${row.id} violates grantedToUser XOR linkToken`);
+    }
 
     return Album.rehydrate(albumRow, {
       items: itemRows,
       members: memberRows,
-      authorizations: authorizationRows,
-      publicLinks,
+      authorizations: userAuthorizationRows,
+      publicLinks: publicLinkRows,
     });
   };
 
   const save = async (album: Album): Promise<void> => {
     await persist(album, uow);
-    await grantSync.syncGrants(album);
   };
 
   const deleteAlbum = async (album: Album): Promise<void> => {

@@ -1,4 +1,4 @@
-import { ReactionEmoji, EntityType } from '@packages/contracts';
+import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { Heart, MessageCircleMore } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import styled from 'styled-components';

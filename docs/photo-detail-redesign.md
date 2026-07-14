@@ -49,7 +49,7 @@ Target shape (design against this; stubbed in v1):
 type ReactorVM = {
   id: string;
   displayName: string;
-  avatarUrl?: string;  // not rendered v1
+  avatarUrl?: string; // not rendered v1
   isViewer?: boolean;
 };
 
@@ -61,12 +61,12 @@ type EmojiCountVM = EmojiCountFragment & {
 
 Display rules (authed, heart only):
 
-| Reactors | Inline copy |
-|----------|-------------|
-| 0 | Heart button + "React with a heart" |
-| 1 | ❤ Bob reacted |
-| 2 | ❤ Bob and Carol reacted |
-| 3+ | ❤ Bob, Carol +N reacted (N = total − 2) |
+| Reactors | Inline copy                             |
+| -------- | --------------------------------------- |
+| 0        | Heart button + "React with a heart"     |
+| 1        | ❤ Bob reacted                           |
+| 2        | ❤ Bob and Carol reacted                 |
+| 3+       | ❤ Bob, Carol +N reacted (N = total − 2) |
 
 Viewer sorted first → `"You"`. Example: ❤ You, Bob +5 reacted.
 
@@ -82,15 +82,15 @@ Viewer sorted first → `"You"`. Example: ❤ You, Bob +5 reacted.
 
 ## Deferred follow-ups
 
-| Item | Notes |
-|------|-------|
-| GraphQL `reactors` on `EmojiCount` + resolver | Maps `actorId` → `displayName`; swap stub for real data |
+| Item                                             | Notes                                                           |
+| ------------------------------------------------ | --------------------------------------------------------------- |
+| GraphQL `reactors` on `EmojiCount` + resolver    | Maps `actorId` → `displayName`; swap stub for real data         |
 | `width` / `height` on `MediaItemDetail` fragment | Authed photo details disclosure (public already has dimensions) |
-| React operation / granular `canReact` | If permissions model expands |
-| Reactor avatars in rail | `avatarUrl` reserved in type |
-| Name tap actions (filter, profile) | Visual hint only in v1 |
-| Per-field inline editing | Polish beyond form-on-click |
-| Empty-state affordance polish | If dashed "Add a title" reads apologetic |
+| React operation / granular `canReact`            | If permissions model expands                                    |
+| Reactor avatars in rail                          | `avatarUrl` reserved in type                                    |
+| Name tap actions (filter, profile)               | Visual hint only in v1                                          |
+| Per-field inline editing                         | Polish beyond form-on-click                                     |
+| Empty-state affordance polish                    | If dashed "Add a title" reads apologetic                        |
 
 ## File map
 

@@ -12,7 +12,11 @@ describe('ioc.config', () => {
             generatedDir: 'src/generated',
             factoryPrefix: 'build__',
           }),
-          composedManifests: ['@packages/media-core', '@packages/infrastructure'],
+          composedManifests: [
+            '@packages/media-core',
+            '@packages/infrastructure',
+            '@packages/notifications',
+          ],
           registrations: expect.objectContaining({
             Knex: {
               $contract: { accessKey: 'database' },

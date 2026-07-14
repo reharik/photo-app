@@ -95,10 +95,6 @@ type WriteMutationResponse<T> = {
   errors: ContractErrorPayload[];
 };
 
-type AddMediaItemsToAlbumMutationData = {
-  AddMediaItemsToAlbum?: WriteMutationResponse<{ albumId: string; albumItemIds: string[] }>;
-};
-
 const listCollection = `
   collectionInfo: {
     pageInfo: { limit: 50, offset: 0 }

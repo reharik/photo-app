@@ -18,7 +18,7 @@ const bootstrap = async (): Promise<void> => {
   const runMediaWorkerLoop = container.resolve('runMediaWorkerLoop');
   const eventPublisher = container.resolve('eventPublisher');
   const domainEventHandlers = container.resolve<DomainEventHandlers>('domainEventHandlers');
-  registerDomainEventHandlers(eventPublisher, domainEventHandlers);
+  registerDomainEventHandlers(eventPublisher, domainEventHandlers, logger);
   await logMediaWorkerStartup({ config, logger, database });
 
   let shuttingDown = false;

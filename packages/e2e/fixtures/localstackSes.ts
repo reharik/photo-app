@@ -21,7 +21,7 @@ type SesMessagesResponse = {
   messages?: SesMessage[];
 };
 
-const SHARE_INVITE_PATH_PATTERN = /\/shared\/[^\s"'<>\)]+/;
+const SHARE_INVITE_PATH_PATTERN = /\/shared\/[^\s"'<>)]+/;
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -88,6 +88,27 @@ export const findSesMessageForRecipient = (
 
 export const sesMessageBodyIncludes = (message: SesMessage, text: string): boolean =>
   getSesMessageSearchableParts(message).some((part) => part.includes(text));
+
+/**
+ * Pulls the 6-digit code out of an email-verification message. The template renders
+ * it in the preview text ("Your <App> verification code is 123456.") and again in the
+ * code block, so match that phrase first and fall back to a lone 6-digit run.
+ */
+export const extractVerificationCode = (message: SesMessage): string | undefined => {
+  for (const part of getSesMessageSearchableParts(message)) {
+    const labelled = part.match(/verification code is\s*(\d{6})/i);
+    if (labelled) {
+      return labelled[1];
+    }
+  }
+  for (const part of getSesMessageSearchableParts(message)) {
+    const bare = part.match(/\b(\d{6})\b/);
+    if (bare) {
+      return bare[1];
+    }
+  }
+  return undefined;
+};
 
 export const extractShareInviteUrl = (
   message: SesMessage,

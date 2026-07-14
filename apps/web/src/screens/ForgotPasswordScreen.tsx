@@ -2,143 +2,107 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { APP_NAME, APP_TAGLINE } from '../brand';
-import { config } from '../config';
+import { useAuth } from '../contexts/AuthContext';
+import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
+import {
+  CODE_SENT_MESSAGE,
+  REQUEST_CODE_FAILURE_MESSAGE,
+  setPasswordErrorMessage,
+} from '../features/auth/authMessages';
 import { FormInput } from '../ui/FormInput';
 
-const STAGE1_SUCCESS_MESSAGE =
-  "If an account exists for that email, we've sent a reset code. Check your inbox and enter the code below.";
-
-const RESET_ERROR_INVALID_CODE =
-  "That code isn't right or has expired. Check the code, or request a new one.";
-
-const RESET_ERROR_TOO_MANY_ATTEMPTS = 'Too many attempts. Request a new code and try again.';
-
-type ApiPostResult =
-  | { ok: true }
-  | { ok: false; status: number; error: string };
-
-const apiPost = async (path: string, body: unknown): Promise<ApiPostResult> => {
-  const apiBase = config.apiBaseUrl.endsWith('/')
-    ? config.apiBaseUrl.slice(0, -1)
-    : config.apiBaseUrl;
-  const url = `${apiBase}${path}`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (response.ok) {
-    return { ok: true };
-  }
-
-  const data = (await response.json()) as { error?: string; message?: string };
-  return {
-    ok: false,
-    status: response.status,
-    error: data.error ?? data.message ?? `HTTP ${response.status}`,
-  };
-};
-
+// The forgot-password door. Framing/copy differ from signup, but the call sequence is
+// IDENTICAL: email → request a code (existence-blind) → verify code + set password in
+// one call → land logged in. It collects NO names (that's how the backend tells reset
+// from create without leaking existence). Both doors run through the same auth client.
 export const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
-  const [stage1Submitted, setStage1Submitted] = useState(false);
-  const [stage1Message, setStage1Message] = useState<string | undefined>();
+  const [codeSent, setCodeSent] = useState(false);
+  const [info, setInfo] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
   const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { requestEmailVerification, completeAuth } = useAuth();
   const navigate = useNavigate();
 
   const trimmedEmail = email.trim();
 
-  const sendResetCode = async (): Promise<void> => {
+  // Existence-blind: advance to the code step for every email. The response can't tell
+  // us whether an account exists and we must not infer it. Only a genuine transport
+  // fault is surfaced, with copy that reveals nothing about existence.
+  const sendCode = async (): Promise<boolean> => {
+    const result = await requestEmailVerification(trimmedEmail);
+    if (!result.ok) {
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
+      return false;
+    }
+    setInfo(CODE_SENT_MESSAGE);
+    return true;
+  };
+
+  const handleEmailSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError(undefined);
     setIsSendingCode(true);
-
     try {
-      const result = await apiPost('/auth/forgot-password', { email: trimmedEmail });
-
-      if (!result.ok) {
-        setError('An unexpected error occurred. Please try again.');
-        return;
+      if (await sendCode()) {
+        setCodeSent(true);
       }
-
-      setStage1Submitted(true);
-      setStage1Message(STAGE1_SUCCESS_MESSAGE);
     } catch {
-      setError('An unexpected error occurred. Please try again.');
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
     } finally {
       setIsSendingCode(false);
     }
   };
 
-  const handleSendCodeSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    await sendResetCode();
-  };
-
-  const handleResendCode = async () => {
+  const handleResend = async () => {
     setError(undefined);
     setCode('');
-    await sendResetCode();
+    setIsSendingCode(true);
+    try {
+      await sendCode();
+    } catch {
+      setError(REQUEST_CODE_FAILURE_MESSAGE);
+    } finally {
+      setIsSendingCode(false);
+    }
   };
 
   const handleResetSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(undefined);
 
-    if (code.length !== 6) {
+    if (code.length !== CODE_LENGTH) {
       setError('Enter the 6-digit code from your email.');
       return;
     }
-
     if (password.length < 8) {
-      setError('Password must be at least 8 characters long');
+      setError('Password must be at least 8 characters long.');
       return;
     }
 
-    setIsResetting(true);
-
+    setIsSubmitting(true);
     try {
-      const result = await apiPost('/auth/reset-password', {
-        email: trimmedEmail,
-        code,
-        password,
-      });
+      // No names on this door → the backend routes this as a reset/login.
+      const result = await completeAuth({ email: trimmedEmail, code, password });
 
       if (!result.ok) {
-        if (result.status === 429) {
-          setError(RESET_ERROR_TOO_MANY_ATTEMPTS);
-        } else if (result.status === 400) {
-          setError(RESET_ERROR_INVALID_CODE);
-        } else {
-          setError(result.error);
-        }
+        // Code-level failure: friendly copy, stay on the code step to retry/resend.
+        setError(setPasswordErrorMessage(result.reason));
         return;
       }
 
-      await navigate('/login', {
-        replace: true,
-        state: { successMessage: 'Your password has been changed. Please sign in.' },
-      });
+      // 200 → the session cookie is set and the viewer hydrated. Land in the app — NOT
+      // a "now log in" screen.
+      await navigate('/', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsResetting(false);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleCodeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = event.target.value.replace(/\D/g, '').slice(0, 6);
-    setCode(digits);
   };
 
   return (
@@ -174,11 +138,13 @@ export const ForgotPasswordScreen = () => {
             <AuthHeader>
               <AuthTitle>Reset Password</AuthTitle>
               <AuthSubtitle>
-                Enter your email and we&apos;ll send you a code to choose a new password.
+                {codeSent
+                  ? 'Enter the code we sent, then choose a new password.'
+                  : "Enter your email and we'll send you a code to choose a new password."}
               </AuthSubtitle>
             </AuthHeader>
 
-            <Form onSubmit={stage1Submitted ? handleResetSubmit : handleSendCodeSubmit}>
+            <Form onSubmit={codeSent ? handleResetSubmit : handleEmailSubmit}>
               <FormInput
                 id="forgot-password-email"
                 label="Email"
@@ -189,24 +155,21 @@ export const ForgotPasswordScreen = () => {
                   setEmail(event.target.value)
                 }
                 required
+                disabled={codeSent}
                 autoComplete="email"
               />
 
-              {stage1Message && <InfoMessage>{stage1Message}</InfoMessage>}
+              {info && <InfoMessage>{info}</InfoMessage>}
 
-              {stage1Submitted && (
+              {codeSent && (
                 <>
-                  <FormInput
-                    id="forgot-password-code"
-                    label="Reset code"
-                    type="text"
-                    placeholder="000000"
-                    value={code}
-                    onChange={handleCodeChange}
-                    required
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
+                  <VerificationStep
+                    idPrefix="forgot-password"
+                    code={code}
+                    onCodeChange={setCode}
+                    onResend={handleResend}
+                    isResending={isSendingCode}
+                    disabled={isSubmitting}
                   />
                   <FormInput
                     id="forgot-password-new-password"
@@ -220,24 +183,18 @@ export const ForgotPasswordScreen = () => {
                     minLength={8}
                     autoComplete="new-password"
                   />
-                  <ResendRow>
-                    Didn&apos;t get a code?{' '}
-                    <ResendLink type="button" onClick={handleResendCode} disabled={isSendingCode}>
-                      Send again
-                    </ResendLink>
-                  </ResendRow>
                 </>
               )}
 
               {error && <ErrorMessage>{error}</ErrorMessage>}
 
-              {!stage1Submitted ? (
+              {!codeSent ? (
                 <SubmitButton type="submit" disabled={isSendingCode}>
                   {isSendingCode ? 'Loading...' : 'Send reset code'}
                 </SubmitButton>
               ) : (
-                <SubmitButton type="submit" disabled={isResetting || isSendingCode}>
-                  {isResetting ? 'Loading...' : 'Reset password'}
+                <SubmitButton type="submit" disabled={isSubmitting || isSendingCode}>
+                  {isSubmitting ? 'Loading...' : 'Set password & sign in'}
                 </SubmitButton>
               )}
             </Form>
@@ -434,30 +391,5 @@ const BackLink = styled(Link)`
 
   &:hover {
     color: ${({ theme }) => theme.color.linkHover};
-  }
-`;
-
-const ResendRow = styled.div`
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  font-size: 14px;
-`;
-
-const ResendLink = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.color.link};
-  font-size: 14px;
-  padding: 0;
-  text-decoration: underline;
-  transition: color 0.2s ease;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: ${({ theme }) => theme.color.linkHover};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 `;

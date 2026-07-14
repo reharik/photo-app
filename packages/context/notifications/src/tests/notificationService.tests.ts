@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, ok } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
@@ -34,10 +36,8 @@ describe('build__NotificationService', () => {
       },
     }));
 
-    jest.unstable_mockModule('@react-email/components', () => ({
-      render: jest.fn(async () => '<html><body><p>Jane</p></body></html>'),
-    }));
-
+    // '@react-email/components' is statically mocked via moduleNameMapper (its `render`
+    // serializes props, so the html still contains the recipient's name).
     ({ build__NotificationService } = await import('../notificationService.js'));
   });
 
@@ -67,9 +67,9 @@ describe('build__NotificationService', () => {
       });
 
       expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.id).toBe('welcome-msg-1');
-      }
+      assert(result.success);
+      // notify joins per-channel message ids; a single email send yields just its id.
+      expect(result.value).toBe('welcome-msg-1');
 
       expect(sendEmail).toHaveBeenCalledTimes(1);
       const [payload] = sendEmail.mock.calls[0] ?? [];
@@ -104,9 +104,9 @@ describe('build__NotificationService', () => {
       });
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toBe(ContractError.EmailSendFailed.display);
-      }
+      assert(!result.success);
+      // notify surfaces the ContractError itself (not its display string).
+      expect(result.error).toBe(ContractError.EmailSendFailed);
     });
   });
 });

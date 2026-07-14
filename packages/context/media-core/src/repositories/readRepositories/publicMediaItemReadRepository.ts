@@ -32,7 +32,7 @@ export const build__PublicMediaItemReadRepository = ({
       database('mediaItem')
         .join('grant', 'mediaItem.id', 'grant.mediaItemId')
         .join('accessGrant', 'accessGrant.id', 'grant.accessGrantId')
-        .where('accessGrant.shareLinkId', publicLinkId)
+        .where('accessGrant.id', publicLinkId)
         .whereNull('accessGrant.revokedAt')
         .where((b) => {
           b.whereNull('accessGrant.expiresAt').orWhere(

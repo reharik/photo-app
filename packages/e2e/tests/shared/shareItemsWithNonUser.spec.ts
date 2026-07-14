@@ -1,5 +1,7 @@
+import { cleanupRecipientByEmail } from '../../fixtures/cleanup';
 import { env } from '../../fixtures/env';
 import {
+  clearLocalStackSesMessages,
   extractShareInviteUrl,
   findSesMessageForRecipient,
   retrieveLocalStackSesMessages,
@@ -8,10 +10,23 @@ import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSel
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
+// Shared with the album non-user spec; both reuse this fixed address, so each resets
+// the shadow user it leaves behind (see cleanupRecipientByEmail) before running.
+const RECIPIENT_EMAIL = 'nonUser@email.com';
+
 /**
  * Scenario 1 — Share individual media items with an email that is not a user.
  */
 test.describe('Share individual items with an email that is not a user', () => {
+  test.beforeEach(async () => {
+    // Reset the shadow user (cascades away any un-sent pending notification) AND drain
+    // SES: both non-user specs reuse RECIPIENT_EMAIL, and the poll below matches the
+    // first email to that address, so a stale invite from an earlier spec would send the
+    // anon page to a since-cleaned-up token ("This album isn't available").
+    await cleanupRecipientByEmail(RECIPIENT_EMAIL);
+    await clearLocalStackSesMessages();
+  });
+
   test.describe('When User A shares two items with a non-user email', () => {
     test('should create a public link and email it to the email', async ({
       userA,
@@ -20,7 +35,7 @@ test.describe('Share individual items with an email that is not a user', () => {
       grabTestImages,
     }) => {
       const [a, b, c] = await setup(grabTestImages, userA, 3);
-      const recipientEmail = 'nonUser@email.com';
+      const recipientEmail = RECIPIENT_EMAIL;
 
       const selection = await selectMediaItems(userA.page, [a.id, b.id], {
         toolbarVariant: 'library',

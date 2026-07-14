@@ -45,8 +45,6 @@ export const resetDb = async (db: Knex): Promise<void> => {
       access_grant,
       album_item,
       album_member,
-      share_link_grant,
-      share_link,
       "comment",
       notification,
       album,
@@ -54,7 +52,8 @@ export const resetDb = async (db: Knex): Promise<void> => {
       media_deletion_job,
       media_asset,
       media_item,
-      password_reset,
+      email_verification,
+      rate_limit_event,
       "user"
     RESTART IDENTITY CASCADE;
   `);

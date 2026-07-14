@@ -71,6 +71,8 @@ export const ensureTestViewerUsers = async (database: Knex): Promise<void> => {
         email: row.email,
         firstName: row.firstName,
         lastName: row.lastName,
+        // RAI-76: user_status became NOT NULL in migration 0019; seed users are active.
+        userStatus: 'ACTIVE',
         emailVerified: true,
         createdBy: row.id,
         updatedBy: row.id,

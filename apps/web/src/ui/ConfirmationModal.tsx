@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { AppError } from '../domain/errors/errorTypes';
 import { AppErrorPanel } from '../ui/AppErrorPanel';
-import { Button } from './Button';
 import { AppModal } from './AppModal';
+import { Button } from './Button';
 
 type ConfirmationModalProps = {
   onClose: () => void;
@@ -70,4 +70,3 @@ export const ConfirmationModal = ({
     </AppModal>
   );
 };
-

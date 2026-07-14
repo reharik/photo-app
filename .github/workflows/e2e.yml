@@ -1,0 +1,261 @@
+name: E2E
+
+# Playwright end-to-end suite against a real, containerized stack.
+#
+# Local flow (three terminals) that this reproduces headlessly:
+#   1. make docker/dev/up   -> db + localstack + api + media-worker (Docker)
+#   2. npm run dev:web       -> here: built bundle served via `vite preview`
+#   3. npm run test:e2e      -> Playwright (Chromium) against the served app
+#
+# SES runs on LocalStack (email assertions); S3 media uses REAL AWS via a
+# dedicated test bucket + GitHub OIDC role (presigned URLs / CORS need real-S3
+# fidelity). The app already routes S3 -> real AWS and SES -> AWS_ENDPOINT
+# independently, so no app change is needed to express the split.
+#
+# MANUAL AWS PREREQS (must exist before this passes):
+#   - Repo/Org variable CI_E2E_BUCKET  : test S3 bucket (1-day lifecycle expiry;
+#                                        CORS allowing http://localhost:5173).
+#   - Repo/Org variable CI_E2E_ROLE_ARN: OIDC IAM role, trust limited to this
+#                                        repo, perms = S3 object ops on that
+#                                        bucket only.
+#   - GitHub OIDC provider in the AWS account
+#     (token.actions.githubusercontent.com). Check:
+#       aws iam list-open-id-connect-providers
+
+on:
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Which e2e suite to run"
+        type: choice
+        default: full
+        options:
+          - smoke
+          - full
+
+# One e2e run per PR/ref; cancel superseded runs.
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write # required for AWS OIDC
+  contents: read
+
+env:
+  APP_NAME: betaname
+  COMPOSE_PROJECT_NAME: betaname-ci
+  # Every `docker compose` call in this job auto-loads these files, in order.
+  # NOTE: each `docker compose` invocation also passes `--project-directory .`
+  # so env_file paths (./apps/api/.env, ...) resolve from the repo root rather
+  # than the first compose file's directory (the Makefile does the same).
+  COMPOSE_FILE: infra/config/docker-compose/base.yml:infra/config/docker-compose/dev.yml:docker-compose/docker-compose.dev.yml:infra/config/docker-compose/ci.yml
+  DEV_IMAGE: betaname-api:dev
+
+jobs:
+  e2e:
+    name: E2E (${{ github.event_name == 'pull_request' && 'smoke' || inputs.suite }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+
+      - run: npm i -g npm@11.6.2
+      - name: npm ci (retry up to 3x)
+        run: |
+          for i in 1 2 3; do
+            echo "npm ci attempt $i/3"
+            if npm ci; then
+              echo "npm ci succeeded on attempt $i"; exit 0
+            fi
+            echo "npm ci failed on attempt $i; lockfile status:"
+            ls -l package-lock.json || echo "no root package-lock.json present!"
+            sleep 5
+          done
+          echo "::error::npm ci failed after 3 attempts"; exit 1
+
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
+
+      # --- DEBUG: decode the OIDC token claims to compare against the AWS
+      #     IAM role's trust policy (sub / aud / repository / ref / iss).
+      #     NOTE: ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN are injected into the shell
+      #     env by the runner (because permissions.id-token: write is set) — they
+      #     are NOT ${{ env.* }} workflow expressions, so we reference them
+      #     directly from the shell and DO NOT re-declare them in an env: block.
+      - name: Debug OIDC claims
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sLS \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}")
+          # JWT payload is base64url (no padding): translate to std base64 + pad.
+          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
+          case $(( ${#PAYLOAD} % 4 )) in 2) PAYLOAD="${PAYLOAD}==";; 3) PAYLOAD="${PAYLOAD}=";; esac
+          CLAIMS=$(echo "$PAYLOAD" | base64 -d | jq .)
+          echo "=== configured role-to-assume (from vars.CI_E2E_ROLE_ARN) ==="
+          echo "${{ vars.CI_E2E_ROLE_ARN }}"
+          echo "=== full OIDC claims ==="
+          echo "$CLAIMS"
+          echo "=== fields the AWS trust policy conditions match on ==="
+          echo "$CLAIMS" | jq '{sub, aud, iss, repository, repository_owner, ref, ref_type, workflow, event_name, environment}'
+
+      # --- Real AWS creds for S3 (SES stays on LocalStack) via OIDC ---
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.CI_E2E_ROLE_ARN }} # TODO: set repo/org variable
+          aws-region: us-east-1
+          role-session-name: gha-e2e-${{ github.run_id }}
+
+      # --- Materialize the CI env files (git-ignored in real clones) ---
+      - name: Write CI env files
+        run: |
+          cp .env.ci .env
+          cp apps/api/.env.ci apps/api/.env
+          cp apps/media-worker/.env.ci apps/media-worker/.env
+
+      # --- Pre-build the single `dev` image (buildx + GHA layer cache) ---
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: dev
+          build-args: |
+            SERVICE_NAME=api
+          tags: ${{ env.DEV_IMAGE }}
+          load: true # into the local daemon so compose --no-build finds it
+          cache-from: type=gha,scope=e2e-dev
+          cache-to: type=gha,scope=e2e-dev,mode=max
+
+      # --- Bring up the stack; gate on real readiness (no fixed sleeps) ---
+      - name: Compose up (db, localstack, api, worker)
+        env:
+          CI_E2E_BUCKET: ${{ vars.CI_E2E_BUCKET }} # TODO: set repo/org variable
+        run: |
+          # --wait blocks until db + localstack report healthy (compose
+          # healthchecks) and api/worker are running. api/worker have no
+          # healthcheck, so we poll /health separately below.
+          docker compose --project-directory . up -d --no-build --wait
+
+      - name: Wait for API /health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3001/health >/dev/null 2>&1; then
+              echo "api healthy"; exit 0
+            fi
+            echo "waiting for api /health ($i/60)..."; sleep 2
+          done
+          echo "::error::api did not become healthy"; docker compose --project-directory . logs api; exit 1
+
+      # --- Explicit, exit-code-checked migrate + seed (not the tolerant boot) ---
+      - name: DB migrate
+        run: docker compose --project-directory . exec -T api npm run db:migrate:local --workspace=@app/api
+
+      - name: DB seed
+        run: docker compose --project-directory . exec -T api npm run db:seed:local --workspace=@app/api
+
+      # --- Build + serve the web app (production bundle, not the dev server) ---
+      - name: Build web
+        run: npm run build:web
+        env:
+          VITE_API: /api # relative; the preview proxy forwards /api + /media
+
+      - name: Serve web (vite preview) and wait for ready
+        run: |
+          nohup npx nx preview web --port 5173 > preview.log 2>&1 &
+          echo "PREVIEW_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5173 >/dev/null 2>&1; then
+              echo "web preview up"; exit 0
+            fi
+            echo "waiting for web ($i/60)..."; sleep 2
+          done
+          echo "::error::web preview did not become ready"; cat preview.log; exit 1
+
+      - name: Install Playwright browser
+        working-directory: packages/e2e
+        run: npx playwright install --with-deps chromium
+
+      # --- Choose smoke vs full ---
+      # PRs gate on smoke; add the `e2e-full` label to a PR to run everything.
+      # workflow_dispatch honors the `suite` input.
+      - name: Select suite
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SUITE="${{ inputs.suite }}"
+          elif ${{ contains(github.event.pull_request.labels.*.name, 'e2e-full') }}; then
+            SUITE="full"
+          else
+            SUITE="smoke"
+          fi
+          echo "Selected suite: $SUITE"
+          if [ "$SUITE" = "smoke" ]; then
+            # Critical path: auth signup, one share flow, foundation happy path.
+            echo "SPEC_ARGS=tests/auth/signup.spec.ts tests/shared/shareAlbumWithUser.spec.ts tests/foundation.spec.ts" >> "$GITHUB_ENV"
+          else
+            echo "SPEC_ARGS=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run e2e
+        working-directory: packages/e2e
+        env:
+          CI: "true"
+          E2E_WEB_BASE_URL: http://localhost:5173
+          E2E_API_BASE_URL: http://localhost:3001
+          # Host-mapped Postgres port for global-setup / teardown (5433 -> 5432).
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5433"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photo_app
+        run: npx playwright test ${{ env.SPEC_ARGS }}
+
+      # --- Diagnostics on failure ---
+      - name: Collect docker logs
+        if: failure()
+        run: |
+          mkdir -p artifacts/docker-logs
+          for svc in db localstack api media-worker; do
+            docker compose --project-directory . logs --no-color "$svc" > "artifacts/docker-logs/$svc.log" 2>&1 || true
+          done
+          cp preview.log artifacts/docker-logs/web-preview.log 2>/dev/null || true
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ github.run_id }}
+          path: |
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
+            artifacts/docker-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # --- Teardown ---
+      - name: Compose down
+        if: always()
+        run: |
+          [ -n "${PREVIEW_PID:-}" ] && kill "$PREVIEW_PID" 2>/dev/null || true
+          docker compose --project-directory . down -v --remove-orphans || true

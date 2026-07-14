@@ -3,12 +3,7 @@ import type { Knex } from 'knex';
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('password_reset', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
-    table
-      .uuid('user_id')
-      .notNullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('CASCADE');
+    table.uuid('user_id').notNullable().references('id').inTable('user').onDelete('CASCADE');
     table.text('code_hash').notNullable();
     table.timestamp('expires_at', { useTz: true }).notNullable();
     table.timestamp('consumed_at', { useTz: true }).nullable();

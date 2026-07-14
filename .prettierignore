@@ -14,3 +14,22 @@ package-lock.json
 **/*.generated.ts
 /infra/**
 /ops/**
+
+# Barrelsby-generated barrels: their export order is owned by barrelsby (enforced by
+# check:policy rule 11). prettier-plugin-organize-imports would reorder them and fight
+# barrelsby forever, so exclude them from formatting.
+packages/context/media-core/src/application/index.ts
+packages/context/media-core/src/domain/index.ts
+packages/context/media-core/src/repositories/index.ts
+packages/context/media-core/src/services/index.ts
+packages/context/media-core/src/types/index.ts
+packages/context/notifications/src/channels/index.ts
+packages/foundation/contracts/src/enums/index.ts
+packages/foundation/contracts/src/types/index.ts
+packages/foundation/infrastructure/src/logger/index.ts
+packages/foundation/infrastructure/src/utilities/index.ts
+
+# Transient artifacts (should not be committed either — see .gitignore)
+/graph.json
+/stdout.json
+/test-results

@@ -21,6 +21,9 @@ export default {
     '^@packages/infrastructure$': '<rootDir>/../../packages/foundation/infrastructure/src/index.ts',
     '^@packages/media-core$': '<rootDir>/../../packages/context/media-core/src/index.ts',
     '^@packages/heic-converter$': '<rootDir>/../../packages/context/heic-converter/src/index.ts',
+    // Loading the real `@react-email/components` barrel pulls in tailwindcss, which
+    // fails under Jest ESM; the worker never renders emails (see the mock file).
+    '^@react-email/components$': '<rootDir>/src/tests/__mocks__/reactEmailComponents.js',
   },
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: ['<rootDir>/src/tests/setup.ts'],

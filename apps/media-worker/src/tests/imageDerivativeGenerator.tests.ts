@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { generateImageDerivatives } from '../tasks/mediaWorkers/imageDerivativeGenerator';
+import { generateImageDerivatives } from '../tasks/queue/mediaWorkers/imageDerivativeGenerator';
 
 /** 1×1 PNG — minimal valid image for sharp. */
 const MINIMAL_PNG_1X1 = Buffer.from([

@@ -12,7 +12,7 @@ export type UnseenActivitySummary = {
 export interface UnseenActivityRepository {
   getUnseenActivity: (viewerId: EntityId) => Promise<boolean>;
   getUnseenActivitySummary: (viewerId: EntityId) => Promise<UnseenActivitySummary>;
-  markSeen: (targetType: EntityType, targetId: EntityId, viewerId: EntityId) => Promise<void>;
+  markSeen: (targetType: EntityType, viewerId: EntityId, targetId?: EntityId) => Promise<void>;
 }
 
 type UnseenActivityRepositoryDeps = { database: Knex };
@@ -29,8 +29,8 @@ export const build__UnseenActivityRepository = ({
     const row = await database('unseenActivity')
       .where({ viewerId })
       .select(
-        database.raw('bool_or(target_type = ?) as mediaItems', [EntityType.mediaItem.value]),
-        database.raw('bool_or(target_type = ?) as albums', [EntityType.album.value]),
+        database.raw('bool_or(target_type = ?) as "mediaItems"', [EntityType.mediaItem.value]),
+        database.raw('bool_or(target_type = ?) as "albums"', [EntityType.album.value]),
       )
       .first<{ mediaItems: boolean | null; albums: boolean | null } | undefined>();
     return { mediaItems: Boolean(row?.mediaItems), albums: Boolean(row?.albums) };
@@ -38,9 +38,10 @@ export const build__UnseenActivityRepository = ({
   // Clears ALL unseen activity at this target (every activity_kind) for the
   // viewer. Keyed on target_type + target_id only — opening an album must not
   // leave per-mediaItem (comment) dots behind, and vice versa.
-  markSeen: async (targetType, targetId, viewerId) => {
+  markSeen: async (targetType: EntityType, viewerId: EntityId, targetId?: string) => {
+    const filterOnTargetId = targetId ? { targetId } : {};
     await database('unseenActivity')
       .delete()
-      .where({ targetType: targetType.value, targetId, viewerId });
+      .where({ targetType: targetType.value, ...filterOnTargetId, viewerId });
   },
 });

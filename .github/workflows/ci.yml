@@ -21,11 +21,15 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+               - name: Install proper npm
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - run: npm run check:deps
       - run: npm run check:policy
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run lint:all
       - name: Check formatting
         run: npm run format:check
@@ -46,9 +50,12 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run test:ci
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
@@ -57,6 +64,61 @@ jobs:
           files: ./coverage/coverage-final.json
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    # Real-Postgres integration suite (apps/api/src/tests/*.integration.tests.ts). The unit
+    # `test` job runs jest.config.js, which IGNORES *.integration.tests.ts and has no DB, so
+    # these never ran in CI. This job stands up Postgres and runs jest.integration.config.js
+    # (via `nx run api:test-integration`). It guards the write-boundary uow-rollback property
+    # (graphql.uowRollbackBoundary.integration.tests.ts) among the rest of the suite.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photo_app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # createConfigFromEnv() (apps/api/src/config.ts) reads these directly; the knexfile and
+      # the integration test harness both use it. No apps/api/.env exists in CI (git-ignored),
+      # so setup.ts's dotenv load is a no-op and these job env vars are what's used.
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: photo_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+      - run: npm i -g npm@11.6.2
+      - run: npm ci
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
+      - name: DB migrate
+        run: npm run db:migrate
+      - name: Integration tests (real Postgres)
+        run: npm run test:integration:api
 
   build:
     name: Build
@@ -74,9 +136,12 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
+      - run: npm i -g npm@11.6.2  
       - run: npm ci
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
       - run: npm run build:all
       - name: Build production frontend
         run: npm run build:web

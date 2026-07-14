@@ -9,12 +9,7 @@ export async function up(knex: Knex): Promise<void> {
     // notification kind: 'album_activity' (more later; validated in app code)
     table.text('kind').notNullable();
 
-    table
-      .uuid('recipient_id')
-      .notNullable()
-      .references('id')
-      .inTable('user')
-      .onDelete('CASCADE');
+    table.uuid('recipient_id').notNullable().references('id').inTable('user').onDelete('CASCADE');
 
     // polymorphic ref: 'album' | 'mediaItem' (more later); no FK because polymorphic
     table.text('aggregate_type').notNullable();

@@ -24,7 +24,7 @@ tuned for AA contrast against the paper background.
   value (app background in dark mode). Now `gray_10` is the lightest (paper
   white). Mental model: lower number = closer to background, higher number =
   closer to text. The semantic token mappings (`body: gray_10`, `bodyText:
-  gray_90`) didn't change — the values they point to did.
+gray_90`) didn't change — the values they point to did.
 - **All neutrals carry a subtle warm tint.** Yellow/orange hue at low
   saturation. Avoids the "clinical lab" feeling of pure gray on cream.
 - **Box shadows softened.** Previous `rgba(0,0,0, 0.3–0.5)` was tuned for
@@ -99,11 +99,12 @@ git grep -nE "box-shadow.*rgba\\(0, ?0, ?0, ?0\\.[2-9]" apps/web
 
 ### 5. Card/panel components
 
-Previously, cards (`bodyRaised`, `cardBg`) were *lighter* than the body
-(`bodyText`) on a dark theme. Now they're *also light* — the visual
+Previously, cards (`bodyRaised`, `cardBg`) were _lighter_ than the body
+(`bodyText`) on a dark theme. Now they're _also light_ — the visual
 relationship between body and card is much subtler. If a card used to
 stand out by being a few shades brighter than the page, it now barely
 differs. Decide whether you want:
+
 - **No card chrome** (recommended, matches the new design — let
   whitespace and typography do the structural work)
 - **Subtle 0.5px border** (`border: 0.5px solid theme.color.gray_30`)
@@ -118,20 +119,20 @@ instead of the 10–15% gap they had on dark.
 When building the redesigned library grid, selection state, etc., reach
 for these specifically:
 
-| Use                              | Token                       |
-|----------------------------------|-----------------------------|
-| Page background                  | `body`                      |
-| Section header text (the clay-colored one) | `textAccent` |
-| Section subtitle ("June 4 · workshop")     | `textMuted`  |
-| Selected photo ring              | `primaryButtonBg` (clay_dark) |
-| Selected photo checkmark badge bg | `primaryButtonBg`          |
-| Checkmark icon color             | `primaryButtonText`         |
-| Unselected hollow circle border  | `rgba(255, 255, 255, 0.9)` on top of photo (white-on-image, not theme color) |
-| Selection toolbar bg             | `bodyRaised`                |
-| Share button (primary)           | `primaryButtonBg` / `primaryButtonText` |
-| Add to album / text actions      | `ghostButtonText`           |
-| Cancel link                      | `textMuted`                 |
-| Wordmark "Harik family"          | `font.serif`, `bodyText`, `fontSize._17` |
+| Use                                        | Token                                                                        |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| Page background                            | `body`                                                                       |
+| Section header text (the clay-colored one) | `textAccent`                                                                 |
+| Section subtitle ("June 4 · workshop")     | `textMuted`                                                                  |
+| Selected photo ring                        | `primaryButtonBg` (clay_dark)                                                |
+| Selected photo checkmark badge bg          | `primaryButtonBg`                                                            |
+| Checkmark icon color                       | `primaryButtonText`                                                          |
+| Unselected hollow circle border            | `rgba(255, 255, 255, 0.9)` on top of photo (white-on-image, not theme color) |
+| Selection toolbar bg                       | `bodyRaised`                                                                 |
+| Share button (primary)                     | `primaryButtonBg` / `primaryButtonText`                                      |
+| Add to album / text actions                | `ghostButtonText`                                                            |
+| Cancel link                                | `textMuted`                                                                  |
+| Wordmark "Harik family"                    | `font.serif`, `bodyText`, `fontSize._17`                                     |
 
 ## Things deferred
 
