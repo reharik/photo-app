@@ -55,7 +55,7 @@
     },
     "build": {
       "executor": "@nx/js:tsc",
-      "dependsOn": ["barrels", "^build"],
+      "dependsOn": ["barrels", "gen-ioc", "^build", "typecheck"],
       "outputs": ["{projectRoot}/dist"],
       "options": {
         "outputPath": "{projectRoot}/dist",
