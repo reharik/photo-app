@@ -52,6 +52,7 @@
     "typecheck": {
       "executor": "nx:run-commands",
       "cache": true,
+      "dependsOn": ["^build", "gen-ioc"],
       "options": { "command": "tsc --noEmit -p {projectRoot}/tsconfig.json" }
     },
     "build": {
