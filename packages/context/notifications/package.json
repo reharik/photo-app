@@ -49,3 +49,34 @@
     "typescript": "^5.9.2"
   }
 }
+
+
+
+cat > /tmp/cors.json <<EOF
+{
+    "CORSRules": [
+        {
+            "AllowedHeaders": [
+                "*"
+            ],
+            "AllowedMethods": [
+                "PUT",
+                "GET",
+                "HEAD"
+            ],
+            "AllowedOrigins": [
+                "https://betaname.app",
+                "http://localhost:4200"
+            ],
+            "ExposeHeaders": [
+                "ETag"
+            ],
+            "MaxAgeSeconds": 3000
+        }
+    ]
+}
+EOF
+
+aws s3api put-bucket-cors \
+  --bucket ${BUCKET} \
+  --cors-configuration file:///tmp/cors.json
