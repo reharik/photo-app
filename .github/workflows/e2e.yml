@@ -75,7 +75,18 @@ jobs:
             ${{ runner.os }}-nx-
 
       - run: npm i -g npm@11.6.2
-      - run: npm ci
+      - name: npm ci (retry up to 3x)
+        run: |
+          for i in 1 2 3; do
+            echo "npm ci attempt $i/3"
+            if npm ci; then
+              echo "npm ci succeeded on attempt $i"; exit 0
+            fi
+            echo "npm ci failed on attempt $i; lockfile status:"
+            ls -l package-lock.json || echo "no root package-lock.json present!"
+            sleep 5
+          done
+          echo "::error::npm ci failed after 3 attempts"; exit 1
 
       - name: Generate IoC manifests
         run: npm run gen:ioc:all
