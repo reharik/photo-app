@@ -93,6 +93,29 @@ jobs:
       - name: Generate GraphQL types & smart-enums
         run: npm run gen:gql:all
 
+      # --- DEBUG: decode the OIDC token claims to compare against the AWS
+      #     IAM role's trust policy (sub / aud / repository / ref / iss).
+      #     NOTE: ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN are injected into the shell
+      #     env by the runner (because permissions.id-token: write is set) — they
+      #     are NOT ${{ env.* }} workflow expressions, so we reference them
+      #     directly from the shell and DO NOT re-declare them in an env: block.
+      - name: Debug OIDC claims
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sLS \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}")
+          # JWT payload is base64url (no padding): translate to std base64 + pad.
+          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
+          case $(( ${#PAYLOAD} % 4 )) in 2) PAYLOAD="${PAYLOAD}==";; 3) PAYLOAD="${PAYLOAD}=";; esac
+          CLAIMS=$(echo "$PAYLOAD" | base64 -d | jq .)
+          echo "=== configured role-to-assume (from vars.CI_E2E_ROLE_ARN) ==="
+          echo "${{ vars.CI_E2E_ROLE_ARN }}"
+          echo "=== full OIDC claims ==="
+          echo "$CLAIMS"
+          echo "=== fields the AWS trust policy conditions match on ==="
+          echo "$CLAIMS" | jq '{sub, aud, iss, repository, repository_owner, ref, ref_type, workflow, event_name, environment}'
+
       # --- Real AWS creds for S3 (SES stays on LocalStack) via OIDC ---
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
