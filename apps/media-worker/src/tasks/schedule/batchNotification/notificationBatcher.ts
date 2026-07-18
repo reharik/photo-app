@@ -1,6 +1,6 @@
 import { ActivityKind, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
-import { SystemPendingNotificationRepository, SystemUserRepository } from '@packages/media-core';
+import { SystemAsyncNotificationRepository, SystemUserRepository } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
 import { pickEnum } from '@reharik/smart-enum';
 import { Config } from '../../../config';
@@ -14,7 +14,7 @@ export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
 type NotificationBatcherDeps = {
   logger: Logger;
   notificationService: NotificationService;
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   batchedEmailActivity: BatchedEmailActivity;
   config: Config;
@@ -23,13 +23,13 @@ type NotificationBatcherDeps = {
 export const build__NotificationBatcher = ({
   logger,
   notificationService,
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   systemUserRepository,
   batchedEmailActivity,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
   return async (): Promise<WorkerTaskOutcome> => {
-    const rows = await systemPendingNotificationRepository.claimNotificationBatch(
+    const rows = await systemAsyncNotificationRepository.claimNotificationBatch(
       config.debounceEmailWindowSeconds,
     );
     logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
@@ -91,8 +91,8 @@ export const build__NotificationBatcher = ({
 
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     await Promise.all([
-      systemPendingNotificationRepository.deleteCompletedRecords(deleteIds),
-      systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds),
+      systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds),
+      systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds),
     ]);
     logs.forEach((x) => logger.info(x));
 

@@ -1,6 +1,6 @@
-import { PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
-import { PendingNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
+import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 
@@ -13,9 +13,9 @@ export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
 }: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'albumGuestInvite'> => ({
-  kind: PendingNotificationKind.guestAlbumShared,
+  kind: AsyncNotificationKind.guestAlbumShared,
   execute: async (
-    rows: PendingNotification[],
+    rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'albumGuestInvite'>[]> => {
     const albumIds = [...new Set(rows.map((x) => x.aggregateId))];

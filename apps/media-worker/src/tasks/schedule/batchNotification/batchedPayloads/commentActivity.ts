@@ -1,12 +1,7 @@
-import {
-  ActivityKind,
-  filterByMember,
-  notEmpty,
-  PendingNotificationKind,
-} from '@packages/contracts';
+import { ActivityKind, AsyncNotificationKind, filterByMember, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy } from '@packages/infrastructure';
 import {
-  PendingNotification,
+  AsyncNotification,
   SystemCommentRepository,
   SystemUserRepository,
 } from '@packages/media-core';
@@ -16,7 +11,7 @@ import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload } from './types';
 
 export interface CommentActivity extends BatchedEmailPayload {
-  execute: (rows: PendingNotification[]) => Promise<ActivityResult>;
+  execute: (rows: AsyncNotification[]) => Promise<ActivityResult>;
 }
 
 type CommentActivityDeps = {
@@ -36,7 +31,7 @@ export const build__CommentActivity = ({
   systemCommentRepository,
 }: CommentActivityDeps): CommentActivity => ({
   execute: async (rows): Promise<ActivityResult> => {
-    const commentRowKind = pickEnum(PendingNotificationKind, ['commentPosted', 'replyPosted']);
+    const commentRowKind = pickEnum(AsyncNotificationKind, ['commentPosted', 'replyPosted']);
     const commentRows = filterByMember(rows, 'kind', commentRowKind);
 
     const comments = await systemCommentRepository.getCommentsByIds(

@@ -1,12 +1,12 @@
 import {
   ActivityKind,
+  AsyncNotificationKind,
   EntityType,
   filterByMember,
-  PendingNotificationKind,
 } from '@packages/contracts';
 import { groupByMapping, indexBy } from '@packages/infrastructure';
 import {
-  PendingNotification,
+  AsyncNotification,
   SystemCommentRepository,
   SystemUserRepository,
 } from '@packages/media-core';
@@ -16,7 +16,7 @@ import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload } from './types';
 
 export interface ReactionActivity extends BatchedEmailPayload {
-  execute: (rows: PendingNotification[]) => Promise<ActivityResult>;
+  execute: (rows: AsyncNotification[]) => Promise<ActivityResult>;
 }
 
 type ReactionActivityDeps = {
@@ -28,7 +28,7 @@ export const build__ReactionActivity = ({
   systemUserRepository,
 }: ReactionActivityDeps): ReactionActivity => ({
   execute: async (rows): Promise<ActivityResult> => {
-    const reactionRowKind = pickEnum(PendingNotificationKind, ['reactionAdded']);
+    const reactionRowKind = pickEnum(AsyncNotificationKind, ['reactionAdded']);
     const reactionRows = filterByMember(rows, 'kind', reactionRowKind);
     const users = await systemUserRepository.getActiveUsers(reactionRows.map((x) => x.actorId));
     const userMap = indexBy(users);

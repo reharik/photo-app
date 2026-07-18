@@ -1,10 +1,10 @@
 import { ActivityKind } from '@packages/contracts';
-import { PendingNotification } from '@packages/media-core';
+import { AsyncNotification } from '@packages/media-core';
 import { ActivitySection } from '@packages/notifications';
 import { RowOutcome } from '../../outcomeCleanup';
 
 export interface BatchedEmailPayload {
-  execute: (rows: PendingNotification[]) => Promise<ActivityResult>;
+  execute: (rows: AsyncNotification[]) => Promise<ActivityResult>;
 }
 
 export type ActivityResult = {

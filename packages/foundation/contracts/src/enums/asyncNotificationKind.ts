@@ -15,7 +15,7 @@ const input = {
   replyPosted: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
   reactionAdded: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
 };
-export type PendingNotificationKind = Enumeration<typeof PendingNotificationKind>;
-export const PendingNotificationKind = enumeration<typeof input>('PendingNotificationKind', {
+export type AsyncNotificationKind = Enumeration<typeof AsyncNotificationKind>;
+export const AsyncNotificationKind = enumeration<typeof input>('AsyncNotificationKind', {
   input: input,
 });

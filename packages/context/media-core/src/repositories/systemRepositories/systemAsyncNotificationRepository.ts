@@ -1,18 +1,18 @@
-import { EntityType, NotificationCadence, PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind, EntityType, NotificationCadence } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { DateTime } from 'luxon';
 import { EntityId } from '../../types';
 
-export type SystemPendingNotificationRepository = {
-  upsertRecipientRow: (upsert: PendingNotificationInput) => Promise<number[]>;
-  claimNotificationBatch: (window: number) => Promise<PendingNotification[]>;
-  claimIndividualNotifications: (window: number) => Promise<PendingNotification[]>;
+export type SystemAsyncNotificationRepository = {
+  upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;
+  claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;
+  claimIndividualNotifications: (window: number) => Promise<AsyncNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
   bumpRecordAttemptsByIds: (ids: string[]) => Promise<void>;
 };
 
-export type SystemPendingNotificationRepositoryDeps = {
+export type SystemAsyncNotificationRepositoryDeps = {
   database: Knex;
 };
 
@@ -23,10 +23,10 @@ export type SystemPendingNotificationRepositoryDeps = {
 // time. `null` = no template wired for this kind yet.
 export type NotificationTemplate = 'shareInvite' | 'albumActivity';
 
-export type PendingNotification = {
+export type AsyncNotification = {
   id: string;
   channel: 'email' | 'sms';
-  kind: PendingNotificationKind;
+  kind: AsyncNotificationKind;
   recipientId: EntityId;
   aggregateType: EntityType;
   aggregateId: EntityId;
@@ -35,7 +35,7 @@ export type PendingNotification = {
   actorId: EntityId;
   data?: { token?: string; commentId?: string };
 };
-const pendingNotificationFields = [
+const asyncNotificationFields = [
   'id',
   'channel',
   'kind',
@@ -48,13 +48,13 @@ const pendingNotificationFields = [
   'data',
 ];
 
-type PendingNotificationInput = Omit<PendingNotification, 'dirtySince'>;
+type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince'>;
 
-export const build__SystemPendingNotificationRepository = ({
+export const build__SystemAsyncNotificationRepository = ({
   database,
-}: SystemPendingNotificationRepositoryDeps): SystemPendingNotificationRepository => ({
-  upsertRecipientRow: async (upsert: PendingNotificationInput) => {
-    return database('pendingNotification')
+}: SystemAsyncNotificationRepositoryDeps): SystemAsyncNotificationRepository => ({
+  upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
+    return database('asyncNotification')
       .insert({
         ...upsert,
         kind: upsert.kind.value,
@@ -66,17 +66,17 @@ export const build__SystemPendingNotificationRepository = ({
   },
   claimNotificationBatch: (windowSeconds: number) => {
     return withEnumRevival(
-      database('pendingNotification')
-        .select(pendingNotificationFields)
+      database('asyncNotification')
+        .select(asyncNotificationFields)
         .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
         .whereIn(
           'kind',
-          PendingNotificationKind.items()
+          AsyncNotificationKind.items()
             .filter((x) => x.cadence.equals(NotificationCadence.batched))
             .map((x) => x.value),
         ),
       {
-        kind: PendingNotificationKind,
+        kind: AsyncNotificationKind,
         aggregateType: EntityType,
       },
       { strict: true },
@@ -84,17 +84,17 @@ export const build__SystemPendingNotificationRepository = ({
   },
   claimIndividualNotifications: (windowSeconds: number) => {
     return withEnumRevival(
-      database('pendingNotification')
-        .select(pendingNotificationFields)
+      database('asyncNotification')
+        .select(asyncNotificationFields)
         .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
         .whereIn(
           'kind',
-          PendingNotificationKind.items()
+          AsyncNotificationKind.items()
             .filter((x) => x.cadence.equals(NotificationCadence.immediate))
             .map((x) => x.value),
         ),
       {
-        kind: PendingNotificationKind,
+        kind: AsyncNotificationKind,
         aggregateType: EntityType,
       },
       { strict: true },
@@ -104,12 +104,12 @@ export const build__SystemPendingNotificationRepository = ({
     if (ids.length === 0) {
       return;
     }
-    await database('pendingNotification').delete().whereIn('id', ids);
+    await database('asyncNotification').delete().whereIn('id', ids);
   },
   bumpRecordAttemptsByIds: async (ids: string[]): Promise<void> => {
     if (ids.length === 0) {
       return;
     }
-    await database('pendingNotification').whereIn('id', ids).increment('attempts', 1);
+    await database('asyncNotification').whereIn('id', ids).increment('attempts', 1);
   },
 });

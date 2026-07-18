@@ -1,17 +1,17 @@
-import { PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind } from '@packages/contracts';
+import { SystemAsyncNotificationRepository } from '../../../repositories/systemRepositories/systemAsyncNotificationRepository';
 import { SystemCommentRepository } from '../../../repositories/systemRepositories/systemCommentRepository';
 import { SystemMediaItemRepository } from '../../../repositories/systemRepositories/systemMediaItemRepository';
-import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 
 type ReactionActivityEmailHandlerDeps = {
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemCommentRepository: SystemCommentRepository;
   systemMediaItemRepository: SystemMediaItemRepository;
 };
 
 export const build__ReactionActivityEmailHandler = ({
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   systemCommentRepository,
   systemMediaItemRepository,
 }: ReactionActivityEmailHandlerDeps): DomainEventHandler<'reactionAdded'> => ({
@@ -32,10 +32,10 @@ export const build__ReactionActivityEmailHandler = ({
     if (recipientId === actorId) {
       return;
     }
-    await systemPendingNotificationRepository.upsertRecipientRow({
+    await systemAsyncNotificationRepository.upsertRecipientRow({
       id: crypto.randomUUID(),
       channel: 'email',
-      kind: PendingNotificationKind.reactionAdded,
+      kind: AsyncNotificationKind.reactionAdded,
       recipientId,
       aggregateType: targetType,
       aggregateId: targetId,

@@ -1,19 +1,19 @@
 import {
   ActivityKind,
+  AsyncNotificationKind,
   EntityType,
   filterByMember,
   notEmpty,
-  PendingNotificationKind,
 } from '@packages/contracts';
 import { dedupeIds, groupByMapping, indexBy } from '@packages/infrastructure';
-import { PendingNotification, SystemAlbumRepository } from '@packages/media-core';
+import { AsyncNotification, SystemAlbumRepository } from '@packages/media-core';
 import { AlbumSection } from '@packages/notifications';
 import { pickEnum } from '@reharik/smart-enum';
 import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload } from './types';
 
 export interface AlbumActivity extends BatchedEmailPayload {
-  execute: (rows: PendingNotification[]) => Promise<ActivityResult>;
+  execute: (rows: AsyncNotification[]) => Promise<ActivityResult>;
 }
 
 type AlbumActivityDeps = {
@@ -24,7 +24,7 @@ export const build__AlbumActivity = ({
   systemAlbumRepository,
 }: AlbumActivityDeps): AlbumActivity => ({
   execute: async (rows): Promise<ActivityResult> => {
-    const albumRowKind = pickEnum(PendingNotificationKind, [
+    const albumRowKind = pickEnum(AsyncNotificationKind, [
       'albumShared',
       'guestAlbumShared',
       'itemShared',

@@ -1,16 +1,16 @@
 import { UserStatus } from '@packages/contracts';
-import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
+import { SystemAsyncNotificationRepository } from '../../../repositories/systemRepositories/systemAsyncNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { NOTIFICATION_KIND_BY_EVENT } from './mapEventKindToActionKind';
 import { ResolveActivity } from './resolveActivity';
 
 type InAppNotificationEmailHandlerDeps = {
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   resolveActivity: ResolveActivity;
 };
 
 export const build__InAppNotificationEmailHandler = ({
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   resolveActivity,
 }: InAppNotificationEmailHandlerDeps): DomainEventHandler<
   'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
@@ -27,7 +27,7 @@ export const build__InAppNotificationEmailHandler = ({
     await Promise.all(
       filteredRecipients.map((recipient) => {
         const tokenValue = token ? { data: { token } } : {};
-        return systemPendingNotificationRepository.upsertRecipientRow({
+        return systemAsyncNotificationRepository.upsertRecipientRow({
           id: crypto.randomUUID(),
           channel: 'email',
           kind,

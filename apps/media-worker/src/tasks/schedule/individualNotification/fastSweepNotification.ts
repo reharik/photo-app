@@ -1,8 +1,8 @@
 import { notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
-  PendingNotification,
-  SystemPendingNotificationRepository,
+  AsyncNotification,
+  SystemAsyncNotificationRepository,
   SystemUserRepository,
 } from '@packages/media-core';
 import { NotificationService } from '@packages/notifications';
@@ -16,7 +16,7 @@ export type FastSweepNotification = () => Promise<'idle' | 'processed'>;
 type FastSweepNotificationDeps = {
   logger: Logger;
   notificationService: NotificationService;
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   config: Config;
   fastSweepNotificationStrategies: FastSweepNotificationStrategies;
@@ -25,12 +25,12 @@ type FastSweepNotificationDeps = {
 export const build__FastSweepNotification = ({
   logger,
   notificationService,
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   systemUserRepository,
   config,
   fastSweepNotificationStrategies,
 }: FastSweepNotificationDeps): FastSweepNotification => {
-  const hydrateUsers = async (rows: PendingNotification[]) => {
+  const hydrateUsers = async (rows: AsyncNotification[]) => {
     const ids = rows.flatMap((x) => [x.actorId, x.recipientId]).filter(notEmpty);
     const uniqueIds = new Set(ids);
     const users = await systemUserRepository.getUserContacts([...uniqueIds]);
@@ -38,7 +38,7 @@ export const build__FastSweepNotification = ({
   };
 
   return async (): Promise<WorkerTaskOutcome> => {
-    const rows = await systemPendingNotificationRepository.claimIndividualNotifications(
+    const rows = await systemAsyncNotificationRepository.claimIndividualNotifications(
       config.debounceEmailWindowSeconds,
     );
     logger.info(`[notification-send] claimed ${rows.length} row(s)`);
@@ -74,8 +74,8 @@ export const build__FastSweepNotification = ({
     logger.info('[notification-send] send loop complete', summarizeOutcomes(outcomes));
 
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
-    await systemPendingNotificationRepository.deleteCompletedRecords(deleteIds);
-    await systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
+    await systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds);
+    await systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
     logs.forEach((x) => logger.info(x));
     return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };

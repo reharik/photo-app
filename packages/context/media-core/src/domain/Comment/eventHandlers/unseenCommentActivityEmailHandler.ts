@@ -1,15 +1,15 @@
-import { PendingNotificationKind } from '@packages/contracts';
-import { SystemPendingNotificationRepository } from '../../../repositories/systemRepositories/systemPendingNotificationRepository';
+import { AsyncNotificationKind } from '@packages/contracts';
+import { SystemAsyncNotificationRepository } from '../../../repositories/systemRepositories/systemAsyncNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { ResolveCommentActivity } from './resolveCommentActivity';
 
 type UnseenCommentActivityEmailHandlerDeps = {
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   resolveCommentActivity: ResolveCommentActivity;
 };
 
 export const build__UnseenCommentActivityEmailHandler = ({
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   resolveCommentActivity,
 }: UnseenCommentActivityEmailHandlerDeps): DomainEventHandler<'commentPosted'> => ({
   name: 'UnseenCommentActivityEmail',
@@ -22,12 +22,12 @@ export const build__UnseenCommentActivityEmailHandler = ({
       return;
     }
 
-    await systemPendingNotificationRepository.upsertRecipientRow({
+    await systemAsyncNotificationRepository.upsertRecipientRow({
       id: crypto.randomUUID(),
       channel: 'email',
       kind: isReplyToComment
-        ? PendingNotificationKind.replyPosted
-        : PendingNotificationKind.commentPosted,
+        ? AsyncNotificationKind.replyPosted
+        : AsyncNotificationKind.commentPosted,
       recipientId: recipientId,
       aggregateType: targetType,
       aggregateId: targetId,

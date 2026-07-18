@@ -1,8 +1,8 @@
-import { EntityType, PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind, EntityType } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import {
+  SystemAsyncNotificationRepository,
   SystemAuthorizationRepository,
-  SystemPendingNotificationRepository,
   SystemUserRepository,
 } from '../../../repositories';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
@@ -10,14 +10,14 @@ import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 type PublicLinkEmailHandlerDeps = {
   systemUserRepository: SystemUserRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   logger: Logger;
 };
 
 export const build__PublicLinkEmailHandler = ({
   systemUserRepository,
   systemAuthorizationRepository,
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   logger,
 }: PublicLinkEmailHandlerDeps): DomainEventHandler<'publicLinkSharedWithUser'> => ({
   name: 'publicLinkEmailHandler',
@@ -39,10 +39,10 @@ export const build__PublicLinkEmailHandler = ({
       });
       return; // permanent
     }
-    await systemPendingNotificationRepository.upsertRecipientRow({
+    await systemAsyncNotificationRepository.upsertRecipientRow({
       id: crypto.randomUUID(),
       channel: 'email',
-      kind: PendingNotificationKind.guestAlbumShared,
+      kind: AsyncNotificationKind.guestAlbumShared,
       // this table has the recipient email on it and that probably needs to go.
       recipientId: user.id,
       aggregateType: EntityType.album,
