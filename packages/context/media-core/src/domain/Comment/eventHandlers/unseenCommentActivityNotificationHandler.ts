@@ -1,15 +1,15 @@
-import { EntityType, UnseenActivityType } from '@packages/contracts';
-import { SystemUnseenActivityRepository } from '../../../repositories/systemRepositories/systemUnseenActivityRepository';
+import { EntityType, InAppNotificationType } from '@packages/contracts';
+import { SystemInAppNotificationRepository } from '../../../repositories/systemRepositories/systemInAppNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { ResolveCommentActivity } from './resolveCommentActivity';
 
 type UnseenCommentActivityNotificationHandlerDeps = {
-  systemUnseenActivityRepository: SystemUnseenActivityRepository;
+  systemInAppNotificationRepository: SystemInAppNotificationRepository;
   resolveCommentActivity: ResolveCommentActivity;
 };
 
 export const build__UnseenCommentActivityNotificationHandler = ({
-  systemUnseenActivityRepository,
+  systemInAppNotificationRepository,
   resolveCommentActivity,
 }: UnseenCommentActivityNotificationHandlerDeps): DomainEventHandler<'commentPosted'> => ({
   name: 'UnseenCommentActivityNotificationHandler',
@@ -21,14 +21,14 @@ export const build__UnseenCommentActivityNotificationHandler = ({
     if (recipientId === event.actorId) {
       return;
     }
-    await systemUnseenActivityRepository.upsertActivityRow({
+    await systemInAppNotificationRepository.upsertActivityRow({
       id: crypto.randomUUID(),
       viewerId: recipientId,
       targetType,
       targetId,
       activityKind: isReplyToComment
-        ? UnseenActivityType.replyPosted
-        : UnseenActivityType.commentPosted,
+        ? InAppNotificationType.replyPosted
+        : InAppNotificationType.commentPosted,
       sourceId: event.commentId,
       sourceType: EntityType.comment,
     });

@@ -81,7 +81,7 @@ export const apolloClient = new ApolloClient({
             // derives from this one field client-side. It's fetched (and refetched
             // after clears) wholesale, so the incoming list always replaces the
             // cached one rather than merging: `merge: false`.
-            unseenActivity: { merge: false },
+            inAppNotification: { merge: false },
 
             // List queries normalize MediaItem entities into the cache, but the
             // detail field `mediaItem(id:)` has its own per-args result slot.

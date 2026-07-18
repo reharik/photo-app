@@ -3,17 +3,17 @@ import { useQuery } from '@apollo/client/react';
 import type { EntityType } from '@packages/contracts';
 import { useMemo } from 'react';
 import {
-  ViewerUnseenActivityDocument,
-  type ViewerUnseenActivityQuery,
+  ViewerInAppNotificationDocument,
+  type ViewerInAppNotificationQuery,
 } from '../graphql/generated/types';
 
-export type UnseenActivityRow = NonNullable<
-  NonNullable<ViewerUnseenActivityQuery['viewer']>['unseenActivity']
+export type InAppNotificationRow = NonNullable<
+  NonNullable<ViewerInAppNotificationQuery['viewer']>['inAppNotification']
 >[number];
 
-export interface UseUnseenActivityResult {
+export interface UseInAppNotificationResult {
   /** All unseen-activity rows for the viewer (empty until the query resolves). */
-  rows: UnseenActivityRow[];
+  rows: InAppNotificationRow[];
   /**
    * Container-level membership (album list, media grids): true when `id` is the
    * TARGET of some activity of `type`. This is the surface you clear by opening.
@@ -25,12 +25,12 @@ export interface UseUnseenActivityResult {
    */
   isSourceUnseen: (type: EntityType, id: string) => boolean;
   /** Nav-level EXISTS check: true when any row satisfies `predicate`. */
-  anyUnseenMatching: (predicate: (row: UnseenActivityRow) => boolean) => boolean;
+  anyUnseenMatching: (predicate: (row: InAppNotificationRow) => boolean) => boolean;
 }
 
 /**
  * The single source for every unseen dot/bold in the app. Reads the viewer-level
- * `unseenActivity` array (held once in the normalized Viewer cache object) and
+ * `inAppNotification` array (held once in the normalized Viewer cache object) and
  * exposes set-membership checks.
  *
  * ONE field per level: `isTargetUnseen` for container surfaces, `isSourceUnseen`
@@ -46,12 +46,12 @@ export interface UseUnseenActivityResult {
  * every watcher (cache-first included) when the normalized array changes, so dots stay
  * correct everywhere without the redundant per-mount traffic.
  */
-export const useUnseenActivity = (
+export const useInAppNotification = (
   fetchPolicy: WatchQueryFetchPolicy = 'cache-first',
-): UseUnseenActivityResult => {
-  const { data } = useQuery(ViewerUnseenActivityDocument, { fetchPolicy });
+): UseInAppNotificationResult => {
+  const { data } = useQuery(ViewerInAppNotificationDocument, { fetchPolicy });
 
-  const rows = data?.viewer?.unseenActivity;
+  const rows = data?.viewer?.inAppNotification;
 
   return useMemo(() => {
     const list = rows ?? [];
@@ -65,7 +65,8 @@ export const useUnseenActivity = (
       rows: list,
       isTargetUnseen: (type: EntityType, id: string) => targetSet.has(`${type.value}:${id}`),
       isSourceUnseen: (type: EntityType, id: string) => sourceSet.has(`${type.value}:${id}`),
-      anyUnseenMatching: (predicate: (row: UnseenActivityRow) => boolean) => list.some(predicate),
+      anyUnseenMatching: (predicate: (row: InAppNotificationRow) => boolean) =>
+        list.some(predicate),
     };
   }, [rows]);
 };

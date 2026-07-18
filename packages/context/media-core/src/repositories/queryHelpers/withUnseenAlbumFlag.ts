@@ -1,13 +1,13 @@
-import { EntityType, UnseenActivityType } from '@packages/contracts';
+import { EntityType, InAppNotificationType } from '@packages/contracts';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
-// queryFragments/unseenActivity.ts
+// queryFragments/inAppNotification.ts
 export const withUnseenAlbumFlag =
-  (db: Knex, viewerId: EntityId, kinds?: UnseenActivityType[]) =>
+  (db: Knex, viewerId: EntityId, kinds?: InAppNotificationType[]) =>
   (qb: Knex.QueryBuilder): void => {
     qb.select(
-      db('unseenActivity as ua')
+      db('inAppNotification as ua')
         .select(db.raw('1'))
         // album-level unseen activity: the target IS the album (target_id === album.id).
         // (was keyed on the now-removed ua.album_id rollup column.)

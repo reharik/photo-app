@@ -17,16 +17,16 @@ type Viewer {
   ): SharedWithMeMediaItemCollectionPayload!
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
-  unseenActivity: [UnseenActivity!]!
+  inAppNotification: [InAppNotification!]!
 }
 
-type UnseenActivity {
+type InAppNotification {
   id: ID!
   targetType: EntityType!
   targetId: ID!
   sourceType: EntityType!
   sourceId: ID!
-  activityKind: UnseenActivityType!
+  activityKind: InAppNotificationType!
 }
 
 type DeleteAlbumResponse {

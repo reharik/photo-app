@@ -1,4 +1,4 @@
-mutation MarkSurfaceSeen($targetType: EntityType!, $targetId: ID!, $kind: UnseenActivityType!) {
+mutation MarkSurfaceSeen($targetType: EntityType!, $targetId: ID!, $kind: InAppNotificationType!) {
   markSurfaceSeen(targetType: $targetType, targetId: $targetId, kind: $kind) {
     data {
       success

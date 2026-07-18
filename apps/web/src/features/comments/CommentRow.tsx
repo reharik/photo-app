@@ -1,7 +1,7 @@
 import { EntityType } from '@packages/contracts';
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
-import { useUnseenActivity } from '../../hooks/useUnseenActivity';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useViewer } from '../../hooks/useViewer';
 import { UnseenDot } from '../../ui/UnseenDot';
 import { CommentReplyVM, CommentRootVM } from '../../viewModels/';
@@ -39,7 +39,7 @@ export const CommentRow = ({
   deleteCommentPending = false,
 }: Props): JSX.Element => {
   const { viewer } = useViewer();
-  const { isSourceUnseen } = useUnseenActivity();
+  const { isSourceUnseen } = useInAppNotification();
   const authorId = viewer?.id;
   const [isEditing, setIsEditing] = useState(false);
   // Per-comment read-state: unseen rows get an UnseenDot badged on the avatar corner.

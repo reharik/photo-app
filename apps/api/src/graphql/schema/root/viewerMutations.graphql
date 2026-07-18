@@ -3,7 +3,7 @@ type Mutation {
   markSurfaceSeen(
     targetType: EntityType!
     targetId: ID!
-    kind: UnseenActivityType!
+    kind: InAppNotificationType!
   ): MarkSeenResponse!
   markItemsSeen(ids: [ID!]!): MarkSeenResponse!
   deleteShareContact(handle: String!): DeleteShareContactResponse
@@ -43,7 +43,7 @@ type MarkSeenPayload {
 # Activity kind written when unseen rows are created (insert/read side).
 # markSeen keys on the EntityType target, not the kind — the two axes stay
 # separate so this never gets conflated with "which entity".
-enum UnseenActivityType {
+enum InAppNotificationType {
   ITEM_ADDED
   ALBUM_SHARED
   ITEM_SHARED

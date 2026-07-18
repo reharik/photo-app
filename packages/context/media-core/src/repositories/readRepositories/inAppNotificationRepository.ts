@@ -1,15 +1,15 @@
-import { EntityType, UnseenActivityType } from '@packages/contracts';
+import { EntityType, InAppNotificationType } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 import {
-  UnseenActivity,
-  UnseenActivitySourceType,
-  UnseenActivityTargetType,
-} from '../systemRepositories/systemUnseenActivityRepository';
+  InAppNotification,
+  InAppNotificationSourceType,
+  InAppNotificationTargetType,
+} from '../systemRepositories/systemInAppNotificationRepository';
 
-export type UnseenActivitySummary = {
+export type InAppNotificationSummary = {
   /** Unseen activity on individually shared media items (target_type = mediaItem). */
   mediaItems: boolean;
   /** Unseen activity on shared albums (target_type = album). */
@@ -17,7 +17,7 @@ export type UnseenActivitySummary = {
 };
 
 // waiting for query
-const unseenActivityFields = [
+const inAppNotificationFields = [
   'id',
   'viewerId',
   'targetType',
@@ -31,11 +31,11 @@ type DeleteWhereInput = {
   viewerId: EntityId;
   targetType: EntityType;
   targetId: EntityId;
-  activityKind: UnseenActivityType;
+  activityKind: InAppNotificationType;
 };
 
-export interface UnseenActivityRepository {
-  getUnseenActivity: (viewerId: EntityId) => Promise<UnseenActivity[]>;
+export interface InAppNotificationRepository {
+  getInAppNotification: (viewerId: EntityId) => Promise<InAppNotification[]>;
   deleteWhere: ({
     viewerId,
     targetType,
@@ -46,18 +46,20 @@ export interface UnseenActivityRepository {
   markSeen: (targetType: EntityType, viewerId: EntityId, targetId?: EntityId) => Promise<void>;
 }
 
-type UnseenActivityRepositoryDeps = { database: Knex };
+type InAppNotificationRepositoryDeps = { database: Knex };
 
-export const build__UnseenActivityRepository = ({
+export const build__InAppNotificationRepository = ({
   database,
-}: UnseenActivityRepositoryDeps): UnseenActivityRepository => ({
-  getUnseenActivity: async (viewerId: EntityId): Promise<UnseenActivity[]> =>
+}: InAppNotificationRepositoryDeps): InAppNotificationRepository => ({
+  getInAppNotification: async (viewerId: EntityId): Promise<InAppNotification[]> =>
     await withEnumRevival(
-      database('unseenActivity').where({ viewerId }).select<UnseenActivity[]>(unseenActivityFields),
+      database('inAppNotification')
+        .where({ viewerId })
+        .select<InAppNotification[]>(inAppNotificationFields),
       {
-        targetType: UnseenActivityTargetType,
-        sourceType: UnseenActivitySourceType,
-        activityKind: UnseenActivityType,
+        targetType: InAppNotificationTargetType,
+        sourceType: InAppNotificationSourceType,
+        activityKind: InAppNotificationType,
       },
       { strict: true },
     ),
@@ -67,7 +69,7 @@ export const build__UnseenActivityRepository = ({
     targetId,
     activityKind,
   }: DeleteWhereInput): Promise<void> => {
-    await database('unseenActivity').delete().where(
+    await database('inAppNotification').delete().where(
       prepareForDatabase({
         viewerId,
         targetType,
@@ -83,7 +85,7 @@ export const build__UnseenActivityRepository = ({
     viewerId: EntityId;
     ids: EntityId[];
   }): Promise<void> => {
-    await database('unseenActivity').delete().where({ viewerId }).and.whereIn('id', ids);
+    await database('inAppNotification').delete().where({ viewerId }).and.whereIn('id', ids);
   },
 
   // Clears ALL unseen activity at this target (every activity_kind) for the
@@ -91,7 +93,7 @@ export const build__UnseenActivityRepository = ({
   // leave per-mediaItem (comment) dots behind, and vice versa.
   markSeen: async (targetType: EntityType, viewerId: EntityId, targetId?: string) => {
     const filterOnTargetId = targetId ? { targetId } : {};
-    await database('unseenActivity')
+    await database('inAppNotification')
       .delete()
       .where({ targetType: targetType.value, ...filterOnTargetId, viewerId });
   },

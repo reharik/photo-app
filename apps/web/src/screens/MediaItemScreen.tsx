@@ -1,6 +1,6 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
 
-import { EntityType, MediaAssetKind, UnseenActivityType } from '@packages/contracts';
+import { EntityType, InAppNotificationType, MediaAssetKind } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -19,11 +19,11 @@ import type {
 } from '../features/media/viewer/mediaViewerTypes';
 import {
   MarkSurfaceSeenDocument,
+  ViewerInAppNotificationDocument,
   ViewerMediaItemDetailDocument,
-  ViewerUnseenActivityDocument,
 } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { useUnseenActivity } from '../hooks/useUnseenActivity';
+import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
 /** Mobile stage chrome (close + action bar) is always visible — single-tap toggle is a no-op. */
@@ -40,7 +40,7 @@ export const MediaItemScreen = () => {
   const galleryIds = (location.state as MediaItemLocationState | undefined)?.mediaGalleryIds;
 
   const apolloClient = useApolloClient();
-  const { anyUnseenMatching } = useUnseenActivity();
+  const { anyUnseenMatching } = useInAppNotification();
   const markedSeenMediaIdRef = useRef<string | null>(null);
 
   const query = useQuery(ViewerMediaItemDetailDocument, {
@@ -84,7 +84,7 @@ export const MediaItemScreen = () => {
       (r) =>
         r.targetType.equals(EntityType.mediaItem) &&
         r.targetId === loadedMediaId &&
-        r.activityKind.equals(UnseenActivityType.itemShared),
+        r.activityKind.equals(InAppNotificationType.itemShared),
     );
     if (!hasSharedRow) {
       return;
@@ -98,10 +98,10 @@ export const MediaItemScreen = () => {
           variables: {
             targetType: EntityType.mediaItem,
             targetId: loadedMediaId,
-            kind: UnseenActivityType.itemShared,
+            kind: InAppNotificationType.itemShared,
           },
         });
-        void apolloClient.refetchQueries({ include: [ViewerUnseenActivityDocument] });
+        void apolloClient.refetchQueries({ include: [ViewerInAppNotificationDocument] });
       } catch (error) {
         console.error('markSurfaceSeen failed for media item', loadedMediaId, error);
       }

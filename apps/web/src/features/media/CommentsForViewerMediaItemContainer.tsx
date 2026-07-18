@@ -12,11 +12,11 @@ import {
   EditCommentDocument,
   type EditCommentMutation,
   MarkItemsSeenDocument,
-  ViewerUnseenActivityDocument,
+  ViewerInAppNotificationDocument,
 } from '../../graphql/generated/types';
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
-import { useUnseenActivity } from '../../hooks/useUnseenActivity';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { CommentsPanel, type CommentsPanelLayout } from '../comments/CommentsPanel';
 
@@ -47,7 +47,7 @@ export const CommentsForViewerMediaItemContainer = ({
   //   - desktop: the always-visible rail unmounts (or mediaItemId changes) when you leave
   //     the photo → cleanup runs. Either way weight stays visible the whole time it's open.
   const apolloClient = useApolloClient();
-  const { rows: unseenRows } = useUnseenActivity();
+  const { rows: unseenRows } = useInAppNotification();
   const unseenRowsRef = useRef(unseenRows);
   unseenRowsRef.current = unseenRows;
 
@@ -89,7 +89,7 @@ export const CommentsForViewerMediaItemContainer = ({
       }
       void apolloClient
         .mutate({ mutation: MarkItemsSeenDocument, variables: { ids } })
-        .then(() => apolloClient.refetchQueries({ include: [ViewerUnseenActivityDocument] }))
+        .then(() => apolloClient.refetchQueries({ include: [ViewerInAppNotificationDocument] }))
         .catch((error) => console.error('markItemsSeen failed for comments', mediaItemId, error));
     };
   }, [mediaItemId, apolloClient]);

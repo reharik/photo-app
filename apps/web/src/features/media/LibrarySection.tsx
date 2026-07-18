@@ -3,7 +3,6 @@ import { EntityType, FrontendUploadStatus, Operation } from '@packages/contracts
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
-import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
@@ -17,6 +16,7 @@ import {
   saveGalleryScrollPosition,
   useGalleryScrollRestoration,
 } from '../../hooks/useGalleryScrollRestoration';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
@@ -49,7 +49,7 @@ const groupByStrategy: NamedGroupStrategy<MediaItemSummaryVM> = makeDateStrategy
 export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
-  const { isTargetUnseen } = useUnseenActivity();
+  const { isTargetUnseen } = useInAppNotification();
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const [shareMediaOpen, setShareMediaOpen] = useState(false);

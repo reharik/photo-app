@@ -1,5 +1,5 @@
-import { EntityType, ok, UnseenActivityType, WriteResult } from '@packages/contracts';
-import { UnseenActivityRepository } from '../../repositories/readRepositories/unseenActivityRepository';
+import { EntityType, InAppNotificationType, ok, WriteResult } from '@packages/contracts';
+import { InAppNotificationRepository } from '../../repositories/readRepositories/inAppNotificationRepository';
 import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';
 
@@ -7,7 +7,7 @@ export type ClearBySurfaceCommand = {
   viewerId: EntityId;
   targetType: EntityType;
   targetId: EntityId;
-  kind: UnseenActivityType;
+  kind: InAppNotificationType;
 };
 
 export type ClearByIdsCommand = {
@@ -24,16 +24,16 @@ export interface MarkActivitySeen extends WriteServiceBase {
 type MarkActivitySeenDeps = {
   viewerId: EntityId;
 
-  unseenActivityRepository: UnseenActivityRepository;
+  inAppNotificationRepository: InAppNotificationRepository;
 };
 
 export const build__MarkActivitySeen = ({
-  unseenActivityRepository,
+  inAppNotificationRepository,
 }: MarkActivitySeenDeps): MarkActivitySeen => {
   return {
-    // unseenActivityService
+    // inAppNotificationService
     clearBySurface: async ({ viewerId, targetType, targetId, kind }: ClearBySurfaceCommand) => {
-      await unseenActivityRepository.deleteWhere({
+      await inAppNotificationRepository.deleteWhere({
         viewerId,
         targetType: targetType,
         targetId,
@@ -42,7 +42,7 @@ export const build__MarkActivitySeen = ({
       return ok({ success: true });
     },
     clearByIds: async ({ viewerId, ids }: ClearByIdsCommand) => {
-      await unseenActivityRepository.deleteByIds({ viewerId, ids }); // viewerId scoped — never delete another viewer's rows by raw id
+      await inAppNotificationRepository.deleteByIds({ viewerId, ids }); // viewerId scoped — never delete another viewer's rows by raw id
       return ok({ success: true });
     },
   };

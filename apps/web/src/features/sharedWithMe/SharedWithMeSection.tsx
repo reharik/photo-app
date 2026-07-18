@@ -2,7 +2,7 @@ import { EntityType } from '@packages/contracts';
 import { useRef } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
-import { useUnseenActivity } from '../../hooks/useUnseenActivity';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
@@ -29,7 +29,7 @@ export const SharedWithMeSection = ({
   reloadData,
 }: SharedWithMeSectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
-  const { isTargetUnseen } = useUnseenActivity();
+  const { isTargetUnseen } = useInAppNotification();
   return (
     <Container>
       <PageHeader>

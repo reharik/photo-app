@@ -1,11 +1,11 @@
 import { UserStatus } from '@packages/contracts';
-import { SystemUnseenActivityRepository } from '../../../repositories/systemRepositories/systemUnseenActivityRepository';
+import { SystemInAppNotificationRepository } from '../../../repositories/systemRepositories/systemInAppNotificationRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { UNSEEN_KIND_BY_EVENT } from './mapEventKindToActionKind';
 import { ResolveActivity } from './resolveActivity';
 
-type UnseenActivityNotificationHandlerDeps = {
-  systemUnseenActivityRepository: SystemUnseenActivityRepository;
+type InAppNotificationNotificationHandlerDeps = {
+  systemInAppNotificationRepository: SystemInAppNotificationRepository;
   resolveActivity: ResolveActivity;
 };
 
@@ -14,13 +14,13 @@ type UnseenActivityNotificationHandlerDeps = {
 // * update handlers to take both new events
 // * update fastSweepNotificationTask to handle both new events
 // * add/update e2e tests
-export const build__UnseenActivityNotificationHandler = ({
-  systemUnseenActivityRepository,
+export const build__InAppNotificationNotificationHandler = ({
+  systemInAppNotificationRepository,
   resolveActivity,
-}: UnseenActivityNotificationHandlerDeps): DomainEventHandler<
+}: InAppNotificationNotificationHandlerDeps): DomainEventHandler<
   'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
 > => ({
-  name: 'UnseenActivityNotification',
+  name: 'InAppNotificationNotification',
   handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
     const { recipients, targetType, targetId, sourceType, sourceId } = await resolveActivity(event);
@@ -30,7 +30,7 @@ export const build__UnseenActivityNotificationHandler = ({
       recipients
         .filter((x) => x.userStatus.equals(UserStatus.active))
         .map((recipient) =>
-          systemUnseenActivityRepository.upsertActivityRow({
+          systemInAppNotificationRepository.upsertActivityRow({
             id: crypto.randomUUID(),
             viewerId: recipient.id,
             targetType,

@@ -1,5 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { AlbumItemSortBy, EntityType, SortDir, UnseenActivityType } from '@packages/contracts';
+import { AlbumItemSortBy, EntityType, InAppNotificationType, SortDir } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -15,13 +15,13 @@ import {
   SetCoverMediaDocument,
   SetCoverMediaMutation,
   ViewerAlbumDetailDocument,
+  ViewerInAppNotificationDocument,
   ViewerLibraryDocument,
   ViewerSharedWithMeAlbumsDocument,
-  ViewerUnseenActivityDocument,
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
-import { useUnseenActivity } from '../hooks/useUnseenActivity';
+import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
 export const AlbumScreen = () => {
@@ -35,7 +35,7 @@ export const AlbumScreen = () => {
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
   const apolloClient = useApolloClient();
-  const { anyUnseenMatching } = useUnseenActivity();
+  const { anyUnseenMatching } = useInAppNotification();
   const markedSeenAlbumIdRef = useRef<string | null>(null);
   const [groupBy, setGroupBy] = useState<AlbumGroupBy>('none');
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
@@ -109,13 +109,14 @@ export const AlbumScreen = () => {
     // Clear only the kinds the client actually holds a row for at this album — skip the
     // mutation(s) AND the refetch entirely when there's nothing to clear (empty round-trip).
     // If the array hasn't resolved yet this is empty and the effect re-runs when it does.
-    const kinds = [UnseenActivityType.itemAdded, UnseenActivityType.albumShared].filter((kind) =>
-      anyUnseenMatching(
-        (r) =>
-          r.targetType.equals(EntityType.album) &&
-          r.targetId === loadedAlbumId &&
-          r.activityKind.equals(kind),
-      ),
+    const kinds = [InAppNotificationType.itemAdded, InAppNotificationType.albumShared].filter(
+      (kind) =>
+        anyUnseenMatching(
+          (r) =>
+            r.targetType.equals(EntityType.album) &&
+            r.targetId === loadedAlbumId &&
+            r.activityKind.equals(kind),
+        ),
     );
     if (kinds.length === 0) {
       return;
@@ -133,7 +134,7 @@ export const AlbumScreen = () => {
           ),
         );
         void apolloClient.refetchQueries({
-          include: [ViewerUnseenActivityDocument, ViewerSharedWithMeAlbumsDocument],
+          include: [ViewerInAppNotificationDocument, ViewerSharedWithMeAlbumsDocument],
         });
       } catch (error) {
         console.error('markSurfaceSeen failed for album', loadedAlbumId, error);

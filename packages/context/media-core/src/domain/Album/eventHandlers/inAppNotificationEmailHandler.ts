@@ -4,18 +4,18 @@ import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { NOTIFICATION_KIND_BY_EVENT } from './mapEventKindToActionKind';
 import { ResolveActivity } from './resolveActivity';
 
-type UnseenActivityEmailHandlerDeps = {
+type InAppNotificationEmailHandlerDeps = {
   systemPendingNotificationRepository: SystemPendingNotificationRepository;
   resolveActivity: ResolveActivity;
 };
 
-export const build__UnseenActivityEmailHandler = ({
+export const build__InAppNotificationEmailHandler = ({
   systemPendingNotificationRepository,
   resolveActivity,
-}: UnseenActivityEmailHandlerDeps): DomainEventHandler<
+}: InAppNotificationEmailHandlerDeps): DomainEventHandler<
   'mediaItemAddedToAlbum' | 'albumSharedWithUser' | 'mediaItemsSharedWithUser'
 > => ({
-  name: 'UnseenActivityEmail',
+  name: 'InAppNotificationEmail',
   handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
     const { recipients, targetType, targetId, token } = await resolveActivity(event);

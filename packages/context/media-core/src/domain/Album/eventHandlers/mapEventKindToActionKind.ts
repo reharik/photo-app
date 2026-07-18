@@ -1,6 +1,6 @@
 // email handler — 3 events
 
-import { PendingNotificationKind, UnseenActivityType } from '@packages/contracts';
+import { InAppNotificationType, PendingNotificationKind } from '@packages/contracts';
 import { ActivityEvent } from './resolveActivity';
 
 export const NOTIFICATION_KIND_BY_EVENT = {
@@ -11,7 +11,7 @@ export const NOTIFICATION_KIND_BY_EVENT = {
 
 // unseen handler — 2 events
 export const UNSEEN_KIND_BY_EVENT = {
-  albumSharedWithUser: UnseenActivityType.albumShared,
-  mediaItemsSharedWithUser: UnseenActivityType.itemShared,
-  mediaItemAddedToAlbum: UnseenActivityType.itemAdded,
-} as const satisfies Record<ActivityEvent['kind'], UnseenActivityType>;
+  albumSharedWithUser: InAppNotificationType.albumShared,
+  mediaItemsSharedWithUser: InAppNotificationType.itemShared,
+  mediaItemAddedToAlbum: InAppNotificationType.itemAdded,
+} as const satisfies Record<ActivityEvent['kind'], InAppNotificationType>;

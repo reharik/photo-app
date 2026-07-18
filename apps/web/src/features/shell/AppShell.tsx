@@ -1,10 +1,10 @@
-import { UnseenActivityType } from '@packages/contracts';
+import { InAppNotificationType } from '@packages/contracts';
 import { Menu } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
 import { isNavigationParent, Navigation, type NavigationItem } from './Navigation';
@@ -50,15 +50,15 @@ export const AppShell = () => {
   // AppShell wraps every authed screen (layout route) and stays mounted, so it drives the
   // single authoritative fetch of the unseen-activity array. Every other consumer reads
   // cache-first; clears refetch this query, updating all watchers.
-  const { anyUnseenMatching } = useUnseenActivity('cache-and-network');
+  const { anyUnseenMatching } = useInAppNotification('cache-and-network');
   const albumsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(UnseenActivityType.itemAdded),
+    r.activityKind.equals(InAppNotificationType.itemAdded),
   );
   const sharedItemsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(UnseenActivityType.itemShared),
+    r.activityKind.equals(InAppNotificationType.itemShared),
   );
   const sharedAlbumsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(UnseenActivityType.albumShared),
+    r.activityKind.equals(InAppNotificationType.albumShared),
   );
   const sharedUnseen = sharedItemsUnseen || sharedAlbumsUnseen;
 
