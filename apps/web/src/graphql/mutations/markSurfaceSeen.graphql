@@ -1,0 +1,7 @@
+mutation MarkSurfaceSeen($targetType: EntityType!, $targetId: ID!, $kind: UnseenActivityType!) {
+  markSurfaceSeen(targetType: $targetType, targetId: $targetId, kind: $kind) {
+    data {
+      success
+    }
+  }
+}

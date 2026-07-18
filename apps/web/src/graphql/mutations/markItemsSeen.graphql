@@ -1,0 +1,7 @@
+mutation MarkItemsSeen($ids: [ID!]!) {
+  markItemsSeen(ids: $ids) {
+    data {
+      success
+    }
+  }
+}

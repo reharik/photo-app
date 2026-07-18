@@ -1,10 +1,10 @@
-import { useQuery } from '@apollo/client/react';
+import { UnseenActivityType } from '@packages/contracts';
 import { Menu } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled, { css } from 'styled-components';
-import { ViewerHasUnseenActivityDocument } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
 import { isNavigationParent, Navigation, type NavigationItem } from './Navigation';
@@ -13,8 +13,11 @@ import { Profile } from './Profile';
 const MOBILE_SHELL = '(max-width: 768px)';
 
 const NAV_LINKS: NavigationItem[] = [
-  { label: 'Recent', to: '/media', activePaths: ['/', '/media'] },
-  { label: 'Albums', to: '/albums' },
+  // activePrefix keeps the top-level item selected when you drill into its detail routes
+  // (/media/:id, /albums/:id). /albums/:id serves both owned and shared albums, so by the
+  // "root wins" rule it activates "Albums" even for a shared album.
+  { label: 'Recent', to: '/media', activePaths: ['/', '/media'], activePrefix: '/media' },
+  { label: 'Albums', to: '/albums', activePrefix: '/albums' },
   {
     label: 'Shared',
     children: [
@@ -37,39 +40,57 @@ export const AppShell = () => {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const navRef = useRef<HTMLElement | null>(null);
 
-  // Aggregate unseen-activity flag drives the dot on the "Shared" nav item.
-  // Errors degrade to `false` so a failing query never breaks navigation.
-  const unseenQuery = useQuery(ViewerHasUnseenActivityDocument, {
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-and-network',
-  });
-  const hasUnseenActivity = unseenQuery.data?.viewer?.hasUnseenActivity ?? false;
-  const unseenMediaItems = unseenQuery.data?.viewer?.unseenSharedActivity?.mediaItems ?? false;
-  const unseenAlbums = unseenQuery.data?.viewer?.unseenSharedActivity?.albums ?? false;
+  // Nav dots derive from the one viewer-level unseen-activity array, keyed on
+  // `activityKind` — the backend populates it on every row, whereas `source` is only
+  // written for comment activity. Comment activity is intentionally NOT surfaced in the
+  // nav: a comment row carries no album/container context, so it can't be attributed to
+  // a section; comments are discoverable via the media-tile dot and the in-thread avatar
+  // dot instead. Errors degrade to `false` (empty array) so a failing query never breaks
+  // navigation.
+  // AppShell wraps every authed screen (layout route) and stays mounted, so it drives the
+  // single authoritative fetch of the unseen-activity array. Every other consumer reads
+  // cache-first; clears refetch this query, updating all watchers.
+  const { anyUnseenMatching } = useUnseenActivity('cache-and-network');
+  const albumsUnseen = anyUnseenMatching((r) =>
+    r.activityKind.equals(UnseenActivityType.itemAdded),
+  );
+  const sharedItemsUnseen = anyUnseenMatching((r) =>
+    r.activityKind.equals(UnseenActivityType.itemShared),
+  );
+  const sharedAlbumsUnseen = anyUnseenMatching((r) =>
+    r.activityKind.equals(UnseenActivityType.albumShared),
+  );
+  const sharedUnseen = sharedItemsUnseen || sharedAlbumsUnseen;
 
   const navLinks = useMemo<NavigationItem[]>(
     () =>
       NAV_LINKS.map((item) => {
-        if (!isNavigationParent(item) || item.label !== 'Shared') {
-          return item;
+        if (isNavigationParent(item)) {
+          if (item.label !== 'Shared') {
+            return item;
+          }
+          // Aggregate dot on the parent; per-category dots on the children so you can
+          // see whether the activity is in shared photos or shared albums.
+          return {
+            ...item,
+            hasUnseen: sharedUnseen,
+            children: item.children.map((child) => {
+              if (child.to === '/shared/items') {
+                return { ...child, hasUnseen: sharedItemsUnseen };
+              }
+              if (child.to === '/shared/albums') {
+                return { ...child, hasUnseen: sharedAlbumsUnseen };
+              }
+              return child;
+            }),
+          };
         }
-        // Aggregate dot on the parent; per-category dots on the children so you can
-        // see whether the activity is in shared photos or shared albums.
-        return {
-          ...item,
-          hasUnseen: hasUnseenActivity,
-          children: item.children.map((child) => {
-            if (child.to === '/shared/items') {
-              return { ...child, hasUnseen: unseenMediaItems };
-            }
-            if (child.to === '/shared/albums') {
-              return { ...child, hasUnseen: unseenAlbums };
-            }
-            return child;
-          }),
-        };
+        if (item.to === '/albums') {
+          return { ...item, hasUnseen: albumsUnseen };
+        }
+        return item; // Recent gets no nav dot (comment activity is not surfaced here)
       }),
-    [hasUnseenActivity, unseenMediaItems, unseenAlbums],
+    [albumsUnseen, sharedUnseen, sharedItemsUnseen, sharedAlbumsUnseen],
   );
 
   useEffect(() => {

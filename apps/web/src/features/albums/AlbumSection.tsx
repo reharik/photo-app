@@ -1,8 +1,9 @@
-import { FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
+import { EntityType, FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
 import { ArrowUpRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -77,6 +78,7 @@ export const AlbumSection = ({
   paging,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
+  const { isTargetUnseen } = useUnseenActivity();
   const [metaCompact, setMetaCompact] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
   const dismissAlbumToast = useCallback((): void => {
@@ -252,6 +254,7 @@ export const AlbumSection = ({
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact
                   onReactionsRefetch={reloadData}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.mediaItem.id)}
                 />
               )}
             />

@@ -1,6 +1,8 @@
+import { EntityType } from '@packages/contracts';
 import { useRef } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { EmptyState } from '../../ui/EmptyState';
 import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
@@ -27,6 +29,7 @@ export const SharedWithMeSection = ({
   reloadData,
 }: SharedWithMeSectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const { isTargetUnseen } = useUnseenActivity();
   return (
     <Container>
       <PageHeader>
@@ -58,6 +61,7 @@ export const SharedWithMeSection = ({
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact
                   onReactionsRefetch={reloadData}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.mediaItem.id)}
                 />
               )}
             />

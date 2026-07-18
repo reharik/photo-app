@@ -6,6 +6,7 @@
 
 import { EntityType, ok, WriteResult } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
+import { EnumSubset } from '@reharik/smart-enum';
 import { DBReactionCounts } from '../../services/readServices/types';
 import { Reaction } from '../../services/writeServices/mediaItem/writeMediaItem.types';
 import type { ActorId, EntityId } from '../../types/types';
@@ -18,7 +19,7 @@ export type CommentReactionRecord = Omit<Reaction, 'id'> & {
 
 export type CommentRecord = {
   id: EntityId;
-  targetType: EntityType;
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId: EntityId;
@@ -29,7 +30,7 @@ export type CommentRecord = {
 } & AuditRecord;
 
 export type CommentProps = {
-  targetType: EntityType;
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
   targetId: EntityId;
   parentCommentId?: EntityId;
   authorId: EntityId;
@@ -41,9 +42,10 @@ export type CommentProps = {
 };
 
 export type CreateCommentInput = {
-  targetType: EntityType;
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
   targetId: EntityId;
   parentCommentId?: EntityId;
+  parentAuthorId?: EntityId;
   authorId: EntityId;
   body: string;
   displayName: string;
@@ -85,7 +87,20 @@ export class Comment extends AggregateRoot<CommentRecord> {
   }
 
   static create(input: CreateCommentInput, actorId: ActorId): Comment {
-    return new Comment(actorId, { ...input });
+    const comment = new Comment(actorId, { ...input });
+    comment.recordEvent(
+      'commentPosted',
+      {
+        commentId: comment.id(),
+        targetType: input.targetType,
+        targetId: input.targetId,
+        authorId: input.authorId,
+        parentCommentId: input.parentCommentId,
+        parentAuthorId: input.parentAuthorId,
+      },
+      actorId,
+    );
+    return comment;
   }
 
   static rehydrate(record: CommentRecord, childRecords: CommentChildRecords): Comment {
@@ -121,7 +136,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     this.touch(actorId);
   }
 
-  targetType(): EntityType {
+  targetType(): EnumSubset<EntityType, 'mediaItem'> {
     return this.props.targetType;
   }
 
@@ -160,7 +175,17 @@ export class Comment extends AggregateRoot<CommentRecord> {
       };
       this.#addedReactions.push(newReaction);
       this.#reactions.push(newReaction);
+      this.recordEvent(
+        'reactionAdded',
+        {
+          targetId: this.id(),
+          targetType: EntityType.comment,
+          reactionKind: item.emoji,
+        },
+        actorId,
+      );
     }
+
     this.#computedReactionCounts();
     this.touch(actorId);
     return ok(undefined);

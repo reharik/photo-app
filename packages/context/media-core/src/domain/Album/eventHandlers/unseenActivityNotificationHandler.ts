@@ -23,7 +23,7 @@ export const build__UnseenActivityNotificationHandler = ({
   name: 'UnseenActivityNotification',
   handles: ['mediaItemAddedToAlbum', 'albumSharedWithUser', 'mediaItemsSharedWithUser'],
   processor: async (event) => {
-    const { recipients, targetType, targetId } = await resolveActivity(event);
+    const { recipients, targetType, targetId, sourceType, sourceId } = await resolveActivity(event);
     const activityKind = UNSEEN_KIND_BY_EVENT[event.kind];
 
     await Promise.all(
@@ -35,6 +35,8 @@ export const build__UnseenActivityNotificationHandler = ({
             viewerId: recipient.id,
             targetType,
             targetId,
+            sourceType,
+            sourceId,
             activityKind,
           }),
         ),

@@ -1,4 +1,6 @@
+import { EntityType } from '@packages/contracts';
 import styled from 'styled-components';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { EmptyState } from '../../ui/EmptyState';
 import { AlbumSummaryVM } from '../../viewModels/';
 import { AlbumTile } from '../albums/AlbumTile';
@@ -18,6 +20,7 @@ type SharedAlbumListSectionProps = {
 };
 
 export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) => {
+  const { isTargetUnseen } = useUnseenActivity();
   return (
     <Container>
       <PageHeader>
@@ -42,7 +45,12 @@ export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) =
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_LIST_COLUMNS}
-              renderItem={(album) => <AlbumTile album={album} />}
+              renderItem={(album) => (
+                <AlbumTile
+                  album={album}
+                  hasUnseen={isTargetUnseen(EntityType.album, album.id)}
+                />
+              )}
             />
           </GridWrap>
         )}

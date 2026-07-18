@@ -16,6 +16,14 @@ export type NavigationLinkItem = {
   label: string;
   to: string;
   activePaths?: string[];
+  /**
+   * Also mark active when the path equals this prefix or is nested under it — keeps the
+   * item selected on its detail routes (e.g. `/albums` stays active on `/albums/:id`).
+   * Scoped per-item, so `/shared/*` siblings (which have no prefix) are unaffected.
+   */
+  activePrefix?: string;
+  /** Show an unseen-activity dot on this top-level link. */
+  hasUnseen?: boolean;
 };
 
 export type NavigationParentItem = {
@@ -50,10 +58,18 @@ const isParentActive = (parent: NavigationParentItem, pathname: string): boolean
   parent.children.some((child) => isChildActive(child, pathname));
 
 const isLinkActive = (link: NavigationLinkItem, pathname: string): boolean => {
-  if (link.activePaths != null && link.activePaths.length > 0) {
-    return link.activePaths.includes(pathname);
+  const exactMatch =
+    link.activePaths != null && link.activePaths.length > 0
+      ? link.activePaths.includes(pathname)
+      : pathname === link.to;
+  if (exactMatch) {
+    return true;
   }
-  return pathname === link.to;
+  // Stay selected when drilling into this item's detail routes (/albums/:id, /media/:id).
+  if (link.activePrefix != null) {
+    return pathname === link.activePrefix || pathname.startsWith(`${link.activePrefix}/`);
+  }
+  return false;
 };
 
 type NavigationParentInlineProps = {
@@ -213,6 +229,9 @@ export const Navigation = (props: NavigationProps) => {
               }}
             >
               {item.label}
+              {item.hasUnseen ? (
+                <UnseenDot size={7} {...(stacked ? { top: 12, right: 8 } : { top: 4, right: -6 })} />
+              ) : null}
             </StyledNavLink>
           );
         })}

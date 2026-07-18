@@ -4,7 +4,6 @@ fragment AlbumSummary on Album {
   createdAt
   updatedAt
   itemCount
-  hasUnseen
   ...ViewableAlbum
   coverMedia {
     ...MediaItemSummary

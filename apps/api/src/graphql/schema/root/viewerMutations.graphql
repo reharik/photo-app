@@ -1,6 +1,11 @@
 type Mutation {
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
-  markSeen(targetType: EntityType!, targetId: ID): MarkSeenResponse!
+  markSurfaceSeen(
+    targetType: EntityType!
+    targetId: ID!
+    kind: UnseenActivityType!
+  ): MarkSeenResponse!
+  markItemsSeen(ids: [ID!]!): MarkSeenResponse!
   deleteShareContact(handle: String!): DeleteShareContactResponse
 }
 
@@ -42,4 +47,6 @@ enum UnseenActivityType {
   ITEM_ADDED
   ALBUM_SHARED
   ITEM_SHARED
+  COMMENT_POSTED
+  REPLY_POSTED
 }

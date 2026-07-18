@@ -418,6 +418,15 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       };
       this.#addedReactions.push(newReaction);
       this.#reactions.push(newReaction);
+      this.recordEvent(
+        'reactionAdded',
+        {
+          targetId: this.id(),
+          targetType: EntityType.mediaItem,
+          reactionKind: item.emoji,
+        },
+        actorId,
+      );
     }
     this.#computedReactionCounts();
     this.touch(actorId);

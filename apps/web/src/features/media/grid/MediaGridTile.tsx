@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
+import { UnseenDot } from '../../../ui/UnseenDot';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 import { MediaGridTileReactionPill, ReactionHoverPill } from './MediaGridTileReactionPill';
 
@@ -36,6 +37,8 @@ export type MediaGridTileProps = {
   buildTileHref?: (itemId: string) => string;
   /** When false, skip thumbnail fetch and show the kind placeholder (e.g. album with no cover). */
   hasThumbnail?: boolean;
+  /** Derived from the viewer-level unseen-activity array (targetType=mediaItem). */
+  hasUnseen?: boolean;
 };
 
 export const MediaGridTile = ({
@@ -49,6 +52,7 @@ export const MediaGridTile = ({
   buildTileHref = defaultBuildTileHref,
   onBeforeNavigate,
   hasThumbnail = true,
+  hasUnseen = false,
 }: MediaGridTileProps) => {
   const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const showBurstBadge = burstCount != null && burstCount > 1;
@@ -93,6 +97,7 @@ export const MediaGridTile = ({
         buildTileHref={buildTileHref}
         onReactionsRefetch={onReactionsRefetch}
       />
+      {hasUnseen ? <UnseenDot /> : null}
     </>
   );
 

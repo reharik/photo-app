@@ -1,5 +1,7 @@
+import { EntityType } from '@packages/contracts';
 import { useState } from 'react';
 import styled from 'styled-components';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
 import { AlbumSummaryVM } from '../../viewModels/';
@@ -28,6 +30,7 @@ export const AlbumListSection = ({
   submitCreateAlbum,
 }: AlbumListSectionProps) => {
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const { isTargetUnseen } = useUnseenActivity();
 
   const closeCreate = () => {
     setCreateModalOpen(false);
@@ -73,7 +76,12 @@ export const AlbumListSection = ({
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_LIST_COLUMNS}
-              renderItem={(album) => <AlbumTile album={album} />}
+              renderItem={(album) => (
+                <AlbumTile
+                  album={album}
+                  hasUnseen={isTargetUnseen(EntityType.album, album.id)}
+                />
+              )}
             />
           </GridWrap>
         )}

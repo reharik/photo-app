@@ -1,8 +1,9 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { FrontendUploadStatus, Operation } from '@packages/contracts';
+import { EntityType, FrontendUploadStatus, Operation } from '@packages/contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
@@ -48,6 +49,7 @@ const groupByStrategy: NamedGroupStrategy<MediaItemSummaryVM> = makeDateStrategy
 export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
+  const { isTargetUnseen } = useUnseenActivity();
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const [shareMediaOpen, setShareMediaOpen] = useState(false);
@@ -212,6 +214,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
                   canReact
                   onReactionsRefetch={reloadData}
                   onBeforeNavigate={handleTileNavigate}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.id)}
                 />
               )}
             />

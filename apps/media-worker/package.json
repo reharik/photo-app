@@ -26,7 +26,7 @@
     "@packages/infrastructure": "*",
     "@packages/media-core": "*",
     "@packages/notifications": "*",
-    "@reharik/smart-enum": "^0.4.6",
+    "@reharik/smart-enum": "^0.6.0",
     "@reharik/smart-enum-knex": "^0.0.3",
     "awilix": "^12.1.1",
     "dotenv": "^16.6.1",

@@ -15,6 +15,8 @@ export type ResolvedActivity = {
   recipients: UserContact[];
   targetType: EntityType;
   targetId: EntityId;
+  sourceType: EntityType;
+  sourceId: EntityId;
   token?: string;
 };
 
@@ -41,6 +43,8 @@ export const build__ResolveActivity =
           recipients: users,
           targetType: EntityType.album,
           targetId: event.albumId,
+          sourceType: EntityType.mediaItem,
+          sourceId: event.mediaItemId,
         };
       }
       case 'albumSharedWithUser':
@@ -50,6 +54,8 @@ export const build__ResolveActivity =
           recipients: users,
           targetType: EntityType.album,
           targetId: event.albumId,
+          sourceType: EntityType.album,
+          sourceId: event.albumId,
         };
       case 'mediaItemsSharedWithUser':
         users = await systemUserRepository.getUserContacts([event.userId]);
@@ -57,6 +63,8 @@ export const build__ResolveActivity =
           recipients: users,
           targetType: EntityType.mediaItem,
           targetId: event.mediaItemIds[0],
+          sourceType: EntityType.mediaItem,
+          sourceId: event.mediaItemIds[0],
         };
 
       default:

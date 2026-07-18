@@ -4,7 +4,9 @@
 
 export * from './ContractError';
 export * from './FrontendError';
+export * from './activityKind';
 export * from './albumMemberRole';
+export * from './authorizationKind';
 export * from './frontendUploadStatus';
 export * from './frontendUploadStep';
 export * from './graphqlSmartEnums';

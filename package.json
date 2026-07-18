@@ -85,7 +85,7 @@
     "postinstall": "ts-patch install"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.4.6",
+    "@reharik/smart-enum": "^0.6.0",
     "ioc-manifest": "^2.3.6",
     "knip": "^6.4.1"
   },

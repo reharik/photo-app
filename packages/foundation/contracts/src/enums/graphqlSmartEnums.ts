@@ -21,7 +21,14 @@ const albumSortByInput = {
   createdAt: { column: 'created_at', table: 'album', nullsLast: 'false' },
   title: { column: 'title', table: 'album', nullsLast: 'true' },
 } as const;
-const entityTypeInput = ['album', 'comment', 'mediaItem', 'notification', 'user'] as const;
+const entityTypeInput = [
+  'album',
+  'comment',
+  'mediaItem',
+  'notification',
+  'reaction',
+  'user',
+] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = {
@@ -46,7 +53,13 @@ const sharedWithMeMediaItemSortByInput = {
   sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
 } as const;
 const sortDirInput = ['asc', 'desc'] as const;
-const unseenActivityTypeInput = ['albumShared', 'itemAdded', 'itemShared'] as const;
+const unseenActivityTypeInput = [
+  'albumShared',
+  'commentPosted',
+  'itemAdded',
+  'itemShared',
+  'replyPosted',
+] as const;
 
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;

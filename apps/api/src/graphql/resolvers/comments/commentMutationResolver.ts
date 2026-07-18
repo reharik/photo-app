@@ -1,7 +1,8 @@
-import type {
-  AddCommentCommand,
-  DeleteCommentCommand,
-  EditCommentCommand,
+import { EntityType } from '@packages/contracts';
+import {
+  type AddCommentCommand,
+  type DeleteCommentCommand,
+  type EditCommentCommand,
 } from '@packages/media-core';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type { Resolvers } from '../../generated/types.generated';
@@ -9,6 +10,9 @@ import type { Resolvers } from '../../generated/types.generated';
 const commentMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     addComment: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      if (!args.input.targetType.equals(EntityType.mediaItem)) {
+        throw new Error('TargetType provided to Comment mutation of invalid type');
+      }
       const command: AddCommentCommand = {
         authorId: ctx.viewer.id,
         targetType: args.input.targetType,

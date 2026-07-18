@@ -1,13 +1,10 @@
-import {
-  UnseenActivityRepository,
-  UnseenActivitySummary,
-} from '../../../repositories/readRepositories/unseenActivityRepository';
+import { UnseenActivity } from '../../../repositories';
+import { UnseenActivityRepository } from '../../../repositories/readRepositories/unseenActivityRepository';
 import { EntityId } from '../../../types';
 import { ReadServiceBase } from '../readServiceBaseType';
 
 export interface ViewerHasUnseenActivityService extends ReadServiceBase {
-  getUnseenActivity: () => Promise<boolean>;
-  getUnseenActivitySummary: () => Promise<UnseenActivitySummary>;
+  getUnseenActivity: () => Promise<UnseenActivity[]>;
 }
 
 type ViewerHasUnseenActivityServiceDeps = {
@@ -19,10 +16,7 @@ export const build__ViewerHasUnseenActivityService = ({
   viewerId,
   unseenActivityRepository,
 }: ViewerHasUnseenActivityServiceDeps): ViewerHasUnseenActivityService => ({
-  getUnseenActivity: async (): Promise<boolean> => {
+  getUnseenActivity: async (): Promise<UnseenActivity[]> => {
     return unseenActivityRepository.getUnseenActivity(viewerId);
-  },
-  getUnseenActivitySummary: async (): Promise<UnseenActivitySummary> => {
-    return unseenActivityRepository.getUnseenActivitySummary(viewerId);
   },
 });

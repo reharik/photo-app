@@ -6,18 +6,8 @@ export type MediaKindRailLabelProps = {
   kind: MediaKind;
 };
 
-const labelForKind = (kind: MediaKind): string => {
-  if (kind.equals(MediaKind.photo)) {
-    return 'Photo';
-  }
-  if (kind.equals(MediaKind.video)) {
-    return 'Video';
-  }
-  return kind.display;
-};
-
 export const MediaKindRailLabel = ({ kind }: MediaKindRailLabelProps): JSX.Element => (
-  <Root>{labelForKind(kind)}</Root>
+  <Root>{kind.display}</Root>
 );
 
 const Root = styled.p`

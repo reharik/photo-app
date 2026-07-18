@@ -33,7 +33,7 @@ export type PendingNotification = {
   dirtySince: DateTime;
   attempts: number;
   actorId: EntityId;
-  data?: { token: string };
+  data?: { token?: string; commentId?: string };
 };
 const pendingNotificationFields = [
   'id',

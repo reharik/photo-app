@@ -1,48 +1,34 @@
 import { EntityType, UnseenActivityType } from '@packages/contracts';
-import { prepareForDatabase } from '@reharik/smart-enum';
+import { pickEnum, prepareForDatabase } from '@reharik/smart-enum';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
 export type SystemUnseenActivityRepository = {
-  upsertActivityRow: (upsert: UnseenActivity) => Promise<number[]>;
-  deleteCompletedRecords: (ids: string[]) => Promise<void>;
+  upsertActivityRow: (upsert: UnseenActivity) => Promise<void>;
 };
 
 export type SystemUnseenActivityRepositoryDeps = {
   database: Knex;
 };
-
-type UnseenActivity = {
+export const UnseenActivityTargetType = pickEnum(EntityType, ['album', 'mediaItem']);
+export const UnseenActivitySourceType = pickEnum(EntityType, ['comment', 'mediaItem']);
+export type UnseenActivity = {
   id: string;
   viewerId: EntityId;
-  targetType: EntityType;
+  targetType: typeof UnseenActivityTargetType;
   targetId: EntityId;
+  sourceType: typeof UnseenActivitySourceType;
+  sourceId: EntityId;
   activityKind: UnseenActivityType;
 };
-// waiting for query
-// const UnseenActivityFields = [
-//   'id',
-//   'kind',
-//   'viewerId',
-//   'targetType',
-//   'targetId',
-//   'unseenActivityType',
-// ];
 
 export const build__SystemUnseenActivityRepository = ({
   database,
 }: SystemUnseenActivityRepositoryDeps): SystemUnseenActivityRepository => ({
   upsertActivityRow: async (upsert: UnseenActivity) => {
-    return database('unseenActivity')
+    await database('unseenActivity')
       .insert(prepareForDatabase({ ...upsert }))
-      .onConflict(['viewerId', 'targetType', 'targetId', 'activityKind'])
+      .onConflict(['viewerId', 'targetType', 'targetId', 'sourceType', 'sourceId'])
       .ignore();
-  },
-
-  deleteCompletedRecords: async (ids: string[]): Promise<void> => {
-    if (ids.length === 0) {
-      return;
-    }
-    await database('unseenActivity').delete().whereIn('id', ids);
   },
 });

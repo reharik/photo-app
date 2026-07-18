@@ -10,9 +10,11 @@ import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 
 type AlbumTileProps = {
   album: AlbumSummaryVM;
+  /** Derived from the viewer-level unseen-activity array (targetType=album). */
+  hasUnseen?: boolean;
 };
 
-export const AlbumTile = ({ album }: AlbumTileProps) => {
+export const AlbumTile = ({ album, hasUnseen = false }: AlbumTileProps) => {
   const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const coverMediaId = album.coverMedia?.id;
   const thumbnailUrl =
@@ -39,7 +41,7 @@ export const AlbumTile = ({ album }: AlbumTileProps) => {
               <Camera size={28} strokeWidth={1.75} aria-hidden />
             </CoverPlaceholder>
           )}
-          {album.hasUnseen ? <UnseenDot /> : null}
+          {hasUnseen ? <UnseenDot /> : null}
         </Cover>
         <Caption>
           <Title>{album.title}</Title>

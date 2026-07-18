@@ -1,7 +1,9 @@
 import { EntityType } from '@packages/contracts';
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
+import { useUnseenActivity } from '../../hooks/useUnseenActivity';
 import { useViewer } from '../../hooks/useViewer';
+import { UnseenDot } from '../../ui/UnseenDot';
 import { CommentReplyVM, CommentRootVM } from '../../viewModels/';
 import { PublicReactionsContainer } from '../reactions/PublicReactionsContainer';
 import { ReactionsContainer } from '../reactions/ReactionsContainer';
@@ -37,8 +39,12 @@ export const CommentRow = ({
   deleteCommentPending = false,
 }: Props): JSX.Element => {
   const { viewer } = useViewer();
+  const { isSourceUnseen } = useUnseenActivity();
   const authorId = viewer?.id;
   const [isEditing, setIsEditing] = useState(false);
+  // Per-comment read-state: unseen rows get an UnseenDot badged on the avatar corner.
+  // Same membership check used at every level — here matched on the comment SOURCE id.
+  const isUnseen = isSourceUnseen(EntityType.comment, comment.id);
   const avatarSize = depth > 0 ? 28 : 32;
 
   const isMine = authorId !== null && comment.authorId === authorId;
@@ -65,10 +71,13 @@ export const CommentRow = ({
 
   const inner = (
     <Root data-testid="comment-row">
-      <CommentAvatar
-        comment={{ displayName: comment.displayName, displayAvatarUrl: comment.displayAvatarUrl }}
-        size={avatarSize}
-      />
+      <AvatarWrap>
+        <CommentAvatar
+          comment={{ displayName: comment.displayName, displayAvatarUrl: comment.displayAvatarUrl }}
+          size={avatarSize}
+        />
+        {isUnseen ? <UnseenDot size={9} top={-2} right={-2} /> : null}
+      </AvatarWrap>
       <Content>
         <TopRow>
           <CommentHeader
@@ -122,6 +131,13 @@ const Root = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing(1.5)};
   align-items: flex-start;
+`;
+
+/** Anchors the unseen dot to the avatar corner (the row itself is not relative). */
+const AvatarWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
 `;
 
 const Content = styled.div`

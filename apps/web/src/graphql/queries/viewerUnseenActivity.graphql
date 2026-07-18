@@ -1,0 +1,13 @@
+query ViewerUnseenActivity {
+  viewer {
+    id
+    unseenActivity {
+      id
+      targetType
+      targetId
+      sourceType
+      sourceId
+      activityKind
+    }
+  }
+}

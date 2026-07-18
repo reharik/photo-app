@@ -71,3 +71,13 @@ services:
       - '5433:5432'
     env_file:
       - ./apps/api/.env
+
+  ses-viewer:
+    build: https://github.com/veertech/localstack-aws-ses-email-viewer.git#main
+    environment:
+      - LOCALSTACK_HOST=http://localstack:4566
+      - PORT=3005
+    ports:
+      - '3005:3005'
+    depends_on:
+      - localstack
