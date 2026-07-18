@@ -1,12 +1,11 @@
-import { ok, UnseenActivityType, WriteResult } from '@packages/contracts';
-import { UnseenActivityTargetType } from '../../repositories';
+import { EntityType, ok, UnseenActivityType, WriteResult } from '@packages/contracts';
 import { UnseenActivityRepository } from '../../repositories/readRepositories/unseenActivityRepository';
 import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';
 
 export type ClearBySurfaceCommand = {
   viewerId: EntityId;
-  targetType: typeof UnseenActivityTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   kind: UnseenActivityType;
 };

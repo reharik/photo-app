@@ -15,9 +15,9 @@ export const UnseenActivitySourceType = pickEnum(EntityType, ['comment', 'mediaI
 export type UnseenActivity = {
   id: string;
   viewerId: EntityId;
-  targetType: typeof UnseenActivityTargetType;
+  targetType: EntityType;
   targetId: EntityId;
-  sourceType: typeof UnseenActivitySourceType;
+  sourceType: EntityType;
   sourceId: EntityId;
   activityKind: UnseenActivityType;
 };

@@ -29,7 +29,7 @@ const unseenActivityFields = [
 
 type DeleteWhereInput = {
   viewerId: EntityId;
-  targetType: typeof UnseenActivityTargetType;
+  targetType: EntityType;
   targetId: EntityId;
   activityKind: UnseenActivityType;
 };
