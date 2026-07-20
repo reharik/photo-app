@@ -234,7 +234,10 @@ export const Navigation = (props: NavigationProps) => {
             >
               {item.label}
               {item.hasUnseen ? (
-                <UnseenDot size={7} {...(stacked ? { top: 12, right: 8 } : { top: 4, right: -6 })} />
+                <UnseenDot
+                  size={7}
+                  {...(stacked ? { top: 12, right: 8 } : { top: 4, right: -6 })}
+                />
               ) : null}
             </StyledNavLink>
           );

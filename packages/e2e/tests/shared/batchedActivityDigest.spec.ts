@@ -5,7 +5,10 @@ import {
   expectAlbumGalleryItems,
 } from '../../fixtures/album';
 import { loginViaUi } from '../../fixtures/auth';
-import { retrieveLocalStackSesMessages, sesMessageBodyIncludes } from '../../fixtures/localstackSes';
+import {
+  retrieveLocalStackSesMessages,
+  sesMessageBodyIncludes,
+} from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded, mediaTile } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
 
