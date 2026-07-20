@@ -1,13 +1,15 @@
-import { EntityType, InAppNotificationType } from '@packages/contracts';
+import {
+  ActivitySurface,
+  EntityType,
+  InAppNotificationType,
+  NotificationSourceType,
+  NotificationTargetType,
+} from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
-import {
-  InAppNotification,
-  InAppNotificationSourceType,
-  InAppNotificationTargetType,
-} from '../systemRepositories/systemInAppNotificationRepository';
+import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
 export type InAppNotificationSummary = {
   /** Unseen activity on individually shared media items (target_type = mediaItem). */
@@ -24,24 +26,20 @@ const inAppNotificationFields = [
   'targetId',
   'sourceType',
   'sourceId',
-  'activityKind',
+  'kind',
+  'surface',
 ];
 
 type DeleteWhereInput = {
   viewerId: EntityId;
   targetType: EntityType;
   targetId: EntityId;
-  activityKind: InAppNotificationType;
+  kind: InAppNotificationType;
 };
 
 export interface InAppNotificationRepository {
   getInAppNotification: (viewerId: EntityId) => Promise<InAppNotification[]>;
-  deleteWhere: ({
-    viewerId,
-    targetType,
-    targetId,
-    activityKind,
-  }: DeleteWhereInput) => Promise<void>;
+  deleteWhere: ({ viewerId, targetType, targetId, kind }: DeleteWhereInput) => Promise<void>;
   deleteByIds: ({ viewerId, ids }: { viewerId: EntityId; ids: EntityId[] }) => Promise<void>;
   markSeen: (targetType: EntityType, viewerId: EntityId, targetId?: EntityId) => Promise<void>;
 }
@@ -57,9 +55,10 @@ export const build__InAppNotificationRepository = ({
         .where({ viewerId })
         .select<InAppNotification[]>(inAppNotificationFields),
       {
-        targetType: InAppNotificationTargetType,
-        sourceType: InAppNotificationSourceType,
-        activityKind: InAppNotificationType,
+        targetType: NotificationTargetType,
+        sourceType: NotificationSourceType,
+        kind: InAppNotificationType,
+        surface: ActivitySurface,
       },
       { strict: true },
     ),
@@ -67,14 +66,14 @@ export const build__InAppNotificationRepository = ({
     viewerId,
     targetType,
     targetId,
-    activityKind,
+    kind,
   }: DeleteWhereInput): Promise<void> => {
     await database('inAppNotification').delete().where(
       prepareForDatabase({
         viewerId,
         targetType,
         targetId,
-        activityKind,
+        kind,
       }),
     );
   },

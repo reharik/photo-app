@@ -1,6 +1,6 @@
 import {
-  ActivityKind,
   AsyncNotificationKind,
+  BatchedPayloadKind,
   EntityType,
   filterByMember,
 } from '@packages/contracts';
@@ -47,13 +47,13 @@ export const build__ReactionActivity = ({
       const reactorName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
       const line: ReactionItem = {
         reactorName,
-        reactionTargetType: row.aggregateType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
+        reactionTargetType: row.targetType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
       };
       return {
         row,
         result: 'resolved' as const,
         recipientId: row.recipientId,
-        targetItemId: row.aggregateId,
+        targetItemId: row.targetId,
         line,
       };
     });
@@ -76,6 +76,6 @@ export const build__ReactionActivity = ({
       reactionSection.set(recipientId, items);
     }
 
-    return { kind: ActivityKind.reaction, activity: reactionSection, outcomes };
+    return { kind: BatchedPayloadKind.reaction, activity: reactionSection, outcomes };
   },
 });

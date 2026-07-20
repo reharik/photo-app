@@ -4,10 +4,10 @@
 
 export * from './ContractError';
 export * from './FrontendError';
-export * from './activityKind';
 export * from './albumMemberRole';
 export * from './asyncNotificationKind';
 export * from './authorizationKind';
+export * from './batchedPayloadKind';
 export * from './frontendUploadStatus';
 export * from './frontendUploadStep';
 export * from './graphqlSmartEnums';

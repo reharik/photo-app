@@ -12,6 +12,7 @@ import { ErrorCategory } from './ContractError';
 import { Operation } from './operation';
 import { ReactionEmoji } from './reactionEmojis';
 
+const activitySurfaceInput = ['albums', 'recent', 'sharedAlbums', 'sharedItems'] as const;
 const albumItemSortByInput = {
   createdAt: { column: 'created_at', table: 'album_item', nullsLast: 'false' },
   orderIndex: { column: 'order_index', table: 'album_item', nullsLast: 'false' },
@@ -23,9 +24,9 @@ const albumSortByInput = {
 } as const;
 const entityTypeInput = [
   'album',
+  'authorization',
   'comment',
   'mediaItem',
-  'notification',
   'reaction',
   'user',
 ] as const;
@@ -61,6 +62,7 @@ const sharedWithMeMediaItemSortByInput = {
 } as const;
 const sortDirInput = ['asc', 'desc'] as const;
 
+export type ActivitySurface = Enumeration<typeof ActivitySurface>;
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
 export type EntityType = Enumeration<typeof EntityType>;
@@ -74,6 +76,10 @@ export type SharedWithMeAlbumSortBy = Enumeration<typeof SharedWithMeAlbumSortBy
 export type SharedWithMeMediaItemSortBy = Enumeration<typeof SharedWithMeMediaItemSortBy>;
 export type SortDir = Enumeration<typeof SortDir>;
 
+export const ActivitySurface = enumeration<typeof activitySurfaceInput>('ActivitySurface', {
+  input: activitySurfaceInput,
+  serializeAs: 'value',
+});
 export const AlbumItemSortBy = enumeration<typeof albumItemSortByInput>('AlbumItemSortBy', {
   input: albumItemSortByInput,
   serializeAs: 'value',
@@ -124,6 +130,7 @@ export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
 });
 
 export const enumRegistry = {
+  ActivitySurface,
   AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,

@@ -1,4 +1,12 @@
-import { AsyncNotificationKind, EntityType, NotificationCadence } from '@packages/contracts';
+import {
+  AsyncNotificationKind,
+  EntityType,
+  NotificationCadence,
+  NotificationKind,
+  NotificationSourceType,
+  NotificationTargetType,
+} from '@packages/contracts';
+import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { DateTime } from 'luxon';
@@ -28,40 +36,42 @@ export type AsyncNotification = {
   channel: 'email' | 'sms';
   kind: AsyncNotificationKind;
   recipientId: EntityId;
-  aggregateType: EntityType;
-  aggregateId: EntityId;
+  targetType: NotificationTargetType;
+  targetId: EntityId;
+  sourceType: NotificationSourceType;
+  sourceId: EntityId;
   dirtySince: DateTime;
   attempts: number;
   actorId: EntityId;
   data?: { token?: string; commentId?: string };
 };
+
 const asyncNotificationFields = [
   'id',
   'channel',
   'kind',
   'recipientId',
-  'aggregateType',
-  'aggregateId',
+  'targetType',
+  'targetId',
+  'sourceType',
+  'sourceId',
   'dirtySince',
   'attempts',
   'actorId',
   'data',
 ];
 
-type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince'>;
+type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince' | 'kind'> & {
+  kind: NotificationKind;
+};
 
 export const build__SystemAsyncNotificationRepository = ({
   database,
 }: SystemAsyncNotificationRepositoryDeps): SystemAsyncNotificationRepository => ({
   upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
     return database('asyncNotification')
-      .insert({
-        ...upsert,
-        kind: upsert.kind.value,
-        aggregateType: upsert.aggregateType.value,
-        dirtySince: database.fn.now(),
-      })
-      .onConflict(['channel', 'kind', 'recipientId', 'aggregateType', 'aggregateId'])
+      .insert({ ...prepareForDatabase(upsert), dirtySince: database.fn.now() })
+      .onConflict(['channel', 'kind', 'recipientId', 'targetType', 'targetId'])
       .merge({ dirtySince: database.fn.now() });
   },
   claimNotificationBatch: (windowSeconds: number) => {
@@ -77,7 +87,8 @@ export const build__SystemAsyncNotificationRepository = ({
         ),
       {
         kind: AsyncNotificationKind,
-        aggregateType: EntityType,
+        targetType: EntityType,
+        sourceType: EntityType,
       },
       { strict: true },
     );
@@ -95,7 +106,8 @@ export const build__SystemAsyncNotificationRepository = ({
         ),
       {
         kind: AsyncNotificationKind,
-        aggregateType: EntityType,
+        targetType: EntityType,
+        sourceType: EntityType,
       },
       { strict: true },
     );

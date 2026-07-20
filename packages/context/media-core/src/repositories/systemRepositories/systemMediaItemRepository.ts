@@ -9,7 +9,7 @@ type SystemMediaItemRepositoryDeps = {
   database: Knex;
 };
 
-type MediaItemOwner = {
+export type MediaItemOwner = {
   id: EntityId;
   ownerId: EntityId;
 };

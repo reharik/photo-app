@@ -26,7 +26,8 @@ type InAppNotification {
   targetId: ID!
   sourceType: EntityType!
   sourceId: ID!
-  activityKind: InAppNotificationType!
+  kind: InAppNotificationType!
+  surface: ActivitySurface!
 }
 
 type DeleteAlbumResponse {

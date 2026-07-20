@@ -18,7 +18,7 @@ export const build__AlbumSharedStrategy = ({
     rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'albumShareInvite'>[]> => {
-    const albumIds = [...new Set(rows.map((x) => x.aggregateId))];
+    const albumIds = [...new Set(rows.map((x) => x.targetId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
     return rows.map((row) => {
@@ -27,7 +27,7 @@ export const build__AlbumSharedStrategy = ({
         return { row, kind: 'skipped', reason: 'no recipient email' };
       }
       const actor = userMap.get(row.actorId);
-      const album = albumMap.get(row.aggregateId);
+      const album = albumMap.get(row.targetId);
       return {
         row,
         kind: 'ready',

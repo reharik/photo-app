@@ -1,31 +1,39 @@
-import { EntityType, InAppNotificationType } from '@packages/contracts';
-import { pickEnum, prepareForDatabase } from '@reharik/smart-enum';
+import {
+  ActivitySurface,
+  InAppNotificationType,
+  NotificationKind,
+  NotificationSourceType,
+  NotificationTargetType,
+} from '@packages/contracts';
+import { prepareForDatabase } from '@reharik/smart-enum';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
 
 export type SystemInAppNotificationRepository = {
-  upsertActivityRow: (upsert: InAppNotification) => Promise<void>;
+  upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;
 };
 
 export type SystemInAppNotificationRepositoryDeps = {
   database: Knex;
 };
-export const InAppNotificationTargetType = pickEnum(EntityType, ['album', 'mediaItem']);
-export const InAppNotificationSourceType = pickEnum(EntityType, ['comment', 'mediaItem']);
+
 export type InAppNotification = {
   id: string;
   viewerId: EntityId;
-  targetType: EntityType;
+  targetType: NotificationTargetType;
   targetId: EntityId;
-  sourceType: EntityType;
+  sourceType: NotificationSourceType;
   sourceId: EntityId;
-  activityKind: InAppNotificationType;
+  kind: InAppNotificationType;
+  actorId: EntityId;
+  surface: ActivitySurface;
 };
 
+type InAppNotificationInput = Omit<InAppNotification, 'kind'> & { kind: NotificationKind };
 export const build__SystemInAppNotificationRepository = ({
   database,
 }: SystemInAppNotificationRepositoryDeps): SystemInAppNotificationRepository => ({
-  upsertActivityRow: async (upsert: InAppNotification) => {
+  upsertActivityRow: async (upsert: InAppNotificationInput) => {
     await database('inAppNotification')
       .insert(prepareForDatabase({ ...upsert }))
       .onConflict(['viewerId', 'targetType', 'targetId', 'sourceType', 'sourceId'])

@@ -1,4 +1,4 @@
-import { ActivityKind } from '@packages/contracts';
+import { BatchedPayloadKind } from '@packages/contracts';
 import { AsyncNotification } from '@packages/media-core';
 import { ActivitySection } from '@packages/notifications';
 import { RowOutcome } from '../../outcomeCleanup';
@@ -8,7 +8,7 @@ export interface BatchedEmailPayload {
 }
 
 export type ActivityResult = {
-  kind: ActivityKind;
+  kind: BatchedPayloadKind;
   activity: Map<string, ActivitySection>;
   outcomes: RowOutcome[];
 };

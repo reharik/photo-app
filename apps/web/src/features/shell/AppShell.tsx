@@ -1,4 +1,4 @@
-import { InAppNotificationType } from '@packages/contracts';
+import { ActivitySurface } from '@packages/contracts';
 import { Menu } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
@@ -40,26 +40,23 @@ export const AppShell = () => {
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
   const navRef = useRef<HTMLElement | null>(null);
 
-  // Nav dots derive from the one viewer-level unseen-activity array, keyed on
-  // `activityKind` — the backend populates it on every row, whereas `source` is only
-  // written for comment activity. Comment activity is intentionally NOT surfaced in the
-  // nav: a comment row carries no album/container context, so it can't be attributed to
-  // a section; comments are discoverable via the media-tile dot and the in-thread avatar
-  // dot instead. Errors degrade to `false` (empty array) so a failing query never breaks
-  // navigation.
+  // Nav dots derive from the one viewer-level unseen-activity array, keyed on the
+  // backend-computed `surface` — the nav destination the backend already resolved from
+  // (kind + the recipient's ownership of the target). The FE no longer re-derives
+  // owned-vs-shared from `kind`, which is what double-lit "Albums" and "Shared > Albums"
+  // for a single shared album (itemAdded is always a shared album, never your own).
+  // Each surface maps 1:1 to a nav item. Errors degrade to `false` (empty array) so a
+  // failing query never breaks navigation.
   // AppShell wraps every authed screen (layout route) and stays mounted, so it drives the
   // single authoritative fetch of the unseen-activity array. Every other consumer reads
   // cache-first; clears refetch this query, updating all watchers.
   const { anyUnseenMatching } = useInAppNotification('cache-and-network');
-  const albumsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(InAppNotificationType.itemAdded),
-  );
-  const sharedItemsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(InAppNotificationType.itemShared),
-  );
-  const sharedAlbumsUnseen = anyUnseenMatching((r) =>
-    r.activityKind.equals(InAppNotificationType.albumShared),
-  );
+  const anySurface = (surface: ActivitySurface) =>
+    anyUnseenMatching((r) => r.surface.equals(surface));
+  const recentUnseen = anySurface(ActivitySurface.recent);
+  const albumsUnseen = anySurface(ActivitySurface.albums);
+  const sharedItemsUnseen = anySurface(ActivitySurface.sharedItems);
+  const sharedAlbumsUnseen = anySurface(ActivitySurface.sharedAlbums);
   const sharedUnseen = sharedItemsUnseen || sharedAlbumsUnseen;
 
   const navLinks = useMemo<NavigationItem[]>(
@@ -88,9 +85,12 @@ export const AppShell = () => {
         if (item.to === '/albums') {
           return { ...item, hasUnseen: albumsUnseen };
         }
-        return item; // Recent gets no nav dot (comment activity is not surfaced here)
+        if (item.to === '/media') {
+          return { ...item, hasUnseen: recentUnseen };
+        }
+        return item;
       }),
-    [albumsUnseen, sharedUnseen, sharedItemsUnseen, sharedAlbumsUnseen],
+    [recentUnseen, albumsUnseen, sharedUnseen, sharedItemsUnseen, sharedAlbumsUnseen],
   );
 
   useEffect(() => {

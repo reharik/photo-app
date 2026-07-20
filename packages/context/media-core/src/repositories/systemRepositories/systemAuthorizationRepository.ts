@@ -7,6 +7,7 @@ import { EntityId } from '../../types';
 export type SystemAuthorizationRepository = {
   getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
   getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
+  getPublicLinkAuthorizationById: (id: EntityId) => Promise<PublicLinkAuthorizationRow>;
 };
 
 export type Authorizations = {
@@ -140,5 +141,17 @@ export const build__SystemAuthorizationRepository = ({
       }
     }
     return { userAuthorizations, publicLinkAuthorizations };
+  },
+
+  getPublicLinkAuthorizationById: async (id: EntityId): Promise<PublicLinkAuthorizationRow> => {
+    const row = await withEnumRevival(
+      database('access_grant').first<PublicLinkAuthorizationRow>(authorizationFields).where({ id }),
+      { operations: Operation },
+      { strict: true },
+    );
+    if (!isPublicLinkAuthRecord(row)) {
+      throw new Error(`Authorization ${row.id} violates grantedToUser XOR linkToken`);
+    }
+    return { ...row, kind: 'publicLink', target: toAlbumTarget(row) };
   },
 });

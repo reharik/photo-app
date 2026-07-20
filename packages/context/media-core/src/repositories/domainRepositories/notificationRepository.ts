@@ -1,4 +1,4 @@
-import { NotificationKindEnum } from '@packages/contracts';
+import { NotificationKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { NotificationRecord } from '../../domain/Notification/Notification';
 import { Notification } from '../../domain/Notification/Notification';
@@ -20,7 +20,7 @@ export const build__NotificationRepository = ({
   const getById = async (id: EntityId): Promise<Notification | undefined> => {
     const notificationRow = await withEnumRevival(
       uow.db()<NotificationRecord>('notification').where({ id }).first(),
-      { notificationKind: NotificationKindEnum },
+      { notificationKind: NotificationKind },
       { strict: true },
     );
 

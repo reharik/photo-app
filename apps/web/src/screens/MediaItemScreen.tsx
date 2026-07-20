@@ -84,7 +84,7 @@ export const MediaItemScreen = () => {
       (r) =>
         r.targetType.equals(EntityType.mediaItem) &&
         r.targetId === loadedMediaId &&
-        r.activityKind.equals(InAppNotificationType.itemShared),
+        r.kind.equals(InAppNotificationType.itemShared),
     );
     if (!hasSharedRow) {
       return;

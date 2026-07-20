@@ -1,8 +1,8 @@
-import { ActivityKind, EntityType } from '@packages/contracts';
+import { BatchedPayloadKind, EntityType } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 
 export type ActivityDigestData = {
-  data: Map<ActivityKind, ActivitySection>; // ← keyed by ActivityKind, not EntityType
+  data: Map<BatchedPayloadKind, ActivitySection>; // ← keyed by BatchedPayloadKind not EntityType
   viewUrl: string;
 };
 

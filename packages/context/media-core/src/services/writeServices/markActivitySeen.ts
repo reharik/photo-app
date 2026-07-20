@@ -37,7 +37,7 @@ export const build__MarkActivitySeen = ({
         viewerId,
         targetType: targetType,
         targetId,
-        activityKind: kind,
+        kind,
       });
       return ok({ success: true });
     },

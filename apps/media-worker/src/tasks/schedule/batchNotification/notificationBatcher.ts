@@ -1,4 +1,4 @@
-import { ActivityKind, notEmpty } from '@packages/contracts';
+import { BatchedPayloadKind, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import { SystemAsyncNotificationRepository, SystemUserRepository } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
@@ -8,7 +8,7 @@ import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
-const drivers = pickEnum(ActivityKind, ['comment', 'album']);
+const Drivers = pickEnum(BatchedPayloadKind, ['comment', 'album']);
 export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
 
 type NotificationBatcherDeps = {
@@ -63,13 +63,13 @@ export const build__NotificationBatcher = ({
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
         continue;
       }
-      const data = new Map<ActivityKind, ActivitySection>();
+      const data = new Map<BatchedPayloadKind, ActivitySection>();
       let hasDriver = false;
       payloads.forEach((x) => {
         const activity = x.activity.get(recipientId);
         if (activity) {
           data.set(x.kind, activity);
-          hasDriver ||= drivers.has(x.kind);
+          hasDriver ||= Drivers.has(x.kind);
         }
       });
       if (hasDriver) {

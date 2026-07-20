@@ -1,4 +1,9 @@
-import { ActivityKind, AsyncNotificationKind, filterByMember, notEmpty } from '@packages/contracts';
+import {
+  AsyncNotificationKind,
+  BatchedPayloadKind,
+  filterByMember,
+  notEmpty,
+} from '@packages/contracts';
 import { groupByMapping, indexBy } from '@packages/infrastructure';
 import {
   AsyncNotification,
@@ -52,7 +57,7 @@ export const build__CommentActivity = ({
         row,
         result: 'resolved' as const,
         recipientId: row.recipientId,
-        mediaItemId: row.aggregateId,
+        mediaItemId: row.targetId,
         line: { snippet: truncate(comment.body), commenterName },
       };
     });
@@ -75,6 +80,6 @@ export const build__CommentActivity = ({
       commentSection.set(recipientId, items);
     }
 
-    return { kind: ActivityKind.comment, activity: commentSection, outcomes };
+    return { kind: BatchedPayloadKind.comment, activity: commentSection, outcomes };
   },
 });

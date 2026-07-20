@@ -115,7 +115,7 @@ export const AlbumScreen = () => {
           (r) =>
             r.targetType.equals(EntityType.album) &&
             r.targetId === loadedAlbumId &&
-            r.activityKind.equals(kind),
+            r.kind.equals(kind),
         ),
     );
     if (kinds.length === 0) {
