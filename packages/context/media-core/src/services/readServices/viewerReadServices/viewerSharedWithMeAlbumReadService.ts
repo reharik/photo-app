@@ -59,7 +59,6 @@ export const build__ViewerSharedWithMeAlbumReadService = ({
     updatedAt: album.updatedAt,
     viewerMemberRole: album.viewerMemberRole,
     coverMedia,
-    hasUnseen: album.hasUnseen,
     operations: album.viewerMemberRole?.operations ?? [],
   });
 

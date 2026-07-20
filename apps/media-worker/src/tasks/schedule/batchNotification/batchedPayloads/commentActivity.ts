@@ -39,8 +39,10 @@ export const build__CommentActivity = ({
     const commentRowKind = pickEnum(AsyncNotificationKind, ['commentPosted', 'replyPosted']);
     const commentRows = filterByMember(rows, 'kind', commentRowKind);
 
+    // The comment id is the row's subject (was `data.commentId` before the
+    // container/subject rename; asyncWriter no longer writes a data bag).
     const comments = await systemCommentRepository.getCommentsByIds(
-      commentRows.map((x) => x.data!.commentId).filter(notEmpty),
+      commentRows.map((x) => x.subjectId).filter(notEmpty),
     );
     const users = await systemUserRepository.getUserContacts(comments.map((x) => x.authorId));
     const userMap = indexBy(users);
@@ -49,7 +51,7 @@ export const build__CommentActivity = ({
 
     // resolve each row ONCE → row + its fate + (if resolved) the rendered line
     const resolved = commentRows.map((row) => {
-      const comment = commentMap.get(row.data!.commentId!);
+      const comment = commentMap.get(row.subjectId);
       if (!comment) return { row, result: 'skipped' as const }; // hard-deleted → accounted, not eaten
       const user = userMap.get(comment.authorId);
       const commenterName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();

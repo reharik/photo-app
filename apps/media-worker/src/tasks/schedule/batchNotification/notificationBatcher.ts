@@ -62,25 +62,15 @@ export const build__NotificationBatcher = ({
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
         continue;
       }
-      // console.log(`************payloads[0].outcomes************`);
-      // payloads.map((x) => console.log(x.outcomes));
-      // console.log(`********END payloads[0].outcomes************`);
       const data = new Map<BatchedPayloadKind, ActivitySection>();
       let hasDriver = false;
       payloads.forEach((x) => {
         const activity = x.activity.get(recipientId);
-        // console.log(`************activity************`);
-        // console.log(activity);
-        // console.log(x.kind);
-        // console.log(`********END activity************`);
         if (activity) {
           data.set(x.kind, activity);
           hasDriver ||= Drivers.has(x.kind);
         }
       });
-      console.log(`************hasDriver************`);
-      console.log(hasDriver);
-      console.log(`********END hasDriver************`);
       if (hasDriver) {
         const payload: NotificationPayload<'activityDigest'> = {
           to: recipientEmail.email,

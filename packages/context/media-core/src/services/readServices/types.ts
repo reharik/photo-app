@@ -29,7 +29,6 @@ export type AlbumProjection = {
   coverMedia?: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
-  hasUnseen?: boolean;
   operations: Operation[];
 };
 
@@ -70,7 +69,6 @@ export type AlbumWithCoverRow = {
   updatedAt: Date;
   viewerMemberRole?: AlbumMemberRole;
   itemCount: number;
-  hasUnseen?: boolean;
 } & NamespacedMediaItemRow;
 
 export type AlbumItemWithMediaRow = {

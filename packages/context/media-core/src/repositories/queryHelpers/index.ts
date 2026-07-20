@@ -9,6 +9,5 @@ export * from './withAlbumCoverItem';
 export * from './withAlbumItemCount';
 export * from './withCollectionInfo';
 export * from './withGrantBy';
-export * from './withUnseenAlbumFlag';
 export * from './withViewableByMemberOrAlbumGrant';
 export * from './withViewerMembership';

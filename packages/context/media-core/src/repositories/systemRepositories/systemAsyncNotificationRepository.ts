@@ -43,7 +43,9 @@ export type AsyncNotification = {
   dirtySince: DateTime;
   attempts: number;
   actorId: EntityId;
-  data?: { token?: string; commentId?: string };
+  // The `data` jsonb column is intentionally NOT modelled here: token/commentId
+  // migrated to subjectId in the container/subject rename, so nothing reads or
+  // writes it. The column is left in place (see migrations) as an escape hatch.
 };
 
 const asyncNotificationFields = [
@@ -58,7 +60,6 @@ const asyncNotificationFields = [
   'dirtySince',
   'attempts',
   'actorId',
-  'data',
 ];
 
 type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince' | 'kind'> & {

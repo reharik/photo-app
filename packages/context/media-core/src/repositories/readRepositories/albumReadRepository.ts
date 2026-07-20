@@ -18,7 +18,6 @@ import {
   withAlbumItemCount,
   withAlbumItemViewableByMemberOrItemGrant,
   withCollectionInfo,
-  withUnseenAlbumFlag,
   withViewableByMemberOrAlbumGrant,
   withViewerMembership,
 } from '../queryHelpers';
@@ -76,7 +75,6 @@ export const build__AlbumReadRepository = ({
         .modify(withViewerMembership(database, viewerId))
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
-        .modify(withUnseenAlbumFlag(database, viewerId))
         .modify(withCollectionInfo(database, collectionInfo))
         .select<(AlbumWithCoverRow & { totalCount: number })[]>(...albumFields)
         .where('albumMember.userId', viewerId)

@@ -224,6 +224,10 @@ export const Navigation = (props: NavigationProps) => {
               key={item.label}
               $stacked={stacked}
               $active={active}
+              // Pin the accessible name to the label so a nested UnseenDot's
+              // `status` (aria-label "Unseen activity") doesn't get folded into
+              // the link name (it would become "Recent Unseen activity").
+              aria-label={item.label}
               onClick={() => {
                 onLinkClick?.();
               }}

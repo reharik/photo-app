@@ -21,7 +21,6 @@ export * from './queryHelpers/withAlbumCoverItem';
 export * from './queryHelpers/withAlbumItemCount';
 export * from './queryHelpers/withCollectionInfo';
 export * from './queryHelpers/withGrantBy';
-export * from './queryHelpers/withUnseenAlbumFlag';
 export * from './queryHelpers/withViewableByMemberOrAlbumGrant';
 export * from './queryHelpers/withViewerMembership';
 export * from './readRepositories/albumMemberReadRepository';
