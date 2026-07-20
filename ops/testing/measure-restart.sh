@@ -2,8 +2,8 @@
 # measure-restart.sh — times API + media-worker restart from container logs
 set -uo pipefail
 
-API=betaname-dev-api-1
-WORKER=betaname-dev-media-worker-1
+API=homeroll-dev-api-1
+WORKER=homeroll-dev-media-worker-1
 RUNS=${1:-5}   # number of samples; default 5, override: ./measure-restart.sh 10
 
 # epoch millis from an RFC3339 timestamp like 2026-05-19T01:23:10.344300000Z

@@ -1,1 +1,1 @@
-export const APP_NAME = 'BetanaMe';
+export const APP_NAME = 'Homeroll';

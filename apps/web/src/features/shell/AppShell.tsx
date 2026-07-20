@@ -153,7 +153,7 @@ export const AppShell = () => {
                 >
                   <Menu size={20} strokeWidth={2} aria-hidden />
                 </MobileNavMenuButton>
-                <Wordmark aria-hidden>Harik family</Wordmark>
+                <Wordmark aria-hidden>Homeroll</Wordmark>
               </MobileNavLeading>
               <NavActions>
                 <UploadMediaIconButton />
@@ -184,7 +184,7 @@ export const AppShell = () => {
         ) : (
           <SCNavContent>
             <SCAppNavigation>
-              <WordmarkLink to="/">Harik family</WordmarkLink>
+              <WordmarkLink to="/">Homeroll</WordmarkLink>
               <Navigation links={navLinks} variant="inline" />
             </SCAppNavigation>
             <NavActions>

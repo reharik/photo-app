@@ -1,7 +1,7 @@
 {
   "name": "@app/api",
   "private": true,
-  "description": "BetanaMe API",
+  "description": "Homeroll API",
   "keywords": [],
   "license": "ISC",
   "author": "",

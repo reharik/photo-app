@@ -39,7 +39,7 @@ refactor. Source is read-only; only test files touched. No commits.
 RESTART IDENTITY CASCADE`) then re-seed viewer users.
   - Stable user ids in `testViewerIds.ts`; seeded by `ensureTestViewerUsers.ts`
     (`ON CONFLICT (id) DO NOTHING`).
-  - Running DB: docker `betaname-dev-db-1`, host port **5433** (`apps/api/.env`
+  - Running DB: docker `homeroll-dev-db-1`, host port **5433** (`apps/api/.env`
     `POSTGRES_PORT=5433`, db `photo_app`). DB is migrated through `0020`
     (`email_verification`, `rate_limit_event`, `user.user_status` present;
     `password_reset` **dropped**).

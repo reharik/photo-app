@@ -132,7 +132,7 @@ for these specifically:
 | Share button (primary)                     | `primaryButtonBg` / `primaryButtonText`                                      |
 | Add to album / text actions                | `ghostButtonText`                                                            |
 | Cancel link                                | `textMuted`                                                                  |
-| Wordmark "Harik family"                    | `font.serif`, `bodyText`, `fontSize._17`                                     |
+| Wordmark "Homeroll"                        | `font.serif`, `bodyText`, `fontSize._17`                                     |
 
 ## Things deferred
 

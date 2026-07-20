@@ -68,7 +68,7 @@ export type GrabTestImagesResult = { fileName: string; path: string };
  */
 export const grabTestImages = (count: number, uniqueSuffix: string): GrabTestImagesResult[] => {
   const picked = pickRandomE2eAssetImages(count);
-  const dir = mkdtempSync(join(tmpdir(), 'betaname-e2e-'));
+  const dir = mkdtempSync(join(tmpdir(), 'homeroll-e2e-'));
   const usedBaseNames = new Map<string, number>();
   const result: { fileName: string; path: string }[] = [];
 

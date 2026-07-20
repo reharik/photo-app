@@ -19,7 +19,7 @@ describe('build__EmailChannel', () => {
       const channel = build__EmailChannel({
         config: {
           fromEmail: '',
-          fromName: 'BetanaMe',
+          fromName: 'Homeroll',
           awsRegion: 'us-east-1',
         },
         emailClient,
@@ -47,7 +47,7 @@ describe('build__EmailChannel', () => {
       const channel = build__EmailChannel({
         config: {
           fromEmail: 'notifications@example.com',
-          fromName: 'BetanaMe',
+          fromName: 'Homeroll',
           awsRegion: 'us-east-1',
         },
         emailClient: { sendEmail },
@@ -65,7 +65,7 @@ describe('build__EmailChannel', () => {
         subject: 'Welcome',
         html: '<p>Hello</p>',
         fromEmail: 'notifications@example.com',
-        fromDisplayName: 'BetanaMe',
+        fromDisplayName: 'Homeroll',
         text: 'Hello',
       });
       expect(result.success).toBe(true);
