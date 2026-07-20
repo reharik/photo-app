@@ -25,7 +25,7 @@ export const build__AlbumSharedWithNonUserStrategy = ({
     rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'albumGuestInvite'>[]> => {
-    const albumIds = [...new Set(rows.map((x) => x.targetId))];
+    const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
 
@@ -33,14 +33,14 @@ export const build__AlbumSharedWithNonUserStrategy = ({
     for (const row of rows) {
       const recipientEmail = userMap.get(row.recipientId)?.email;
       const publicLinkAuthorization =
-        await systemAuthorizationRepository.getPublicLinkAuthorizationById(row.sourceId);
+        await systemAuthorizationRepository.getPublicLinkAuthorizationById(row.subjectId);
       const token = publicLinkAuthorization.linkToken;
       if (!recipientEmail || !token) {
         results.push({ row, kind: 'skipped', reason: 'no recipient email or token' });
         continue;
       }
       const actor = userMap.get(row.actorId);
-      const album = albumMap.get(row.targetId);
+      const album = albumMap.get(row.containerId);
       results.push({
         row,
         kind: 'ready',

@@ -1,7 +1,7 @@
 import {
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { SystemUserRepository } from '../../repositories';
 import { NotificationStrategy, ResolvedNotification } from '../types';
@@ -20,10 +20,10 @@ export const build__NotificationNotificationMediaItemStrategy = ({
     return {
       recipients,
       actorId: event.actorId,
-      targetType: NotificationTargetType.mediaItem,
-      targetId: event.mediaItemIds[0],
-      sourceType: NotificationSourceType.mediaItem, // degenerate
-      sourceId: event.mediaItemIds[0],
+      containerType: NotificationContainerType.mediaItem,
+      containerId: event.mediaItemIds[0],
+      subjectType: NotificationSubjectType.mediaItem, // degenerate
+      subjectId: event.mediaItemIds[0],
       kind: NotificationKind.itemShared,
     };
   },

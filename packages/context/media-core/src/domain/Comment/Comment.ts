@@ -92,8 +92,8 @@ export class Comment extends AggregateRoot<CommentRecord> {
       'commentPosted',
       {
         commentId: comment.id(),
-        targetType: input.targetType,
-        targetId: input.targetId,
+        containerType: input.targetType,
+        containerId: input.targetId,
         authorId: input.authorId,
         parentCommentId: input.parentCommentId,
         parentAuthorId: input.parentAuthorId,
@@ -178,8 +178,8 @@ export class Comment extends AggregateRoot<CommentRecord> {
       this.recordEvent(
         'reactionAdded',
         {
-          targetId: this.id(),
-          targetType: EntityType.comment,
+          containerId: this.id(),
+          containerType: EntityType.comment,
           reactionKind: item.emoji,
         },
         actorId,

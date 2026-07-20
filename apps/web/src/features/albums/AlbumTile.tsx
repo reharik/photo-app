@@ -10,7 +10,7 @@ import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 
 type AlbumTileProps = {
   album: AlbumSummaryVM;
-  /** Derived from the viewer-level unseen-activity array (targetType=album). */
+  /** Derived from the viewer-level unseen-activity array (containerType=album). */
   hasUnseen?: boolean;
 };
 

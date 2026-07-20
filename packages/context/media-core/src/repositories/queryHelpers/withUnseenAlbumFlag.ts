@@ -9,10 +9,10 @@ export const withUnseenAlbumFlag =
     qb.select(
       db('inAppNotification as ua')
         .select(db.raw('1'))
-        // album-level unseen activity: the target IS the album (target_id === album.id).
+        // album-level unseen activity: the container IS the album (container_id === album.id).
         // (was keyed on the now-removed ua.album_id rollup column.)
-        .whereRaw('ua.target_id = album.id')
-        .where('ua.target_type', EntityType.album.value)
+        .whereRaw('ua.container_id = album.id')
+        .where('ua.container_type', EntityType.album.value)
         .where('ua.viewer_id', viewerId)
         .modify((sub) => {
           if (kinds) sub.whereIn('ua.activity_kind', kinds);

@@ -33,7 +33,7 @@ export const build__InAppWriter =
     const kind = n.kind as possibleInAppNotificationKinds;
     let item: MediaItemOwner;
     if (kind.equals(NotificationKind.replyPosted)) {
-      item = await systemMediaItemRepository.getMediaItemById(n.targetId);
+      item = await systemMediaItemRepository.getMediaItemById(n.containerId);
     }
     await Promise.all(
       n.recipients.map((r) => {
@@ -51,10 +51,10 @@ export const build__InAppWriter =
           id: crypto.randomUUID(),
           viewerId: r.id,
           actorId: n.actorId, // NEW — for "who" display + dot placement
-          targetType: n.targetType,
-          targetId: n.targetId,
-          sourceType: n.sourceType,
-          sourceId: n.sourceId,
+          containerType: n.containerType,
+          containerId: n.containerId,
+          subjectType: n.subjectType,
+          subjectId: n.subjectId,
           kind: n.kind,
           surface,
         });

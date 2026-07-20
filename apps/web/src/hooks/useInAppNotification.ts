@@ -58,8 +58,8 @@ export const useInAppNotification = (
     const targetSet = new Set<string>();
     const sourceSet = new Set<string>();
     for (const row of list) {
-      targetSet.add(`${row.targetType.value}:${row.targetId}`);
-      sourceSet.add(`${row.sourceType.value}:${row.sourceId}`);
+      targetSet.add(`${row.containerType.value}:${row.containerId}`);
+      sourceSet.add(`${row.subjectType.value}:${row.subjectId}`);
     }
     return {
       rows: list,

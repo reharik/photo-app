@@ -1,9 +1,9 @@
 import {
   ActivitySurface,
   InAppNotificationType,
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { Knex } from 'knex';
@@ -20,10 +20,10 @@ export type SystemInAppNotificationRepositoryDeps = {
 export type InAppNotification = {
   id: string;
   viewerId: EntityId;
-  targetType: NotificationTargetType;
-  targetId: EntityId;
-  sourceType: NotificationSourceType;
-  sourceId: EntityId;
+  containerType: NotificationContainerType;
+  containerId: EntityId;
+  subjectType: NotificationSubjectType;
+  subjectId: EntityId;
   kind: InAppNotificationType;
   actorId: EntityId;
   surface: ActivitySurface;
@@ -36,7 +36,7 @@ export const build__SystemInAppNotificationRepository = ({
   upsertActivityRow: async (upsert: InAppNotificationInput) => {
     await database('inAppNotification')
       .insert(prepareForDatabase({ ...upsert }))
-      .onConflict(['viewerId', 'targetType', 'targetId', 'sourceType', 'sourceId'])
+      .onConflict(['viewerId', 'containerType', 'containerId', 'subjectType', 'subjectId'])
       .ignore();
   },
 });

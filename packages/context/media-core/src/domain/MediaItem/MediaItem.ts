@@ -421,8 +421,8 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       this.recordEvent(
         'reactionAdded',
         {
-          targetId: this.id(),
-          targetType: EntityType.mediaItem,
+          containerId: this.id(),
+          containerType: EntityType.mediaItem,
           reactionKind: item.emoji,
         },
         actorId,

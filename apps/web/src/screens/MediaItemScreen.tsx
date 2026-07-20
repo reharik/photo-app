@@ -82,8 +82,8 @@ export const MediaItemScreen = () => {
     // (anyUnseenMatching is a dep and is stable per array).
     const hasSharedRow = anyUnseenMatching(
       (r) =>
-        r.targetType.equals(EntityType.mediaItem) &&
-        r.targetId === loadedMediaId &&
+        r.containerType.equals(EntityType.mediaItem) &&
+        r.containerId === loadedMediaId &&
         r.kind.equals(InAppNotificationType.itemShared),
     );
     if (!hasSharedRow) {
@@ -96,8 +96,8 @@ export const MediaItemScreen = () => {
         await apolloClient.mutate({
           mutation: MarkSurfaceSeenDocument,
           variables: {
-            targetType: EntityType.mediaItem,
-            targetId: loadedMediaId,
+            containerType: EntityType.mediaItem,
+            containerId: loadedMediaId,
             kind: InAppNotificationType.itemShared,
           },
         });

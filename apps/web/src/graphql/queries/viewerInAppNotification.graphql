@@ -3,10 +3,10 @@ query ViewerInAppNotification {
     id
     inAppNotification {
       id
-      targetType
-      targetId
-      sourceType
-      sourceId
+      containerType
+      containerId
+      subjectType
+      subjectId
       kind
       surface
     }

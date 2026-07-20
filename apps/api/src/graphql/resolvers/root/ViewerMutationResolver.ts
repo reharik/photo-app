@@ -11,11 +11,11 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     }),
 
     markSurfaceSeen: authenticatedWriteResolver(
-      async (_parent, { targetType, targetId, kind }, ctx) => {
+      async (_parent, { containerType, containerId, kind }, ctx) => {
         return ctx.writeServices.markActivitySeen.clearBySurface({
           viewerId: ctx.viewer.id,
-          targetType,
-          targetId,
+          containerType,
+          containerId,
           kind,
         });
       },

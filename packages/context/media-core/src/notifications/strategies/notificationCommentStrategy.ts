@@ -1,4 +1,4 @@
-import { NotificationKind, NotificationSourceType } from '@packages/contracts';
+import { NotificationKind, NotificationSubjectType } from '@packages/contracts';
 import {
   SystemCommentRepository,
   SystemMediaItemRepository,
@@ -26,7 +26,7 @@ export const build__NotificationCommentStrategy = ({
 
     const recipientId = isReply
       ? (await systemCommentRepository.getCommentById(event.parentCommentId!)).authorId
-      : (await systemMediaItemRepository.getMediaItemById(event.targetId)).ownerId;
+      : (await systemMediaItemRepository.getMediaItemById(event.containerId)).ownerId;
 
     // Hydrate for status so the self/active guards apply uniformly in the dispatcher.
     const [recipient] = await systemUserRepository.getUserContacts([recipientId]);
@@ -34,10 +34,10 @@ export const build__NotificationCommentStrategy = ({
     return {
       recipients: recipient ? [recipient] : [],
       actorId: event.authorId,
-      targetType: event.targetType, // the media item the comment is on
-      targetId: event.targetId,
-      sourceType: NotificationSourceType.comment, // source = the comment (first-class; no more data.commentId)
-      sourceId: event.commentId,
+      containerType: event.containerType, // the media item the comment is on
+      containerId: event.containerId,
+      subjectType: NotificationSubjectType.comment, // subject = the comment (first-class; no more data.commentId)
+      subjectId: event.commentId,
       kind: isReply ? NotificationKind.replyPosted : NotificationKind.commentPosted,
     };
   },

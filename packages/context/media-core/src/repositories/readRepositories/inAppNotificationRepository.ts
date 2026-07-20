@@ -2,8 +2,8 @@ import {
   ActivitySurface,
   EntityType,
   InAppNotificationType,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationContainerType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
@@ -12,9 +12,9 @@ import { EntityId } from '../../types';
 import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
 export type InAppNotificationSummary = {
-  /** Unseen activity on individually shared media items (target_type = mediaItem). */
+  /** Unseen activity on individually shared media items (container_type = mediaItem). */
   mediaItems: boolean;
-  /** Unseen activity on shared albums (target_type = album). */
+  /** Unseen activity on shared albums (container_type = album). */
   albums: boolean;
 };
 
@@ -22,26 +22,30 @@ export type InAppNotificationSummary = {
 const inAppNotificationFields = [
   'id',
   'viewerId',
-  'targetType',
-  'targetId',
-  'sourceType',
-  'sourceId',
+  'containerType',
+  'containerId',
+  'subjectType',
+  'subjectId',
   'kind',
   'surface',
 ];
 
 type DeleteWhereInput = {
   viewerId: EntityId;
-  targetType: EntityType;
-  targetId: EntityId;
+  containerType: EntityType;
+  containerId: EntityId;
   kind: InAppNotificationType;
 };
 
 export interface InAppNotificationRepository {
   getInAppNotification: (viewerId: EntityId) => Promise<InAppNotification[]>;
-  deleteWhere: ({ viewerId, targetType, targetId, kind }: DeleteWhereInput) => Promise<void>;
+  deleteWhere: ({ viewerId, containerType, containerId, kind }: DeleteWhereInput) => Promise<void>;
   deleteByIds: ({ viewerId, ids }: { viewerId: EntityId; ids: EntityId[] }) => Promise<void>;
-  markSeen: (targetType: EntityType, viewerId: EntityId, targetId?: EntityId) => Promise<void>;
+  markSeen: (
+    containerType: EntityType,
+    viewerId: EntityId,
+    containerId?: EntityId,
+  ) => Promise<void>;
 }
 
 type InAppNotificationRepositoryDeps = { database: Knex };
@@ -55,8 +59,8 @@ export const build__InAppNotificationRepository = ({
         .where({ viewerId })
         .select<InAppNotification[]>(inAppNotificationFields),
       {
-        targetType: NotificationTargetType,
-        sourceType: NotificationSourceType,
+        containerType: NotificationContainerType,
+        subjectType: NotificationSubjectType,
         kind: InAppNotificationType,
         surface: ActivitySurface,
       },
@@ -64,15 +68,15 @@ export const build__InAppNotificationRepository = ({
     ),
   deleteWhere: async ({
     viewerId,
-    targetType,
-    targetId,
+    containerType,
+    containerId,
     kind,
   }: DeleteWhereInput): Promise<void> => {
     await database('inAppNotification').delete().where(
       prepareForDatabase({
         viewerId,
-        targetType,
-        targetId,
+        containerType,
+        containerId,
         kind,
       }),
     );
@@ -87,13 +91,13 @@ export const build__InAppNotificationRepository = ({
     await database('inAppNotification').delete().where({ viewerId }).and.whereIn('id', ids);
   },
 
-  // Clears ALL unseen activity at this target (every activity_kind) for the
-  // viewer. Keyed on target_type + target_id only — opening an album must not
+  // Clears ALL unseen activity at this container (every activity_kind) for the
+  // viewer. Keyed on container_type + container_id only — opening an album must not
   // leave per-mediaItem (comment) dots behind, and vice versa.
-  markSeen: async (targetType: EntityType, viewerId: EntityId, targetId?: string) => {
-    const filterOnTargetId = targetId ? { targetId } : {};
+  markSeen: async (containerType: EntityType, viewerId: EntityId, containerId?: string) => {
+    const filterOnContainerId = containerId ? { containerId } : {};
     await database('inAppNotification')
       .delete()
-      .where({ targetType: targetType.value, ...filterOnTargetId, viewerId });
+      .where({ containerType: containerType.value, ...filterOnContainerId, viewerId });
   },
 });

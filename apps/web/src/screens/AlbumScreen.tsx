@@ -113,8 +113,8 @@ export const AlbumScreen = () => {
       (kind) =>
         anyUnseenMatching(
           (r) =>
-            r.targetType.equals(EntityType.album) &&
-            r.targetId === loadedAlbumId &&
+            r.containerType.equals(EntityType.album) &&
+            r.containerId === loadedAlbumId &&
             r.kind.equals(kind),
         ),
     );
@@ -129,7 +129,7 @@ export const AlbumScreen = () => {
           kinds.map((kind) =>
             apolloClient.mutate({
               mutation: MarkSurfaceSeenDocument,
-              variables: { targetType: EntityType.album, targetId: loadedAlbumId, kind },
+              variables: { containerType: EntityType.album, containerId: loadedAlbumId, kind },
             }),
           ),
         );

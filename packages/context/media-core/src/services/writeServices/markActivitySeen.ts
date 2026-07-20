@@ -5,8 +5,8 @@ import { WriteServiceBase } from './writeServiceBaseType';
 
 export type ClearBySurfaceCommand = {
   viewerId: EntityId;
-  targetType: EntityType;
-  targetId: EntityId;
+  containerType: EntityType;
+  containerId: EntityId;
   kind: InAppNotificationType;
 };
 
@@ -32,11 +32,16 @@ export const build__MarkActivitySeen = ({
 }: MarkActivitySeenDeps): MarkActivitySeen => {
   return {
     // inAppNotificationService
-    clearBySurface: async ({ viewerId, targetType, targetId, kind }: ClearBySurfaceCommand) => {
+    clearBySurface: async ({
+      viewerId,
+      containerType,
+      containerId,
+      kind,
+    }: ClearBySurfaceCommand) => {
       await inAppNotificationRepository.deleteWhere({
         viewerId,
-        targetType: targetType,
-        targetId,
+        containerType: containerType,
+        containerId,
         kind,
       });
       return ok({ success: true });

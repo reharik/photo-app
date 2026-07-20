@@ -16,7 +16,7 @@ export type CommentSection = CommentSectionItem[];
 
 export type ReactionItem = { reactorName: string; reactionTargetType: ReactionTargetKind };
 export type ReactionSection = {
-  targetId: string;
+  containerId: string;
   reactions: ReactionItem[];
 }[];
 

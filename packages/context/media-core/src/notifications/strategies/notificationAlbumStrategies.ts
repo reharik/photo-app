@@ -1,8 +1,8 @@
 import {
   EntityType,
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { SystemAuthorizationRepository, SystemUserRepository } from '../../repositories';
 import { NotificationStrategy, ResolvedNotification } from '../types';
@@ -31,10 +31,10 @@ export const build__NotificationAddedToAlbumStrategy = ({
     return {
       recipients,
       actorId: event.actorId,
-      targetType: NotificationTargetType.album,
-      targetId: event.albumId,
-      sourceType: NotificationSourceType.mediaItem, // source = the added item
-      sourceId: event.mediaItemId,
+      containerType: NotificationContainerType.album,
+      containerId: event.albumId,
+      subjectType: NotificationSubjectType.mediaItem, // subject = the added item
+      subjectId: event.mediaItemId,
       kind: NotificationKind.itemAdded,
     };
   },
@@ -53,10 +53,10 @@ export const build__NotificationAlbumSharedStrategy = ({
     return {
       recipients,
       actorId: event.actorId,
-      targetType: EntityType.album,
-      targetId: event.albumId,
-      sourceType: EntityType.album, // degenerate: source == target
-      sourceId: event.albumId,
+      containerType: EntityType.album,
+      containerId: event.albumId,
+      subjectType: EntityType.album, // degenerate: subject == container
+      subjectId: event.albumId,
       kind: NotificationKind.albumShared,
     };
   },

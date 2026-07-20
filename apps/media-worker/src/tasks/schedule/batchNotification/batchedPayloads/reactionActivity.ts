@@ -47,13 +47,13 @@ export const build__ReactionActivity = ({
       const reactorName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
       const line: ReactionItem = {
         reactorName,
-        reactionTargetType: row.targetType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
+        reactionTargetType: row.containerType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
       };
       return {
         row,
         result: 'resolved' as const,
         recipientId: row.recipientId,
-        targetItemId: row.targetId,
+        targetItemId: row.containerId,
         line,
       };
     });
@@ -69,8 +69,8 @@ export const build__ReactionActivity = ({
     const reactionSection = new Map<string, ReactionSection>();
     for (const [recipientId, rs] of byRecipient) {
       const byItem = groupByMapping(rs, (r) => r.targetItemId);
-      const items = [...byItem].map(([targetId, itemRs]) => ({
-        targetId,
+      const items = [...byItem].map(([containerId, itemRs]) => ({
+        containerId,
         reactions: itemRs.map((r) => r.line),
       }));
       reactionSection.set(recipientId, items);

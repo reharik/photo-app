@@ -1,7 +1,7 @@
 import {
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { SystemAuthorizationRepository, SystemUserRepository } from '../../repositories';
@@ -30,10 +30,10 @@ export const build__NotificationPublicLinkStrategy = ({
     return {
       recipients,
       actorId: event.actorId,
-      targetType: NotificationTargetType.album,
-      targetId: publicLinkAuthorization.target.albumId,
-      sourceType: NotificationSourceType.authorization,
-      sourceId: publicLinkAuthorization.id,
+      containerType: NotificationContainerType.album,
+      containerId: publicLinkAuthorization.target.albumId,
+      subjectType: NotificationSubjectType.authorization,
+      subjectId: publicLinkAuthorization.id,
       kind: NotificationKind.guestAlbumShared,
     };
   },

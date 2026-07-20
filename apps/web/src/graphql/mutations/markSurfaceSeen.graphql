@@ -1,5 +1,9 @@
-mutation MarkSurfaceSeen($targetType: EntityType!, $targetId: ID!, $kind: InAppNotificationType!) {
-  markSurfaceSeen(targetType: $targetType, targetId: $targetId, kind: $kind) {
+mutation MarkSurfaceSeen(
+  $containerType: EntityType!
+  $containerId: ID!
+  $kind: InAppNotificationType!
+) {
+  markSurfaceSeen(containerType: $containerType, containerId: $containerId, kind: $kind) {
     data {
       success
     }

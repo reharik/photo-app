@@ -24,12 +24,12 @@ export const build__NotificationReactionStrategy = ({
   branches: ['asyncWriter'], // <- the grid hole, as data
   resolve: async (event) => {
     let recipientId;
-    if (event.targetType.equals(EntityType.comment)) {
-      recipientId = (await systemCommentRepository.getCommentById(event.targetId)).authorId;
-    } else if (event.targetType.equals(EntityType.mediaItem)) {
-      recipientId = (await systemMediaItemRepository.getMediaItemById(event.targetId)).ownerId;
+    if (event.containerType.equals(EntityType.comment)) {
+      recipientId = (await systemCommentRepository.getCommentById(event.containerId)).authorId;
+    } else if (event.containerType.equals(EntityType.mediaItem)) {
+      recipientId = (await systemMediaItemRepository.getMediaItemById(event.containerId)).ownerId;
     } else {
-      throw new Error('[Notification recipientStrategy]: invalid target type');
+      throw new Error('[Notification recipientStrategy]: invalid container type');
     }
 
     const [recipient] = await systemUserRepository.getUserContacts([recipientId]);
@@ -37,10 +37,10 @@ export const build__NotificationReactionStrategy = ({
     return {
       recipients: recipient ? [recipient] : [],
       actorId: event.actorId,
-      targetType: event.targetType,
-      targetId: event.targetId,
-      sourceType: event.targetType, // degenerate: source == target
-      sourceId: event.targetId,
+      containerType: event.containerType,
+      containerId: event.containerId,
+      subjectType: event.containerType, // degenerate: subject == container
+      subjectId: event.containerId,
       kind: NotificationKind.reactionAdded,
     };
   },

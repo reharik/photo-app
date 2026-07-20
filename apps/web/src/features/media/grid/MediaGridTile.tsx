@@ -37,7 +37,7 @@ export type MediaGridTileProps = {
   buildTileHref?: (itemId: string) => string;
   /** When false, skip thumbnail fetch and show the kind placeholder (e.g. album with no cover). */
   hasThumbnail?: boolean;
-  /** Derived from the viewer-level unseen-activity array (targetType=mediaItem). */
+  /** Derived from the viewer-level unseen-activity array (containerType=mediaItem). */
   hasUnseen?: boolean;
 };
 

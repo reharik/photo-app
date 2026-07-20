@@ -79,9 +79,9 @@ export const CommentsForViewerMediaItemContainer = ({
       const ids = unseenRowsRef.current
         .filter(
           (row) =>
-            row.targetType.equals(EntityType.mediaItem) &&
-            row.targetId === mediaItemId &&
-            row.sourceType.equals(EntityType.comment),
+            row.containerType.equals(EntityType.mediaItem) &&
+            row.containerId === mediaItemId &&
+            row.subjectType.equals(EntityType.comment),
         )
         .map((row) => row.id);
       if (ids.length === 0) {

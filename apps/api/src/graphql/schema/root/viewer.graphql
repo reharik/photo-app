@@ -22,10 +22,10 @@ type Viewer {
 
 type InAppNotification {
   id: ID!
-  targetType: EntityType!
-  targetId: ID!
-  sourceType: EntityType!
-  sourceId: ID!
+  containerType: EntityType!
+  containerId: ID!
+  subjectType: EntityType!
+  subjectId: ID!
   kind: InAppNotificationType!
   surface: ActivitySurface!
 }

@@ -2,9 +2,9 @@ import {
   AsyncNotificationKind,
   EntityType,
   NotificationCadence,
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
@@ -36,10 +36,10 @@ export type AsyncNotification = {
   channel: 'email' | 'sms';
   kind: AsyncNotificationKind;
   recipientId: EntityId;
-  targetType: NotificationTargetType;
-  targetId: EntityId;
-  sourceType: NotificationSourceType;
-  sourceId: EntityId;
+  containerType: NotificationContainerType;
+  containerId: EntityId;
+  subjectType: NotificationSubjectType;
+  subjectId: EntityId;
   dirtySince: DateTime;
   attempts: number;
   actorId: EntityId;
@@ -51,10 +51,10 @@ const asyncNotificationFields = [
   'channel',
   'kind',
   'recipientId',
-  'targetType',
-  'targetId',
-  'sourceType',
-  'sourceId',
+  'containerType',
+  'containerId',
+  'subjectType',
+  'subjectId',
   'dirtySince',
   'attempts',
   'actorId',
@@ -71,7 +71,7 @@ export const build__SystemAsyncNotificationRepository = ({
   upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
     return database('asyncNotification')
       .insert({ ...prepareForDatabase(upsert), dirtySince: database.fn.now() })
-      .onConflict(['channel', 'kind', 'recipientId', 'targetType', 'targetId'])
+      .onConflict(['channel', 'kind', 'recipientId', 'containerType', 'containerId'])
       .merge({ dirtySince: database.fn.now() });
   },
   claimNotificationBatch: (windowSeconds: number) => {
@@ -87,8 +87,8 @@ export const build__SystemAsyncNotificationRepository = ({
         ),
       {
         kind: AsyncNotificationKind,
-        targetType: EntityType,
-        sourceType: EntityType,
+        containerType: EntityType,
+        subjectType: EntityType,
       },
       { strict: true },
     );
@@ -106,8 +106,8 @@ export const build__SystemAsyncNotificationRepository = ({
         ),
       {
         kind: AsyncNotificationKind,
-        targetType: EntityType,
-        sourceType: EntityType,
+        containerType: EntityType,
+        subjectType: EntityType,
       },
       { strict: true },
     );

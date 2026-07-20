@@ -1,7 +1,7 @@
 import {
+  NotificationContainerType,
   NotificationKind,
-  NotificationSourceType,
-  NotificationTargetType,
+  NotificationSubjectType,
 } from '@packages/contracts';
 import { DomainEvent } from '../domain';
 import { UserContact } from '../repositories';
@@ -18,10 +18,10 @@ export type Recipient = Pick<UserContact, 'id' | 'userStatus'>;
 export type ResolvedNotification = {
   recipients: Recipient[];
   actorId: EntityId;
-  targetType: NotificationTargetType; // container / context
-  targetId: EntityId;
-  sourceType: NotificationSourceType; // most-specific entity; == target when none finer; authorization for token cases
-  sourceId: EntityId;
+  containerType: NotificationContainerType; // container / context
+  containerId: EntityId;
+  subjectType: NotificationSubjectType; // most-specific entity; == container when none finer; authorization for token cases
+  subjectId: EntityId;
   kind: NotificationKind; // resolved here — the reply/root fork is already applied
 };
 

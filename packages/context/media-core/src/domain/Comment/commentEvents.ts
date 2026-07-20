@@ -1,4 +1,4 @@
-import { EntityType, NotificationTargetType, ReactionEmoji } from '@packages/contracts';
+import { EntityType, NotificationContainerType, ReactionEmoji } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 import { EntityId } from '../../types/types';
 import { DomainEventBase } from '../domainEvents/DomainEvent';
@@ -8,8 +8,8 @@ export type CommentSourceType = EnumSubset<EntityType, 'mediaItem' | 'comment'>;
 export interface CommentPosted extends DomainEventBase {
   kind: 'commentPosted';
   commentId: EntityId;
-  targetType: CommentTargetType;
-  targetId: EntityId;
+  containerType: CommentTargetType;
+  containerId: EntityId;
   authorId: EntityId;
   parentCommentId?: EntityId;
   parentAuthorId?: EntityId;
@@ -17,7 +17,7 @@ export interface CommentPosted extends DomainEventBase {
 
 export interface ReactionAdded extends DomainEventBase {
   kind: 'reactionAdded';
-  targetType: NotificationTargetType;
-  targetId: EntityId;
+  containerType: NotificationContainerType;
+  containerId: EntityId;
   reactionKind: ReactionEmoji;
 }

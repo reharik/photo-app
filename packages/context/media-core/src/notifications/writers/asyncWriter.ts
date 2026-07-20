@@ -28,10 +28,10 @@ export const build__AsyncWriter =
           kind: n.kind,
           recipientId: r.id,
           actorId: n.actorId,
-          targetType: n.targetType, // was aggregateType
-          targetId: n.targetId, // was aggregateId
-          sourceType: n.sourceType,
-          sourceId: n.sourceId,
+          containerType: n.containerType, // was aggregateType
+          containerId: n.containerId, // was aggregateId
+          subjectType: n.subjectType,
+          subjectId: n.subjectId,
           attempts: 0,
         }),
       ),

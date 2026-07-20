@@ -24,13 +24,13 @@ export const NotificationKind = enumeration<typeof input>('NotificationKind', {
   input,
 });
 
-export type NotificationTargetType = EnumSubset<EntityType, 'album' | 'comment' | 'mediaItem'>;
-export type NotificationSourceType = EnumSubset<
+export type NotificationContainerType = EnumSubset<EntityType, 'album' | 'comment' | 'mediaItem'>;
+export type NotificationSubjectType = EnumSubset<
   EntityType,
   'album' | 'comment' | 'mediaItem' | 'authorization' | 'reaction'
 >;
-export const NotificationTargetType = pickEnum(EntityType, ['album', 'comment', 'mediaItem']);
-export const NotificationSourceType = pickEnum(EntityType, [
+export const NotificationContainerType = pickEnum(EntityType, ['album', 'comment', 'mediaItem']);
+export const NotificationSubjectType = pickEnum(EntityType, [
   'album',
   'comment',
   'mediaItem',

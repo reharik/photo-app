@@ -1,8 +1,8 @@
 type Mutation {
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   markSurfaceSeen(
-    targetType: EntityType!
-    targetId: ID!
+    containerType: EntityType!
+    containerId: ID!
     kind: InAppNotificationType!
   ): MarkSeenResponse!
   markItemsSeen(ids: [ID!]!): MarkSeenResponse!

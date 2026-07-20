@@ -72,7 +72,7 @@ const ReactionSectionView = ({ data }: { data: ReactionSection }): ReactElement 
     {data.map((group) => {
       const target = group.reactions[0]?.reactionTargetType;
       return (
-        <Text key={group.targetId} style={albumItem}>
+        <Text key={group.containerId} style={albumItem}>
           {formatReactors(group.reactions)} reacted to your{' '}
           {target ? target.display.toLowerCase() : 'content'}
         </Text>
