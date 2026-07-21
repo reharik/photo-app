@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
@@ -69,7 +70,7 @@ export const Toast = ({ message = 'Changes saved', onDismiss }: ToastProps): Rea
     <Bar role="status" aria-live="polite" $shown={shown}>
       <Text>{message}</Text>
       <Close type="button" aria-label="Dismiss notification" onClick={startExit}>
-        ×
+        <X size={20} strokeWidth={2} aria-hidden />
       </Close>
     </Bar>
   );

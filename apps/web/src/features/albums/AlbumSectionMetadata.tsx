@@ -5,7 +5,7 @@ import {
   Operation,
   SortDir,
 } from '@packages/contracts';
-import { Camera, ChevronDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, Camera, ChevronDown } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useEffect, useRef, useState } from 'react';
 import { css, styled } from 'styled-components';
@@ -83,7 +83,7 @@ const groupByLabel = (groupBy: AlbumGroupBy): string =>
   GROUP_BY_OPTIONS.find((option) => option.value === groupBy)?.label ?? 'None';
 
 const sortDirLabel = (sortDir: SortDir): string =>
-  sortDir.equals(SortDir.desc) ? '↓ Newest first' : '↑ Oldest first';
+  sortDir.equals(SortDir.desc) ? 'Newest first' : 'Oldest first';
 
 const noopMultiSelect: MultiSelectProps = {
   isSelected: () => false,
@@ -218,6 +218,11 @@ export const AlbumSectionMetadata = ({
           aria-label={sortDirLabel(sortDir)}
           onClick={() => onSortDirChange(sortDir.equals(SortDir.desc) ? SortDir.asc : SortDir.desc)}
         >
+          {sortDir.equals(SortDir.desc) ? (
+            <ArrowDown size={14} strokeWidth={2} aria-hidden />
+          ) : (
+            <ArrowUp size={14} strokeWidth={2} aria-hidden />
+          )}
           {sortDirLabel(sortDir)}
         </PickerTextControl>
       </AlbumSortPickerRow>

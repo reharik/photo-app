@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
 import type { Key, Selection } from 'react-aria-components';
 import {
@@ -353,7 +353,7 @@ export const MultiCombobox = ({
                     aria-label={`Remove ${item.display}`}
                     isDisabled={disabled}
                   >
-                    ×
+                    <X size={14} strokeWidth={2} aria-hidden />
                   </RemoveButton>
                 </Tag>
               );

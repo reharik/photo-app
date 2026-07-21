@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import styled from 'styled-components';
 
 type MediaGridSelectionToggleProps = {
@@ -35,7 +36,11 @@ export const MediaGridSelectionToggle = ({
         onToggle();
       }}
     >
-      {selected ? <CheckGlyph aria-hidden>✓</CheckGlyph> : null}
+      {selected ? (
+        <CheckGlyph aria-hidden>
+          <Check size={14} strokeWidth={2.5} aria-hidden />
+        </CheckGlyph>
+      ) : null}
     </ToggleButton>
   );
 };
@@ -107,7 +112,7 @@ const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boole
 `;
 
 const CheckGlyph = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;

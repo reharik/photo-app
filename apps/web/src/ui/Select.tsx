@@ -1,4 +1,5 @@
 import * as RadixSelect from '@radix-ui/react-select';
+import { ChevronDown } from 'lucide-react';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -50,7 +51,9 @@ export const Select = <T,>({
           <TriggerButton type="button" $hasError={hasError}>
             <RadixSelect.Value placeholder={placeholder} />
             <RadixSelect.Icon>
-              <Chevron aria-hidden="true">▾</Chevron>
+              <Chevron aria-hidden="true">
+                <ChevronDown size={16} strokeWidth={2} aria-hidden />
+              </Chevron>
             </RadixSelect.Icon>
           </TriggerButton>
         </RadixSelect.Trigger>
@@ -125,6 +128,8 @@ const TriggerButton = styled.button<{ $hasError: boolean }>`
 `;
 
 const Chevron = styled.span`
+  display: inline-flex;
+  align-items: center;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;
 

@@ -1,4 +1,5 @@
 import { ReactionEmoji } from '@packages/contracts';
+import { X } from 'lucide-react';
 import { forwardRef, useCallback, useImperativeHandle } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -148,7 +149,7 @@ export const PublicMediaItemDetailPanel = forwardRef<
       <DescriptiveMetadataZone>
         <RailHeader>
           <DetailsPanelCloseButton type="button" onClick={onDismissScreen} aria-label="Close">
-            ✕
+            <X size={20} strokeWidth={2} aria-hidden />
           </DetailsPanelCloseButton>
         </RailHeader>
 

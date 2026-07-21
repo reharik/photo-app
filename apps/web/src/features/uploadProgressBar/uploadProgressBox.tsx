@@ -1,4 +1,5 @@
 import { FrontendUploadStatus } from '@packages/contracts';
+import { Check, ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
@@ -174,7 +175,13 @@ const UploadProgressPanel = ({
       <Header>
         <HeaderButton type="button" onClick={onToggleExpanded} aria-expanded={expanded}>
           <HeaderLeading>
-            {showSpinner ? <Spinner aria-hidden /> : <SuccessMark aria-hidden>✓</SuccessMark>}
+            {showSpinner ? (
+              <Spinner aria-hidden />
+            ) : (
+              <SuccessMark aria-hidden>
+                <Check size={12} strokeWidth={2.5} aria-hidden />
+              </SuccessMark>
+            )}
             <HeaderText>
               <SummaryRow>
                 <Summary>{summary}</Summary>
@@ -183,7 +190,7 @@ const UploadProgressPanel = ({
             </HeaderText>
           </HeaderLeading>
           <Chevron aria-hidden $expanded={expanded}>
-            ▾
+            <ChevronDown size={16} strokeWidth={2} aria-hidden />
           </Chevron>
         </HeaderButton>
       </Header>
@@ -304,7 +311,8 @@ const SubSummary = styled.div`
 
 const Chevron = styled.span<{ $expanded: boolean }>`
   flex-shrink: 0;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   transform: rotate(${(p) => (p.$expanded ? '180deg' : '0')});
   transition: transform 0.15s ease;
