@@ -1,3 +1,4 @@
+import { Camera, Image, Lock, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -216,19 +217,27 @@ export const LoggedOutScreen = () => {
           </BrandSection>
           <FeatureList>
             <Feature>
-              <FeatureIcon>📸</FeatureIcon>
+              <FeatureIcon>
+                <Camera size={24} strokeWidth={2} aria-hidden />
+              </FeatureIcon>
               <FeatureText>All your photos in one place</FeatureText>
             </Feature>
             <Feature>
-              <FeatureIcon>🖼️</FeatureIcon>
+              <FeatureIcon>
+                <Image size={24} strokeWidth={2} aria-hidden />
+              </FeatureIcon>
               <FeatureText>Share with family and friends</FeatureText>
             </Feature>
             <Feature>
-              <FeatureIcon>🔒</FeatureIcon>
+              <FeatureIcon>
+                <Lock size={24} strokeWidth={2} aria-hidden />
+              </FeatureIcon>
               <FeatureText>Private and secure</FeatureText>
             </Feature>
             <Feature>
-              <FeatureIcon>📱</FeatureIcon>
+              <FeatureIcon>
+                <Smartphone size={24} strokeWidth={2} aria-hidden />
+              </FeatureIcon>
               <FeatureText>Access anywhere</FeatureText>
             </Feature>
           </FeatureList>
@@ -501,7 +510,9 @@ const Feature = styled.div`
 `;
 
 const FeatureIcon = styled.div`
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  color: ${({ theme }) => theme.color.textAccent};
 `;
 
 const FeatureText = styled.div`
