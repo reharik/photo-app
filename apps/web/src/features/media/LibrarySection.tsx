@@ -21,6 +21,7 @@ import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { FilmRollMark } from '../../ui/FilmRollMark';
 import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
@@ -191,6 +192,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<FilmRollMark />}
               title="No media yet"
               text="Upload your first media to start building your family gallery"
               action={<UploadMediaButton />}

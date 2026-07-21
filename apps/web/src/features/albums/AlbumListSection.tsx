@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
+import { FilmRollMark } from '../../ui/FilmRollMark';
 import { AlbumSummaryVM } from '../../viewModels/';
 import { ALBUM_LIST_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
@@ -58,6 +59,7 @@ export const AlbumListSection = ({
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<FilmRollMark />}
               title="No albums yet"
               text="Create an album to organize your media."
               action={

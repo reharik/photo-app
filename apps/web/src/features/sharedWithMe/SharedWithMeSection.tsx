@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { EmptyState } from '../../ui/EmptyState';
+import { FilmRollMark } from '../../ui/FilmRollMark';
 import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
@@ -39,6 +40,7 @@ export const SharedWithMeSection = ({
         {sharedWithMeMediaItems.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<FilmRollMark />}
               title="No shared media"
               text="When someone shares individual photos or videos with you, they will show up here."
             />

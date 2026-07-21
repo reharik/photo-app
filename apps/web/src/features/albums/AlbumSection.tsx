@@ -12,6 +12,7 @@ import { AppModal } from '../../ui/AppModal';
 import { Button } from '../../ui/Button';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { FilmRollMark } from '../../ui/FilmRollMark';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
@@ -224,6 +225,7 @@ export const AlbumSection = ({
       >
         {albumItems.length === 0 ? (
           <EmptyState
+            illustration={<FilmRollMark />}
             title="No album items yet"
             text="Start choosing media items to include to build your gallery"
             action={
