@@ -118,6 +118,7 @@ const Title = styled.h3`
 
 const Meta = styled.p`
   margin: 0;
+  font-family: ${({ theme }) => theme.font.mono};
   font-size: ${({ theme }) => theme.fontSize._13};
   line-height: 1.4;
   color: ${({ theme }) => theme.color.bodyTextMuted};

@@ -1,3 +1,4 @@
+import { ChevronRight } from 'lucide-react';
 import { type JSX, useState } from 'react';
 import styled from 'styled-components';
 
@@ -27,7 +28,7 @@ export const PhotoDetailsDisclosure = ({
       >
         <ToggleLabel>Item details</ToggleLabel>
         <Chevron aria-hidden $expanded={expanded}>
-          ›
+          <ChevronRight size={16} strokeWidth={2} aria-hidden />
         </Chevron>
       </ToggleButton>
       {expanded && rows.length > 0 ? (
@@ -80,9 +81,8 @@ const ToggleLabel = styled.span`
 `;
 
 const Chevron = styled.span<{ $expanded: boolean }>`
-  display: inline-block;
-  font-size: ${({ theme }) => theme.fontSize._16};
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
   transform: rotate(${({ $expanded }) => ($expanded ? '90deg' : '0deg')});
   transition: transform 0.15s ease;
 `;
@@ -108,6 +108,7 @@ const RowLabel = styled.span`
 `;
 
 const RowValue = styled.span`
+  font-family: ${({ theme }) => theme.font.mono};
   font-size: ${({ theme }) => theme.fontSize._13};
   color: ${({ theme }) => theme.color.textMuted};
 `;
