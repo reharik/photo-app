@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
-import { FilmRollMark } from '../../ui/FilmRollMark';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { PICKER_GRID_COLUMNS } from './grid/gridColumns';
 import { MediaGrid } from './grid/MediaGrid';
@@ -53,7 +53,7 @@ export const MediaSelectorSection = ({
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
-              illustration={<FilmRollMark />}
+              illustration={<HeroIllustration />}
               title="No media items to add"
               text="No media items to add"
             />

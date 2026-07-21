@@ -501,7 +501,7 @@ const MobileBrowseTitle = styled.h2`
 
 const MobileBrowseSubtitle = styled.p`
   margin: 0;
-  font-family: ${({ theme }) => theme.font.mono};
+  font-variant-numeric: tabular-nums;
   font-size: ${({ theme }) => theme.fontSize._13};
   line-height: 1.4;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
@@ -588,7 +588,7 @@ const AlbumTitle = styled.h2`
 
 const AlbumCompactSummary = styled.p`
   margin: 0;
-  font-family: ${({ theme }) => theme.font.mono};
+  font-variant-numeric: tabular-nums;
   font-size: 13px;
   line-height: 1.4;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
@@ -606,12 +606,12 @@ const AlbumStats = styled.div`
 `;
 
 const Stat = styled.span`
-  font-family: ${({ theme }) => theme.font.mono};
+  font-variant-numeric: tabular-nums;
 `;
 
 const AlbumDescription = styled.p`
   margin: 0;
-  font-family: ${({ theme }) => theme.font.mono};
+  font-variant-numeric: tabular-nums;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   line-height: 1.6;
 `;

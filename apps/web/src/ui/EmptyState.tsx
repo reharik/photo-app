@@ -36,14 +36,18 @@ const EmptyStateContainer = styled.div`
 
 const EmptyIllustration = styled.div`
   display: flex;
+  /* Pull the headline up toward the illustration so they read as one unit. */
+  margin-bottom: -${({ theme }) => theme.spacing(1)};
   color: ${({ theme }) => theme.color.textAccent};
-  opacity: 0.85;
 
+  /* Softening is only for the line-art fallback (FilmRollMark); raster
+     illustrations render at full strength. */
   svg {
     display: block;
     width: auto;
     max-width: 100%;
     height: auto;
+    opacity: 0.85;
   }
 `;
 

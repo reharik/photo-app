@@ -2,7 +2,7 @@ import { EntityType } from '@packages/contracts';
 import styled from 'styled-components';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { EmptyState } from '../../ui/EmptyState';
-import { FilmRollMark } from '../../ui/FilmRollMark';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { AlbumSummaryVM } from '../../viewModels/';
 import { AlbumTile } from '../albums/AlbumTile';
 import { ALBUM_LIST_COLUMNS } from '../media/grid/gridColumns';
@@ -33,7 +33,7 @@ export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) =
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
-              illustration={<FilmRollMark />}
+              illustration={<HeroIllustration />}
               title="No shared albums"
               text="When someone shares an album with you, it will show up here."
             />

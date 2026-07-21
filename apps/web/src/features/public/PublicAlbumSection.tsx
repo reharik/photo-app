@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { EmptyState } from '../../ui/EmptyState';
-import { FilmRollMark } from '../../ui/FilmRollMark';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { PublicAlbumItemSummaryVM, PublicAlbumSummaryVM } from '../../viewModels/';
 import { AlbumSectionMetadata } from '../albums/AlbumSectionMetadata';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
@@ -67,7 +67,7 @@ export const PublicAlbumSection = ({
       >
         {albumItems.length === 0 ? (
           <EmptyState
-            illustration={<FilmRollMark />}
+            illustration={<HeroIllustration />}
             title="No album items yet"
             text="Start choosing media items to include to build your gallery"
           />
