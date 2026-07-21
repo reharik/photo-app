@@ -1,4 +1,5 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { Film, Image, Layers } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
@@ -10,9 +11,6 @@ import { MediaGridTileReactionPill, ReactionHoverPill } from './MediaGridTileRea
 export type MediaGridTileFit = 'cover' | 'contain';
 
 const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
-
-const placeholderIconForKind = (kind: MediaKind): string =>
-  kind.equals(MediaKind.photo) ? '🖼️' : '🎬';
 
 export type MediaGridTileItem = {
   id: string;
@@ -61,7 +59,8 @@ export const MediaGridTile = ({
   const thumbnailUrl = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   /** Used for data-testid on the thumbnail. */
   const testId = item.id;
-  const placeholderIcon = placeholderIconForKind(item.kind);
+  const PlaceholderIcon = item.kind.equals(MediaKind.photo) ? Image : Film;
+  const placeholderIconSize = isContain ? 32 : 40;
   const showThumbnailImage = item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
 
   useEffect(() => {
@@ -80,12 +79,12 @@ export const MediaGridTile = ({
         />
       ) : (
         <ThumbIcon aria-hidden $contain={isContain} data-testid={testId}>
-          {placeholderIcon}
+          <PlaceholderIcon size={placeholderIconSize} strokeWidth={2} aria-hidden />
         </ThumbIcon>
       )}
       {showBurstBadge ? (
         <BurstBadge aria-hidden>
-          <BurstIcon>⧉</BurstIcon>
+          <Layers size={10} strokeWidth={2} aria-hidden />
           <BurstCount>{burstCount}</BurstCount>
         </BurstBadge>
       ) : null}
@@ -206,17 +205,17 @@ const ThumbImage = styled.img<{ $contain: boolean }>`
 `;
 
 const ThumbIcon = styled.div<{ $contain: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.color.textAccent};
   opacity: 0.35;
-  font-size: ${({ $contain }) => ($contain ? '32px' : '40px')};
   ${({ $contain, theme }) =>
     $contain
       ? ''
       : `
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: ${theme.color.bodyElevated};
   `}
 `;
@@ -224,11 +223,6 @@ const ThumbIcon = styled.div<{ $contain: boolean }>`
 const BurstBadge = styled(TileChromePill)`
   right: ${({ theme }) => theme.spacing(0.75)};
   bottom: ${({ theme }) => theme.spacing(0.75)};
-`;
-
-const BurstIcon = styled.span`
-  font-size: 10px;
-  line-height: 1;
 `;
 
 const BurstCount = styled.span`

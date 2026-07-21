@@ -1,4 +1,5 @@
 import { MediaKind } from '@packages/contracts';
+import { FileText, Film } from 'lucide-react';
 import styled from 'styled-components';
 import { ImageRenderer } from './ImageRenderer';
 
@@ -32,7 +33,9 @@ export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: Medi
   if (isVideoLike(kind, mimeType)) {
     return (
       <UnsupportedBlock>
-        <UnsupportedIcon aria-hidden>🎬</UnsupportedIcon>
+        <UnsupportedIcon aria-hidden>
+          <Film size={48} strokeWidth={2} aria-hidden />
+        </UnsupportedIcon>
         <UnsupportedTitle>Video playback isn’t available yet</UnsupportedTitle>
         <UnsupportedHint>
           This item opens here for details; a player will be added later.
@@ -43,7 +46,9 @@ export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: Medi
 
   return (
     <UnsupportedBlock>
-      <UnsupportedIcon aria-hidden>📄</UnsupportedIcon>
+      <UnsupportedIcon aria-hidden>
+        <FileText size={48} strokeWidth={2} aria-hidden />
+      </UnsupportedIcon>
       <UnsupportedTitle>Preview not available</UnsupportedTitle>
       <UnsupportedHint>This media type can’t be shown in the viewer yet.</UnsupportedHint>
     </UnsupportedBlock>
@@ -60,7 +65,8 @@ const UnsupportedBlock = styled.div`
 `;
 
 const UnsupportedIcon = styled.div`
-  font-size: 48px;
+  display: flex;
+  color: ${({ theme }) => theme.color.textAccent};
   opacity: 0.35;
 `;
 
