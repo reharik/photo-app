@@ -517,12 +517,21 @@ const MobileBrowseActions = styled.div`
   flex-shrink: 0;
 `;
 
+// Print treatment: warm matte + warm drop shadow + inner-edge inset ring so the
+// header cover reads as a framed print. No stacked sheets here — this cover sits
+// inline in the header row (and as a 52px compact chip) where outward-fanned
+// sheets would collide with the adjacent title/meta; the matte + shadow carry
+// the print feel. `overflow: hidden` clips the image to the matte inner edge but
+// not the element's own outer drop shadow, so the warm shadow still shows.
 const AlbumCover = styled.div<{ $compact: boolean }>`
   flex-shrink: 0;
-  background: ${({ theme }) => theme.color.bodyRaised};
-  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.print};
+  padding: ${({ theme, $compact }) => ($compact ? '2px' : theme.spacing(0.75))};
   border-radius: ${({ theme, $compact }) =>
     $compact ? theme.borderRadius.md : theme.borderRadius.lg};
+  box-shadow:
+    ${({ theme }) => theme.boxShadow.print},
+    inset 0 0 0 1px ${({ theme }) => theme.color.borderSubtle};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -546,7 +555,8 @@ const CoverPlaceholder = styled.div<{ $compact: boolean }>`
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: ${({ theme }) => theme.color.bodyElevated};
+  /* Print (white) so an empty cover reads as a blank print, not cream-in-white. */
+  background: ${({ theme }) => theme.color.print};
   color: ${({ theme }) => theme.color.bodyTextMuted};
 `;
 

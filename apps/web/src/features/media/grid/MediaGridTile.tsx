@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
+import { printTileMatte, TILE_MATTE_VAR } from '../../../ui/Print';
 import { UnseenDot } from '../../../ui/UnseenDot';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 import { MediaGridTileReactionPill, ReactionHoverPill } from './MediaGridTileReactionPill';
@@ -96,7 +97,12 @@ export const MediaGridTile = ({
         buildTileHref={buildTileHref}
         onReactionsRefetch={onReactionsRefetch}
       />
-      {hasUnseen ? <UnseenDot /> : null}
+      {hasUnseen ? (
+        <UnseenDot
+          top={`calc(${TILE_MATTE_VAR} + 8px)`}
+          right={`calc(${TILE_MATTE_VAR} + 8px)`}
+        />
+      ) : null}
     </>
   );
 
@@ -150,9 +156,13 @@ const thumbFrameContainStyles = css`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.color.bodyElevated};
 `;
 
+// CALM print: the photo reads as a small print via a thin warm matte + inner
+// inset ring (printTileMatte). No outward shadow/stack/lift — the deepened grid
+// gap does the separating. Contain-mode letterboxing now happens on the print
+// matte itself, so a contained photo sits on a white mat (framed-print look)
+// instead of the old grey bodyElevated fill.
 const thumbFrameBaseStyles = css`
   position: relative;
   display: block;
@@ -161,6 +171,7 @@ const thumbFrameBaseStyles = css`
   overflow: hidden;
   border-radius: 3px;
   color: inherit;
+  ${printTileMatte}
 
   @media (hover: hover) {
     &:hover ${ReactionHoverPill} {
@@ -220,9 +231,11 @@ const ThumbIcon = styled.div<{ $contain: boolean }>`
   `}
 `;
 
+// Offset inward by the (responsive) tile matte (like the reaction pill) so the
+// badge sits within the photo area, not on the mat. Inherits --tile-matte.
 const BurstBadge = styled(TileChromePill)`
-  right: ${({ theme }) => theme.spacing(0.75)};
-  bottom: ${({ theme }) => theme.spacing(0.75)};
+  right: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+  bottom: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
 `;
 
 const BurstCount = styled.span`

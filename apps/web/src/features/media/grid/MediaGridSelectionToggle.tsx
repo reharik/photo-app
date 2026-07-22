@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react';
 import styled from 'styled-components';
+import { tileMatteVars } from '../../../ui/Print';
 
 type MediaGridSelectionToggleProps = {
   selected: boolean;
@@ -46,9 +47,14 @@ export const MediaGridSelectionToggle = ({
 };
 
 const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boolean }>`
+  ${tileMatteVars}
   position: absolute;
-  top: ${({ $selected }) => ($selected ? '7px' : '8px')};
-  right: ${({ $selected }) => ($selected ? '7px' : '8px')};
+  /* Offset inward by the (responsive) tile matte so the ring sits within the
+     photo, not on the mat — matches the reaction pill / unseen dot / burst
+     badge. This ring is a sibling of the tile frame (not a descendant), so it
+     sets --tile-matte on itself rather than inheriting it. */
+  top: ${({ $selected }) => `calc(var(--tile-matte) + ${$selected ? 7 : 8}px)`};
+  right: ${({ $selected }) => `calc(var(--tile-matte) + ${$selected ? 7 : 8}px)`};
   width: ${({ $selected }) => ($selected ? '20px' : '18px')};
   height: ${({ $selected }) => ($selected ? '20px' : '18px')};
   padding: 0;

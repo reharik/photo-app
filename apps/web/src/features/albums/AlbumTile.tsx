@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
+import { Print } from '../../ui/Print';
 import { UnseenDot } from '../../ui/UnseenDot';
 import type { AlbumSummaryVM } from '../../viewModels/';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
@@ -28,21 +29,25 @@ export const AlbumTile = ({ album, hasUnseen = false }: AlbumTileProps) => {
   return (
     <TileRoot>
       <ThumbLink to={`/albums/${album.id}`}>
-        <Cover>
-          {showCoverImage ? (
-            <CoverImage
-              src={thumbnailUrl}
-              data-testid={coverMediaId}
-              alt=""
-              onError={() => setThumbLoadFailed(true)}
-            />
-          ) : (
-            <CoverPlaceholder aria-hidden>
-              <Camera size={28} strokeWidth={1.75} aria-hidden />
-            </CoverPlaceholder>
-          )}
-          {hasUnseen ? <UnseenDot /> : null}
-        </Cover>
+        <CoverFrame>
+          <Print>
+            <Cover>
+              {showCoverImage ? (
+                <CoverImage
+                  src={thumbnailUrl}
+                  data-testid={coverMediaId}
+                  alt=""
+                  onError={() => setThumbLoadFailed(true)}
+                />
+              ) : (
+                <CoverPlaceholder aria-hidden>
+                  <Camera size={28} strokeWidth={1.75} aria-hidden />
+                </CoverPlaceholder>
+              )}
+              {hasUnseen ? <UnseenDot /> : null}
+            </Cover>
+          </Print>
+        </CoverFrame>
         <Caption>
           <Title>{album.title}</Title>
           <Meta>{buildAlbumBrowseSubtitle(album.itemCount, album.updatedAt)}</Meta>
@@ -67,14 +72,22 @@ const ThumbLink = styled(Link)`
   color: inherit;
 `;
 
+// Insets the print from the tile edge so its stacked sheets, warm shadow, and
+// hover lift have room to render. This is a compromise: the grid wraps every
+// tile in MediaGridSelectableItem's ThumbFrame (overflow: hidden), which clips
+// anything bleeding past the tile edge — so the print is inset here rather than
+// allowed to fan into the grid gutter. See report for the alternative.
+const CoverFrame = styled.div`
+  padding: ${({ theme }) => theme.spacing(1.5)};
+`;
+
 const Cover = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   flex-shrink: 0;
   background: ${({ theme }) => theme.color.bodyRaised};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +107,8 @@ const CoverPlaceholder = styled.div`
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: ${({ theme }) => theme.color.bodyElevated};
+  /* Print (white) so an empty cover reads as a blank print, not cream-in-white. */
+  background: ${({ theme }) => theme.color.print};
   color: ${({ theme }) => theme.color.bodyTextMuted};
 `;
 
@@ -103,6 +117,8 @@ const Caption = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.25)};
   min-width: 0;
+  /* Match CoverFrame's padding so title/meta align with the mat's outer edge. */
+  padding: 0 ${({ theme }) => theme.spacing(1.5)};
 `;
 
 const Title = styled.h3`

@@ -4,6 +4,7 @@ import type { MouseEvent } from 'react';
 import styled from 'styled-components';
 import { useAppMutationState } from '../../../hooks/useAppMutation';
 import { useReactionHandlers } from '../../../hooks/useReactionHandlers';
+import { TILE_MATTE_VAR } from '../../../ui/Print';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 
 export type MediaGridTileReactionPillProps = {
@@ -144,8 +145,10 @@ const InteractiveReactionPill = ({
 /** Exported for tile hover selector in {@link MediaGridTile}. */
 export const ReactionHoverPill = styled.div<{ $interactive: boolean; $alwaysVisible: boolean }>`
   position: absolute;
-  left: ${({ theme }) => theme.spacing(0.75)};
-  bottom: ${({ theme }) => theme.spacing(0.75)};
+  /* Offset inward by the (responsive) tile matte so the pill sits within the
+     photo, not on the mat. Inherits --tile-matte from the tile frame. */
+  left: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+  bottom: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
   display: inline-flex;
   align-items: center;
   gap: 7px;

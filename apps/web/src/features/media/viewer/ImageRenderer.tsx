@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { printLightboxMatte } from '../../../ui/Print';
 
 export type ImageRendererProps = {
   id: string;
@@ -20,12 +21,16 @@ export const ImageRenderer = ({ id, src, alt }: ImageRendererProps) => {
   );
 };
 
+// Thin print matte on the dark stage: the <img> box tracks the photo aspect
+// (no internal letterbox), so the matte hugs the photo — a print resting on the
+// stage rather than a bare image floating on the dark.
 const StyledImg = styled.img`
   display: block;
   width: auto;
   max-width: 100%;
   height: auto;
   object-fit: contain;
+  ${printLightboxMatte}
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;

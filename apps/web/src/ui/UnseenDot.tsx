@@ -3,12 +3,15 @@ import styled from 'styled-components';
 type UnseenDotProps = {
   /** Diameter in px. Default 10. */
   size?: number;
-  /** Offset from the top edge in px (may be negative to overhang). Default 8. */
-  top?: number;
-  /** Offset from the right edge in px (may be negative to overhang). Default 8. */
-  right?: number;
+  /** Offset from the top edge. Number = px (may be negative to overhang), or a
+   * CSS length string (e.g. `calc(var(--tile-matte) + 8px)`). Default 8. */
+  top?: number | string;
+  /** Offset from the right edge. Number = px, or a CSS length string. Default 8. */
+  right?: number | string;
   className?: string;
 };
+
+const toLength = (v: number | string): string => (typeof v === 'number' ? `${v}px` : v);
 
 /**
  * Binary unseen-activity indicator — a small solid red circle pinned to the
@@ -27,10 +30,10 @@ export const UnseenDot = ({ size = 10, top = 8, right = 8, className }: UnseenDo
   />
 );
 
-const Dot = styled.span<{ $size: number; $top: number; $right: number }>`
+const Dot = styled.span<{ $size: number; $top: number | string; $right: number | string }>`
   position: absolute;
-  top: ${({ $top }) => $top}px;
-  right: ${({ $right }) => $right}px;
+  top: ${({ $top }) => toLength($top)};
+  right: ${({ $right }) => toLength($right)};
   width: ${({ $size }) => $size}px;
   height: ${({ $size }) => $size}px;
   border-radius: 50%;

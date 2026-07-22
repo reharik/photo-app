@@ -33,6 +33,10 @@ export const theme: DefaultTheme = {
     sm: '0 1px 2px rgba(58, 42, 28, 0.06)',
     md: '0 2px 8px rgba(58, 42, 28, 0.08)',
     lg: '0 6px 20px rgba(58, 42, 28, 0.10)',
+    // Keepsake "print" drop shadow — a photo print resting on the surface.
+    // Same warm-dark tint as the others, a touch deeper/closer so the print
+    // reads as a physical object with weight, not a flat card.
+    print: '0 4px 16px rgba(58, 42, 28, 0.16)',
   },
 
   spacing: (n: number) => `${n * 8}px`, // 8px base unit
@@ -75,6 +79,12 @@ export const theme: DefaultTheme = {
     bodyRaised: colors.gray_15, // nav, sticky headers
     bodyElevated: colors.gray_20, // subtle panels
     stageDark: colors.gray_85, // photo lightbox stage (warm dark, not pure black)
+    stageDeep: colors.gray_90, // deepest lightbox stage, behind a print on the stage
+    // Keepsake "print" matte — the warm-white paper border framing a photo so it
+    // reads as a physical print, brighter than the cream body it rests on. Uses
+    // gray_05 (a warm print-white), not pure white, which reads cold against the
+    // warm palette.
+    print: colors.gray_05,
     bodyText: colors.gray_90, // primary text
     bodyTextSecondary: colors.gray_80, // subtitles
     bodyTextMuted: colors.gray_70, // metadata, timestamps

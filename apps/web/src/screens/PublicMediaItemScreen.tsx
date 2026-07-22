@@ -185,7 +185,8 @@ const Container = styled.div`
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: ${({ theme }) => theme.color.stageDark};
+  /* Deepened to stageDeep so the photo's white print matte lifts off the stage. */
+  background: ${({ theme }) => theme.color.stageDeep};
   z-index: 100;
 
   @media (max-width: 968px) {

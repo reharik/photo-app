@@ -31,7 +31,9 @@ export const mediaGridColumnStyles = (counts: MediaGridColumnCounts) => css`
   display: grid;
   width: 100%;
   grid-template-columns: repeat(${counts.mobile}, 1fr);
-  gap: 4px;
+  /* Deepened from 4px: prints are separated by the grid gutter, not per-tile
+     shadow, so the calm tile matte reads as discrete prints on the surface. */
+  gap: 10px;
 
   @media screen and (min-width: ${MinWidthBreakpoint.Tablet}px) and (max-width: ${MaxWidthBreakpoint.Tablet}px) {
     grid-template-columns: repeat(${counts.tablet}, 1fr);
