@@ -10,6 +10,10 @@ import { MediaGrid } from './grid/MediaGrid';
 import { MediaGridTile } from './grid/MediaGridTile';
 import { MediaPickerSelectionBar } from './MediaPickerSelectionBar';
 
+// Picker tiles fill each square edge-to-edge (no letterboxing). Flip to 'contain'
+// here — single edit — to letterbox picker thumbnails instead.
+const PICKER_IMAGE_FIT = 'cover' as const;
+
 type MediaSelectorSectionProps = {
   nodes: MediaItemSummaryVM[];
   header: React.ReactNode;
@@ -67,6 +71,8 @@ export const MediaSelectorSection = ({
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive
+              showSelectionToggle={false}
+              tileGap="3px"
               dimUnselectedTiles={selectionCount > 0}
               columnCounts={PICKER_GRID_COLUMNS}
               renderItem={(item, ctx) => (
@@ -74,7 +80,9 @@ export const MediaSelectorSection = ({
                   item={item}
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact={false}
-                  tileFit="contain"
+                  showReactions={false}
+                  showCardChrome={false}
+                  tileFit={PICKER_IMAGE_FIT}
                   disableTileNavigation
                 />
               )}

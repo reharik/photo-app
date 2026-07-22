@@ -38,6 +38,16 @@ export type MediaGridTileProps = {
   hasThumbnail?: boolean;
   /** Derived from the viewer-level unseen-activity array (containerType=mediaItem). */
   hasUnseen?: boolean;
+  /**
+   * When false, the reaction pill never renders (not CSS-hidden) and no reaction
+   * data is read — e.g. the add-to-album picker, which shouldn't surface reactions.
+   */
+  showReactions?: boolean;
+  /**
+   * When false, the tile drops the print matte/mat chrome and renders image-only
+   * (e.g. the add-to-album picker). Defaults to the full print treatment.
+   */
+  showCardChrome?: boolean;
 };
 
 export const MediaGridTile = ({
@@ -52,6 +62,8 @@ export const MediaGridTile = ({
   onBeforeNavigate,
   hasThumbnail = true,
   hasUnseen = false,
+  showReactions = true,
+  showCardChrome = true,
 }: MediaGridTileProps) => {
   const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const showBurstBadge = burstCount != null && burstCount > 1;
@@ -89,14 +101,16 @@ export const MediaGridTile = ({
           <BurstCount>{burstCount}</BurstCount>
         </BurstBadge>
       ) : null}
-      <MediaGridTileReactionPill
-        itemId={item.id}
-        reactionCounts={item.reactionCounts}
-        viewerReactions={item.viewerReactions}
-        canReact={canReact}
-        buildTileHref={buildTileHref}
-        onReactionsRefetch={onReactionsRefetch}
-      />
+      {showReactions ? (
+        <MediaGridTileReactionPill
+          itemId={item.id}
+          reactionCounts={item.reactionCounts}
+          viewerReactions={item.viewerReactions}
+          canReact={canReact}
+          buildTileHref={buildTileHref}
+          onReactionsRefetch={onReactionsRefetch}
+        />
+      ) : null}
       {hasUnseen ? (
         <UnseenDot
           top={`calc(${TILE_MATTE_VAR} + 8px)`}
@@ -113,6 +127,7 @@ export const MediaGridTile = ({
       {disableTileNavigation ? (
         <ThumbShell
           $contain={isContain}
+          $chrome={showCardChrome}
           $clickable={handleActivate != null}
           onClick={handleActivate}
         >
@@ -123,6 +138,7 @@ export const MediaGridTile = ({
           to={to}
           state={{ mediaGalleryIds }}
           $contain={isContain}
+          $chrome={showCardChrome}
           onClick={() => (onBeforeNavigate ? onBeforeNavigate(item.id) : undefined)}
         >
           {thumbContent}
@@ -163,7 +179,9 @@ const thumbFrameContainStyles = css`
 // gap does the separating. Contain-mode letterboxing now happens on the print
 // matte itself, so a contained photo sits on a white mat (framed-print look)
 // instead of the old grey bodyElevated fill.
-const thumbFrameBaseStyles = css`
+// `$chrome === false` drops the print matte (mat padding, warm mat, bevel) so the
+// tile is image-only — the add-to-album picker uses this. Default keeps the matte.
+const thumbFrameBaseStyles = css<{ $chrome?: boolean }>`
   position: relative;
   display: block;
   width: 100%;
@@ -171,7 +189,7 @@ const thumbFrameBaseStyles = css`
   overflow: hidden;
   border-radius: 3px;
   color: inherit;
-  ${printTileMatte}
+  ${({ $chrome }) => ($chrome === false ? '' : printTileMatte)}
 
   @media (hover: hover) {
     &:hover ${ReactionHoverPill} {
@@ -180,13 +198,13 @@ const thumbFrameBaseStyles = css`
   }
 `;
 
-const ThumbShell = styled.div<{ $contain: boolean; $clickable?: boolean }>`
+const ThumbShell = styled.div<{ $contain: boolean; $clickable?: boolean; $chrome?: boolean }>`
   ${thumbFrameBaseStyles}
   ${({ $contain }) => ($contain ? thumbFrameContainStyles : '')}
   ${({ $clickable }) => ($clickable ? 'cursor: pointer;' : '')}
 `;
 
-const ThumbLink = styled(Link)<{ $contain: boolean }>`
+const ThumbLink = styled(Link)<{ $contain: boolean; $chrome?: boolean }>`
   ${thumbFrameBaseStyles}
   text-decoration: none;
   ${({ $contain }) => ($contain ? thumbFrameContainStyles : '')}

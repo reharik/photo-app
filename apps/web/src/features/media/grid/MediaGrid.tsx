@@ -28,6 +28,10 @@ type MediaGridProps<T extends ViewableItemVM> = {
   groupedSections?: GroupResult<T>[];
   /** When true, unselected tiles render subdued (e.g. after first selection in library). */
   dimUnselectedTiles?: boolean;
+  /** When false, tiles hide the corner selection dot and become the selection control themselves. */
+  showSelectionToggle?: boolean;
+  /** Overrides the default grid gap (e.g. the picker packs tiles tighter). */
+  tileGap?: string;
   paging?: PagingState;
   scrollRootRef?: RefObject<HTMLDivElement | null>;
 };
@@ -44,6 +48,8 @@ export const MediaGrid = <T extends ViewableItemVM>({
   columnCounts,
   groupedSections,
   dimUnselectedTiles = false,
+  showSelectionToggle = true,
+  tileGap,
   scrollRootRef,
 }: MediaGridProps<T>) => {
   const orderedMediaIds = useMemo(
@@ -58,7 +64,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
   const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
   const TRIGGER_FROM_END = 8; // at 20/page; tune by feel
   const renderTiles = (items: T[]) => (
-    <TileGrid $columnCounts={columnCounts}>
+    <TileGrid $columnCounts={columnCounts} $gap={tileGap}>
       {items.map((item, i) => {
         const selectionId = item.id;
         const globalIndex = indexById.get(selectionId) ?? 0;
@@ -83,6 +89,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
             }
             selectableActions={selectableActions}
             dimUnselectedTiles={dimUnselectedTiles}
+            showSelectionToggle={showSelectionToggle}
           >
             {renderItem(item, { mediaGalleryIds: orderedMediaIds })}
           </MediaGridSelectableItem>
@@ -116,6 +123,7 @@ const GridRoot = styled.div`
   box-sizing: border-box;
 `;
 
-const TileGrid = styled.div<{ $columnCounts: MediaGridColumnCounts }>`
+const TileGrid = styled.div<{ $columnCounts: MediaGridColumnCounts; $gap?: string }>`
   ${({ $columnCounts }) => mediaGridColumnStyles($columnCounts)}
+  ${({ $gap }) => ($gap ? `gap: ${$gap};` : '')}
 `;
