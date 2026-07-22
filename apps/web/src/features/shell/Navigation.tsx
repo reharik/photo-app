@@ -277,7 +277,7 @@ const StyledNavLinks = styled.div<{ $stacked: boolean }>`
 
 const navLinkTextCss = css<{ $active: boolean }>`
   position: relative;
-  color: ${({ $active, theme }) => ($active ? theme.color.bodyText : theme.color.bodyTextMuted)};
+  color: ${({ $active, theme }) => ($active ? theme.color.textAccent : theme.color.bodyTextMuted)};
   font-size: ${({ theme }) => theme.fontSize._13};
   font-weight: ${({ $active, theme }) => ($active ? theme.weight.medium : theme.weight.regular)};
   text-decoration: none;

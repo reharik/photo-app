@@ -22,6 +22,7 @@ import {
   withViewerMembership,
 } from '../queryHelpers';
 import { withActivePublicLink } from '../queryHelpers/withActivePublicLink';
+import { withAlbumOwnerName } from '../queryHelpers/withAlbumOwnerName';
 import type { AlbumIdRow, AlbumReadRepository, ReadRepositoryDeps } from './types';
 
 const mediaItemSelectColumns = [
@@ -101,6 +102,7 @@ export const build__AlbumReadRepository = ({
         .modify(withViewerMembership(database, viewerId))
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
+        .modify(withAlbumOwnerName(database))
         .select(...albumFields)
         .where('album.id', albumId)
         .modify(withViewableByMemberOrAlbumGrant(database, viewerId))
@@ -163,6 +165,7 @@ export const build__AlbumReadRepository = ({
       database<AlbumWithCoverRow>('album')
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
+        .modify(withAlbumOwnerName(database))
         .where('album.id', albumId)
         .modify(withActivePublicLink(database, albumId, publicLinkId))
         .select<AlbumWithCoverRow>(...publicAlbumFields)

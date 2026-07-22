@@ -29,6 +29,10 @@ export type AlbumProjection = {
   coverMedia?: MediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  owner: {
+    firstName: string;
+    lastName: string;
+  };
   operations: Operation[];
 };
 
@@ -67,6 +71,8 @@ export type AlbumWithCoverRow = {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
+  ownerFirstName: string;
+  ownerLastName: string;
   viewerMemberRole?: AlbumMemberRole;
   itemCount: number;
 } & NamespacedMediaItemRow;
@@ -209,6 +215,10 @@ export type PublicAlbumProjection = {
   coverMedia?: PublicMediaItemProjection;
   createdAt: Date;
   updatedAt: Date;
+  owner: {
+    firstName: string;
+    lastName: string;
+  };
   operations: Operation[];
 };
 

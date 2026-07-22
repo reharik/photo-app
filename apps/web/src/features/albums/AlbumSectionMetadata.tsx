@@ -38,6 +38,10 @@ type AlbumSectionMetadataProps = {
   addCoverItemOpen?: boolean;
   setAddCoverItemOpen?: (open: boolean) => void;
   isPublic?: boolean;
+  /** Public-view attribution ("Shared with you by …"), rendered in italics under the item count. Omitted when absent. */
+  attribution?: string;
+  /** Branding shown on the trailing side of the collapsed (compact) bar — public view keeps the wordmark visible after the full header scrolls under. */
+  compactBrand?: React.ReactNode;
   headerActions?: React.ReactNode;
   selectionCount?: number;
   onClearSelection?: () => void;
@@ -103,6 +107,8 @@ export const AlbumSectionMetadata = ({
   onSortDirChange,
   onSelectCover,
   isPublic,
+  attribution,
+  compactBrand,
   headerActions,
   selectionCount = 0,
   onClearSelection,
@@ -146,7 +152,7 @@ export const AlbumSectionMetadata = ({
       />
     ) : (
       <CoverPlaceholder aria-hidden $compact={compact}>
-        <Camera size={compact ? 18 : 28} strokeWidth={1.75} aria-hidden />
+        <Camera size={compact ? 22 : 28} strokeWidth={1.75} aria-hidden />
       </CoverPlaceholder>
     );
     return album.operations.includes(Operation.editCover) ? (
@@ -234,6 +240,7 @@ export const AlbumSectionMetadata = ({
         $compact={metaCompact}
         $mobileBrowse={showMobileBrowse}
         $mobileSelection={showMobileSelection}
+        $public={isPublic ?? false}
       >
         <AlbumMetaMainRow>
           {showMobileBrowse ? (
@@ -249,6 +256,9 @@ export const AlbumSectionMetadata = ({
                 <MobileBrowseSubtitle>
                   {buildAlbumBrowseSubtitle(count, album.updatedAt)}
                 </MobileBrowseSubtitle>
+                {attribution != null ? (
+                  <MobileBrowseAttribution>{attribution}</MobileBrowseAttribution>
+                ) : null}
               </MobileBrowseInfo>
             </MobileBrowseHeader>
           ) : showMobileSelection ? (
@@ -268,6 +278,7 @@ export const AlbumSectionMetadata = ({
                       <AlbumStats>
                         <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
                       </AlbumStats>
+                      {attribution != null ? <AlbumAttribution>{attribution}</AlbumAttribution> : null}
                       {album.updatedAt?.isValid ? (
                         <AlbumDescription>
                           Updated {formatActivityDate(album.updatedAt)}
@@ -278,7 +289,11 @@ export const AlbumSectionMetadata = ({
                 </AlbumInfo>
               </AlbumMetaPrimary>
               <HeaderTrailing $selecting={isSelecting}>
-                {isSelecting ? renderSelectionActions() : headerActions}
+                {isSelecting
+                  ? renderSelectionActions()
+                  : metaCompact && compactBrand != null
+                    ? compactBrand
+                    : headerActions}
               </HeaderTrailing>
             </>
           )}
@@ -340,16 +355,20 @@ const AlbumMeta = styled.div<{
   $compact: boolean;
   $mobileBrowse: boolean;
   $mobileSelection: boolean;
+  $public: boolean;
 }>`
+  position: relative;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: ${({ theme, $compact }) => theme.spacing($compact ? 1 : 1.5)};
-  padding: ${({ theme, $compact }) =>
+  // Public view sits under its own header, so it needs far less top padding than the
+  // authed view (which is the first thing under the app nav).
+  padding: ${({ theme, $compact, $public }) =>
     $compact
       ? `${theme.spacing(2)} ${theme.spacing(6)}`
-      : `${theme.spacing(4)} ${theme.spacing(6)} ${theme.spacing(3)}`};
+      : `${theme.spacing($public ? 1.5 : 4)} ${theme.spacing(6)} ${theme.spacing(3)}`};
   background: ${({ theme }) => theme.color.body};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   max-width: 1400px;
@@ -412,7 +431,7 @@ const PickerTextControl = styled.button`
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize._13};
   font-weight: ${({ theme }) => theme.weight.regular};
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
   line-height: 1.4;
   transition: color 0.15s ease;
 
@@ -510,6 +529,17 @@ const MobileBrowseSubtitle = styled.p`
   text-overflow: ellipsis;
 `;
 
+const MobileBrowseAttribution = styled.p`
+  margin: 0;
+  font-style: italic;
+  font-size: ${({ theme }) => theme.fontSize._13};
+  line-height: 1.4;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
 const MobileBrowseActions = styled.div`
   display: flex;
   align-items: center;
@@ -540,8 +570,8 @@ const AlbumCover = styled.div<{ $compact: boolean }>`
   ${({ $compact }) =>
     $compact
       ? css`
-          width: 52px;
-          height: 52px;
+          width: 64px;
+          height: 64px;
         `
       : css`
           width: 180px;
@@ -584,7 +614,6 @@ const AlbumInfo = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme, $compact }) => theme.spacing($compact ? 0.5 : 1.5)};
-  flex: 1;
   min-width: 0;
   justify-content: center;
 `;
@@ -612,7 +641,7 @@ const AlbumStats = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing(2)};
   font-size: 14px;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
 `;
 
 const Stat = styled.span`
@@ -622,8 +651,17 @@ const Stat = styled.span`
 const AlbumDescription = styled.p`
   margin: 0;
   font-variant-numeric: tabular-nums;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.bodyTextMuted};
   line-height: 1.6;
+`;
+
+const AlbumAttribution = styled.p`
+  margin: 0;
+  font-style: italic;
+  font-size: 14px;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  line-height: 1.5;
 `;
 
 const AddAlbumCoverModalHeader = styled.div`
@@ -666,12 +704,14 @@ const AddAlbumCoverModalClose = styled.button`
   }
 `;
 
+// Content-width, not flex:1 — the cover + info hug together as a left cluster so a
+// short title doesn't leave a large empty gap across the row. In the authed view,
+// AlbumMetaMainRow's space-between still pushes the trailing actions to the right.
 const AlbumMetaPrimary = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing(3)};
-  flex: 1;
+  gap: ${({ theme }) => theme.spacing(2)};
   min-width: 0;
   align-self: center;
 `;

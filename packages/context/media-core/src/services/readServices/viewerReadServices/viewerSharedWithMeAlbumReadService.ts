@@ -54,6 +54,10 @@ export const build__ViewerSharedWithMeAlbumReadService = ({
   ): AlbumProjection => ({
     id: album.id,
     title: album.title,
+    owner: {
+      firstName: album.ownerFirstName,
+      lastName: album.ownerLastName,
+    },
     itemCount: album.itemCount,
     createdAt: album.createdAt,
     updatedAt: album.updatedAt,
