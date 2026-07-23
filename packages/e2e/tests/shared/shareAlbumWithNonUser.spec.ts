@@ -6,7 +6,7 @@ import {
 import { cleanupRecipientByEmail } from '../../fixtures/cleanup';
 import { env } from '../../fixtures/env';
 import {
-  clearLocalStackSesMessages,
+  countLocalStackSesMessages,
   extractShareInviteUrl,
   findSesMessageForRecipient,
   retrieveLocalStackSesMessages,
@@ -25,12 +25,12 @@ const RECIPIENT_EMAIL = 'nonUser@email.com';
  */
 test.describe('Share an album with an email that is not a user', () => {
   test.beforeEach(async () => {
-    // Reset the shadow user (cascades away any un-sent pending notification) AND drain
-    // SES: both non-user specs reuse RECIPIENT_EMAIL, and the poll below matches the
-    // first email to that address, so a stale invite from an earlier spec would send the
-    // anon page to a since-cleaned-up token ("This album isn't available").
+    // Reset the shadow user, which cascades away any un-sent pending notification so no
+    // stale invite to RECIPIENT_EMAIL can still be delivered. Both non-user specs reuse
+    // this address; the poll below matches the first email to it AFTER a per-test
+    // baseline (see sesBaseline), so already-delivered invites are ignored without
+    // deleting them.
     await cleanupRecipientByEmail(RECIPIENT_EMAIL);
-    await clearLocalStackSesMessages();
   });
 
   test.describe('When User A shares a multi-item album with User X', () => {
@@ -57,6 +57,9 @@ test.describe('Share an album with an email that is not a user', () => {
       await expect(
         shareDialog.getByRole('button', { name: `Remove ${recipientEmail.toLowerCase()}` }),
       ).toBeVisible();
+      // Only mail sent after this share counts — ignores any earlier invite to the
+      // reused RECIPIENT_EMAIL without wiping the SES store.
+      const sesBaseline = await countLocalStackSesMessages(request);
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
@@ -64,7 +67,7 @@ test.describe('Share an album with an email that is not a user', () => {
       await expect
         .poll(
           async () => {
-            const messages = await retrieveLocalStackSesMessages(request);
+            const messages = (await retrieveLocalStackSesMessages(request)).slice(sesBaseline);
             const message = findSesMessageForRecipient(messages, recipientEmail);
             if (!message) {
               return false;

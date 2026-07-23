@@ -1,6 +1,6 @@
 import { loginViaUi } from '../../fixtures/auth';
 import {
-  clearLocalStackSesMessages,
+  countLocalStackSesMessages,
   findSesMessageForRecipient,
   retrieveLocalStackSesMessages,
 } from '../../fixtures/localstackSes';
@@ -44,9 +44,9 @@ test.describe('Share individual items with an existing user', () => {
       await expect(
         shareDialog.getByRole('button', { name: `Remove ${userB.user.email.toLowerCase()}` }),
       ).toBeVisible();
-      // Clear SES so the email assertion below only sees the message this share produces,
-      // not a leftover from an earlier test.
-      await clearLocalStackSesMessages();
+      // Baseline SES so the email assertion below only sees the message this share
+      // produces, not a leftover from an earlier test — without wiping the store.
+      const sesBaseline = await countLocalStackSesMessages(request);
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
@@ -58,7 +58,7 @@ test.describe('Share individual items with an existing user', () => {
         await expect
           .poll(
             async () => {
-              const messages = await retrieveLocalStackSesMessages(request);
+              const messages = (await retrieveLocalStackSesMessages(request)).slice(sesBaseline);
               return Boolean(findSesMessageForRecipient(messages, userB.user.email));
             },
             { timeout: 30_000 },
