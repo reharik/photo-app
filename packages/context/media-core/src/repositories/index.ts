@@ -19,6 +19,7 @@ export * from './queryHelpers/withActiveGrants';
 export * from './queryHelpers/withActivePublicLink';
 export * from './queryHelpers/withAlbumCoverItem';
 export * from './queryHelpers/withAlbumItemCount';
+export * from './queryHelpers/withAlbumOwnerName';
 export * from './queryHelpers/withCollectionInfo';
 export * from './queryHelpers/withGrantBy';
 export * from './queryHelpers/withViewableByMemberOrAlbumGrant';
