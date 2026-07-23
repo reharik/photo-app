@@ -1,4 +1,5 @@
 import { expect, test } from '../../fixtures/test';
+import { expectToast } from '../../fixtures/toast';
 import { reactToItem } from '../../routines/reactToItem';
 import { setup } from '../../routines/setup';
 
@@ -44,7 +45,7 @@ test.describe('Media Viewer', () => {
       await descriptionInput.fill(description);
       await userA.page.getByRole('button', { name: 'Save' }).click();
 
-      await expect(userA.page.getByRole('status')).toContainText('Changes saved');
+      await expectToast(userA.page, 'Changes saved');
       await expect(userA.page.getByRole('button', { name: title })).toBeVisible();
       await expect(userA.page.getByRole('button', { name: description })).toBeVisible();
       await expect(userA.page.locator('#media-detail-title')).toHaveCount(0);

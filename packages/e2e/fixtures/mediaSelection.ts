@@ -60,6 +60,19 @@ export const selectionCountLabel = (
 export const mediaTile = (root: Page | Locator, mediaItemId: string): Locator =>
   root.getByTestId(`media-tile-${mediaItemId}`);
 
+/**
+ * The tile's selection control, resolved regardless of where the `checkbox` role
+ * lives. Two shapes exist:
+ *  - library / album grids render a descendant toggle button (`role="checkbox"`);
+ *  - the picker's "bare tiles" put `role="checkbox"` on the tile element itself
+ *    (no toggle button), so the whole tile is the accessible control.
+ * `getByRole` only matches descendants, so we OR in the tile-as-checkbox case.
+ */
+export const mediaTileCheckbox = (root: Page | Locator, mediaItemId: string): Locator => {
+  const tile = mediaTile(root, mediaItemId);
+  return tile.getByRole('checkbox').or(tile.and(tile.page().getByRole('checkbox')));
+};
+
 const selectionToolbarIn = (
   root: Page | Locator,
   variant: SelectionToolbarVariant = 'library',
@@ -79,7 +92,7 @@ export const selectMediaTile = async (
   const tile = mediaTile(root, mediaItemId);
   await tile.hover();
 
-  const checkbox = tile.getByRole('checkbox');
+  const checkbox = mediaTileCheckbox(root, mediaItemId);
   const checkboxCount = await checkbox.count();
   if (checkboxCount === 0) {
     throw new Error(
@@ -183,8 +196,8 @@ export const expectMediaTileNotSelectable = async (
 ): Promise<void> => {
   const tile = mediaTile(page, mediaItemId);
   await tile.hover();
-  await expect(tile.getByRole('checkbox', { name: 'Select' })).toHaveCount(0);
-  await expect(tile.getByRole('checkbox', { name: 'Deselect' })).toHaveCount(0);
+  // Covers both the descendant toggle button and the tile-as-checkbox (picker) shapes.
+  await expect(mediaTileCheckbox(page, mediaItemId)).toHaveCount(0);
 };
 
 export const toggleReaction = async (
