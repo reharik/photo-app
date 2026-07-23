@@ -28,27 +28,27 @@ export type TemplateData = {
     lastName: string;
     appUrl: string;
   };
-  albumShareInvite: {
+  memberAlbumShared: {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
   };
-  albumGuestInvite: {
+  guestAlbumShared: {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
     signupUrl: string;
   };
-  itemShareInvite: {
+  memberItemsShared: {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
   };
   activityDigest: ActivityDigestData;
-  passwordReset: {
+  passwordChanged: {
     firstName: string;
   };
-  emailVerification: {
+  verificationCode: {
     code: string;
   };
 };

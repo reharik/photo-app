@@ -115,7 +115,7 @@ export const build__AuthQueryService = ({
     void notificationService.notify({
       to: { email },
       channels: ['email'],
-      template: 'emailVerification',
+      template: 'verificationCode',
       data: {
         code,
       },

@@ -12,12 +12,12 @@ type AlbumSharedStrategyDeps = {
 export const build__AlbumSharedStrategy = ({
   config,
   systemAlbumRepository,
-}: AlbumSharedStrategyDeps): FastSweepNotificationStrategy<'albumShareInvite'> => ({
+}: AlbumSharedStrategyDeps): FastSweepNotificationStrategy<'memberAlbumShared'> => ({
   kind: AsyncNotificationKind.albumShared,
   execute: async (
     rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
-  ): Promise<PayloadResult<'albumShareInvite'>[]> => {
+  ): Promise<PayloadResult<'memberAlbumShared'>[]> => {
     const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
@@ -33,7 +33,7 @@ export const build__AlbumSharedStrategy = ({
         kind: 'ready',
         payload: {
           to: recipientEmail,
-          template: 'albumShareInvite',
+          template: 'memberAlbumShared',
           channels: ['email'],
           data: {
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',

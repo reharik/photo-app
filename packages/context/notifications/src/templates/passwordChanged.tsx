@@ -5,13 +5,13 @@ import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { secondaryTextStyle as muted, bodyTextStyle as paragraph } from './emailTokens.js';
 
-type PasswordResetData = TemplateData['passwordReset'];
+type PasswordChangedData = TemplateData['passwordChanged'];
 
 export const subject = (): string => {
   return 'Your password was changed';
 };
 
-const PasswordReset = (data: PasswordResetData): ReactElement => {
+const PasswordChanged = (data: PasswordChangedData): ReactElement => {
   const greetingName = data.firstName?.trim() || 'there';
 
   return (
@@ -34,4 +34,4 @@ const PasswordReset = (data: PasswordResetData): ReactElement => {
   );
 };
 
-export default PasswordReset;
+export default PasswordChanged;

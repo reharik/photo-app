@@ -8,13 +8,13 @@ import { fontStacks } from './emailTokens.js';
 
 void React;
 
-type EmailVerificationData = TemplateData['emailVerification'];
+type VerificationCodeData = TemplateData['verificationCode'];
 
 export const subject = (): string => {
   return `Your ${APP_NAME} verification code`;
 };
 
-const EmailVerification = (data: EmailVerificationData): ReactElement => {
+const VerificationCode = (data: VerificationCodeData): ReactElement => {
   return (
     <BaseEmail
       previewText={`Your ${APP_NAME} verification code is ${data.code}.`}
@@ -37,7 +37,7 @@ const EmailVerification = (data: EmailVerificationData): ReactElement => {
   );
 };
 
-export default EmailVerification;
+export default VerificationCode;
 
 const paragraph = {
   color: '#3f3f46',

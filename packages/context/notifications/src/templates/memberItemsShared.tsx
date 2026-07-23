@@ -5,26 +5,26 @@ import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { buttonStyle, linkFallback, muted, paragraph } from './sharedStyles.js';
 
-type Data = TemplateData['albumShareInvite'];
+type Data = TemplateData['memberItemsShared'];
 
 export const subject = (data: Data): string =>
-  `${data.inviterName} shared “${data.resourceName}” with you`;
+  `${data.inviterName} added photos to “${data.resourceName}”`;
 
-const AlbumShareInvite = (data: Data): ReactElement => (
+const MemberItemsShared = (data: Data): ReactElement => (
   <BaseEmail
-    previewText={`${data.inviterName} invited you to ${data.resourceName}.`}
-    title="You’ve been invited"
+    previewText={`${data.inviterName} added new photos to ${data.resourceName}.`}
+    title="New photos to see"
     footerVariant="notification"
   >
     <Section>
       <Text style={paragraph}>
-        <strong>{data.inviterName}</strong> shared <strong>{data.resourceName}</strong> with you on{' '}
-        {APP_NAME}. Open it below to see the photos.
+        <strong>{data.inviterName}</strong> added new photos to <strong>{data.resourceName}</strong>{' '}
+        on {APP_NAME}. Take a look below.
       </Text>
     </Section>
     <Section style={{ marginTop: '24px' }}>
       <Button href={data.inviteUrl} style={buttonStyle}>
-        View album
+        View photos
       </Button>
     </Section>
     <Section style={{ marginTop: '16px' }}>
@@ -34,4 +34,4 @@ const AlbumShareInvite = (data: Data): ReactElement => (
   </BaseEmail>
 );
 
-export default AlbumShareInvite;
+export default MemberItemsShared;

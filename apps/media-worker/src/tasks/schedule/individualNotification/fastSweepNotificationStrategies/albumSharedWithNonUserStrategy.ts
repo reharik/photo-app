@@ -19,17 +19,17 @@ export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
   systemAuthorizationRepository,
-}: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'albumGuestInvite'> => ({
+}: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'guestAlbumShared'> => ({
   kind: AsyncNotificationKind.guestAlbumShared,
   execute: async (
     rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
-  ): Promise<PayloadResult<'albumGuestInvite'>[]> => {
+  ): Promise<PayloadResult<'guestAlbumShared'>[]> => {
     const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
 
-    const results: PayloadResult<'albumGuestInvite'>[] = [];
+    const results: PayloadResult<'guestAlbumShared'>[] = [];
     for (const row of rows) {
       const recipientEmail = userMap.get(row.recipientId)?.email;
       const publicLinkAuthorization =
@@ -46,7 +46,7 @@ export const build__AlbumSharedWithNonUserStrategy = ({
         kind: 'ready',
         payload: {
           to: recipientEmail,
-          template: 'albumGuestInvite',
+          template: 'guestAlbumShared',
           channels: ['email'],
           data: {
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',

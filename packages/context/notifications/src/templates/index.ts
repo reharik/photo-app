@@ -1,11 +1,11 @@
 import type { FC } from 'react';
 import type { TemplateData, TemplateName } from '../types';
 import ActivityDigest, { subject as activityDigestSubject } from './ActivityDigest';
-import AlbumGuestInvite, { subject as albumGuestInviteSubject } from './albumGuestInvite';
-import AlbumShareInvite, { subject as albumShareInviteSubject } from './albumShareInvite';
-import EmailVerification, { subject as emailVerificationSubject } from './emailVerification';
-import ItemShareInvite, { subject as itemShareInviteSubject } from './itemShareInvite';
-import PasswordReset, { subject as passwordResetSubject } from './passwordReset';
+import GuestAlbumShared, { subject as guestAlbumSharedSubject } from './guestAlbumShared';
+import MemberAlbumShared, { subject as memberAlbumSharedSubject } from './memberAlbumShared';
+import MemberItemsShared, { subject as memberItemsSharedSubject } from './memberItemsShared';
+import PasswordChanged, { subject as passwordChangedSubject } from './passwordChanged';
+import VerificationCode, { subject as verificationCodeSubject } from './verificationCode';
 import Welcome, { subject as welcomeSubject } from './welcome';
 
 type RegistryEntry<K extends TemplateName> = {
@@ -19,10 +19,10 @@ export type TemplateRegistry = {
 
 export const templateRegistry: TemplateRegistry = {
   welcome: { Component: Welcome, getSubject: welcomeSubject },
-  albumShareInvite: { Component: AlbumShareInvite, getSubject: albumShareInviteSubject },
-  albumGuestInvite: { Component: AlbumGuestInvite, getSubject: albumGuestInviteSubject },
-  itemShareInvite: { Component: ItemShareInvite, getSubject: itemShareInviteSubject },
+  memberAlbumShared: { Component: MemberAlbumShared, getSubject: memberAlbumSharedSubject },
+  guestAlbumShared: { Component: GuestAlbumShared, getSubject: guestAlbumSharedSubject },
+  memberItemsShared: { Component: MemberItemsShared, getSubject: memberItemsSharedSubject },
   activityDigest: { Component: ActivityDigest, getSubject: activityDigestSubject },
-  passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
-  emailVerification: { Component: EmailVerification, getSubject: emailVerificationSubject },
+  passwordChanged: { Component: PasswordChanged, getSubject: passwordChangedSubject },
+  verificationCode: { Component: VerificationCode, getSubject: verificationCodeSubject },
 };

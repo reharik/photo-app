@@ -75,7 +75,7 @@ export const build__AuthService = ({
   const notifyUser = async (
     id: EntityId,
     creds: SignupInput,
-    template: 'welcome' | 'passwordReset',
+    template: 'welcome' | 'passwordChanged',
   ): Promise<string> => {
     const { email, firstName, lastName } = creds;
     // Generate JWT token
@@ -136,7 +136,7 @@ export const build__AuthService = ({
         let user = await userRepository.getUserByEmail(email);
         // Hash password
         const passwordHash = await bcrypt.hash(password, 12);
-        let template: 'welcome' | 'passwordReset';
+        let template: 'welcome' | 'passwordChanged';
         if (!user) {
           user = PendingUser.create(
             { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
@@ -168,7 +168,7 @@ export const build__AuthService = ({
               break;
             }
             case 'active': {
-              template = 'passwordReset';
+              template = 'passwordChanged';
               user.setPassword(passwordHash, user.id());
               break;
             }

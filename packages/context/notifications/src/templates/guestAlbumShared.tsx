@@ -5,12 +5,12 @@ import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { buttonStyle, linkFallback, muted, paragraph } from './sharedStyles.js';
 
-type Data = TemplateData['albumGuestInvite'];
+type Data = TemplateData['guestAlbumShared'];
 
 export const subject = (data: Data): string =>
   `${data.inviterName} shared “${data.resourceName}” with you`;
 
-const AlbumGuestInvite = (data: Data): ReactElement => (
+const GuestAlbumShared = (data: Data): ReactElement => (
   <BaseEmail
     previewText={`${data.inviterName} shared photos with you — no account needed.`}
     title="Someone shared photos with you"
@@ -35,4 +35,4 @@ const AlbumGuestInvite = (data: Data): ReactElement => (
   </BaseEmail>
 );
 
-export default AlbumGuestInvite;
+export default GuestAlbumShared;
