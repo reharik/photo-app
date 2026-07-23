@@ -247,6 +247,11 @@ jobs:
           export S3_BUCKET="${{ needs.discover.outputs.s3_bucket }}"
           export APP_NAME="${{ needs.discover.outputs.app_name }}"
           export ENV="${{ needs.discover.outputs.env_name }}"
+          # Pin the Docker Compose project to the original name so deploys reuse the
+          # existing prod stack (volume/containers/network) instead of orphaning them
+          # under a new ${APP_NAME}-${ENV} project. APP_NAME/branding stay 'homeroll';
+          # only the on-host stack namespace stays 'betaname-prod'.
+          export COMPOSE_PROJECT_NAME="betaname-${ENV}"
           export SHA="${SHORT_SHA}"
           export DEPLOY_BACKEND=true
           export DEPLOY_FRONTEND=false
