@@ -4,6 +4,14 @@ import type { AlbumSection, CommentSection, ReactionItem, ReactionSection } from
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import {
+  bodyTextStyle,
+  buttonStyle,
+  fontStacks,
+  hrStyle,
+  linkFallbackStyle as linkFallback,
+  secondaryTextStyle as muted,
+} from './emailTokens.js';
 
 type ActivityDigestData = TemplateData['activityDigest'];
 // { data: Map<ActivityKind, ActivitySection>; viewUrl: string }
@@ -12,7 +20,11 @@ type ActivityDigestData = TemplateData['activityDigest'];
 export const subject = (_data: ActivityDigestData): string => `New activity on ${APP_NAME}`;
 
 const ActivityDigest = (data: ActivityDigestData): ReactElement => (
-  <BaseEmail previewText={`There's new activity on ${APP_NAME}.`} title={'New activity'}>
+  <BaseEmail
+    previewText={`There's new activity on ${APP_NAME}.`}
+    title={'New activity'}
+    footerVariant="notification"
+  >
     <Text style={lede}>Here's what's new since you were last here.</Text>
 
     {[...data.data].map(([kind, section], i) => (
@@ -93,9 +105,7 @@ const formatReactors = (reactions: ReactionItem[]): string => {
 // ── styles ────────────────────────────────────────────────
 
 const lede = {
-  color: '#3f3f46',
-  fontSize: '15px',
-  lineHeight: '1.6',
+  ...bodyTextStyle,
   margin: '0 0 24px',
 };
 
@@ -104,50 +114,23 @@ const sectionBlock = {
 };
 
 const sectionLabel = {
-  color: '#71717a',
+  ...muted,
+  fontFamily: fontStacks.serif,
   fontSize: '12px',
-  fontWeight: 600,
+  fontWeight: 500,
   letterSpacing: '0.04em',
   textTransform: 'uppercase' as const,
   margin: '0 0 10px',
 };
 
 const item = {
-  color: '#18181b',
-  fontSize: '15px',
-  lineHeight: '1.6',
+  ...bodyTextStyle,
   margin: '0 0 6px',
 };
 
 const divider = {
-  borderColor: '#e4e4e7',
+  ...hrStyle,
   margin: '24px 0',
-};
-
-const muted = {
-  color: '#71717a',
-  fontSize: '12px',
-  lineHeight: '1.5',
-  margin: '0 0 6px',
-};
-
-const linkFallback = {
-  color: '#52525b',
-  fontSize: '12px',
-  lineHeight: '1.5',
-  margin: 0,
-  wordBreak: 'break-all' as const,
-};
-
-const buttonStyle = {
-  backgroundColor: '#18181b',
-  borderRadius: '6px',
-  color: '#fafafa',
-  display: 'inline-block',
-  fontSize: '14px',
-  fontWeight: 600,
-  padding: '12px 20px',
-  textDecoration: 'none',
 };
 
 export default ActivityDigest;

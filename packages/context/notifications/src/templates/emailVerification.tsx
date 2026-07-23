@@ -4,6 +4,7 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import { fontStacks } from './emailTokens.js';
 
 void React;
 
@@ -18,6 +19,7 @@ const EmailVerification = (data: EmailVerificationData): ReactElement => {
     <BaseEmail
       previewText={`Your ${APP_NAME} verification code is ${data.code}.`}
       title={'Your verification code'}
+      footerVariant="transactional"
     >
       <Section>
         <Text style={paragraph}>Enter this code to continue:</Text>
@@ -53,8 +55,9 @@ const muted = {
 
 const codeStyle = {
   color: '#18181b',
+  fontFamily: fontStacks.mono,
   fontSize: '32px',
-  fontWeight: 700,
+  fontWeight: 500,
   letterSpacing: '8px',
   textAlign: 'center' as const,
   margin: 0,

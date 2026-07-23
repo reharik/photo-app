@@ -14,6 +14,7 @@ const AlbumShareInvite = (data: Data): ReactElement => (
   <BaseEmail
     previewText={`${data.inviterName} invited you to ${data.resourceName}.`}
     title="You’ve been invited"
+    footerVariant="notification"
   >
     <Section>
       <Text style={paragraph}>

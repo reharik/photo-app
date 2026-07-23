@@ -14,6 +14,7 @@ const AlbumGuestInvite = (data: Data): ReactElement => (
   <BaseEmail
     previewText={`${data.inviterName} shared photos with you — no account needed.`}
     title="Someone shared photos with you"
+    footerVariant="shareLink"
   >
     <Section>
       <Text style={paragraph}>

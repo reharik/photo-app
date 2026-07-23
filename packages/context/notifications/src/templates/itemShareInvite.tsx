@@ -14,6 +14,7 @@ const ItemShareInvite = (data: Data): ReactElement => (
   <BaseEmail
     previewText={`${data.inviterName} added new photos to ${data.resourceName}.`}
     title="New photos to see"
+    footerVariant="notification"
   >
     <Section>
       <Text style={paragraph}>
