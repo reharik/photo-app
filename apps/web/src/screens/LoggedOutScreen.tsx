@@ -1,15 +1,17 @@
+import { EyeOff, KeyRound, RefreshCw, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { APP_NAME, APP_TAGLINE } from '../brand';
 import { useAuth } from '../contexts/AuthContext';
-import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
 import {
   CODE_SENT_MESSAGE,
   REQUEST_CODE_FAILURE_MESSAGE,
   setPasswordErrorMessage,
 } from '../features/auth/authMessages';
+import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
 import { FormInput } from '../ui/FormInput';
+import { HeroIllustration } from '../ui/HeroIllustration';
 
 const isValidPhone = (value: string): boolean => {
   const digits = value.replace(/\D/g, '');
@@ -208,43 +210,81 @@ export const LoggedOutScreen = () => {
 
   return (
     <Container>
-      <ContentWrapper>
-        <LeftPanel>
-          <BrandSection>
+      <PageInner>
+        <Hero>
+          <HeroLockup>
+            <HeroIllustration size={168} />
             <BrandTitle>{APP_NAME}</BrandTitle>
-            <BrandTagline>{APP_TAGLINE}</BrandTagline>
-          </BrandSection>
-          <FeatureList>
-            <Feature>
-              <FeatureIcon>📸</FeatureIcon>
-              <FeatureText>All your photos in one place</FeatureText>
-            </Feature>
-            <Feature>
-              <FeatureIcon>🖼️</FeatureIcon>
-              <FeatureText>Share with family and friends</FeatureText>
-            </Feature>
-            <Feature>
-              <FeatureIcon>🔒</FeatureIcon>
-              <FeatureText>Private and secure</FeatureText>
-            </Feature>
-            <Feature>
-              <FeatureIcon>📱</FeatureIcon>
-              <FeatureText>Access anywhere</FeatureText>
-            </Feature>
-          </FeatureList>
-        </LeftPanel>
+          </HeroLockup>
+          <BrandTagline>{APP_TAGLINE}</BrandTagline>
+        </Hero>
+        <ContentWrapper>
+          <LeftPanel>
+            <FeatureList>
+              <Feature>
+                <FeatureIcon>
+                  <Smartphone size={22} strokeWidth={2} aria-hidden />
+                </FeatureIcon>
+                <FeatureText>
+                  <FeatureLabel>Nobody gets left out</FeatureLabel>
+                  <FeatureDesc>
+                    iPhone, Android, an old laptop — if they can open a link, they can see the
+                    photos.
+                  </FeatureDesc>
+                </FeatureText>
+              </Feature>
+              <Feature>
+                <FeatureIcon>
+                  <RefreshCw size={22} strokeWidth={2} aria-hidden />
+                </FeatureIcon>
+                <FeatureText>
+                  <FeatureLabel>Keeps up with you</FeatureLabel>
+                  <FeatureDesc>
+                    Add photos whenever. The album stays current instead of going stale after you
+                    send it.
+                  </FeatureDesc>
+                </FeatureText>
+              </Feature>
+              <Feature>
+                <FeatureIcon>
+                  <KeyRound size={22} strokeWidth={2} aria-hidden />
+                </FeatureIcon>
+                <FeatureText>
+                  <FeatureLabel>You decide who sees it</FeatureLabel>
+                  <FeatureDesc>
+                    Invite people directly or send a link. Set it to expire, or shut it off whenever
+                    you want.
+                  </FeatureDesc>
+                </FeatureText>
+              </Feature>
+              <Feature>
+                <FeatureIcon>
+                  <EyeOff size={22} strokeWidth={2} aria-hidden />
+                </FeatureIcon>
+                <FeatureText>
+                  <FeatureLabel>Nothing is public</FeatureLabel>
+                  <FeatureDesc>
+                    No feed, no strangers, no algorithm deciding who your kids get shown to.
+                  </FeatureDesc>
+                </FeatureText>
+              </Feature>
+            </FeatureList>
+            <FeatureClosing>
+              We&apos;re a small team who think your family&apos;s photos are nobody else&apos;s
+              business.
+            </FeatureClosing>
+          </LeftPanel>
 
-        <RightPanel>
-          <AuthCard $isSignup={isSignup}>
+          <AuthCard>
             <AuthHeader>
               <AuthTitle>{isSignup ? 'Create Account' : 'Welcome Back'}</AuthTitle>
-              <AuthSubtitle>
-                {!isSignup
-                  ? 'Welcome back.'
-                  : signupStep === 'email'
+              {isSignup && (
+                <AuthSubtitle>
+                  {signupStep === 'email'
                     ? "Enter your email and we'll send you a code to get started."
                     : 'Enter the code we sent, then choose your details and password.'}
-              </AuthSubtitle>
+                </AuthSubtitle>
+              )}
             </AuthHeader>
 
             <Form onSubmit={handleSubmit} $isSignup={isSignup}>
@@ -415,8 +455,8 @@ export const LoggedOutScreen = () => {
               </ToggleText>
             </AuthFooter>
           </AuthCard>
-        </RightPanel>
-      </ContentWrapper>
+        </ContentWrapper>
+      </PageInner>
     </Container>
   );
 };
@@ -425,17 +465,44 @@ const Container = styled.div`
   min-height: 100vh;
   background: ${({ theme }) => theme.color.body};
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: ${({ theme }) => theme.spacing(3)};
+  padding: ${({ theme }) => theme.spacing(6)} ${({ theme }) => theme.spacing(3)}
+    ${({ theme }) => theme.spacing(8)};
+`;
+
+const PageInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-width: 1200px;
+  width: 100%;
+  gap: ${({ theme }) => theme.spacing(6)};
+`;
+
+const Hero = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(2)};
+  text-align: center;
+`;
+
+const HeroLockup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(3)};
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+    gap: ${({ theme }) => theme.spacing(1)};
+  }
 `;
 
 const ContentWrapper = styled.div`
   display: flex;
-  max-width: 1200px;
   width: 100%;
   gap: ${({ theme }) => theme.spacing(8)};
-  align-items: center;
+  align-items: stretch;
 
   @media (max-width: 968px) {
     flex-direction: column;
@@ -445,19 +512,16 @@ const ContentWrapper = styled.div`
 
 const LeftPanel = styled.div`
   flex: 1;
+  /* strip the implicit min-width: auto so flex-basis:0 splits the row evenly —
+     otherwise the form column's wider content floor steals space from this one */
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(6)};
-
-  @media (max-width: 968px) {
-    text-align: center;
-  }
-`;
-
-const BrandSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(5)};
+  background: ${({ theme }) => theme.color.bodyRaised};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  padding: ${({ theme }) => theme.spacing(6)};
 `;
 
 const BrandTitle = styled.h1`
@@ -473,14 +537,14 @@ const BrandTitle = styled.h1`
 `;
 
 const BrandTagline = styled.p`
-  font-size: 18px;
+  font-size: 22px;
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
-  line-height: 1.6;
-  max-width: 480px;
+  line-height: 1.5;
+  max-width: 720px;
 
   @media (max-width: 968px) {
-    margin: 0 auto;
+    font-size: 18px;
   }
 `;
 
@@ -488,40 +552,78 @@ const FeatureList = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
-
-  @media (max-width: 968px) {
-    align-items: center;
-  }
 `;
 
 const Feature = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: ${({ theme }) => theme.spacing(2)};
 `;
 
+// Marketing surface — a soft clay-tint badge carries the two-line blocks with more
+// presence than a bare outline glyph, without the filled disc pulling focus from the
+// copy. Clay glyph on a clay_lightest tint.
 const FeatureIcon = styled.div`
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.selectionBg};
+  color: ${({ theme }) => theme.color.textAccent};
+
+  /* On phones the badge eats ~60px and forces short line breaks — give the text the
+     full column width. */
+  @media (max-width: 520px) {
+    display: none;
+  }
 `;
 
 const FeatureText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+`;
+
+const FeatureLabel = styled.div`
   color: ${({ theme }) => theme.color.bodyText};
   font-size: 16px;
+  font-weight: ${({ theme }) => theme.weight.medium};
 `;
 
-const RightPanel = styled.div`
+const FeatureDesc = styled.div`
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 420px;
+`;
+
+const FeatureClosing = styled.p`
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 420px;
+  margin: 0;
+`;
+
+// A direct flex sibling of LeftPanel with the identical box model (flex:1 + min-width:0
+// + own padding/border). Both cards must carry their padding on the flex ITEM itself —
+// wrapping one in a bare flex parent makes flex-grow equalize content boxes, leaving the
+// padded item wider by its own padding+border.
+const AuthCard = styled.div`
   flex: 1;
-  display: flex;
-  justify-content: center;
-`;
-
-const AuthCard = styled.div<{ $isSignup: boolean }>`
+  min-width: 0;
   background: ${({ theme }) => theme.color.bodyRaised};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.borderRadius.xl};
   padding: ${({ theme }) => theme.spacing(6)};
-  width: 100%;
-  max-width: ${({ $isSignup }) => ($isSignup ? '520px' : '440px')};
+
+  /* When the columns stack, a returning user shouldn't scroll past the pitch to log in. */
+  @media (max-width: 968px) {
+    order: -1;
+  }
 `;
 
 const AuthHeader = styled.div`

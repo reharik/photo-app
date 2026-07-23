@@ -60,6 +60,10 @@ export const build__PublicAlbumReadService = ({
         title: row.title,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+        owner: {
+          firstName: row.ownerFirstName,
+          lastName: row.ownerLastName,
+        },
         itemCount: row.itemCount,
         viewerMemberRole: row.viewerMemberRole,
         coverMedia,

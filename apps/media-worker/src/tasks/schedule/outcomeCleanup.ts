@@ -1,6 +1,6 @@
-import { PendingNotification } from '@packages/media-core';
+import { AsyncNotification } from '@packages/media-core';
 
-export type RowOutcome = { row: PendingNotification; result: 'sent' | 'failed' | 'skipped' };
+export type RowOutcome = { row: AsyncNotification; result: 'sent' | 'failed' | 'skipped' };
 
 // Roll a batch of per-row outcomes into counts for a single summary log line, so a sweep's
 // result is legible without reading every per-row line.
@@ -23,17 +23,17 @@ export const cleanUp = (outcomes: RowOutcome[]) => {
   const deleteSuccessfulRowIds = outcomes.filter((x) => x.result === 'sent').map((x) => x.row.id);
 
   const bumpLogs = bumpRowIds.map(
-    (x) => `[pending_notification_row] row ${x} -> failed to send, bumping attempts`,
+    (x) => `[async_notification_row] row ${x} -> failed to send, bumping attempts`,
   );
   const killLogs = deleteFailedRowIds.map(
-    (x) => `[pending_notification_row] row ${x} -> failed to send, too many attempts`,
+    (x) => `[async_notification_row] row ${x} -> failed to send, too many attempts`,
   );
   const skippedLogs = deleteSkippedRowIds.map(
     (x) =>
-      `[pending_notification_row] row ${x} -> failed to send, either no active albums or no recipient email address`,
+      `[async_notification_row] row ${x} -> failed to send, either no active albums or no recipient email address`,
   );
   const okLogs = deleteSuccessfulRowIds.map(
-    (x) => `[pending_notification_row] row ${x} -> successfully sent`,
+    (x) => `[async_notification_row] row ${x} -> successfully sent`,
   );
 
   const deleteIds = [...deleteSuccessfulRowIds, ...deleteFailedRowIds, ...deleteSkippedRowIds];

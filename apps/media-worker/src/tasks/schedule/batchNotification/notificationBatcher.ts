@@ -1,107 +1,100 @@
-import { EntityType, notEmpty } from '@packages/contracts';
+import { BatchedPayloadKind, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
-import {
-  SystemAlbumRepository,
-  SystemAuthorizationRepository,
-  SystemPendingNotificationRepository,
-  SystemUserRepository,
-} from '@packages/media-core';
-import { NotificationPayload, NotificationService } from '@packages/notifications';
+import { SystemAsyncNotificationRepository, SystemUserRepository } from '@packages/media-core';
+import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
+import { pickEnum } from '@reharik/smart-enum';
 import { Config } from '../../../config';
+import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
-export type NotificationBatcher = () => Promise<'idle' | 'processed'>;
+const Drivers = pickEnum(BatchedPayloadKind, ['comment', 'album']);
+export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
 
 type NotificationBatcherDeps = {
   logger: Logger;
   notificationService: NotificationService;
-  systemPendingNotificationRepository: SystemPendingNotificationRepository;
+  systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
-  systemAlbumRepository: SystemAlbumRepository;
-  systemAuthorizationRepository: SystemAuthorizationRepository;
+  batchedEmailActivity: BatchedEmailActivity;
   config: Config;
 };
 
 export const build__NotificationBatcher = ({
   logger,
   notificationService,
-  systemPendingNotificationRepository,
+  systemAsyncNotificationRepository,
   systemUserRepository,
-  systemAlbumRepository,
-  systemAuthorizationRepository,
+  batchedEmailActivity,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
   return async (): Promise<WorkerTaskOutcome> => {
-    const rows = await systemPendingNotificationRepository.claimNotificationBatch(
+    const rows = await systemAsyncNotificationRepository.claimNotificationBatch(
       config.debounceEmailWindowSeconds,
     );
     logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
-    if (!rows.length) {
-      return 'idle';
-    }
+    if (!rows.length) return 'idle';
+
+    // null recipientId = cadence-filter leak upstream; log but don't process
     const bad = rows.filter((r) => !notEmpty(r.recipientId));
     if (bad.length) {
       logger.error(`[batcher] claimed ${bad.length} null-recipient row(s) — cadence filter leak`);
     }
-    const albumRows = rows.filter((x) => x.aggregateType.equals(EntityType.album));
 
     const recipientMap = groupByMapping(
-      albumRows.filter((r) => notEmpty(r.recipientId)),
+      rows.filter((r) => notEmpty(r.recipientId)),
       (x) => x.recipientId,
     );
-    const albumMap = groupByMapping(albumRows, (x) => x.aggregateId);
 
-    const userIds = [...recipientMap.keys()].filter(notEmpty);
-    const albumIds = [...albumMap.keys()];
-    const recipients = await systemUserRepository.getUserContacts(userIds);
-    const albumTitles = await systemAlbumRepository.getAlbumTitlesById(albumIds);
-    const albumAuths = await systemAuthorizationRepository.getAuthorizationsByAlbumId(albumIds);
+    const userIds = [...recipientMap.keys()];
+    const recipientEmailMap = indexBy(await systemUserRepository.getUserContacts(userIds));
 
-    const recipientEmailMap = indexBy(recipients);
-    const albumTitleMap = indexBy(albumTitles);
-    const authMap = groupByMapping(albumAuths.userAuthorizations, (x) => x.grantedToUser);
+    const activityPayloads = batchedEmailActivity.map((x) => x.execute(rows));
+    // section processors are independent — run together
+    const payloads = await Promise.all(activityPayloads);
 
-    const outcomes: RowOutcome[] = [];
+    // outcomes surfaced by processors (skipped rows) merge with send outcomes below
+    const outcomes: RowOutcome[] = payloads.flatMap((x) => x.outcomes);
     for (const [recipientId, rowsForRecipient] of recipientMap) {
-      // drive off claimed rows
-      const authRows = authMap.get(recipientId) ?? [];
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
         logger.warn(`User ${recipientId} has no email`);
         for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
         continue;
       }
+      const data = new Map<BatchedPayloadKind, ActivitySection>();
+      let hasDriver = false;
+      payloads.forEach((x) => {
+        const activity = x.activity.get(recipientId);
+        if (activity) {
+          data.set(x.kind, activity);
+          hasDriver ||= Drivers.has(x.kind);
+        }
+      });
+      if (hasDriver) {
+        const payload: NotificationPayload<'activityDigest'> = {
+          to: recipientEmail.email,
+          template: 'activityDigest',
+          data: { data, viewUrl: '' },
+          channels: ['email'],
+        };
+        const r = await notificationService.notify(payload);
+        const result = r.success ? 'sent' : 'failed';
 
-      const emailsAlbumTitles = authRows
-        .map((x) => {
-          if (x.target.kind === 'album') {
-            return albumTitleMap.get(x.target.albumId)?.title;
-          }
-        })
-        .filter(notEmpty);
-      if (!emailsAlbumTitles.length) {
-        for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
-        continue;
+        // one send → fan its fate across all this recipient's rows (reactions ride along)
+        for (const row of rowsForRecipient) outcomes.push({ row, result });
       }
-      const payload: NotificationPayload<'albumActivity'> = {
-        to: recipientEmail.email,
-        template: 'albumActivity',
-        data: { albumTitles: emailsAlbumTitles, viewUrl: config.clientUrl },
-        channels: ['email'],
-      };
-
-      const r = await notificationService.notify(payload);
-      const result = r.success ? 'sent' : 'failed';
-
-      for (const row of rowsForRecipient) outcomes.push({ row, result }); // one send → fan its fate across all its rows
     }
+
     logger.info('[notificationBatcher] send loop complete', summarizeOutcomes(outcomes));
 
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
-    await systemPendingNotificationRepository.deleteCompletedRecords(deleteIds);
-    await systemPendingNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
+    await Promise.all([
+      systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds),
+      systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds),
+    ]);
     logs.forEach((x) => logger.info(x));
+
     return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };
 };

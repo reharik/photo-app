@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useEffect, type MouseEvent, type ReactNode } from 'react';
 import styled from 'styled-components';
 
@@ -59,7 +60,7 @@ export const AppModal = ({
             <Title id={titleId}>{title}</Title>
             {showCloseButton && (
               <CloseButton type="button" aria-label="Close modal" onClick={onClose}>
-                ×
+                <X size={20} strokeWidth={2} aria-hidden />
               </CloseButton>
             )}
           </Header>

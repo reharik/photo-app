@@ -76,6 +76,10 @@ export const build__ViewerAlbumReadService = ({
         itemCount: album.itemCount,
         createdAt: album.createdAt,
         updatedAt: album.updatedAt,
+        owner: {
+          firstName: album.ownerFirstName,
+          lastName: album.ownerLastName,
+        },
         viewerMemberRole: album.viewerMemberRole,
         coverMedia: coversMap.get(album.id),
         operations: album.viewerMemberRole?.operations ?? [],
@@ -99,6 +103,10 @@ export const build__ViewerAlbumReadService = ({
         title: row.title,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+        owner: {
+          firstName: row.ownerFirstName,
+          lastName: row.ownerLastName,
+        },
         itemCount: row.itemCount,
         viewerMemberRole: row.viewerMemberRole,
         coverMedia,

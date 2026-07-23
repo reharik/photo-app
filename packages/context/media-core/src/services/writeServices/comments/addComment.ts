@@ -7,6 +7,7 @@ import {
   User,
   WriteResult,
 } from '@packages/contracts';
+import { EnumSubset } from '@reharik/smart-enum';
 import { Comment } from '../../../domain';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
@@ -25,7 +26,7 @@ export type AddCommentCommand = {
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
-  targetType: EntityType;
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
   /**
    * Ignored when parentCommentId is set; the service copies target from the parent.
    */
@@ -75,51 +76,30 @@ export const build__AddComment = ({
       if (parentComment.isReply()) {
         return fail(AppErrorCollection.comment.ReplyDepthExceeded);
       }
-      const comment = Comment.create(
-        {
-          targetType: command.targetType,
-          targetId: command.targetId,
-          parentCommentId: command.parentCommentId,
-          authorId: command.authorId,
-          body: command.body,
-          displayName: `${user.firstName}, ${user.lastName}`,
-          displayAvatarUrl: undefined,
-        },
-        command.authorId,
-      );
-
-      await commentRepository.save(comment);
-      await toggleReaction({
-        targetType: EntityType.mediaItem,
-        targetId: command.targetId,
-        emoji: ReactionEmoji.comment,
-        viewer: command.viewer,
-      });
-      return ok({ entityId: comment.id() });
-    } else {
-      // TODO: Look up viewer's display_name and avatar_url from the user table and
-      //   snapshot them into the row (denormalized — do not join through user on reads).
-      const comment = Comment.create(
-        {
-          targetType: command.targetType,
-          targetId: command.targetId,
-          parentCommentId: command.parentCommentId,
-          authorId: command.authorId,
-          body: command.body,
-          displayName: `${user.firstName}, ${user.lastName}`,
-          displayAvatarUrl: undefined,
-        },
-        command.authorId,
-      );
-
-      await commentRepository.save(comment);
-      await toggleReaction({
-        targetType: EntityType.mediaItem,
-        targetId: command.targetId,
-        emoji: ReactionEmoji.comment,
-        viewer: command.viewer,
-      });
-      return ok({ entityId: comment.id() });
     }
+
+    // TODO: Look up viewer's display_name and avatar_url from the user table and
+    //   snapshot them into the row (denormalized — do not join through user on reads).
+    const comment = Comment.create(
+      {
+        targetType: command.targetType,
+        targetId: command.targetId,
+        parentCommentId: command.parentCommentId,
+        authorId: command.authorId,
+        body: command.body,
+        displayName: `${user.firstName}, ${user.lastName}`,
+        displayAvatarUrl: undefined,
+      },
+      command.authorId,
+    );
+
+    await commentRepository.save(comment);
+    await toggleReaction({
+      targetType: EntityType.mediaItem,
+      targetId: command.targetId,
+      emoji: ReactionEmoji.comment,
+      viewer: command.viewer,
+    });
+    return ok({ entityId: comment.id() });
   };
 };

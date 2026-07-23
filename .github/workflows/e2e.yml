@@ -44,14 +44,14 @@ permissions:
   contents: read
 
 env:
-  APP_NAME: betaname
-  COMPOSE_PROJECT_NAME: betaname-ci
+  APP_NAME: homeroll
+  COMPOSE_PROJECT_NAME: homeroll-ci
   # Every `docker compose` call in this job auto-loads these files, in order.
   # NOTE: each `docker compose` invocation also passes `--project-directory .`
   # so env_file paths (./apps/api/.env, ...) resolve from the repo root rather
   # than the first compose file's directory (the Makefile does the same).
-  COMPOSE_FILE: infra/config/docker-compose/base.yml:infra/config/docker-compose/dev.yml:docker-compose/docker-compose.dev.yml:infra/config/docker-compose/ci.yml
-  DEV_IMAGE: betaname-api:dev
+  COMPOSE_FILE: infra/config/docker-compose/base.yml:infra/config/docker-compose/dev.yml:docker-compose/docker-compose.ci.yml:infra/config/docker-compose/ci.yml
+  DEV_IMAGE: homeroll-api:dev
 
 jobs:
   e2e:

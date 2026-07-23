@@ -41,5 +41,9 @@ export default defineIocConfig({
       baseType: 'FastSweepNotificationStrategy',
       baseTypeArg: 'TemplateName',
     },
+    batchedEmailActivity: {
+      kind: 'collection',
+      baseType: 'BatchedEmailPayload',
+    },
   },
 });

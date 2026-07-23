@@ -43,7 +43,7 @@ export const AlbumSelectionActions = ({
         {removeAction ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="small"
             fullWidth
             onClick={removeAction.onAction}
@@ -60,7 +60,7 @@ export const AlbumSelectionActions = ({
       <CountText>{selectionLabel}</CountText>
       <ActionGroup>
         {removeAction ? (
-          <Button type="button" variant="ghost" size="small" onClick={removeAction.onAction}>
+          <Button type="button" variant="secondary" size="small" onClick={removeAction.onAction}>
             Remove from album
           </Button>
         ) : null}
@@ -124,7 +124,7 @@ const CancelButton = styled.button`
   background: transparent;
   color: ${({ theme }) => theme.color.textMuted};
   font-size: ${({ theme }) => theme.fontSize._13};
-  font-weight: ${({ theme }) => theme.weight.medium};
+  font-weight: ${({ theme }) => theme.weight.regular};
   cursor: pointer;
   transition: color 0.15s ease;
   flex-shrink: 0;

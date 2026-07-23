@@ -1,0 +1,11 @@
+mutation MarkSurfaceSeen(
+  $containerType: EntityType!
+  $containerId: ID!
+  $kind: InAppNotificationType!
+) {
+  markSurfaceSeen(containerType: $containerType, containerId: $containerId, kind: $kind) {
+    data {
+      success
+    }
+  }
+}

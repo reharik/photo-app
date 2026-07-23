@@ -110,7 +110,7 @@ test.describe('Share an album with an existing user', () => {
               // Matches the recipient AND the "New album activity" body, so the earlier
               // share-invite email to the same user doesn't satisfy the poll.
               return Boolean(
-                findSesMessageForRecipient(messages, userB.user.email, 'New album activity'),
+                findSesMessageForRecipient(messages, userB.user.email, 'New activity'),
               );
             },
             { timeout: 30_000 },

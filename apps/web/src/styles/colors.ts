@@ -25,6 +25,7 @@ export const colors = {
   white: '#ffffff',
 
   // ── Neutrals (warm-tinted for light UI) ──────────────────────────
+  gray_05: '#FFFDF9', // warm print-white (photo mat) — above the paper body
   gray_10: '#FAFAF7', // body background (paper, faint warm)
   gray_15: '#F5F1E9', // raised surface (nav, sticky headers)
   gray_20: '#EDE7DA', // subtle divider line, panel

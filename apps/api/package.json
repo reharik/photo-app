@@ -1,7 +1,7 @@
 {
   "name": "@app/api",
   "private": true,
-  "description": "BetanaMe API",
+  "description": "Homeroll API",
   "keywords": [],
   "license": "ISC",
   "author": "",
@@ -43,7 +43,7 @@
     "@packages/infrastructure": "*",
     "@packages/media-core": "*",
     "@packages/notifications": "*",
-    "@reharik/smart-enum": "^0.4.6",
+    "@reharik/smart-enum": "^0.7.0",
     "@reharik/smart-enum-knex": "^0.0.3",
     "awilix": "^12.1.1",
     "bcryptjs": "^3.0.3",

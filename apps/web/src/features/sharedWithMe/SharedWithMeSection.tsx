@@ -1,7 +1,10 @@
+import { EntityType } from '@packages/contracts';
 import { useRef } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { EmptyState } from '../../ui/EmptyState';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { SharedWithMeMediaItemVM } from '../../viewModels/';
 import { LIBRARY_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
@@ -27,6 +30,7 @@ export const SharedWithMeSection = ({
   reloadData,
 }: SharedWithMeSectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const { isTargetUnseen } = useInAppNotification();
   return (
     <Container>
       <PageHeader>
@@ -36,6 +40,7 @@ export const SharedWithMeSection = ({
         {sharedWithMeMediaItems.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<HeroIllustration />}
               title="No shared media"
               text="When someone shares individual photos or videos with you, they will show up here."
             />
@@ -58,6 +63,7 @@ export const SharedWithMeSection = ({
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact
                   onReactionsRefetch={reloadData}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.mediaItem.id)}
                 />
               )}
             />

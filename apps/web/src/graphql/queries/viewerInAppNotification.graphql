@@ -1,0 +1,14 @@
+query ViewerInAppNotification {
+  viewer {
+    id
+    inAppNotification {
+      id
+      containerType
+      containerId
+      subjectType
+      subjectId
+      kind
+      surface
+    }
+  }
+}

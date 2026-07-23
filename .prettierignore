@@ -32,4 +32,5 @@ packages/foundation/infrastructure/src/utilities/index.ts
 # Transient artifacts (should not be committed either — see .gitignore)
 /graph.json
 /stdout.json
-/test-results
+**/test-results/**
+**/playwright-report/**

@@ -1,35 +1,47 @@
-import { PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
-import { PendingNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
+import {
+  AsyncNotification,
+  SystemAlbumRepository,
+  SystemAuthorizationRepository,
+  UserContact,
+} from '@packages/media-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 
 type AlbumSharedWithNonUserStrategyDeps = {
   systemAlbumRepository: SystemAlbumRepository;
+  systemAuthorizationRepository: SystemAuthorizationRepository;
   config: Config;
 };
 
 export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
+  systemAuthorizationRepository,
 }: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'albumGuestInvite'> => ({
-  kind: PendingNotificationKind.guestAlbumShared,
+  kind: AsyncNotificationKind.guestAlbumShared,
   execute: async (
-    rows: PendingNotification[],
+    rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'albumGuestInvite'>[]> => {
-    const albumIds = [...new Set(rows.map((x) => x.aggregateId))];
+    const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
-    return rows.map((row) => {
+
+    const results: PayloadResult<'albumGuestInvite'>[] = [];
+    for (const row of rows) {
       const recipientEmail = userMap.get(row.recipientId)?.email;
-      const token = row.data?.token;
+      const publicLinkAuthorization =
+        await systemAuthorizationRepository.getPublicLinkAuthorizationById(row.subjectId);
+      const token = publicLinkAuthorization.linkToken;
       if (!recipientEmail || !token) {
-        return { row, kind: 'skipped', reason: 'no recipient email or token' };
+        results.push({ row, kind: 'skipped', reason: 'no recipient email or token' });
+        continue;
       }
       const actor = userMap.get(row.actorId);
-      const album = albumMap.get(row.aggregateId);
-      return {
+      const album = albumMap.get(row.containerId);
+      results.push({
         row,
         kind: 'ready',
         payload: {
@@ -43,7 +55,8 @@ export const build__AlbumSharedWithNonUserStrategy = ({
             signupUrl: `${config.clientUrl}/signup`,
           },
         },
-      };
-    });
+      });
+    }
+    return results;
   },
 });

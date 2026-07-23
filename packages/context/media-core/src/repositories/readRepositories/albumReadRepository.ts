@@ -18,11 +18,11 @@ import {
   withAlbumItemCount,
   withAlbumItemViewableByMemberOrItemGrant,
   withCollectionInfo,
-  withUnseenAlbumFlag,
   withViewableByMemberOrAlbumGrant,
   withViewerMembership,
 } from '../queryHelpers';
 import { withActivePublicLink } from '../queryHelpers/withActivePublicLink';
+import { withAlbumOwnerName } from '../queryHelpers/withAlbumOwnerName';
 import type { AlbumIdRow, AlbumReadRepository, ReadRepositoryDeps } from './types';
 
 const mediaItemSelectColumns = [
@@ -76,7 +76,6 @@ export const build__AlbumReadRepository = ({
         .modify(withViewerMembership(database, viewerId))
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
-        .modify(withUnseenAlbumFlag(database, viewerId))
         .modify(withCollectionInfo(database, collectionInfo))
         .select<(AlbumWithCoverRow & { totalCount: number })[]>(...albumFields)
         .where('albumMember.userId', viewerId)
@@ -103,6 +102,7 @@ export const build__AlbumReadRepository = ({
         .modify(withViewerMembership(database, viewerId))
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
+        .modify(withAlbumOwnerName(database))
         .select(...albumFields)
         .where('album.id', albumId)
         .modify(withViewableByMemberOrAlbumGrant(database, viewerId))
@@ -165,6 +165,7 @@ export const build__AlbumReadRepository = ({
       database<AlbumWithCoverRow>('album')
         .modify(withAlbumCoverItem)
         .modify(withAlbumItemCount(database))
+        .modify(withAlbumOwnerName(database))
         .where('album.id', albumId)
         .modify(withActivePublicLink(database, albumId, publicLinkId))
         .select<AlbumWithCoverRow>(...publicAlbumFields)

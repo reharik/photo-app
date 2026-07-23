@@ -2,6 +2,10 @@ fragment publicAlbumSummary on PublicAlbum {
   id
   title
   itemCount
+  owner {
+    firstName
+    lastName
+  }
   coverMedia {
     ...PublicMediaItemSummary
   }

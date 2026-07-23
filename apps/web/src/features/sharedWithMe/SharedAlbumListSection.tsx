@@ -1,5 +1,8 @@
+import { EntityType } from '@packages/contracts';
 import styled from 'styled-components';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { EmptyState } from '../../ui/EmptyState';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { AlbumSummaryVM } from '../../viewModels/';
 import { AlbumTile } from '../albums/AlbumTile';
 import { ALBUM_LIST_COLUMNS } from '../media/grid/gridColumns';
@@ -18,6 +21,7 @@ type SharedAlbumListSectionProps = {
 };
 
 export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) => {
+  const { isTargetUnseen } = useInAppNotification();
   return (
     <Container>
       <PageHeader>
@@ -29,6 +33,7 @@ export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) =
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<HeroIllustration />}
               title="No shared albums"
               text="When someone shares an album with you, it will show up here."
             />
@@ -42,7 +47,9 @@ export const SharedAlbumListSection = ({ nodes }: SharedAlbumListSectionProps) =
               selectable={false}
               selectionActive={false}
               columnCounts={ALBUM_LIST_COLUMNS}
-              renderItem={(album) => <AlbumTile album={album} />}
+              renderItem={(album) => (
+                <AlbumTile album={album} hasUnseen={isTargetUnseen(EntityType.album, album.id)} />
+              )}
             />
           </GridWrap>
         )}

@@ -1,5 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { AlbumItemSortBy, EntityType, SortDir } from '@packages/contracts';
+import { AlbumItemSortBy, EntityType, InAppNotificationType, SortDir } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -10,18 +10,18 @@ import {
   AddMediaItemsToAlbumMutation,
   DeleteAlbumItemsFromAlbumDocument,
   DeleteAlbumItemsFromAlbumMutation,
-  MarkSeenDocument,
-  MarkSeenMutation,
+  MarkSurfaceSeenDocument,
   MediaItemSortBy,
   SetCoverMediaDocument,
   SetCoverMediaMutation,
   ViewerAlbumDetailDocument,
-  ViewerHasUnseenActivityDocument,
+  ViewerInAppNotificationDocument,
   ViewerLibraryDocument,
   ViewerSharedWithMeAlbumsDocument,
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
+import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
 export const AlbumScreen = () => {
@@ -34,8 +34,8 @@ export const AlbumScreen = () => {
   const addToAlbumMutation = useAppMutationState();
   const removeFromAlbumMutation = useAppMutationState();
   const addAlbumCoverMutation = useAppMutationState();
-  const markSeenMutation = useAppMutationState();
   const apolloClient = useApolloClient();
+  const { anyUnseenMatching } = useInAppNotification();
   const markedSeenAlbumIdRef = useRef<string | null>(null);
   const [groupBy, setGroupBy] = useState<AlbumGroupBy>('none');
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
@@ -95,40 +95,52 @@ export const AlbumScreen = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, sortDir]); // ONLY sort inputs — not query, not buildPageVariables
 
-  // Opening an album = seeing its activity. Fire markSeen once the detail
-  // resolves, once per album. On success, refetch the aggregate nav flag and the
-  // shared-album list so their unseen dots clear. Real failures are logged, not
-  // swallowed — the backend write is live.
+  // Opening an album = seeing its container-level activity. Surface-clear once the
+  // detail resolves, once per album. Kind-scoped: an album can carry itemAdded (new
+  // media in my album) and/or albumShared (a shared album). We clear BOTH kinds —
+  // each is a no-op for the album that doesn't have it, and albums never carry
+  // comment rows, so there is no collision with the deferred comment id-clear.
+  // Best-effort: failures are logged, not surfaced.
   const loadedAlbumId = albumData?.album?.id;
   useEffect(() => {
     if (loadedAlbumId == null || markedSeenAlbumIdRef.current === loadedAlbumId) {
       return;
     }
+    // Clear only the kinds the client actually holds a row for at this album — skip the
+    // mutation(s) AND the refetch entirely when there's nothing to clear (empty round-trip).
+    // If the array hasn't resolved yet this is empty and the effect re-runs when it does.
+    const kinds = [InAppNotificationType.itemAdded, InAppNotificationType.albumShared].filter(
+      (kind) =>
+        anyUnseenMatching(
+          (r) =>
+            r.containerType.equals(EntityType.album) &&
+            r.containerId === loadedAlbumId &&
+            r.kind.equals(kind),
+        ),
+    );
+    if (kinds.length === 0) {
+      return;
+    }
     markedSeenAlbumIdRef.current = loadedAlbumId;
 
     void (async () => {
-      const result = await markSeenMutation.execute(
-        {
-          mutation: MarkSeenDocument,
-          variables: {
-            targetType: EntityType.album,
-            targetId: loadedAlbumId,
-          },
-        },
-        (data: MarkSeenMutation) => data.markSeen,
-      );
-
-      if (!result.success) {
-        console.error('markSeen failed for album', loadedAlbumId, result.errors);
-        return;
+      try {
+        await Promise.all(
+          kinds.map((kind) =>
+            apolloClient.mutate({
+              mutation: MarkSurfaceSeenDocument,
+              variables: { containerType: EntityType.album, containerId: loadedAlbumId, kind },
+            }),
+          ),
+        );
+        void apolloClient.refetchQueries({
+          include: [ViewerInAppNotificationDocument, ViewerSharedWithMeAlbumsDocument],
+        });
+      } catch (error) {
+        console.error('markSurfaceSeen failed for album', loadedAlbumId, error);
       }
-
-      void apolloClient.refetchQueries({
-        include: [ViewerHasUnseenActivityDocument, ViewerSharedWithMeAlbumsDocument],
-      });
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadedAlbumId]); // fire once per album; mutation/client are stable refs
+  }, [loadedAlbumId, anyUnseenMatching, apolloClient]);
 
   // replace the bare useQuery with the paginated hook
   const buildPickerVariables = useCallback(

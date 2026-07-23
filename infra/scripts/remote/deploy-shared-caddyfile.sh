@@ -55,7 +55,7 @@ else
     -v /opt/shared/Caddyfile:/etc/caddy/Caddyfile:ro \
     -v /opt/network/frontend:/srv/network:ro \
     -v /opt/chore-tracker/frontend:/srv/chore-tracker:ro \
-    -v /opt/betaname/frontend:/srv/betaname:ro \
+    -v /opt/homeroll/frontend:/srv/homeroll:ro \
     -v caddy_data_shared:/data \
     -v caddy_config_shared:/config \
     caddy:2-alpine

@@ -1,5 +1,5 @@
-import { PendingNotificationKind } from '@packages/contracts';
-import { PendingNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
+import { AsyncNotificationKind } from '@packages/contracts';
+import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 
@@ -11,9 +11,9 @@ type MediaItemsSharedStrategyDeps = {
 export const build__MediaItemsSharedStrategy = ({
   config,
 }: MediaItemsSharedStrategyDeps): FastSweepNotificationStrategy<'itemShareInvite'> => ({
-  kind: PendingNotificationKind.itemShared,
+  kind: AsyncNotificationKind.itemShared,
   execute: async (
-    rows: PendingNotification[],
+    rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'itemShareInvite'>[]> => {
     return rows.map((row) => {

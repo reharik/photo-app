@@ -1,4 +1,4 @@
-APP_NAME := betaname
+APP_NAME := homeroll
 ENV_NAME ?= dev
 
 # Per-clone overrides (git-ignored). A secondary working copy drops in a

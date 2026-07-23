@@ -49,5 +49,14 @@ export default defineIocConfig({
       kind: 'object',
       baseType: 'AgnosticReadServiceBase',
     },
+    notificationWriters: {
+      kind: 'object',
+      baseType: 'NotificationWriter',
+    },
+    notificationStrategies: {
+      kind: 'collection',
+      baseType: 'NotificationStrategy',
+      baseTypeArg: 'DomainEventKind',
+    },
   },
 });

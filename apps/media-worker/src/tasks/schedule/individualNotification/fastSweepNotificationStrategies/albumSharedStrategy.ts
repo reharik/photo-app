@@ -1,6 +1,6 @@
-import { PendingNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
-import { PendingNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
+import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 
@@ -13,12 +13,12 @@ export const build__AlbumSharedStrategy = ({
   config,
   systemAlbumRepository,
 }: AlbumSharedStrategyDeps): FastSweepNotificationStrategy<'albumShareInvite'> => ({
-  kind: PendingNotificationKind.albumShared,
+  kind: AsyncNotificationKind.albumShared,
   execute: async (
-    rows: PendingNotification[],
+    rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
   ): Promise<PayloadResult<'albumShareInvite'>[]> => {
-    const albumIds = [...new Set(rows.map((x) => x.aggregateId))];
+    const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
     return rows.map((row) => {
@@ -27,7 +27,7 @@ export const build__AlbumSharedStrategy = ({
         return { row, kind: 'skipped', reason: 'no recipient email' };
       }
       const actor = userMap.get(row.actorId);
-      const album = albumMap.get(row.aggregateId);
+      const album = albumMap.get(row.containerId);
       return {
         row,
         kind: 'ready',

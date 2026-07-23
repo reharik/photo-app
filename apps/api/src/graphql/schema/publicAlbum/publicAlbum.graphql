@@ -1,6 +1,7 @@
 type PublicAlbum implements Node {
   id: ID!
   title: String!
+  owner: Owner
   coverMedia: PublicMediaItem
   items(input: PublicAlbumItemsInput!): PublicAlbumItemCollectionPayload!
   comments(input: CommentsInput!): CommentCollectionPayload!

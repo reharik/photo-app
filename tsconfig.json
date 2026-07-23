@@ -1,5 +1,5 @@
 {
-  "extends": "./infra/config/tsconfig/tsconfig.typia.json",
+  "extends": "./infra/config/tsconfig/tsconfig.base.json",
   "files": [],
   "include": ["types/**/*.d.ts"],
   "compilerOptions": {

@@ -1,4 +1,6 @@
+import { Check } from 'lucide-react';
 import styled from 'styled-components';
+import { tileMatteVars } from '../../../ui/Print';
 
 type MediaGridSelectionToggleProps = {
   selected: boolean;
@@ -35,15 +37,24 @@ export const MediaGridSelectionToggle = ({
         onToggle();
       }}
     >
-      {selected ? <CheckGlyph aria-hidden>✓</CheckGlyph> : null}
+      {selected ? (
+        <CheckGlyph aria-hidden>
+          <Check size={14} strokeWidth={2.5} aria-hidden />
+        </CheckGlyph>
+      ) : null}
     </ToggleButton>
   );
 };
 
 const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boolean }>`
+  ${tileMatteVars}
   position: absolute;
-  top: ${({ $selected }) => ($selected ? '7px' : '8px')};
-  right: ${({ $selected }) => ($selected ? '7px' : '8px')};
+  /* Offset inward by the (responsive) tile matte so the ring sits within the
+     photo, not on the mat — matches the reaction pill / unseen dot / burst
+     badge. This ring is a sibling of the tile frame (not a descendant), so it
+     sets --tile-matte on itself rather than inheriting it. */
+  top: ${({ $selected }) => `calc(var(--tile-matte) + ${$selected ? 7 : 8}px)`};
+  right: ${({ $selected }) => `calc(var(--tile-matte) + ${$selected ? 7 : 8}px)`};
   width: ${({ $selected }) => ($selected ? '20px' : '18px')};
   height: ${({ $selected }) => ($selected ? '20px' : '18px')};
   padding: 0;
@@ -107,7 +118,7 @@ const ToggleButton = styled.button<{ $selected: boolean; $selectionActive: boole
 `;
 
 const CheckGlyph = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;

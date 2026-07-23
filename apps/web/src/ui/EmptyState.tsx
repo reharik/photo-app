@@ -1,15 +1,22 @@
+import type { ReactNode } from 'react';
 import styled from 'styled-components';
 
 type EmptyStateProps = {
   title: string;
   text: string;
-  action?: React.ReactNode;
+  /**
+   * Illustration slot rendered above the headline. Strokes/fills should use
+   * `currentColor` — the slot is clay-tinted here, so a richer illustration can
+   * drop in later with no plumbing change. See {@link FilmRollMark}.
+   */
+  illustration?: ReactNode;
+  action?: ReactNode;
 };
 
-export const EmptyState = ({ title, text, action }: EmptyStateProps) => {
+export const EmptyState = ({ title, text, illustration, action }: EmptyStateProps) => {
   return (
     <EmptyStateContainer>
-      <EmptyIcon>📷</EmptyIcon>
+      {illustration ? <EmptyIllustration aria-hidden>{illustration}</EmptyIllustration> : null}
       <EmptyTitle>{title}</EmptyTitle>
       <EmptyText>{text}</EmptyText>
       {action ? action : null}
@@ -27,20 +34,34 @@ const EmptyStateContainer = styled.div`
   text-align: center;
 `;
 
-const EmptyIcon = styled.div`
-  font-size: 64px;
-  opacity: 0.3;
+const EmptyIllustration = styled.div`
+  display: flex;
+  /* Pull the headline up toward the illustration so they read as one unit. */
+  margin-bottom: -${({ theme }) => theme.spacing(1)};
+  color: ${({ theme }) => theme.color.textAccent};
+
+  /* Softening is only for the line-art fallback (FilmRollMark); raster
+     illustrations render at full strength. */
+  svg {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    opacity: 0.85;
+  }
 `;
 
 const EmptyTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 500;
+  font-family: ${({ theme }) => theme.font.serif};
+  font-size: ${({ theme }) => theme.fontSize._24};
+  font-weight: ${({ theme }) => theme.weight.medium};
   margin: 0;
   color: ${({ theme }) => theme.color.bodyText};
 `;
 
 const EmptyText = styled.p`
-  font-size: 16px;
+  font-family: ${({ theme }) => theme.font.body};
+  font-size: ${({ theme }) => theme.fontSize._16};
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
   max-width: 400px;

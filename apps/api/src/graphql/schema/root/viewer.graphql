@@ -17,18 +17,17 @@ type Viewer {
   ): SharedWithMeMediaItemCollectionPayload!
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
-  hasUnseenActivity: Boolean!
-  unseenSharedActivity: UnseenSharedActivity!
+  inAppNotification: [InAppNotification!]!
 }
 
-"""
-Per-category unseen-activity flags, mirroring the "Shared" nav children so each
-can show its own dot. `photos` covers individually shared media items; `albums`
-covers shared albums.
-"""
-type UnseenSharedActivity {
-  mediaItems: Boolean!
-  albums: Boolean!
+type InAppNotification {
+  id: ID!
+  containerType: EntityType!
+  containerId: ID!
+  subjectType: EntityType!
+  subjectId: ID!
+  kind: InAppNotificationType!
+  surface: ActivitySurface!
 }
 
 type DeleteAlbumResponse {

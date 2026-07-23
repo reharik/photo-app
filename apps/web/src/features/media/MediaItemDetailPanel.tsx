@@ -1,5 +1,6 @@
 import { useFragment } from '@apollo/client/react';
 import { Operation } from '@packages/contracts';
+import { X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { MediaItemCommentCountFragmentDoc } from '../../graphql/generated/types';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -222,7 +223,7 @@ export const MediaItemDetailPanel = forwardRef<
         <DescriptiveMetadataZone>
           <RailHeader>
             <DetailsPanelCloseButton type="button" onClick={handleCloseRequest} aria-label="Close">
-              ✕
+              <X size={20} strokeWidth={2} aria-hidden />
             </DetailsPanelCloseButton>
           </RailHeader>
 

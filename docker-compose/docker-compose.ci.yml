@@ -1,0 +1,73 @@
+services:
+  # Infra dev base includes LocalStack; keep it opt-in so default `make docker/dev/up` uses real AWS (~/.aws).
+  # localstack:
+  #   profiles: !override []
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: dev
+      args:
+        APP_NAME: api
+    ports:
+      - '3001:3001'
+    env_file:
+      - ./apps/api/.env
+    # Merge with infra/config/docker-compose/dev.yml (LocalStack, AWS_ENDPOINT, etc.).
+    depends_on: !override
+      localstack:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+      API_PORT: '3001'
+      # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
+      AWS_REGION: us-east-1
+      FROM_EMAIL: test@example.com
+      FROM_NAME: homeroll Dev
+    volumes:
+      - ./apps/api:/app/apps/api
+      - /app/apps/api/node_modules
+      - ./packages:/app/packages
+    command: ['sh', '-c', 'sh apps/api/src/scripts/serverStartUpDev.sh']
+
+  media-worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+      target: dev
+      args:
+        APP_NAME: media-worker
+    env_file:
+      - ./apps/media-worker/.env
+    depends_on: !override
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+      # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      FROM_EMAIL: test@example.com
+      FROM_NAME: homeroll Dev
+      # for e2e testing
+      SLOW_SWEEP_INTERVAL_MS: 5000
+      FAST_SWEEP_INTERVAL_MS: 5000
+      DEBOUNCE_EMAIL_WINDOW_SECONDS: 5
+    volumes:
+      - ./apps/media-worker:/app/apps/media-worker
+      - /app/apps/media-worker/node_modules
+      - ./packages:/app/packages
+      - ~/.aws:/root/.aws:ro
+    command: ['sh', '-c', 'sh apps/media-worker/src/scripts/serverStartUpDev.sh']
+
+  db:
+    # Replace default 5432:5432 so we don't conflict with another Postgres (e.g. network app)
+    ports: !override
+      - '5433:5432'
+    env_file:
+      - ./apps/api/.env

@@ -1,17 +1,17 @@
 import { MediaAssetKind, MediaKind } from '@packages/contracts';
+import { Film, Image, Layers } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
+import { printTileMatte, TILE_MATTE_VAR } from '../../../ui/Print';
+import { UnseenDot } from '../../../ui/UnseenDot';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 import { MediaGridTileReactionPill, ReactionHoverPill } from './MediaGridTileReactionPill';
 
 export type MediaGridTileFit = 'cover' | 'contain';
 
 const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
-
-const placeholderIconForKind = (kind: MediaKind): string =>
-  kind.equals(MediaKind.photo) ? '🖼️' : '🎬';
 
 export type MediaGridTileItem = {
   id: string;
@@ -36,6 +36,18 @@ export type MediaGridTileProps = {
   buildTileHref?: (itemId: string) => string;
   /** When false, skip thumbnail fetch and show the kind placeholder (e.g. album with no cover). */
   hasThumbnail?: boolean;
+  /** Derived from the viewer-level unseen-activity array (containerType=mediaItem). */
+  hasUnseen?: boolean;
+  /**
+   * When false, the reaction pill never renders (not CSS-hidden) and no reaction
+   * data is read — e.g. the add-to-album picker, which shouldn't surface reactions.
+   */
+  showReactions?: boolean;
+  /**
+   * When false, the tile drops the print matte/mat chrome and renders image-only
+   * (e.g. the add-to-album picker). Defaults to the full print treatment.
+   */
+  showCardChrome?: boolean;
 };
 
 export const MediaGridTile = ({
@@ -49,6 +61,9 @@ export const MediaGridTile = ({
   buildTileHref = defaultBuildTileHref,
   onBeforeNavigate,
   hasThumbnail = true,
+  hasUnseen = false,
+  showReactions = true,
+  showCardChrome = true,
 }: MediaGridTileProps) => {
   const [thumbLoadFailed, setThumbLoadFailed] = useState(false);
   const showBurstBadge = burstCount != null && burstCount > 1;
@@ -57,7 +72,8 @@ export const MediaGridTile = ({
   const thumbnailUrl = buildMediaItemUrl(item.id, MediaAssetKind.thumbnail);
   /** Used for data-testid on the thumbnail. */
   const testId = item.id;
-  const placeholderIcon = placeholderIconForKind(item.kind);
+  const PlaceholderIcon = item.kind.equals(MediaKind.photo) ? Image : Film;
+  const placeholderIconSize = isContain ? 32 : 40;
   const showThumbnailImage = item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
 
   useEffect(() => {
@@ -76,23 +92,28 @@ export const MediaGridTile = ({
         />
       ) : (
         <ThumbIcon aria-hidden $contain={isContain} data-testid={testId}>
-          {placeholderIcon}
+          <PlaceholderIcon size={placeholderIconSize} strokeWidth={2} aria-hidden />
         </ThumbIcon>
       )}
       {showBurstBadge ? (
         <BurstBadge aria-hidden>
-          <BurstIcon>⧉</BurstIcon>
+          <Layers size={10} strokeWidth={2} aria-hidden />
           <BurstCount>{burstCount}</BurstCount>
         </BurstBadge>
       ) : null}
-      <MediaGridTileReactionPill
-        itemId={item.id}
-        reactionCounts={item.reactionCounts}
-        viewerReactions={item.viewerReactions}
-        canReact={canReact}
-        buildTileHref={buildTileHref}
-        onReactionsRefetch={onReactionsRefetch}
-      />
+      {showReactions ? (
+        <MediaGridTileReactionPill
+          itemId={item.id}
+          reactionCounts={item.reactionCounts}
+          viewerReactions={item.viewerReactions}
+          canReact={canReact}
+          buildTileHref={buildTileHref}
+          onReactionsRefetch={onReactionsRefetch}
+        />
+      ) : null}
+      {hasUnseen ? (
+        <UnseenDot top={`calc(${TILE_MATTE_VAR} + 8px)`} right={`calc(${TILE_MATTE_VAR} + 8px)`} />
+      ) : null}
     </>
   );
 
@@ -103,6 +124,7 @@ export const MediaGridTile = ({
       {disableTileNavigation ? (
         <ThumbShell
           $contain={isContain}
+          $chrome={showCardChrome}
           $clickable={handleActivate != null}
           onClick={handleActivate}
         >
@@ -113,6 +135,7 @@ export const MediaGridTile = ({
           to={to}
           state={{ mediaGalleryIds }}
           $contain={isContain}
+          $chrome={showCardChrome}
           onClick={() => (onBeforeNavigate ? onBeforeNavigate(item.id) : undefined)}
         >
           {thumbContent}
@@ -146,10 +169,16 @@ const thumbFrameContainStyles = css`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${({ theme }) => theme.color.bodyElevated};
 `;
 
-const thumbFrameBaseStyles = css`
+// CALM print: the photo reads as a small print via a thin warm matte + inner
+// inset ring (printTileMatte). No outward shadow/stack/lift — the deepened grid
+// gap does the separating. Contain-mode letterboxing now happens on the print
+// matte itself, so a contained photo sits on a white mat (framed-print look)
+// instead of the old grey bodyElevated fill.
+// `$chrome === false` drops the print matte (mat padding, warm mat, bevel) so the
+// tile is image-only — the add-to-album picker uses this. Default keeps the matte.
+const thumbFrameBaseStyles = css<{ $chrome?: boolean }>`
   position: relative;
   display: block;
   width: 100%;
@@ -157,6 +186,7 @@ const thumbFrameBaseStyles = css`
   overflow: hidden;
   border-radius: 3px;
   color: inherit;
+  ${({ $chrome }) => ($chrome === false ? '' : printTileMatte)}
 
   @media (hover: hover) {
     &:hover ${ReactionHoverPill} {
@@ -165,13 +195,13 @@ const thumbFrameBaseStyles = css`
   }
 `;
 
-const ThumbShell = styled.div<{ $contain: boolean; $clickable?: boolean }>`
+const ThumbShell = styled.div<{ $contain: boolean; $clickable?: boolean; $chrome?: boolean }>`
   ${thumbFrameBaseStyles}
   ${({ $contain }) => ($contain ? thumbFrameContainStyles : '')}
   ${({ $clickable }) => ($clickable ? 'cursor: pointer;' : '')}
 `;
 
-const ThumbLink = styled(Link)<{ $contain: boolean }>`
+const ThumbLink = styled(Link)<{ $contain: boolean; $chrome?: boolean }>`
   ${thumbFrameBaseStyles}
   text-decoration: none;
   ${({ $contain }) => ($contain ? thumbFrameContainStyles : '')}
@@ -201,29 +231,26 @@ const ThumbImage = styled.img<{ $contain: boolean }>`
 `;
 
 const ThumbIcon = styled.div<{ $contain: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.color.textAccent};
   opacity: 0.35;
-  font-size: ${({ $contain }) => ($contain ? '32px' : '40px')};
   ${({ $contain, theme }) =>
     $contain
       ? ''
       : `
     width: 100%;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: ${theme.color.bodyElevated};
   `}
 `;
 
+// Offset inward by the (responsive) tile matte (like the reaction pill) so the
+// badge sits within the photo area, not on the mat. Inherits --tile-matte.
 const BurstBadge = styled(TileChromePill)`
-  right: ${({ theme }) => theme.spacing(0.75)};
-  bottom: ${({ theme }) => theme.spacing(0.75)};
-`;
-
-const BurstIcon = styled.span`
-  font-size: 10px;
-  line-height: 1;
+  right: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+  bottom: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
 `;
 
 const BurstCount = styled.span`

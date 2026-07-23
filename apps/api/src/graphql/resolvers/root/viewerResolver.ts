@@ -82,11 +82,8 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         totalCount: albumsRows.totalCount,
       };
     }),
-    hasUnseenActivity: authenticatedReadResolver(async (_parent, args, ctx) => {
-      return ctx.readServices.viewerHasUnseenActivityService.getUnseenActivity();
-    }),
-    unseenSharedActivity: authenticatedReadResolver(async (_parent, args, ctx) => {
-      return ctx.readServices.viewerHasUnseenActivityService.getUnseenActivitySummary();
+    inAppNotification: authenticatedReadResolver(async (_parent, args, ctx) => {
+      return ctx.readServices.viewerHasInAppNotificationService.getInAppNotification();
     }),
   },
 };

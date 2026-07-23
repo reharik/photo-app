@@ -3,11 +3,16 @@ import styled from 'styled-components';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { EmptyState } from '../../ui/EmptyState';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { PICKER_GRID_COLUMNS } from './grid/gridColumns';
 import { MediaGrid } from './grid/MediaGrid';
 import { MediaGridTile } from './grid/MediaGridTile';
 import { MediaPickerSelectionBar } from './MediaPickerSelectionBar';
+
+// Picker tiles fill each square edge-to-edge (no letterboxing). Flip to 'contain'
+// here — single edit — to letterbox picker thumbnails instead.
+const PICKER_IMAGE_FIT = 'cover' as const;
 
 type MediaSelectorSectionProps = {
   nodes: MediaItemSummaryVM[];
@@ -51,7 +56,11 @@ export const MediaSelectorSection = ({
       <PickerScrollArea ref={scrollRootRef}>
         {nodes.length === 0 ? (
           <EmptyStateWrap>
-            <EmptyState title="No media items to add" text="No media items to add" />
+            <EmptyState
+              illustration={<HeroIllustration />}
+              title="No media items to add"
+              text="No media items to add"
+            />
           </EmptyStateWrap>
         ) : (
           <GridWrap>
@@ -62,6 +71,8 @@ export const MediaSelectorSection = ({
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive
+              showSelectionToggle={false}
+              tileGap="3px"
               dimUnselectedTiles={selectionCount > 0}
               columnCounts={PICKER_GRID_COLUMNS}
               renderItem={(item, ctx) => (
@@ -69,7 +80,9 @@ export const MediaSelectorSection = ({
                   item={item}
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact={false}
-                  tileFit="contain"
+                  showReactions={false}
+                  showCardChrome={false}
+                  tileFit={PICKER_IMAGE_FIT}
                   disableTileNavigation
                 />
               )}

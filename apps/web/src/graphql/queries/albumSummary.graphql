@@ -4,7 +4,10 @@ fragment AlbumSummary on Album {
   createdAt
   updatedAt
   itemCount
-  hasUnseen
+  owner {
+    firstName
+    lastName
+  }
   ...ViewableAlbum
   coverMedia {
     ...MediaItemSummary

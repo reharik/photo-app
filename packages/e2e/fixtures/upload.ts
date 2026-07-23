@@ -33,7 +33,7 @@ export const createTestImageFile = (
   options: CreateTestImageFileOptions = {},
 ): string => {
   const sourceAssetName = options.sourceAssetName ?? 'sample.jpg';
-  const dir = mkdtempSync(join(tmpdir(), 'betaname-e2e-'));
+  const dir = mkdtempSync(join(tmpdir(), 'homeroll-e2e-'));
   const dest = join(dir, fileName);
   copyFileSync(join(E2E_ASSETS_DIR, sourceAssetName), dest);
   return dest;
@@ -50,7 +50,7 @@ export const getMediaTileIds = async (page: Page): Promise<string[]> => {
 };
 
 export const expectLibraryPage = async (page: Page): Promise<void> => {
-  await expect(page.getByText('Harik family')).toBeVisible();
+  await expect(page.getByText('Homeroll')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Recent' })).toBeVisible();
   await expect(page.getByTestId('upload-media-input').first()).toBeAttached();
 };

@@ -5,11 +5,18 @@ type Album implements ViewableItem & Node {
   # members: (input: ViewerAlbumItemsInput): AlbumItemCollectionPayload!
   createdAt: DateTime!
   updatedAt: DateTime!
+  owner: Owner
+  ownerFirstName: String
+  ownerLastName: String
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   comments(input: CommentsInput!): CommentCollectionPayload!
   operations: [Operation!]!
-  hasUnseen: Boolean
   itemCount: Int!
+}
+
+type Owner {
+  firstName: String
+  lastName: String
 }
 
 input ViewerAlbumItemsInput {

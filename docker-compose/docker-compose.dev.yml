@@ -27,7 +27,7 @@ services:
       # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
-      FROM_NAME: BetanaMe Dev
+      FROM_NAME: Homeroll Dev
     volumes:
       - ./apps/api:/app/apps/api
       - /app/apps/api/node_modules
@@ -53,7 +53,7 @@ services:
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
-      FROM_NAME: BetanaMe Dev
+      FROM_NAME: Homeroll Dev
       # for e2e testing
       SLOW_SWEEP_INTERVAL_MS: 5000
       FAST_SWEEP_INTERVAL_MS: 5000
@@ -71,3 +71,30 @@ services:
       - '5433:5432'
     env_file:
       - ./apps/api/.env
+
+  ses-viewer:
+    build: https://github.com/veertech/localstack-aws-ses-email-viewer.git#main
+    environment:
+      LOCALSTACK_HOST: http://localstack:4566
+      SMTP_FORWARD_ENABLED: 'true'
+      SMTP_FORWARD_HOST: mailpit
+      SMTP_FORWARD_PORT: '1025'
+    ports:
+      - '3005:3005'
+    depends_on:
+      - localstack
+      - mailpit
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: '500'
+    volumes:
+      - mailpit-data:/data
+    ports:
+      - '8025:8025' # UI
+      - '1025:1025' # SMTP
+
+volumes:
+  mailpit-data:

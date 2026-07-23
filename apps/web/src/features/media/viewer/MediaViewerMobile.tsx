@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { JSX, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
@@ -36,7 +37,7 @@ export const MediaViewerMobile = ({
         <ChromeLayer $visible={chromeVisible}>
           {showCloseButton ? (
             <StageImageCloseButton type="button" onClick={onClose} aria-label="Close viewer">
-              ✕
+              <X size={20} strokeWidth={2} aria-hidden />
             </StageImageCloseButton>
           ) : null}
         </ChromeLayer>

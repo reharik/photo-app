@@ -9,7 +9,6 @@ import {
   withAlbumItemCount,
   withCollectionInfo,
   withGrantedBy,
-  withUnseenAlbumFlag,
   withViewerMembership,
 } from '../queryHelpers';
 import type {
@@ -64,7 +63,6 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withViewerMembership(database, viewerId))
       .modify(withAlbumCoverItem)
       .modify(withAlbumItemCount(database))
-      .modify(withUnseenAlbumFlag(database, viewerId))
       .modify(withGrantedBy('album'))
       .modify(withActiveGrants(database, viewerId))
       .andWhere('album.isPublicLinkAlbum', false)
@@ -96,7 +94,6 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))
       .modify(withActiveGrants(database, viewerId))
-      .modify(withUnseenAlbumFlag(database, viewerId))
       .andWhere('album.isPublicLinkAlbum', false)
       .select<SharedAlbumRow>(...albumFields)
       .where('album.id', albumId);

@@ -3,14 +3,14 @@
  * Aggregate Root with its own lifecycle; references recipient (and optional resource) by ID only.
  */
 
-import { NotificationKindEnum } from '@packages/contracts';
+import { NotificationKind } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import type { AuditRecord } from '../Entity';
 
 export type NotificationProps = {
   recipientId: EntityId;
-  kind: NotificationKindEnum;
+  kind: NotificationKind;
   title: string;
   body: string;
   readAt?: Date;
@@ -19,7 +19,7 @@ export type NotificationProps = {
 export type NotificationRecord = {
   id: EntityId;
   recipientId: EntityId;
-  kind: NotificationKindEnum;
+  kind: NotificationKind;
   title: string;
   body: string;
   readAt?: Date;
@@ -27,7 +27,7 @@ export type NotificationRecord = {
 
 export type CreateNotificationInput = {
   recipientId: EntityId;
-  kind: NotificationKindEnum;
+  kind: NotificationKind;
   title: string;
   body: string;
 };

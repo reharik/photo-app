@@ -20,6 +20,7 @@ declare module 'styled-components' {
       sm: string;
       md: string;
       lg: string;
+      print: string;
     };
     spacing: (n: number) => string;
 
@@ -59,6 +60,8 @@ declare module 'styled-components' {
       bodyRaised: string;
       bodyElevated: string;
       stageDark: string;
+      stageDeep: string;
+      print: string;
       bodyText: string;
       bodyTextSecondary: string;
       bodyTextMuted: string;

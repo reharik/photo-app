@@ -1,5 +1,5 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { FrontendUploadStatus, Operation } from '@packages/contracts';
+import { EntityType, FrontendUploadStatus, Operation } from '@packages/contracts';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
@@ -16,10 +16,12 @@ import {
   saveGalleryScrollPosition,
   useGalleryScrollRestoration,
 } from '../../hooks/useGalleryScrollRestoration';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { Toast } from '../../ui/Toast';
 import { MediaItemSummaryVM } from '../../viewModels/';
 import { AddItemsToAlbum } from '../gallery/AddItemsToAlbum';
@@ -48,6 +50,7 @@ const groupByStrategy: NamedGroupStrategy<MediaItemSummaryVM> = makeDateStrategy
 export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProps) => {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const client = useApolloClient();
+  const { isTargetUnseen } = useInAppNotification();
   const [addToAlbumOpen, setAddToAlbumOpen] = useState(false);
   const [deleteMediaOpen, setDeleteMediaOpen] = useState(false);
   const [shareMediaOpen, setShareMediaOpen] = useState(false);
@@ -189,6 +192,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
         {nodes.length === 0 ? (
           <EmptyStateWrap>
             <EmptyState
+              illustration={<HeroIllustration />}
               title="No media yet"
               text="Upload your first media to start building your family gallery"
               action={<UploadMediaButton />}
@@ -212,6 +216,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
                   canReact
                   onReactionsRefetch={reloadData}
                   onBeforeNavigate={handleTileNavigate}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.id)}
                 />
               )}
             />

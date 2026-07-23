@@ -1,3 +1,3 @@
-export const APP_NAME = 'BetanaMe';
+export const APP_NAME = 'Homeroll';
 export const APP_TAGLINE =
-  'A private place for your photos — share them with the people you choose.';
+  "Share your family's photos with the people who matter — and keep them in the loop as you go.";

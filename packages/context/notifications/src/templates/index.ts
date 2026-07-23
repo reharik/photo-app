@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { TemplateData, TemplateName } from '../types';
-import AlbumActivity, { subject as albumActivitySubject } from './albumActivity';
+import ActivityDigest, { subject as activityDigestSubject } from './ActivityDigest';
 import AlbumGuestInvite, { subject as albumGuestInviteSubject } from './albumGuestInvite';
 import AlbumShareInvite, { subject as albumShareInviteSubject } from './albumShareInvite';
 import EmailVerification, { subject as emailVerificationSubject } from './emailVerification';
@@ -22,7 +22,7 @@ export const templateRegistry: TemplateRegistry = {
   albumShareInvite: { Component: AlbumShareInvite, getSubject: albumShareInviteSubject },
   albumGuestInvite: { Component: AlbumGuestInvite, getSubject: albumGuestInviteSubject },
   itemShareInvite: { Component: ItemShareInvite, getSubject: itemShareInviteSubject },
-  albumActivity: { Component: AlbumActivity, getSubject: albumActivitySubject },
+  activityDigest: { Component: ActivityDigest, getSubject: activityDigestSubject },
   passwordReset: { Component: PasswordReset, getSubject: passwordResetSubject },
   emailVerification: { Component: EmailVerification, getSubject: emailVerificationSubject },
 };

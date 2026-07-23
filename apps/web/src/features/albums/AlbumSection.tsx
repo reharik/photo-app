@@ -1,16 +1,18 @@
-import { FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
+import { EntityType, FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
 import { ArrowUpRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
+import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
 import { Button } from '../../ui/Button';
 import { ConfirmationModal } from '../../ui/ConfirmationModal';
 import { EmptyState } from '../../ui/EmptyState';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { Toast } from '../../ui/Toast';
 import { AlbumItemSummaryVM, AlbumSummaryVM, MediaItemSummaryVM } from '../../viewModels/';
 import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
@@ -77,6 +79,7 @@ export const AlbumSection = ({
   paging,
 }: AlbumSectionProps) => {
   const albumScrollRef = useRef<HTMLDivElement>(null);
+  const { isTargetUnseen } = useInAppNotification();
   const [metaCompact, setMetaCompact] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | undefined>(undefined);
   const dismissAlbumToast = useCallback((): void => {
@@ -222,6 +225,7 @@ export const AlbumSection = ({
       >
         {albumItems.length === 0 ? (
           <EmptyState
+            illustration={<HeroIllustration />}
             title="No album items yet"
             text="Start choosing media items to include to build your gallery"
             action={
@@ -252,6 +256,7 @@ export const AlbumSection = ({
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact
                   onReactionsRefetch={reloadData}
+                  hasUnseen={isTargetUnseen(EntityType.mediaItem, item.mediaItem.id)}
                 />
               )}
             />

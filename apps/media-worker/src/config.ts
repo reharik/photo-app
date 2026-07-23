@@ -99,8 +99,8 @@ export const createConfigFromEnv = (): Config => {
     slowSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
       ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
       : 3600000, //  1 hour
-    fastSweepIntervalMS: process.env.SLOW_SWEEP_INTERVAL_MS
-      ? Number(process.env.SLOW_SWEEP_INTERVAL_MS)
+    fastSweepIntervalMS: process.env.FAST_SWEEP_INTERVAL_MS
+      ? Number(process.env.FAST_SWEEP_INTERVAL_MS)
       : 60000, // 1 minutes
     debounceEmailWindowSeconds: process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS
       ? Number(process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS)

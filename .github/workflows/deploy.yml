@@ -259,9 +259,14 @@ jobs:
           ssm_run "Deploy backend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"
 
   deploy_frontend:
-    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_frontend) && needs.discover.outputs.frontend_changed == 'true' }}
+    needs: [discover, build, deploy]
+    if: >-
+      !cancelled()
+      && (github.event_name != 'workflow_dispatch' || inputs.deploy_frontend)
+      && needs.discover.outputs.frontend_changed == 'true'
+      && needs.build.result != 'failure'
+      && needs.deploy.result != 'failure'
     runs-on: ubuntu-latest
-    needs: discover
     steps:
       - uses: actions/checkout@v4
 

@@ -1,31 +1,54 @@
-import { EntityType, ok, WriteResult } from '@packages/contracts';
-import { UnseenActivityRepository } from '../../repositories/readRepositories/unseenActivityRepository';
+import { EntityType, InAppNotificationType, ok, WriteResult } from '@packages/contracts';
+import { InAppNotificationRepository } from '../../repositories/readRepositories/inAppNotificationRepository';
 import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';
 
-export type MarkActivitySeenInput = {
-  targetType: EntityType;
-  targetId?: EntityId;
+export type ClearBySurfaceCommand = {
   viewerId: EntityId;
+  containerType: EntityType;
+  containerId: EntityId;
+  kind: InAppNotificationType;
+};
+
+export type ClearByIdsCommand = {
+  viewerId: EntityId;
+  ids: EntityId[];
 };
 
 export interface MarkActivitySeen extends WriteServiceBase {
-  (input: MarkActivitySeenInput): Promise<WriteResult<{ success: boolean }>>;
+  clearBySurface: (input: ClearBySurfaceCommand) => Promise<WriteResult<{ success: boolean }>>;
+
+  clearByIds: (input: ClearByIdsCommand) => Promise<WriteResult<{ success: boolean }>>;
 }
 
 type MarkActivitySeenDeps = {
   viewerId: EntityId;
 
-  unseenActivityRepository: UnseenActivityRepository;
+  inAppNotificationRepository: InAppNotificationRepository;
 };
 
 export const build__MarkActivitySeen = ({
-  unseenActivityRepository,
+  inAppNotificationRepository,
 }: MarkActivitySeenDeps): MarkActivitySeen => {
-  return async (input: MarkActivitySeenInput): Promise<WriteResult<{ success: boolean }>> => {
-    const { targetType, targetId, viewerId } = input;
-    await unseenActivityRepository.markSeen(targetType, viewerId, targetId);
-
-    return ok({ success: true });
+  return {
+    // inAppNotificationService
+    clearBySurface: async ({
+      viewerId,
+      containerType,
+      containerId,
+      kind,
+    }: ClearBySurfaceCommand) => {
+      await inAppNotificationRepository.deleteWhere({
+        viewerId,
+        containerType: containerType,
+        containerId,
+        kind,
+      });
+      return ok({ success: true });
+    },
+    clearByIds: async ({ viewerId, ids }: ClearByIdsCommand) => {
+      await inAppNotificationRepository.deleteByIds({ viewerId, ids }); // viewerId scoped — never delete another viewer's rows by raw id
+      return ok({ success: true });
+    },
   };
 };

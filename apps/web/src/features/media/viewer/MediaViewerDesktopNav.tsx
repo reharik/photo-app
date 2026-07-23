@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReactNode } from 'react';
 import styled, { css } from 'styled-components';
 import { ViewerStageDesktop } from './MediaViewerStyles';
@@ -24,7 +25,7 @@ export const MediaViewerDesktopNav = ({
           $side="start"
           onClick={() => onNavigate('previous')}
         >
-          ‹
+          <ChevronLeft size={28} strokeWidth={2} aria-hidden />
         </DesktopNavMarginButton>
 
         <ViewerStageDesktop>{media}</ViewerStageDesktop>
@@ -36,7 +37,7 @@ export const MediaViewerDesktopNav = ({
           $side="end"
           onClick={() => onNavigate('next')}
         >
-          ›
+          <ChevronRight size={28} strokeWidth={2} aria-hidden />
         </DesktopNavMarginButton>
       </DesktopMediaStage>
     </DesktopNavLayout>
@@ -76,8 +77,6 @@ const DesktopNavMarginButton = styled.button<{ $side: 'start' | 'end' }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  line-height: 1;
   color: ${({ theme }) => theme.color.body};
   cursor: pointer;
   border: 1px solid color-mix(in srgb, ${({ theme }) => theme.color.body} 22%, transparent);

@@ -9,14 +9,22 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         albumId: args.input.albumId,
       });
     }),
-    markSeen: authenticatedWriteResolver((_parent, args, ctx) => {
-      const { targetType, targetId } = args;
-      return ctx.writeServices.markActivitySeen({
-        targetType,
-        targetId,
-        viewerId: ctx.viewer.id,
-      });
+
+    markSurfaceSeen: authenticatedWriteResolver(
+      async (_parent, { containerType, containerId, kind }, ctx) => {
+        return ctx.writeServices.markActivitySeen.clearBySurface({
+          viewerId: ctx.viewer.id,
+          containerType,
+          containerId,
+          kind,
+        });
+      },
+    ),
+
+    markItemsSeen: authenticatedWriteResolver(async (_parent, { ids }, ctx) => {
+      return ctx.writeServices.markActivitySeen.clearByIds({ viewerId: ctx.viewer.id, ids });
     }),
+
     deleteShareContact: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const { handle } = args;
       return ctx.writeServices.deleteShareContactService(handle, ctx.viewer.id);

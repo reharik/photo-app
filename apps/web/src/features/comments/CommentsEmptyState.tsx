@@ -1,3 +1,4 @@
+import { MessageCircle } from 'lucide-react';
 import { JSX } from 'react';
 import styled from 'styled-components';
 
@@ -7,7 +8,9 @@ type Props = {
 
 export const CommentsEmptyState = ({ canComment }: Props): JSX.Element => (
   <Root>
-    <Icon aria-hidden>💬</Icon>
+    <Icon aria-hidden>
+      <MessageCircle size={24} strokeWidth={2} aria-hidden />
+    </Icon>
     <Message>{canComment ? 'No comments yet. Be the first.' : 'No comments yet.'}</Message>
   </Root>
 );
@@ -22,9 +25,8 @@ const Root = styled.div`
 `;
 
 const Icon = styled.span`
-  font-size: 24px;
-  line-height: 1;
-  filter: grayscale(0.6);
+  display: inline-flex;
+  color: ${({ theme }) => theme.color.textAccent};
 `;
 
 const Message = styled.p`

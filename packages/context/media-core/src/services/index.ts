@@ -15,7 +15,7 @@ export * from './readServices/publicReadServices/publicMediaItemReadService';
 export * from './readServices/viewerReadServices/enrichMediaItems';
 export * from './readServices/viewerReadServices/viewerAlbumReadService';
 export * from './readServices/viewerReadServices/viewerAuthorizationsReadService';
-export * from './readServices/viewerReadServices/viewerHasUnseenActivityService';
+export * from './readServices/viewerReadServices/viewerHasInAppNotificationService';
 export * from './readServices/viewerReadServices/viewerMediaItemReadService';
 export * from './readServices/viewerReadServices/viewerReactionReadService';
 export * from './readServices/viewerReadServices/viewerSharedContactsReadService';

@@ -1,5 +1,5 @@
 {
-  "name": "betaname",
+  "name": "homeroll",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.6.2",
@@ -85,7 +85,7 @@
     "postinstall": "ts-patch install"
   },
   "dependencies": {
-    "@reharik/smart-enum": "^0.4.6",
+    "@reharik/smart-enum": "^0.7.0",
     "ioc-manifest": "^2.3.6",
     "knip": "^6.4.1"
   },
@@ -99,7 +99,7 @@
     "@nx/js": "21.4.1",
     "@nx/react": "21.4.1",
     "@nx/vite": "21.4.1",
-    "@react-email/ui": "^6.6.7",
+    "@react-email/ui": "^6.9.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

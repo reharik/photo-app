@@ -60,7 +60,7 @@ photos.backintouch.net {
 	}
 }
 
-betaname.app {
+homeroll.app {
 	handle /api/* {
 		reverse_proxy localhost:3002 {
 			health_uri /health
@@ -77,7 +77,7 @@ betaname.app {
 	handle {
 		@shared path /shared/*
 		header @shared X-Robots-Tag "noindex, nofollow"
-		root * /srv/betaname
+		root * /srv/homeroll
 		try_files {path} /index.html
 		file_server
 	}

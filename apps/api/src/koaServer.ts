@@ -93,7 +93,7 @@ export const build__KoaServer = ({
       ctx.body = {
         status: 'ok',
         timestamp: new Date().toISOString(),
-        service: 'betaname-api',
+        service: 'homeroll-api',
       };
       return;
     }

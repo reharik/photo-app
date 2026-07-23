@@ -1,3 +1,27 @@
+import { BatchedPayloadKind, EntityType } from '@packages/contracts';
+import { EnumSubset } from '@reharik/smart-enum';
+
+export type ActivityDigestData = {
+  data: Map<BatchedPayloadKind, ActivitySection>; // ← keyed by BatchedPayloadKind not EntityType
+  viewUrl: string;
+};
+
+export type ReactionTargetKind = EnumSubset<EntityType, 'comment' | 'mediaItem'>;
+
+export type AlbumSection = { albumTitles: string[] };
+
+export type CommentSectionComment = { commenterName: string; snippet: string };
+export type CommentSectionItem = { mediaItemId: string; comments: CommentSectionComment[] };
+export type CommentSection = CommentSectionItem[];
+
+export type ReactionItem = { reactorName: string; reactionTargetType: ReactionTargetKind };
+export type ReactionSection = {
+  containerId: string;
+  reactions: ReactionItem[];
+}[];
+
+export type ActivitySection = AlbumSection | CommentSection | ReactionSection;
+
 export type TemplateData = {
   welcome: {
     firstName: string;
@@ -20,10 +44,7 @@ export type TemplateData = {
     resourceName: string;
     inviteUrl: string;
   };
-  albumActivity: {
-    albumTitles: string[];
-    viewUrl: string;
-  };
+  activityDigest: ActivityDigestData;
   passwordReset: {
     firstName: string;
   };

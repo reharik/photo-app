@@ -1,3 +1,4 @@
+import { Pencil } from 'lucide-react';
 import { type JSX, type ReactNode } from 'react';
 import styled, { css } from 'styled-components';
 import { formatCaptureDateWithWeekday } from '../../../ui/dateDisplay';
@@ -37,7 +38,9 @@ export const MediaItemDetailRailFields = ({
           canEdit ? (
             <MomentEditButton type="button" onClick={onOpenEdit}>
               <MomentHeading>{momentHeading}</MomentHeading>
-              <EditCue aria-hidden>✎</EditCue>
+              <EditCue aria-hidden>
+                <Pencil size={14} strokeWidth={2} aria-hidden />
+              </EditCue>
             </MomentEditButton>
           ) : (
             <MomentHeading>{momentHeading}</MomentHeading>
@@ -45,7 +48,9 @@ export const MediaItemDetailRailFields = ({
         ) : canEdit ? (
           <EditablePromptButton type="button" onClick={onOpenEdit}>
             <PromptText>Add date</PromptText>
-            <EditCue aria-hidden>✎</EditCue>
+            <EditCue aria-hidden>
+              <Pencil size={14} strokeWidth={2} aria-hidden />
+            </EditCue>
           </EditablePromptButton>
         ) : null
       ) : null}
@@ -56,12 +61,18 @@ export const MediaItemDetailRailFields = ({
         titleText != null ? (
           <EditableFieldButton disabled={!canEdit} type="button" onClick={onOpenEdit}>
             <EditableValueText $multiline>{titleText}</EditableValueText>
-            {canEdit ? <EditCue aria-hidden>✎</EditCue> : null}
+            {canEdit ? (
+              <EditCue aria-hidden>
+                <Pencil size={14} strokeWidth={2} aria-hidden />
+              </EditCue>
+            ) : null}
           </EditableFieldButton>
         ) : canEdit ? (
           <EditablePromptButton type="button" onClick={onOpenEdit}>
             <PromptText>Add a title</PromptText>
-            <EditCue aria-hidden>✎</EditCue>
+            <EditCue aria-hidden>
+              <Pencil size={14} strokeWidth={2} aria-hidden />
+            </EditCue>
           </EditablePromptButton>
         ) : (
           <MediaKindRailLabel kind={mediaItem.kind} />
@@ -72,12 +83,18 @@ export const MediaItemDetailRailFields = ({
         descriptionText != null ? (
           <EditableFieldButton disabled={!canEdit} type="button" onClick={onOpenEdit}>
             <EditableValueText $multiline>{descriptionText}</EditableValueText>
-            {canEdit ? <EditCue aria-hidden>✎</EditCue> : null}
+            {canEdit ? (
+              <EditCue aria-hidden>
+                <Pencil size={14} strokeWidth={2} aria-hidden />
+              </EditCue>
+            ) : null}
           </EditableFieldButton>
         ) : canEdit ? (
           <EditablePromptButton type="button" onClick={onOpenEdit}>
             <PromptText>Add a description</PromptText>
-            <EditCue aria-hidden>✎</EditCue>
+            <EditCue aria-hidden>
+              <Pencil size={14} strokeWidth={2} aria-hidden />
+            </EditCue>
           </EditablePromptButton>
         ) : null
       ) : null}
@@ -205,8 +222,8 @@ const PromptText = styled.span`
 
 const EditCue = styled.span`
   flex-shrink: 0;
-  font-size: 12px;
-  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
   opacity: 0.45;
   color: ${({ theme }) => theme.color.textMuted};
 `;

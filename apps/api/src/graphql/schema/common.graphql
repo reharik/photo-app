@@ -41,9 +41,16 @@ enum EntityType {
   MEDIA_ITEM
   COMMENT
   USER
-  NOTIFICATION
+  REACTION
+  AUTHORIZATION
 }
 
+enum ActivitySurface {
+  RECENT
+  ALBUMS
+  SHARED_ITEMS
+  SHARED_ALBUMS
+}
 """
 Cursor-free paging window (offset-based). Used on output types.
 """

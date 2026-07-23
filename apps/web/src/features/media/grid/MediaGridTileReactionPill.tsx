@@ -1,9 +1,10 @@
 import { EntityType, ReactionEmoji } from '@packages/contracts';
-import { Heart, MessageCircleMore } from 'lucide-react';
+import { Heart, MessageCircle } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import styled from 'styled-components';
 import { useAppMutationState } from '../../../hooks/useAppMutation';
 import { useReactionHandlers } from '../../../hooks/useReactionHandlers';
+import { TILE_MATTE_VAR } from '../../../ui/Print';
 import type { ReactionCountsVM, ViewerReactionVM } from '../../../viewModels/';
 
 export type MediaGridTileReactionPillProps = {
@@ -58,13 +59,13 @@ export const MediaGridTileReactionPill = ({
     <ReactionHoverPill $interactive={false} $alwaysVisible={hasReactions} aria-hidden>
       {heartCount > 0 ? (
         <DisplayStat>
-          <DisplayHeartIcon size={11} strokeWidth={2} aria-hidden />
+          <DisplayHeartIcon size={12} strokeWidth={2} aria-hidden />
           <ReactionCount>{heartCount}</ReactionCount>
         </DisplayStat>
       ) : null}
       {commentCount > 0 ? (
         <DisplayStat>
-          <DisplayCommentIcon size={11} strokeWidth={2} aria-hidden />
+          <DisplayCommentIcon size={12} strokeWidth={2} aria-hidden />
           <ReactionCount>{commentCount}</ReactionCount>
         </DisplayStat>
       ) : null}
@@ -120,7 +121,7 @@ const InteractiveReactionPill = ({
           }
         }}
       >
-        <HeartIcon $reacted={hasHeartReaction} size={11} strokeWidth={2} aria-hidden />
+        <HeartIcon $reacted={hasHeartReaction} size={12} strokeWidth={2} aria-hidden />
         {heartCount > 0 ? <ReactionCount>{heartCount}</ReactionCount> : null}
       </IconHitTarget>
       <IconHitTarget
@@ -134,7 +135,7 @@ const InteractiveReactionPill = ({
           }
         }}
       >
-        <CommentIcon size={11} strokeWidth={2} aria-hidden />
+        <CommentIcon size={12} strokeWidth={2} aria-hidden />
         {commentCount > 0 ? <ReactionCount>{commentCount}</ReactionCount> : null}
       </IconHitTarget>
     </ReactionHoverPill>
@@ -144,16 +145,19 @@ const InteractiveReactionPill = ({
 /** Exported for tile hover selector in {@link MediaGridTile}. */
 export const ReactionHoverPill = styled.div<{ $interactive: boolean; $alwaysVisible: boolean }>`
   position: absolute;
-  left: ${({ theme }) => theme.spacing(0.75)};
-  bottom: ${({ theme }) => theme.spacing(0.75)};
+  /* Offset inward by the (responsive) tile matte so the pill sits within the
+     photo, not on the mat. Inherits --tile-matte from the tile frame. */
+  left: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+  bottom: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 6px;
+  gap: 7px;
+  padding: 3px 8px;
   border-radius: 999px;
-  background: rgba(20, 15, 10, 0.55);
+  /* Warm clay-derived scrim; kept dark/opaque so white icons read over bright photos. */
+  background: rgba(38, 22, 14, 0.8);
   color: ${({ theme }) => theme.color.primaryButtonText};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: ${({ theme }) => theme.weight.medium};
   line-height: 1.2;
   pointer-events: ${({ $interactive }) => ($interactive ? 'auto' : 'none')};
@@ -205,7 +209,7 @@ const HeartIcon = styled(Heart)<{ $reacted: boolean }>`
   fill: ${({ theme, $reacted }) => ($reacted ? theme.color.primaryButtonBg : 'none')};
 `;
 
-const CommentIcon = styled(MessageCircleMore)`
+const CommentIcon = styled(MessageCircle)`
   ${iconBaseStyles}
   color: inherit;
 `;
@@ -215,13 +219,14 @@ const DisplayHeartIcon = styled(Heart)`
   color: inherit;
 `;
 
-const DisplayCommentIcon = styled(MessageCircleMore)`
+const DisplayCommentIcon = styled(MessageCircle)`
   ${iconBaseStyles}
   color: inherit;
 `;
 
 const ReactionCount = styled.span`
-  font-size: 11px;
+  font-family: ${({ theme }) => theme.font.mono};
+  font-size: 12px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 `;

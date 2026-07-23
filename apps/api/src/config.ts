@@ -135,7 +135,7 @@ export const createConfigFromEnv = (): Config => {
     fromEmail: process.env.FROM_EMAIL || '',
     fromName: process.env.FROM_NAME || '',
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
-    appName: process.env.APP_NAME || 'BetanaMe',
+    appName: process.env.APP_NAME || 'Homeroll',
     isProduction,
     isDevelopment,
   };

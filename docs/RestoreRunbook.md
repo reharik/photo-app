@@ -13,8 +13,8 @@ able to touch live data.
 Run on the EC2 box. Container: `photo-app-prod-db-1`.
 
 1. Find and pull the dump:
-   aws s3 ls s3://betaname-db-backups-prod/ --region us-east-1
-   aws s3 cp s3://betaname-db-backups-prod/betaname-<STAMP>.dump /tmp/restore.dump --region us-east-1
+   aws s3 ls s3://homeroll-db-backups-prod/ --region us-east-1
+   aws s3 cp s3://homeroll-db-backups-prod/homeroll-<STAMP>.dump /tmp/restore.dump --region us-east-1
 
 2. Create scratch DB:
    docker exec photo-app-prod-db-1 psql -U postgres -c "DROP DATABASE IF EXISTS restore_drill;"
