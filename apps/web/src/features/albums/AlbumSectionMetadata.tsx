@@ -278,7 +278,9 @@ export const AlbumSectionMetadata = ({
                       <AlbumStats>
                         <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
                       </AlbumStats>
-                      {attribution != null ? <AlbumAttribution>{attribution}</AlbumAttribution> : null}
+                      {attribution != null ? (
+                        <AlbumAttribution>{attribution}</AlbumAttribution>
+                      ) : null}
                       {album.updatedAt?.isValid ? (
                         <AlbumDescription>
                           Updated {formatActivityDate(album.updatedAt)}

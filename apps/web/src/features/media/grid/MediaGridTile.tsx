@@ -112,10 +112,7 @@ export const MediaGridTile = ({
         />
       ) : null}
       {hasUnseen ? (
-        <UnseenDot
-          top={`calc(${TILE_MATTE_VAR} + 8px)`}
-          right={`calc(${TILE_MATTE_VAR} + 8px)`}
-        />
+        <UnseenDot top={`calc(${TILE_MATTE_VAR} + 8px)`} right={`calc(${TILE_MATTE_VAR} + 8px)`} />
       ) : null}
     </>
   );
