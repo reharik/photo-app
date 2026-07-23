@@ -2,7 +2,7 @@ import { test as base, type Browser, type BrowserContext, type Page } from '@pla
 import { cleanupGrantsToRecipient, cleanupOwnedRows } from './cleanup';
 import { closeDb, getUserIdByEmail } from './db';
 // Import disabled alongside the afterAll SES clear below (kept for easy re-enable).
-// import { clearLocalStackSesMessages } from './localstackSes';
+import { clearLocalStackSesMessages } from './localstackSes';
 import { grabTestImages, type GrabTestImagesResult } from './testAssets';
 import { USER_A, USER_B, type TestUser } from './users';
 
@@ -94,7 +94,7 @@ test.afterAll(async () => {
   // Temporarily disabled so sent emails survive the run for manual inspection
   // (e.g. the batched activity digest). Re-enable to stop inboxes accumulating
   // across runs against the shared LocalStack SES store.
-  // await clearLocalStackSesMessages();
+  await clearLocalStackSesMessages();
   await closeDb();
 });
 

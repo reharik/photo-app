@@ -54,6 +54,17 @@ export const retrieveLocalStackSesMessages = async (
   return payload.messages ?? [];
 };
 
+/**
+ * Snapshot of how many SES messages are currently stored. Take this right before an
+ * action that sends mail, then slice `retrieveLocalStackSesMessages(...)` from it, to
+ * consider only newly-sent messages — a non-destructive alternative to clearing the
+ * store (LocalStack's DELETE wipes ALL mail, so it can't isolate one test without
+ * destroying every other test's — and every manually-inspectable — email).
+ */
+export const countLocalStackSesMessages = async (
+  request: APIRequestContext,
+): Promise<number> => (await retrieveLocalStackSesMessages(request)).length;
+
 export const clearLocalStackSesMessages = async (): Promise<void> => {
   const response = await fetch(LOCALSTACK_SES_URL, { method: 'DELETE' });
   // A cold SES route may 404 before it's initialized — nothing to clear yet.
