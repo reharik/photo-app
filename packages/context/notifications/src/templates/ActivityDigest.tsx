@@ -11,6 +11,7 @@ import type {
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { contentNoun } from './contentNoun.js';
+import { emailKindMarker, sectionMarker } from './emailMarker.js';
 import {
   bodyTextStyle,
   emailColors,
@@ -143,17 +144,27 @@ const ActivityDigest = ({ data, appUrl }: ActivityDigestData): ReactElement => {
   const comments = data.get(BatchedPayloadKind.comment) as CommentSection | undefined;
   const reactions = data.get(BatchedPayloadKind.reaction) as ReactionSection | undefined;
 
-  const sections = [
-    albums && renderAlbums(albums, appUrl),
-    comments && renderComments(comments, appUrl),
-    reactions && renderReactions(reactions, appUrl),
-  ].filter((el): el is ReactElement => Boolean(el));
+  const albumEl = albums && renderAlbums(albums, appUrl);
+  const commentEl = comments && renderComments(comments, appUrl);
+  const reactionEl = reactions && renderReactions(reactions, appUrl);
+
+  const sections = [albumEl, commentEl, reactionEl].filter((el): el is ReactElement => Boolean(el));
+
+  // Mark the sections that actually rendered (each renderer returns null when it
+  // has nothing to show), so tests can key off which activity a digest carries.
+  const markers = [
+    emailKindMarker('activityDigest'),
+    albumEl && sectionMarker('album'),
+    commentEl && sectionMarker('comment'),
+    reactionEl && sectionMarker('reaction'),
+  ].filter((m): m is string => Boolean(m));
 
   return (
     <BaseEmail
       previewText={`There's new activity on ${APP_NAME}.`}
       title={"What's new"}
       footerVariant="notification"
+      markers={markers}
     >
       <Text style={lede}>Here&apos;s what&apos;s happened recently.</Text>
       {sections.map((el, i) => (

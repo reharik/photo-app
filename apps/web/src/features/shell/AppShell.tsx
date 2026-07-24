@@ -154,7 +154,10 @@ export const AppShell = () => {
                 >
                   <Menu size={20} strokeWidth={2} aria-hidden />
                 </MobileNavMenuButton>
-                <Wordmark aria-hidden>Homeroll</Wordmark>
+                <Wordmark aria-hidden>
+                  <HeroIllustration size={60} />
+                  <span>Homeroll</span>
+                </Wordmark>
               </MobileNavLeading>
               <NavActions>
                 <UploadMediaIconButton />
@@ -285,10 +288,9 @@ const Wordmark = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  @media (max-width: 375px) {
-    font-size: ${({ theme }) => theme.fontSize._16};
-  }
+  display: flex;
+  align-items: center;
+  font-size: ${({ theme }) => theme.fontSize._21};
 `;
 
 const WordmarkLink = styled(Link)`

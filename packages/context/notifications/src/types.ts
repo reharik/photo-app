@@ -53,7 +53,6 @@ export type TemplateData = {
   };
   memberItemsShared: {
     inviterName: string;
-    resourceName: string;
     inviteUrl: string;
   };
   activityDigest: ActivityDigestData;

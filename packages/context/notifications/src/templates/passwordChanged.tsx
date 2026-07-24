@@ -3,6 +3,7 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME, SUPPORT_EMAIL } from './constants.js';
+import { emailKindMarker } from './emailMarker.js';
 import {
   linkStyle,
   secondaryTextStyle as muted,
@@ -29,6 +30,7 @@ const PasswordChanged = (data: PasswordChangedData): ReactElement => {
       previewText={`Your ${APP_NAME} password was just changed.`}
       title={'Your password was changed'}
       footerVariant="transactional"
+      markers={[emailKindMarker('passwordChanged')]}
     >
       <Section>
         <Text style={paragraph}>

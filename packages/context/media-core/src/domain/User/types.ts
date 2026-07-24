@@ -4,8 +4,8 @@ import { AuditRecord } from '../Entity';
 
 export type UserProps = {
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
   addressLine1?: string;
   addressLine2?: string;

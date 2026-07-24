@@ -4,6 +4,7 @@ import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { contentNoun } from './contentNoun.js';
+import { emailKindMarker } from './emailMarker.js';
 import { buttonStyle, paragraph } from './sharedStyles.js';
 
 type Data = TemplateData['welcome'];
@@ -23,6 +24,7 @@ const Welcome = (data: Data): ReactElement => {
       previewText={`Your ${APP_NAME} account is ready.`}
       title={heading}
       footerVariant="welcome"
+      markers={[emailKindMarker('welcome')]}
     >
       <Section>
         <Text style={paragraph}>Your {APP_NAME} account is ready.</Text>

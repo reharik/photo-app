@@ -3,6 +3,7 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { contentCount } from './contentNoun.js';
+import { emailKindMarker } from './emailMarker.js';
 import { buttonStyle, linkFallback, muted, paragraph } from './sharedStyles.js';
 
 type Data = TemplateData['memberAlbumShared'];
@@ -31,6 +32,7 @@ const MemberAlbumShared = (data: Data): ReactElement => {
       previewText={body}
       title={`${who} shared an album with you`}
       footerVariant="notification"
+      markers={[emailKindMarker('memberAlbumShared')]}
     >
       <Section>
         <Text style={paragraph}>{body}</Text>

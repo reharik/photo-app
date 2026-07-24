@@ -533,6 +533,13 @@ const contractErrorInput = {
     area: ErrorArea.auth,
     retryable: false,
   },
+  MissingFirstOrLastName: {
+    code: 'MISSING_FIRST_OR_LAST_NAME',
+    display: 'missing first or last name',
+    category: ErrorCategory.domain,
+    area: ErrorArea.user,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

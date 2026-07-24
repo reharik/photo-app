@@ -25,6 +25,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     grantUserAuthorizationForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
+        viewerFirstName: ctx.viewer.firstName,
         entityIds: [args.input.albumId],
         operations: args.input.operations,
         grantedToHandles: args.input.grantedToHandles,

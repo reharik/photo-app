@@ -11,6 +11,7 @@ import { CreatePublicLinkForAlbum, CreatePublicLinkResponse } from './createPubl
 
 export type CreatePublicLinkForMediaItemsCommand = {
   viewerId: EntityId;
+  viewerFirstName: string;
   mediaItemIds: EntityId[];
   name?: string;
   expiresAt?: Date;
@@ -41,7 +42,7 @@ export const build__CreatePublicLinkForMediaItems = ({
 
     const album = Album.create(
       {
-        title: input.name ?? 'Public Link Album',
+        title: input.name ?? `Photos from ${input.viewerFirstName}`,
         isPublicLinkAlbum: true,
       },
       input.viewerId,

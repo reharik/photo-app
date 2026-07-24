@@ -80,8 +80,10 @@ export const build__GrantUserAuthorizationForAlbum = ({
     const activeUsers = userResult.value.filter((u): u is User => u.kind === 'active');
     const pendingUsers = userResult.value.filter((u): u is PendingUser => u.kind === 'pending');
 
-    // active → album.grantAuthorization emits its own domain events
-    const activeResult = inviteUsers(activeUsers, album, input);
+    // active → album.grantAuthorization emits its own domain events, runs for
+    // both pending and active.  In event handler pending users don't get grants.
+    // Once they activate the grants will be created.
+    const activeResult = inviteUsers([...activeUsers, ...pendingUsers], album, input);
 
     // pending → public link + serviceEvents (no domain events)
     const pendingResult = invitePendingUsers(pendingUsers, album, input, logger);

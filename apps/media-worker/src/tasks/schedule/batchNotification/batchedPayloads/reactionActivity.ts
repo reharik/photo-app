@@ -4,6 +4,7 @@ import {
   EntityType,
   filterByMember,
   notEmpty,
+  toDisplayName,
 } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
@@ -59,7 +60,7 @@ export const build__ReactionActivity = ({
           reason: 'actor not found / inactive',
         };
       }
-      const reactorName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+      const reactorName = toDisplayName(user);
       const line: ReactionItem = {
         reactorName,
         reactionTargetType: row.containerType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
@@ -86,7 +87,14 @@ export const build__ReactionActivity = ({
       const byItem = groupByMapping(rs, (r) => r.targetItemId);
       const items = [...byItem]
         .map(([containerId, itemRs]) => {
-          const mediaId = mediaIdMap.get(containerId);
+          // A reaction's link target is the underlying media item. When the reaction
+          // is on the media item itself, that IS the containerId; when it's on a
+          // comment, resolve the comment's targetId (mediaIdMap is keyed by comment id).
+          const containerType = itemRs[0]?.row.containerType;
+          const mediaId =
+            containerType && containerType.equals(EntityType.mediaItem)
+              ? containerId
+              : mediaIdMap.get(containerId);
           if (!mediaId) {
             logger.warn('reaction row missing mediaId, skipping');
             return;

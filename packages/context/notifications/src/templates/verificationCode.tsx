@@ -4,6 +4,7 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import { emailKindMarker } from './emailMarker.js';
 import { fontStacks } from './emailTokens.js';
 
 void React;
@@ -20,6 +21,7 @@ const VerificationCode = (data: VerificationCodeData): ReactElement => {
       previewText={`Your ${APP_NAME} verification code is ${data.code}.`}
       title={'Your verification code'}
       footerVariant="transactional"
+      markers={[emailKindMarker('verificationCode')]}
     >
       <Section>
         <Text style={paragraph}>Enter this code to continue:</Text>

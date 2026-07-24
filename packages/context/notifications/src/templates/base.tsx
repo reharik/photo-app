@@ -11,6 +11,7 @@ import {
 } from '@react-email/components';
 import { ReactElement, ReactNode } from 'react';
 import { APP_NAME } from './constants.js';
+import { EmailMarker } from './emailMarker.js';
 import {
   bodyStyle,
   cardStyle,
@@ -28,6 +29,9 @@ export type BaseEmailProps = {
   previewText: string;
   title: string;
   footerVariant: FooterVariant;
+  // Hidden machine-readable identity tokens (see emailMarker.tsx). Optional so a
+  // template can opt out, but every template should pass at least its email-kind.
+  markers?: string[];
   children: ReactNode;
 };
 
@@ -35,6 +39,7 @@ export const BaseEmail = ({
   previewText,
   title,
   footerVariant,
+  markers,
   children,
 }: BaseEmailProps): ReactElement => {
   return (
@@ -44,6 +49,7 @@ export const BaseEmail = ({
         <meta name="supported-color-schemes" content="light" />
       </Head>
       <Preview>{previewText}</Preview>
+      {markers && markers.length > 0 && <EmailMarker tokens={markers} />}
       <Body style={bodyStyle}>
         {/* Outlook honors bgcolor on a table, not backgroundColor on a div. */}
         <Section bgcolor={emailColors.outerBg} style={outerBgStyle}>

@@ -99,7 +99,7 @@ export const build__GrantAuthorizationForMediaItems = ({
     if (pendingUsers.length > 0) {
       const album = Album.create(
         {
-          title: label ?? 'Public Link Album',
+          title: label ?? `Photos from ${input.viewerFirstName}`,
           isPublicLinkAlbum: true,
         },
         input.viewerId,

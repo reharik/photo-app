@@ -4,6 +4,7 @@ import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
 import { contentCount, contentNoun } from './contentNoun.js';
+import { emailKindMarker } from './emailMarker.js';
 import { buttonStyle, linkFallback, muted, paragraph } from './sharedStyles.js';
 
 type Data = TemplateData['guestAlbumShared'];
@@ -26,7 +27,12 @@ const GuestAlbumShared = (data: Data): ReactElement => {
     : `${who} shared an album with you on ${APP_NAME}.`;
 
   return (
-    <BaseEmail previewText={intro} title={heading} footerVariant="shareLink">
+    <BaseEmail
+      previewText={intro}
+      title={heading}
+      footerVariant="shareLink"
+      markers={[emailKindMarker('guestAlbumShared')]}
+    >
       <Section>
         <Text style={paragraph}>{intro}</Text>
         <Text style={paragraph}>

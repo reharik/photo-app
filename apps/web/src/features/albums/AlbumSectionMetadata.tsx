@@ -23,7 +23,7 @@ import type { MultiSelectProps } from '../media/grid/types';
 import { buildAlbumBrowseSubtitle } from './albumBrowseSubtitle';
 import { AlbumSelectionActions } from './AlbumSelectionActions';
 
-export type AlbumGroupBy = 'none' | 'takenDate';
+export type AlbumGroupBy = 'ungrouped' | 'takenDate';
 
 type AlbumSectionMetadataProps = {
   count: number;
@@ -79,7 +79,7 @@ export type MinimalAlbumItemSummaryVM = {
 const MOBILE_ALBUM_MEDIA = '(max-width: 768px)';
 
 const GROUP_BY_OPTIONS: { value: AlbumGroupBy; label: string }[] = [
-  { value: 'none', label: 'None' },
+  { value: 'ungrouped', label: 'Ungrouped' },
   { value: 'takenDate', label: 'Taken date' },
 ];
 

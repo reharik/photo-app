@@ -32,7 +32,6 @@ export const build__MediaItemsSharedStrategy = ({
           data: {
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',
             inviteUrl: `${config.clientUrl}/shared/items`,
-            resourceName: '',
           },
         },
       };

@@ -3,6 +3,7 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { contentNoun } from './contentNoun.js';
+import { emailKindMarker } from './emailMarker.js';
 import { buttonStyle, linkFallback, muted, paragraph } from './sharedStyles.js';
 
 type Data = TemplateData['memberItemsShared'];
@@ -18,7 +19,12 @@ const MemberItemsShared = (data: Data): ReactElement => {
   const heading = `${sender(data)} shared ${contentNoun()} with you`;
 
   return (
-    <BaseEmail previewText={heading} title={heading} footerVariant="notification">
+    <BaseEmail
+      previewText={heading}
+      title={heading}
+      footerVariant="notification"
+      markers={[emailKindMarker('memberItemsShared')]}
+    >
       <Section>
         <Text style={paragraph}>They’re in your Shared with me.</Text>
       </Section>
