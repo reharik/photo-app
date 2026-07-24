@@ -133,6 +133,8 @@ export const footerCopy = {
     "You're receiving this because someone entered this address on Homeroll. If that wasn't you, you can ignore it.",
   notification: "You're receiving this because you're on this album on Homeroll.",
   shareLink: 'Someone sent you this album on Homeroll.',
+  welcome:
+    "You're receiving this because someone created a Homeroll account with this email address.",
 } as const;
 
 export type FooterVariant = keyof typeof footerCopy;
