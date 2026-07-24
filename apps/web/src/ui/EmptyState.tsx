@@ -64,5 +64,5 @@ const EmptyText = styled.p`
   font-size: ${({ theme }) => theme.fontSize._16};
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   margin: 0;
-  max-width: 400px;
+  max-width: 350px;
 `;

@@ -7,7 +7,7 @@ import heroIllustration from '../assets/empty-state-hero.png';
 // `size` (px width) defaults to the empty-state size; the auth hero renders it larger.
 type Props = { size?: number };
 
-export const HeroIllustration = ({ size = 70 }: Props) => (
+export const HeroIllustration = ({ size = 170 }: Props) => (
   <HeroImage src={heroIllustration} alt="" aria-hidden $size={size} />
 );
 
