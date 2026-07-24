@@ -1,22 +1,31 @@
-import { BatchedPayloadKind, EntityType } from '@packages/contracts';
+import { AsyncNotificationKind, BatchedPayloadKind, EntityType } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 
 export type ActivityDigestData = {
   data: Map<BatchedPayloadKind, ActivitySection>; // ← keyed by BatchedPayloadKind not EntityType
-  viewUrl: string;
+  appUrl: string; // client base URL; each row builds its own absolute link from it
 };
 
 export type ReactionTargetKind = EnumSubset<EntityType, 'comment' | 'mediaItem'>;
+export type CommentRowKind = EnumSubset<AsyncNotificationKind, 'commentPosted' | 'replyPosted'>;
 
-export type AlbumSection = { albumTitles: string[] };
+export type AlbumSection = { albumTitle: string; albumId: string; itemCount: number }[];
 
-export type CommentSectionComment = { commenterName: string; snippet: string };
-export type CommentSectionItem = { mediaItemId: string; comments: CommentSectionComment[] };
+export type CommentSectionComment = {
+  commenterName: string;
+  kind: CommentRowKind;
+  snippet: string;
+};
+export type CommentSectionItem = {
+  mediaItemId: string;
+  comments: CommentSectionComment[];
+};
 export type CommentSection = CommentSectionItem[];
 
 export type ReactionItem = { reactorName: string; reactionTargetType: ReactionTargetKind };
 export type ReactionSection = {
   containerId: string;
+  mediaId: string;
   reactions: ReactionItem[];
 }[];
 
@@ -32,12 +41,15 @@ export type TemplateData = {
     inviterName: string;
     resourceName: string;
     inviteUrl: string;
+    itemCount: number;
   };
   guestAlbumShared: {
     inviterName: string;
+    inviterEmail: string;
     resourceName: string;
     inviteUrl: string;
     signupUrl: string;
+    itemCount: number;
   };
   memberItemsShared: {
     inviterName: string;
@@ -47,6 +59,7 @@ export type TemplateData = {
   activityDigest: ActivityDigestData;
   passwordChanged: {
     firstName: string;
+    changedAt: string;
   };
   verificationCode: {
     code: string;

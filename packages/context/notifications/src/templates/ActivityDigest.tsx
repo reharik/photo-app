@@ -1,106 +1,172 @@
-import { Button, Hr, Section, Text } from '@react-email/components';
+import { AsyncNotificationKind, BatchedPayloadKind, EntityType } from '@packages/contracts';
+import { Hr, Link, Section, Text } from '@react-email/components';
 import { Fragment, ReactElement } from 'react';
-import type { AlbumSection, CommentSection, ReactionItem, ReactionSection } from '../types.js';
-import { TemplateData } from '../types.js';
+import type {
+  AlbumSection,
+  CommentSection,
+  ReactionItem,
+  ReactionSection,
+  TemplateData,
+} from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import { contentNoun } from './contentNoun.js';
 import {
   bodyTextStyle,
-  buttonStyle,
+  emailColors,
   fontStacks,
   hrStyle,
-  linkFallbackStyle as linkFallback,
   secondaryTextStyle as muted,
 } from './emailTokens.js';
 
 type ActivityDigestData = TemplateData['activityDigest'];
-// { data: Map<ActivityKind, ActivitySection>; viewUrl: string }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const subject = (_data: ActivityDigestData): string => `New activity on ${APP_NAME}`;
+// Word-boundary truncate to ~80 code points with a trailing ellipsis. Operates
+// on code POINTS so it never splits a surrogate pair (emoji, astral chars).
+const clip = (raw: string, max = 80): string => {
+  const s = raw.trim();
+  if ([...s].length <= max) return s;
+  const clipped = [...s].slice(0, max).join('');
+  const lastSpace = clipped.lastIndexOf(' ');
+  return (lastSpace > max * 0.6 ? clipped.slice(0, lastSpace) : clipped) + '…';
+};
 
-const ActivityDigest = (data: ActivityDigestData): ReactElement => (
-  <BaseEmail
-    previewText={`There's new activity on ${APP_NAME}.`}
-    title={'New activity'}
-    footerVariant="notification"
-  >
-    <Text style={lede}>Here's what's new since you were last here.</Text>
+const person = (name: string | undefined): string => name?.trim() || 'Someone';
 
-    {[...data.data].map(([kind, section], i) => (
-      <Fragment key={kind.key}>
-        {i > 0 && <Hr style={divider} />}
-        {kind.match({
-          album: () => <AlbumSectionView data={section as AlbumSection} />,
-          comment: () => <CommentSectionView data={section as CommentSection} />,
-          reaction: () => <ReactionSectionView data={section as ReactionSection} />,
-        })}
-      </Fragment>
-    ))}
+// One tappable line. A missing id → plain unlinked text (a true line with no
+// link beats a link that 404s). Rows get real vertical padding to be a phone
+// touch target.
+const Row = ({ href, text }: { href?: string; text: string }): ReactElement =>
+  href ? (
+    <Link href={href} style={rowLink}>
+      {text}
+    </Link>
+  ) : (
+    <Text style={rowText}>{text}</Text>
+  );
 
-    <Section style={{ marginTop: '28px' }}>
-      <Button href={data.viewUrl} style={buttonStyle}>
-        View activity
-      </Button>
-    </Section>
+// ── subject ───────────────────────────────────────────────
+// Name the digest only when it's about a single thing: exactly one driver kind
+// (album XOR comment — reactions never drive) AND a single subject inside it.
+// Everything else → generic. Never "{Person} and N others".
+export const subject = ({ data }: ActivityDigestData): string => {
+  const generic = `New activity on ${APP_NAME}`;
+  const albums = data.get(BatchedPayloadKind.album) as AlbumSection | undefined;
+  const comments = data.get(BatchedPayloadKind.comment) as CommentSection | undefined;
 
-    <Section style={{ marginTop: '16px' }}>
-      <Text style={muted}>If the button doesn't work, paste this link into your browser:</Text>
-      <Text style={linkFallback}>{data.viewUrl}</Text>
-    </Section>
-  </BaseEmail>
-);
+  const hasAlbum = Boolean(albums?.length);
+  const commentRows = (comments ?? []).flatMap((i) => i.comments.filter((c) => c.snippet.trim()));
+  const hasComment = commentRows.length > 0;
+
+  if (hasAlbum === hasComment) return generic; // zero drivers, or both → generic
+
+  if (hasAlbum) {
+    if (albums!.length !== 1) return generic; // multiple albums → generic
+    const name = albums![0].albumTitle?.trim();
+    return name ? `New ${contentNoun()} in “${name}”` : `New ${contentNoun()} in an album`;
+  }
+
+  if (commentRows.length !== 1) return generic; // multiple comments / actors → generic
+  const c = commentRows[0];
+  return AsyncNotificationKind.replyPosted.equals(c.kind)
+    ? `${person(c.commenterName)} replied to your comment`
+    : `${person(c.commenterName)} commented on your ${contentNoun(1)}`;
+};
 
 // ── sections ──────────────────────────────────────────────
-// Each section shares one shape: a small label, then items that
-// lead with a bolded anchor (album / commenter / reactors).
+// Each returns null when it has nothing to show, so the parent can skip it
+// (and its divider) rather than render an empty label.
 
-const AlbumSectionView = ({ data }: { data: AlbumSection }): ReactElement => (
-  <Section style={sectionBlock}>
-    <Text style={sectionLabel}>New photos</Text>
-    {data.albumTitles.map((title, i) => (
-      <Text key={i} style={item}>
-        <strong>{title}</strong>
-      </Text>
-    ))}
-  </Section>
-);
-
-const CommentSectionView = ({ data }: { data: CommentSection }): ReactElement => (
-  <Section style={sectionBlock}>
-    <Text style={sectionLabel}>New comments</Text>
-    {data.map((entry) =>
-      entry.comments.map((c, i) => (
-        <Text key={`${entry.mediaItemId}-${i}`} style={item}>
-          <strong>{c.commenterName}</strong> &mdash; {c.snippet}
-        </Text>
-      )),
-    )}
-  </Section>
-);
-
-const ReactionSectionView = ({ data }: { data: ReactionSection }): ReactElement => (
-  <Section style={sectionBlock}>
-    <Text style={sectionLabel}>New reactions</Text>
-    {data.map((group) => {
-      const target = group.reactions[0]?.reactionTargetType;
-      return (
-        <Text key={group.containerId} style={item}>
-          <strong>{formatReactors(group.reactions)}</strong> reacted to your{' '}
-          {target ? target.display.toLowerCase() : 'photo'}
-        </Text>
-      );
-    })}
-  </Section>
-);
-
-const formatReactors = (reactions: ReactionItem[]): string => {
-  const names = reactions.map((r) => r.reactorName).filter(Boolean);
-  if (names.length === 0) return 'Someone';
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names[0]} and ${names.length - 1} others`;
+const renderAlbums = (rows: AlbumSection, appUrl: string): ReactElement | null => {
+  if (!rows.length) return null;
+  return (
+    <Section style={sectionBlock}>
+      <Text style={sectionLabel}>New {contentNoun()}</Text>
+      {rows.map((a, i) => {
+        const name = a.albumTitle?.trim();
+        const text = name
+          ? `New ${contentNoun()} in “${name}”`
+          : `New ${contentNoun()} in an album`;
+        const href = a.albumId ? `${appUrl}/albums/${a.albumId}` : undefined;
+        return <Row key={i} href={href} text={text} />;
+      })}
+    </Section>
+  );
 };
+
+const renderComments = (items: CommentSection, appUrl: string): ReactElement | null => {
+  // one row per comment, flattening the by-media grouping; drop empty snippets
+  const rows = items.flatMap((item) =>
+    item.comments
+      .filter((c) => c.snippet.trim().length > 0)
+      .map((c) => ({ c, mediaItemId: item.mediaItemId })),
+  );
+  if (!rows.length) return null;
+  return (
+    <Section style={sectionBlock}>
+      <Text style={sectionLabel}>Comments</Text>
+      {rows.map(({ c, mediaItemId }, i) => {
+        const lead = AsyncNotificationKind.replyPosted.equals(c.kind)
+          ? `${person(c.commenterName)} replied to your comment`
+          : `${person(c.commenterName)} commented on your ${contentNoun(1)}`;
+        const href = mediaItemId ? `${appUrl}/media/${mediaItemId}` : undefined;
+        return (
+          <Row key={`${mediaItemId}-${i}`} href={href} text={`${lead} — “${clip(c.snippet)}”`} />
+        );
+      })}
+    </Section>
+  );
+};
+
+const renderReactions = (groups: ReactionSection, appUrl: string): ReactElement | null => {
+  // Reactions ride along last. One row per target, collapsed to a single
+  // reactor (the queue only ever keeps one) — never "and N others".
+  const rows = groups
+    .map((g) => ({ r: g.reactions[0], mediaId: g.mediaId }))
+    .filter((x): x is { r: ReactionItem; mediaId: string } => Boolean(x.r));
+  if (!rows.length) return null;
+  return (
+    <Section style={sectionBlock}>
+      <Text style={sectionLabel}>Also</Text>
+      {rows.map(({ r, mediaId }, i) => {
+        const target = EntityType.comment.equals(r.reactionTargetType) ? 'comment' : contentNoun(1);
+        const href = mediaId ? `${appUrl}/media/${mediaId}` : undefined;
+        return <Row key={i} href={href} text={`${person(r.reactorName)} liked your ${target}`} />;
+      })}
+    </Section>
+  );
+};
+
+const ActivityDigest = ({ data, appUrl }: ActivityDigestData): ReactElement => {
+  // Fixed order: new photos, then comments, then reactions (always last).
+  const albums = data.get(BatchedPayloadKind.album) as AlbumSection | undefined;
+  const comments = data.get(BatchedPayloadKind.comment) as CommentSection | undefined;
+  const reactions = data.get(BatchedPayloadKind.reaction) as ReactionSection | undefined;
+
+  const sections = [
+    albums && renderAlbums(albums, appUrl),
+    comments && renderComments(comments, appUrl),
+    reactions && renderReactions(reactions, appUrl),
+  ].filter((el): el is ReactElement => Boolean(el));
+
+  return (
+    <BaseEmail
+      previewText={`There's new activity on ${APP_NAME}.`}
+      title={"What's new"}
+      footerVariant="notification"
+    >
+      <Text style={lede}>Here&apos;s what&apos;s happened recently.</Text>
+      {sections.map((el, i) => (
+        <Fragment key={i}>
+          {i > 0 && <Hr style={divider} />}
+          {el}
+        </Fragment>
+      ))}
+    </BaseEmail>
+  );
+};
+
+export default ActivityDigest;
 
 // ── styles ────────────────────────────────────────────────
 
@@ -120,17 +186,27 @@ const sectionLabel = {
   fontWeight: 500,
   letterSpacing: '0.04em',
   textTransform: 'uppercase' as const,
-  margin: '0 0 10px',
+  margin: '0 0 6px',
 };
 
-const item = {
+const rowLink = {
   ...bodyTextStyle,
-  margin: '0 0 6px',
+  color: emailColors.accent,
+  fontWeight: 500,
+  textDecoration: 'none',
+  display: 'block',
+  padding: '10px 0',
+  margin: 0,
+};
+
+const rowText = {
+  ...bodyTextStyle,
+  display: 'block',
+  padding: '10px 0',
+  margin: 0,
 };
 
 const divider = {
   ...hrStyle,
   margin: '24px 0',
 };
-
-export default ActivityDigest;

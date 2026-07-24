@@ -108,6 +108,15 @@ export const buttonStyle: CSSProperties = {
   textDecoration: 'none',
 };
 
+// Inline text link (e.g. the mailto in passwordChanged). Clay, underlined so
+// it reads as a link mid-sentence. Weight stays at 500 — the copy rule caps
+// weight at 500.
+export const linkStyle: CSSProperties = {
+  color: emailColors.accent,
+  fontWeight: 500,
+  textDecoration: 'underline',
+};
+
 export const linkFallbackStyle: CSSProperties = {
   fontFamily: fontStacks.sans,
   color: emailColors.textSecondary,

@@ -41,6 +41,11 @@ export const build__AlbumSharedWithNonUserStrategy = ({
       }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.containerId);
+      // An empty share is an upstream bug, not an email — don't send, just record it.
+      if ((album?.itemCount ?? 0) === 0) {
+        results.push({ row, kind: 'skipped', reason: 'empty album share (itemCount 0)' });
+        continue;
+      }
       results.push({
         row,
         kind: 'ready',
@@ -53,6 +58,8 @@ export const build__AlbumSharedWithNonUserStrategy = ({
             resourceName: album?.title ?? '',
             inviteUrl: `${config.clientUrl}/shared/${token}`,
             signupUrl: `${config.clientUrl}/signup`,
+            inviterEmail: actor?.email ?? '',
+            itemCount: album?.itemCount ?? 0,
           },
         },
       });

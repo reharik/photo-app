@@ -28,10 +28,8 @@ const VerificationCode = (data: VerificationCodeData): ReactElement => {
         <Text style={codeStyle}>{data.code}</Text>
       </Section>
       <Section>
-        <Text style={paragraph}>This code expires in 10 minutes.</Text>
-        <Text style={muted}>
-          If you didn&apos;t request this, you can safely ignore this email.
-        </Text>
+        <Text style={paragraph}>This code works for the next 10 minutes.</Text>
+        <Text style={muted}>If you didn&apos;t ask for it, you can ignore this email.</Text>
       </Section>
     </BaseEmail>
   );
