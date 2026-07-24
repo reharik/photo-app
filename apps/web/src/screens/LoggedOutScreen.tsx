@@ -136,6 +136,14 @@ export const LoggedOutScreen = () => {
       setError('Enter the 6-digit code from your email.');
       return;
     }
+    if (!firstName.trim()) {
+      setError('Enter your first name.');
+      return;
+    }
+    if (!lastName.trim()) {
+      setError('Enter your last name.');
+      return;
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;

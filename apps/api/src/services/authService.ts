@@ -140,7 +140,7 @@ export const build__AuthService = ({
         let template: 'welcome' | 'passwordChanged';
         if (!user) {
           user = PendingUser.create(
-            { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
+            { email, firstName: firstName, lastName: lastName, phone, passwordHash },
             randomUUID(),
           );
           template = 'welcome';
@@ -150,7 +150,10 @@ export const build__AuthService = ({
           );
           if (!activateResult.success) {
             await uow.rollback();
-            return fail(ContractError.ErrorActivatingUser);
+            // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
+            // generic ErrorActivatingUser: the forgot-password door lands a brand-new email
+            // here with no name, and the FE reveals the name fields off that exact reason.
+            return activateResult;
           }
           // this else is ugly, true, but it's the only true way we can handle the three cases.
           // we can't pass the new user in and have activate set the pw because that also sets the template
@@ -164,7 +167,10 @@ export const build__AuthService = ({
               );
               if (!activateResult.success) {
                 await uow.rollback();
-                return fail(ContractError.ErrorActivatingUser);
+                // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME): an invited
+                // user who never set a name lands here via the forgot-password door, and the FE
+                // reveals the name fields off that exact reason to finish setup in place.
+                return activateResult;
               }
               break;
             }

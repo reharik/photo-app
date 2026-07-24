@@ -8,6 +8,9 @@ const SET_PASSWORD_ERROR_COPY: Record<SetPasswordErrorReason, string> = {
   INVALID_CODE: "That code isn't right.",
   EXPIRED: 'Code expired — resend.',
   TOO_MANY_ATTEMPTS: 'Too many tries — resend a new code.',
+  // Screens that support the in-place name reveal key off the NAME_REQUIRED reason and
+  // render their own inline prompt; this is the fallback for any screen that just shows copy.
+  NAME_REQUIRED: 'We just need your name to finish setting up your account.',
 };
 
 export const setPasswordErrorMessage = (reason: SetPasswordErrorReason): string =>
