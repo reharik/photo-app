@@ -95,6 +95,7 @@ export const build__AuthService = ({
         firstName,
         lastName,
         appUrl: config.clientUrl,
+        changedAt: new Date().toISOString(),
       },
     });
 

@@ -60,7 +60,7 @@ export const build__CommentActivity = ({
         result: 'resolved' as const,
         recipientId: row.recipientId,
         mediaItemId: row.containerId,
-        line: { snippet: truncate(comment.body), commenterName },
+        line: { snippet: truncate(comment.body), commenterName, kind: row.kind },
       };
     });
 

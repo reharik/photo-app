@@ -3,8 +3,9 @@ import {
   BatchedPayloadKind,
   EntityType,
   filterByMember,
+  notEmpty,
 } from '@packages/contracts';
-import { groupByMapping, indexBy } from '@packages/infrastructure';
+import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
   AsyncNotification,
   SystemCommentRepository,
@@ -22,16 +23,30 @@ export interface ReactionActivity extends BatchedEmailPayload {
 type ReactionActivityDeps = {
   systemUserRepository: SystemUserRepository;
   systemCommentRepository: SystemCommentRepository;
+  logger: Logger;
 };
 
 export const build__ReactionActivity = ({
   systemUserRepository,
+  systemCommentRepository,
+  logger,
 }: ReactionActivityDeps): ReactionActivity => ({
   execute: async (rows): Promise<ActivityResult> => {
     const reactionRowKind = pickEnum(AsyncNotificationKind, ['reactionAdded']);
     const reactionRows = filterByMember(rows, 'kind', reactionRowKind);
     const users = await systemUserRepository.getActiveUsers(reactionRows.map((x) => x.actorId));
     const userMap = indexBy(users);
+
+    const commentRowKind = pickEnum(EntityType, ['comment']);
+    const commentReactionRows = filterByMember(rows, 'containerType', commentRowKind).map(
+      (x) => x.containerId,
+    );
+    const comments = await systemCommentRepository.getCommentsByIds(commentReactionRows);
+    const mediaIdMap = indexBy(
+      comments,
+      (x) => x.id,
+      (x) => x.targetId,
+    );
 
     // resolve each row ONCE → row + its fate + (if resolved) the rendered line
     const resolved = reactionRows.map((row) => {
@@ -69,10 +84,20 @@ export const build__ReactionActivity = ({
     const reactionSection = new Map<string, ReactionSection>();
     for (const [recipientId, rs] of byRecipient) {
       const byItem = groupByMapping(rs, (r) => r.targetItemId);
-      const items = [...byItem].map(([containerId, itemRs]) => ({
-        containerId,
-        reactions: itemRs.map((r) => r.line),
-      }));
+      const items = [...byItem]
+        .map(([containerId, itemRs]) => {
+          const mediaId = mediaIdMap.get(containerId);
+          if (!mediaId) {
+            logger.warn('reaction row missing mediaId, skipping');
+            return;
+          }
+          return {
+            containerId,
+            mediaId,
+            reactions: itemRs.map((r) => r.line),
+          };
+        })
+        .filter(notEmpty);
       reactionSection.set(recipientId, items);
     }
 
