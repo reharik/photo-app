@@ -57,7 +57,14 @@ export const build__AlbumSharedWithNonUserStrategy = ({
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',
             resourceName: album?.title ?? '',
             inviteUrl: `${config.clientUrl}/shared/${token}`,
-            signupUrl: `${config.clientUrl}/signup`,
+            // Carry the banked email (prefills the field, still editable) and a returnTo
+            // pointing at the album's authenticated detail route (row.containerId is the
+            // albumId) so a guest lands back on it after signup. Both are percent-encoded;
+            // the FE validates returnTo (safeReturnTo) and gates album visibility before
+            // navigating.
+            signupUrl: `${config.clientUrl}/signup?email=${encodeURIComponent(
+              recipientEmail,
+            )}&returnTo=${encodeURIComponent(`/albums/${row.containerId}`)}`,
             inviterEmail: actor?.email ?? '',
             itemCount: album?.itemCount ?? 0,
           },
