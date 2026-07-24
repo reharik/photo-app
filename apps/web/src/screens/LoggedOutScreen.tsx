@@ -10,6 +10,7 @@ import {
   REQUEST_CODE_FAILURE_MESSAGE,
   setPasswordErrorMessage,
 } from '../features/auth/authMessages';
+import { safeReturnTo } from '../features/auth/safeReturnTo';
 import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
 import { ViewerAlbumVisibilityDocument } from '../graphql/generated/types';
 import { FormInput } from '../ui/FormInput';
@@ -28,12 +29,6 @@ type LoginLocationState = {
   successMessage?: string;
   returnTo?: string;
 };
-
-// Only accept a same-origin internal path — guards against open-redirect via
-// crafted router state OR a crafted ?returnTo= URL param. Rejects absolute URLs
-// (no leading '/') and protocol-relative '//host' paths.
-const safeReturnTo = (value: string | undefined): string =>
-  value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
 
 // Matches the authenticated album-detail route ('/albums/<id>', no trailing
 // segment/query/hash) and extracts the id. Used to gate a returnTo that points at
