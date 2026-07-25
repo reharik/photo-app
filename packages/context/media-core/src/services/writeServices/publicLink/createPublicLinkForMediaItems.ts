@@ -12,6 +12,7 @@ import { CreatePublicLinkForAlbum, CreatePublicLinkResponse } from './createPubl
 export type CreatePublicLinkForMediaItemsCommand = {
   viewerId: EntityId;
   viewerFirstName: string;
+  viewerLastName: string;
   mediaItemIds: EntityId[];
   name?: string;
   expiresAt?: Date;
@@ -67,6 +68,8 @@ export const build__CreatePublicLinkForMediaItems = ({
     await albumRepository.save(album);
     const publicLinkResult = await createPublicLinkForAlbum({
       viewerId: input.viewerId,
+      viewerFirstName: input.viewerFirstName,
+      viewerLastName: input.viewerLastName,
       albumId: album.id(),
       name: input.name,
       expiresAt: input.expiresAt,

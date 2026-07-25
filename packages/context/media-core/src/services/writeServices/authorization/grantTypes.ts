@@ -27,6 +27,7 @@ export type GrantUserAuthorizationResult = {
 export type GrantUserAuthorizationCommand = {
   viewerId: EntityId;
   viewerFirstName: string;
+  viewerLastName: string;
   entityIds: EntityId[];
   operations: Operation[];
   grantedToHandles: string[];
