@@ -10,6 +10,8 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     createPublicLinkForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: CreatePublicLinkForAlbumCommand = {
         viewerId: ctx.viewer.id,
+        viewerFirstName: ctx.viewer.firstName,
+        viewerLastName: ctx.viewer.lastName,
         albumId: args.input.albumId,
         name: args.input.name ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
@@ -21,6 +23,8 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     createPublicLinkForMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: CreatePublicLinkForMediaItemsCommand = {
         viewerId: ctx.viewer.id,
+        viewerFirstName: ctx.viewer.firstName,
+        viewerLastName: ctx.viewer.lastName,
         mediaItemIds: args.input.mediaItemIds,
         name: args.input.name ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
