@@ -75,7 +75,7 @@ export const build__AuthService = ({
   const notifyUser = async (
     id: EntityId,
     creds: SignupInput,
-    template: 'welcome' | 'passwordReset',
+    template: 'welcome' | 'passwordChanged',
   ): Promise<string> => {
     const { email, firstName, lastName } = creds;
     // Generate JWT token
@@ -95,6 +95,7 @@ export const build__AuthService = ({
         firstName,
         lastName,
         appUrl: config.clientUrl,
+        changedAt: new Date().toISOString(),
       },
     });
 
@@ -136,10 +137,10 @@ export const build__AuthService = ({
         let user = await userRepository.getUserByEmail(email);
         // Hash password
         const passwordHash = await bcrypt.hash(password, 12);
-        let template: 'welcome' | 'passwordReset';
+        let template: 'welcome' | 'passwordChanged';
         if (!user) {
           user = PendingUser.create(
-            { email, firstName: firstName ?? '', lastName: lastName ?? '', phone, passwordHash },
+            { email, firstName: firstName, lastName: lastName, phone, passwordHash },
             randomUUID(),
           );
           template = 'welcome';
@@ -149,7 +150,10 @@ export const build__AuthService = ({
           );
           if (!activateResult.success) {
             await uow.rollback();
-            return fail(ContractError.ErrorActivatingUser);
+            // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
+            // generic ErrorActivatingUser: the forgot-password door lands a brand-new email
+            // here with no name, and the FE reveals the name fields off that exact reason.
+            return activateResult;
           }
           // this else is ugly, true, but it's the only true way we can handle the three cases.
           // we can't pass the new user in and have activate set the pw because that also sets the template
@@ -163,12 +167,15 @@ export const build__AuthService = ({
               );
               if (!activateResult.success) {
                 await uow.rollback();
-                return fail(ContractError.ErrorActivatingUser);
+                // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME): an invited
+                // user who never set a name lands here via the forgot-password door, and the FE
+                // reveals the name fields off that exact reason to finish setup in place.
+                return activateResult;
               }
               break;
             }
             case 'active': {
-              template = 'passwordReset';
+              template = 'passwordChanged';
               user.setPassword(passwordHash, user.id());
               break;
             }

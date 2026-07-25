@@ -5,6 +5,7 @@ import {
   expectAlbumGalleryItems,
 } from '../../fixtures/album';
 import { loginViaUi } from '../../fixtures/auth';
+import { sectionMarker } from '../../fixtures/emailMarkers';
 import {
   retrieveLocalStackSesMessages,
   sesMessageBodyIncludes,
@@ -57,7 +58,7 @@ const digestPresent = async (
  * Recipients differ by activity, so this produces two independent digests:
  *
  *   • USER B's digest — item-added: A adds an item to the shared album; B (an album
- *     member) is notified. Section: "New photos" + the album title.
+ *     member) is notified. Section: the album (marker) + the album title.
  *
  *   • USER A's digest — comment (driver) + reaction (rider): B comments on and reacts
  *     to an item A owns; both notify the owner (A). Because the reaction is created
@@ -130,13 +131,15 @@ test.describe('Batched activity digest', () => {
 
     await test.step('USER A: receives a comment+reaction digest (reaction rides the comment)', async () => {
       await expect
-        .poll(() => digestPresent(request, commentBody, 'reacted to your'), { timeout: 45_000 })
+        .poll(() => digestPresent(request, commentBody, sectionMarker('reaction')), {
+          timeout: 45_000,
+        })
         .toBe(true);
     });
 
     await test.step('USER B: receives an item-added digest', async () => {
       await expect
-        .poll(() => digestPresent(request, albumTitle, 'New photos'), { timeout: 45_000 })
+        .poll(() => digestPresent(request, albumTitle, sectionMarker('album')), { timeout: 45_000 })
         .toBe(true);
     });
   });

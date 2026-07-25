@@ -21,6 +21,11 @@ export const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  // Latches true when the server reports the account still needs a name (NAME_REQUIRED).
+  // Once revealed, the name fields stay so a later code error doesn't discard what was typed.
+  const [nameRequired, setNameRequired] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [info, setInfo] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
@@ -85,13 +90,39 @@ export const ForgotPasswordScreen = () => {
       setError('Password must be at least 8 characters long.');
       return;
     }
+    // Once the name fields are revealed they're required, matching the signup door:
+    // non-empty after trim, whitespace-only rejected before we submit.
+    if (nameRequired) {
+      if (!firstName.trim()) {
+        setError('Enter your first name.');
+        return;
+      }
+      if (!lastName.trim()) {
+        setError('Enter your last name.');
+        return;
+      }
+    }
 
     setIsSubmitting(true);
     try {
-      // No names on this door → the backend routes this as a reset/login.
-      const result = await completeAuth({ email: trimmedEmail, code, password });
+      // Names are sent only once revealed. A plain reset stays name-less so the backend
+      // still routes an existing active account as a password reset (never an activation).
+      const result = await completeAuth({
+        email: trimmedEmail,
+        code,
+        password,
+        ...(nameRequired ? { firstName: firstName.trim(), lastName: lastName.trim() } : {}),
+      });
 
       if (!result.ok) {
+        // The account needs a name to finish setup (a brand-new email or an invited account
+        // that never set one). Reveal the name fields in place and let the user resubmit with
+        // the SAME code — no second email. Keyed off NAME_REQUIRED ONLY: a mistyped/expired
+        // code falls through to the friendly code-step copy and never reveals the fields.
+        if (result.reason === 'NAME_REQUIRED') {
+          setNameRequired(true);
+          return;
+        }
         // Code-level failure: friendly copy, stay on the code step to retry/resend.
         setError(setPasswordErrorMessage(result.reason));
         return;
@@ -223,6 +254,39 @@ export const ForgotPasswordScreen = () => {
                     minLength={8}
                     autoComplete="new-password"
                   />
+                  {nameRequired && (
+                    <NameReveal>
+                      <NameRevealNote>
+                        We just need your name to finish setting up your account.
+                      </NameRevealNote>
+                      <NameRow>
+                        <FormInput
+                          id="forgot-password-first-name"
+                          label="First name"
+                          type="text"
+                          placeholder="Jane"
+                          value={firstName}
+                          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                            setFirstName(event.target.value)
+                          }
+                          required
+                          autoComplete="given-name"
+                        />
+                        <FormInput
+                          id="forgot-password-last-name"
+                          label="Last name"
+                          type="text"
+                          placeholder="Doe"
+                          value={lastName}
+                          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                            setLastName(event.target.value)
+                          }
+                          required
+                          autoComplete="family-name"
+                        />
+                      </NameRow>
+                    </NameReveal>
+                  )}
                 </>
               )}
 
@@ -436,6 +500,29 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(3)};
+`;
+
+const NameReveal = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(2)};
+`;
+
+const NameRevealNote = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
+const NameRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${({ theme }) => theme.spacing(3)};
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const InfoMessage = styled.div`

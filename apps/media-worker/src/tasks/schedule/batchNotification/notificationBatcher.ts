@@ -75,7 +75,7 @@ export const build__NotificationBatcher = ({
         const payload: NotificationPayload<'activityDigest'> = {
           to: recipientEmail.email,
           template: 'activityDigest',
-          data: { data, viewUrl: '' },
+          data: { data, appUrl: config.clientUrl },
           channels: ['email'],
         };
         const r = await notificationService.notify(payload);

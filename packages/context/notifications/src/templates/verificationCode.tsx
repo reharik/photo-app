@@ -4,20 +4,24 @@ import { ReactElement } from 'react';
 import { TemplateData } from '../types.js';
 import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import { emailKindMarker } from './emailMarker.js';
+import { fontStacks } from './emailTokens.js';
 
 void React;
 
-type EmailVerificationData = TemplateData['emailVerification'];
+type VerificationCodeData = TemplateData['verificationCode'];
 
 export const subject = (): string => {
   return `Your ${APP_NAME} verification code`;
 };
 
-const EmailVerification = (data: EmailVerificationData): ReactElement => {
+const VerificationCode = (data: VerificationCodeData): ReactElement => {
   return (
     <BaseEmail
       previewText={`Your ${APP_NAME} verification code is ${data.code}.`}
       title={'Your verification code'}
+      footerVariant="transactional"
+      markers={[emailKindMarker('verificationCode')]}
     >
       <Section>
         <Text style={paragraph}>Enter this code to continue:</Text>
@@ -26,16 +30,14 @@ const EmailVerification = (data: EmailVerificationData): ReactElement => {
         <Text style={codeStyle}>{data.code}</Text>
       </Section>
       <Section>
-        <Text style={paragraph}>This code expires in 10 minutes.</Text>
-        <Text style={muted}>
-          If you didn&apos;t request this, you can safely ignore this email.
-        </Text>
+        <Text style={paragraph}>This code works for the next 10 minutes.</Text>
+        <Text style={muted}>If you didn&apos;t ask for it, you can ignore this email.</Text>
       </Section>
     </BaseEmail>
   );
 };
 
-export default EmailVerification;
+export default VerificationCode;
 
 const paragraph = {
   color: '#3f3f46',
@@ -53,8 +55,9 @@ const muted = {
 
 const codeStyle = {
   color: '#18181b',
+  fontFamily: fontStacks.mono,
   fontSize: '32px',
-  fontWeight: 700,
+  fontWeight: 500,
   letterSpacing: '8px',
   textAlign: 'center' as const,
   margin: 0,

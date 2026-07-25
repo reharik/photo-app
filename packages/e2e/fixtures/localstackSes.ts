@@ -61,9 +61,8 @@ export const retrieveLocalStackSesMessages = async (
  * store (LocalStack's DELETE wipes ALL mail, so it can't isolate one test without
  * destroying every other test's — and every manually-inspectable — email).
  */
-export const countLocalStackSesMessages = async (
-  request: APIRequestContext,
-): Promise<number> => (await retrieveLocalStackSesMessages(request)).length;
+export const countLocalStackSesMessages = async (request: APIRequestContext): Promise<number> =>
+  (await retrieveLocalStackSesMessages(request)).length;
 
 export const clearLocalStackSesMessages = async (): Promise<void> => {
   const response = await fetch(LOCALSTACK_SES_URL, { method: 'DELETE' });

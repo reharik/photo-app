@@ -124,7 +124,8 @@ describe('build__AuthController', () => {
       const user = {
         id: 'u1',
         email: 'user@example.test',
-        name: 'User',
+        firstName: 'user',
+        lastName: 'name',
         isActive: true,
         displayName: 'User',
         isAuthenticated: true,

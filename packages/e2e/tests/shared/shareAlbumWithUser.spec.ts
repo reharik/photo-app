@@ -5,6 +5,7 @@ import {
   removeMediaItemsFromAlbum,
 } from '../../fixtures/album';
 import { loginViaUi } from '../../fixtures/auth';
+import { sectionMarker } from '../../fixtures/emailMarkers';
 import {
   findSesMessageForRecipient,
   retrieveLocalStackSesMessages,
@@ -107,10 +108,11 @@ test.describe('Share an album with an existing user', () => {
           .poll(
             async () => {
               const messages = await retrieveLocalStackSesMessages(request);
-              // Matches the recipient AND the "New album activity" body, so the earlier
-              // share-invite email to the same user doesn't satisfy the poll.
+              // Matches the recipient AND the hidden activity-digest album-section
+              // marker, so the earlier share-invite email to the same user doesn't
+              // satisfy the poll — and no copy rewrite can break this.
               return Boolean(
-                findSesMessageForRecipient(messages, userB.user.email, 'New activity'),
+                findSesMessageForRecipient(messages, userB.user.email, sectionMarker('album')),
               );
             },
             { timeout: 30_000 },

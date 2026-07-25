@@ -211,7 +211,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
 
       expect(result.success).toBe(false);
       assert(!result.success);
-      expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
+      expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
       expect(h.uow.rollback).toHaveBeenCalledTimes(1);
       expect(h.uow.commit).not.toHaveBeenCalled();
       expect(h.save).not.toHaveBeenCalled();

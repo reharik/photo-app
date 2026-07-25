@@ -170,13 +170,21 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
       expect(await itemGrantsFor(shadow.id, item1)).toHaveLength(1);
       expect(await itemGrantsFor(shadow.id, item2)).toHaveLength(1);
 
-      // The non-user branch additionally built a "Public Link Album" with a tokenized
+      // The non-user branch additionally built a public-link album with a tokenized
       // public-link grant (link_token set, no granted_to_user), in the SAME call — proving
       // the active item-grant branch and the public-link branch both committed in one uow.
+      //
+      // Found by the isPublicLinkAlbum flag rather than by title: the title is no longer a
+      // fixed string but is generated from the sharer's first name, so matching on it would
+      // couple this test to a seed fixture's name. The DB is reset after every test, so the
+      // flag identifies exactly the album this call created.
       const publicAlbum = await database('album')
-        .where({ title: 'Public Link Album' })
-        .first<{ id: string }>();
+        .where({ isPublicLinkAlbum: true })
+        .first<{ id: string; title: string }>();
       expect(publicAlbum).toBeDefined();
+      // Untitled shares fall back to "Photos from {viewerFirstName}"; the sharer here is the
+      // default logged-in viewer, seeded as firstName 'Demo' in ensureTestViewerUsers.
+      expect(publicAlbum.title).toBe('Photos from Demo');
       const linkGrant = await database('accessGrant')
         .where({ albumId: publicAlbum.id })
         .whereNotNull('linkToken')

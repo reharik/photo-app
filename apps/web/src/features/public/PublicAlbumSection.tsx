@@ -10,6 +10,7 @@ import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
+import { PublicSignupCta } from './PublicSignupCta';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
 
@@ -61,7 +62,7 @@ export const PublicAlbumSection = ({
       {!metaCompact ? (
         <PublicHeader>
           <Wordmark>Homeroll</Wordmark>
-          <Slogan>A private album — no account needed to view.</Slogan>
+          <Slogan>A private album, shared with you.</Slogan>
         </PublicHeader>
       ) : null}
       <AlbumSectionMetadata
@@ -75,11 +76,12 @@ export const PublicAlbumSection = ({
           <CompactBrand>
             <CompactBrandInner>
               <CompactWordmark>Homeroll</CompactWordmark>
-              <CompactSlogan>A private album — no account needed to view.</CompactSlogan>
+              <CompactSlogan>A private album, shared with you.</CompactSlogan>
             </CompactBrandInner>
           </CompactBrand>
         }
       />
+      <PublicSignupCta albumId={album.id} senderName={ownerName} />
       <AlbumBodyScroll
         ref={(el) => {
           albumScrollRef.current = el;

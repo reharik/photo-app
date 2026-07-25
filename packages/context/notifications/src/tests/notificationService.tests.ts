@@ -74,7 +74,9 @@ describe('build__NotificationService', () => {
       expect(sendEmail).toHaveBeenCalledTimes(1);
       const [payload] = sendEmail.mock.calls[0] ?? [];
       expect(payload?.to).toBe('jane@example.com');
-      expect(payload?.subject).toContain('Jane');
+      // The welcome subject is deliberately flat ("Welcome to <App>") — the name
+      // lives only in the H1/body, so assert on that, not the subject line.
+      expect(payload?.subject).toContain('Welcome');
       expect(payload?.html).toContain('Jane');
     });
   });

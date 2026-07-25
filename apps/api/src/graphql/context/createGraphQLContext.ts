@@ -1,3 +1,4 @@
+import { toDisplayName } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { NotificationService } from '@packages/notifications';
 import { Config } from '../../config';
@@ -40,7 +41,7 @@ export const build__CreateGraphQLContext = ({
       };
     }
     if (initialContext.state?.isLoggedIn && user) {
-      const viewer = { ...user, displayName: `${user.firstName} ${user.lastName}` };
+      const viewer = { ...user, displayName: toDisplayName(user) };
       return {
         kind: 'authenticated',
         viewer,

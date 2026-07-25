@@ -30,14 +30,26 @@ interface HasId {
  * most recent. For "there must not be duplicates," use `indexByUnique` instead so
  * a violated assumption fails loudly rather than silently dropping a row.
  *
- *   indexBy(albumItems)                       // Map<id, AlbumItem>
- *   indexBy(rows, r => `${r.albumId}:${r.userTagId}`)  // Map<compositeKey, Row>
+ * @example
+ * const users = [{ id: 'u1', name: 'Ada' }, { id: 'u2', name: 'Grace' }];
+ * const byId = indexBy(users);              // Map<string, User>, keyed by item.id
+ * byId.get('u1');                           // { id: 'u1', name: 'Ada' }
+ *
+ * @example
+ * // Explicit (composite) key function
+ * indexBy(rows, r => `${r.albumId}:${r.userTagId}`);  // Map<compositeKey, Row>
  */
 export function indexBy<T extends HasId>(items: T[]): Map<string, T>;
 export function indexBy<T, K>(items: T[], key: (item: T) => K): Map<K, T>;
-export function indexBy<T, K>(items: T[], key?: (item: T) => K) {
+export function indexBy<T, K, V>(items: T[], key: (item: T) => K, value: (item: T) => V): Map<K, V>;
+export function indexBy<T, K, V>(
+  items: T[],
+  key?: (item: T) => K,
+  value?: (item: T) => V,
+): Map<string | K, V | T> {
   const keyFn = key ?? ((item: T) => (item as unknown as HasId).id);
-  return new Map(items.map((item) => [keyFn(item), item]));
+  const valFn = value ?? ((item: T) => item);
+  return new Map(items.map((item) => [keyFn(item), valFn(item)]));
 }
 
 /**
@@ -47,6 +59,13 @@ export function indexBy<T, K>(items: T[], key?: (item: T) => K) {
  * upstream (e.g. two rows that should have been deduped, two entities sharing an
  * id). Failing fast here surfaces the bug at the point of the bad data rather
  * than letting a silent overwrite cause a confusing symptom much later.
+ *
+ * @example
+ * const albums = [{ id: 'al1' }, { id: 'al2' }];
+ * const byId = indexByUnique(albums);       // Map<string, Album>
+ *
+ * @example
+ * indexByUnique([{ id: 'x' }, { id: 'x' }]); // throws: "indexByUnique: duplicate key x"
  */
 export function indexByUnique<T extends HasId>(items: T[]): Map<string, T>;
 export function indexByUnique<T, K>(items: T[], key: (item: T) => K): Map<K, T>;
@@ -73,8 +92,14 @@ export function indexByUnique<T, K>(items: T[], key?: (item: T) => K): Map<strin
  * three-arg form groups a projected value (e.g. group rows by parentId but keep
  * only the mapped domain object in each bucket).
  *
- *   groupByMapping(itemRows, r => r.albumId)              // Map<albumId, Row[]>
- *   groupByMapping(grantRows, r => r.authId, toGrant)     // Map<authId, Grant[]>
+ * @example
+ * // Group whole items by a key → Map<albumId, Row[]>
+ * const byAlbum = groupByMapping(itemRows, r => r.albumId);
+ * byAlbum.get('a1');                        // [{ id: 'i1', ... }, { id: 'i2', ... }]
+ *
+ * @example
+ * // Group a projected value → Map<authId, Grant[]>
+ * groupByMapping(grantRows, r => r.authId, toGrant);
  */
 export function groupByMapping<T extends HasId>(items: T[]): Map<string, T[]>;
 export function groupByMapping<T, K>(items: T[], key: (item: T) => K): Map<K, T[]>;
@@ -101,12 +126,29 @@ export function groupByMapping<T, K, V>(
   return map;
 }
 
+/**
+ * Set-equality of two smart-enum arrays: true if they contain the same members,
+ * ignoring order and duplicates. Compares by each item's `.value`.
+ *
+ * @example
+ * const a = [NotificationKindEnum.albumShared, NotificationKindEnum.mediaAdded];
+ * const b = [NotificationKindEnum.mediaAdded, NotificationKindEnum.albumShared];
+ * EnumArraysAreEqual(a, b);                             // true  (same set, different order)
+ * EnumArraysAreEqual(a, [NotificationKindEnum.albumShared]); // false
+ */
 export const EnumArraysAreEqual = <E extends StandardEnumItem>(a: E[], b: E[]): boolean => {
   const av = new Set(a.map((e) => e.value));
   const bv = new Set(b.map((e) => e.value));
   return av.size === bv.size && [...av].every((v) => bv.has(v));
 };
 
+/**
+ * Dedupe an array of primitives, keeping the FIRST occurrence and preserving
+ * insertion order.
+ *
+ * @example
+ * dedupeIds(['a1', 'a2', 'a1', 'a3']);      // ['a1', 'a2', 'a3']
+ */
 export const dedupeIds = <T>(ids: T[]): T[] => {
   const seen = new Set<T>();
   const out: T[] = [];
@@ -118,6 +160,20 @@ export const dedupeIds = <T>(ids: T[]): T[] => {
   return out;
 };
 
+/**
+ * Dedupe objects by a composite key built from one or more key extractors.
+ * Unlike `dedupeIds`, collisions keep the LAST occurrence (it reduces into a
+ * `Map.set`).
+ *
+ * @example
+ * const rows = [
+ *   { albumId: 'a1', userId: 'u1', role: 'viewer' },
+ *   { albumId: 'a1', userId: 'u1', role: 'editor' }, // same key → this one wins
+ *   { albumId: 'a1', userId: 'u2', role: 'viewer' },
+ * ];
+ * dedupeBy(rows, [r => r.albumId, r => r.userId]);
+ * // [{ a1, u1, editor }, { a1, u2, viewer }]
+ */
 export const dedupeBy = <T extends object>(items: T[], keys: Array<(item: T) => unknown>): T[] => [
   ...items
     .reduce((m, item) => {

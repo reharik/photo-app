@@ -37,7 +37,7 @@ export const AlbumScreen = () => {
   const apolloClient = useApolloClient();
   const { anyUnseenMatching } = useInAppNotification();
   const markedSeenAlbumIdRef = useRef<string | null>(null);
-  const [groupBy, setGroupBy] = useState<AlbumGroupBy>('none');
+  const [groupBy, setGroupBy] = useState<AlbumGroupBy>('ungrouped');
   const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
   const sortParamsInitialized = useRef(false);
 

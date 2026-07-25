@@ -57,7 +57,11 @@ export interface SetPasswordSuccess {
 }
 
 // FAILURE (code-level only, safe to surface): HTTP 400.
-export type SetPasswordErrorReason = 'INVALID_CODE' | 'EXPIRED' | 'TOO_MANY_ATTEMPTS';
+// NAME_REQUIRED: the code was valid but the account has no name yet (a brand-new email or
+// an invited account that never set one), so activation needs first/last name. Surfaced
+// only after a valid mailed code, so it leaks no existence beyond what the inbox proves.
+export type SetPasswordErrorReason =
+  'INVALID_CODE' | 'EXPIRED' | 'TOO_MANY_ATTEMPTS' | 'NAME_REQUIRED';
 
 export interface SetPasswordError {
   error: SetPasswordErrorReason;

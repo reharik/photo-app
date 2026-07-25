@@ -1,3 +1,4 @@
+import { useApolloClient } from '@apollo/client/react';
 import { EyeOff, KeyRound, RefreshCw, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -9,7 +10,9 @@ import {
   REQUEST_CODE_FAILURE_MESSAGE,
   setPasswordErrorMessage,
 } from '../features/auth/authMessages';
+import { safeReturnTo } from '../features/auth/safeReturnTo';
 import { CODE_LENGTH, VerificationStep } from '../features/auth/VerificationStep';
+import { ViewerAlbumVisibilityDocument } from '../graphql/generated/types';
 import { FormInput } from '../ui/FormInput';
 import { HeroIllustration } from '../ui/HeroIllustration';
 
@@ -27,19 +30,28 @@ type LoginLocationState = {
   returnTo?: string;
 };
 
-// Only accept a same-origin internal path — guards against open-redirect via
-// crafted router state.
-const safeReturnTo = (value: string | undefined): string =>
-  value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+// Matches the authenticated album-detail route ('/albums/<id>', no trailing
+// segment/query/hash) and extracts the id. Used to gate a returnTo that points at
+// an album behind a real visibility check before navigating there.
+const albumDetailPath = /^\/albums\/([^/?#]+)$/;
 
 export const LoggedOutScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const apolloClient = useApolloClient();
+  // URL params are an ADDITIONAL source alongside in-memory router state, never a
+  // replacement. `email` prefills the field from a share/CTA link; `returnTo` lands the
+  // guest back where she came from. Both are untrusted: email is only ever rendered as a
+  // React-escaped controlled-input value (never raw HTML), and returnTo goes through
+  // safeReturnTo below. URLSearchParams.get() returns the percent-decoded value.
+  const urlParams = new URLSearchParams(location.search);
   const [isSignup, setIsSignup] = useState(location.pathname === '/signup');
   const [signupStep, setSignupStep] = useState<SignupStep>('email');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  // Seed once from the URL. It stays fully editable — she may sign up with a different
+  // address — and normalization (trimmedEmail) is identical to a typed value.
+  const [email, setEmail] = useState(() => urlParams.get('email') ?? '');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -52,6 +64,31 @@ export const LoggedOutScreen = () => {
   const { login, requestEmailVerification, completeAuth } = useAuth();
   const locationState = location.state as LoginLocationState | undefined;
   const successMessage = locationState?.successMessage;
+
+  // Where to land after auth. In-memory state wins (internal deep-link bounce), the URL
+  // ?returnTo= is the fallback — both filtered through safeReturnTo. When the target is an
+  // album, verify the freshly-authenticated viewer can actually SEE it before navigating:
+  // a guest who signed up with a different email than the banked one has no grant, and
+  // AlbumScreen would throw (surfacing the app-wide error boundary). We fall back to '/'
+  // quietly in just that case. AlbumScreen's throw is left intact for every other caller —
+  // stale links, revoked grants, and mistyped album URLs still surface as errors.
+  const resolveReturnTarget = async (): Promise<string> => {
+    const target = safeReturnTo(locationState?.returnTo ?? urlParams.get('returnTo') ?? undefined);
+    const albumMatch = albumDetailPath.exec(target);
+    if (!albumMatch) {
+      return target;
+    }
+    try {
+      const { data } = await apolloClient.query({
+        query: ViewerAlbumVisibilityDocument,
+        variables: { albumId: albumMatch[1] },
+        fetchPolicy: 'network-only',
+      });
+      return data?.viewer?.album ? target : '/';
+    } catch {
+      return '/';
+    }
+  };
 
   const trimmedEmail = email.trim();
   const trimmedPhone = phone.trim();
@@ -136,6 +173,14 @@ export const LoggedOutScreen = () => {
       setError('Enter the 6-digit code from your email.');
       return;
     }
+    if (!firstName.trim()) {
+      setError('Enter your first name.');
+      return;
+    }
+    if (!lastName.trim()) {
+      setError('Enter your last name.');
+      return;
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters long.');
       return;
@@ -163,7 +208,7 @@ export const LoggedOutScreen = () => {
         return;
       }
 
-      await navigate(safeReturnTo(locationState?.returnTo), { replace: true });
+      await navigate(await resolveReturnTarget(), { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -187,6 +232,9 @@ export const LoggedOutScreen = () => {
         setError(result.message);
         return;
       }
+      // Login keeps its existing behavior exactly: in-memory-state returnTo only, through
+      // safeReturnTo, no URL-param source and no album-visibility gate. The signup door owns
+      // the guest-from-share flow; login's high-traffic path is deliberately left untouched.
       await navigate(safeReturnTo(locationState?.returnTo), { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');

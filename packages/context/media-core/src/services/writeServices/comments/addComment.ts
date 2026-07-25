@@ -4,6 +4,7 @@ import {
   fail,
   ok,
   ReactionEmoji,
+  toDisplayName,
   User,
   WriteResult,
 } from '@packages/contracts';
@@ -87,7 +88,7 @@ export const build__AddComment = ({
         parentCommentId: command.parentCommentId,
         authorId: command.authorId,
         body: command.body,
-        displayName: `${user.firstName}, ${user.lastName}`,
+        displayName: toDisplayName(user),
         displayAvatarUrl: undefined,
       },
       command.authorId,

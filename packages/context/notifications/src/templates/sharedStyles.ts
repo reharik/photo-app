@@ -1,26 +1,12 @@
-// emails/templates/shareStyles.ts
-export const paragraph = {
-  color: '#3f3f46',
-  fontSize: '15px',
-  lineHeight: '1.6',
-  margin: '0 0 12px',
-};
-export const muted = { color: '#71717a', fontSize: '12px', lineHeight: '1.5', margin: '0 0 6px' };
-export const linkFallback = {
-  color: '#52525b',
-  fontSize: '12px',
-  lineHeight: '1.5',
-  margin: 0,
-  wordBreak: 'break-all' as const,
-};
-export const buttonStyle = {
-  backgroundColor: '#18181b',
-  borderRadius: '6px',
-  color: '#fafafa',
-  display: 'inline-block',
-  fontSize: '14px',
-  fontWeight: 600,
-  padding: '12px 20px',
-  textDecoration: 'none',
-};
-export const linkFallbackBlock = (url: string) => /* shared fallback section — see below */ url;
+// Re-exports the shared token styles under the names the invite templates use.
+import {
+  bodyTextStyle,
+  buttonStyle,
+  linkFallbackStyle,
+  secondaryTextStyle,
+} from './emailTokens.js';
+
+export const paragraph = bodyTextStyle;
+export const muted = secondaryTextStyle; // the "paste this link" label (#5C5145, 14px)
+export const linkFallback = linkFallbackStyle;
+export { buttonStyle };
