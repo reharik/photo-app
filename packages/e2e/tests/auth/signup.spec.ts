@@ -1,183 +1,135 @@
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
-import { getDb } from '../../fixtures/db';
 import {
-  extractVerificationCode,
-  findSesMessageForRecipient,
-  retrieveLocalStackSesMessages,
-} from '../../fixtures/localstackSes';
+  AUTH_PASSWORD,
+  authTestEmail,
+  expectLoggedIn,
+  resetAuthState,
+  startSignup,
+  waitForVerificationCode,
+} from '../../fixtures/authFlows';
+import { countLocalStackSesMessages } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
 /**
- * RAI-76 — e2e for the unified signup flow (email → verification code → set
- * password → logged in). The earlier new-user-not-persisted source bug is fixed
- * (User.create no longer forwards an id, so isNew() is true and the row persists),
- * so the happy path now completes end to end.
+ * RAI-76 — e2e for the unified signup door (email → verification code → set password → in the
+ * app). See root CLAUDE.md for the code lifecycle: 6-digit code, 10-min TTL, lockout at the 4th
+ * submit (backend rejects once `attemptCount >= 3`).
+ *
+ * Two tests:
+ *  - a single JOURNEY that walks the happy path and DETOURS through every recoverable failure a
+ *    real fat-fingering user hits — whitespace-only names (client gate), a wrong code, the
+ *    attempt lockout, and resend recovery — because each failure leaves the user able to retry.
+ *  - an ISOLATED pending-user activation test: it exercises a different read path (item-scoped
+ *    grant materialization surfacing in "Shared with me"), so it stays on its own.
  */
 
-// All signup test emails share this prefix so cleanup can target them.
 const EMAIL_PREFIX = 'rai76-signup';
 
-const freshEmail = (kind = 'user'): string =>
-  `${EMAIL_PREFIX}-${kind}-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.test`;
-
-/**
- * Resets throttle bookkeeping and removes users this suite created. The
- * email-verification endpoint throttles by IP (30 / 15 min) and email (5 / 15 min);
- * `rate_limit_event` rows persist across runs against the shared dev DB, so without
- * this a few reruns silently trip the IP limit and no code is ever emailed.
- */
-const resetSignupState = async (): Promise<void> => {
-  const db = getDb();
-  await db('rate_limit_event').delete();
-
-  const users = await db<{ id: string }>('user')
-    .where('email', 'like', `${EMAIL_PREFIX}-%`)
-    .select('id');
-  const ids = users.map((u) => u.id);
-  if (ids.length > 0) {
-    await db('access_grant').whereIn('granted_to_user', ids).delete();
-    await db('access_grant').whereIn('granted_by', ids).delete();
-    await db('share_contact').whereIn('contact_user_id', ids).delete();
-    await db('share_contact').whereIn('user_id', ids).delete();
-  }
-  await db('email_verification').where('email', 'like', `${EMAIL_PREFIX}-%`).delete();
-  await db('user').where('email', 'like', `${EMAIL_PREFIX}-%`).delete();
-};
-
-/** Drive the signup email step and return once the code step is showing. */
-const startSignup = async (page: Page, email: string): Promise<void> => {
-  await page.goto('/signup');
-  await page.getByTestId('login-email').fill(email);
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByTestId('signup-code')).toBeVisible();
-};
-
-/** Poll LocalStack SES for the verification email and return its 6-digit code. */
-const waitForVerificationCode = async (
-  request: APIRequestContext,
-  email: string,
-): Promise<string> => {
-  let code = '';
-  await expect
-    .poll(
-      async () => {
-        const messages = await retrieveLocalStackSesMessages(request);
-        const message = findSesMessageForRecipient(messages, email, 'verification code');
-        if (!message) {
-          return false;
-        }
-        code = extractVerificationCode(message) ?? '';
-        return code.length === 6;
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
-  return code;
-};
-
-/** Fill the details step and submit. */
-const submitDetails = async (
+/** Fill the details-step fields without submitting, so a test can re-submit to retry. */
+const fillDetails = async (
   page: Page,
   {
     code,
     firstName = 'Given',
     lastName = 'Family',
-  }: { code: string; firstName?: string; lastName?: string },
+    password = AUTH_PASSWORD,
+  }: { code: string; firstName?: string; lastName?: string; password?: string },
 ): Promise<void> => {
   await page.getByTestId('signup-code').fill(code);
   await page.locator('#signup-first-name').fill(firstName);
   await page.locator('#signup-last-name').fill(lastName);
-  await page.getByTestId('login-password').fill('newPassword9');
-  await page.getByRole('button', { name: 'Create Account' }).click();
+  await page.getByTestId('login-password').fill(password);
 };
 
-/** The authenticated app shell is booted once the "Recent" nav link is visible. */
-const expectLoggedIn = async (page: Page): Promise<void> => {
-  await expect(page.getByRole('link', { name: 'Recent', exact: true })).toBeVisible();
-};
+const clickCreateAccount = (page: Page): Promise<void> =>
+  page.getByRole('button', { name: 'Create Account' }).click();
 
 test.describe('Signup (email → code → password)', () => {
   test.beforeEach(async () => {
-    await resetSignupState();
+    await resetAuthState(EMAIL_PREFIX);
   });
 
   test.afterAll(async () => {
-    await resetSignupState();
+    await resetAuthState(EMAIL_PREFIX);
   });
 
-  test('email step sends a code and advances to the details/code step', async ({ anonPage }) => {
-    const email = freshEmail();
-    await startSignup(anonPage, email);
-
-    // Existence-blind: regardless of the email, the UI advances to the code step.
-    await expect(
-      anonPage.getByText('a 6-digit code is on its way', { exact: false }),
-    ).toBeVisible();
-  });
-
-  test('an invalid code is rejected and keeps the user on the code step', async ({ anonPage }) => {
-    const email = freshEmail();
-    await startSignup(anonPage, email);
-
-    // A real (random) verification code was just issued for this email; 000000 is wrong.
-    await submitDetails(anonPage, { code: '000000' });
-
-    // Backend rejects the bad code (and bumps the attempt counter); the FE surfaces a
-    // friendly message and keeps the user on the code step — no navigation into the app.
-    await expect(anonPage.getByText("That code isn't right.")).toBeVisible();
-    await expect(anonPage.getByTestId('signup-code')).toBeVisible();
-    await expect(anonPage).toHaveURL(/\/signup$/);
-  });
-
-  test('happy path: valid code creates the account and lands in the app', async ({
+  test('journey: existence-blind email step, name + code errors recover, resend completes signup', async ({
     anonPage,
     request,
   }) => {
-    const email = freshEmail();
-    await startSignup(anonPage, email);
+    const email = authTestEmail(EMAIL_PREFIX);
 
-    const code = await waitForVerificationCode(request, email);
-    await submitDetails(anonPage, { code });
+    await test.step('email step is existence-blind and advances to the details step', async () => {
+      await startSignup(anonPage, email);
+      await expect(
+        anonPage.getByText('a 6-digit code is on its way', { exact: false }),
+      ).toBeVisible();
+    });
 
-    await expectLoggedIn(anonPage);
+    // A real code is now issued. Grab it up front; the wrong-code detour below never consumes it.
+    const firstCode = await waitForVerificationCode(request, email);
+
+    await test.step('DETOUR: whitespace-only names are rejected client-side', async () => {
+      // Code is a valid length so validation falls through to the name gate (which trims).
+      await fillDetails(anonPage, { code: '000000', firstName: '   ', lastName: 'Family' });
+      await clickCreateAccount(anonPage);
+      await expect(anonPage.getByText('Enter your first name.')).toBeVisible();
+
+      await anonPage.locator('#signup-first-name').fill('Given');
+      await anonPage.locator('#signup-last-name').fill('   ');
+      await clickCreateAccount(anonPage);
+      await expect(anonPage.getByText('Enter your last name.')).toBeVisible();
+
+      await anonPage.locator('#signup-last-name').fill('Family');
+    });
+
+    await test.step('DETOUR: wrong code three times, then a fourth submit trips the lockout', async () => {
+      // Names are valid now, so each submit reaches the API with the wrong code. Attempts 1-3
+      // are rejected as a bad code (each bumps the server-side counter); the 4th is locked out
+      // BEFORE the code is even checked, so a valid code would be refused here too.
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await clickCreateAccount(anonPage);
+        await expect(anonPage.getByText("That code isn't right.")).toBeVisible();
+      }
+      await clickCreateAccount(anonPage);
+      await expect(anonPage.getByText('Too many tries — resend a new code.')).toBeVisible();
+    });
+
+    await test.step('resend issues a fresh code and the correct one completes signup', async () => {
+      // Baseline before resend so the poll returns the NEW code, not the stale first one (which
+      // resend invalidates anyway). The old `firstCode` is now dead.
+      const sesBaseline = await countLocalStackSesMessages(request);
+      await anonPage.getByRole('button', { name: 'Send again' }).click();
+      const resentCode = await waitForVerificationCode(request, email, sesBaseline);
+      expect(resentCode).not.toBe(firstCode);
+
+      await anonPage.getByTestId('signup-code').fill(resentCode);
+      await clickCreateAccount(anonPage);
+      await expectLoggedIn(anonPage);
+    });
   });
 
-  test('bad code then correct code logs the new user in', async ({ anonPage, request }) => {
-    const email = freshEmail();
-    await startSignup(anonPage, email);
-
-    const code = await waitForVerificationCode(request, email);
-
-    // A wrong code bumps the attempt counter (well short of the 3-attempt lockout) and
-    // keeps the user on the code step without consuming the real code.
-    await submitDetails(anonPage, { code: '000000' });
-    await expect(anonPage.getByText("That code isn't right.")).toBeVisible();
-
-    // The correct code then completes signup and lands in the app.
-    await anonPage.getByTestId('signup-code').fill(code);
-    await anonPage.getByRole('button', { name: 'Create Account' }).click();
-    await expectLoggedIn(anonPage);
-  });
-
-  // Sharing an INDIVIDUAL item with a not-yet-registered email and then activating that
-  // account surfaces the item in the recipient's "Shared with me". This previously failed
-  // on the read side (the item's grant was album-scoped on a public-link album, which
-  // getMediaItemsSharedWithMe/getAlbumsSharedWithMe both dropped); the grants-from-domain-
-  // events refactor now materializes the item-scoped grant on activation, so it works.
-  test('pending-user activation materializes the shadow user and their grants', async ({
+  // Sharing an INDIVIDUAL item with a not-yet-registered email and then activating that account
+  // surfaces the item in the recipient's "Shared with me". This previously failed on the read
+  // side (the item's grant was album-scoped on a public-link album, which
+  // getMediaItemsSharedWithMe/getAlbumsSharedWithMe both dropped); the grants-from-domain-events
+  // refactor now materializes the item-scoped grant on activation, so it works. Kept ISOLATED:
+  // its read path (item-scoped "Shared with me") differs from the album-scoped landing that the
+  // guest-conversion suite covers.
+  test('pending-user activation materializes the shadow user and their item-scoped grant', async ({
     userA,
     anonPage,
     request,
     grabTestImages,
   }) => {
     const [item] = await setup(grabTestImages, userA, 1);
-    const email = freshEmail('pending');
+    const email = authTestEmail(EMAIL_PREFIX, 'pending');
 
-    // User A shares the item with a not-yet-registered email → mints a pending
-    // (shadow) user plus a pending grant to them.
+    // User A shares the item with a not-yet-registered email → mints a pending (shadow) user
+    // plus a pending grant to them.
     const selection = await selectMediaItems(userA.page, [item.id], {
       toolbarVariant: 'library',
       expectActions: ['Share', 'Add to album'],
@@ -194,11 +146,12 @@ test.describe('Signup (email → code → password)', () => {
     await shareDialog.getByRole('button', { name: 'Share with user' }).click();
     await expect(shareDialog).toBeHidden();
 
-    // The shadow user signs up through the SAME flow; activation should flip them
-    // active and materialize the pending grant.
+    // The shadow user signs up through the SAME flow; activation should flip them active and
+    // materialize the pending grant.
     await startSignup(anonPage, email);
     const code = await waitForVerificationCode(request, email);
-    await submitDetails(anonPage, { code, firstName: 'Pending', lastName: 'Activated' });
+    await fillDetails(anonPage, { code, firstName: 'Pending', lastName: 'Activated' });
+    await clickCreateAccount(anonPage);
     await expectLoggedIn(anonPage);
 
     // The pending grant materializes via the post-commit `pendingUserActivated` handler

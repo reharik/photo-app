@@ -1,4 +1,4 @@
-import { AsyncNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind, UserStatus } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
 import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
 import { Config } from '../../../../config';
@@ -22,9 +22,12 @@ export const build__AlbumSharedStrategy = ({
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
     return rows.map((row) => {
-      const recipientEmail = userMap.get(row.recipientId)?.email;
-      if (!recipientEmail) {
+      const recipient = userMap.get(row.recipientId);
+      if (!recipient?.email) {
         return { row, kind: 'skipped', reason: 'no recipient email' };
+      }
+      if (recipient.userStatus.equals(UserStatus.pending)) {
+        return { row, kind: 'skipped', reason: 'User is pending' };
       }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.containerId);
@@ -36,7 +39,7 @@ export const build__AlbumSharedStrategy = ({
         row,
         kind: 'ready',
         payload: {
-          to: recipientEmail,
+          to: recipient.email,
           template: 'memberAlbumShared',
           channels: ['email'],
           data: {
