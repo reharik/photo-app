@@ -1,6 +1,6 @@
 import { useApolloClient } from '@apollo/client/react';
 import { EyeOff, KeyRound, RefreshCw, Smartphone } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { APP_NAME, APP_TAGLINE } from '../brand';
@@ -52,6 +52,11 @@ export const LoggedOutScreen = () => {
   // Seed once from the URL. It stays fully editable — she may sign up with a different
   // address — and normalization (trimmedEmail) is identical to a typed value.
   const [email, setEmail] = useState(() => urlParams.get('email') ?? '');
+  // An explicit opt-in from the caller, not something inferred from `email` being present:
+  // the share notification links prefill the field WITHOUT wanting a code sent on arrival,
+  // and only the public-album offer (where she has already typed her address and pressed
+  // submit) asks for the step to fire.
+  const shouldAutoSubmitEmail = urlParams.get('autoSubmit') === '1';
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
@@ -149,6 +154,37 @@ export const LoggedOutScreen = () => {
       setIsLoading(false);
     }
   };
+
+  // Fire the email step on arrival when a caller handed us both an email and an explicit
+  // autoSubmit signal, so she lands on the code screen instead of a pre-filled form she has
+  // to submit a second time.
+  //
+  // Three guards, each load-bearing:
+  //  - the ref makes it fire AT MOST ONCE per mount. React StrictMode double-invokes effects
+  //    in dev, and any later re-render must not re-send. Set before the await, not after.
+  //  - a non-empty trimmed email, so a crafted `?autoSubmit=1` with no address (or one made
+  //    of whitespace) does nothing at all.
+  //  - still on the email step, so it can never re-fire behind the code screen.
+  //
+  // It calls the SAME handler the Continue button does. That is the whole point: the request
+  // is indistinguishable from a manual click, so it inherits the existence-blind error
+  // mapping and consumes the server's per-IP (30/15min) and per-email (5/15min) buckets
+  // identically. A crafted URL cannot fan out code-sends faster than a person clicking.
+  const autoSubmitFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoSubmitFiredRef.current) {
+      return;
+    }
+    if (!isSignup || !shouldAutoSubmitEmail || signupStep !== 'email' || trimmedEmail === '') {
+      return;
+    }
+    autoSubmitFiredRef.current = true;
+    void handleSignupEmailSubmit();
+    // handleSignupEmailSubmit is intentionally absent from the deps: it is re-created on
+    // every render, so listing it would re-run this effect constantly. That is harmless —
+    // the ref above, not the dep list, is what makes the send happen once — but it would
+    // wrongly imply the dep list is doing the guarding.
+  }, [isSignup, shouldAutoSubmitEmail, signupStep, trimmedEmail]);
 
   const handleSignupResend = async () => {
     setError(undefined);

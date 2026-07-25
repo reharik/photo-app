@@ -37,11 +37,6 @@ type AlbumSectionMetadataProps = {
   onSelectCover?: (mediaId: string) => void;
   addCoverItemOpen?: boolean;
   setAddCoverItemOpen?: (open: boolean) => void;
-  isPublic?: boolean;
-  /** Public-view attribution ("Shared with you by …"), rendered in italics under the item count. Omitted when absent. */
-  attribution?: string;
-  /** Branding shown on the trailing side of the collapsed (compact) bar — public view keeps the wordmark visible after the full header scrolls under. */
-  compactBrand?: React.ReactNode;
   headerActions?: React.ReactNode;
   selectionCount?: number;
   onClearSelection?: () => void;
@@ -106,9 +101,6 @@ export const AlbumSectionMetadata = ({
   onGroupByChange,
   onSortDirChange,
   onSelectCover,
-  isPublic,
-  attribution,
-  compactBrand,
   headerActions,
   selectionCount = 0,
   onClearSelection,
@@ -240,7 +232,6 @@ export const AlbumSectionMetadata = ({
         $compact={metaCompact}
         $mobileBrowse={showMobileBrowse}
         $mobileSelection={showMobileSelection}
-        $public={isPublic ?? false}
       >
         <AlbumMetaMainRow>
           {showMobileBrowse ? (
@@ -256,9 +247,6 @@ export const AlbumSectionMetadata = ({
                 <MobileBrowseSubtitle>
                   {buildAlbumBrowseSubtitle(count, album.updatedAt)}
                 </MobileBrowseSubtitle>
-                {attribution != null ? (
-                  <MobileBrowseAttribution>{attribution}</MobileBrowseAttribution>
-                ) : null}
               </MobileBrowseInfo>
             </MobileBrowseHeader>
           ) : showMobileSelection ? (
@@ -278,9 +266,6 @@ export const AlbumSectionMetadata = ({
                       <AlbumStats>
                         <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
                       </AlbumStats>
-                      {attribution != null ? (
-                        <AlbumAttribution>{attribution}</AlbumAttribution>
-                      ) : null}
                       {album.updatedAt?.isValid ? (
                         <AlbumDescription>
                           Updated {formatActivityDate(album.updatedAt)}
@@ -291,11 +276,7 @@ export const AlbumSectionMetadata = ({
                 </AlbumInfo>
               </AlbumMetaPrimary>
               <HeaderTrailing $selecting={isSelecting}>
-                {isSelecting
-                  ? renderSelectionActions()
-                  : metaCompact && compactBrand != null
-                    ? compactBrand
-                    : headerActions}
+                {isSelecting ? renderSelectionActions() : headerActions}
               </HeaderTrailing>
             </>
           )}
@@ -324,29 +305,27 @@ export const AlbumSectionMetadata = ({
             </AddAlbumCoverModalHeader>
           }
         >
-          {!isPublic ? (
-            <CoverPickerGridWrap>
-              <MediaGrid
-                nodes={albumItems}
-                getMediaItem={(item) => item.mediaItem}
-                multiSelectProps={noopMultiSelect}
-                selectableActions={[]}
-                selectable={false}
-                selectionActive={false}
-                columnCounts={PICKER_GRID_COLUMNS}
-                renderItem={(item, ctx) => (
-                  <MediaGridTile
-                    item={item.mediaItem}
-                    mediaGalleryIds={ctx.mediaGalleryIds}
-                    canReact={false}
-                    tileFit="contain"
-                    disableTileNavigation
-                    onBeforeNavigate={handleCoverTileClick}
-                  />
-                )}
-              />
-            </CoverPickerGridWrap>
-          ) : null}
+          <CoverPickerGridWrap>
+            <MediaGrid
+              nodes={albumItems}
+              getMediaItem={(item) => item.mediaItem}
+              multiSelectProps={noopMultiSelect}
+              selectableActions={[]}
+              selectable={false}
+              selectionActive={false}
+              columnCounts={PICKER_GRID_COLUMNS}
+              renderItem={(item, ctx) => (
+                <MediaGridTile
+                  item={item.mediaItem}
+                  mediaGalleryIds={ctx.mediaGalleryIds}
+                  canReact={false}
+                  tileFit="contain"
+                  disableTileNavigation
+                  onBeforeNavigate={handleCoverTileClick}
+                />
+              )}
+            />
+          </CoverPickerGridWrap>
         </AppModal>
       )}
     </>
@@ -357,7 +336,6 @@ const AlbumMeta = styled.div<{
   $compact: boolean;
   $mobileBrowse: boolean;
   $mobileSelection: boolean;
-  $public: boolean;
 }>`
   position: relative;
   flex-shrink: 0;
@@ -365,12 +343,10 @@ const AlbumMeta = styled.div<{
   flex-direction: column;
   align-items: stretch;
   gap: ${({ theme, $compact }) => theme.spacing($compact ? 1 : 1.5)};
-  // Public view sits under its own header, so it needs far less top padding than the
-  // authed view (which is the first thing under the app nav).
-  padding: ${({ theme, $compact, $public }) =>
+  padding: ${({ theme, $compact }) =>
     $compact
       ? `${theme.spacing(2)} ${theme.spacing(6)}`
-      : `${theme.spacing($public ? 1.5 : 4)} ${theme.spacing(6)} ${theme.spacing(3)}`};
+      : `${theme.spacing(4)} ${theme.spacing(6)} ${theme.spacing(3)}`};
   background: ${({ theme }) => theme.color.body};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   max-width: 1400px;
@@ -531,17 +507,6 @@ const MobileBrowseSubtitle = styled.p`
   text-overflow: ellipsis;
 `;
 
-const MobileBrowseAttribution = styled.p`
-  margin: 0;
-  font-style: italic;
-  font-size: ${({ theme }) => theme.fontSize._13};
-  line-height: 1.4;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
 const MobileBrowseActions = styled.div`
   display: flex;
   align-items: center;
@@ -656,14 +621,6 @@ const AlbumDescription = styled.p`
   font-size: 14px;
   color: ${({ theme }) => theme.color.bodyTextMuted};
   line-height: 1.6;
-`;
-
-const AlbumAttribution = styled.p`
-  margin: 0;
-  font-style: italic;
-  font-size: 14px;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  line-height: 1.5;
 `;
 
 const AddAlbumCoverModalHeader = styled.div`

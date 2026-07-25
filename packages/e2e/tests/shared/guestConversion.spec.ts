@@ -15,26 +15,35 @@ import {
   findSesMessageForRecipient,
   retrieveLocalStackSesMessages,
 } from '../../fixtures/localstackSes';
-import { expectMediaItemLoaded, mediaTile } from '../../fixtures/mediaSelection';
+import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
+import { USER_A } from '../../fixtures/users';
 import { setup } from '../../routines/setup';
 
 /**
- * Cluster B — guest conversion. A guest opens a shared album via a public link, the dismissible
- * CTA offers signup, and completing signup with the BANKED email lands her inside her account on
- * /albums/{id} because her pending grant materializes on activation.
+ * Cluster B — guest conversion. A guest opens a shared album via a public link, the "living
+ * album" offer in the header takes her email inline, and completing signup with the BANKED
+ * email lands her inside her account on /albums/{id} because her pending grant materializes
+ * on activation.
  *
- *  - B1 (JOURNEY): one real-user walk — open public album, dismiss the CTA and confirm it stays
- *    gone across a tile→detail→back REMOUNT and an in-session RELOAD, then a FRESH visit restores
- *    it, sign up with the banked email, and land on the album seeing its items. The email-prefill
- *    variant (the notification-email `?email=` param) is folded in as a one-line probe.
- *  - B2 (ISOLATED): the wrong-email bounce is a genuinely DIVERGENT terminal outcome ('/' vs the
- *    album), so it gets its own path. It is hardened so it can't pass for the wrong reason —
- *    landing on '/' is necessary but not sufficient (materialization failing for the RIGHT email,
- *    a thrown visibility query, or returnTo never applying all also end on '/').
+ *  - B1 (JOURNEY): one real-user walk — open the public album, reveal the offer in place,
+ *    hand it the banked email, and confirm the handoff SKIPS the signup email form and lands
+ *    her straight on the code screen, then finish signup and land on the album seeing its
+ *    items. The prefill-only variant (the notification-email `?email=` link, which must NOT
+ *    auto-fire) is folded in as a one-step probe.
+ *  - B2 (ISOLATED): the wrong-email bounce is a genuinely DIVERGENT terminal outcome ('/' vs
+ *    the album), so it gets its own path. It is hardened so it can't pass for the wrong
+ *    reason — landing on '/' is necessary but not sufficient (materialization failing for the
+ *    RIGHT email, a thrown visibility query, or returnTo never applying all also end on '/').
  */
 
 const EMAIL_PREFIX = 'rai-guest';
+
+/**
+ * The offer's attribution renders the owner's first + last name, which is exactly how the
+ * seeded owner's displayName is composed (`firstName: 'E2e'`, `lastName: 'Owner'`).
+ */
+const ownerName = USER_A.displayName;
 
 /**
  * User A creates an album and shares it with a not-yet-registered email. Returns the album id
@@ -86,9 +95,24 @@ const shareAlbumWithGuest = async (
   return { albumId, shareUrl: resolvedShareUrl };
 };
 
-const signupCta = (page: Page) => page.getByRole('link', { name: 'Sign up' });
+/**
+ * Drive the public-album offer: reveal the inline field, type an address, submit. Scoped to
+ * the offer's own testid because the mobile bar carries the same "A living album" / "Join in"
+ * copy and is present in the DOM (CSS-hidden) at desktop widths.
+ */
+const submitOffer = async (page: Page, email: string): Promise<void> => {
+  await page.getByTestId('public-offer-join').click();
+  await page.getByTestId('public-offer-email').fill(email);
+  await page.getByTestId('public-offer-submit').click();
+};
 
-test.describe('Guest conversion (public album → CTA → signup → album)', () => {
+/** The signup door's code step, reached WITHOUT the guest re-submitting her email. */
+const expectOnCodeStep = async (page: Page, email: string): Promise<void> => {
+  await expect(page.getByTestId('signup-code')).toBeVisible();
+  await expect(page.getByText(`Code sent to ${email}`)).toBeVisible();
+};
+
+test.describe('Guest conversion (public album → offer → signup → album)', () => {
   test.beforeEach(async () => {
     await resetAuthState(EMAIL_PREFIX);
   });
@@ -97,7 +121,7 @@ test.describe('Guest conversion (public album → CTA → signup → album)', ()
     await resetAuthState(EMAIL_PREFIX);
   });
 
-  test('journey: dismiss CTA persists across remount + reload, fresh visit restores, banked signup lands on the album', async ({
+  test('journey: the offer reveals in place, carries the email past the signup form, and banked signup lands on the album', async ({
     userA,
     anonPage,
     request,
@@ -115,34 +139,30 @@ test.describe('Guest conversion (public album → CTA → signup → album)', ()
       bankedEmail,
     );
 
-    await test.step('the public album shows the items and the signup CTA', async () => {
+    await test.step('the public album shows the items and the living-album offer', async () => {
       await anonPage.goto(shareUrl);
       await expectMediaItemLoaded(anonPage, a.id);
       await expectMediaItemLoaded(anonPage, b.id);
-      await expect(signupCta(anonPage)).toBeVisible();
+      const offer = anonPage.getByTestId('public-offer');
+      await expect(offer.getByText('A living album')).toBeVisible();
+      await expect(offer.getByText(`shared with you by ${ownerName}`)).toBeVisible();
+      await expect(anonPage.getByTestId('public-offer-join')).toBeVisible();
     });
 
-    await test.step('dismissing the CTA hides it and it stays gone across remount + reload', async () => {
-      await anonPage.getByRole('button', { name: 'Dismiss' }).click();
-      await expect(signupCta(anonPage)).toHaveCount(0);
-
-      // tile → media detail → back: the section unmounts and remounts. sessionStorage (not
-      // component state) must keep it dismissed.
-      await mediaTile(anonPage, a.id).getByRole('link').first().click();
-      await expect(anonPage).toHaveURL(new RegExp(`/shared/[^/]+/media/${a.id}`));
-      await anonPage.goBack();
-      await expectMediaItemLoaded(anonPage, a.id);
-      await expect(signupCta(anonPage)).toHaveCount(0);
-
-      // In-session reload: still dismissed (sessionStorage survives a reload).
-      await anonPage.reload();
-      await expectMediaItemLoaded(anonPage, a.id);
-      await expect(signupCta(anonPage)).toHaveCount(0);
+    await test.step('revealing swaps ONLY the button for the field — the offer copy stays', async () => {
+      await anonPage.getByTestId('public-offer-join').click();
+      const offer = anonPage.getByTestId('public-offer');
+      await expect(anonPage.getByTestId('public-offer-email')).toBeVisible();
+      await expect(anonPage.getByTestId('public-offer-join')).toHaveCount(0);
+      // The field must not appear as an unlabeled box: both lines above it survive the swap.
+      await expect(offer.getByText('A living album')).toBeVisible();
+      await expect(offer.getByText(`shared with you by ${ownerName}`)).toBeVisible();
     });
 
-    await test.step('email-prefill: the notification-email `?email=` param seeds the signup field', async () => {
-      // The share notification links to /signup?email=…&returnTo=…; the CTA itself only carries
-      // returnTo. Prove the param prefills the (still-editable) email field.
+    await test.step('prefill WITHOUT autoSubmit still lands on the editable email form', async () => {
+      // The share notification links to /signup?email=…&returnTo=… and deliberately carries no
+      // autoSubmit — she never typed anything, so no code should be sent on arrival. Proves the
+      // auto-fire is gated on the explicit signal, not merely on `email` being present.
       const probeContext = await browser.newContext({ storageState: undefined });
       try {
         const probePage = await probeContext.newPage();
@@ -152,42 +172,36 @@ test.describe('Guest conversion (public album → CTA → signup → album)', ()
           )}`,
         );
         await expect(probePage.getByTestId('login-email')).toHaveValue(bankedEmail);
+        await expect(probePage.getByTestId('signup-code')).toHaveCount(0);
       } finally {
         await probeContext.close();
       }
     });
 
-    await test.step('a FRESH visit restores the CTA; signing up with the BANKED email lands on the album', async () => {
-      // A brand-new session (empty sessionStorage) — the per-token dismissal above does not carry
-      // over, so the CTA is offered again. This is the real "re-open the CTA in a fresh visit".
-      const freshContext = await browser.newContext({ storageState: undefined });
-      try {
-        const freshPage = await freshContext.newPage();
-        await freshPage.goto(shareUrl);
-        await expectMediaItemLoaded(freshPage, a.id);
-        await expect(signupCta(freshPage)).toBeVisible();
+    await test.step('submitting the offer skips the email form and lands on the code screen', async () => {
+      await anonPage.getByTestId('public-offer-email').fill(bankedEmail);
+      await anonPage.getByTestId('public-offer-submit').click();
 
-        await signupCta(freshPage).click();
-        await expect(freshPage).toHaveURL(/\/signup\?returnTo=/);
+      await expect(anonPage).toHaveURL(/\/signup\?.*autoSubmit=1/);
+      // The whole point of the handoff: she is past the email step without re-submitting it.
+      await expectOnCodeStep(anonPage, bankedEmail);
+      await expect(anonPage.getByTestId('login-email')).toHaveCount(0);
+    });
 
-        await freshPage.getByTestId('login-email').fill(bankedEmail);
-        await freshPage.getByRole('button', { name: 'Continue' }).click();
-        const code = await waitForVerificationCode(request, bankedEmail);
-        await freshPage.getByTestId('signup-code').fill(code);
-        await freshPage.locator('#signup-first-name').fill('Banked');
-        await freshPage.locator('#signup-last-name').fill('Guest');
-        await freshPage.getByTestId('login-password').fill(AUTH_PASSWORD);
-        await freshPage.getByRole('button', { name: 'Create Account' }).click();
+    await test.step('completing signup with the BANKED email lands on the album', async () => {
+      const code = await waitForVerificationCode(request, bankedEmail);
+      await anonPage.getByTestId('signup-code').fill(code);
+      await anonPage.locator('#signup-first-name').fill('Banked');
+      await anonPage.locator('#signup-last-name').fill('Guest');
+      await anonPage.getByTestId('login-password').fill(AUTH_PASSWORD);
+      await anonPage.getByRole('button', { name: 'Create Account' }).click();
 
-        // Landing on /albums/{id} AT ALL is the proof: the signup screen gates the album returnTo
-        // behind a live visibility check and quietly falls back to '/' unless the grant exists. So
-        // reaching the album means the pending grant materialized on activation.
-        await expect(freshPage).toHaveURL(new RegExp(`/albums/${albumId}$`));
-        await expectMediaItemLoaded(freshPage, a.id);
-        await expectMediaItemLoaded(freshPage, b.id);
-      } finally {
-        await freshContext.close();
-      }
+      // Landing on /albums/{id} AT ALL is the proof: the signup screen gates the album returnTo
+      // behind a live visibility check and quietly falls back to '/' unless the grant exists. So
+      // reaching the album means the pending grant materialized on activation.
+      await expect(anonPage).toHaveURL(new RegExp(`/albums/${albumId}$`));
+      await expectMediaItemLoaded(anonPage, a.id);
+      await expectMediaItemLoaded(anonPage, b.id);
     });
   });
 
@@ -201,7 +215,7 @@ test.describe('Guest conversion (public album → CTA → signup → album)', ()
     const [a, b] = await setup(grabTestImages, userA, 2);
     const bankedEmail = authTestEmail(EMAIL_PREFIX, 'banked');
     // B1 proves this exact setup DOES land the banked email on the album — the positive control.
-    // B2 changes ONLY the email typed at signup.
+    // B2 changes ONLY the email handed to the offer.
     const { albumId, shareUrl } = await shareAlbumWithGuest(
       userA.page,
       request,
@@ -224,16 +238,15 @@ test.describe('Guest conversion (public album → CTA → signup → album)', ()
 
     const wrongEmail = authTestEmail(EMAIL_PREFIX, 'wrong');
 
-    await test.step('open the public album and start signup via the CTA', async () => {
+    await test.step('open the public album and hand the offer a DIFFERENT email', async () => {
       await anonPage.goto(shareUrl);
       await expectMediaItemLoaded(anonPage, a.id);
-      await signupCta(anonPage).click();
-      await expect(anonPage).toHaveURL(/\/signup\?returnTo=/);
+      await submitOffer(anonPage, wrongEmail);
+      await expect(anonPage).toHaveURL(/\/signup\?.*autoSubmit=1/);
+      await expectOnCodeStep(anonPage, wrongEmail);
     });
 
-    await test.step('complete signup with a DIFFERENT email', async () => {
-      await anonPage.getByTestId('login-email').fill(wrongEmail);
-      await anonPage.getByRole('button', { name: 'Continue' }).click();
+    await test.step('complete signup as that different account', async () => {
       const code = await waitForVerificationCode(request, wrongEmail);
       await anonPage.getByTestId('signup-code').fill(code);
       await anonPage.locator('#signup-first-name').fill('Wrong');
