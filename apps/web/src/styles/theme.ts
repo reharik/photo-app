@@ -116,6 +116,15 @@ export const theme: DefaultTheme = {
     dangerButtonText: colors.gray_10,
     buttonDisabled: colors.gray_30,
     buttonDisabledText: colors.gray_50,
+    // Outline-clay "offer" register. Distinct from BOTH the filled primary (which
+    // reads as an app action) and the neutral secondary (which reads as a dismissal):
+    // an invitation offered on the cream body. Clay text on a clay-wash fill with a
+    // mid-clay hairline. Text is clay_dark — the same value the filled primary uses —
+    // so the offer stays in the primary's color family at 7.4:1 on the wash.
+    offerButtonBg: colors.clay_wash,
+    offerButtonBorder: colors.clay_hairline,
+    offerButtonText: colors.clay_dark,
+    offerButtonHover: colors.clay_lightest,
 
     /* ── Alerts / Status ─────────────────────────────────── */
     // Tint-backgrounds pair with their _darker text for AA contrast.
