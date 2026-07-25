@@ -49,6 +49,17 @@ export const colors = {
   clay_dark: '#8D4A2C',
   clay_darker: '#6E3920',
   clay_darkest: '#4A2516',
+  // Two steps deliberately OUTSIDE the base→_darkest scale, for the outline-clay
+  // "offer" register (see theme.color.offerButton*). Named rather than numbered
+  // because neither fits the scale's ordering:
+  //   clay_wash   — lighter than clay_lightest; a fill so faint it reads as tinted
+  //                 paper, not a filled button. clay_lightest is already too present
+  //                 as a large fill next to the cream body.
+  //   clay_hairline — sits BETWEEN clay_lighter and clay_lightest. A 1px border needs
+  //                 more edge than clay_lightest gives and less weight than
+  //                 clay_lighter, which reads as a filled outline at hairline width.
+  clay_wash: '#FBF3EC',
+  clay_hairline: '#D9B79F',
 
   // ── Red / Danger ─────────────────────────────────────────────────
   red: '#C44A35',
