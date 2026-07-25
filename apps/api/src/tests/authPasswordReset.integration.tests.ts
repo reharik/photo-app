@@ -249,7 +249,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
 
       expect(result.success).toBe(false);
       assert(!result.success);
-      expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
+      expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeUndefined();
       const user = await getUser(email);
