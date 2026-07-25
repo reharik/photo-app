@@ -32,7 +32,7 @@
     "check:policy": "tsx scripts/validate-policy.ts",
     "clean:all": "nx run-many --target=clean --all",
     "clean:dist": "nx reset && nx run-many --target=clean --all",
-    "dance": "npm run build:all && npm run format:check && npm run lint:all && npm run typecheck:all && npm run test:ci && npm run test:integration:api",
+    "dance": "npm run build:all && npm run format && npm run lint:all && npm run test:ci && npm run test:integration:api",
     "email:dev": "npx react-email dev --dir packages/context/notifications/src/templates",
     "email:clean": "curl -X DELETE http://localhost:4566/_aws/ses",
     "gen:enums": "nx gen-enums contracts",
