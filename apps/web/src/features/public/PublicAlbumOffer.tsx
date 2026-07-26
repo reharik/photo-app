@@ -78,7 +78,7 @@ const Block = styled.div<{ $compact: boolean }>`
 const Lead = styled.p`
   margin: 0;
   font-family: ${({ theme }) => theme.font.serif};
-  font-size: ${({ theme }) => theme.fontSize._16};
+  font-size: ${({ theme }) => theme.fontSize._18};
   font-weight: ${({ theme }) => theme.weight.regular};
   color: ${({ theme }) => theme.color.bodyText};
   line-height: 1.3;
@@ -88,7 +88,7 @@ const Lead = styled.p`
 const Attribution = styled.p<{ $compact: boolean }>`
   margin: 0;
   font-family: ${({ theme }) => theme.font.body};
-  font-size: ${({ theme }) => theme.fontSize._13};
+  font-size: ${({ theme }) => theme.fontSize._14};
   font-weight: ${({ theme }) => theme.weight.regular};
   color: ${({ theme }) => theme.color.bodyTextMuted};
   line-height: 1.4;

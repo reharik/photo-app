@@ -90,11 +90,8 @@ services:
     environment:
       MP_DATABASE: /data/mailpit.db
       MP_MAX_MESSAGES: '500'
-    volumes:
-      - mailpit-data:/data
+
     ports:
       - '8025:8025' # UI
       - '1025:1025' # SMTP
 
-volumes:
-  mailpit-data:

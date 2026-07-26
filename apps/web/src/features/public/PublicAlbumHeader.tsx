@@ -106,8 +106,8 @@ export const PublicAlbumHeader = ({
           <Slogan>A private album, shared with you.</Slogan>
         </BrandRow>
       ) : null}
-      <Row>
-        <Leading>
+      <Row $topAlign={!isMobile}>
+        <Leading $topAlign={!isMobile}>
           {cover(isMobile ? 'compact' : 'full')}
           <LeadingText>
             <Title $mobile={isMobile} title={album.title}>
@@ -137,11 +137,11 @@ const HeaderShell = styled.header<{ $compact: boolean }>`
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(2)};
+  gap: ${({ theme }) => theme.spacing(1.5)};
   padding: ${({ theme, $compact }) =>
     $compact
       ? `${theme.spacing(1.5)} ${theme.spacing(6)}`
-      : `${theme.spacing(3)} ${theme.spacing(6)}`};
+      : `${theme.spacing(2)} ${theme.spacing(6)} ${theme.spacing(1.5)}`};
   background: ${({ theme }) => theme.color.body};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   max-width: 1400px;
@@ -169,6 +169,17 @@ const BrandRow = styled.div`
   column-gap: ${({ theme }) => theme.spacing(2)};
   row-gap: ${({ theme }) => theme.spacing(0.5)};
   width: 100%;
+  /* Hairline separating the brand row from the metadata row. Subtle (borderSubtle) on
+     purpose: the stronger border token is reserved for HeaderShell's outer bottom edge, so
+     the two rows read as divisions WITHIN one block rather than as two stacked blocks. */
+  padding-bottom: ${({ theme }) => theme.spacing(1.75)};
+  border-bottom: 1px solid ${({ theme }) => theme.color.borderSubtle};
+
+  /* Desktop-only: mobile's header composition is unchanged. */
+  @media (max-width: 768px) {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
 `;
 
 // Mirrors the app-shell wordmark treatment (serif / regular / -0.02em), scaled up to be the
@@ -200,20 +211,25 @@ const Slogan = styled.p`
 
 // space-between across the FULL width — this is the fix for the floating header. The
 // metadata used to hug left as a content-width cluster with nothing on the trailing edge.
-const Row = styled.div`
+// $topAlign is the DESKTOP FULL header only (passed as !isMobile from that branch). The
+// compact row leaves it unset and keeps center alignment.
+const Row = styled.div<{ $topAlign?: boolean }>`
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: ${({ $topAlign }) => ($topAlign ? 'flex-start' : 'center')};
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing(3)};
   width: 100%;
   min-width: 0;
 `;
 
-const Leading = styled.div`
+// Top-aligning Row alone is not enough: this centers the title/count block against the
+// cover, so the offer would land level with the cover's TOP EDGE rather than with the title.
+// Both have to top-align for the two columns to start on the same line.
+const Leading = styled.div<{ $topAlign?: boolean }>`
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: ${({ $topAlign }) => ($topAlign ? 'flex-start' : 'center')};
   gap: ${({ theme }) => theme.spacing(2)};
   min-width: 0;
 `;
