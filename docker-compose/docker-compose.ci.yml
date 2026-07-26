@@ -1,22 +1,35 @@
+# CI e2e stack shape — ports, env files, and the dependency gates. Layered on
+# base.yml + infra dev.yml, and layered UNDER infra/config/docker-compose/ci.yml
+# (which pins the images and re-prods the `migrate` one-shot).
+#
+# This file used to be a near-copy of docker-compose.dev.yml: it built the `dev`
+# target, bind-mounted the working tree over /app/apps/** and /app/packages, and
+# replaced the image CMD with serverStartUpDev.sh. All three are gone. e2e now
+# runs the SHIPPING `runtime-node` image, which means:
+#
+#   - no `build:`   — the workflow pre-builds both images with buildx/GHA cache
+#                     and `--no-build` keeps a stray rebuild from sneaking in
+#   - no `volumes:` — a source mount would shadow the baked dist/ with the
+#                     working tree and we would be testing tsx-over-source
+#                     again, i.e. not the artifact that ships
+#   - no `command:` — the image's own prod CMD (node dist/index.js via
+#                     serverStartUpProd.sh) is the thing under test
+#
+# Only this clone's dev stack still uses the dev image; see
+# docker-compose.dev.yml, which is unchanged.
 services:
-  # Infra dev base includes LocalStack; keep it opt-in so default `make docker/dev/up` uses real AWS (~/.aws).
-  # localstack:
-  #   profiles: !override []
-
   api:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile
-      target: dev
-      args:
-        APP_NAME: api
     ports:
       - '3001:3001'
     env_file:
       - ./apps/api/.env
-    # Merge with infra/config/docker-compose/dev.yml (LocalStack, AWS_ENDPOINT, etc.).
     # NOTE: `!override` REPLACES base.yml's depends_on wholesale, so the
     # `migrate` gate must be restated here or it is silently dropped.
+    #
+    # The e2e workflow brings api up with `--no-deps` (it runs migrate as an
+    # explicit, exit-code-checked step first), so this gate is belt-and-braces
+    # for any other caller of this file rather than the live guarantee. It still
+    # documents the invariant: the prod image never migrates itself.
     depends_on: !override
       localstack:
         condition: service_healthy
@@ -32,19 +45,8 @@ services:
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
       FROM_NAME: homeroll Dev
-    volumes:
-      - ./apps/api:/app/apps/api
-      - /app/apps/api/node_modules
-      - ./packages:/app/packages
-    command: ['sh', '-c', 'sh apps/api/src/scripts/serverStartUpDev.sh']
 
   media-worker:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile
-      target: dev
-      args:
-        APP_NAME: media-worker
     env_file:
       - ./apps/media-worker/.env
     # `!override` replaces base.yml's depends_on — restate the migrate gate.
@@ -56,7 +58,7 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: '5432'
-      # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
+      # Worker uses real S3 via OIDC creds (infra ci.yml); SES -> LocalStack.
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
       FROM_EMAIL: test@example.com
@@ -65,15 +67,12 @@ services:
       SLOW_SWEEP_INTERVAL_MS: 5000
       FAST_SWEEP_INTERVAL_MS: 5000
       DEBOUNCE_EMAIL_WINDOW_SECONDS: 5
-    volumes:
-      - ./apps/media-worker:/app/apps/media-worker
-      - /app/apps/media-worker/node_modules
-      - ./packages:/app/packages
-      - ~/.aws:/root/.aws:ro
-    command: ['sh', '-c', 'sh apps/media-worker/src/scripts/serverStartUpDev.sh']
 
   db:
-    # Replace default 5432:5432 so we don't conflict with another Postgres (e.g. network app)
+    # Replace default 5432:5432 so we don't conflict with another Postgres (e.g.
+    # network app). This mapping is also what the runner-side seed step and
+    # Playwright's global-setup connect through — the prod image carries no seed
+    # path, so seeding has to reach the db from outside the stack.
     ports: !override
       - '5433:5432'
     env_file:

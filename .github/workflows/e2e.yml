@@ -2,6 +2,18 @@ name: E2E
 
 # Playwright end-to-end suite against a real, containerized stack.
 #
+# WHAT THIS TESTS: the SHIPPING image. api + media-worker run the `runtime-node`
+# Dockerfile target — the same target, on the same arch (arm64/Graviton), that
+# `deploy.yml` builds and ships. No dev image, no source bind-mount, no tsx: the
+# containers execute their baked `dist/` via the image's own prod CMD. If it
+# passes here it is the artifact that goes to prod, not a stand-in for it.
+#
+# The stack is therefore driven exactly like prod is:
+#   - migrations run in the one-shot `migrate` service (base.yml), never at boot
+#   - the api/worker containers only serve; they never migrate and never seed
+#   - seeding is a CI-only concern and runs from the RUNNER over the exposed
+#     Postgres port (5433), because the prod image has no seed path at all
+#
 # Local flow (three terminals) that this reproduces headlessly:
 #   1. make docker/dev/up   -> db + localstack + api + media-worker (Docker)
 #   2. npm run dev:web       -> here: built bundle served via `vite preview`
@@ -51,12 +63,27 @@ env:
   # so env_file paths (./apps/api/.env, ...) resolve from the repo root rather
   # than the first compose file's directory (the Makefile does the same).
   COMPOSE_FILE: infra/config/docker-compose/base.yml:infra/config/docker-compose/dev.yml:docker-compose/docker-compose.ci.yml:infra/config/docker-compose/ci.yml
-  DEV_IMAGE: homeroll-api:dev
+  # The two prod images under test. `runtime-node` copies only
+  # apps/${SERVICE_NAME}/dist, so unlike the old dev image (whole source tree,
+  # shared by both services) each service needs its own build. The `migrate`
+  # one-shot reuses API_IMAGE — migrations live in the api's dist/db.
+  API_IMAGE: homeroll-api:ci
+  WORKER_IMAGE: homeroll-media-worker:ci
+  # Job-wide, not per-step: infra ci.yml interpolates ${CI_E2E_BUCKET} into the
+  # api/worker environment, so EVERY `docker compose` call in this job parses a
+  # reference to it — including `up db localstack`, `run migrate`, `logs` and
+  # the teardown `down`. Scoping it to one step just means the others emit
+  # "variable is not set" warnings and substitute an empty string.
+  CI_E2E_BUCKET: ${{ vars.CI_E2E_BUCKET }} # TODO: set repo/org variable
 
 jobs:
   e2e:
     name: E2E (${{ github.event_name == 'pull_request' && 'smoke' || inputs.suite }})
-    runs-on: ubuntu-latest
+    # arm64 ON PURPOSE: prod is Graviton (see prod.yml `platform: linux/arm64`
+    # and deploy.yml's ubuntu-24.04-arm build). Running e2e here means the image
+    # e2e exercises is bit-for-bit the arch that ships, and a native build needs
+    # no qemu.
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -131,33 +158,91 @@ jobs:
           cp apps/api/.env.ci apps/api/.env
           cp apps/media-worker/.env.ci apps/media-worker/.env
 
-      # --- Pre-build the single `dev` image (buildx + GHA layer cache) ---
+      # --- Pre-build the PROD images (buildx + GHA layer cache) ---
+      # Same target/args as deploy.yml's build job. The runner is arm64, so
+      # these are native arm64 builds — no `platforms:` and no qemu needed.
+      # Cache scopes are arch-suffixed so they can never collide with an amd64
+      # layer cache if one is ever added.
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build dev image
+      - name: Build api image (runtime-node, arm64)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: infra/docker/Dockerfile
-          target: dev
+          target: runtime-node
           build-args: |
             SERVICE_NAME=api
-          tags: ${{ env.DEV_IMAGE }}
+          tags: ${{ env.API_IMAGE }}
           load: true # into the local daemon so compose --no-build finds it
-          cache-from: type=gha,scope=e2e-dev
-          cache-to: type=gha,scope=e2e-dev,mode=max
+          cache-from: type=gha,scope=e2e-api-arm64
+          cache-to: type=gha,scope=e2e-api-arm64,mode=max
+          provenance: false
 
-      # --- Bring up the stack; gate on real readiness (no fixed sleeps) ---
-      - name: Compose up (db, localstack, api, worker)
+      - name: Build media-worker image (runtime-node, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: runtime-node
+          build-args: |
+            SERVICE_NAME=media-worker
+          tags: ${{ env.WORKER_IMAGE }}
+          load: true
+          cache-from: type=gha,scope=e2e-media-worker-arm64
+          cache-to: type=gha,scope=e2e-media-worker-arm64,mode=max
+          provenance: false
+
+      # --- Bring up the stack in prod order; gate on real readiness ---
+      #
+      # ORDER IS LOAD-BEARING. The prod image only serves: it does not migrate
+      # and does not seed. So the schema and the fixtures must both be in place
+      # BEFORE api/worker start, or they serve against an empty database:
+      #
+      #   1. db + localstack   (compose healthchecks)
+      #   2. migrate one-shot  (blocks; non-zero exit fails the job)
+      #   3. seed from runner  (blocks; non-zero exit fails the job)
+      #   4. api + media-worker
+      #   5. poll /health from the runner
+      #
+      - name: Compose up (db, localstack)
+        run: docker compose --project-directory . up -d --no-build --wait db localstack
+
+      # The same one-shot `migrate` service prod uses (base.yml), running the
+      # compiled entrypoint out of the image's own dist. `compose run` returns
+      # the container's exit code, so a failed migration fails the job here
+      # rather than surfacing as a mystery 500 in a test.
+      - name: DB migrate (one-shot migrate service)
+        run: docker compose --project-directory . run --rm migrate
+
+      # Seeding is CI-only — the prod image has no seed path (see
+      # serverStartUpProd.sh). Run it from the runner against the host-mapped
+      # Postgres port instead. These POSTGRES_* vars beat apps/api/.env:
+      # config.ts's ensureEnvLoaded() skips the dotenv read entirely when
+      # POSTGRES_HOST is already set, so `db`/5432 can't leak in here.
+      - name: DB seed (runner-side, over exposed 5433)
         env:
-          CI_E2E_BUCKET: ${{ vars.CI_E2E_BUCKET }} # TODO: set repo/org variable
-        run: |
-          # --wait blocks until db + localstack report healthy (compose
-          # healthchecks) and api/worker are running. api/worker have no
-          # healthcheck, so we poll /health separately below.
-          docker compose --project-directory . up -d --no-build --wait
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5433"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photo_app
+        run: npm run db:seed
 
+      - name: Compose up (api, media-worker)
+        run: |
+          # --no-deps: db/localstack are already up and migrate has already run
+          # explicitly above. Without it compose would honor api's
+          # `migrate: service_completed_successfully` gate by starting a SECOND
+          # migrate one-shot (the `run --rm` container is gone), which is wasted
+          # time and makes `--wait` reason about an intentionally-exiting
+          # service. The gate is not lost — it just moved into the job's step
+          # order, where its exit code is checked.
+          docker compose --project-directory . up -d --no-build --no-deps --wait api media-worker
+
+      # api/worker have no compose healthcheck (the image stays pure — no curl
+      # probe baked in for CI's benefit), so poll the exposed port from here.
       - name: Wait for API /health
         run: |
           for i in $(seq 1 60); do
@@ -167,13 +252,6 @@ jobs:
             echo "waiting for api /health ($i/60)..."; sleep 2
           done
           echo "::error::api did not become healthy"; docker compose --project-directory . logs api; exit 1
-
-      # --- Explicit, exit-code-checked migrate + seed (not the tolerant boot) ---
-      - name: DB migrate
-        run: docker compose --project-directory . exec -T api npm run db:migrate:local --workspace=@app/api
-
-      - name: DB seed
-        run: docker compose --project-directory . exec -T api npm run db:seed:local --workspace=@app/api
 
       # --- Build + serve the web app (production bundle, not the dev server) ---
       - name: Build web
@@ -236,7 +314,10 @@ jobs:
         if: failure()
         run: |
           mkdir -p artifacts/docker-logs
-          for svc in db localstack api media-worker; do
+          # `migrate` included: it is a one-shot run with `--rm`, so if it is
+          # what failed its container is already gone — but compose still has
+          # the log, and a migration failure is otherwise invisible here.
+          for svc in db localstack migrate api media-worker; do
             docker compose --project-directory . logs --no-color "$svc" > "artifacts/docker-logs/$svc.log" 2>&1 || true
           done
           cp preview.log artifacts/docker-logs/web-preview.log 2>/dev/null || true
