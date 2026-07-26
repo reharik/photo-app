@@ -183,7 +183,7 @@ const BrandRow = styled.div`
   }
 `;
 
-// Mirrors the app-shell wordmark treatment (serif / regular / -0.02em), scaled up to be the
+//  Mirrors the app-shell wordmark treatment (serif / regular / -0.02em), scaled up to be the
 // largest text on the screen since it's the only branding here. Non-interactive: a public
 // recipient has no app home to link to.
 const Wordmark = styled.span`

@@ -7,6 +7,17 @@ services:
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
 
+  # One-shot migration runner (see base.yml). Inherits the prod image via
+  # API_IMAGE and runs the compiled entrypoint. `restart: "no"` is pinned in
+  # base.yml — do NOT add `restart: unless-stopped` here.
+  migrate:
+    platform: linux/arm64
+    env_file:
+      - /opt/${APP_NAME}/env/prod.env
+    environment:
+      NODE_ENV: production
+      POSTGRES_PORT: "5432"
+
   api:
     platform: linux/arm64
     restart: unless-stopped
@@ -22,7 +33,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      # Boot is just-serve now (migrations moved to the `migrate` one-shot), so
+      # the startup grace no longer has to cover migration time.
+      start_period: 15s
 
 volumes:
   pgdata_prod:

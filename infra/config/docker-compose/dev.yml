@@ -25,6 +25,22 @@ services:
     ports:
       - "5432:5432"
 
+  # Dev/CI images are source + tsx with no dist/, so the one-shot runs the
+  # source entrypoint. Same contract as prod: run to completion, exit non-zero
+  # on failure. This file is in BOTH the dev chain and the CI chain, which is
+  # why the override lives here rather than in either leaf overlay.
+  # env_file resolves from the repo root (every caller passes
+  # --project-directory .).
+  migrate:
+    image: ${API_IMAGE:-${APP_NAME}-api:dev}
+    working_dir: /app/apps/api
+    command: ["npx", "tsx", "src/scripts/runMigrations.ts"]
+    env_file:
+      - ./apps/api/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+
   api:
     image: ${API_IMAGE:-${APP_NAME}-api:dev}
     environment:

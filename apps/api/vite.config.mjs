@@ -24,7 +24,12 @@ export default defineConfig(({ mode }) => {
         input: {
           index: join(__dirname, 'src/index.ts'),
           'scripts/runMigrations': join(__dirname, 'src/scripts/runMigrations.ts'),
-          'scripts/runSeeds': join(__dirname, 'src/scripts/runSeeds.ts'),
+          // runSeeds is deliberately NOT built. Prod must not merely decline to
+          // seed — it must not carry the capability. Seeding provisions fixture
+          // users with a shared known password, so the runner stays out of the
+          // image entirely rather than shipping unreferenced behind a guard.
+          // dev (serverStartUpDev.sh) and e2e (packages/e2e/global-setup.ts) run
+          // the TypeScript source via tsx and are unaffected.
           knexfile: join(__dirname, 'src/knexfile.ts'),
           koaServer: join(__dirname, 'src/koaServer.ts'),
         },

@@ -4,13 +4,15 @@ set -e
 export NODE_ENV=${NODE_ENV:-development}
 cd /app/apps/api
 
-# Run migrations using tsx (TypeScript executor for dev mode)
-echo "Running database migrations..."
-npx tsx src/scripts/runMigrations.ts || echo "Warning: Migrations failed, continuing..."
-
-# Run seeds using tsx
+# Migrations run in the `migrate` one-shot service (see
+# infra/config/docker-compose/base.yml); this container gates on it via
+# depends_on: service_completed_successfully.
+#
+# Seeding is dev fixture data only — prod NEVER seeds. The tolerant `|| echo`
+# is gone: this now runs only after the migrate one-shot has exited 0, so the
+# "database not ready yet" case it papered over can no longer happen.
 echo "Running database seeds..."
-npx tsx src/scripts/runSeeds.ts || echo "Warning: Seeds failed, continuing..."
+npx tsx src/scripts/runSeeds.ts
 
 # Start the server with nodemon
 echo "Starting server with nodemon..."

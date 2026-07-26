@@ -6,7 +6,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {},
-    "types": ["jest", "vite/client"],
+    "types": ["node", "jest", "vite/client"],
     "plugins": [
       {
         "transform": "typia/lib/transform"
