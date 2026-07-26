@@ -3,10 +3,9 @@
   "files": [],
   "include": ["types/**/*.d.ts"],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@packages/contracts": ["packages/foundation/contracts/src/index.ts"],
-      "@packages/infrastructure": ["packages/foundation/infrastructure/src/index.ts"]
+      "@packages/contracts": ["./packages/foundation/contracts/src/index.ts"],
+      "@packages/infrastructure": ["./packages/foundation/infrastructure/src/index.ts"]
     }
   }
 }
