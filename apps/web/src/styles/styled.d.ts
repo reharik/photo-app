@@ -90,6 +90,10 @@ declare module 'styled-components' {
       dangerButtonText: string;
       buttonDisabled: string;
       buttonDisabledText: string;
+      offerButtonBg: string;
+      offerButtonBorder: string;
+      offerButtonText: string;
+      offerButtonHover: string;
 
       /* Alerts / Status */
       alertError: string;

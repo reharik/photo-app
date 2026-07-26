@@ -1,0 +1,8 @@
+query ViewerAlbumVisibility($albumId: ID!) {
+  viewer {
+    id
+    album(id: $albumId) {
+      id
+    }
+  }
+}

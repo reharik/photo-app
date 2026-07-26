@@ -8,6 +8,8 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     grantUserAuthorizationsForMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
+        viewerFirstName: ctx.viewer.firstName,
+        viewerLastName: ctx.viewer.lastName,
         entityIds: args.input.mediaItemIds,
         operations: args.input.operations,
         grantedToHandles: args.input.grantedToHandles,
@@ -25,6 +27,8 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     grantUserAuthorizationForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const command: GrantUserAuthorizationCommand = {
         viewerId: ctx.viewer.id,
+        viewerFirstName: ctx.viewer.firstName,
+        viewerLastName: ctx.viewer.lastName,
         entityIds: [args.input.albumId],
         operations: args.input.operations,
         grantedToHandles: args.input.grantedToHandles,

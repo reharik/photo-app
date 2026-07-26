@@ -53,6 +53,10 @@ export class PendingUser extends AggregateRoot<UserRecord> {
         return fail(ContractError.InvalidPhoneNumber);
       }
     }
+    if (!firstName?.trim() || !lastName?.trim()) {
+      return fail(ContractError.MissingFirstOrLastName);
+    }
+
     this.props.firstName = firstName;
     this.props.lastName = lastName;
     this.props.phone = phone;

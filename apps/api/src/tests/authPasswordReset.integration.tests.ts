@@ -249,7 +249,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
 
       expect(result.success).toBe(false);
       assert(!result.success);
-      expect(result.error.equals(ContractError.ErrorActivatingUser)).toBe(true);
+      expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeUndefined();
       const user = await getUser(email);
@@ -328,7 +328,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeDefined();
       expect(observations).toHaveLength(1);
-      expect(observations[0].template).toBe('passwordReset');
+      expect(observations[0].template).toBe('passwordChanged');
       expect(observations[0].committedUserVisible).toBe(true);
       // The verification is consumed INSIDE the uow; its being visibly-consumed at
       // notify time proves notify ran AFTER commit (not before).

@@ -1,3 +1,4 @@
+import { toDisplayName } from '@packages/contracts';
 import { ReactorVM } from '../../../viewModels';
 
 export type ReactorLine = {
@@ -7,7 +8,7 @@ export type ReactorLine = {
 };
 
 export const displayNameForReactor = (reactor: ReactorVM): string =>
-  reactor.isViewer ? 'You' : `${reactor.firstName} ${reactor.lastName}`;
+  reactor.isViewer ? 'You' : toDisplayName(reactor);
 
 /** Viewer first, then remaining reactors in source order. */
 export const sortReactorsForDisplay = (reactors: ReactorVM[]): ReactorVM[] => {

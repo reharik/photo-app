@@ -6,6 +6,8 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type CreatePublicLinkForAlbumCommand = {
   viewerId: EntityId;
+  viewerFirstName: string;
+  viewerLastName: string;
   albumId: EntityId;
   name?: string;
   expiresAt?: Date;

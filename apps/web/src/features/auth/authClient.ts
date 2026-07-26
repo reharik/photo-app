@@ -47,11 +47,13 @@ const emailVerification = async (
   }
 };
 
-const KNOWN_REASONS: readonly SetPasswordErrorReason[] = [
-  'INVALID_CODE',
-  'EXPIRED',
-  'TOO_MANY_ATTEMPTS',
-];
+// Map the server's ContractError wire value (its constantCase `.value`) to the reason the
+// UI acts on. Anything not listed collapses to INVALID_CODE, so we never surface more than
+// the contract allows. NAME_REQUIRED reveals the name fields in place on the calling screen.
+const WIRE_TO_REASON: Record<string, SetPasswordErrorReason> = {
+  TOO_MANY_ATTEMPTS: 'TOO_MANY_ATTEMPTS',
+  MISSING_FIRST_OR_LAST_NAME: 'NAME_REQUIRED',
+};
 
 const setPassword = async (req: SetPasswordRequest): Promise<SetPasswordResult> => {
   try {
@@ -63,7 +65,7 @@ const setPassword = async (req: SetPasswordRequest): Promise<SetPasswordResult> 
     // 400 with a code-level reason is the only failure we surface; anything else maps
     // to a generic invalid-code so we never leak more than the contract allows.
     const data = (await response.json().catch(() => ({}))) as { error?: string };
-    const reason = KNOWN_REASONS.find((r) => r === data.error) ?? 'INVALID_CODE';
+    const reason = WIRE_TO_REASON[data.error ?? ''] ?? 'INVALID_CODE';
     return { ok: false, reason };
   } catch {
     return { ok: false, reason: 'INVALID_CODE' };

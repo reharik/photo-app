@@ -64,6 +64,7 @@ export const build__FastSweepNotification = ({
     // execute per-kind batch
     for (const r of results) {
       if (r.kind === 'skipped') {
+        logger.warn(`[notification-send] skipped ${r.row.kind.value}: ${r.reason}`);
         outcomes.push({ row: r.row, result: 'skipped' });
         continue;
       }

@@ -24,15 +24,15 @@ export interface DomainEventBase {
 
 export type DomainEvent = DomainEventBase &
   (
-    | MediaItemAddedToAlbum
-    | MediaItemRemovedFromAlbum
-    | AlbumSharedWithUser
-    | MediaItemsSharedWithUser
     | AlbumSharedWithPublicLink
+    | AlbumSharedWithUser
     | AuthorizationExpired
     | AuthorizationRevoked
+    | CommentPosted
+    | MediaItemAddedToAlbum
+    | MediaItemRemovedFromAlbum
+    | MediaItemsSharedWithUser
     | PendingUserActivated
     | PublicLinkSharedWithUser
-    | CommentPosted
     | ReactionAdded
   );

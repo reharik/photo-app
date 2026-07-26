@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
 import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
 import { isNavigationParent, Navigation, type NavigationItem } from './Navigation';
@@ -153,7 +154,10 @@ export const AppShell = () => {
                 >
                   <Menu size={20} strokeWidth={2} aria-hidden />
                 </MobileNavMenuButton>
-                <Wordmark aria-hidden>Homeroll</Wordmark>
+                <Wordmark aria-hidden>
+                  <HeroIllustration size={60} />
+                  <span>Homeroll</span>
+                </Wordmark>
               </MobileNavLeading>
               <NavActions>
                 <UploadMediaIconButton />
@@ -184,7 +188,10 @@ export const AppShell = () => {
         ) : (
           <SCNavContent>
             <SCAppNavigation>
-              <WordmarkLink to="/">Homeroll</WordmarkLink>
+              <WordmarkLink to="/">
+                <HeroIllustration size={65} />
+                <span>Homeroll</span>
+              </WordmarkLink>
               <Navigation links={navLinks} variant="inline" />
             </SCAppNavigation>
             <NavActions>
@@ -281,17 +288,18 @@ const Wordmark = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  @media (max-width: 375px) {
-    font-size: ${({ theme }) => theme.fontSize._16};
-  }
+  display: flex;
+  align-items: center;
+  font-size: ${({ theme }) => theme.fontSize._21};
 `;
 
 const WordmarkLink = styled(Link)`
   ${wordmarkCss}
   text-decoration: none;
   flex-shrink: 0;
-
+  display: flex;
+  align-items: center;
+  font-size: ${({ theme }) => theme.fontSize._21};
   &:hover {
     color: ${({ theme }) => theme.color.bodyText};
   }

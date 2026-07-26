@@ -5,7 +5,7 @@ import {
   filterByMember,
   notEmpty,
 } from '@packages/contracts';
-import { dedupeIds, groupByMapping, indexBy } from '@packages/infrastructure';
+import { dedupeBy, dedupeIds, groupByMapping, indexBy } from '@packages/infrastructure';
 import { AsyncNotification, SystemAlbumRepository } from '@packages/media-core';
 import { AlbumSection } from '@packages/notifications';
 import { pickEnum } from '@reharik/smart-enum';
@@ -34,17 +34,17 @@ export const build__AlbumActivity = ({
     const outcomes: RowOutcome[] = [];
     const albumActivity = new Map<string, AlbumSection>();
     for (const [recipientId, rowsForRecipient] of recipientMap) {
-      const titles = [
-        ...new Set(
-          rowsForRecipient
-            .filter((x) => EntityType.album.equals(x.containerType))
-            .map((r) => titleMap.get(r.containerId)?.title)
-            .filter(notEmpty),
-        ),
-      ];
+      const albumSections = dedupeBy(
+        rowsForRecipient
+          .filter((x) => EntityType.album.equals(x.containerType))
+          .map((r) => titleMap.get(r.containerId))
+          .filter(notEmpty)
+          .map((x) => ({ albumTitle: x.title, albumId: x.id, itemCount: x.itemCount })),
+        [(x) => x.albumId],
+      );
 
-      if (titles.length) {
-        albumActivity.set(recipientId, { albumTitles: titles });
+      if (albumSections.length) {
+        albumActivity.set(recipientId, albumSections);
       }
     }
 

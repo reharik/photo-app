@@ -1,151 +1,50 @@
-import {
-  Body,
-  Button,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Section,
-  Text,
-} from '@react-email/components';
-import React from 'react';
-import { TemplateData } from '../types';
+import { Button, Section, Text } from '@react-email/components';
+import { ReactElement } from 'react';
+import { TemplateData } from '../types.js';
+import { BaseEmail } from './base.js';
 import { APP_NAME } from './constants.js';
+import { contentNoun } from './contentNoun.js';
+import { emailKindMarker } from './emailMarker.js';
+import { buttonStyle, paragraph } from './sharedStyles.js';
 
-export type WelcomeEmailProps = {
-  firstName?: string;
-  appUrl: string;
-};
+type Data = TemplateData['welcome'];
 
-type WelcomeData = TemplateData['welcome'];
+// Flat subject — no name interpolation, so it can never render a dangling
+// comma or an empty slot. The name lives only in the H1.
+export const subject = (): string => `Welcome to ${APP_NAME}`;
 
-export const subject = (data: WelcomeData): string => {
-  return `Welcome to ${APP_NAME}, ${data.firstName} ${data.lastName}`;
-};
-
-export const WelcomeEmail = ({ firstName, appUrl }: WelcomeData) => {
-  const greetingName = firstName?.trim() || 'there';
+const Welcome = (data: Data): ReactElement => {
+  // firstName can be empty/whitespace at signup; drop the name entirely rather
+  // than greet an empty slot (no "Welcome, there").
+  const name = data.firstName?.trim();
+  const heading = name ? `Welcome, ${name}` : `Welcome to ${APP_NAME}`;
 
   return (
-    <Html>
-      <Head />
-      <Preview>
-        Your {APP_NAME} account is ready — your photos, shared with the people you choose.
-      </Preview>
-      <Body style={body}>
-        <Container style={container}>
-          <Section style={brandSection}>
-            <Text style={brand}>{APP_NAME}</Text>
-          </Section>
-
-          <Heading style={heading}>Welcome, {greetingName}!</Heading>
-
-          <Text style={paragraph}>Your {APP_NAME} account is ready.</Text>
-
-          <Text style={paragraph}>
-            {APP_NAME} is a private place for your photos — keep them in one spot, and share the
-            moments you want with the family and friends you choose. Add your own, and see what
-            everyone else adds.
-          </Text>
-
-          <Section style={buttonSection}>
-            <Button style={button} href={appUrl}>
-              Open {APP_NAME}
-            </Button>
-          </Section>
-
-          <Text style={paragraph}>
-            Didn&apos;t create this account? You can safely ignore this email — nothing else will
-            happen.
-          </Text>
-
-          <Hr style={hr} />
-
-          <Text style={footer}>
-            You&apos;re receiving this because someone created a {APP_NAME} account with this email
-            address.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
+    <BaseEmail
+      previewText={`Your ${APP_NAME} account is ready.`}
+      title={heading}
+      footerVariant="welcome"
+      markers={[emailKindMarker('welcome')]}
+    >
+      <Section>
+        <Text style={paragraph}>Your {APP_NAME} account is ready.</Text>
+        <Text style={paragraph}>
+          Put your {contentNoun()} somewhere they’ll stay — no feed, no strangers, no algorithm.
+          Share an album with whoever you choose, and it opens for them on whatever they’re using.
+        </Text>
+      </Section>
+      <Section style={{ marginTop: '24px' }}>
+        <Button href={data.appUrl} style={buttonStyle}>
+          Open {APP_NAME}
+        </Button>
+      </Section>
+      <Section style={{ marginTop: '16px' }}>
+        <Text style={paragraph}>
+          Didn’t create this account? You can ignore this email — nothing else will happen.
+        </Text>
+      </Section>
+    </BaseEmail>
   );
 };
 
-WelcomeEmail.PreviewProps = {
-  firstName: 'Jane',
-  appUrl: 'https://homeroll.app',
-} satisfies WelcomeEmailProps;
-
-export default WelcomeEmail;
-
-// ---- styles ----
-
-const body: React.CSSProperties = {
-  backgroundColor: '#f5f3ee',
-  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-  margin: 0,
-  padding: '32px 0',
-};
-
-const container: React.CSSProperties = {
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
-  margin: '0 auto',
-  padding: '40px',
-  maxWidth: '480px',
-};
-
-const brandSection: React.CSSProperties = {
-  marginBottom: '24px',
-};
-
-const brand: React.CSSProperties = {
-  fontSize: '20px',
-  fontWeight: 600,
-  color: '#6b4a2b',
-  margin: 0,
-};
-
-const heading: React.CSSProperties = {
-  fontSize: '24px',
-  fontWeight: 600,
-  color: '#2b2b2b',
-  margin: '0 0 16px',
-};
-
-const paragraph: React.CSSProperties = {
-  fontSize: '16px',
-  lineHeight: '1.6',
-  color: '#3a3a3a',
-  margin: '0 0 16px',
-};
-
-const buttonSection: React.CSSProperties = {
-  margin: '28px 0',
-};
-
-const button: React.CSSProperties = {
-  backgroundColor: '#6b4a2b',
-  borderRadius: '8px',
-  color: '#ffffff',
-  fontSize: '16px',
-  fontWeight: 600,
-  textDecoration: 'none',
-  textAlign: 'center',
-  display: 'inline-block',
-  padding: '14px 28px',
-};
-
-const hr: React.CSSProperties = {
-  borderColor: '#e8e4dc',
-  margin: '32px 0 16px',
-};
-
-const footer: React.CSSProperties = {
-  fontSize: '13px',
-  lineHeight: '1.5',
-  color: '#8a8a8a',
-  margin: 0,
-};
+export default Welcome;

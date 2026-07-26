@@ -10,12 +10,12 @@ type MediaItemsSharedStrategyDeps = {
 
 export const build__MediaItemsSharedStrategy = ({
   config,
-}: MediaItemsSharedStrategyDeps): FastSweepNotificationStrategy<'itemShareInvite'> => ({
+}: MediaItemsSharedStrategyDeps): FastSweepNotificationStrategy<'memberItemsShared'> => ({
   kind: AsyncNotificationKind.itemShared,
   execute: async (
     rows: AsyncNotification[],
     userMap: Map<string, UserContact>,
-  ): Promise<PayloadResult<'itemShareInvite'>[]> => {
+  ): Promise<PayloadResult<'memberItemsShared'>[]> => {
     return rows.map((row) => {
       const recipientEmail = userMap.get(row.recipientId)?.email;
       if (!recipientEmail) {
@@ -27,12 +27,11 @@ export const build__MediaItemsSharedStrategy = ({
         kind: 'ready',
         payload: {
           to: recipientEmail,
-          template: 'itemShareInvite',
+          template: 'memberItemsShared',
           channels: ['email'],
           data: {
             inviterName: actor ? `${actor.firstName} ${actor.lastName}` : '',
             inviteUrl: `${config.clientUrl}/shared/items`,
-            resourceName: '',
           },
         },
       };

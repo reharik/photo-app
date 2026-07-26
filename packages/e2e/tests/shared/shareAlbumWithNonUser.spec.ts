@@ -63,18 +63,26 @@ test.describe('Share an album with an email that is not a user', () => {
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
+      // A non-user album share sends the recipient TWO emails: a linkless "…shared an album
+      // with you" notification and the guest invite ("…sent you photos") carrying the public
+      // /shared/{token} URL. Order isn't guaranteed, so match on the message that actually
+      // yields a share URL rather than the first one addressed to the recipient.
       let resolvedShareUrl = '';
       await expect
         .poll(
           async () => {
             const messages = (await retrieveLocalStackSesMessages(request)).slice(sesBaseline);
-            const message = findSesMessageForRecipient(messages, recipientEmail);
-            if (!message) {
-              return false;
+            for (const message of messages) {
+              if (!findSesMessageForRecipient([message], recipientEmail)) {
+                continue;
+              }
+              const url = extractShareInviteUrl(message, env.webBaseUrl) ?? '';
+              if (url.length > 0) {
+                resolvedShareUrl = url;
+                return true;
+              }
             }
-
-            resolvedShareUrl = extractShareInviteUrl(message, env.webBaseUrl) ?? '';
-            return resolvedShareUrl.length > 0;
+            return false;
           },
           { timeout: 30_000 },
         )
