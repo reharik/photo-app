@@ -5,5 +5,15 @@
     "noEmit": false
   },
   "include": ["db/**/*.ts"],
-  "exclude": []
+  // Seeds are NOT compiled into dist. The prod image must not carry the seed
+  // capability at all: `runSeeds` is excluded from the vite inputs, and these
+  // two exclusions keep the seed data and the knex `seeds` directory out of the
+  // artifact too. Without them, `npx knex --knexfile dist/knexfile.js seed:run`
+  // would still provision fixture users with a shared known password inside a
+  // prod container.
+  //
+  // Migrations under db/migrations/** still compile — the `migrate` one-shot
+  // runs them from dist. dev and e2e import the seed SOURCE via tsx and are
+  // unaffected by what dist does or does not contain.
+  "exclude": ["db/seeds/**", "db/seedUsers.ts"]
 }

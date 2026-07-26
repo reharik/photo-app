@@ -73,10 +73,20 @@ export const E2E_SEED_USERS: SeedUserRow[] = [
 /** Both groups. Retained so existing callers keep their current behavior. */
 export const SEED_USER_ROWS: SeedUserRow[] = [...DEV_SEED_USERS, ...E2E_SEED_USERS];
 
+/**
+ * Both spellings, to match `createConfigFromEnv`'s own notion of production
+ * (`nodeEnv === 'production' || nodeEnv === 'prod'`). A second line of defense
+ * that recognized fewer environments than the app does would leave a gap
+ * exactly where it matters.
+ */
+const PRODUCTION_NODE_ENVS = ['production', 'prod'];
+
 const assertNotProduction = (caller: string): void => {
-  if (process.env.NODE_ENV === 'production') {
+  const nodeEnv = process.env.NODE_ENV;
+
+  if (nodeEnv !== undefined && PRODUCTION_NODE_ENVS.includes(nodeEnv)) {
     throw new Error(
-      `${caller} refused to run: NODE_ENV=production. Seed users are dev/e2e ` +
+      `${caller} refused to run: NODE_ENV=${nodeEnv}. Seed users are dev/e2e ` +
         `fixtures with a known password and must never reach a production database.`,
     );
   }

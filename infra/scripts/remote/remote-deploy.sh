@@ -173,7 +173,46 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   fi
 
   export APP_NAME
-  export API_IMAGE="${APP_NAME}-api:${SHA}"
+
+  # Pin the api image to this SHA only if this deploy actually loaded it.
+  #
+  # The build stage only produces images for CHANGED_SERVICE_NAMES, so a
+  # worker-only deploy never ships an api tarball and `${APP_NAME}-api:${SHA}`
+  # does not exist on this host. Compose would then try to pull it from a
+  # registry we do not publish to, and the deploy would abort. This is the same
+  # hazard deploy.sh guards for the frontend-only case; the migrate one-shot
+  # made it reachable for backend deploys too, because every deploy now has to
+  # resolve the api image whether or not api itself changed.
+  #
+  # The fallback is the image the RUNNING api container was created from. That
+  # is safe for migrate specifically: migrations live in apps/api/db/migrations,
+  # which detect-changed-deploy-targets classifies as `apps/api/*` -> service
+  # `api`, so any deploy that ships a migration necessarily rebuilds api and
+  # takes the pinned branch above. A deploy that does NOT rebuild api carries no
+  # new migrations, so `migrate.latest()` from the running image is an
+  # idempotent no-op — one that still repairs a database left unmigrated by an
+  # earlier failed deploy.
+  API_IMAGE_PINNED="${APP_NAME}-api:${SHA}"
+  if sudo docker image inspect "${API_IMAGE_PINNED}" >/dev/null 2>&1; then
+    export API_IMAGE="${API_IMAGE_PINNED}"
+    echo "  API_IMAGE=${API_IMAGE} (built by this deploy)"
+  else
+    RUNNING_API_IMAGE="$(sudo docker ps \
+      --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}" \
+      --filter "label=com.docker.compose.service=api" \
+      --format '{{.Image}}' | head -n 1 || true)"
+    if [[ -z "${RUNNING_API_IMAGE}" ]]; then
+      echo "ERROR: cannot resolve an api image to run migrations from." >&2
+      echo "  ${API_IMAGE_PINNED} was not loaded by this deploy" >&2
+      echo "  (api is not in CHANGED_SERVICE_NAMES='${CHANGED_SERVICE_NAMES}')," >&2
+      echo "  and no running api container exists in project ${COMPOSE_PROJECT_NAME}" >&2
+      echo "  to fall back to. Re-run with FORCE_FULL_BACKEND=true to build and" >&2
+      echo "  ship the api image." >&2
+      exit 1
+    fi
+    export API_IMAGE="${RUNNING_API_IMAGE}"
+    echo "  API_IMAGE=${API_IMAGE} (reused from running api; this deploy built no api image)"
+  fi
 
   echo "docker compose up"
   echo "  project=${COMPOSE_PROJECT_NAME}"
@@ -183,8 +222,12 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   fi
 
   # Migrations run UNCONDITIONALLY, ahead of and independent of the recreate
-  # loop below. A worker-only change can still ship a migration; gating this on
-  # CHANGED_SERVICE_NAMES (as the recreate loop is) would silently skip it.
+  # loop below. Gating this on CHANGED_SERVICE_NAMES (as the recreate loop is)
+  # would tie schema state to which services happened to change: a deploy whose
+  # api image is unchanged would skip migrate entirely, so a database left
+  # unmigrated by an earlier failed deploy would stay that way until the next
+  # api change. Running it every time makes the step self-healing and, because
+  # `migrate.latest()` is idempotent, free when there is nothing to apply.
   #
   # The recreate uses --no-deps deliberately, so db isn't bounced on every
   # deploy — but that also means compose does NOT evaluate depends_on, so the
@@ -202,8 +245,11 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
     sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" \
       run --rm migrate
   else
+    # -T: compose v1 allocates a pseudo-TTY by default and fails with "the input
+    # device is not a TTY" under SSM, whose stdin is not a terminal. v2 detects
+    # this and needs no flag.
     sudo -E docker-compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" \
-      run --rm migrate
+      run --rm -T migrate
   fi
 
   RECREATE_SERVICES=()
