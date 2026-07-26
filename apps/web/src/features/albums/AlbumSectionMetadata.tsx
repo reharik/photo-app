@@ -9,6 +9,7 @@ import { ArrowDown, ArrowUp, Camera, ChevronDown } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useEffect, useRef, useState } from 'react';
 import { css, styled } from 'styled-components';
+import { contentCount } from '../../domain/formatters/contentNoun';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { GalleryActionItems } from '../../hooks/useMultiSelectGallery';
@@ -115,6 +116,9 @@ export const AlbumSectionMetadata = ({
   const isSelecting = selectionCount > 0;
   const showMobileBrowse = isMobileAlbum && !isSelecting;
   const showMobileSelection = isMobileAlbum && isSelecting;
+  // The desktop branch is the only one with a trailing column the sort controls can collapse
+  // into; the mobile browse/selection headers keep them as their own row.
+  const showDesktopHeader = !showMobileBrowse && !showMobileSelection;
 
   useEffect(() => {
     if (!groupByMenuOpen) {
@@ -264,7 +268,7 @@ export const AlbumSectionMetadata = ({
                     <>
                       <AlbumTitle>{album.title}</AlbumTitle>
                       <AlbumStats>
-                        <Stat>{count === 1 ? '1 item' : `${count} items`}</Stat>
+                        <Stat>{contentCount(count)}</Stat>
                       </AlbumStats>
                       {album.updatedAt?.isValid ? (
                         <AlbumDescription>
@@ -275,13 +279,21 @@ export const AlbumSectionMetadata = ({
                   )}
                 </AlbumInfo>
               </AlbumMetaPrimary>
-              <HeaderTrailing $selecting={isSelecting}>
-                {isSelecting ? renderSelectionActions() : headerActions}
-              </HeaderTrailing>
+              {/* Actions and sort collapsed into ONE trailing column, so the sort controls
+                  no longer need a full-width row of their own under a mostly-empty band.
+                  renderSortPicker() returns null when its four props are absent, and a null
+                  child produces no box AND no flex gap — the stack degrades to just the
+                  actions with nothing reserved. */}
+              <HeaderTrailingStack>
+                <HeaderTrailing $selecting={isSelecting}>
+                  {isSelecting ? renderSelectionActions() : headerActions}
+                </HeaderTrailing>
+                {renderSortPicker()}
+              </HeaderTrailingStack>
             </>
           )}
         </AlbumMetaMainRow>
-        {renderSortPicker()}
+        {showDesktopHeader ? null : renderSortPicker()}
       </AlbumMeta>
       {addCoverItemOpen && (
         <AppModal
@@ -577,12 +589,15 @@ const CoverImage = styled.img`
   object-fit: cover;
 `;
 
+// Resting: top-aligned so the title/count/date stack sits tight at the top of the row
+// instead of spreading against the 180px cover. Compact keeps centering — its cover is a
+// 64px chip beside a single summary line, which would otherwise hug the chip's top edge.
 const AlbumInfo = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${({ theme, $compact }) => theme.spacing($compact ? 0.5 : 1.5)};
   min-width: 0;
-  justify-content: center;
+  justify-content: ${({ $compact }) => ($compact ? 'center' : 'flex-start')};
 `;
 
 const AlbumTitle = styled.h2`
@@ -666,19 +681,40 @@ const AddAlbumCoverModalClose = styled.button`
 // Content-width, not flex:1 — the cover + info hug together as a left cluster so a
 // short title doesn't leave a large empty gap across the row. In the authed view,
 // AlbumMetaMainRow's space-between still pushes the trailing actions to the right.
+// Three centering declarations govern this cluster (align-items here, align-self here, and
+// AlbumInfo's justify-content) — top-aligning needs ALL of them, or the cover/info pair and
+// the lines inside it keep re-centering against each other.
 const AlbumMetaPrimary = styled.div<{ $compact: boolean }>`
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: ${({ $compact }) => ($compact ? 'center' : 'flex-start')};
   gap: ${({ theme }) => theme.spacing(2)};
   min-width: 0;
-  align-self: center;
+  align-self: ${({ $compact }) => ($compact ? 'center' : 'flex-start')};
+`;
+
+// Trailing column: actions pinned top (tied to album identity), sort pinned bottom (tied to
+// the grid it sorts, which starts directly below). Both hug the right edge.
+//
+// align-self: stretch is load-bearing — space-between can only distribute FREE space, and a
+// flex-start column shrink-wraps to its content, leaving none. Stretching to the row's height
+// (set by the cover) is what gives the sort controls a bottom edge to drop to. With a single
+// child, space-between places it at the start, so the actions stay put when sort is absent.
+const HeaderTrailingStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  align-self: stretch;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing(1.5)};
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
 `;
 
 const HeaderTrailing = styled.div<{ $selecting: boolean }>`
   display: flex;
   flex-shrink: 1;
-  align-self: flex-start;
   min-width: 0;
   max-width: 100%;
 `;

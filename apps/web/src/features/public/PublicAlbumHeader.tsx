@@ -5,6 +5,7 @@ import styled, { css } from 'styled-components';
 import { contentCount } from '../../domain/formatters/contentNoun';
 import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { truncate } from '../../domain/formatters/truncate';
+import { HeroIllustration } from '../../ui/HeroIllustration';
 import { PublicAlbumSummaryVM } from '../../viewModels/';
 import { PublicAlbumOffer } from './PublicAlbumOffer';
 
@@ -102,7 +103,7 @@ export const PublicAlbumHeader = ({
     <HeaderShell $compact={false}>
       {!compact ? (
         <BrandRow>
-          <Wordmark>Homeroll</Wordmark>
+          <HeroIllustration size={60} /> <Wordmark>Homeroll</Wordmark>
           <Slogan>A private album, shared with you.</Slogan>
         </BrandRow>
       ) : null}
