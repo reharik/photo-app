@@ -1,23 +1,43 @@
 # CI e2e override — layered LAST, on top of base.yml + dev.yml +
-# docker-compose/docker-compose.dev.yml. Purpose:
+# docker-compose/docker-compose.ci.yml. Purpose:
 #
-#   1. Make `docker compose up --no-build` work. The `dev` Dockerfile target is
-#      generic (same image for api + worker; the service `command:` selects the
-#      app). We pre-build ONE image in the workflow (buildx + type=gha cache) and
-#      tag it ${APP_NAME}-api:dev. api already resolves that via `image:`; the
-#      worker has only `build:` and no `image:`, so pin it to the same tag here.
+#   1. Pin every service to the PROD images. e2e runs the `runtime-node`
+#      Dockerfile target — the same target, built on the same arch, that
+#      deploy.yml ships. `runtime-node` copies only apps/${SERVICE_NAME}/dist,
+#      so unlike the old dev image (whole source tree, one image serving both
+#      services via `command:`) api and media-worker are now SEPARATE images.
+#      The workflow pre-builds both (buildx + type=gha cache) and exports
+#      API_IMAGE / WORKER_IMAGE; there is no `build:` left in the CI chain.
 #
-#   2. Route S3 -> REAL AWS while SES stays on LocalStack. The app already splits
+#   2. Put the `migrate` one-shot back on its prod footing. dev.yml sits between
+#      base.yml and this file and re-points migrate at the dev image + the tsx
+#      source entrypoint (correct for the dev image, which has no dist/). The CI
+#      stack runs the compiled image, so that override has to be undone here —
+#      otherwise migrate would try to `npx tsx` a source tree the prod image
+#      does not contain.
+#
+#   3. Route S3 -> REAL AWS while SES stays on LocalStack. The app already splits
 #      these (only the SES client reads AWS_ENDPOINT; the S3 client never does),
 #      so we just inject real-AWS credentials from GitHub OIDC into the
 #      containers. `configure-aws-credentials` exports them to the runner env;
 #      compose interpolates them here into the container environment. SES ignores
 #      these creds (it pins its own dummy test/test when AWS_ENDPOINT is set).
 #
-#   3. Drop the `~/.aws` bind mount (doesn't exist on the CI runner).
+#   4. Drop the `~/.aws` bind mount (doesn't exist on the CI runner). Nothing in
+#      the CI chain mounts anything now, so this is an absence rather than an
+#      override.
 services:
+  # Undo dev.yml's tsx override: prod image, compiled entrypoint, same as
+  # base.yml/prod.yml. Migrations are compiled into dist/db by the api's
+  # `build:db` target; seeds deliberately are NOT (see tsconfig.db.json), which
+  # is why CI seeds from the runner rather than from a container.
+  migrate:
+    image: ${API_IMAGE}
+    working_dir: /app/apps/api/dist
+    command: ['node', 'scripts/runMigrations.js']
+
   api:
-    image: ${APP_NAME}-api:dev
+    image: ${API_IMAGE}
     environment:
       # Real AWS for S3 (default endpoint). SES still -> LocalStack via
       # AWS_ENDPOINT from apps/api/.env. These come from the OIDC role.
@@ -28,16 +48,11 @@ services:
       S3_BUCKET: ${CI_E2E_BUCKET}
 
   media-worker:
-    # Reuse the single pre-built dev image (identical to api's).
-    image: ${APP_NAME}-api:dev
+    # Its own image now — `runtime-node` bakes exactly one service's dist.
+    image: ${WORKER_IMAGE}
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       S3_BUCKET: ${CI_E2E_BUCKET}
-    # Replace the dev volume list to drop `~/.aws:/root/.aws:ro` (absent in CI).
-    volumes: !override
-      - ./apps/media-worker:/app/apps/media-worker
-      - /app/apps/media-worker/node_modules
-      - ./packages:/app/packages
