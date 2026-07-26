@@ -182,6 +182,30 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
     echo "  env_args=${ENV_ARGS[*]}"
   fi
 
+  # Migrations run UNCONDITIONALLY, ahead of and independent of the recreate
+  # loop below. A worker-only change can still ship a migration; gating this on
+  # CHANGED_SERVICE_NAMES (as the recreate loop is) would silently skip it.
+  #
+  # The recreate uses --no-deps deliberately, so db isn't bounced on every
+  # deploy — but that also means compose does NOT evaluate depends_on, so the
+  # `migrate` one-shot would never fire as a side effect. It must be invoked
+  # explicitly. `set -e` aborts the deploy on a non-zero exit, which is what
+  # makes a failed migration fail the deploy instead of crash-looping the api.
+  #
+  # No --no-deps here: `run` honours db's service_healthy condition and will
+  # not recreate an already-running db.
+  echo "Pre-migration safety dump"
+  /usr/local/bin/betaname-backup.sh pre-migration
+
+  echo "Running migrations (one-shot migrate service)"
+  if docker compose version >/dev/null 2>&1; then
+    sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" \
+      run --rm migrate
+  else
+    sudo -E docker-compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" \
+      run --rm migrate
+  fi
+
   RECREATE_SERVICES=()
   for service in ${CHANGED_SERVICE_NAMES}; do
     RECREATE_SERVICES+=("${service}")
@@ -190,10 +214,6 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   if (( ${#RECREATE_SERVICES[@]} == 0 )); then
     echo "No changed backend services; skipping docker compose recreate"
   else
-    if printf '%s\n' "${RECREATE_SERVICES[@]}" | grep -qx "api"; then
-      echo "Backend recreating → pre-migration safety dump"
-      /usr/local/bin/betaname-backup.sh pre-migration
-    fi
     echo "Recreating compose services: ${RECREATE_SERVICES[*]}"
     if docker compose version >/dev/null 2>&1; then
       sudo -E docker compose -p "${COMPOSE_PROJECT_NAME}" "${COMPOSE_FILES[@]}" "${ENV_ARGS[@]}" up -d \

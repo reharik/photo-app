@@ -26,5 +26,7 @@ jq -c '.docker.workers[]?' "$CONFIG_PATH" | while IFS= read -r worker; do
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 EOF
 done

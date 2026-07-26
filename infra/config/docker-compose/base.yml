@@ -13,11 +13,37 @@ services:
       timeout: 3s
       retries: 20
 
+  # One-shot migration runner. Migrations are a DEPLOY step, not a per-service
+  # boot step: this runs them to completion and exits, and api/workers gate on
+  # `service_completed_successfully`, so nothing can serve against an unmigrated
+  # database. A non-zero exit here fails `compose up` / `compose run`, which is
+  # what makes a failed migration abort a deploy loudly instead of silently
+  # crash-looping the api behind a green deploy.
+  #
+  # `restart` MUST be pinned to "no". prod.yml sets `restart: unless-stopped` on
+  # api/db and the generated worker overlay does the same; a one-shot that
+  # inherited that policy would restart forever after exiting 0.
+  #
+  # The command targets the COMPILED entrypoint. dev.yml overrides it to the
+  # tsx/source equivalent for the dev + CI images, which have no dist/.
+  migrate:
+    image: ${API_IMAGE:-${APP_NAME}-api:latest}
+    restart: "no"
+    working_dir: /app/apps/api/dist
+    command: ["node", "scripts/runMigrations.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: db
+
   api:
     image: ${API_IMAGE:-${APP_NAME}-api:latest}
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       PORT: ${PORT:-3000}
       POSTGRES_HOST: db
