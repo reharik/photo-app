@@ -1,8 +1,114 @@
 name: CI
 
+# Single workflow for every pre-merge check: the cheap always-run tier
+# (lint/test/build) plus the PR-only tier (integration/e2e).
+#
+# WHY ONE FILE: `needs:` is workflow-scoped, and it is the only clean fail-fast
+# primitive. e2e used to live in its own workflow, which meant a red lint still
+# paid for a full arm64 image build and a containerized stack. Merging the two
+# lets the expensive tier sit behind the cheap one.
+#
+# WHY THESE TRIGGERS: `push` is restricted to main and `pull_request` covers
+# everything else, so exactly ONE event fires per commit:
+#   - push to a PR branch -> pull_request only
+#   - push to main        -> push only
+# Firing on unfiltered `push` + `pull_request` (the previous setup) ran every
+# job twice per commit. That is fixed HERE, at the trigger, not with a
+# concurrency group: `github.ref` differs between the two events
+# (refs/heads/<branch> vs refs/pull/<n>/merge), so no ref-keyed group can even
+# see them as the same thing — and collapsing by cancellation would be worse,
+# since cancelling the pull_request run kills the very jobs a required check
+# needs.
+#
+# The cost of restricting push to main is no CI on a branch with no PR open.
+# Open a draft PR — draft PRs run checks normally.
+#
+# Job names are REQUIRED CHECK CONTEXTS (branch ruleset on main): Lint, Test,
+# Build, Integration, E2E. Renaming a job silently un-requires it — the ruleset
+# keeps demanding the old string, which nothing produces, and merges block.
+#
+# ---------------------------------------------------------------------------
+# The E2E job below: Playwright end-to-end suite against a real, containerized
+# stack.
+#
+# WHAT THIS TESTS: the SHIPPING image. api + media-worker run the `runtime-node`
+# Dockerfile target — the same target, on the same arch (arm64/Graviton), that
+# `deploy.yml` builds and ships. No dev image, no source bind-mount, no tsx: the
+# containers execute their baked `dist/` via the image's own prod CMD. If it
+# passes here it is the artifact that goes to prod, not a stand-in for it.
+#
+# The stack is therefore driven exactly like prod is:
+#   - migrations run in the one-shot `migrate` service (base.yml), never at boot
+#   - the api/worker containers only serve; they never migrate and never seed
+#   - seeding is a CI-only concern and runs from the RUNNER over the exposed
+#     Postgres port (5433), because the prod image has no seed path at all
+#
+# Local flow (three terminals) that this reproduces headlessly:
+#   1. make docker/dev/up   -> db + localstack + api + media-worker (Docker)
+#   2. npm run dev:web       -> here: built bundle served via `vite preview`
+#   3. npm run test:e2e      -> Playwright (Chromium) against the served app
+#
+# SES runs on LocalStack (email assertions); S3 media uses REAL AWS via a
+# dedicated test bucket + GitHub OIDC role (presigned URLs / CORS need real-S3
+# fidelity). The app already routes S3 -> real AWS and SES -> AWS_ENDPOINT
+# independently, so no app change is needed to express the split.
+#
+# MANUAL AWS PREREQS (must exist before this passes):
+#   - Repo/Org variable CI_E2E_BUCKET  : test S3 bucket (1-day lifecycle expiry;
+#                                        CORS allowing http://localhost:5173).
+#   - Repo/Org variable CI_E2E_ROLE_ARN: OIDC IAM role, trust limited to this
+#                                        repo, perms = S3 object ops on that
+#                                        bucket only.
+#   - GitHub OIDC provider in the AWS account
+#     (token.actions.githubusercontent.com). Check:
+#       aws iam list-open-id-connect-providers
+
+
 on:
-  push: {}
+  push:
+    branches: [main]
   pull_request: {}
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Which e2e suite to run"
+        type: choice
+        default: full
+        options:
+          - smoke
+          - full
+
+# Supersede older commits on the same branch. This is concurrency doing its
+# PROPER job — it is NOT what stops double-runs (the triggers do that).
+# Keyed on head_ref||ref_name rather than `ref` so a PR and its branch resolve
+# to the same group. Deploy is untouched: different workflow name and
+# ref_name=main put it in its own group, and it stays no-cancel so deploys
+# serialize instead of killing each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+# Consumed only by the E2E job; harmless to the others.
+env:
+  APP_NAME: homeroll
+  COMPOSE_PROJECT_NAME: homeroll-ci
+  # Every `docker compose` call in this job auto-loads these files, in order.
+  # NOTE: each `docker compose` invocation also passes `--project-directory .`
+  # so env_file paths (./apps/api/.env, ...) resolve from the repo root rather
+  # than the first compose file's directory (the Makefile does the same).
+  COMPOSE_FILE: infra/config/docker-compose/base.yml:infra/config/docker-compose/dev.yml:docker-compose/docker-compose.ci.yml:infra/config/docker-compose/ci.yml
+  # The two prod images under test. `runtime-node` copies only
+  # apps/${SERVICE_NAME}/dist, so unlike the old dev image (whole source tree,
+  # shared by both services) each service needs its own build. The `migrate`
+  # one-shot reuses API_IMAGE — migrations live in the api's dist/db.
+  API_IMAGE: homeroll-api:ci
+  WORKER_IMAGE: homeroll-media-worker:ci
+  # Job-wide, not per-step: infra ci.yml interpolates ${CI_E2E_BUCKET} into the
+  # api/worker environment, so EVERY `docker compose` call in this job parses a
+  # reference to it — including `up db localstack`, `run migrate`, `logs` and
+  # the teardown `down`. Scoping it to one step just means the others emit
+  # "variable is not set" warnings and substitute an empty string.
+  CI_E2E_BUCKET: ${{ vars.CI_E2E_BUCKET }} # TODO: set repo/org variable
 
 jobs:
   lint:
@@ -21,7 +127,6 @@ jobs:
           key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nx-
-               - name: Install proper npm
       - run: npm i -g npm@11.6.2  
       - run: npm ci
       - run: npm run check:deps
@@ -67,6 +172,11 @@ jobs:
 
   integration:
     name: Integration
+    needs: [lint, test]
+    # PR-only: spins up a real Postgres, so it is not worth paying for on
+    # every main push. Gated behind lint+test so a formatting error does
+    # not cost a database.
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     # Real-Postgres integration suite (apps/api/src/tests/*.integration.tests.ts). The unit
     # `test` job runs jest.config.js, which IGNORES *.integration.tests.ts and has no DB, so
@@ -155,3 +265,332 @@ jobs:
             apps/web/dist
             dist
           retention-days: 1
+
+  e2e:
+    name: E2E
+    # Static name ON PURPOSE: this string is a required check context.
+    # It used to be an expression that rendered "E2E (smoke)" on a PR but
+    # "E2E ()" anywhere else (inputs.suite is null off workflow_dispatch) —
+    # a context that changes name by event can never be reliably required.
+    # The selected suite is surfaced in the step summary instead.
+    needs: [lint, test, integration]
+    # Full fail-fast chain. e2e is by far the most expensive job (arm64
+    # image builds + a whole containerized stack), so it waits behind the
+    # cheap checks AND integration rather than racing them.
+    if: github.event_name != 'push'
+    permissions:
+      id-token: write # AWS OIDC; scoped to this job, not the whole workflow
+      contents: read
+    # arm64 ON PURPOSE: prod is Graviton (see prod.yml `platform: linux/arm64`
+    # and deploy.yml's ubuntu-24.04-arm build). Running e2e here means the image
+    # e2e exercises is bit-for-bit the arch that ships, and a native build needs
+    # no qemu.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Cache Nx
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-
+
+      - run: npm i -g npm@11.6.2
+      - name: npm ci (retry up to 3x)
+        run: |
+          for i in 1 2 3; do
+            echo "npm ci attempt $i/3"
+            if npm ci; then
+              echo "npm ci succeeded on attempt $i"; exit 0
+            fi
+            echo "npm ci failed on attempt $i; lockfile status:"
+            ls -l package-lock.json || echo "no root package-lock.json present!"
+            sleep 5
+          done
+          echo "::error::npm ci failed after 3 attempts"; exit 1
+
+      - name: Generate IoC manifests
+        run: npm run gen:ioc:all
+      - name: Generate GraphQL types & smart-enums
+        run: npm run gen:gql:all
+
+      # --- DEBUG: decode the OIDC token claims to compare against the AWS
+      #     IAM role's trust policy (sub / aud / repository / ref / iss).
+      #     NOTE: ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN are injected into the shell
+      #     env by the runner (because permissions.id-token: write is set) — they
+      #     are NOT ${{ env.* }} workflow expressions, so we reference them
+      #     directly from the shell and DO NOT re-declare them in an env: block.
+      - name: Debug OIDC claims
+        run: |
+          set -euo pipefail
+          TOKEN=$(curl -sLS \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}")
+          # JWT payload is base64url (no padding): translate to std base64 + pad.
+          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
+          case $(( ${#PAYLOAD} % 4 )) in 2) PAYLOAD="${PAYLOAD}==";; 3) PAYLOAD="${PAYLOAD}=";; esac
+          CLAIMS=$(echo "$PAYLOAD" | base64 -d | jq .)
+          echo "=== configured role-to-assume (from vars.CI_E2E_ROLE_ARN) ==="
+          echo "${{ vars.CI_E2E_ROLE_ARN }}"
+          echo "=== full OIDC claims ==="
+          echo "$CLAIMS"
+          echo "=== fields the AWS trust policy conditions match on ==="
+          echo "$CLAIMS" | jq '{sub, aud, iss, repository, repository_owner, ref, ref_type, workflow, event_name, environment}'
+
+      # --- Real AWS creds for S3 (SES stays on LocalStack) via OIDC ---
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.CI_E2E_ROLE_ARN }} # TODO: set repo/org variable
+          aws-region: us-east-1
+          role-session-name: gha-e2e-${{ github.run_id }}
+
+      # --- Materialize the CI env files (git-ignored in real clones) ---
+      - name: Write CI env files
+        run: |
+          cp .env.ci .env
+          cp apps/api/.env.ci apps/api/.env
+          cp apps/media-worker/.env.ci apps/media-worker/.env
+
+      # --- Pre-build the PROD images (buildx + GHA layer cache) ---
+      # Same target/args as deploy.yml's build job. The runner is arm64, so
+      # these are native arm64 builds — no `platforms:` and no qemu needed.
+      # Cache scopes are arch-suffixed so they can never collide with an amd64
+      # layer cache if one is ever added.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build api image (runtime-node, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: runtime-node
+          build-args: |
+            SERVICE_NAME=api
+          tags: ${{ env.API_IMAGE }}
+          load: true # into the local daemon so compose --no-build finds it
+          cache-from: type=gha,scope=e2e-api-arm64
+          cache-to: type=gha,scope=e2e-api-arm64,mode=max
+          provenance: false
+
+      - name: Build media-worker image (runtime-node, arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: runtime-node
+          build-args: |
+            SERVICE_NAME=media-worker
+          tags: ${{ env.WORKER_IMAGE }}
+          load: true
+          cache-from: type=gha,scope=e2e-media-worker-arm64
+          cache-to: type=gha,scope=e2e-media-worker-arm64,mode=max
+          provenance: false
+
+      # --- Bring up the stack in prod order; gate on real readiness ---
+      #
+      # ORDER IS LOAD-BEARING. The prod image only serves: it does not migrate
+      # and does not seed. So the schema and the fixtures must both be in place
+      # BEFORE api/worker start, or they serve against an empty database:
+      #
+      #   1. db + localstack   (compose healthchecks)
+      #   2. migrate one-shot  (blocks; non-zero exit fails the job)
+      #   3. seed from runner  (blocks; non-zero exit fails the job)
+      #   4. api + media-worker
+      #   5. poll /health from the runner
+      #
+      - name: Compose up (db, localstack)
+        run: docker compose --project-directory . up -d --no-build --wait db localstack
+
+      # The same one-shot `migrate` service prod uses (base.yml), running the
+      # compiled entrypoint out of the image's own dist. `compose run` returns
+      # the container's exit code, so a failed migration fails the job here
+      # rather than surfacing as a mystery 500 in a test.
+      - name: DB migrate (one-shot migrate service)
+        run: docker compose --project-directory . run --rm migrate
+
+      # Seeding is CI-only — the prod image has no seed path (see
+      # serverStartUpProd.sh). Run it from the runner against the host-mapped
+      # Postgres port instead. These POSTGRES_* vars beat apps/api/.env:
+      # config.ts's ensureEnvLoaded() skips the dotenv read entirely when
+      # POSTGRES_HOST is already set, so `db`/5432 can't leak in here.
+      - name: DB seed (runner-side, over exposed 5433)
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5433"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photo_app
+        run: npm run db:seed
+
+      - name: Compose up (api, media-worker)
+        run: |
+          # --no-deps: db/localstack are already up and migrate has already run
+          # explicitly above. Without it compose would honor api's
+          # `migrate: service_completed_successfully` gate by starting a SECOND
+          # migrate one-shot (the `run --rm` container is gone), which is wasted
+          # time and makes `--wait` reason about an intentionally-exiting
+          # service. The gate is not lost — it just moved into the job's step
+          # order, where its exit code is checked.
+          docker compose --project-directory . up -d --no-build --no-deps --wait api media-worker
+
+      # api/worker have no compose healthcheck (the image stays pure — no curl
+      # probe baked in for CI's benefit), so poll the exposed port from here.
+      - name: Wait for API /health
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3001/health >/dev/null 2>&1; then
+              echo "api healthy"; exit 0
+            fi
+            echo "waiting for api /health ($i/60)..."; sleep 2
+          done
+          echo "::error::api did not become healthy"; docker compose --project-directory . logs api; exit 1
+
+      # --- Build + serve the web app (production bundle, not the dev server) ---
+      - name: Build web
+        run: npm run build:web
+        env:
+          VITE_API: /api # relative; the preview proxy forwards /api + /media
+
+      - name: Serve web (vite preview) and wait for ready
+        run: |
+          nohup npx nx preview web --port 5173 > preview.log 2>&1 &
+          echo "PREVIEW_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5173 >/dev/null 2>&1; then
+              echo "web preview up"; exit 0
+            fi
+            echo "waiting for web ($i/60)..."; sleep 2
+          done
+          echo "::error::web preview did not become ready"; cat preview.log; exit 1
+
+      - name: Install Playwright browser
+        working-directory: packages/e2e
+        run: npx playwright install --with-deps chromium
+
+      # --- Choose smoke vs full ---
+      # PRs gate on smoke; add the `e2e-full` label to a PR to run everything.
+      # workflow_dispatch honors the `suite` input.
+      - name: Select suite
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SUITE="${{ inputs.suite }}"
+          elif ${{ contains(github.event.pull_request.labels.*.name, 'e2e-full') }}; then
+            SUITE="full"
+          else
+            SUITE="smoke"
+          fi
+          echo "Selected suite: $SUITE"
+          # Surfaced here rather than in the job name: the job name is a required
+          # check context and must stay the literal string "E2E".
+          echo "### E2E suite: \`$SUITE\`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$SUITE" = "smoke" ]; then
+            # Critical path: auth signup, one share flow, foundation happy path.
+            echo "SPEC_ARGS=tests/auth/signup.spec.ts tests/shared/shareAlbumWithUser.spec.ts tests/foundation.spec.ts" >> "$GITHUB_ENV"
+          else
+            echo "SPEC_ARGS=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run e2e
+        working-directory: packages/e2e
+        env:
+          CI: "true"
+          E2E_WEB_BASE_URL: http://localhost:5173
+          E2E_API_BASE_URL: http://localhost:3001
+          # Host-mapped Postgres port for global-setup / teardown (5433 -> 5432).
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5433"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: photo_app
+        run: npx playwright test ${{ env.SPEC_ARGS }}
+
+      # --- Publish the tested images so merge-deploy can reuse them ---
+      #
+      # These are the exact arm64 images the suite above just exercised. A green
+      # PR leaves a known-good pair in the reuse pool; merge-deploy resolves the
+      # merge commit back to this PR head and skips rebuilding them.
+      #
+      # POISON GUARD — this step deliberately has NO `always()`. A custom `if:`
+      # without a status function carries an implicit `success()`, so a red e2e
+      # run aborts before reaching this step and never publishes. Do not "fix"
+      # this by adding `if: always()`: that would put images from a FAILING PR
+      # into the pool for a later merge to pick up.
+      #
+      # Keyed by PR HEAD SHA, never by branch — branches get force-pushed,
+      # renamed and deleted, while the head SHA is what the merge side resolves
+      # back to. workflow_dispatch has no PR head to key on, so it only tests.
+      - name: Publish tested images for merge reuse
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          HEAD12="${HEAD_SHA:0:12}"
+          APP="$(jq -r '.appName' infra.app.config.json)"
+          BUCKET="$(jq -r '.s3Bucket' infra.app.config.json)"
+
+          # Prefix is deployments/<app>-pr/ and NOT deployments/<app>/pr/, so it
+          # is disjoint from the deploy prefix. The bucket carries two lifecycle
+          # rules keyed on exactly these prefixes (30d for PR images, 90d for
+          # deploy artifacts); nesting them would make PR-image expiry depend on
+          # S3's overlapping-rule resolution rather than on stated intent.
+          for svc in api media-worker; do
+            case "$svc" in
+              api) src="${API_IMAGE}" ;;
+              media-worker) src="${WORKER_IMAGE}" ;;
+            esac
+
+            # Retag to the head SHA before saving so the tarball's embedded
+            # RepoTag is deterministic and known to the merge side. remote-deploy
+            # retags from THIS tag to the merge SHA on the host; if the two ever
+            # drift, the api silently falls back to its running image.
+            docker tag "$src" "${APP}-${svc}:${HEAD12}"
+            docker save "${APP}-${svc}:${HEAD12}" | gzip > "${svc}.tar.gz"
+            gzip -t "${svc}.tar.gz"
+            aws s3 cp "${svc}.tar.gz" \
+              "s3://${BUCKET}/deployments/${APP}-pr/${HEAD12}/${svc}.tar.gz"
+            rm -f "${svc}.tar.gz"
+            echo "published ${svc} -> deployments/${APP}-pr/${HEAD12}/${svc}.tar.gz"
+          done
+
+      # --- Diagnostics on failure ---
+      - name: Collect docker logs
+        if: failure()
+        run: |
+          mkdir -p artifacts/docker-logs
+          # `migrate` included: it is a one-shot run with `--rm`, so if it is
+          # what failed its container is already gone — but compose still has
+          # the log, and a migration failure is otherwise invisible here.
+          for svc in db localstack migrate api media-worker; do
+            docker compose --project-directory . logs --no-color "$svc" > "artifacts/docker-logs/$svc.log" 2>&1 || true
+          done
+          cp preview.log artifacts/docker-logs/web-preview.log 2>/dev/null || true
+
+      - name: Upload artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts-${{ github.run_id }}
+          path: |
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
+            artifacts/docker-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # --- Teardown ---
+      - name: Compose down
+        if: always()
+        run: |
+          [ -n "${PREVIEW_PID:-}" ] && kill "$PREVIEW_PID" 2>/dev/null || true
+          docker compose --project-directory . down -v --remove-orphans || true

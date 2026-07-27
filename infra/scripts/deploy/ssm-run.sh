@@ -99,7 +99,11 @@ _ssm_send_command() {
   _ssm_upload_script_to_s3 "$remote_script_path" "$script_key"
 
 local env_text=""
-for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE CHANGED_SERVICE_NAMES COMPOSE_PROJECT_NAME; do
+# This list is an ALLOWLIST: a variable not named here never reaches the remote
+# script, silently. IMAGE_SOURCE_TAG in particular must stay — without it the
+# reuse retag in remote-deploy.sh no-ops and the api quietly redeploys its
+# previous image.
+for v in AWS_REGION S3_BUCKET APP_NAME ENV SHA DEPLOY_BACKEND DEPLOY_FRONTEND S3_PREFIX API_IMAGE CHANGED_SERVICE_NAMES COMPOSE_PROJECT_NAME IMAGE_SOURCE_TAG; do
   if [[ -n "${!v:-}" ]]; then
     printf -v quoted '%q' "${!v}"
     env_text+="${v}=${quoted}"$'\n'
