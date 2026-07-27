@@ -2,6 +2,11 @@
 .git
 .gitignore
 **/.nx/cache
+# Rewritten by every nx invocation (~19MB). CI runs codegen before `docker build`,
+# so without this it lands in the manifests stage's `COPY . .` layer and gets
+# re-exported to the layer cache on every build. Bloat only — it cannot bust the
+# npm ci layer, which is keyed on the extracted package.json set.
+**/.nx/workspace-data
 **/.cache
 
 # Rebuilt inside the image
@@ -23,3 +28,18 @@ output-worker-graph.json
 # Compose/Makefile are not part of the build context payload
 docker-compose/
 Makefile
+
+# Deploy/runtime plumbing the IMAGE BUILD never reads. These sit under infra/,
+# which the Dockerfile copies wholesale (`COPY infra infra`) BEFORE `COPY apps`
+# and `RUN npx nx build`. Without these exclusions, editing a deploy script
+# invalidates that layer and every layer after it, forcing a full application
+# rebuild for a change the build cannot even see — measured at ~4min of wasted
+# arm64 build time on an infra-only PR.
+#
+# Keep excluding ONLY things the build does not read. infra/config/{nx,tsconfig,jest}
+# MUST stay in the context: nx.json extends infra/config/nx/nx.json and
+# tsconfig.base.json extends infra/config/tsconfig/tsconfig.base.json, so
+# excluding those breaks the build outright.
+infra/scripts/
+infra/config/docker-compose/
+infra/config/localstack/
