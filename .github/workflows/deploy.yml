@@ -112,9 +112,99 @@ jobs:
           name: generated-worker-compose
           path: workers.generated.yml
 
-  build:
+  # Decide whether this merge can reuse the arm64 images the PR already built
+  # and e2e-tested, instead of rebuilding them (~12min -> ~2min).
+  #
+  # Reuse requires ALL THREE to hold; any failure falls through to a normal
+  # build. Reuse is an optimization and is never a hard dependency.
+  resolve:
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_build_backend == 'true' }}
     needs: discover
+    runs-on: ubuntu-latest
+    outputs:
+      reuse: ${{ steps.decide.outputs.reuse }}
+      pr_head_sha12: ${{ steps.decide.outputs.pr_head_sha12 }}
+      reason: ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Resolve-Reuse
+          aws-region: ${{ needs.discover.outputs.aws_region }}
+
+      - id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.sha }}
+          MATRIX_JSON: ${{ needs.discover.outputs.build_matrix }}
+          BUCKET: ${{ needs.discover.outputs.s3_bucket }}
+          APP_NAME: ${{ needs.discover.outputs.app_name }}
+        run: |
+          set -uo pipefail
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          gh_get() { curl -sS -H "Authorization: Bearer ${GH_TOKEN}" \
+                       -H 'Accept: application/vnd.github+json' "$1"; }
+          decide() {
+            echo "reuse=$1"  >> "$GITHUB_OUTPUT"
+            echo "reason=$2" >> "$GITHUB_OUTPUT"
+            echo "DECISION: reuse=$1 reason=$2"
+          }
+
+          # 1. Which PR introduced this merge commit? A direct push to main has
+          #    no PR and therefore no prebuilt images — build, do not fail.
+          HEAD_SHA="$(gh_get "${API}/commits/${MERGE_SHA}/pulls" \
+            | jq -r 'if type=="array" then (.[0].head.sha // "") else "" end')"
+          if [[ -z "${HEAD_SHA}" || "${HEAD_SHA}" == "null" ]]; then
+            decide false no-pr; exit 0
+          fi
+          HEAD12="${HEAD_SHA:0:12}"
+          echo "PR head: ${HEAD_SHA}"
+
+          # 2. Is the merged tree the tree the image was actually built from?
+          #    This is the real safety condition, and it is why we do NOT branch
+          #    on merge strategy: a merge commit or a rebase that pulled in new
+          #    main commits produces a tree the PR never built or tested, so the
+          #    prebuilt image would be silently stale. Comparing tree SHAs is
+          #    strategy-independent and exact. (Using the API rather than git
+          #    also avoids needing fetch-depth: 0 on the checkout.)
+          MERGE_TREE="$(gh_get "${API}/commits/${MERGE_SHA}" | jq -r '.commit.tree.sha')"
+          HEAD_TREE="$(gh_get "${API}/commits/${HEAD_SHA}"  | jq -r '.commit.tree.sha')"
+          echo "merge tree=${MERGE_TREE}  head tree=${HEAD_TREE}"
+          if [[ "${MERGE_TREE}" != "${HEAD_TREE}" ]]; then
+            decide false tree-mismatch; exit 0
+          fi
+
+          # 3. Every service THIS deploy intends to ship must have a tarball.
+          #    The matrix is path-filtered, so a worker-only deploy legitimately
+          #    needs only the worker: a fully-present subset is a correct reuse,
+          #    not a partial. But a MISSING member forces a full rebuild — we
+          #    never reuse some services and rebuild others.
+          MISSING=""
+          for svc in $(jq -r '.[].name' <<<"${MATRIX_JSON}"); do
+            KEY="deployments/${APP_NAME}-pr/${HEAD12}/${svc}.tar.gz"
+            if aws s3 ls "s3://${BUCKET}/${KEY}" >/dev/null 2>&1; then
+              echo "present: ${KEY}"
+            else
+              echo "MISSING: ${KEY}"
+              MISSING="${MISSING} ${svc}"
+            fi
+          done
+          if [[ -n "${MISSING// }" ]]; then
+            decide false "missing:${MISSING# }"; exit 0
+          fi
+
+          echo "pr_head_sha12=${HEAD12}" >> "$GITHUB_OUTPUT"
+          decide true hit
+
+  build:
+    # Skipped entirely on a reuse hit. Note this job is only SKIPPED, never
+    # removed: every miss path above still builds exactly as before.
+    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_build_backend == 'true' && needs.resolve.outputs.reuse != 'true' }}
+    needs: [discover, resolve]
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
@@ -188,11 +278,59 @@ jobs:
             "s3://${S3_BUCKET}/deployments/${APP_NAME}/${SHORT_SHA}/${{ matrix.service.name }}.tar.gz" \
             --region "${AWS_REGION}"
 
+  # Reuse hit: promote the PR-built tarballs into this deploy's prefix so the
+  # rest of the pipeline is byte-identical to a freshly-built deploy. This is a
+  # server-side S3 copy — no ~144MiB round-trip through the runner — which is
+  # what makes the hit path cheap.
+  reuse:
+    if: ${{ needs.resolve.outputs.reuse == 'true' }}
+    needs: [discover, resolve]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set short SHA
+        shell: bash
+        run: echo "SHORT_SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Reuse-Images
+          aws-region: ${{ needs.discover.outputs.aws_region }}
+
+      - name: Copy PR images into this deploy's prefix
+        shell: bash
+        env:
+          BUCKET: ${{ needs.discover.outputs.s3_bucket }}
+          APP_NAME: ${{ needs.discover.outputs.app_name }}
+          HEAD12: ${{ needs.resolve.outputs.pr_head_sha12 }}
+          MATRIX_JSON: ${{ needs.discover.outputs.build_matrix }}
+          AWS_REGION: ${{ needs.discover.outputs.aws_region }}
+        run: |
+          set -euo pipefail
+          for svc in $(jq -r '.[].name' <<<"${MATRIX_JSON}"); do
+            SRC="s3://${BUCKET}/deployments/${APP_NAME}-pr/${HEAD12}/${svc}.tar.gz"
+            DST="s3://${BUCKET}/deployments/${APP_NAME}/${SHORT_SHA}/${svc}.tar.gz"
+            echo "copy ${SRC} -> ${DST}"
+            aws s3 cp "${SRC}" "${DST}" --region "${AWS_REGION}"
+          done
+
   deploy:
-    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_deploy_backend == 'true' }}
+    # `!cancelled()` + result checks, not a plain needs-gate: on a reuse hit the
+    # `build` job is SKIPPED, and a skipped dependency would otherwise skip this
+    # job too. A skipped build is a success condition here; only a FAILED build
+    # (or a failed copy) must stop the deploy.
+    if: >-
+      !cancelled()
+      && (github.event_name != 'workflow_dispatch' || inputs.deploy_backend)
+      && needs.discover.outputs.should_deploy_backend == 'true'
+      && needs.build.result != 'failure'
+      && needs.reuse.result != 'failure'
     needs:
       - discover
+      - resolve
       - build
+      - reuse
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -253,6 +391,11 @@ jobs:
           # only the on-host stack namespace stays 'betaname-prod'.
           export COMPOSE_PROJECT_NAME="betaname-${ENV}"
           export SHA="${SHORT_SHA}"
+          # On a reuse, the loaded image carries the PR head SHA as its tag
+          # while every consumer (workers.generated.yml, the API_IMAGE pin)
+          # expects the merge SHA. remote-deploy.sh retags using this. Empty on
+          # a normal build, where the tags already match.
+          export IMAGE_SOURCE_TAG="${{ needs.resolve.outputs.reuse == 'true' && needs.resolve.outputs.pr_head_sha12 || '' }}"
           export DEPLOY_BACKEND=true
           export DEPLOY_FRONTEND=false
           export CHANGED_SERVICE_NAMES="${{ needs.discover.outputs.changed_service_names }}"

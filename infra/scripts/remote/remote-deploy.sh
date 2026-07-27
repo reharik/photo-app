@@ -148,6 +148,23 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
       echo "Loading backend image from ${IMAGE_TAR_PATH}"
       sudo docker load -i "${IMAGE_TAR_PATH}"
 
+      # Reused PR image: the tarball was built on the PR and is tagged with the
+      # PR HEAD sha, but everything downstream addresses images by the MERGE sha
+      # -- workers.generated.yml hardcodes ${APP_NAME}-<svc>:${SHA}, and the
+      # API_IMAGE pin below looks up ${APP_NAME}-api:${SHA}. Without this retag
+      # the worker fails loudly (compose cannot pull a tag we never publish) but
+      # the API fails SILENTLY: the pin misses, the fallback picks the currently
+      # running container's image, and the deploy goes green having shipped the
+      # OLD api. So retag rather than teach each consumer a second tag.
+      #
+      # Empty on a normal build, where the tarball is already tagged ${SHA}.
+      if [[ -n "${IMAGE_SOURCE_TAG:-}" && "${IMAGE_SOURCE_TAG}" != "${SHA}" ]]; then
+        echo "Retagging reused image: ${APP_NAME}-${service}:${IMAGE_SOURCE_TAG} -> :${SHA}"
+        sudo docker tag \
+          "${APP_NAME}-${service}:${IMAGE_SOURCE_TAG}" \
+          "${APP_NAME}-${service}:${SHA}"
+      fi
+
       rm -f "${IMAGE_TAR_PATH}" "${TARBALL_PATH}"
     else
       echo "No backend artifact (${TARBALL_NAME}) found; skipping"

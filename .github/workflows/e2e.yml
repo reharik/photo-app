@@ -309,6 +309,55 @@ jobs:
           POSTGRES_DB: photo_app
         run: npx playwright test ${{ env.SPEC_ARGS }}
 
+      # --- Publish the tested images so merge-deploy can reuse them ---
+      #
+      # These are the exact arm64 images the suite above just exercised. A green
+      # PR leaves a known-good pair in the reuse pool; merge-deploy resolves the
+      # merge commit back to this PR head and skips rebuilding them.
+      #
+      # POISON GUARD — this step deliberately has NO `always()`. A custom `if:`
+      # without a status function carries an implicit `success()`, so a red e2e
+      # run aborts before reaching this step and never publishes. Do not "fix"
+      # this by adding `if: always()`: that would put images from a FAILING PR
+      # into the pool for a later merge to pick up.
+      #
+      # Keyed by PR HEAD SHA, never by branch — branches get force-pushed,
+      # renamed and deleted, while the head SHA is what the merge side resolves
+      # back to. workflow_dispatch has no PR head to key on, so it only tests.
+      - name: Publish tested images for merge reuse
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          HEAD12="${HEAD_SHA:0:12}"
+          APP="$(jq -r '.appName' infra.app.config.json)"
+          BUCKET="$(jq -r '.s3Bucket' infra.app.config.json)"
+
+          # Prefix is deployments/<app>-pr/ and NOT deployments/<app>/pr/, so it
+          # is disjoint from the deploy prefix. The bucket carries two lifecycle
+          # rules keyed on exactly these prefixes (30d for PR images, 90d for
+          # deploy artifacts); nesting them would make PR-image expiry depend on
+          # S3's overlapping-rule resolution rather than on stated intent.
+          for svc in api media-worker; do
+            case "$svc" in
+              api) src="${API_IMAGE}" ;;
+              media-worker) src="${WORKER_IMAGE}" ;;
+            esac
+
+            # Retag to the head SHA before saving so the tarball's embedded
+            # RepoTag is deterministic and known to the merge side. remote-deploy
+            # retags from THIS tag to the merge SHA on the host; if the two ever
+            # drift, the api silently falls back to its running image.
+            docker tag "$src" "${APP}-${svc}:${HEAD12}"
+            docker save "${APP}-${svc}:${HEAD12}" | gzip > "${svc}.tar.gz"
+            gzip -t "${svc}.tar.gz"
+            aws s3 cp "${svc}.tar.gz" \
+              "s3://${BUCKET}/deployments/${APP}-pr/${HEAD12}/${svc}.tar.gz"
+            rm -f "${svc}.tar.gz"
+            echo "published ${svc} -> deployments/${APP}-pr/${HEAD12}/${svc}.tar.gz"
+          done
+
       # --- Diagnostics on failure ---
       - name: Collect docker logs
         if: failure()
