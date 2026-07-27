@@ -20,6 +20,23 @@
       "Resource": "arn:aws:s3:::network-deploy-709865789463-us-east-1/*"
     },
     {
+      "Sid": "ReusePrImagesReadTags",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObjectTagging"
+      ],
+      "Resource": "arn:aws:s3:::network-deploy-709865789463-us-east-1/deployments/homeroll-pr/*"
+    },
+    {
+      "Sid": "ReusePrImagesWriteTags",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+      ],
+      "Resource": "arn:aws:s3:::network-deploy-709865789463-us-east-1/deployments/homeroll/*"
+    },
+    {
       "Sid": "EC2DescribeForDeployTargets",
       "Effect": "Allow",
       "Action": ["ec2:DescribeInstances"],

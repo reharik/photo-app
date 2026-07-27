@@ -117,6 +117,10 @@ jobs:
   #
   # Reuse requires ALL THREE to hold; any failure falls through to a normal
   # build. Reuse is an optimization and is never a hard dependency.
+  #
+  # That invariant covers the DECISION here AND the copy's EXECUTION in `reuse`:
+  # a failed copy re-enables the `build` job rather than aborting the deploy.
+  # See the gate on `build` for the mechanics.
   resolve:
     if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_build_backend == 'true' }}
     needs: discover
@@ -201,10 +205,25 @@ jobs:
           decide true hit
 
   build:
-    # Skipped entirely on a reuse hit. Note this job is only SKIPPED, never
-    # removed: every miss path above still builds exactly as before.
-    if: ${{ (github.event_name != 'workflow_dispatch' || inputs.deploy_backend) && needs.discover.outputs.should_build_backend == 'true' && needs.resolve.outputs.reuse != 'true' }}
-    needs: [discover, resolve]
+    # Skipped on a reuse hit, but only once the copy has actually SUCCEEDED —
+    # this job is the fallback that makes good on "reuse is never a hard
+    # dependency". `resolve` decides; `reuse` executes; a failure in EITHER
+    # lands here and builds normally.
+    #
+    # `!cancelled()` is mandatory, not stylistic: on a reuse MISS the `reuse`
+    # job is skipped, and a skipped dependency skips its dependents by default,
+    # which would kill the very build the miss path depends on.
+    #
+    # The failure this catches is not hypothetical. Besides IAM drift, the PR
+    # image prefix carries a 30-day lifecycle rule, so a tarball can expire
+    # between `resolve`'s `s3 ls` existence check and this copy — a TOCTOU that
+    # would otherwise hard-abort a deploy for no good reason.
+    if: >-
+      !cancelled()
+      && (github.event_name != 'workflow_dispatch' || inputs.deploy_backend)
+      && needs.discover.outputs.should_build_backend == 'true'
+      && (needs.resolve.outputs.reuse != 'true' || needs.reuse.result == 'failure')
+    needs: [discover, resolve, reuse]
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
@@ -319,13 +338,17 @@ jobs:
     # `!cancelled()` + result checks, not a plain needs-gate: on a reuse hit the
     # `build` job is SKIPPED, and a skipped dependency would otherwise skip this
     # job too. A skipped build is a success condition here; only a FAILED build
-    # (or a failed copy) must stop the deploy.
+    # must stop the deploy.
+    #
+    # Deliberately NOT gated on `needs.reuse.result != 'failure'` any more: a
+    # failed copy is now a fallback trigger, not a deploy-stopper — `build`
+    # picks it up and produces the images itself. Re-adding that clause would
+    # silently disable the fallback, since the deploy it feeds could never run.
     if: >-
       !cancelled()
       && (github.event_name != 'workflow_dispatch' || inputs.deploy_backend)
       && needs.discover.outputs.should_deploy_backend == 'true'
       && needs.build.result != 'failure'
-      && needs.reuse.result != 'failure'
     needs:
       - discover
       - resolve
@@ -395,7 +418,18 @@ jobs:
           # while every consumer (workers.generated.yml, the API_IMAGE pin)
           # expects the merge SHA. remote-deploy.sh retags using this. Empty on
           # a normal build, where the tags already match.
-          export IMAGE_SOURCE_TAG="${{ needs.resolve.outputs.reuse == 'true' && needs.resolve.outputs.pr_head_sha12 || '' }}"
+          #
+          # Keyed on the reuse OUTCOME (`reuse.result == 'success'`), NEVER on
+          # the reuse DECISION (`resolve.outputs.reuse`). The two diverge on
+          # exactly one path — the fallback — where `resolve` still says
+          # reuse=true but the image was rebuilt and carries the merge SHA. Key
+          # this on the decision and remote-deploy.sh would try to retag from a
+          # PR-head tag that was never loaded on the host; `docker tag` exits
+          # non-zero under `set -euo pipefail`, so the SSM step aborts and the
+          # deploy fails — after paying for the full rebuild. That is loud, not
+          # silent, but it still defeats the fallback: the copy failure just
+          # moves downstream instead of being absorbed.
+          export IMAGE_SOURCE_TAG="${{ needs.reuse.result == 'success' && needs.resolve.outputs.pr_head_sha12 || '' }}"
           export DEPLOY_BACKEND=true
           export DEPLOY_FRONTEND=false
           export CHANGED_SERVICE_NAMES="${{ needs.discover.outputs.changed_service_names }}"

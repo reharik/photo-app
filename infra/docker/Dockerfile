@@ -85,9 +85,14 @@ RUN --mount=type=cache,target=/root/.npm \
 # === Runtime: Node apps (api, media-worker) ===
 FROM node:22-slim AS runtime-node
 WORKDIR /app
+# The apt layer sits ABOVE ARG/ENV SERVICE_NAME on purpose. An ENV that is in
+# scope becomes part of every subsequent layer's cache key, so setting
+# SERVICE_NAME first made api and media-worker each build their own byte-identical
+# curl layer — paid twice, and cached twice under mode=max. Hoisting it above the
+# ARG makes the layer service-agnostic, so both services share one copy.
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/apps/${SERVICE_NAME}/dist ./apps/${SERVICE_NAME}/dist
 COPY --from=deps-prod /app/node_modules ./node_modules
 RUN test -f "apps/${SERVICE_NAME}/dist/scripts/serverStartUpProd.sh" || \

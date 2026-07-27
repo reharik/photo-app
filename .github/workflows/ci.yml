@@ -3,10 +3,17 @@ name: CI
 # Single workflow for every pre-merge check: the cheap always-run tier
 # (lint/test/build) plus the PR-only tier (integration/e2e).
 #
-# WHY ONE FILE: `needs:` is workflow-scoped, and it is the only clean fail-fast
-# primitive. e2e used to live in its own workflow, which meant a red lint still
-# paid for a full arm64 image build and a containerized stack. Merging the two
-# lets the expensive tier sit behind the cheap one.
+# WHY EVERYTHING IS PARALLEL: no job declares `needs:`. All five start at once,
+# so a green PR costs about the slowest job (~12min, e2e) instead of the sum of
+# the tiers. The accepted tradeoff is that a doomed PR still pays full e2e time
+# when lint fails. That is the right trade here: runner minutes are free on a
+# public repo, local pre-flight makes CI-only failures rare, and optimizing the
+# common (green) case beats optimizing the rare (broken) one. It also surfaces
+# ALL failures in one run rather than hiding integration/e2e breakage behind an
+# upstream lint error.
+#
+# To reintroduce fail-fast later, add `needs: [lint, test]` to integration and
+# e2e — the jobs live in one file precisely so that stays a one-line change.
 #
 # WHY THESE TRIGGERS: `push` is restricted to main and `pull_request` covers
 # everything else, so exactly ONE event fires per commit:
@@ -124,8 +131,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          # The primary key includes the SHA so it is UNIQUE PER COMMIT and can
+          # never hit — which is the point. actions/cache does not re-save on a
+          # hit, so the previous key (os + nx.json + lockfile) froze: the first
+          # run wrote a cache and every later run restored that same stale entry
+          # and never added the targets it had just built. Here every run misses
+          # the primary key, restores the newest prefix match below, and saves a
+          # fresh superset. Cost is one cache write per run; benefit is a cache
+          # that actually accumulates.
+          #
+          # Deliberately NOT keyed on runner.arch: Nx task outputs here are JS
+          # bundles and generated TS (arch-independent), so letting the arm64
+          # E2E job and the x86 jobs share one cache raises the hit rate. If a
+          # cached target ever emits a native artifact, add runner.arch.
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-nx-
       - run: npm i -g npm@11.6.2  
       - run: npm ci
@@ -152,8 +173,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          # The primary key includes the SHA so it is UNIQUE PER COMMIT and can
+          # never hit — which is the point. actions/cache does not re-save on a
+          # hit, so the previous key (os + nx.json + lockfile) froze: the first
+          # run wrote a cache and every later run restored that same stale entry
+          # and never added the targets it had just built. Here every run misses
+          # the primary key, restores the newest prefix match below, and saves a
+          # fresh superset. Cost is one cache write per run; benefit is a cache
+          # that actually accumulates.
+          #
+          # Deliberately NOT keyed on runner.arch: Nx task outputs here are JS
+          # bundles and generated TS (arch-independent), so letting the arm64
+          # E2E job and the x86 jobs share one cache raises the hit rate. If a
+          # cached target ever emits a native artifact, add runner.arch.
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-nx-
       - run: npm i -g npm@11.6.2  
       - run: npm ci
@@ -172,10 +207,9 @@ jobs:
 
   integration:
     name: Integration
-    needs: [lint, test]
-    # PR-only: spins up a real Postgres, so it is not worth paying for on
-    # every main push. Gated behind lint+test so a formatting error does
-    # not cost a database.
+    # PR-only: spins up a real Postgres, so it is not worth paying for on every
+    # main push. Deliberately NOT gated behind lint/test — see the parallelism
+    # note in the header.
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
     # Real-Postgres integration suite (apps/api/src/tests/*.integration.tests.ts). The unit
@@ -216,8 +250,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          # The primary key includes the SHA so it is UNIQUE PER COMMIT and can
+          # never hit — which is the point. actions/cache does not re-save on a
+          # hit, so the previous key (os + nx.json + lockfile) froze: the first
+          # run wrote a cache and every later run restored that same stale entry
+          # and never added the targets it had just built. Here every run misses
+          # the primary key, restores the newest prefix match below, and saves a
+          # fresh superset. Cost is one cache write per run; benefit is a cache
+          # that actually accumulates.
+          #
+          # Deliberately NOT keyed on runner.arch: Nx task outputs here are JS
+          # bundles and generated TS (arch-independent), so letting the arm64
+          # E2E job and the x86 jobs share one cache raises the hit rate. If a
+          # cached target ever emits a native artifact, add runner.arch.
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-nx-
       - run: npm i -g npm@11.6.2
       - run: npm ci
@@ -243,8 +291,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          # The primary key includes the SHA so it is UNIQUE PER COMMIT and can
+          # never hit — which is the point. actions/cache does not re-save on a
+          # hit, so the previous key (os + nx.json + lockfile) froze: the first
+          # run wrote a cache and every later run restored that same stale entry
+          # and never added the targets it had just built. Here every run misses
+          # the primary key, restores the newest prefix match below, and saves a
+          # fresh superset. Cost is one cache write per run; benefit is a cache
+          # that actually accumulates.
+          #
+          # Deliberately NOT keyed on runner.arch: Nx task outputs here are JS
+          # bundles and generated TS (arch-independent), so letting the arm64
+          # E2E job and the x86 jobs share one cache raises the hit rate. If a
+          # cached target ever emits a native artifact, add runner.arch.
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-nx-
       - run: npm i -g npm@11.6.2  
       - run: npm ci
@@ -273,10 +335,8 @@ jobs:
     # "E2E ()" anywhere else (inputs.suite is null off workflow_dispatch) —
     # a context that changes name by event can never be reliably required.
     # The selected suite is surfaced in the step summary instead.
-    needs: [lint, test, integration]
-    # Full fail-fast chain. e2e is by far the most expensive job (arm64
-    # image builds + a whole containerized stack), so it waits behind the
-    # cheap checks AND integration rather than racing them.
+    # No `needs:` — e2e races the cheap checks rather than queueing behind them.
+    # See the parallelism note in the header for the tradeoff.
     if: github.event_name != 'push'
     permissions:
       id-token: write # AWS OIDC; scoped to this job, not the whole workflow
@@ -299,8 +359,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: ${{ runner.os }}-nx-${{ hashFiles('**/nx.json') }}-${{ hashFiles('**/package-lock.json') }}
+          # The primary key includes the SHA so it is UNIQUE PER COMMIT and can
+          # never hit — which is the point. actions/cache does not re-save on a
+          # hit, so the previous key (os + nx.json + lockfile) froze: the first
+          # run wrote a cache and every later run restored that same stale entry
+          # and never added the targets it had just built. Here every run misses
+          # the primary key, restores the newest prefix match below, and saves a
+          # fresh superset. Cost is one cache write per run; benefit is a cache
+          # that actually accumulates.
+          #
+          # Deliberately NOT keyed on runner.arch: Nx task outputs here are JS
+          # bundles and generated TS (arch-independent), so letting the arm64
+          # E2E job and the x86 jobs share one cache raises the hit rate. If a
+          # cached target ever emits a native artifact, add runner.arch.
+          key: ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
+            ${{ runner.os }}-nx-${{ hashFiles('**/package-lock.json') }}-
             ${{ runner.os }}-nx-
 
       - run: npm i -g npm@11.6.2
@@ -378,8 +452,8 @@ jobs:
             SERVICE_NAME=api
           tags: ${{ env.API_IMAGE }}
           load: true # into the local daemon so compose --no-build finds it
-          cache-from: type=gha,scope=e2e-api-arm64
-          cache-to: type=gha,scope=e2e-api-arm64,mode=max
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
           provenance: false
 
       - name: Build media-worker image (runtime-node, arm64)
@@ -392,8 +466,8 @@ jobs:
             SERVICE_NAME=media-worker
           tags: ${{ env.WORKER_IMAGE }}
           load: true
-          cache-from: type=gha,scope=e2e-media-worker-arm64
-          cache-to: type=gha,scope=e2e-media-worker-arm64,mode=max
+          cache-from: type=gha,scope=media-worker
+          cache-to: type=gha,scope=media-worker,mode=max
           provenance: false
 
       # --- Bring up the stack in prod order; gate on real readiness ---
@@ -473,6 +547,27 @@ jobs:
           done
           echo "::error::web preview did not become ready"; cat preview.log; exit 1
 
+      # ~70s off the critical path. E2E is the long pole (every other job
+      # finishes with ~8min to spare), so this is one of the few caches here
+      # that changes PR turnaround rather than just billing minutes.
+      #
+      # Keyed on the LOCKFILE, not on a version string: package.json pins
+      # "@playwright/test": "^1.49.0", so the literal text does not change when
+      # the resolved version does — a hardcoded key would serve stale browsers
+      # after a minor bump. runner.arch is in the key because this job is arm64
+      # while the rest are x86, and the browser build differs.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-playwright-
+
+      # `--with-deps` is KEPT even on a cache hit. The cache holds the browser
+      # bundle under ~/.cache/ms-playwright, but the apt system libraries it
+      # links against live outside that path and are not cached; on a hit this
+      # skips the download and only reconciles those, which is cheap.
       - name: Install Playwright browser
         working-directory: packages/e2e
         run: npx playwright install --with-deps chromium
