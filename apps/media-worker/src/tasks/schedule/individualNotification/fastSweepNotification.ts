@@ -41,10 +41,10 @@ export const build__FastSweepNotification = ({
     const rows = await systemAsyncNotificationRepository.claimIndividualNotifications(
       config.debounceEmailWindowSeconds,
     );
-    logger.info(`[notification-send] claimed ${rows.length} row(s)`);
     if (!rows.length) {
       return 'idle';
     }
+    logger.info(`[notification-send] claimed ${rows.length} row(s)`);
     const outcomes: RowOutcome[] = [];
 
     const userMap = await hydrateUsers(rows);

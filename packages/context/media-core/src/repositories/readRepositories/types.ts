@@ -1,5 +1,4 @@
 import {
-  AlbumItemSortBy,
   AlbumMemberRole,
   AlbumSortBy,
   EntityType,
@@ -10,7 +9,6 @@ import {
 import type { Knex } from 'knex';
 import { AuditRecord } from '../..';
 import {
-  AlbumItemWithMediaRow,
   AlbumWithCoverRow,
   CommentRow,
   DBMediaItemRow,
@@ -106,15 +104,7 @@ export type AlbumReadRepository = {
     albumId: string;
     viewerId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
-  getViewableAlbumItemsForViewer: ({
-    albumId,
-    viewerId,
-    collectionInfo,
-  }: {
-    albumId: string;
-    viewerId: string;
-    collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
+
   findAlbumIdsReferencingMediaItem: ({
     mediaItemId,
   }: {
@@ -127,16 +117,6 @@ export type AlbumReadRepository = {
     albumId: string;
     publicLinkId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
-  /** Album items for public share-link viewing (no membership check). READY media only. */
-  listAlbumItemsForPublicLink: ({
-    albumId,
-    publicLinkId,
-    collectionInfo,
-  }: {
-    albumId: string;
-    publicLinkId: string;
-    collectionInfo: CollectionInfo<AlbumItemSortBy>;
-  }) => Promise<PagedList<AlbumItemWithMediaRow>>;
 };
 
 export type AlbumIdRow = { id: string };

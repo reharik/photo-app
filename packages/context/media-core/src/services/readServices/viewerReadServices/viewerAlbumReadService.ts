@@ -1,6 +1,7 @@
 import { AlbumMemberRole, OperationCatalog } from '@packages/contracts';
 import { indexByUnique } from '@packages/infrastructure';
 import { StandardEnumItem } from '@reharik/smart-enum';
+import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
@@ -28,12 +29,14 @@ export type SortableEnum = StandardEnumItem & { column: string };
 
 type ViewerAlbumReadServiceDeps = {
   albumReadRepository: AlbumReadRepository;
+  albumItemReadRepository: AlbumItemReadRepository;
   enrichMediaItems: EnrichMediaItems;
   viewerId: string;
 };
 
 export const build__ViewerAlbumReadService = ({
   albumReadRepository,
+  albumItemReadRepository,
   enrichMediaItems,
   viewerId,
 }: ViewerAlbumReadServiceDeps): ViewerAlbumReadService => {
@@ -121,7 +124,7 @@ export const build__ViewerAlbumReadService = ({
       albumId: string;
       collectionInfo: AlbumItemCollectionInfo;
     }): Promise<PagedList<AlbumItemProjection>> => {
-      const albumItemsResult = await albumReadRepository.getViewableAlbumItemsForViewer({
+      const albumItemsResult = await albumItemReadRepository.getViewableAlbumItemsForViewer({
         albumId,
         viewerId,
         collectionInfo,

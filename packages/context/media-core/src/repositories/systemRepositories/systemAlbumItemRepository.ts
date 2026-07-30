@@ -4,7 +4,9 @@ import { EntityId } from '../../types';
 export type SystemAlbumItemRepository = {
   getItemsByAlbumIds: (
     albumId: EntityId[],
-  ) => Promise<{ id: EntityId; albumId: EntityId; mediaItemId: EntityId }[]>;
+  ) => Promise<
+    { id: EntityId; albumId: EntityId; mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]
+  >;
 };
 
 type SystemAlbumItemRepositoryDeps = {
@@ -16,11 +18,10 @@ export const build__SystemAlbumItemRepository = ({
 }: SystemAlbumItemRepositoryDeps): SystemAlbumItemRepository => ({
   getItemsByAlbumIds: async (albumIds: EntityId[]) => {
     return database('albumItem')
-      .select<{ id: EntityId; albumId: EntityId; mediaItemId: EntityId }[]>([
-        'id',
-        'albumId',
-        'mediaItemId',
-      ])
+      .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+      .select<
+        { id: EntityId; albumId: EntityId; mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]
+      >(['albumItem.id', 'albumItem.albumId', 'albumItem.mediaItemId', 'mediaItem.ownerId'])
       .whereIn('albumId', albumIds);
   },
 });

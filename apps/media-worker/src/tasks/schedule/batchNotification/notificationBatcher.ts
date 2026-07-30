@@ -32,8 +32,8 @@ export const build__NotificationBatcher = ({
     const rows = await systemAsyncNotificationRepository.claimNotificationBatch(
       config.debounceEmailWindowSeconds,
     );
-    logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
     if (!rows.length) return 'idle';
+    logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
 
     // null recipientId = cadence-filter leak upstream; log but don't process
     const bad = rows.filter((r) => !notEmpty(r.recipientId));

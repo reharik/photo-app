@@ -16,24 +16,21 @@ const adminOperations: Operation[] = [
 ] as const;
 const contributorOperations: Operation[] = [Operation.addItems] as const;
 
+const can = (role: Operation[]) => (operation: Operation) => {
+  return role.includes(operation);
+};
 const input = {
   owner: {
     operations: ownerOperations,
-    can: (operation: Operation) => {
-      return ownerOperations.includes(operation);
-    },
+    can: can(ownerOperations),
   },
   admin: {
     operations: adminOperations,
-    can: (operation: Operation) => {
-      return adminOperations.includes(operation);
-    },
+    can: can(adminOperations),
   },
   contributor: {
     operations: contributorOperations,
-    can: (operation: Operation) => {
-      return contributorOperations.includes(operation);
-    },
+    can: can(contributorOperations),
   },
 } as const;
 

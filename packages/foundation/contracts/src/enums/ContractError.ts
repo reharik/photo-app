@@ -540,6 +540,13 @@ const contractErrorInput = {
     area: ErrorArea.user,
     retryable: false,
   },
+  CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage: {
+    code: 'CAN_ONLY_REMOVE_OWNED_ITEMS_OR_ITEMS_IN_AN_ALBUM_YOU_MANAGE',
+    display: 'You can only remove items you own or items in an album you manage',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

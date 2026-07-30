@@ -51,12 +51,24 @@ export const build__ResolveAuthorizations = ({
 }: ResolveAuthorizationsDeps): ResolveAuthorizations => {
   const getMediaItemIds = (
     authorization: PublicLinkAuthorizationRow | UserAuthorizationRow,
-    itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
+    itemsByAlbum: Map<string, { mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]>,
   ): EntityId[] => {
+    const granteeIsOwner = (
+      authorization: PublicLinkAuthorizationRow | UserAuthorizationRow,
+      item: { mediaItemId: EntityId; mediaItemOwnerId: EntityId },
+    ) => {
+      return authorization.kind === 'user'
+        ? authorization.grantedToUser === item.mediaItemOwnerId
+        : false;
+    };
     return match(
       authorization.target,
       {
-        album: (t, m) => m.get(t.albumId)?.map((x) => x.mediaItemId) ?? [],
+        album: (t, m) =>
+          m
+            .get(t.albumId)
+            ?.filter((x) => !granteeIsOwner(authorization, x))
+            .map((x) => x.mediaItemId) ?? [],
         mediaItem: (t) => [t.mediaItemId],
       },
       itemsByAlbum,
@@ -65,7 +77,7 @@ export const build__ResolveAuthorizations = ({
 
   const buildMap = (
     authorizations: (PublicLinkAuthorizationRow | UserAuthorizationRow)[],
-    itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
+    itemsByAlbum: Map<string, { mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]>,
   ): AuthorizationMap => {
     return new Map(
       authorizations.map((authorization) => [
@@ -94,10 +106,8 @@ export const build__ResolveAuthorizations = ({
         const activeUserAuths = userAuthorizations.filter((a) =>
           activeUserMap.has(a.grantedToUser),
         ); // multi-user filter
-        const itemsByAlbum = groupByMapping(
-          await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
-          (x) => x.albumId,
-        );
+        const albumItems = await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]);
+        const itemsByAlbum = groupByMapping(albumItems, (x) => x.albumId);
         return {
           authorizationMap: buildMap(
             [...activeUserAuths, ...publicLinkAuthorizations],

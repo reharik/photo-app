@@ -25,6 +25,12 @@ export type MediaProcessingJobRepository = {
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<void>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<void>;
+  markPendingRetry: (
+    jobId: EntityId,
+    actorId: EntityId,
+    lastError: string,
+    availableAt: Date,
+  ) => Promise<void>;
 };
 
 const isUniqueViolation = (e: unknown): boolean => {
@@ -70,5 +76,6 @@ export const build__MediaProcessingJobRepository = ({
     claimNextAvailableJob: queue.claimNextAvailableJob,
     markSucceeded: queue.markSucceeded,
     markFailed: queue.markFailed,
+    markPendingRetry: queue.markPendingRetry,
   };
 };

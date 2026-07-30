@@ -31,6 +31,10 @@ export type MarkReadyPayload = {
   mediaItemId: string;
 };
 
+export type MarkFailedPayload = {
+  mediaItemId: string;
+};
+
 type RemovePayload = {
   localId: string;
 };
@@ -47,6 +51,7 @@ export type UploadQueueAction =
   | { type: 'remove'; payload: RemovePayload }
   | { type: 'clearCompleted' }
   | { type: 'markReady'; payload: MarkReadyPayload }
+  | { type: 'markFailed'; payload: MarkFailedPayload }
   | { type: 'retry'; payload: { localId: string } };
 
 export type UploadQueueContextValue = {

@@ -7,9 +7,9 @@ import {
   withActiveGrants,
   withAlbumCoverItem,
   withAlbumItemCount,
+  withAttachViewerMembership,
   withCollectionInfo,
   withGrantedBy,
-  withViewerMembership,
 } from '../queryHelpers';
 import type {
   ReadRepositoryDeps,
@@ -60,7 +60,7 @@ export const build__SharedWithMeReadRepository = ({
   }): Promise<PagedList<SharedAlbumRow>> => {
     const query = database('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
-      .modify(withViewerMembership(database, viewerId))
+      .modify(withAttachViewerMembership(database, viewerId))
       .modify(withAlbumCoverItem)
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))
@@ -89,7 +89,7 @@ export const build__SharedWithMeReadRepository = ({
   }): Promise<SharedAlbumRow | undefined> => {
     const query = database('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
-      .modify(withViewerMembership(database, viewerId))
+      .modify(withAttachViewerMembership(database, viewerId))
       .modify(withAlbumCoverItem)
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))

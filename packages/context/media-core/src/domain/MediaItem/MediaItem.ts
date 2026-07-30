@@ -395,6 +395,24 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
+  /**
+   * Terminal outcome of the derivative pipeline: processing → failed. Without this the
+   * item sits at PROCESSING forever after a dead job and the upload UI polls until it
+   * times out. Idempotent, and a no-op for any other status (a concurrently-readied or
+   * deleted item must not be dragged back to failed).
+   */
+  markProcessingFailed(actorId: ActorId): WriteResult {
+    if (this.props.status.equals(MediaItemStatus.failed)) {
+      return ok(undefined);
+    }
+    if (!this.props.status.equals(MediaItemStatus.processing)) {
+      return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
+    }
+    this.props.status = MediaItemStatus.failed;
+    this.touch(actorId);
+    return ok(undefined);
+  }
+
   toggleReaction(item: Reaction, actorId: ActorId): WriteResult {
     const reaction = this.#reactions.find(
       (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,

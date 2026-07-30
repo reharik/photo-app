@@ -15,6 +15,12 @@ export type AwaitMediaItemsReadyOptions = {
    * or terminal error snapshot). Enables incremental UI refreshes while other items finish processing.
    */
   onItemReady?: (mediaItemId: string) => void;
+  /**
+   * Called the first time this item reaches {@link MediaItemStatus.failed} — the backend gave up on
+   * the derivative pipeline. Without this the item is indistinguishable from one still processing
+   * and the poll spins until {@link AwaitMediaItemsReadyOptions.maxDurationMs} elapses.
+   */
+  onItemFailed?: (mediaItemId: string) => void;
 };
 
 const waitUntilMediaItemReadyOrTimeout = (
@@ -23,10 +29,12 @@ const waitUntilMediaItemReadyOrTimeout = (
   pollIntervalMs: number,
   maxDurationMs: number,
   onItemReady?: (mediaItemId: string) => void,
+  onItemFailed?: (mediaItemId: string) => void,
 ): Promise<void> =>
   new Promise<void>((resolve) => {
     let settled = false;
     let readyNotified = false;
+    let failedNotified = false;
     const waitTimer: { id?: ReturnType<typeof setTimeout> } = {};
     const observableQuery = client.watchQuery<ViewerMediaItemStatusQuery>({
       query: ViewerMediaItemStatusDocument,
@@ -51,10 +59,21 @@ const waitUntilMediaItemReadyOrTimeout = (
     const subscription = observableQuery.subscribe({
       next: (result) => {
         const status = result.data?.viewer?.mediaItem?.status;
-        if (status != null && MediaItemStatus.ready.equals(status as MediaItemStatus)) {
+        if (status == null) {
+          return;
+        }
+        if (MediaItemStatus.ready.equals(status as MediaItemStatus)) {
           if (!readyNotified && onItemReady !== undefined) {
             readyNotified = true;
             onItemReady(mediaItemId);
+          }
+          settle();
+          return;
+        }
+        if (MediaItemStatus.failed.equals(status as MediaItemStatus)) {
+          if (!failedNotified && onItemFailed !== undefined) {
+            failedNotified = true;
+            onItemFailed(mediaItemId);
           }
           settle();
         }
@@ -80,6 +99,7 @@ export const awaitMediaItemsReady = async (
   const pollIntervalMs = options?.pollIntervalMs ?? 1500;
   const maxDurationMs = options?.maxDurationMs ?? 180_000;
   const onItemReady = options?.onItemReady;
+  const onItemFailed = options?.onItemFailed;
 
   await Promise.all(
     mediaItemIds.map((mediaItemId) =>
@@ -89,6 +109,7 @@ export const awaitMediaItemsReady = async (
         pollIntervalMs,
         maxDurationMs,
         onItemReady,
+        onItemFailed,
       ),
     ),
   );

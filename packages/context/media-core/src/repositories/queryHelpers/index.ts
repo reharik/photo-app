@@ -8,7 +8,7 @@ export * from './withActivePublicLink';
 export * from './withAlbumCoverItem';
 export * from './withAlbumItemCount';
 export * from './withAlbumOwnerName';
+export * from './withAttachViewerMembership';
 export * from './withCollectionInfo';
 export * from './withGrantBy';
 export * from './withViewableByMemberOrAlbumGrant';
-export * from './withViewerMembership';
