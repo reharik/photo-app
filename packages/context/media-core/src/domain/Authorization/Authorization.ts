@@ -1,10 +1,19 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  AuthorizationKind,
+  fail,
+  ok,
+  Operation,
+  WriteResult,
+} from '@packages/contracts';
 import { ActorId, EntityId } from '../../types/types';
 import { AuditRecord, Entity } from '../Entity';
+import type { PendingUserAuthorizationRecord } from './PendingUserAuthorization';
+import type { PublicLinkAuthorizationRecord } from './PublicLinkAuthorization';
+import type { UserAuthorizationRecord } from './UserAuthorization';
 
 export type AuthorizationProps = {
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
+  albumId: EntityId;
   grantedToUser?: EntityId;
   linkToken?: string;
   operations: Operation[];
@@ -16,8 +25,7 @@ export type AuthorizationProps = {
 
 export type AuthorizationRecord = {
   id: string;
-  mediaItemId?: string;
-  albumId?: string;
+  albumId: string;
   grantedToUser?: string;
   linkToken?: string;
   grantedBy: EntityId;
@@ -25,7 +33,26 @@ export type AuthorizationRecord = {
   label?: string;
   expiresAt?: Date;
   revokedAt?: Date;
+  kind: AuthorizationKind;
 } & AuditRecord;
+
+export type AnyAuthorizationRecord =
+  | UserAuthorizationRecord
+  | PendingUserAuthorizationRecord
+  | PublicLinkAuthorizationRecord;
+
+/**
+ * Record-side twin of `isAuthorizationKind` (see systemAuthorizationRepository). Same
+ * reason for existing: `kind` is a smart-enum item, so the literal sits at `kind.value`
+ * and TypeScript will not narrow a parent union through a nested path
+ * (microsoft/TypeScript#18758). The imports above are type-only, so this adds no runtime
+ * cycle with the three record modules that import `AuthorizationRecord` from here.
+ */
+export const isAuthorizationRecordKind = <V extends AnyAuthorizationRecord['kind']['value']>(
+  record: AnyAuthorizationRecord,
+  value: V,
+): record is Extract<AnyAuthorizationRecord, { kind: { value: V } }> =>
+  record.kind.value === value;
 
 export type CreateAuthorizationInput = {
   operations: Operation[];
@@ -33,8 +60,7 @@ export type CreateAuthorizationInput = {
   grantedBy: EntityId;
   label?: string;
   expiresAt?: Date;
-  mediaItemId?: EntityId;
-  albumId?: EntityId;
+  albumId: EntityId;
 };
 
 export class Authorization extends Entity<AuthorizationRecord> {
@@ -59,7 +85,6 @@ export class Authorization extends Entity<AuthorizationRecord> {
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
-      mediaItemId: input.mediaItemId,
       albumId: input.albumId,
     });
   }
@@ -116,10 +141,7 @@ export class Authorization extends Entity<AuthorizationRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
-  mediaItemId(): EntityId | undefined {
-    return this.props.mediaItemId;
-  }
-  albumId(): EntityId | undefined {
+  albumId(): EntityId {
     return this.props.albumId;
   }
   expiresAt(): Date | undefined {

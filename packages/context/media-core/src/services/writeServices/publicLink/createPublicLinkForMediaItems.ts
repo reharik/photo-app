@@ -44,7 +44,7 @@ export const build__CreatePublicLinkForMediaItems = ({
     const album = Album.create(
       {
         title: input.name ?? `Photos from ${input.viewerFirstName}`,
-        isPublicLinkAlbum: true,
+        isShadowAlbum: true,
       },
       input.viewerId,
     );

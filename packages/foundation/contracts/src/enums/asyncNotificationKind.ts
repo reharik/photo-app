@@ -11,7 +11,6 @@ export const NotificationCadence = enumeration<typeof cadenceInput>('Notificatio
 const input = {
   albumShared: { cadence: NotificationCadence.immediate, emailTemplate: 'albumShareInvite' },
   guestAlbumShared: { cadence: NotificationCadence.immediate, emailTemplate: 'albumGuestInvite' },
-  itemShared: { cadence: NotificationCadence.immediate, emailTemplate: 'itemShareInvite' },
   itemAdded: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
   commentPosted: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
   replyPosted: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },

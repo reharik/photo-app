@@ -547,6 +547,13 @@ const contractErrorInput = {
     area: ErrorArea.auth,
     retryable: false,
   },
+  noAuthorizationFoundForId: {
+    code: 'NO_AUTHORIZATION_FOUND_FOR_ID',
+    display: 'no authorization found for id',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

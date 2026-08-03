@@ -5,7 +5,7 @@ import { AlbumItemWithMediaRow, PagedList } from '../../services/readServices/ty
 import { CollectionInfo } from '../../types/types';
 import {
   toPagedResult,
-  withAlbumItemViewableByMemberOrItemGrant,
+  withAlbumItemViewableByMemberOrGrant,
   withAttachViewerMembership,
   withCollectionInfo,
 } from '../queryHelpers';
@@ -88,7 +88,7 @@ export const build__AlbumItemReadRepository = ({
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('album.id', albumId)
         .andWhere('mediaItem.status', MediaItemStatus.ready)
-        .modify(withAlbumItemViewableByMemberOrItemGrant(database, viewerId))
+        .modify(withAlbumItemViewableByMemberOrGrant(database, viewerId))
         .select(...albumItemWithMediaSelectColumns)
         .modify(withCollectionInfo(database, collectionInfo)),
       {

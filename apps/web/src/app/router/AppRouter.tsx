@@ -10,7 +10,6 @@ import { NotFoundScreen } from '../../screens/NotFoundScreen';
 import { PublicAccessScreen } from '../../screens/PublicAccessScreen';
 import { PublicMediaItemScreen } from '../../screens/PublicMediaItemScreen';
 import { SharedAlbumsListScreen } from '../../screens/SharedAlbumsListScreen';
-import { SharedWithMeScreen } from '../../screens/SharedWithMeScreen';
 import { PublicRouteShell } from '../PublicRouteShell';
 import { RequireViewer } from '../RequireViewer';
 
@@ -43,8 +42,13 @@ export const AppRouter = () => {
           <Route path="/media/:mediaId" element={<MediaItemScreen />} />
           <Route path="/albums" element={<AlbumsListScreen />} />
           <Route path="/albums/:albumId" element={<AlbumScreen />} />
-          <Route path="/shared-with-me" element={<Navigate to="/shared/items" replace />} />
-          <Route path="/shared/items" element={<SharedWithMeScreen />} />
+          {/*
+            The shared-items surface is gone: sharing loose media items now creates a
+            shadow album, so everything shared with you is an album. Both legacy paths
+            redirect so old links, bookmarks and notification deep-links don't 404.
+          */}
+          <Route path="/shared-with-me" element={<Navigate to="/shared/albums" replace />} />
+          <Route path="/shared/items" element={<Navigate to="/shared/albums" replace />} />
           <Route path="/shared/albums" element={<SharedAlbumsListScreen />} />
         </Route>
       </Route>

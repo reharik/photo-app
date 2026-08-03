@@ -54,6 +54,7 @@ const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository 
   claimNextAvailableJob: async () => undefined,
   markSucceeded: async () => {},
   markFailed: async () => {},
+  markPendingRetry: async () => {},
 });
 
 const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobRepository & {
@@ -68,6 +69,7 @@ const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobReposit
     claimNextAvailableJob: async () => undefined,
     markSucceeded: async () => {},
     markFailed: async () => {},
+    markPendingRetry: async () => {},
   };
 };
 

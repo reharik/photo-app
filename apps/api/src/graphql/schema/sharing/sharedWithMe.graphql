@@ -1,12 +1,3 @@
-type SharedWithMeMediaItemType implements Node {
-  id: ID!
-  sharedAt: DateTime!
-  sharedBy: ID!
-  mediaItem: MediaItem!
-  sharedByFirstName: String!
-  sharedByLastName: String!
-}
-
 type SharedWithMeMediaAlbumType implements Node {
   id: ID!
   sharedAt: DateTime!
@@ -14,29 +5,6 @@ type SharedWithMeMediaAlbumType implements Node {
   sharedByFirstName: String!
   sharedByLastName: String!
   album: Album!
-}
-
-input SharedWithMeMediaItemCollectionInput {
-  pageInfo: PageInfoInput!
-  sortBy: SharedWithMeMediaItemSortBy!
-  sortDir: SortDir!
-}
-
-type SharedWithMeMediaItemCollectionPayload {
-  nodes: [SharedWithMeMediaItemType!]!
-  totalCount: Int!
-  pageInfo: PageInfo!
-}
-
-enum SharedWithMeMediaItemSortBy {
-  SHARED_AT
-    @enumMeta(
-      props: [
-        { name: "column", value: "created_at" }
-        { name: "table", value: "access_grant" }
-        { name: "nullsLast", value: "true" }
-      ]
-    )
 }
 
 input SharedWithMeAlbumCollectionInput {

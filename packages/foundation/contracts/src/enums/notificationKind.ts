@@ -15,7 +15,6 @@ const input = [
   'replyPosted',
   'albumShared',
   'itemAdded',
-  'itemShared',
   'reactionAdded',
   'guestAlbumShared',
 ] as const;

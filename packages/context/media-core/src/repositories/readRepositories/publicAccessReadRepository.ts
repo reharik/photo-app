@@ -42,19 +42,4 @@ export const build__PublicAccessReadRepository = ({
     }
     return publicAccess;
   },
-  canAccessMediaWithLink: async ({ token, mediaItemId }) => {
-    const q = database('accessGrant')
-      .join('grant', 'accessGrant.id', 'grant.accessGrantId')
-      .where('accessGrant.linkToken', token)
-      .whereNull('accessGrant.revokedAt')
-      .where((b) =>
-        b
-          .whereNull('accessGrant.expiresAt')
-          .orWhere('accessGrant.expiresAt', '>', database.fn.now()),
-      )
-      .where('grant.mediaItemId', mediaItemId);
-
-    const row = await q.first<boolean>();
-    return row !== undefined;
-  },
 });

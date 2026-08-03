@@ -80,7 +80,7 @@ const selectionToolbarIn = (
 
 /**
  * Hovers a gallery tile and toggles its corner checkbox on if not already selected.
- * Works on any screen that renders `media-tile-{id}` (library, albums, shared-with-me,
+ * Works on any screen that renders `media-tile-{id}` (library, albums, shared albums,
  * public album, media picker, album list, etc.).
  */
 export const selectMediaTile = async (

@@ -1,4 +1,4 @@
-import { Operation } from '@packages/contracts';
+import { AuthorizationKind, Operation } from '@packages/contracts';
 import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 
 export type PublicLinkWithAuthorizationRaw = {
@@ -16,7 +16,7 @@ export type PublicLinkWithAuthorizationRaw = {
 
 export type AuthorizationRaw = {
   authorizationId: string;
-  authorizationAlbumId?: string;
+  authorizationAlbumId: string;
   authorizationGrantedToUser?: string;
   authorizationGrantedBy: string;
   authorizationOperations: Operation[];
@@ -27,6 +27,7 @@ export type AuthorizationRaw = {
   authorizationUpdatedAt: Date;
   authorizationCreatedBy: string;
   authorizationUpdatedBy: string;
+  authorizationKind: AuthorizationKind;
 };
 
 export const authorizationSelectColumns = [
@@ -60,5 +61,6 @@ export const authorizationRawToAuthorizationRecord = (
     updatedAt: row.authorizationUpdatedAt,
     createdBy: row.authorizationCreatedBy,
     updatedBy: row.authorizationUpdatedBy,
+    kind: row.authorizationKind,
   };
 };

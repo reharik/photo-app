@@ -1,17 +1,15 @@
-import { AlbumMemberRole, Operation } from '@packages/contracts';
+import { AlbumMemberRole, assertNever, AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
 import type { AlbumItemRecord } from '../../domain/Album/AlbumItem';
 import type { AlbumMemberRecord } from '../../domain/Album/AlbumMember';
-import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 import {
-  isPublicLinkAuthRecord,
-  PublicLinkAuthorizationRecord,
-} from '../../domain/Authorization/PublicLinkAuthorization';
-import {
-  isUserAuthRecord,
-  UserAuthorizationRecord,
-} from '../../domain/Authorization/UserAuthorization';
+  AnyAuthorizationRecord,
+  isAuthorizationRecordKind,
+} from '../../domain/Authorization/Authorization';
+import { PendingUserAuthorizationRecord } from '../../domain/Authorization/PendingUserAuthorization';
+import { PublicLinkAuthorizationRecord } from '../../domain/Authorization/PublicLinkAuthorization';
+import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types/types';
@@ -46,26 +44,38 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
 
     const authorizationRows = await withEnumRevival(
       uow
-        .db()<AuthorizationRecord>('access_grant')
+        .db()<AnyAuthorizationRecord>('access_grant')
         .where({ albumId: id })
         .orderBy('createdAt', 'asc'),
-      { operation: Operation },
+      { operation: Operation, kind: AuthorizationKind },
       { strict: true },
     );
 
     const userAuthorizationRows: UserAuthorizationRecord[] = [];
     const publicLinkRows: PublicLinkAuthorizationRecord[] = [];
+    const pendingUserAuthorizationRows: PendingUserAuthorizationRecord[] = [];
 
+    // See isAuthorizationRecordKind for why a predicate and not `kind.value ===`. The
+    // `const _n: never` alarm is the point: a fourth kind stops compiling here instead of
+    // being partitioned into nothing, which is what the old cast-per-branch version did.
     for (const row of authorizationRows) {
-      if (isUserAuthRecord(row)) userAuthorizationRows.push(row);
-      else if (isPublicLinkAuthRecord(row)) publicLinkRows.push(row);
-      else throw new Error(`Authorization ${row.id} violates grantedToUser XOR linkToken`);
+      if (isAuthorizationRecordKind(row, 'USER')) {
+        userAuthorizationRows.push(row);
+      } else if (isAuthorizationRecordKind(row, 'PENDING')) {
+        pendingUserAuthorizationRows.push(row);
+      } else if (isAuthorizationRecordKind(row, 'PUBLIC')) {
+        publicLinkRows.push(row);
+      } else {
+        const _n: never = row;
+        return assertNever(_n);
+      }
     }
 
     return Album.rehydrate(albumRow, {
       items: itemRows,
       members: memberRows,
       authorizations: userAuthorizationRows,
+      pendingUserAuthorizations: pendingUserAuthorizationRows,
       publicLinks: publicLinkRows,
     });
   };

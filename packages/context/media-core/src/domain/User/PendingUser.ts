@@ -1,7 +1,6 @@
 import { ContractError, fail, ok, UserStatus, WriteResult } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
 import { CreateUserInput, UserRecord } from './types';
 
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };
@@ -14,15 +13,12 @@ export type PendingUserProps = {
   passwordHash?: string;
   userStatus: UserStatus;
 };
-export type PendingUserChildRecords = {
-  authorizations: UserAuthorizationRecord[];
-};
 
 export class PendingUser extends AggregateRoot<UserRecord> {
   protected props: PendingUserProps;
   public readonly kind = 'pending' as const;
 
-  #authorizations: UserAuthorization[] = [];
+  #authorizationRefs: { authorizationId: EntityId; albumId: EntityId }[] = [];
 
   private constructor(actorId: ActorId, props: PendingUserProps, id?: EntityId) {
     super(id, actorId, 'user');
@@ -33,12 +29,13 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     return new PendingUser(actorId, { ...input, userStatus: UserStatus.pending });
   }
 
-  static rehydrate(record: UserRecord, childRecords: PendingUserChildRecords): PendingUser {
+  static rehydrate(
+    record: UserRecord,
+    authorizationRefs: { authorizationId: EntityId; albumId: EntityId }[],
+  ): PendingUser {
     const pendingUser = new PendingUser(record.createdBy, record, record.id);
     pendingUser.rehydrateAudit(record);
-    pendingUser.#authorizations = childRecords.authorizations.map((r) =>
-      UserAuthorization.rehydrate(r),
-    );
+    pendingUser.#authorizationRefs = authorizationRefs;
 
     return pendingUser;
   }
@@ -63,8 +60,8 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     this.props.passwordHash = passwordHash;
     this.props.userStatus = UserStatus.active;
 
-    const authorizationIds = this.#authorizations.map((x) => x.id());
-    this.recordEvent('pendingUserActivated', { userId: this.id(), authorizationIds }, actorId);
+    // not sure if I should do this here or in have the album.activatePendingUserAuthorization do it
+    // this.recordEvent('pendingUserActivated', { userId: this.id(), authorizationIds }, actorId);
     this.touch(actorId);
     return ok(undefined);
   }
@@ -74,5 +71,9 @@ export class PendingUser extends AggregateRoot<UserRecord> {
 
   userStatus(): UserStatus {
     return this.props.userStatus;
+  }
+
+  authorizationRefs(): { authorizationId: EntityId; albumId: EntityId }[] {
+    return this.#authorizationRefs;
   }
 }

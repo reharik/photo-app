@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   AlbumMemberRole,
   AppErrorCollection,
+  ContractError,
   MediaAssetKind,
   MediaItemStatus,
 } from '@packages/contracts';
@@ -293,8 +294,8 @@ describe('DeleteAlbumItemsFromAlbum', () => {
     await resetIntegrationTestDb(database, undefined, () => integrationTestMediaStorage.clear());
   });
 
-  describe('When the actor is only a viewer member', () => {
-    it('should fail with member not allowed to delete item', async () => {
+  describe('When a member without removeItems targets an item they do not own', () => {
+    it('should fail with can only remove owned items', async () => {
       const albumResult = await executeGraphQL<{
         createAlbum: WriteMutationResponse<{ albumId: string }>;
       }>({
@@ -310,13 +311,17 @@ describe('DeleteAlbumItemsFromAlbum', () => {
 
       await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.contributor);
 
+      /**
+       * Owned by the album owner, NOT by the contributor doing the delete: a contributor
+       * lacks removeItems, so the ownership escape hatch must not apply here.
+       */
       const mediaItemId = await createUploadedMediaItemViaGraphQL({
         executeGraphQL,
         database,
         integrationTestMediaStorage,
+        context: loggedInViewerA,
       });
 
-      /** Viewers cannot add items; seed album_item as if an admin had added the media. */
       await insertAlbumItem(database, albumId, mediaItemId);
       const seededItem = await database('albumItem')
         .where({ albumId, mediaItemId })
@@ -335,8 +340,54 @@ describe('DeleteAlbumItemsFromAlbum', () => {
       expect(del.json.errors).toBeUndefined();
       expect(del.json.data?.DeleteAlbumItemsFromAlbum?.data).toBeFalsy();
       expect(del.json.data?.DeleteAlbumItemsFromAlbum?.errors[0]?.code).toBe(
-        AppErrorCollection.album.MemberNotAllowedToRemoveItems.code,
+        ContractError.CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage.code,
       );
+    });
+  });
+
+  describe('When a member without removeItems targets an item they own', () => {
+    it('should allow removing their own item', async () => {
+      const albumResult = await executeGraphQL<{
+        createAlbum: WriteMutationResponse<{ albumId: string }>;
+      }>({
+        query: createAlbumMutation,
+        variables: { title: `del-item-own-${randomUUID()}` },
+        context: loggedInViewerA,
+      });
+      const albumId = albumResult.json.data?.createAlbum.data?.albumId;
+      expect(albumId).toBeTruthy();
+      if (!albumId) {
+        return;
+      }
+
+      await insertAlbumMember(database, albumId, TEST_VIEWER_1_ID, AlbumMemberRole.contributor);
+
+      /** Owned by the contributor themselves — the ownership escape hatch applies. */
+      const mediaItemId = await createUploadedMediaItemViaGraphQL({
+        executeGraphQL,
+        database,
+        integrationTestMediaStorage,
+        context: loggedInViewer1,
+      });
+
+      await insertAlbumItem(database, albumId, mediaItemId);
+      const seededItem = await database('albumItem')
+        .where({ albumId, mediaItemId })
+        .select('id')
+        .first();
+      const albumItemId = String(seededItem?.id);
+      expect(albumItemId).toBeTruthy();
+
+      const del = await executeGraphQL<{
+        DeleteAlbumItemsFromAlbum: WriteMutationResponse<unknown>;
+      }>({
+        query: deleteAlbumItemsFromAlbumMutation,
+        variables: { input: { albumId, albumItemIds: [albumItemId] } },
+        context: loggedInViewer1,
+      });
+      expect(del.json.errors).toBeUndefined();
+      expect(del.json.data?.DeleteAlbumItemsFromAlbum?.errors).toEqual([]);
+      expect(del.json.data?.DeleteAlbumItemsFromAlbum?.data).toBeTruthy();
     });
   });
 

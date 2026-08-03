@@ -6,13 +6,6 @@ const EDIT_GRACE_WINDOW_MS = 12000;
 
 const mediaItemResolvers: Resolvers = {
   MediaItem: {
-    authorizations: authenticatedReadResolver(async (parent, _args, ctx) => {
-      return ctx.readServices.viewerAuthorizationsReadService.listGrantedAuthorizationsForOwnedMediaItem(
-        {
-          mediaItemId: parent.id,
-        },
-      );
-    }),
     comments: authenticatedReadResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;
       const comments = await ctx.agnosticReadServices.commentReadService.listComments({

@@ -1,11 +1,13 @@
 import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
-import { SystemAuthorizationRepository } from '../../../repositories/systemRepositories/systemAuthorizationRepository';
+import {
+  isAuthorizationKind,
+  SystemAuthorizationRepository,
+} from '../../../repositories/systemRepositories/systemAuthorizationRepository';
 import {
   SystemGrantRepository,
   UpsertGrantInput,
 } from '../../../repositories/systemRepositories/systemGrantRepository';
 import { DomainEventHandler } from '../../domainEvents/eventPublisher';
-import { isUserAuthRecord } from '../UserAuthorization';
 import { ResolveAuthorizations } from './resolveAuthorizations';
 
 type AuthorizationReconciliationDeps = {
@@ -21,22 +23,24 @@ export const build__AuthorizationReconciliation = ({
 }: AuthorizationReconciliationDeps): DomainEventHandler<
   | 'albumSharedWithPublicLink'
   | 'albumSharedWithUser'
-  | 'authorizationExpired'
-  | 'authorizationRevoked'
+  | 'albumSharedWithPendingUser'
   | 'mediaItemAddedToAlbum'
   | 'mediaItemRemovedFromAlbum'
-  | 'mediaItemsSharedWithUser'
   | 'pendingUserActivated'
 > => ({
   name: 'AuthorizationReconciliation',
+  // MATERIALIZATION ONLY — every kind below belongs to a LIVE authorization and grows or
+  // re-syncs its `grant` rows. The revoke/expire kinds are deliberately NOT handled here:
+  // losing a teardown on the best-effort post-commit bus is a security failure and is not
+  // self-healing (this handler only ever visits authorizations that are still active, so
+  // nothing revisits a revoked one). Teardown belongs in the revoking service's
+  // transaction — see the note on Album.revokeAuthorization.
   handles: [
     'albumSharedWithPublicLink',
     'albumSharedWithUser',
-    'authorizationExpired',
-    'authorizationRevoked',
+    'albumSharedWithPendingUser',
     'mediaItemAddedToAlbum',
     'mediaItemRemovedFromAlbum',
-    'mediaItemsSharedWithUser',
     'pendingUserActivated',
   ],
   processor: async (event) => {
@@ -44,11 +48,16 @@ export const build__AuthorizationReconciliation = ({
     const pruningPromises = [];
     const grants: UpsertGrantInput[] = [];
     for (const { authorization, mediaItemIds } of resolved.authorizationMap.values()) {
-      const isUserAuth = isUserAuthRecord(authorization);
+      // Only a USER authorization names its grantee on the materialized grant. PENDING rows
+      // also carry grantedToUser (a shadow user), so the old nullness predicate only got
+      // this right via its second clause (linkToken == null) — the kind says it outright.
+      const isUserAuth = isAuthorizationKind(authorization, 'USER');
       pruningPromises.push(
         systemGrantRepository.pruneGrantsForAuthorization(authorization.id, mediaItemIds),
       );
-
+      // PublicLink/PendingUser Authentications don't add a token to the grant, it does
+      // a look up of the Authentication that has the token on it. UserAuthentications are
+      // more
       grants.push(
         ...mediaItemIds.map((mediaItemId) => ({
           id: crypto.randomUUID(),

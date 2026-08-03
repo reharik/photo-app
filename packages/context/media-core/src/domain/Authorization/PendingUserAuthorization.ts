@@ -6,42 +6,52 @@ import {
   Operation,
   WriteResult,
 } from '@packages/contracts';
+import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
+import { PublicLinkAuthorization } from './PublicLinkAuthorization';
+import { UserAuthorization } from './UserAuthorization';
 
-export type UserAuthorizationProps = Omit<
+export type PendingUserAuthorizationProps = Omit<
   AuthorizationProps,
   'linkToken' | 'grantedToUser' | 'kind'
 > & {
   grantedToUser: EntityId;
-  linkToken: undefined;
-  kind: typeof AuthorizationKind.user;
+  linkToken: string;
+  kind: typeof AuthorizationKind.pending;
 };
 
-export type UserAuthorizationRecord = Omit<
+export type PendingUserAuthorizationRecord = Omit<
   AuthorizationRecord,
   'linkToken' | 'grantedToUser' | 'kind'
 > & {
   grantedToUser: EntityId;
-  linkToken: undefined;
-  kind: typeof AuthorizationKind.user;
+  linkToken: string;
+  kind: typeof AuthorizationKind.pending;
 };
 
-export type CreateUserAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
+export type CreatePendingUserAuthorizationInput = Omit<
+  CreateAuthorizationInput,
+  'grantedToUser'
+> & {
   grantedToUser: EntityId;
 };
 
-export class UserAuthorization extends Entity<UserAuthorizationRecord> {
-  protected props: UserAuthorizationProps;
+export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRecord> {
+  protected props: PendingUserAuthorizationProps;
 
-  private constructor(actorId: ActorId, props: UserAuthorizationProps, id?: EntityId) {
+  private constructor(actorId: ActorId, props: PendingUserAuthorizationProps, id?: EntityId) {
     super(id, actorId, 'access_grant');
     this.props = props;
   }
 
-  static create(input: CreateUserAuthorizationInput, actorId: ActorId): UserAuthorization {
-    return new UserAuthorization(actorId, {
+  static create(
+    input: CreatePendingUserAuthorizationInput,
+    actorId: ActorId,
+  ): PendingUserAuthorization {
+    const linkToken = crypto.randomBytes(16).toString('hex');
+    return new PendingUserAuthorization(actorId, {
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: actorId,
@@ -51,17 +61,17 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
 
       operations: [Operation.download, Operation.comment],
       grantedToUser: input.grantedToUser,
+      linkToken,
       grantedBy: actorId,
       label: input.label,
       expiresAt: input.expiresAt,
       albumId: input.albumId,
-      linkToken: undefined,
-      kind: AuthorizationKind.user,
+      kind: AuthorizationKind.pending,
     });
   }
 
-  static rehydrate(record: UserAuthorizationRecord): UserAuthorization {
-    const asset = new UserAuthorization(record.createdBy, record, record.id);
+  static rehydrate(record: PendingUserAuthorizationRecord): PendingUserAuthorization {
+    const asset = new PendingUserAuthorization(record.createdBy, record, record.id);
     asset.rehydrateAudit(record);
     return asset;
   }
@@ -109,7 +119,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     return ok(undefined);
   }
 
-  albumId(): EntityId | undefined {
+  albumId(): EntityId {
     return this.props.albumId;
   }
   expiresAt(): Date | undefined {
@@ -120,5 +130,24 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
   }
   createdAt(): Date | undefined {
     return this.props.createdAt;
+  }
+  convertAndCreate(actorId: EntityId): {
+    userAuthorization: UserAuthorization;
+    publicLinkAuthorization: PublicLinkAuthorization;
+  } {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { linkToken, kind: kindA, ...uaProps } = this.props;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { grantedToUser, kind: kindB, ...plaProps } = this.props;
+    const publicLinkAuthProps = {
+      ...plaProps,
+      ...this.exportAudit(),
+      grantedToUser: null,
+      id: this.id(),
+      kind: AuthorizationKind.public,
+    };
+    const ua = UserAuthorization.create(uaProps, actorId);
+    const pla = PublicLinkAuthorization.fromConverted(publicLinkAuthProps, actorId);
+    return { userAuthorization: ua, publicLinkAuthorization: pla };
   }
 }

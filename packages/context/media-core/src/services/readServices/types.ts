@@ -9,7 +9,6 @@ import {
   Operation,
   ReactionEmoji,
   SharedWithMeAlbumSortBy,
-  SharedWithMeMediaItemSortBy,
   SortDir,
 } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../types';
@@ -102,11 +101,6 @@ export interface SharedWithMeAlbumCollectionInfo extends CollectionInfo<SharedWi
   sortBy: SharedWithMeAlbumSortBy;
   sortDir: SortDir;
 }
-export interface SharedWithMeMediaItemCollectionInfo extends CollectionInfo<SharedWithMeMediaItemSortBy> {
-  pageInfo: PageInfo;
-  sortBy: SharedWithMeMediaItemSortBy;
-  sortDir: SortDir;
-}
 
 export type AuthorizationProjection = {
   id: EntityId;
@@ -116,15 +110,6 @@ export type AuthorizationProjection = {
   expiresAt?: Date;
   revokedAt?: Date;
   createdAt?: Date;
-};
-
-export type SharedWithMeItemProjection = {
-  id: EntityId;
-  sharedAt: Date;
-  sharedBy: EntityId;
-  sharedByFirstName: string;
-  sharedByLastName: string;
-  mediaItem: MediaItemProjection;
 };
 
 export type SharedWithMeAlbumProjection = {

@@ -1,22 +1,6 @@
 import { ContractError, Operation } from '@packages/contracts';
-import {
-  MediaItem,
-  MediaItemsSharedWithUser,
-  PendingUser,
-  PublicLinkSharedWithUser,
-  User,
-} from '../../../domain';
-import { UserAuthorization } from '../../../domain/Authorization/UserAuthorization';
+import { PendingUser, User } from '../../../domain';
 import { EntityId } from '../../../types/types';
-
-export type GrantEmailDTO = {
-  template: string;
-  inviteeEmail: string;
-  inviterName: string;
-  title: string;
-  tokenOrUserId?: string;
-  isPublicLink?: boolean;
-};
 
 export type GrantUserAuthorizationResult = {
   invitedUsers: (User | PendingUser)[];
@@ -33,14 +17,4 @@ export type GrantUserAuthorizationCommand = {
   grantedToHandles: string[];
   label?: string;
   expiresAt?: Date;
-};
-
-export type InviteUsersForMediaItemsResult = {
-  // grants: { mediaItem: MediaItem; authorization: Authorization }[];
-  // emailDTOs: GrantEmailDTO[];
-  errors: { user: PendingUser | User; error: ContractError }[]; // user-facing: zero-success users
-  errorDetail: { user: PendingUser | User; mediaItem: MediaItem; error: ContractError }[]; // log only
-  // addedInvitees: User[];
-  serviceEvents: (MediaItemsSharedWithUser | PublicLinkSharedWithUser)[];
-  authorizations: UserAuthorization[];
 };

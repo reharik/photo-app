@@ -31,7 +31,7 @@ export const build__NotificationPublicLinkStrategy = ({
       recipients,
       actorId: event.actorId,
       containerType: NotificationContainerType.album,
-      containerId: publicLinkAuthorization.target.albumId,
+      containerId: publicLinkAuthorization.albumId,
       subjectType: NotificationSubjectType.authorization,
       subjectId: publicLinkAuthorization.id,
       kind: NotificationKind.guestAlbumShared,

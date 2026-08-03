@@ -30,10 +30,16 @@ export const createExecuteGraphQL = ({ yogaApp, config }: ExecuteGraphQLDeps) =>
     query,
     variables,
     context,
+    headers,
   }: {
     query: string;
     variables?: Record<string, unknown>;
     context?: Record<string, unknown>;
+    /**
+     * Extra request headers. Public-link tests need `X-Access-Mode: public` — the
+     * context factory keys off it to enter public mode (see createGraphQLContext).
+     */
+    headers?: Record<string, string>;
   }): Promise<{ response: Response; json: GraphQLResponse<T> }> => {
     const response = await yogaApp.fetch(
       graphqlHttpUrl(config),
@@ -41,6 +47,7 @@ export const createExecuteGraphQL = ({ yogaApp, config }: ExecuteGraphQLDeps) =>
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...headers,
         },
         body: JSON.stringify({
           query,

@@ -12,7 +12,7 @@ import { ErrorCategory } from './ContractError';
 import { Operation } from './operation';
 import { ReactionEmoji } from './reactionEmojis';
 
-const activitySurfaceInput = ['albums', 'recent', 'sharedAlbums', 'sharedItems'] as const;
+const activitySurfaceInput = ['albums', 'recent', 'sharedAlbums'] as const;
 const albumItemSortByInput = {
   createdAt: { column: 'created_at', table: 'album_item', nullsLast: 'false' },
   orderIndex: { column: 'order_index', table: 'album_item', nullsLast: 'false' },
@@ -34,7 +34,6 @@ const inAppNotificationTypeInput = [
   'albumShared',
   'commentPosted',
   'itemAdded',
-  'itemShared',
   'replyPosted',
 ] as const;
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
@@ -57,9 +56,6 @@ const mediaKindInput = ['photo', 'video'] as const;
 const sharedWithMeAlbumSortByInput = {
   sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
 } as const;
-const sharedWithMeMediaItemSortByInput = {
-  sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
-} as const;
 const sortDirInput = ['asc', 'desc'] as const;
 
 export type ActivitySurface = Enumeration<typeof ActivitySurface>;
@@ -73,7 +69,6 @@ export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
 export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
 export type MediaKind = Enumeration<typeof MediaKind>;
 export type SharedWithMeAlbumSortBy = Enumeration<typeof SharedWithMeAlbumSortBy>;
-export type SharedWithMeMediaItemSortBy = Enumeration<typeof SharedWithMeMediaItemSortBy>;
 export type SortDir = Enumeration<typeof SortDir>;
 
 export const ActivitySurface = enumeration<typeof activitySurfaceInput>('ActivitySurface', {
@@ -120,10 +115,6 @@ export const SharedWithMeAlbumSortBy = enumeration<typeof sharedWithMeAlbumSortB
   'SharedWithMeAlbumSortBy',
   { input: sharedWithMeAlbumSortByInput, serializeAs: 'value' },
 );
-export const SharedWithMeMediaItemSortBy = enumeration<typeof sharedWithMeMediaItemSortByInput>(
-  'SharedWithMeMediaItemSortBy',
-  { input: sharedWithMeMediaItemSortByInput, serializeAs: 'value' },
-);
 export const SortDir = enumeration<typeof sortDirInput>('SortDir', {
   input: sortDirInput,
   serializeAs: 'value',
@@ -145,6 +136,5 @@ export const enumRegistry = {
   Operation,
   ReactionEmoji,
   SharedWithMeAlbumSortBy,
-  SharedWithMeMediaItemSortBy,
   SortDir,
 } as const;

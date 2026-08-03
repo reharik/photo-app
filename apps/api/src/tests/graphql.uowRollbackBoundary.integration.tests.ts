@@ -133,8 +133,10 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
   const persistedRowCounts = async () => {
     const [accessGrants, publicAlbums, shadowUsers, shareContacts] = await Promise.all([
       database('accessGrant').count<{ count: string }[]>('* as count').first(),
+      // Identified by the flag, not a fixed title: the generated shadow album's title is
+      // derived from the sharer's first name ("Photos from {firstName}").
       database('album')
-        .where({ title: 'Public Link Album' })
+        .where({ isShadowAlbum: true })
         .count<{ count: string }[]>('* as count')
         .first(),
       // Shadow (PENDING) users are the non-seeded users this op mints for a non-user handle.
@@ -158,13 +160,13 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
       const item2 = await createOwnedMediaItem();
       const nonUserEmail = `shadow-${randomUUID()}@example.test`;
 
-      // Recipients that WRITE before the failure:
-      //   VIEWER_A_EMAIL  -> valid user: item-scoped access_grant rows + share_contact.
-      //   nonUserEmail    -> non-user:   a PENDING shadow user, a "Public Link Album",
-      //                                  and a tokenized public-link access_grant.
-      //   VIEWER_1_EMAIL  -> self (the owner): the per-item grant that FAILS, forcing the
-      //                                  service to return fail(PartialShareFailure) AFTER
-      //                                  everything above was already written to the trx.
+      // Recipients that WRITE before the failure (all hung off the generated shadow album):
+      //   VIEWER_A_EMAIL  -> valid user: an album-scoped access_grant + share_contact.
+      //   nonUserEmail    -> non-user:   a PENDING shadow user and a tokenized public-link
+      //                                  access_grant on that album.
+      //   VIEWER_1_EMAIL  -> self (the owner): the grant that FAILS, forcing the service to
+      //                                  return fail(PartialShareFailure) AFTER everything
+      //                                  above was already written to the trx.
       const res = await share({
         mediaItemIds: [item1, item2],
         grantedToHandles: [VIEWER_A_EMAIL, nonUserEmail, VIEWER_1_EMAIL],
@@ -196,11 +198,16 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
       expect(res.json.errors).toBeUndefined();
       expect(res.json.data?.grantUserAuthorizationsForMediaItems?.errors ?? []).toEqual([]);
 
-      // The item-scoped grant for Viewer A survived the commit...
-      const itemGrants = await database('accessGrant')
-        .where({ grantedToUser: TEST_VIEWER_A_ID, mediaItemId: item })
+      // The album-scoped grant for Viewer A, on the shadow album built from the shared
+      // item, survived the commit...
+      const shadowAlbum = await database('album')
+        .where({ isShadowAlbum: true })
+        .first<{ id: string }>();
+      expect(shadowAlbum).toBeDefined();
+      const albumGrants = await database('accessGrant')
+        .where({ grantedToUser: TEST_VIEWER_A_ID, albumId: shadowAlbum.id })
         .whereNull('linkToken');
-      expect(itemGrants).toHaveLength(1);
+      expect(albumGrants).toHaveLength(1);
 
       // ...and so did the share_contact projection (proves commit, not rollback).
       const counts = await persistedRowCounts();

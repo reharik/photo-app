@@ -48,7 +48,6 @@ enum EntityType {
 enum ActivitySurface {
   RECENT
   ALBUMS
-  SHARED_ITEMS
   SHARED_ALBUMS
 }
 """

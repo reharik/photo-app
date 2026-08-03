@@ -11,7 +11,11 @@ import {
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { AlbumItemCollectionInfo, AlbumReadRepository } from '@packages/media-core';
+import type {
+  AlbumItemCollectionInfo,
+  AlbumItemReadRepository,
+  AlbumReadRepository,
+} from '@packages/media-core';
 import { CollectionInfo } from '@packages/media-core';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
@@ -25,6 +29,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
   let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let albumReadRepository: AlbumReadRepository;
+  let albumItemReadRepository: AlbumItemReadRepository;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
   const insertAlbumWithMember = async (params: {
@@ -128,6 +133,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
     container = setup.container;
     database = container.resolve('database');
     albumReadRepository = container.resolve('albumReadRepository');
+    albumItemReadRepository = container.resolve('albumItemReadRepository');
     integrationTestMediaStorage = setup.integrationTestMediaStorage;
   });
 
@@ -277,7 +283,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         updatedAt: tLate,
       });
 
-      const firstWindow = await albumReadRepository.getViewableAlbumItemsForViewer({
+      const firstWindow = await albumItemReadRepository.getViewableAlbumItemsForViewer({
         albumId,
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({
@@ -289,7 +295,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
 
       expect(firstWindow.nodes.map((r) => r.id)).toEqual([item1, item2]);
 
-      const secondWindow = await albumReadRepository.getViewableAlbumItemsForViewer({
+      const secondWindow = await albumItemReadRepository.getViewableAlbumItemsForViewer({
         albumId,
         viewerId,
         collectionInfo: buildAlbumItemCollectionInfo({

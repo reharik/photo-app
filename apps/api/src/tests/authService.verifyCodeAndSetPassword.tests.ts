@@ -13,10 +13,11 @@
 import assert from 'node:assert';
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ContractError, fail, ok } from '@packages/contracts';
+import { ContractError, fail, ok, type WriteResult } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import type {
   EmailVerificationRepository,
+  PendingUser,
   SystemEmailVerificationRepository,
   UnitOfWork,
   UserRepository,
@@ -53,7 +54,17 @@ type Harness = {
   getValidVerification: jest.Mock<EmailVerificationRepository['getValidVerification']>;
   completeConsumption: jest.Mock<EmailVerificationRepository['completeConsumption']>;
   bumpValidationAttempts: jest.Mock<SystemEmailVerificationRepository['bumpValidationAttempts']>;
+  activatePendingUser: jest.Mock<
+    (input: ActivateInput, user: PendingUser, actorId: string) => Promise<WriteResult<void>>
+  >;
   service: ReturnType<typeof build__AuthService>;
+};
+
+type ActivateInput = {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  passwordHash: string;
 };
 
 const codeHashFor = (code: string): string =>
@@ -94,10 +105,20 @@ const makeHarness = (): Harness => {
     return 1;
   });
 
+  // Stands in for the real write service, which activates the user and then re-materializes
+  // their album authorizations. Delegating to user.activate() keeps every oracle below
+  // pointed at the domain result (E4 mocks activate() to fail) while leaving the album work
+  // — which needs an AlbumRepository — out of a unit test about uow ordering.
+  const activatePendingUser = jest.fn(
+    async (input: ActivateInput, user: PendingUser, actorId: string) =>
+      user.activate(input as Parameters<PendingUser['activate']>[0], actorId),
+  );
+
   const service = build__AuthService({
     logger,
     config,
     notificationService: { notify },
+    activatePendingUserWriteService: activatePendingUser,
     userRepository: { getUserByEmail, save } as unknown as UserRepository,
     emailVerificationRepository: {
       getValidVerification,
@@ -118,6 +139,7 @@ const makeHarness = (): Harness => {
     getValidVerification,
     completeConsumption,
     bumpValidationAttempts,
+    activatePendingUser,
     service,
   };
 };

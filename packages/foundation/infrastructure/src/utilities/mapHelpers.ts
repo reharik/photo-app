@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StandardEnumItem } from '@reharik/smart-enum';
 
 /**
@@ -40,15 +45,16 @@ interface HasId {
  * indexBy(rows, r => `${r.albumId}:${r.userTagId}`);  // Map<compositeKey, Row>
  */
 export function indexBy<T extends HasId>(items: T[]): Map<string, T>;
+export function indexBy<T extends { id(): string }>(items: T[]): Map<string, T>;
 export function indexBy<T, K>(items: T[], key: (item: T) => K): Map<K, T>;
 export function indexBy<T, K, V>(items: T[], key: (item: T) => K, value: (item: T) => V): Map<K, V>;
-export function indexBy<T, K, V>(
-  items: T[],
-  key?: (item: T) => K,
-  value?: (item: T) => V,
-): Map<string | K, V | T> {
-  const keyFn = key ?? ((item: T) => (item as unknown as HasId).id);
-  const valFn = value ?? ((item: T) => item);
+export function indexBy(
+  items: any[],
+  key?: (item: any) => any,
+  value?: (item: any) => any,
+): Map<any, any> {
+  const keyFn = key ?? ((item: any) => (typeof item.id === 'function' ? item.id() : item.id));
+  const valFn = value ?? ((item: any) => item);
   return new Map(items.map((item) => [keyFn(item), valFn(item)]));
 }
 
@@ -68,10 +74,11 @@ export function indexBy<T, K, V>(
  * indexByUnique([{ id: 'x' }, { id: 'x' }]); // throws: "indexByUnique: duplicate key x"
  */
 export function indexByUnique<T extends HasId>(items: T[]): Map<string, T>;
+export function indexByUnique<T extends { id(): string }>(items: T[]): Map<string, T>;
 export function indexByUnique<T, K>(items: T[], key: (item: T) => K): Map<K, T>;
-export function indexByUnique<T, K>(items: T[], key?: (item: T) => K): Map<string | K, T> {
-  const keyFn = key ?? ((item: T) => (item as unknown as HasId).id);
-  const map = new Map<string | K, T>();
+export function indexByUnique(items: any[], key?: (item: any) => any): Map<any, any> {
+  const keyFn = key ?? ((item: any) => (typeof item.id === 'function' ? item.id() : item.id));
+  const map = new Map<any, any>();
   for (const item of items) {
     const k = keyFn(item);
     if (map.has(k)) {
@@ -102,20 +109,21 @@ export function indexByUnique<T, K>(items: T[], key?: (item: T) => K): Map<strin
  * groupByMapping(grantRows, r => r.authId, toGrant);
  */
 export function groupByMapping<T extends HasId>(items: T[]): Map<string, T[]>;
+export function groupByMapping<T extends { id(): string }>(items: T[]): Map<string, T[]>;
 export function groupByMapping<T, K>(items: T[], key: (item: T) => K): Map<K, T[]>;
 export function groupByMapping<T, K, V>(
   items: T[],
   key: (item: T) => K,
   value: (item: T) => V,
 ): Map<K, V[]>;
-export function groupByMapping<T, K, V>(
-  items: T[],
-  key?: (item: T) => K,
-  value?: (item: T) => V,
-): Map<K | string, (V | T)[]> {
-  const keyFn = key ?? ((item: T) => (item as unknown as HasId).id);
-  const valueFn = value ?? ((item: T) => item);
-  const map = new Map<K | string, (V | T)[]>();
+export function groupByMapping(
+  items: any[],
+  key?: (item: any) => any,
+  value?: (item: any) => any,
+): Map<any, any[]> {
+  const keyFn = key ?? ((item: any) => (typeof item.id === 'function' ? item.id() : item.id));
+  const valueFn = value ?? ((item: any) => item);
+  const map = new Map<any, any[]>();
   for (const item of items) {
     const k = keyFn(item);
     const v = valueFn(item);

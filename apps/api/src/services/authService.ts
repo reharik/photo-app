@@ -8,6 +8,7 @@ import {
 } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import {
+  ActivatePendingUserWriteService,
   EmailVerificationRepository,
   EntityId,
   PendingUser,
@@ -32,6 +33,7 @@ type AuthServiceDeps = {
   userRepository: UserRepository;
   emailVerificationRepository: EmailVerificationRepository;
   systemEmailVerificationRepository: SystemEmailVerificationRepository;
+  activatePendingUserWriteService: ActivatePendingUserWriteService;
   uow: UnitOfWork;
 };
 
@@ -42,6 +44,7 @@ export const build__AuthService = ({
   userRepository,
   emailVerificationRepository,
   systemEmailVerificationRepository,
+  activatePendingUserWriteService,
   uow,
 }: AuthServiceDeps): AuthService => {
   const verifyCode = async (email: string, code: string): Promise<WriteResult<{ id: string }>> => {
@@ -143,11 +146,17 @@ export const build__AuthService = ({
             { email, firstName: firstName, lastName: lastName, phone, passwordHash },
             randomUUID(),
           );
+        }
+        if (user.kind === 'pending') {
           template = 'welcome';
-          const activateResult = user.activate(
+          // The activating user is their own actor: this is self-service signup off an
+          // emailed code, so actorId is the pending user's id.
+          const activateResult = await activatePendingUserWriteService(
             { firstName, lastName, phone, passwordHash },
+            user,
             user.id(),
           );
+
           if (!activateResult.success) {
             await uow.rollback();
             // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
@@ -155,37 +164,13 @@ export const build__AuthService = ({
             // here with no name, and the FE reveals the name fields off that exact reason.
             return activateResult;
           }
-          // this else is ugly, true, but it's the only true way we can handle the three cases.
-          // we can't pass the new user in and have activate set the pw because that also sets the template
+        } else if (user.kind === 'active') {
+          template = 'passwordChanged';
+          user.setPassword(passwordHash, user.id());
         } else {
-          switch (user.kind) {
-            case 'pending': {
-              template = 'welcome';
-              const activateResult = user.activate(
-                { firstName, lastName, phone, passwordHash },
-                user.id(),
-              );
-              if (!activateResult.success) {
-                await uow.rollback();
-                // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME): an invited
-                // user who never set a name lands here via the forgot-password door, and the FE
-                // reveals the name fields off that exact reason to finish setup in place.
-                return activateResult;
-              }
-              break;
-            }
-            case 'active': {
-              template = 'passwordChanged';
-              user.setPassword(passwordHash, user.id());
-              break;
-            }
-            default: {
-              // Unreachable: exhaustive over pending | active. assertNever throws,
-              // which the catch below turns into a rollback.
-              return assertNever(user);
-            }
-          }
+          return assertNever(user);
         }
+
         await userRepository.save(user);
         await emailVerificationRepository.completeConsumption(verificationId);
         await uow.commit();

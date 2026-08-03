@@ -14,7 +14,6 @@ type MediaItem implements ViewableItem & Node {
   tags: [Tag!]!
   createdAt: DateTime!
   updatedAt: DateTime!
-  authorizations: [AuthorizationType]
   operations: [Operation!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
   reactionCounts: ReactionCounts!

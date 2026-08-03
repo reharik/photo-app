@@ -5,6 +5,7 @@ import {
   CollectionInfo,
   type AlbumCollectionInfo,
   type AlbumItemCollectionInfo,
+  type AlbumItemReadRepository,
   type AlbumItemWithMediaRow,
   type AlbumReadRepository,
   type AlbumWithCoverRow,
@@ -49,6 +50,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const service = build__ViewerAlbumReadService({
         albumReadRepository: albumReadRepository as AlbumReadRepository,
+        albumItemReadRepository: {} as AlbumItemReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
         viewerId,
       });
@@ -80,6 +82,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const service = build__ViewerAlbumReadService({
         albumReadRepository: albumReadRepository as AlbumReadRepository,
+        albumItemReadRepository: {} as AlbumItemReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
         viewerId,
       });
@@ -144,6 +147,7 @@ describe('ViewerAlbumReadService (collection paging)', () => {
 
       const service = build__ViewerAlbumReadService({
         albumReadRepository: albumReadRepository as AlbumReadRepository,
+        albumItemReadRepository: {} as AlbumItemReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
         viewerId,
       });
@@ -170,12 +174,16 @@ describe('ViewerAlbumReadService (collection paging)', () => {
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
         }): Promise<PagedList<AlbumItemWithMediaRow>> => ({ nodes: [], totalCount: 0 }),
       );
-      const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
+      const albumItemReadRepository: Pick<
+        AlbumItemReadRepository,
+        'getViewableAlbumItemsForViewer'
+      > = {
         getViewableAlbumItemsForViewer,
       };
 
       const service = build__ViewerAlbumReadService({
-        albumReadRepository: albumReadRepository as AlbumReadRepository,
+        albumReadRepository: {} as AlbumReadRepository,
+        albumItemReadRepository: albumItemReadRepository as AlbumItemReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
         viewerId,
       });
@@ -206,12 +214,16 @@ describe('ViewerAlbumReadService (collection paging)', () => {
           collectionInfo: CollectionInfo<AlbumItemSortBy>;
         }): Promise<PagedList<AlbumItemWithMediaRow>> => ({ nodes: [], totalCount: 0 }),
       );
-      const albumReadRepository: Pick<AlbumReadRepository, 'getViewableAlbumItemsForViewer'> = {
+      const albumItemReadRepository: Pick<
+        AlbumItemReadRepository,
+        'getViewableAlbumItemsForViewer'
+      > = {
         getViewableAlbumItemsForViewer,
       };
 
       const service = build__ViewerAlbumReadService({
-        albumReadRepository: albumReadRepository as AlbumReadRepository,
+        albumReadRepository: {} as AlbumReadRepository,
+        albumItemReadRepository: albumItemReadRepository as AlbumItemReadRepository,
         enrichMediaItems: noopEnrichMediaItems,
         viewerId,
       });

@@ -1,20 +1,11 @@
-import { ContractError, fail, notEmpty, ok, WriteResult } from '@packages/contracts';
-import { indexBy, Logger } from '@packages/infrastructure';
-import {
-  Album,
-  MediaItem,
-  MediaItemsSharedWithUser,
-  PendingUser,
-  PublicLinkSharedWithUser,
-  User,
-} from '../../../domain';
-import { UserAuthorization } from '../../../domain/Authorization/UserAuthorization';
+import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { indexBy } from '@packages/infrastructure';
+import { Album, AlbumAuthorizationInput, PendingUser, User } from '../../../domain';
 import { ShareContactRepository } from '../../../repositories';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { EntityId } from '../../../types';
-import {} from '../mediaItem/writeMediaItem.types';
 import { CreateUserWriteService } from '../user/createUserWriteService';
-import { GrantUserAuthorizationCommand, InviteUsersForMediaItemsResult } from './grantTypes';
+import { GrantUserAuthorizationCommand } from './grantTypes';
 
 export const getOrCreateAllUsers = async (
   grantedToHandles: string[],
@@ -64,99 +55,25 @@ export const inviteUsers = (
   const invitedUsers: (User | PendingUser)[] = [];
 
   for (const user of users) {
-    const result = album.grantAuthorization(
-      input.operations,
-      input.viewerId,
-      user.id(),
-      input.label,
-      input.expiresAt,
-    );
-    if (result.success) {
+    const payload: AlbumAuthorizationInput = {
+      operations: input.operations,
+      actorId: input.viewerId,
+      label: input.label,
+      expiresAt: input.expiresAt,
+      grantedToUserId: user.id(),
+    };
+    let authResult;
+    if (user.kind === 'active') {
+      authResult = album.grantAuthorization(payload);
+    } else {
+      authResult = album.grantPendingUserAuthorization(payload);
+    }
+
+    if (authResult.success) {
       invitedUsers.push(user);
     } else {
-      errors.push({ user, error: result.error });
+      errors.push({ user, error: authResult.error });
     }
   }
   return { errors, invitedUsers };
-};
-
-export const invitePendingUsers = (
-  users: PendingUser[],
-  album: Album,
-  input: GrantUserAuthorizationCommand,
-  logger: Logger,
-): WriteResult<PublicLinkSharedWithUser[]> => {
-  const serviceEvents: PublicLinkSharedWithUser[] = [];
-  const result = album.grantPublicLink(input.viewerId, input.expiresAt, input.operations);
-  if (!result.success) {
-    return fail(result.error);
-  }
-
-  const publicLinkAuthorization = result.value;
-  for (const user of users) {
-    serviceEvents.push({
-      kind: 'publicLinkSharedWithUser',
-      userId: user.id(),
-      publicLinkAuthorizationId: publicLinkAuthorization.id(),
-      occurredAt: new Date(),
-      actorId: input.viewerId,
-    });
-  }
-
-  logger.debug(`Pending User service events recorded: ${JSON.stringify(serviceEvents, null, 4)}`);
-  return ok(serviceEvents);
-};
-
-export const inviteUsersForMediaItems = (
-  users: (PendingUser | User)[],
-  mediaItems: MediaItem[],
-  input: GrantUserAuthorizationCommand,
-  logger: Logger,
-): InviteUsersForMediaItemsResult => {
-  const errors: { user: PendingUser | User; error: ContractError }[] = [];
-  const errorDetail: { user: PendingUser | User; mediaItem: MediaItem; error: ContractError }[] =
-    [];
-  const serviceEvents: MediaItemsSharedWithUser[] = [];
-  const authorizations: UserAuthorization[] = [];
-
-  for (const user of users) {
-    const userAuthz: UserAuthorization[] = [];
-    const userErrors: typeof errorDetail = [];
-
-    for (const mediaItem of mediaItems) {
-      const result = mediaItem.grantAuthorization(
-        input.operations,
-        input.viewerId,
-        user.id(),
-        input.label,
-        input.expiresAt,
-      );
-      if (result.success) {
-        userAuthz.push(result.value.authorization); // ← was pushing to global `authorizations`
-      } else {
-        userErrors.push({ user, mediaItem, error: result.error });
-      }
-    }
-
-    authorizations.push(...userAuthz); // feed the global list once, per user
-
-    if (user.kind === 'active' && userAuthz.length > 0) {
-      serviceEvents.push({
-        kind: 'mediaItemsSharedWithUser',
-        userId: user.id(),
-        mediaItemIds: userAuthz.map((x) => x.mediaItemId()).filter(notEmpty),
-        occurredAt: new Date(),
-        actorId: input.viewerId,
-        authorizationIds: userAuthz.map((x) => x.id()),
-      });
-    }
-
-    if (userErrors.length > 0) {
-      errors.push({ user, error: userErrors[0].error });
-      errorDetail.push(...userErrors);
-    }
-  }
-
-  logger.debug(`Service events recorded: ${JSON.stringify(serviceEvents, null, 4)}`);
-  return { errors, errorDetail, serviceEvents, authorizations };
 };

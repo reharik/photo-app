@@ -1,23 +1,21 @@
 import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { EntityId } from '../../types/types';
 import { Album } from '../Album/Album';
-import { MediaItem } from '../MediaItem/MediaItem';
 
-export const grantAuthorizationValidation = <T extends Album | MediaItem>(
-  item: T,
+/**
+ * Album-only: MediaItem no longer carries authorizations. Loose items are wrapped in
+ * a shadow album and granted at album scope (see grantUserAuthorization).
+ */
+export const grantAuthorizationValidation = (
+  item: Album,
   grantedToUserId: EntityId,
   label?: string,
   expiresAt?: Date,
 ): WriteResult<{
   status: 'createAuthorization' | 'updateLabel' | 'updateExpireDate' | 'updated';
 }> => {
-  if (item instanceof Album) {
-    const member = item.getAlbumMember(grantedToUserId);
-
-    if (member && member.role().equals(AlbumMemberRole.owner)) {
-      return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
-    }
-  } else if (item instanceof MediaItem && item.ownerId() === grantedToUserId) {
+  const member = item.getAlbumMember(grantedToUserId);
+  if (member && member.role().equals(AlbumMemberRole.owner)) {
     return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
   }
 

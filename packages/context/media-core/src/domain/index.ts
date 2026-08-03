@@ -10,6 +10,7 @@ export * from './Album/AlbumMember';
 export * from './Album/albumEvents';
 export * from './Album/albumItemOrder';
 export * from './Authorization/Authorization';
+export * from './Authorization/PendingUserAuthorization';
 export * from './Authorization/PublicLinkAuthorization';
 export * from './Authorization/UserAuthorization';
 export * from './Authorization/authorizationEvents';

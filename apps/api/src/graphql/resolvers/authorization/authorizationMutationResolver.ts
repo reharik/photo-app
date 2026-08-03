@@ -16,7 +16,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         label: args.input.label ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
       };
-      const result = await ctx.writeServices.grantAuthorizationForMediaItems(command);
+      const result = await ctx.writeServices.grantUserAuthorization(command, true);
       if (!result.success) {
         return result;
       }
@@ -35,7 +35,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         label: args.input.label ?? undefined,
         expiresAt: args.input.expiresAt ?? undefined,
       };
-      const result = await ctx.writeServices.grantUserAuthorizationForAlbum(command);
+      const result = await ctx.writeServices.grantUserAuthorization(command, false);
       if (!result.success) {
         return result;
       }

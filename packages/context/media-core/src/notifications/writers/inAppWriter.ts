@@ -28,7 +28,7 @@ export const build__InAppWriter =
   async (n) => {
     type possibleInAppNotificationKinds = EnumSubset<
       NotificationKind,
-      'albumShared' | 'itemAdded' | 'itemShared' | 'commentPosted' | 'replyPosted'
+      'albumShared' | 'itemAdded' | 'commentPosted' | 'replyPosted'
     >;
     const kind = n.kind as possibleInAppNotificationKinds;
     let item: MediaItemOwner;
@@ -40,11 +40,10 @@ export const build__InAppWriter =
         const surface = kind.match<ActivitySurface>({
           albumShared: () => ActivitySurface.sharedAlbums,
           itemAdded: () => ActivitySurface.sharedAlbums,
-          itemShared: () => ActivitySurface.sharedItems,
           commentPosted: () => ActivitySurface.recent,
           replyPosted: () =>
             // item is guaranteed assigned here, but only by convention
-            item.ownerId === r.id ? ActivitySurface.recent : ActivitySurface.sharedItems,
+            item.ownerId === r.id ? ActivitySurface.recent : ActivitySurface.sharedAlbums,
         });
 
         return systemInAppNotificationRepository.upsertActivityRow({

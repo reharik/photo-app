@@ -74,7 +74,6 @@ export const apolloClient = new ApolloClient({
             // append rather than replace.
             albums: nestedPagePagination(),
             mediaItems: nestedPagePagination(),
-            sharedWithMeMediaItems: nestedPagePagination(),
             sharedWithMeAlbums: nestedPagePagination(),
 
             // Viewer-level unseen-activity array — every dot/bold on every screen

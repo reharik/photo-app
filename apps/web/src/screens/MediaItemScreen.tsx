@@ -1,6 +1,6 @@
-import { useApolloClient, useQuery } from '@apollo/client/react';
+import { useQuery } from '@apollo/client/react';
 
-import { EntityType, InAppNotificationType, MediaAssetKind } from '@packages/contracts';
+import { MediaAssetKind } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
@@ -17,13 +17,8 @@ import type {
   MobileViewerSheet,
   NavigateDirection,
 } from '../features/media/viewer/mediaViewerTypes';
-import {
-  MarkSurfaceSeenDocument,
-  ViewerInAppNotificationDocument,
-  ViewerMediaItemDetailDocument,
-} from '../graphql/generated/types';
+import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
-import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
 /** Mobile stage chrome (close + action bar) is always visible — single-tap toggle is a no-op. */
@@ -38,10 +33,6 @@ export const MediaItemScreen = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const galleryIds = (location.state as MediaItemLocationState | undefined)?.mediaGalleryIds;
-
-  const apolloClient = useApolloClient();
-  const { anyUnseenMatching } = useInAppNotification();
-  const markedSeenMediaIdRef = useRef<string | null>(null);
 
   const query = useQuery(ViewerMediaItemDetailDocument, {
     variables: { mediaItemId: mediaId ?? '' },
@@ -66,47 +57,6 @@ export const MediaItemScreen = () => {
   useEffect(() => {
     setActiveMobileSheet('none');
   }, [mediaItem?.id]);
-
-  // Opening a photo = seeing the "shared with me" surface for it. Kind-scoped to
-  // ITEM_SHARED so it clears ONLY the shared-media dot and never eats this photo's
-  // commentAdded rows — those clear separately on comment-thread consume (id-clear).
-  // A no-op for photos with no shared-activity row. Best-effort; fired once per photo.
-  const loadedMediaId = mediaItem?.id;
-  useEffect(() => {
-    if (loadedMediaId == null || markedSeenMediaIdRef.current === loadedMediaId) {
-      return;
-    }
-    // Only clear (and refetch) when the client actually holds a matching ITEM_SHARED row
-    // for this photo — otherwise the mutation + refetch is an empty round-trip. If the
-    // array hasn't resolved yet this is false and the effect re-runs when it does
-    // (anyUnseenMatching is a dep and is stable per array).
-    const hasSharedRow = anyUnseenMatching(
-      (r) =>
-        r.containerType.equals(EntityType.mediaItem) &&
-        r.containerId === loadedMediaId &&
-        r.kind.equals(InAppNotificationType.itemShared),
-    );
-    if (!hasSharedRow) {
-      return;
-    }
-    markedSeenMediaIdRef.current = loadedMediaId;
-
-    void (async () => {
-      try {
-        await apolloClient.mutate({
-          mutation: MarkSurfaceSeenDocument,
-          variables: {
-            containerType: EntityType.mediaItem,
-            containerId: loadedMediaId,
-            kind: InAppNotificationType.itemShared,
-          },
-        });
-        void apolloClient.refetchQueries({ include: [ViewerInAppNotificationDocument] });
-      } catch (error) {
-        console.error('markSurfaceSeen failed for media item', loadedMediaId, error);
-      }
-    })();
-  }, [loadedMediaId, anyUnseenMatching, apolloClient]);
 
   const handleClose = useCallback((): void => {
     detailPanelRef.current?.handleCloseRequest();

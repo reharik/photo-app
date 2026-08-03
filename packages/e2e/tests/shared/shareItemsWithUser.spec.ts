@@ -11,6 +11,7 @@ import {
   selectMediaItems,
 } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
+import { openSharedAlbum, sharedItemsAlbumTitle } from '../../routines/openSharedAlbum';
 import { reactToItem } from '../../routines/reactToItem';
 import { setup } from '../../routines/setup';
 
@@ -19,7 +20,7 @@ import { setup } from '../../routines/setup';
  */
 test.describe('Share individual items with an existing user', () => {
   test.describe('When User A shares two items with User B', () => {
-    test('should let User B see them in Shared-with-me with only the granted operations', async ({
+    test('should let User B see them in the shared shadow album with only the granted operations', async ({
       userA,
       userB,
       grabTestImages,
@@ -53,8 +54,8 @@ test.describe('Share individual items with an existing user', () => {
       await test.step('USER B: is emailed about the shared items', async () => {
         // Item-sharing with an existing user should notify them by email. This test
         // never sends any other email to User B, so a recipient match is sufficient.
-        // TODO: tighten the match to the item-share template's distinctive copy once
-        // that template exists (see NOTIFICATION_ROUTING.itemShared, currently null).
+        // There is no item-share template any more: loose items are wrapped in a shadow
+        // album, so the recipient gets the ordinary album-share mail.
         await expect
           .poll(
             async () => {
@@ -69,12 +70,14 @@ test.describe('Share individual items with an existing user', () => {
       await loginViaUi(userB.page, userB.user);
 
       await test.step('USER B: sees the unseen-activity dot for the newly shared items', async () => {
-        // The share should light the aggregate unseen-activity dot on the "Shared" nav
-        // item (role=status, aria-label "Unseen activity") before B opens the items.
+        // The share should light the unseen-activity dot on the "Shared" nav item
+        // (role=status, aria-label "Unseen activity") before B opens the items.
         await expect(userB.page.getByRole('status', { name: 'Unseen activity' })).toBeVisible();
       });
 
-      await userB.page.goto('/shared/items');
+      // Loose items shared with B arrive as a generated shadow album, not a standalone
+      // "shared items" list — open it to reach the tiles.
+      await openSharedAlbum(userB.page, sharedItemsAlbumTitle(userA.user));
 
       const itemA = mediaTile(userB.page, a.id);
       await expect(itemA).toBeVisible();
@@ -100,7 +103,7 @@ test.describe('Share individual items with an existing user', () => {
 
       await reactToItem(userB.page, rootRow);
 
-      await userB.page.goto('/shared-with-me');
+      await openSharedAlbum(userB.page, sharedItemsAlbumTitle(userA.user));
       await expectMediaTileNotSelectable(userB.page, a.id);
     });
   });

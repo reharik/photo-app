@@ -4,16 +4,10 @@ import {
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
-  Operation,
   ReactionEmoji,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
-import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
-import {
-  isUserAuthRecord,
-  UserAuthorizationRecord,
-} from '../../domain/Authorization/UserAuthorization';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import {
   MediaItem,
@@ -76,20 +70,6 @@ export const build__MediaItemRepository = ({
       { strict: true },
     );
 
-    const authorizationRows = await withEnumRevival(
-      uow
-        .db()<AuthorizationRecord>('access_grant')
-        .where({ mediaItemId: id })
-        .orderBy('createdAt', 'asc'),
-      { operations: Operation },
-      { strict: true },
-    );
-    const userAuthorizationRows: UserAuthorizationRecord[] = [];
-    for (const row of authorizationRows) {
-      if (isUserAuthRecord(row)) userAuthorizationRows.push(row);
-      else throw new Error(`Authorization ${row.id} violates grantedToUser XOR linkToken`);
-    }
-
     const tagRows = await uow
       .db()('mediaItemTag')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
@@ -108,7 +88,6 @@ export const build__MediaItemRepository = ({
 
     const childRecords = {
       assets: assetRows,
-      authorizations: userAuthorizationRows,
       tags: tagRows,
       reactions: reactionRows,
     };

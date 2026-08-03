@@ -4,10 +4,7 @@ import { activeGrantChecks } from './withActiveGrants';
 const activeAlbumGrantExists = (db: Knex, viewerId: string) => {
   const sub = db.select(db.raw('1')).from('accessGrant as ag2');
   activeGrantChecks(sub, db, viewerId, 'ag2');
-  return sub
-    .whereNotNull('ag2.albumId')
-    .whereNull('ag2.mediaItemId')
-    .where('ag2.albumId', db.ref('album.id'));
+  return sub.whereNotNull('ag2.albumId').where('ag2.albumId', db.ref('album.id'));
 };
 
 export const withViewableByMemberOrAlbumGrant =
@@ -18,7 +15,12 @@ export const withViewableByMemberOrAlbumGrant =
     });
   };
 
-export const withAlbumItemViewableByMemberOrItemGrant =
+/**
+ * Gates album items on the MATERIALIZED `grant` table, which reconciliation fans out
+ * one row per (accessGrant × mediaItem) for an album-scoped grant. There is no
+ * item-scoped access_grant any more — loose items are wrapped in a shadow album.
+ */
+export const withAlbumItemViewableByMemberOrGrant =
   (db: Knex, viewerId: string) =>
   (qb: Knex.QueryBuilder): void => {
     qb.where((w) => {

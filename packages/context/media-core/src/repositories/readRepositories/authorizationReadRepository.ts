@@ -1,4 +1,4 @@
-import { Operation } from '@packages/contracts';
+import { AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
@@ -9,6 +9,7 @@ type AuthorizationReadRepositoryDeps = { database: Knex };
 const shareSelectColumns = [
   'access_grant.id',
   'access_grant.granted_to_user',
+  'access_grant.kind',
   'access_grant.operations',
   'access_grant.label as description',
   'access_grant.expires_at',
@@ -19,6 +20,15 @@ const shareSelectColumns = [
 export const build__AuthorizationReadRepository = ({
   database,
 }: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
+  /**
+   * "Who have I shared this photo with?"
+   *
+   * Grants are album-scoped only — sharing loose items wraps them in a shadow album
+   * first (see grantUserAuthorization), so there is no access_grant.media_item_id to
+   * filter on any more. Reach the grants through every album that carries the item,
+   * shadow or real; DISTINCT because one grant can be reached via several albumItem
+   * rows. Ownership is still enforced on the media item itself.
+   */
   getGrantedAuthorizationsForOwnedMediaItem: async ({
     mediaItemId,
     ownerId,
@@ -28,12 +38,13 @@ export const build__AuthorizationReadRepository = ({
   }): Promise<AuthorizationRow[]> => {
     return withEnumRevival(
       database('accessGrant')
-        .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
-        .where('accessGrant.mediaItemId', mediaItemId)
+        .innerJoin('albumItem', 'albumItem.albumId', 'accessGrant.albumId')
+        .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+        .where('albumItem.mediaItemId', mediaItemId)
         .andWhere('mediaItem.ownerId', ownerId)
         .orderBy('accessGrant.createdAt', 'asc')
-        .select<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation },
+        .distinct<AuthorizationRow[]>(...shareSelectColumns),
+      { operation: Operation, kind: AuthorizationKind },
       { strict: true },
     );
   },
@@ -52,7 +63,7 @@ export const build__AuthorizationReadRepository = ({
         .andWhere('albumMember.role', 'owner')
         .orderBy('accessGrant.createdAt', 'asc')
         .select<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation },
+      { operation: Operation, kind: AuthorizationKind },
       { strict: true },
     );
   },

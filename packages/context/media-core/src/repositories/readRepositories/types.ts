@@ -1,6 +1,7 @@
 import {
   AlbumMemberRole,
   AlbumSortBy,
+  AuthorizationKind,
   EntityType,
   Operation,
   ReactionEmoji,
@@ -15,10 +16,8 @@ import {
   DBPublicMediaItemRow,
   DBReactionCounts,
   MediaItemCollectionInfo,
-  NamespacedMediaItemRow,
   PagedList,
   SharedWithMeAlbumCollectionInfo,
-  SharedWithMeMediaItemCollectionInfo,
 } from '../../services/readServices/types';
 import type { CollectionInfo, EntityId, PageInfo } from '../../types/types';
 
@@ -27,13 +26,13 @@ export type ReadRepositoryDeps = { database: Knex };
 export type AuthorizationRow = {
   id: EntityId;
   grantedToUser?: EntityId;
-  albumId?: EntityId;
-  mediaItemId?: EntityId;
+  albumId: EntityId;
   operations: Operation[];
   description?: string;
   expiresAt?: Date;
   revokedAt?: Date;
   createdAt: Date;
+  kind: AuthorizationKind;
 };
 
 export type MediaItemOperations = {
@@ -184,14 +183,6 @@ export type ShareContactRow = {
   lastSharedAt: Date;
 };
 
-export type SharedWithMeMediaItemRow = NamespacedMediaItemRow & {
-  grantId: EntityId;
-  sharedBy: EntityId;
-  sharedByFirstName: string;
-  sharedByLastName: string;
-  sharedAt: Date;
-};
-
 export type SharedAlbumRow = {
   grantId: EntityId;
   sharedAt: Date;
@@ -201,13 +192,6 @@ export type SharedAlbumRow = {
 } & AlbumWithCoverRow;
 
 export type SharedWithMeReadRepository = {
-  getMediaItemsSharedWithMe: ({
-    viewerId,
-    collectionInfo,
-  }: {
-    viewerId: EntityId;
-    collectionInfo: SharedWithMeMediaItemCollectionInfo;
-  }) => Promise<PagedList<SharedWithMeMediaItemRow>>;
   getAlbumsSharedWithMe: ({
     viewerId,
     collectionInfo,
@@ -285,5 +269,4 @@ export type PublicAccessIdRow = { publicAccessId: string };
 export type PublicAccessReadRepository = {
   getPublicAccessIdByToken: (token: string) => Promise<PublicAccessIdRow | undefined>;
   getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
-  canAccessMediaWithLink: (input: { token: string; mediaItemId: string }) => Promise<boolean>;
 };

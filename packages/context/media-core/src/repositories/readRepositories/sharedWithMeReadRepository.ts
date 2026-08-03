@@ -1,9 +1,8 @@
 import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { EntityId, PagedList, SharedWithMeMediaItemCollectionInfo, toPagedResult } from '../..';
+import { EntityId, PagedList, toPagedResult } from '../..';
 import { SharedWithMeAlbumCollectionInfo } from '../../services/readServices/types';
 import {
-  mediaItemSelectColumns,
   withActiveGrants,
   withAlbumCoverItem,
   withAlbumItemCount,
@@ -11,12 +10,7 @@ import {
   withCollectionInfo,
   withGrantedBy,
 } from '../queryHelpers';
-import type {
-  ReadRepositoryDeps,
-  SharedAlbumRow,
-  SharedWithMeMediaItemRow,
-  SharedWithMeReadRepository,
-} from './types';
+import type { ReadRepositoryDeps, SharedAlbumRow, SharedWithMeReadRepository } from './types';
 
 const albumFields = [
   'album.id as id',
@@ -29,28 +23,6 @@ const albumFields = [
 export const build__SharedWithMeReadRepository = ({
   database,
 }: ReadRepositoryDeps): SharedWithMeReadRepository => ({
-  getMediaItemsSharedWithMe: async ({
-    viewerId,
-    collectionInfo,
-  }: {
-    viewerId: EntityId;
-    collectionInfo: SharedWithMeMediaItemCollectionInfo;
-  }): Promise<PagedList<SharedWithMeMediaItemRow>> => {
-    const query = database('accessGrant')
-      .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
-      .modify(withGrantedBy('mediaItem'))
-      .modify(withActiveGrants(database, viewerId))
-      .modify(withCollectionInfo(database, collectionInfo))
-      .select<(SharedWithMeMediaItemRow & { totalCount: number })[]>(...mediaItemSelectColumns);
-
-    const rows = await withEnumRevival(
-      query,
-      { mediaItemKind: MediaKind, mediaItemStatus: MediaItemStatus },
-      { strict: true },
-    );
-
-    return toPagedResult(rows);
-  },
   getAlbumsSharedWithMe: async ({
     viewerId,
     collectionInfo,
@@ -65,7 +37,6 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))
       .modify(withActiveGrants(database, viewerId))
-      .andWhere('album.isPublicLinkAlbum', false)
       .modify(withCollectionInfo(database, collectionInfo))
       .select<(SharedAlbumRow & { totalCount: number })[]>(...albumFields);
 
@@ -94,7 +65,6 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withAlbumItemCount(database))
       .modify(withGrantedBy('album'))
       .modify(withActiveGrants(database, viewerId))
-      .andWhere('album.isPublicLinkAlbum', false)
       .select<SharedAlbumRow>(...albumFields)
       .where('album.id', albumId);
 

@@ -41,7 +41,7 @@ export const build__AlbumReadRepository = ({
         .modify(withCollectionInfo(database, collectionInfo))
         .select<(AlbumWithCoverRow & { totalCount: number })[]>(...albumFields)
         .where('albumMember.userId', viewerId)
-        .andWhere('album.isPublicLinkAlbum', false),
+        .andWhere('album.isShadowAlbum', false),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,

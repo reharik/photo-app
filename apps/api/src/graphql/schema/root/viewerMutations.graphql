@@ -46,7 +46,6 @@ type MarkSeenPayload {
 enum InAppNotificationType {
   ITEM_ADDED
   ALBUM_SHARED
-  ITEM_SHARED
   COMMENT_POSTED
   REPLY_POSTED
 }
