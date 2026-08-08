@@ -1,9 +1,3 @@
-enum Operation {
-  VIEW
-  DOWNLOAD
-  COMMENT
-}
-
 type AuthorizationType {
   id: ID!
   grantedToUserId: ID

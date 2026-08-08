@@ -26,11 +26,9 @@ export const build__SystemUserRepository = ({
   database,
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
   getUserContacts: (userIds: EntityId[]) => {
-    return withEnumRevival(
-      database('User').select(UserFields).whereIn('id', userIds),
-      { userStatus: UserStatus },
-      { strict: true },
-    );
+    return withEnumRevival(database('User').select(UserFields).whereIn('id', userIds), {
+      userStatus: UserStatus,
+    });
   },
   getActiveUsers: (userIds: EntityId[]) => {
     return withEnumRevival(
@@ -39,7 +37,6 @@ export const build__SystemUserRepository = ({
         .whereIn('id', userIds)
         .andWhere({ userStatus: UserStatus.active.value }),
       { userStatus: UserStatus },
-      { strict: true },
     );
   },
 });

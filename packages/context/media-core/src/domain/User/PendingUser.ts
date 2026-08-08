@@ -59,9 +59,7 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     this.props.phone = phone;
     this.props.passwordHash = passwordHash;
     this.props.userStatus = UserStatus.active;
-
-    // not sure if I should do this here or in have the album.activatePendingUserAuthorization do it
-    // this.recordEvent('pendingUserActivated', { userId: this.id(), authorizationIds }, actorId);
+    // Domain event is called in the album.activatePendingUserAuthorization
     this.touch(actorId);
     return ok(undefined);
   }

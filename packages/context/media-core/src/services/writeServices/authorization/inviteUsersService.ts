@@ -1,6 +1,17 @@
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { fail, ok, WriteResult } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
-import { Album, AlbumAuthorizationInput, PendingUser, User } from '../../../domain';
+import {
+  Album,
+  AlbumAuthorizationInput,
+  PendingUser,
+  PendingUserAuthorization,
+  User,
+  UserAuthorization,
+} from '../../../domain';
+import {
+  eachIndependently,
+  IndependentGroupResult,
+} from '../../../infrastructure/writeServices/groupActionStrategy';
 import { ShareContactRepository } from '../../../repositories';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { EntityId } from '../../../types';
@@ -43,18 +54,13 @@ export const saveNewShareContacts = async (
   await Promise.all(newShareContactPromises);
 };
 
+export type GrantedAuthorization = { authorization: UserAuthorization | PendingUserAuthorization };
 export const inviteUsers = (
   users: (User | PendingUser)[],
   album: Album,
   input: GrantUserAuthorizationCommand,
-): {
-  errors: { user: User | PendingUser; error: ContractError }[];
-  invitedUsers: (User | PendingUser)[];
-} => {
-  const errors: { user: User | PendingUser; error: ContractError }[] = [];
-  const invitedUsers: (User | PendingUser)[] = [];
-
-  for (const user of users) {
+): IndependentGroupResult<User | PendingUser, GrantedAuthorization> => {
+  return eachIndependently(users, (user) => {
     const payload: AlbumAuthorizationInput = {
       operations: input.operations,
       actorId: input.viewerId,
@@ -62,18 +68,10 @@ export const inviteUsers = (
       expiresAt: input.expiresAt,
       grantedToUserId: user.id(),
     };
-    let authResult;
-    if (user.kind === 'active') {
-      authResult = album.grantAuthorization(payload);
-    } else {
-      authResult = album.grantPendingUserAuthorization(payload);
-    }
-
-    if (authResult.success) {
-      invitedUsers.push(user);
-    } else {
-      errors.push({ user, error: authResult.error });
-    }
-  }
-  return { errors, invitedUsers };
+    const result: WriteResult<GrantedAuthorization> =
+      user.kind === 'active'
+        ? album.grantAuthorization(payload)
+        : album.grantPendingUserAuthorization(payload);
+    return result;
+  });
 };

@@ -47,7 +47,6 @@ export const build__PublicMediaItemReadRepository = ({
         kind: MediaKind,
         status: MediaItemStatus,
       },
-      { strict: true },
     );
     if (!mediaItem) return undefined;
     return mediaItem;

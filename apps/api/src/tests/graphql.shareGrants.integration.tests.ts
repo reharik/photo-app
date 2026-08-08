@@ -110,6 +110,11 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
       MediaItemStatus.processing.value,
     );
+    // The worker that advances PROCESSING → READY does not run in integration tests, and
+    // the share path refuses non-READY items. Promote directly, as the worker would.
+    await database('mediaItem')
+      .where({ id: mediaItemId })
+      .update({ status: MediaItemStatus.ready.value });
     return mediaItemId;
   };
 
@@ -129,11 +134,15 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
       context,
     });
 
+  // User-addressed grants are matched by grantedToUser alone: PUBLIC rows have a NULL
+  // grantee so they can never match. Do NOT filter on link_token nullness — a PENDING
+  // grant carries BOTH the grantee and the invite token under the kind discriminator,
+  // so the old `whereNull('linkToken')` heuristic silently excluded pending recipients.
   const itemGrantsFor = (grantedToUser: string, mediaItemId: string) =>
-    database('accessGrant').where({ grantedToUser, mediaItemId }).whereNull('linkToken');
+    database('accessGrant').where({ grantedToUser, mediaItemId });
 
   const albumGrantsFor = (grantedToUser: string, albumId: string) =>
-    database('accessGrant').where({ grantedToUser, albumId }).whereNull('linkToken');
+    database('accessGrant').where({ grantedToUser, albumId });
 
   describe('mixed recipients (active + non-user) in one call', () => {
     // Sharing loose media items no longer mints one grant per (recipient × item). The
@@ -174,8 +183,10 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
         .select('mediaItemId');
       expect(albumItems.map((r) => r.mediaItemId).sort()).toEqual([item1, item2].sort());
 
-      // Active recipient: a single album-scoped grant, not one grant per item.
-      expect(await albumGrantsFor(TEST_VIEWER_A_ID, shadowAlbum.id)).toHaveLength(1);
+      // Active recipient: a single album-scoped USER grant, not one grant per item.
+      const viewerAGrants = await albumGrantsFor(TEST_VIEWER_A_ID, shadowAlbum.id);
+      expect(viewerAGrants).toHaveLength(1);
+      expect(viewerAGrants[0].kind).toBe('USER');
 
       // Non-user recipient: a PENDING shadow user row was minted for the email...
       const shadow = await database('user')
@@ -189,16 +200,18 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
       expect(status).toBe('PENDING');
 
       // ...and it too gets an album-scoped grant, which materializes on activation.
-      expect(await albumGrantsFor(shadow.id, shadowAlbum.id)).toHaveLength(1);
+      const shadowGrants = await albumGrantsFor(shadow.id, shadowAlbum.id);
+      expect(shadowGrants).toHaveLength(1);
 
-      // The pending branch additionally issued the tokenized public-link grant (link_token
-      // set, no granted_to_user) in the SAME call — proving the active-grant branch and the
-      // public-link branch both committed in one uow.
-      const linkGrant = await database('accessGrant')
-        .where({ albumId: shadowAlbum.id })
-        .whereNotNull('linkToken')
-        .first();
-      expect(linkGrant).toBeDefined();
+      // Under the kind discriminator the pending invite is ONE row carrying BOTH the
+      // grantee and the invite token (kind PENDING). No separate public-link row is
+      // minted at share time — activation later splits the PENDING row into USER +
+      // PUBLIC, reusing its id.
+      expect(shadowGrants[0].kind).toBe('PENDING');
+      expect(shadowGrants[0].linkToken).toBeTruthy();
+      expect(
+        await database('accessGrant').where({ albumId: shadowAlbum.id, kind: 'PUBLIC' }),
+      ).toHaveLength(0);
 
       // No item-scoped grants are written on this path any more.
       expect(await itemGrantsFor(TEST_VIEWER_A_ID, item1)).toHaveLength(0);

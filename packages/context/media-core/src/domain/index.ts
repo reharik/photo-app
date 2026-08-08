@@ -21,7 +21,6 @@ export * from './Comment/Comment';
 export * from './Comment/commentEvents';
 export * from './MediaItem/MediaAsset';
 export * from './MediaItem/MediaItem';
-export * from './MediaItem/mediaItemEvents';
 export * from './Notification/Notification';
 export * from './User/PendingUser';
 export * from './User/User';

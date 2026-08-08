@@ -51,7 +51,6 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
           handles.map((x) => x.trim().toLowerCase()),
         ),
       { userStatus: UserStatus },
-      { strict: true },
     );
 
     const pendingIds = users
@@ -63,8 +62,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
         .db()<UserAuthorizationRecord>('access_grant')
         .whereIn('grantedToUser', pendingIds)
         .orderBy('createdAt', 'asc'),
-      { operation: Operation, kind: AuthorizationKind },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
     );
     const authzMap = groupByMapping(authorizationRows, (x) => x.grantedToUser);
 
@@ -82,7 +80,6 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
       { userStatus: UserStatus },
-      { strict: true },
     );
 
     if (!userRow) {
@@ -94,9 +91,9 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     const authorizationRefs = await uow
       .db()('access_grant')
       .where({ grantedToUser: userRow.id })
-      .whereNull('ag.revoked_at')
+      .whereNull('revoked_at')
       .where((expiry) => {
-        expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', uow.db().fn.now());
+        expiry.whereNull('expires_at').orWhere('expires_at', '>', uow.db().fn.now());
       })
       .select<{ authorizationId: string; albumId: string }[]>(['id as authorizationId', 'albumId']);
     return PendingUser.rehydrate(userRow, authorizationRefs);

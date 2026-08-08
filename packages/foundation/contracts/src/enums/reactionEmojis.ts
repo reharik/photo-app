@@ -1,5 +1,6 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-const input = {
+import { defineReactionEmojiInput } from './graphqlSmartEnums';
+const input = defineReactionEmojiInput({
   heart: {
     // this much match the icon name in the icon library (lucide-react) and those icons
     // use kebab-case.  I could transform the key to kebab-case, but for now
@@ -11,7 +12,7 @@ const input = {
     iconName: 'message-circle-more',
     fillColor: 'blue_darker',
   },
-};
+});
 export type ReactionEmoji = Enumeration<typeof ReactionEmoji>;
 export const ReactionEmoji = enumeration<typeof input>('ReactionEmoji', {
   input: input,

@@ -118,6 +118,11 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
     expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
       MediaItemStatus.processing.value,
     );
+    // The worker that advances PROCESSING → READY does not run in integration tests, and
+    // the share path refuses non-READY items. Promote directly, as the worker would.
+    await database('mediaItem')
+      .where({ id: mediaItemId })
+      .update({ status: MediaItemStatus.ready.value });
     return mediaItemId;
   };
 

@@ -151,6 +151,8 @@ export const build__AuthService = ({
           template = 'welcome';
           // The activating user is their own actor: this is self-service signup off an
           // emailed code, so actorId is the pending user's id.
+          // The activatePendingUserWriteService takes the responsibility for saving the user
+          // to avoid having a double have here or a potentially unsaved case there
           const activateResult = await activatePendingUserWriteService(
             { firstName, lastName, phone, passwordHash },
             user,
@@ -167,11 +169,11 @@ export const build__AuthService = ({
         } else if (user.kind === 'active') {
           template = 'passwordChanged';
           user.setPassword(passwordHash, user.id());
+          await userRepository.save(user);
         } else {
           return assertNever(user);
         }
 
-        await userRepository.save(user);
         await emailVerificationRepository.completeConsumption(verificationId);
         await uow.commit();
         committed = true;

@@ -6,7 +6,7 @@ import { EntityId } from '../../types';
 export type SystemAuthorizationRepository = {
   getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
   getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
-  getPublicLinkAuthorizationById: (id: EntityId) => Promise<PublicLinkAuthorizationRow>;
+  getPendingUserAuthorizationById: (id: EntityId) => Promise<PendingUserAuthorizationRow>;
 };
 
 export type Authorizations = {
@@ -153,7 +153,6 @@ export const build__SystemAuthorizationRepository = ({
           );
         }),
       { operations: Operation, kind: AuthorizationKind },
-      { strict: true },
     );
     return partitionByKind(rows);
   },
@@ -164,22 +163,20 @@ export const build__SystemAuthorizationRepository = ({
         .select<AnyAuthorizationRow[]>(authorizationFields)
         .whereIn('id', ids),
       { operations: Operation, kind: AuthorizationKind },
-      { strict: true },
     );
     return partitionByKind(rows);
   },
 
-  getPublicLinkAuthorizationById: async (id: EntityId): Promise<PublicLinkAuthorizationRow> => {
+  getPendingUserAuthorizationById: async (id: EntityId): Promise<PendingUserAuthorizationRow> => {
     const row = await withEnumRevival(
       database('access_grant').first<AnyAuthorizationRow>(authorizationFields).where({ id }),
       { operations: Operation, kind: AuthorizationKind },
-      { strict: true },
     );
     // Selecting by id alone can return any of the three kinds, so the row is typed as the
     // union and the guard both enforces and narrows. `.first<PublicLinkAuthorizationRow>()`
     // asserted the answer instead of proving it.
-    if (!isAuthorizationKind(row, 'PUBLIC')) {
-      throw new Error(`Authorization ${row.id} is ${row.kind.value}, expected PUBLIC`);
+    if (!isAuthorizationKind(row, 'PENDING')) {
+      throw new Error(`Authorization ${row.id} is ${row.kind.value}, expected PENDING`);
     }
     return row;
   },

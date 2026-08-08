@@ -1,3 +1,4 @@
+import { AlbumMemberRole } from '@packages/contracts';
 import { EntityId } from '../../../types';
 
 export type CreateAlbumCommand = {
@@ -86,4 +87,28 @@ export type AddMediaItemsToAlbumCommand = {
 export type AddMediaItemsToAlbumResult = {
   albumId: EntityId;
   albumItemIds: EntityId[];
+};
+
+export type AddAlbumMembersCommand = {
+  albumId: string;
+  userIds: EntityId[];
+  role: AlbumMemberRole;
+  actorId: string;
+};
+
+export type AddAlbumMembersResult = {
+  albumId: EntityId;
+  albumMemberIds: EntityId[];
+};
+
+export type RemoveAlbumMembersCommand = {
+  albumId: string;
+  albumMemberIds: EntityId[];
+
+  actorId: string;
+};
+
+export type RemoveAlbumMembersResult = {
+  albumId: EntityId;
+  albumMemberIds: EntityId[];
 };

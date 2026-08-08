@@ -1,19 +1,28 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
 import { ContractError } from './ContractError';
+import { defineOperationInput } from './graphqlSmartEnums';
 import { SubjectType } from './subjectType';
 
-const input = {
+const input = defineOperationInput({
   editDetails: {
     deniedError: ContractError.MemberNotAllowedToEditAlbum,
-    subjectType: SubjectType.mediaItem,
+    subjectType: SubjectType.album,
   },
   addItems: {
     deniedError: ContractError.MemberNotAllowedToAddItems,
     subjectType: SubjectType.album,
   },
   removeItems: {
-    deniedError: ContractError.MemberNotAllowedToRemoveItems,
+    deniedError: ContractError.CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage,
     subjectType: SubjectType.albumItem,
+  },
+  addMembers: {
+    deniedError: ContractError.MemberNotAllowedToAddNewMembers,
+    subjectType: SubjectType.album,
+  },
+  removeMembers: {
+    deniedError: ContractError.MemberNotAllowedToRemoveMembers,
+    subjectType: SubjectType.album,
   },
   editCover: {
     deniedError: ContractError.AlbumEditCoverForbidden,
@@ -47,7 +56,7 @@ const input = {
     deniedError: ContractError.NotAllowedToEditMediaItem,
     subjectType: SubjectType.mediaItem,
   },
-} as const;
+});
 
 export type Operation = Enumeration<typeof Operation>;
 export const Operation = enumeration<typeof input>('Operation', {

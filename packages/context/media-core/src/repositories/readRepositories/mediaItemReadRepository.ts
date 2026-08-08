@@ -60,7 +60,6 @@ export const build__MediaItemReadRepository = ({
         kind: MediaKind,
         status: MediaItemStatus,
       },
-      { strict: true },
     );
 
     if (!mediaItem) return undefined;
@@ -89,7 +88,6 @@ export const build__MediaItemReadRepository = ({
         kind: MediaKind,
         status: MediaItemStatus,
       },
-      { strict: true },
     );
 
     return rows;
@@ -125,7 +123,6 @@ export const build__MediaItemReadRepository = ({
         kind: MediaKind,
         status: MediaItemStatus,
       },
-      { strict: true },
     )) as (DBMediaItemRow & { totalCount: number })[];
     return toPagedResult(rows);
   },

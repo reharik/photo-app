@@ -163,7 +163,8 @@ describe('publicAccess query (integration)', () => {
 
   /**
    * The public link itself: an album-scoped access_grant whose grantee is a token rather
-   * than a user (the `granted_to_user XOR link_token` invariant from migration 0018).
+   * than a user — kind 'PUBLIC' under the discriminator model (migration 0024:
+   * granted_to_user NULL, link_token NOT NULL, kind NOT NULL with no default).
    */
   const insertPublicLinkGrant = async (
     albumId: string,
@@ -179,7 +180,10 @@ describe('publicAccess query (integration)', () => {
       grantedBy: viewerId,
       grantedToUser: null,
       linkToken,
-      operations: ['VIEW'],
+      kind: 'PUBLIC',
+      // COMMENT, not VIEW: the DB CHECK admits 'VIEW' but the domain Operation
+      // smart-enum has no such member, so revival throws on read. Mirror the client.
+      operations: ['COMMENT'],
       expiresAt: overrides.expiresAt ?? null,
       revokedAt: overrides.revokedAt ?? null,
       createdAt: at,
@@ -203,7 +207,8 @@ describe('publicAccess query (integration)', () => {
       mediaItemId,
       accessGrantId,
       grantedToUser: null,
-      operations: ['VIEW'],
+      // COMMENT, not VIEW — see insertPublicLinkGrant.
+      operations: ['COMMENT'],
       createdAt: now(),
     });
   };

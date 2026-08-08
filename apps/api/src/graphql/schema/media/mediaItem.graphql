@@ -39,6 +39,8 @@ enum Operation {
   COMMENT
   DELETE_MEDIA_ITEM
   EDIT_MEDIA_ITEM
+  ADD_MEMBERS
+  REMOVE_MEMBERS
 }
 
 enum MediaKind {

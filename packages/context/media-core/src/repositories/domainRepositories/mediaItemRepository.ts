@@ -44,7 +44,6 @@ export const build__MediaItemRepository = ({
     const mediaItemRow = await withEnumRevival(
       uow.db()<MediaItemRecord>('mediaItem').where({ id }).first(),
       { kind: MediaKind, status: MediaItemStatus },
-      { strict: true },
     );
     if (!mediaItemRow) {
       return;
@@ -56,7 +55,6 @@ export const build__MediaItemRepository = ({
         .where({ targetId: id, targetType: EntityType.mediaItem })
         .orderBy('createdAt', 'asc'),
       { emoji: ReactionEmoji, targetType: EntityType },
-      { strict: true },
     );
 
     // TODO this is a smell. These should be created by a service but not in the repository.
@@ -67,7 +65,6 @@ export const build__MediaItemRepository = ({
         .where({ mediaItemId: id })
         .orderBy('createdAt', 'asc'),
       { kind: MediaAssetKind, status: MediaAssetStatus },
-      { strict: true },
     );
 
     const tagRows = await uow

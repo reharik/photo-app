@@ -11,13 +11,10 @@ import {
   AuthorizationRevoked,
   PendingUserAuthorizationExpired,
   PendingUserAuthorizationRevoked,
-} from '../Authorization/authorizationEvents';
-import { CommentPosted, ReactionAdded } from '../Comment/commentEvents';
-import {
   PublicLinkExpired,
   PublicLinkRevoked,
-  PublicLinkSharedWithUser,
-} from '../MediaItem/mediaItemEvents';
+} from '../Authorization/authorizationEvents';
+import { CommentPosted, ReactionAdded } from '../Comment/commentEvents';
 import { PendingUserActivated } from '../User/userEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
@@ -45,7 +42,6 @@ export type DomainEvent = DomainEventBase &
     | MediaItemAddedToAlbum
     | MediaItemRemovedFromAlbum
     | PendingUserActivated
-    | PublicLinkSharedWithUser
     | PublicLinkExpired
     | PublicLinkRevoked
     | ReactionAdded

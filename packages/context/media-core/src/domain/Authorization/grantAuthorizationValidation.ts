@@ -14,7 +14,7 @@ export const grantAuthorizationValidation = (
 ): WriteResult<{
   status: 'createAuthorization' | 'updateLabel' | 'updateExpireDate' | 'updated';
 }> => {
-  const member = item.getAlbumMember(grantedToUserId);
+  const member = item.getAlbumMemberByUserId(grantedToUserId);
   if (member && member.role().equals(AlbumMemberRole.owner)) {
     return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
   }

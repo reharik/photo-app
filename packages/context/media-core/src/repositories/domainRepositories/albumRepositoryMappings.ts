@@ -1,5 +1,4 @@
 import { AuthorizationKind, Operation } from '@packages/contracts';
-import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
 
 export type PublicLinkWithAuthorizationRaw = {
   id: string;
@@ -45,22 +44,23 @@ export const authorizationSelectColumns = [
   'accessGrant.updatedBy as authorizationUpdatedBy',
 ];
 
-export const authorizationRawToAuthorizationRecord = (
-  row: AuthorizationRaw,
-): AuthorizationRecord => {
-  return {
-    id: row.authorizationId,
-    grantedToUser: row.authorizationGrantedToUser,
-    grantedBy: row.authorizationGrantedBy,
-    operations: row.authorizationOperations,
-    label: row.authorizationLabel,
-    albumId: row.authorizationAlbumId,
-    expiresAt: row.authorizationExpiresAt,
-    revokedAt: row.authorizationRevokedAt,
-    createdAt: row.authorizationCreatedAt,
-    updatedAt: row.authorizationUpdatedAt,
-    createdBy: row.authorizationCreatedBy,
-    updatedBy: row.authorizationUpdatedBy,
-    kind: row.authorizationKind,
-  };
-};
+// delete me please 8/3/26
+// export const authorizationRawToAuthorizationRecord = (
+//   row: AuthorizationRaw,
+// ): AuthorizationRecord => {
+//   return {
+//     id: row.authorizationId,
+//     grantedToUser: row.authorizationGrantedToUser,
+//     grantedBy: row.authorizationGrantedBy,
+//     operations: row.authorizationOperations,
+//     label: row.authorizationLabel,
+//     albumId: row.authorizationAlbumId,
+//     expiresAt: row.authorizationExpiresAt,
+//     revokedAt: row.authorizationRevokedAt,
+//     createdAt: row.authorizationCreatedAt,
+//     updatedAt: row.authorizationUpdatedAt,
+//     createdBy: row.authorizationCreatedBy,
+//     updatedBy: row.authorizationUpdatedBy,
+//     kind: row.authorizationKind,
+//   };
+// };

@@ -130,12 +130,12 @@ export const build__ResolveAuthorizations = ({
       case 'albumSharedWithUser': {
         const { userAuthorizations, pendingUserAuthorizations, publicLinkAuthorizations } =
           await systemAuthorizationRepository.getAuthorizationsByIds([event.authorizationId]);
-        const authorizations =
-          userAuthorizations.length > 0
-            ? userAuthorizations
-            : pendingUserAuthorizations.length > 0
-              ? pendingUserAuthorizations
-              : publicLinkAuthorizations;
+        const authorizations = [
+          ...userAuthorizations,
+          ...pendingUserAuthorizations,
+          ...publicLinkAuthorizations,
+        ];
+
         const itemsByAlbum = groupByMapping(
           await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
           (x) => x.albumId,

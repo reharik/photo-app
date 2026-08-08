@@ -7,7 +7,7 @@ export const ensureMemberCanEditAlbum = (
   operation: Operation,
   viewerId: EntityId,
 ) => {
-  const member = album.getAlbumMember(viewerId);
+  const member = album.getAlbumMemberByUserId(viewerId);
   if (!member) {
     return fail(AppErrorCollection.album.UserIsNotMember);
   }

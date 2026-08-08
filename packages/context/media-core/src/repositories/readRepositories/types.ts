@@ -5,11 +5,11 @@ import {
   EntityType,
   Operation,
   ReactionEmoji,
-  User,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
 import { AuditRecord } from '../..';
 import {
+  AlbumMemberCollectionInfo,
   AlbumWithCoverRow,
   CommentRow,
   DBMediaItemRow,
@@ -18,6 +18,7 @@ import {
   MediaItemCollectionInfo,
   PagedList,
   SharedWithMeAlbumCollectionInfo,
+  UserRow,
 } from '../../services/readServices/types';
 import type { CollectionInfo, EntityId, PageInfo } from '../../types/types';
 
@@ -122,7 +123,12 @@ export type AlbumIdRow = { id: string };
 
 export type AlbumMemberRow = {
   id: string;
+  userId: string;
   role: AlbumMemberRole;
+  firstName: string;
+  lastName: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type AlbumMemberReadRepository = {
@@ -133,6 +139,15 @@ export type AlbumMemberReadRepository = {
     albumId: string;
     viewerId: string;
   }) => Promise<AlbumMemberRow | undefined>;
+  getAlbumMembersForAlbum: ({
+    albumId,
+    viewerId,
+    collectionInfo,
+  }: {
+    albumId: string;
+    viewerId: string;
+    collectionInfo: AlbumMemberCollectionInfo;
+  }) => Promise<PagedList<AlbumMemberRow>>;
 };
 
 export type ReactionRecord = {
@@ -242,7 +257,8 @@ export type MediaItemReadRepository = {
 };
 
 export type UserReadRepository = {
-  getById: (userId: EntityId) => Promise<User | undefined>;
+  getById: (userId: EntityId) => Promise<UserRow | undefined>;
+  getByIds: (userIds: EntityId[]) => Promise<UserRow[]>;
 };
 
 export type PublicMediaItemReadRepository = {

@@ -13,28 +13,19 @@ import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } fro
 import { PublicLinkAuthorization } from './PublicLinkAuthorization';
 import { UserAuthorization } from './UserAuthorization';
 
-export type PendingUserAuthorizationProps = Omit<
-  AuthorizationProps,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
+export type PendingUserAuthorizationProps = AuthorizationProps & {
   grantedToUser: EntityId;
   linkToken: string;
   kind: typeof AuthorizationKind.pending;
 };
 
-export type PendingUserAuthorizationRecord = Omit<
-  AuthorizationRecord,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
+export type PendingUserAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: EntityId;
   linkToken: string;
   kind: typeof AuthorizationKind.pending;
 };
 
-export type CreatePendingUserAuthorizationInput = Omit<
-  CreateAuthorizationInput,
-  'grantedToUser'
-> & {
+export type CreatePendingUserAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser: EntityId;
 };
 

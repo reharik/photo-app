@@ -61,7 +61,8 @@ export const build__CreateMediaItemUpload = ({
 
     await mediaItemRepository.save(mediaItem);
     // If albumId is passed that means that we are adding media directly
-    // to the album.
+    // to the album. This bypasses the rule that an item must be in a ready state.
+    // should probably find a way to wait on this
     if (albumId) {
       const album = await albumRepository.getById(albumId);
       if (!album) {

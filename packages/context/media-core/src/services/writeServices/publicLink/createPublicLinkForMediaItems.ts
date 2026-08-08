@@ -1,6 +1,9 @@
 import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
-import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
+import {
+  ensureMediaItemInReadyState,
+  ensureMediaItemOwnedByViewer,
+} from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -61,6 +64,10 @@ export const build__CreatePublicLinkForMediaItems = ({
       );
       if (!ownershipResult.success) {
         return ownershipResult;
+      }
+      const isReady = ensureMediaItemInReadyState(loadedMediaItem.value);
+      if (!isReady.success) {
+        return isReady;
       }
       album.addItem(mediaItemId, input.viewerId, loadedMediaItem.value.kind());
     }

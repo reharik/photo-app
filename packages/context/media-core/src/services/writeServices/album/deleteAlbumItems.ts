@@ -1,7 +1,7 @@
 import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
+import { SystemAlbumItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumItemsCommand, DeleteAlbumItemsResult } from './writeAlbum.types';
 
@@ -11,12 +11,12 @@ export interface DeleteAlbumItems extends WriteServiceBase {
 
 type DeleteAlbumItemsDeps = {
   albumRepository: AlbumRepository;
-  albumItemReadRepository: AlbumItemReadRepository;
+  systemAlbumItemRepository: SystemAlbumItemRepository;
 };
 
 export const build__DeleteAlbumItems = ({
   albumRepository,
-  albumItemReadRepository,
+  systemAlbumItemRepository,
 }: DeleteAlbumItemsDeps): DeleteAlbumItems => {
   return async (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
@@ -28,16 +28,16 @@ export const build__DeleteAlbumItems = ({
       return getResult;
     }
     const album = getResult.value;
-    const member = album.getAlbumMember(viewerId);
+    const member = album.getAlbumMemberByUserId(viewerId);
     if (!member) {
       return fail(AppErrorCollection.album.UserIsNotMember);
     }
 
     if (!member.role().can(Operation.removeItems)) {
-      const items = await albumItemReadRepository.getAlbumItemsByIds({ albumId, albumItemIds });
+      const items = await systemAlbumItemRepository.getAlbumItemsByIds({ albumId, albumItemIds });
       const notOwned = items.some((i) => i.mediaItemOwnerId !== viewerId);
       if (notOwned) {
-        return fail(AppErrorCollection.album.MemberNotAllowedToDeleteAlbum);
+        return fail(AppErrorCollection.album.CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage);
       }
     }
 

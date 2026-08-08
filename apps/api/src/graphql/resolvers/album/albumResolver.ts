@@ -1,6 +1,6 @@
 import { AlbumItemSortBy, EntityType } from '@packages/contracts';
 import { authenticatedReadResolver } from '../../context/contextWrappers';
-import type { Resolvers } from '../../generated/types.generated';
+import type { AlbumMemberSortBy, Resolvers } from '../../generated/types.generated';
 import { standardizeCollectionInput } from '../standardizeInput';
 
 const albumResolvers: Resolvers = {
@@ -19,6 +19,17 @@ const albumResolvers: Resolvers = {
       });
 
       return { ...albumItemsResult, pageInfo: collectionInfo.pageInfo };
+    }),
+    albumMembers: authenticatedReadResolver(async (album, { input }, ctx) => {
+      const collectionInfo = standardizeCollectionInput<AlbumMemberSortBy>(input.collectionInfo);
+
+      const albumMembersResult =
+        await ctx.readServices.viewerAlbumReadService.getAlbumMembersForAlbum({
+          albumId: album.id,
+          collectionInfo,
+        });
+
+      return { ...albumMembersResult, pageInfo: collectionInfo.pageInfo };
     }),
     comments: authenticatedReadResolver(async (parent, args, ctx) => {
       const collectionInfo = args.input.collectionInfo;

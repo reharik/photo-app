@@ -2,13 +2,18 @@ import { AlbumMemberRole, OperationCatalog } from '@packages/contracts';
 import { indexByUnique } from '@packages/infrastructure';
 import { StandardEnumItem } from '@reharik/smart-enum';
 import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
-import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
+import {
+  AlbumMemberReadRepository,
+  AlbumReadRepository,
+} from '../../../repositories/readRepositories/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
 import {
   AlbumCollectionInfo,
   AlbumItemCollectionInfo,
   AlbumItemProjection,
+  AlbumMemberCollectionInfo,
+  AlbumMemberProjection,
   AlbumProjection,
   AlbumWithCoverRow,
   MediaItemProjection,
@@ -23,6 +28,10 @@ export interface ViewerAlbumReadService extends ReadServiceBase {
     albumId: string;
     collectionInfo: AlbumItemCollectionInfo;
   }) => Promise<PagedList<AlbumItemProjection>>;
+  getAlbumMembersForAlbum: (args: {
+    albumId: string;
+    collectionInfo: AlbumMemberCollectionInfo;
+  }) => Promise<PagedList<AlbumMemberProjection>>;
 }
 
 export type SortableEnum = StandardEnumItem & { column: string };
@@ -30,6 +39,7 @@ export type SortableEnum = StandardEnumItem & { column: string };
 type ViewerAlbumReadServiceDeps = {
   albumReadRepository: AlbumReadRepository;
   albumItemReadRepository: AlbumItemReadRepository;
+  albumMemberReadRepository: AlbumMemberReadRepository;
   enrichMediaItems: EnrichMediaItems;
   viewerId: string;
 };
@@ -37,6 +47,7 @@ type ViewerAlbumReadServiceDeps = {
 export const build__ViewerAlbumReadService = ({
   albumReadRepository,
   albumItemReadRepository,
+  albumMemberReadRepository,
   enrichMediaItems,
   viewerId,
 }: ViewerAlbumReadServiceDeps): ViewerAlbumReadService => {
@@ -153,6 +164,19 @@ export const build__ViewerAlbumReadService = ({
         nodes,
         totalCount: albumItemsResult.totalCount,
       };
+    },
+    getAlbumMembersForAlbum: async ({
+      albumId,
+      collectionInfo,
+    }: {
+      albumId: string;
+      collectionInfo: AlbumMemberCollectionInfo;
+    }): Promise<PagedList<AlbumMemberProjection>> => {
+      return albumMemberReadRepository.getAlbumMembersForAlbum({
+        albumId,
+        viewerId,
+        collectionInfo,
+      });
     },
   };
 };

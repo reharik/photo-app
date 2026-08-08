@@ -40,15 +40,11 @@ export const build__SharedWithMeReadRepository = ({
       .modify(withCollectionInfo(database, collectionInfo))
       .select<(SharedAlbumRow & { totalCount: number })[]>(...albumFields);
 
-    const rows = await withEnumRevival(
-      query,
-      {
-        mediaItemKind: MediaKind,
-        mediaItemStatus: MediaItemStatus,
-        viewerMemberRole: AlbumMemberRole,
-      },
-      { strict: true },
-    );
+    const rows = await withEnumRevival(query, {
+      mediaItemKind: MediaKind,
+      mediaItemStatus: MediaItemStatus,
+      viewerMemberRole: AlbumMemberRole,
+    });
     return toPagedResult(rows);
   },
   getAlbumSharedWithMe: async ({
@@ -68,15 +64,11 @@ export const build__SharedWithMeReadRepository = ({
       .select<SharedAlbumRow>(...albumFields)
       .where('album.id', albumId);
 
-    const row = await withEnumRevival(
-      query,
-      {
-        mediaItemKind: MediaKind,
-        mediaItemStatus: MediaItemStatus,
-        viewerMemberRole: AlbumMemberRole,
-      },
-      { strict: true },
-    );
+    const row = await withEnumRevival(query, {
+      mediaItemKind: MediaKind,
+      mediaItemStatus: MediaItemStatus,
+      viewerMemberRole: AlbumMemberRole,
+    });
 
     return row;
   },

@@ -10,25 +10,19 @@ import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type UserAuthorizationProps = Omit<
-  AuthorizationProps,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
+export type UserAuthorizationProps = AuthorizationProps & {
   grantedToUser: EntityId;
   linkToken: undefined;
   kind: typeof AuthorizationKind.user;
 };
 
-export type UserAuthorizationRecord = Omit<
-  AuthorizationRecord,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
+export type UserAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: EntityId;
   linkToken: undefined;
   kind: typeof AuthorizationKind.user;
 };
 
-export type CreateUserAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
+export type CreateUserAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser: EntityId;
 };
 

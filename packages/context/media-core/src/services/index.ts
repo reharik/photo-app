@@ -23,10 +23,12 @@ export * from './readServices/viewerReadServices/viewerSharedWithMeAlbumReadServ
 export * from './writeServices/markActivitySeen';
 export * from './writeServices/writeServiceBaseType';
 export * from './writeServices/album/addAlbumItem';
+export * from './writeServices/album/addAlbumMembers';
 export * from './writeServices/album/addMediaItemsToAlbum';
 export * from './writeServices/album/createAlbum';
 export * from './writeServices/album/deleteAlbum';
 export * from './writeServices/album/deleteAlbumItems';
+export * from './writeServices/album/removeAlbumMembers';
 export * from './writeServices/album/reorderAlbumItems';
 export * from './writeServices/album/setCoverMedia';
 export * from './writeServices/album/unsetCoverMedia';

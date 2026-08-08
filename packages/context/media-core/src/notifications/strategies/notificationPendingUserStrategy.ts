@@ -13,27 +13,27 @@ type Deps = {
   logger: Logger;
 };
 
-export const build__NotificationPublicLinkStrategy = ({
+export const build__NotificationPendingUserStrategy = ({
   systemUserRepository,
   systemAuthorizationRepository,
   logger,
-}: Deps): NotificationStrategy<'publicLinkSharedWithUser'> => ({
-  handles: ['publicLinkSharedWithUser'],
+}: Deps): NotificationStrategy<'albumSharedWithPendingUser'> => ({
+  handles: ['albumSharedWithPendingUser'],
   branches: ['asyncWriter'],
   resolve: async (event): Promise<ResolvedNotification> => {
-    logger.info(`[PublicLinkStrategy] Handling message for publicLinkSharedWithUser`);
+    logger.info(
+      `[PendingUserStrategy] Handling message for publicLinkSharedWithUser | albumSharedWithPendingUser`,
+    );
     const recipients = await systemUserRepository.getUserContacts([event.userId]);
-    const publicLinkAuthorization =
-      await systemAuthorizationRepository.getPublicLinkAuthorizationById(
-        event.publicLinkAuthorizationId,
-      );
+    const pendingUserAuthorization =
+      await systemAuthorizationRepository.getPendingUserAuthorizationById(event.authorizationId);
     return {
       recipients,
       actorId: event.actorId,
       containerType: NotificationContainerType.album,
-      containerId: publicLinkAuthorization.albumId,
+      containerId: pendingUserAuthorization.albumId,
       subjectType: NotificationSubjectType.authorization,
-      subjectId: publicLinkAuthorization.id,
+      subjectId: pendingUserAuthorization.id,
       kind: NotificationKind.guestAlbumShared,
     };
   },

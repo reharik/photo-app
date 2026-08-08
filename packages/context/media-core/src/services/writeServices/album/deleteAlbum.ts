@@ -20,7 +20,7 @@ export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): Delete
       return getResult;
     }
     const album = getResult.value;
-    const member = album.getAlbumMember(viewerId);
+    const member = album.getAlbumMemberByUserId(viewerId);
     if (!member) {
       return fail(AppErrorCollection.album.UserIsNotMember);
     }

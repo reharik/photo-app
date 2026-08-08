@@ -11,35 +11,26 @@ import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type PublicLinkAuthorizationProps = Omit<
-  AuthorizationProps,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
-  grantedToUser: string | null;
-  linkToken: string;
-  kind: typeof AuthorizationKind.public;
-};
-
-export type PublicLinkAuthorizationRecord = Omit<
-  AuthorizationRecord,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
-  grantedToUser: string | null;
-  linkToken: string;
-  kind: typeof AuthorizationKind.public;
-};
-
-export type PublicLinkAuthorizationConversionRecord = Omit<
-  AuthorizationRecord,
-  'linkToken' | 'grantedToUser' | 'kind'
-> & {
+export type PublicLinkAuthorizationProps = AuthorizationProps & {
   grantedToUser: null;
   linkToken: string;
   kind: typeof AuthorizationKind.public;
 };
 
-export type CreatePublicLinkAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
-  grantedToUser: undefined;
+export type PublicLinkAuthorizationRecord = AuthorizationRecord & {
+  grantedToUser: null;
+  linkToken: string;
+  kind: typeof AuthorizationKind.public;
+};
+
+export type PublicLinkAuthorizationConversionRecord = AuthorizationRecord & {
+  grantedToUser: null;
+  linkToken: string;
+  kind: typeof AuthorizationKind.public;
+};
+
+export type CreatePublicLinkAuthorizationInput = CreateAuthorizationInput & {
+  grantedToUser?: undefined;
 };
 
 export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecord> {

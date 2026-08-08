@@ -84,7 +84,6 @@ export const createQueueClaimable = <TRow extends ClaimableRow>(
           })
           .returning('*'),
         { status: MediaItemStatus },
-        { strict: true },
       );
 
       return updated as TRow[];

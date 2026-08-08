@@ -20,3 +20,13 @@ export interface PendingUserAuthorizationRevoked extends DomainEventBase {
   kind: 'pendingUserAuthorizationRevoked';
   authorizationId: EntityId;
 }
+
+export interface PublicLinkExpired extends DomainEventBase {
+  kind: 'publicLinkExpired';
+  authorizationId: EntityId;
+}
+
+export interface PublicLinkRevoked extends DomainEventBase {
+  kind: 'publicLinkRevoked';
+  authorizationId: EntityId;
+}

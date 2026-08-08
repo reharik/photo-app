@@ -21,7 +21,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         return result;
       }
 
-      return ok({ userIds: result.value.invitedUsers.map((x) => x.id()) });
+      return ok({ userIds: result.value.succeeded.map((x) => x.item.id()) });
     }),
 
     grantUserAuthorizationForAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
@@ -40,7 +40,7 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         return result;
       }
 
-      return ok({ userIds: result.value.invitedUsers.map((u) => u.id()) });
+      return ok({ userIds: result.value.succeeded.map((x) => x.item.id()) });
     }),
   },
 };

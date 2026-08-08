@@ -47,7 +47,6 @@ export const build__AlbumReadRepository = ({
         mediaItemStatus: MediaItemStatus,
         viewerMemberRole: AlbumMemberRole,
       },
-      { strict: true },
     );
     return toPagedResult(rows);
   },
@@ -74,7 +73,6 @@ export const build__AlbumReadRepository = ({
         mediaItemStatus: MediaItemStatus,
         viewerMemberRole: AlbumMemberRole,
       },
-      { strict: true },
     );
   },
 
@@ -110,7 +108,6 @@ export const build__AlbumReadRepository = ({
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
       },
-      { strict: true },
     );
   },
 });

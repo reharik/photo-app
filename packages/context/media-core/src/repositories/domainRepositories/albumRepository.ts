@@ -39,7 +39,6 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
     const memberRows = await withEnumRevival(
       uow.db()<AlbumMemberRecord>('albumMember').where({ albumId: id }).orderBy('createdAt', 'asc'),
       { role: AlbumMemberRole },
-      { strict: true },
     );
 
     const authorizationRows = await withEnumRevival(
@@ -47,8 +46,7 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
         .db()<AnyAuthorizationRecord>('access_grant')
         .where({ albumId: id })
         .orderBy('createdAt', 'asc'),
-      { operation: Operation, kind: AuthorizationKind },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
     );
 
     const userAuthorizationRows: UserAuthorizationRecord[] = [];

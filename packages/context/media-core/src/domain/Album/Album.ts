@@ -154,13 +154,39 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  addMember(userId: EntityId, role: AlbumMemberRole, actorId: ActorId): WriteResult {
+  addMember(userId: EntityId, role: AlbumMemberRole, actorId: ActorId): WriteResult<AlbumMember> {
+    if (role.equals(AlbumMemberRole.owner)) {
+      return fail(AppErrorCollection.album.CanNotAddMoreThanOneAlbumOwner);
+    }
+    const actingMember = this.#members.find((m) => m.userId() === actorId);
+    if (!actingMember || !actingMember.role().can(Operation.addMembers)) {
+      return fail(Operation.addMembers.deniedError);
+    }
     if (this.#members.some((m) => m.userId() === userId)) {
       return fail(AppErrorCollection.album.UserAlreadyMember);
     }
-    this.#members.push(AlbumMember.create({ userId, role, albumId: this.id() }, actorId));
+    const newMember = AlbumMember.create({ userId, role, albumId: this.id() }, actorId);
+    this.#members.push(newMember);
     this.touch(actorId);
-    return ok(undefined);
+    return ok(newMember);
+  }
+
+  removeMember(albumMemberId: EntityId, actorId: ActorId): WriteResult<AlbumMember> {
+    const actingMember = this.#members.find((m) => m.userId() === actorId);
+    if (!actingMember || !actingMember.role().can(Operation.removeMembers)) {
+      return fail(Operation.removeMembers.deniedError);
+    }
+    const targetMember = this.#members.find((m) => m.id() === albumMemberId);
+    if (!targetMember) {
+      return fail(AppErrorCollection.album.UserIsNotMember);
+    }
+    if (targetMember.role().equals(AlbumMemberRole.owner)) {
+      return fail(AppErrorCollection.album.CanNotRemoveOwnerOfAlbum);
+    }
+    this.#members = this.#members.filter((x) => x.id() !== albumMemberId);
+    this.#removedMembers.push(targetMember);
+    this.touch(actorId);
+    return ok(targetMember);
   }
 
   coverMediaId(): EntityId | undefined {
@@ -239,7 +265,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  getAlbumMember(userId: EntityId): AlbumMember | undefined {
+  getAlbumMemberByUserId(userId: EntityId): AlbumMember | undefined {
     return this.#members.find((m) => m.userId() === userId) ?? undefined;
   }
 
@@ -365,7 +391,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   }
 
   grantPendingUserAuthorization(input: AlbumAuthorizationInput): WriteResult<{
-    pendingUserAuthorization: PendingUserAuthorization;
+    authorization: PendingUserAuthorization;
   }> {
     const { operations, actorId, grantedToUserId, label, expiresAt } = input;
     const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
@@ -399,7 +425,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
         },
         actorId,
       );
-      return ok({ pendingUserAuthorization });
+      return ok({ authorization: pendingUserAuthorization });
     }
 
     if (expiresAt && result.value.status === 'updateExpireDate') {
@@ -439,7 +465,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
       //   actorId,
       // );
     }
-    return ok({ pendingUserAuthorization: existingPendingUserAuthorization });
+    return ok({ authorization: existingPendingUserAuthorization });
   }
   /**
    * ⚠️ NOT WIRED YET. As with revokeAuthorization above: when this goes live the calling
@@ -476,10 +502,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
   }
 
   grantPublicLink(
-    actorId: ActorId,
-    expiresAt?: Date,
-    operations?: Operation[],
+    input: Omit<AlbumAuthorizationInput, 'grantedToUserId'>,
   ): WriteResult<PublicLinkAuthorization> {
+    const { operations, actorId, label, expiresAt } = input;
     let publicLink = this.#publicLinks.find((x) => {
       const exp = x.expiresAt();
       return !x.revokedAt() && (!exp || exp > new Date());
@@ -491,8 +516,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
         {
           operations: operations ?? [],
           grantedBy: actorId,
-          grantedToUser: undefined,
-          label: undefined,
+          label,
           expiresAt,
           albumId: this.id(),
         },
@@ -559,8 +583,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     // persisted from the other.
     this.#pendingUserAuthorizations = this.#pendingUserAuthorizations.filter((x) => x.id() !== id);
     this.#publicLinks.push(publicLinkAuthorization);
-    // this is half done
-    // fire some domain events.
+    this.recordEvent(
+      'pendingUserActivated',
+      { userId: userAuthorization.grantedToUser(), authorizationIds: [userAuthorization.id()] },
+      actorId,
+    );
     return ok(undefined);
   }
   childEntities(): ChildEntities {

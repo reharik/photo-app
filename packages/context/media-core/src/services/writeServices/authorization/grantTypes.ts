@@ -4,8 +4,7 @@ import { EntityId } from '../../../types/types';
 
 export type GrantUserAuthorizationResult = {
   invitedUsers: (User | PendingUser)[];
-  errors: { user: User | PendingUser; error: ContractError }[];
-  publicLinkFailure?: { handles: string[]; error: ContractError };
+  errors: { item: User | PendingUser; error: ContractError }[];
 };
 
 export type GrantUserAuthorizationCommand = {

@@ -36,12 +36,16 @@ export const build__CreatePublicLinkForAlbum = ({
       return loadedAlbum;
     }
     const album = loadedAlbum.value;
-    const member = album.getAlbumMember(input.viewerId);
+    const member = album.getAlbumMemberByUserId(input.viewerId);
     if (!member || !member.role().equals(AlbumMemberRole.owner)) {
       return fail(AppErrorCollection.album.NotAllowedToGrantAuthorizationForAlbum);
     }
 
-    const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
+    const publicLinkResult = album.grantPublicLink({
+      operations: [],
+      actorId: input.viewerId,
+      expiresAt: input.expiresAt,
+    });
     if (!publicLinkResult.success) {
       return publicLinkResult;
     }

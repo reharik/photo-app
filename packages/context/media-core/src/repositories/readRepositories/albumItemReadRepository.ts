@@ -59,7 +59,7 @@ const mediaItemSelectColumns = [
   'mediaItem.reactionCounts as mediaItemReactionCounts',
 ];
 
-const albumItemWithMediaSelectColumns = [
+export const albumItemWithMediaSelectColumns = [
   'albumItem.id',
   'albumItem.orderIndex as albumItemOrderIndex',
   'albumItem.createdAt',
@@ -95,7 +95,6 @@ export const build__AlbumItemReadRepository = ({
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
       },
-      { strict: true },
     )) as (AlbumItemWithMediaRow & { totalCount: number })[];
     return toPagedResult(rows);
   },
@@ -119,14 +118,10 @@ export const build__AlbumItemReadRepository = ({
         ...albumItemWithMediaSelectColumns,
       );
 
-    const rows = await withEnumRevival(
-      query,
-      {
-        mediaItemKind: MediaKind,
-        mediaItemStatus: MediaItemStatus,
-      },
-      { strict: true },
-    );
+    const rows = await withEnumRevival(query, {
+      mediaItemKind: MediaKind,
+      mediaItemStatus: MediaItemStatus,
+    });
 
     return toPagedResult(rows);
   },
@@ -149,7 +144,6 @@ export const build__AlbumItemReadRepository = ({
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
       },
-      { strict: true },
     );
   },
 });

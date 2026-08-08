@@ -44,8 +44,7 @@ export const build__AuthorizationReadRepository = ({
         .andWhere('mediaItem.ownerId', ownerId)
         .orderBy('accessGrant.createdAt', 'asc')
         .distinct<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation, kind: AuthorizationKind },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
     );
   },
   getGrantedAuthorizationsForOwnedAlbum: async ({
@@ -63,8 +62,7 @@ export const build__AuthorizationReadRepository = ({
         .andWhere('albumMember.role', 'owner')
         .orderBy('accessGrant.createdAt', 'asc')
         .select<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation, kind: AuthorizationKind },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
     );
   },
 
@@ -88,8 +86,7 @@ export const build__AuthorizationReadRepository = ({
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
         ),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation },
     );
   },
   getPublicMediaItemOperationsFromGrants: async (
@@ -112,8 +109,7 @@ export const build__AuthorizationReadRepository = ({
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
         ),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation },
     );
   },
 });
