@@ -1,0 +1,18 @@
+query ResolveShareRecipients($albumId: ID!, $emails: [String!]!) {
+  viewer {
+    id
+    album(id: $albumId) {
+      id
+      resolveShareRecipients(emails: $emails) {
+        data {
+          email
+          resolved
+          displayName
+        }
+        errors {
+          code
+        }
+      }
+    }
+  }
+}

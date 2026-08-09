@@ -1,11 +1,4 @@
-import {
-  AppErrorCollection,
-  ContractError,
-  fail,
-  ok,
-  Operation,
-  WriteResult,
-} from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
 import { dedupeIds, Logger } from '@packages/infrastructure';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from '../../../application';
 import {
@@ -148,25 +141,19 @@ export const build__GrantUserAuthorization = ({
     // active → album.grantAuthorization emits its own domain events, runs for
     // both pending and active.  In event handler pending users don't get grants.
     // Once they activate the grants will be created.
-    const activeResult = inviteUsers(userResult.value, album, input);
-
-    // ALL-OR-NOTHING GUARD — Until the share UI renders the
-    // errors array, a partial active-grant failure is a silent "shared!" lie, so fail the
-    // whole op (rolls back uow). Pending failures stay non-fatal (logged above). See RAI-XX.
-
-    if (activeResult.failed.length > 0) {
-      logger.warn(formatFailures(activeResult.failed, 'partial album grant', (x) => x.id()));
-      return fail(ContractError.PartialShareFailure);
+    const inviteResult = inviteUsers(userResult.value, album, input);
+    if (inviteResult.failed.length > 0) {
+      logger.warn(formatFailures(inviteResult.failed, 'partial album grant', (x) => x.id()));
     }
 
     // only persist contacts for people who actually got a grant
     await saveNewShareContacts(
-      activeResult.succeeded.map((x) => x.item),
+      inviteResult.succeeded.map((x) => x.item),
       granter,
       shareContactRepository,
     );
     await albumRepository.save(album);
 
-    return ok(activeResult);
+    return ok(inviteResult);
   };
 };

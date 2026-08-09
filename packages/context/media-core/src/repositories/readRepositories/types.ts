@@ -2,6 +2,7 @@ import {
   AlbumMemberRole,
   AlbumSortBy,
   AuthorizationKind,
+  AuthorizationOrigin,
   EntityType,
   Operation,
   ReactionEmoji,
@@ -27,6 +28,7 @@ export type ReadRepositoryDeps = { database: Knex };
 export type AuthorizationRow = {
   id: EntityId;
   grantedToUser?: EntityId;
+  linkToken?: string;
   albumId: EntityId;
   operations: Operation[];
   description?: string;
@@ -34,6 +36,7 @@ export type AuthorizationRow = {
   revokedAt?: Date;
   createdAt: Date;
   kind: AuthorizationKind;
+  origin: AuthorizationOrigin;
 };
 
 export type MediaItemOperations = {
@@ -44,6 +47,12 @@ export type MediaItemOperations = {
 export type MediaItemOperationsRow = {
   mediaItemId: EntityId;
   operations: Operation[];
+};
+
+export type EmailShare = {
+  id: EntityId;
+  email: string;
+  createdAt: Date;
 };
 
 export type AuthorizationReadRepository = {
@@ -63,6 +72,17 @@ export type AuthorizationReadRepository = {
     publicLinkId: EntityId,
     mediaItemIds: EntityId[],
   ) => Promise<MediaItemOperations[]>;
+  getPendingEmailAuthorizationsForAlbum: ({
+    albumId,
+    viewerId,
+  }: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }) => Promise<EmailShare[]>;
+  getPublicAuthorizationByAlbum: (args: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }) => Promise<AuthorizationRow>;
 };
 
 export type HasActiveGrantInput = {
@@ -259,6 +279,7 @@ export type MediaItemReadRepository = {
 export type UserReadRepository = {
   getById: (userId: EntityId) => Promise<UserRow | undefined>;
   getByIds: (userIds: EntityId[]) => Promise<UserRow[]>;
+  getByEmails: (emails: string[]) => Promise<UserRow[]>;
 };
 
 export type PublicMediaItemReadRepository = {

@@ -16,7 +16,7 @@ generates:
         DateTime: 'luxon#DateTime'
         Date: 'luxon#DateTime'
         UUID: string
-        JSON: unknown # or whatever you actually want for JSON
+        JSON: Record<string, unknown>
       maybeValue: 'T | undefined'
       avoidOptionals:
         field: false # nullable fields become optional `field?:`

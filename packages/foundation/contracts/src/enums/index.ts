@@ -7,6 +7,7 @@ export * from './FrontendError';
 export * from './albumMemberRole';
 export * from './asyncNotificationKind';
 export * from './authorizationKind';
+export * from './authorizationOrigin';
 export * from './batchedPayloadKind';
 export * from './frontendUploadStatus';
 export * from './frontendUploadStep';

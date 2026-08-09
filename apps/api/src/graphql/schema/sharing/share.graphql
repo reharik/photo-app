@@ -19,5 +19,24 @@ type GrantUserAuthorizationResult {
 }
 
 type GrantUserAuthorizationPayload {
+  succeeded: [GrantUserAuthorizationSucceeded!]!
+  failed: [GrantUserAuthorizationFailed!]!
+}
+
+type GrantUserAuthorizationSucceeded {
+  email: String!
+}
+
+type GrantUserAuthorizationFailed {
+  email: String!
+  error: ContractError!
+}
+
+type GrantMediaItemUserAuthorizationResult {
+  data: GrantMediaItemUserAuthorizationPayload
+  errors: [ContractError!]
+}
+
+type GrantMediaItemUserAuthorizationPayload {
   userIds: [ID!]!
 }

@@ -1,10 +1,17 @@
-import { AlbumMemberRole, OperationCatalog } from '@packages/contracts';
-import { indexByUnique } from '@packages/infrastructure';
+import {
+  AlbumMemberRole,
+  ContractError,
+  Operation,
+  OperationCatalog,
+  UserStatus,
+} from '@packages/contracts';
+import { indexBy, indexByUnique, Logger, RateLimiter } from '@packages/infrastructure';
 import { StandardEnumItem } from '@reharik/smart-enum';
 import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
 import {
   AlbumMemberReadRepository,
   AlbumReadRepository,
+  UserReadRepository,
 } from '../../../repositories/readRepositories/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
@@ -32,15 +39,28 @@ export interface ViewerAlbumReadService extends ReadServiceBase {
     albumId: string;
     collectionInfo: AlbumMemberCollectionInfo;
   }) => Promise<PagedList<AlbumMemberProjection>>;
+  resolveShareRecipients: (args: {
+    albumId: string;
+    emails: string[];
+  }) => Promise<ShareRecipient[] | ContractError>;
 }
 
 export type SortableEnum = StandardEnumItem & { column: string };
+
+export type ShareRecipient = {
+  email: string;
+  resolved: boolean;
+  displayName?: string;
+};
 
 type ViewerAlbumReadServiceDeps = {
   albumReadRepository: AlbumReadRepository;
   albumItemReadRepository: AlbumItemReadRepository;
   albumMemberReadRepository: AlbumMemberReadRepository;
   enrichMediaItems: EnrichMediaItems;
+  userReadRepository: UserReadRepository;
+  rateLimiter: RateLimiter;
+  logger: Logger;
   viewerId: string;
 };
 
@@ -49,6 +69,9 @@ export const build__ViewerAlbumReadService = ({
   albumItemReadRepository,
   albumMemberReadRepository,
   enrichMediaItems,
+  userReadRepository,
+  rateLimiter,
+  logger,
   viewerId,
 }: ViewerAlbumReadServiceDeps): ViewerAlbumReadService => {
   const buildCover = (album: AlbumWithCoverRow) => {
@@ -176,6 +199,53 @@ export const build__ViewerAlbumReadService = ({
         albumId,
         viewerId,
         collectionInfo,
+      });
+    },
+    resolveShareRecipients: async ({
+      albumId,
+      emails,
+    }: {
+      albumId: string;
+      emails: string[];
+    }): Promise<ShareRecipient[] | ContractError> => {
+      const album = await albumReadRepository.getAlbumForViewer({ albumId, viewerId });
+      if (!album) {
+        return ContractError.AlbumNotFound;
+      }
+      if (!album.viewerMemberRole?.can(Operation.grantAlbumAuthorization)) {
+        return Operation.grantAlbumAuthorization.deniedError;
+      }
+      const normalizedEmails = [...new Set(emails.map((x) => x.trim().toLowerCase()))];
+
+      if (normalizedEmails.length > 25) {
+        return ContractError.TooManyRecipients;
+      }
+      const resolveShareCheck = await rateLimiter.consume(
+        'resolve:shareRecipient',
+        viewerId,
+        {
+          limit: 100,
+          windowMs: 60 * 60_000,
+        },
+        normalizedEmails.length,
+      );
+      if (!resolveShareCheck.allowed) {
+        logger.warn('Resolve share recipient limit exceeded!', {
+          viewerId,
+        });
+        return ContractError.TooManyAttempts;
+      }
+
+      const users = await userReadRepository.getByEmails(normalizedEmails);
+      const userMap = indexBy(users, (x) => x.email.trim().toLowerCase());
+      return normalizedEmails.map((x) => {
+        const user = userMap.get(x);
+        const resolved = !!user && user.userStatus.equals(UserStatus.active);
+        return {
+          email: x,
+          resolved,
+          displayName: resolved ? `${user.firstName} ${user.lastName}` : undefined,
+        };
       });
     },
   };

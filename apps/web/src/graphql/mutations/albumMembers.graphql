@@ -1,0 +1,11 @@
+mutation RemoveAlbumMembers($input: RemoveAlbumMembersInput!) {
+  RemoveAlbumMembers(input: $input) {
+    data {
+      albumId
+      albumMemberIds
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

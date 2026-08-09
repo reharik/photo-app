@@ -1,6 +1,7 @@
 import { AlbumItemSortBy, EntityType } from '@packages/contracts';
 import { authenticatedReadResolver } from '../../context/contextWrappers';
 import type { AlbumMemberSortBy, Resolvers } from '../../generated/types.generated';
+import { writeResultToPayload } from '../../util/writeResultToPayload';
 import { standardizeCollectionInput } from '../standardizeInput';
 
 const albumResolvers: Resolvers = {
@@ -44,6 +45,26 @@ const albumResolvers: Resolvers = {
         pageInfo: collectionInfo.pageInfo,
         totalCount: nodes.length,
       };
+    }),
+    resolveShareRecipients: authenticatedReadResolver(async (album, { emails }, ctx) => {
+      const fu = await ctx.readServices.viewerAlbumReadService.resolveShareRecipients({
+        albumId: album.id,
+        emails,
+      });
+      console.log(`************fu************`);
+      console.log(fu);
+      console.log(`********END fu************`);
+      return writeResultToPayload(fu);
+    }),
+    emailShares: authenticatedReadResolver(async (album, args, ctx) => {
+      return ctx.readServices.viewerAuthorizationsReadService.listEmailSharesForAlbum({
+        albumId: album.id,
+      });
+    }),
+    publicLink: authenticatedReadResolver(async (album, args, ctx) => {
+      return ctx.readServices.viewerAuthorizationsReadService.getPublicLinkTokenForAlbum({
+        albumId: album.id,
+      });
     }),
   },
 };

@@ -17,4 +17,9 @@ export const build__UserReadRepository = ({
       userStatus: UserStatus,
     });
   },
+  getByEmails: async (emails: string[]): Promise<UserRow[]> => {
+    return await withEnumRevival(database<UserRow>('User').whereIn('email', emails), {
+      userStatus: UserStatus,
+    });
+  },
 });

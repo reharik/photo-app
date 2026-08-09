@@ -6,8 +6,8 @@
  *   - `key`    is the throttled identifier (normalized email, IP, userId, ...)
  *   - `rule`   is per-caller config (limit + window)
  *
- * Backing table `rate_limit_event(id, bucket, key, created_at)` — created by the
- * migration CC is writing. Requires a periodic sweep (delete created_at < now() - maxWindow);
+ * Backing table `rate_limit_event(id, bucket, key, count, created_at)` — created by
+ * migrations 0017 + 0025. Requires a periodic sweep (delete created_at < now() - maxWindow);
  * there is no FK cascade to clean it.
  *
  */
@@ -15,7 +15,7 @@
 import type { Knex } from 'knex';
 
 export interface RateLimitRule {
-  /** max events allowed within the window (inclusive) */
+  /** max units allowed within the window (inclusive) */
   limit: number;
   /** window length in milliseconds */
   windowMs: number;
@@ -23,52 +23,70 @@ export interface RateLimitRule {
 
 export interface RateLimitResult {
   allowed: boolean;
-  /** events left in the current window after this one (0 when denied) */
+  /** units left in the current window after this consume (0 when denied) */
   remaining: number;
-  /** ms until the window frees up (null when allowed) */
+  /** ms until a retry of the same size could pass (null when allowed) */
   retryAfterMs: number | null;
 }
 
 export interface RateLimiter {
-  consume: (bucket: string, key: string, rule: RateLimitRule) => Promise<RateLimitResult>;
+  /** `count` = units this call spends (default 1) — e.g. a 10-item batch passes 10 */
+  consume: (
+    bucket: string,
+    key: string,
+    rule: RateLimitRule,
+    count?: number,
+  ) => Promise<RateLimitResult>;
 }
 
 type RateLimiterDeps = { database: Knex };
 
 export const build__RateLimiter = ({ database }: RateLimiterDeps): RateLimiter => {
   /**
-   * Record an attempt and report whether it's within the limit.
+   * Record an attempt of `count` units and report whether it's within the limit.
    *
-   * Semantics: **insert-then-count**. Every call inserts a row, then counts rows
-   * in the window (including the one just inserted). This is deliberate — denied
-   * attempts still count, so hammering keeps the counter pinned instead of letting
-   * it drain. `limit` is inclusive: limit=3 allows exactly 3 in the window, denies the 4th.
+   * Semantics: **insert-then-sum**. Every call inserts a row (weighted by `count`),
+   * then sums units in the window (including the one just inserted). This is
+   * deliberate — denied attempts still count, so hammering keeps the counter pinned
+   * instead of letting it drain. `limit` is inclusive: limit=3 allows exactly 3
+   * units in the window, denies the 4th. All-or-nothing: a batch either fits
+   * entirely or is denied entirely (no partial admission), and `count > limit`
+   * can never pass — split the batch or raise the rule.
    */
   const consume = async (
     bucket: string,
     key: string,
     rule: RateLimitRule,
+    count: number = 1,
   ): Promise<RateLimitResult> => {
     const now = Date.now();
     const since = new Date(now - rule.windowMs);
 
     // Always record the attempt (denied ones count too).
-    await database('rateLimitEvent').insert({ bucket, key });
+    await database('rateLimitEvent').insert({ bucket, key, count });
 
-    const rows = await database('rateLimitEvent')
+    const rows: { createdAt: Date; count: number }[] = await database('rateLimitEvent')
       .where({ bucket, key })
       .andWhere('createdAt', '>', since)
       .orderBy('createdAt', 'asc')
-      .select('createdAt');
+      .select('createdAt', 'count');
 
-    const used = rows.length;
+    const used = rows.reduce((sum, row) => sum + row.count, 0);
 
     if (used > rule.limit) {
-      // window is full — free space opens when the oldest in-window event ages out
-      const oldest = rows[0]?.createdAt;
-      const oldestMs = oldest ? new Date(oldest).getTime() : now;
-      const retryAfterMs = Math.max(oldestMs + rule.windowMs - now, 0);
-      return { allowed: false, remaining: 0, retryAfterMs };
+      // Window is full — find when enough of the oldest weight ages out that a
+      // retry of this same size would fit. Falls back to full drain (last row's
+      // expiry) when even that isn't enough, i.e. count > limit.
+      let freed = 0;
+      let opensAtMs = new Date(rows[rows.length - 1].createdAt).getTime() + rule.windowMs;
+      for (const row of rows) {
+        freed += row.count;
+        if (used - freed + count <= rule.limit) {
+          opensAtMs = new Date(row.createdAt).getTime() + rule.windowMs;
+          break;
+        }
+      }
+      return { allowed: false, remaining: 0, retryAfterMs: Math.max(opensAtMs - now, 0) };
     }
 
     return { allowed: true, remaining: rule.limit - used, retryAfterMs: null };

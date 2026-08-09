@@ -60,7 +60,7 @@ export const MediaItemDetailForm = ({
       const envelope = result.data?.updateMediaItemDetails;
       const contractErrors = envelope?.errors;
       if (contractErrors != null && contractErrors.length > 0) {
-        setSaveError(contractErrors[0]?.message ?? 'Could not save changes.');
+        setSaveError('Could not save changes.');
         return;
       }
       await onSaved();

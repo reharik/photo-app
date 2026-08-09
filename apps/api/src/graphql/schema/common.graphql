@@ -1,5 +1,6 @@
 scalar DateTime
 scalar Date
+scalar JSON
 
 """
 Optional metadata on enum values for SmartEnum / codegen (e.g. DB column names).
@@ -68,10 +69,7 @@ input PageInfoInput {
 
 type ContractError {
   code: String!
-  message: String!
-  field: String
-  category: ErrorCategory!
-  retryable: Boolean!
+  data: JSON
 }
 
 enum ErrorCategory {

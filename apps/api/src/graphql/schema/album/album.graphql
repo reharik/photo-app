@@ -10,8 +10,26 @@ type Album implements ViewableItem & Node {
   ownerLastName: String
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  resolveShareRecipients(emails: [String!]!): ResolveShareRecipientsResponse!
   operations: [Operation!]!
   itemCount: Int!
+  emailShares: [EmailShare!]!
+  publicLink: PublicLink
+}
+
+type ResolveShareRecipientsResponse {
+  data: [ShareRecipient!]
+  errors: [ContractError!]
+}
+
+type EmailShare {
+  id: ID!
+  email: String!
+  createdAt: DateTime!
+}
+
+type PublicLink {
+  token: String
 }
 
 type Owner {
@@ -112,4 +130,10 @@ enum AlbumItemSortBy {
         { name: "nullsLast", value: "false" }
       ]
     )
+}
+
+type ShareRecipient {
+  email: String!
+  resolved: Boolean!
+  displayName: String
 }

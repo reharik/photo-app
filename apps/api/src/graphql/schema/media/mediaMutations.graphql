@@ -7,7 +7,7 @@ type Mutation {
   updateMediaItemTags(input: UpdateMediaItemTagsInput!): UpdateMediaItemTagsResponse!
   grantUserAuthorizationsForMediaItems(
     input: GrantUserAuthorizationsForMediaItemsInput!
-  ): GrantUserAuthorizationResult!
+  ): GrantMediaItemUserAuthorizationResult!
 }
 
 input CreateMediaUploadInput {

@@ -591,6 +591,13 @@ const contractErrorInput = {
     area: ErrorArea.auth,
     retryable: false,
   },
+  TooManyRecipients: {
+    code: 'TOO_MANY_RECIPIENTS',
+    display: 'Too many recipients',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

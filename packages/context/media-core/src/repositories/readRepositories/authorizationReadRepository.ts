@@ -1,8 +1,18 @@
-import { AuthorizationKind, Operation } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AuthorizationKind,
+  AuthorizationOrigin,
+  Operation,
+} from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
-import type { AuthorizationReadRepository, AuthorizationRow, MediaItemOperations } from './types';
+import type {
+  AuthorizationReadRepository,
+  AuthorizationRow,
+  EmailShare,
+  MediaItemOperations,
+} from './types';
 
 type AuthorizationReadRepositoryDeps = { database: Knex };
 
@@ -10,12 +20,19 @@ const shareSelectColumns = [
   'access_grant.id',
   'access_grant.granted_to_user',
   'access_grant.kind',
+  'access_grant.origin',
   'access_grant.operations',
   'access_grant.label as description',
+  'access_grant.link_token',
   'access_grant.expires_at',
   'access_grant.revoked_at',
   'access_grant.created_at',
 ];
+
+const rolesThatCan = (op: Operation) =>
+  AlbumMemberRole.items()
+    .filter((r) => r.can(op))
+    .map((r) => r.value);
 
 export const build__AuthorizationReadRepository = ({
   database,
@@ -66,6 +83,34 @@ export const build__AuthorizationReadRepository = ({
     );
   },
 
+  getPendingEmailAuthorizationsForAlbum: async ({
+    albumId,
+    viewerId,
+  }: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }): Promise<EmailShare[]> => {
+    return database('accessGrant')
+      .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
+      .where('accessGrant.albumId', albumId)
+      .where('accessGrant.kind', AuthorizationKind.pending.value)
+      .whereNull('accessGrant.revokedAt')
+      .whereExists(
+        database
+          .select(database.raw('1'))
+          .from('albumMember')
+          .where('albumMember.albumId', albumId)
+          .where('albumMember.userId', viewerId)
+          .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
+      )
+      .orderBy('accessGrant.createdAt', 'asc')
+      .select<EmailShare[]>([
+        'access_grant.id',
+        'user.email',
+        'access_grant.createdAt as grantedAt',
+      ]);
+  },
+
   getMediaItemOperationsFromGrants: async (
     viewerId: EntityId,
     mediaItemIds: EntityId[],
@@ -110,6 +155,31 @@ export const build__AuthorizationReadRepository = ({
           'g.operations as operations',
         ),
       { operations: Operation },
+    );
+  },
+  getPublicAuthorizationByAlbum: ({
+    albumId,
+    viewerId,
+  }: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }): Promise<AuthorizationRow> => {
+    return withEnumRevival(
+      database('accessGrant')
+        .where('accessGrant.albumId', albumId)
+        .where('accessGrant.kind', AuthorizationKind.public.value)
+        .where('accessGrant.origin', AuthorizationOrigin.owner.value)
+        .whereNull('accessGrant.revokedAt')
+        .whereExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember')
+            .where('albumMember.albumId', albumId)
+            .where('albumMember.userId', viewerId)
+            .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
+        )
+        .first<AuthorizationRow>(...shareSelectColumns),
+      { operations: Operation, kind: AuthorizationKind, origin: AuthorizationOrigin },
     );
   },
 });
