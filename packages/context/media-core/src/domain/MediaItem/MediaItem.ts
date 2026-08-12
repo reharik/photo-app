@@ -13,7 +13,7 @@ import {
   MediaItemStatus,
   MediaKind,
   ok,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { DBReactionCounts } from '../../services/readServices/types';
@@ -170,7 +170,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  addTags(tags: MediaItemTag[]): WriteResult {
+  addTags(tags: MediaItemTag[]): OperationResult {
     const newTags = tags.map((tag) => ({
       ...tag,
       id: crypto.randomUUID(),
@@ -182,7 +182,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): WriteResult {
+  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): OperationResult {
     this.#tags = this.#tags.filter(
       (t) => !tagIds.some((removeTag) => removeTag.userTagId === t.userTagId),
     );
@@ -201,7 +201,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       takenAt,
     }: { title?: string | null; description?: string | null; takenAt?: Date | null },
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     this.props.title = title;
     this.props.description = description;
     this.props.takenAt = takenAt;
@@ -278,7 +278,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     input: { sizeBytes: number; mimeType?: string },
     kind: MediaKind,
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     if (!this.props.status.equals(MediaItemStatus.pending)) {
       return fail(AppErrorCollection.mediaItem.StatusNotPending);
     }
@@ -302,7 +302,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   markReadyAfterDerivatives(
     input: { displayWidth: number; displayHeight: number },
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     if (!this.props.status.equals(MediaItemStatus.processing)) {
       return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
     }
@@ -324,7 +324,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
    * times out. Idempotent, and a no-op for any other status (a concurrently-readied or
    * deleted item must not be dragged back to failed).
    */
-  markProcessingFailed(actorId: ActorId): WriteResult {
+  markProcessingFailed(actorId: ActorId): OperationResult {
     if (this.props.status.equals(MediaItemStatus.failed)) {
       return ok(undefined);
     }
@@ -336,7 +336,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  toggleReaction(item: Reaction, actorId: ActorId): WriteResult {
+  toggleReaction(item: Reaction, actorId: ActorId): OperationResult {
     const reaction = this.#reactions.find(
       (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,
     );

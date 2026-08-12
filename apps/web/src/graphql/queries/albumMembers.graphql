@@ -10,6 +10,7 @@ query AlbumMembers($albumId: ID!, $input: AlbumMemberInput!) {
           role
           firstName
           lastName
+          email
         }
         totalCount
       }

@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, MediaAssetKind, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, MediaAssetKind, ok, OperationResult } from '@packages/contracts';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -11,7 +11,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
 
 export interface CreateMediaUpload extends WriteServiceBase {
-  (input: CreateMediaUploadCommand): Promise<WriteResult<CreateMediaUploadResult>>;
+  (input: CreateMediaUploadCommand): Promise<OperationResult<CreateMediaUploadResult>>;
 }
 
 const sanitizeOriginalFileName = (value: string | undefined): string | undefined => {
@@ -36,7 +36,9 @@ export const build__CreateMediaItemUpload = ({
   albumRepository,
   mediaStorage,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
-  return async (input: CreateMediaUploadCommand): Promise<WriteResult<CreateMediaUploadResult>> => {
+  return async (
+    input: CreateMediaUploadCommand,
+  ): Promise<OperationResult<CreateMediaUploadResult>> => {
     const { viewerId, kind, mimeType, originalFileName, albumId } = input;
     const mediaItem = MediaItem.create(
       {

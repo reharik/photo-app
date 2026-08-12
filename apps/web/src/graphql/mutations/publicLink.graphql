@@ -19,3 +19,14 @@ mutation CreatePublicLinkForMediaItems($input: CreatePublicLinkForMediaItemsInpu
     }
   }
 }
+
+mutation RevokePublicLinkAuthentication($input: RevokePublicLinkAuthenticationInput!) {
+  RevokePublicLinkAuthentication(input: $input) {
+    data {
+      token
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

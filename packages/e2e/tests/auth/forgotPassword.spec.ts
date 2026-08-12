@@ -12,6 +12,7 @@ import {
 } from '../../fixtures/authFlows';
 import { countLocalStackSesMessages } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
+import { shareAlbumWithEmail } from '../../fixtures/shareAlbumModal';
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
@@ -57,14 +58,7 @@ const shareNewAlbumWithEmail = async (
   email: string,
 ): Promise<string> => {
   const { albumId } = await addMediaItemsToNewAlbum(ownerPage, albumTitle, mediaItemIds);
-  await ownerPage.getByRole('button', { name: 'Share album' }).click();
-  const dialog = ownerPage.getByRole('dialog', { name: 'Share album' });
-  const recipients = dialog.getByRole('combobox', { name: 'Recipients' });
-  await recipients.fill(email);
-  await recipients.press('Enter');
-  await expect(dialog.getByRole('button', { name: `Remove ${email.toLowerCase()}` })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Share with user' }).click();
-  await expect(dialog).toBeHidden();
+  await shareAlbumWithEmail(ownerPage, email);
   return albumId;
 };
 

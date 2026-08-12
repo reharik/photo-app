@@ -13,7 +13,7 @@
 import assert from 'node:assert';
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { ContractError, fail, ok, type WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, type OperationResult } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import type {
   EmailVerificationRepository,
@@ -55,7 +55,7 @@ type Harness = {
   completeConsumption: jest.Mock<EmailVerificationRepository['completeConsumption']>;
   bumpValidationAttempts: jest.Mock<SystemEmailVerificationRepository['bumpValidationAttempts']>;
   activatePendingUser: jest.Mock<
-    (input: ActivateInput, user: PendingUser, actorId: string) => Promise<WriteResult<void>>
+    (input: ActivateInput, user: PendingUser, actorId: string) => Promise<OperationResult<void>>
   >;
   service: ReturnType<typeof build__AuthService>;
 };
@@ -105,13 +105,22 @@ const makeHarness = (): Harness => {
     return 1;
   });
 
-  // Stands in for the real write service, which activates the user and then re-materializes
-  // their album authorizations. Delegating to user.activate() keeps every oracle below
-  // pointed at the domain result (E4 mocks activate() to fail) while leaving the album work
-  // — which needs an AlbumRepository — out of a unit test about uow ordering.
+  // Stands in for the real write service, which activates the user, SAVES them, and then
+  // re-materializes their album authorizations. Activate-then-save mirrors that contract —
+  // authService no longer saves the pending user itself — so the ordering oracle still sees
+  // 'save' and a save throw still surfaces pre-commit. Delegating to user.activate() keeps
+  // every oracle below pointed at the domain result (E4 mocks activate() to fail) while
+  // leaving the album work — which needs an AlbumRepository — out of a unit test about uow
+  // ordering.
   const activatePendingUser = jest.fn(
-    async (input: ActivateInput, user: PendingUser, actorId: string) =>
-      user.activate(input as Parameters<PendingUser['activate']>[0], actorId),
+    async (input: ActivateInput, user: PendingUser, actorId: string) => {
+      const result = user.activate(input as Parameters<PendingUser['activate']>[0], actorId);
+      if (!result.success) {
+        return result;
+      }
+      await save(user);
+      return result;
+    },
   );
 
   const service = build__AuthService({

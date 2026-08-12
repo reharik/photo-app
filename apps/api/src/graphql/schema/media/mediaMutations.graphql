@@ -122,8 +122,6 @@ type FinalizeMediaUploadPayload {
 
 input GrantUserAuthorizationsForMediaItemsInput {
   mediaItemIds: [ID!]!
-  operations: [Operation!]!
   grantedToHandles: [String!]!
   label: String
-  expiresAt: DateTime
 }

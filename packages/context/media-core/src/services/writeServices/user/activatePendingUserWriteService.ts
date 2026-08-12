@@ -1,4 +1,4 @@
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { PendingUser } from '../../../domain';
 import { AlbumRepository, UserRepository } from '../../../repositories';
@@ -8,7 +8,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };
 
 export interface ActivatePendingUserWriteService extends WriteServiceBase {
-  (input: ActivateProps, user: PendingUser, actorId: ActorId): Promise<WriteResult<void>>;
+  (input: ActivateProps, user: PendingUser, actorId: ActorId): Promise<OperationResult<void>>;
 }
 
 type ActivatePendingUserWriteServiceDeps = {
@@ -26,7 +26,7 @@ export const build__ActivatePendingUserWriteService =
     activateInput: ActivateProps,
     user: PendingUser,
     actorId: ActorId,
-  ): Promise<WriteResult<void>> => {
+  ): Promise<OperationResult<void>> => {
     const userResult = user.activate(activateInput, actorId);
     if (!userResult.success) {
       return userResult;

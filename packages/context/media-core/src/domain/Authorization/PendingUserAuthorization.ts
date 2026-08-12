@@ -1,10 +1,11 @@
 import {
   AppErrorCollection,
   AuthorizationKind,
+  AuthorizationOrigin,
   fail,
   ok,
   Operation,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
@@ -17,12 +18,14 @@ export type PendingUserAuthorizationProps = AuthorizationProps & {
   grantedToUser: EntityId;
   linkToken: string;
   kind: typeof AuthorizationKind.pending;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
 export type PendingUserAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: EntityId;
   linkToken: string;
   kind: typeof AuthorizationKind.pending;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
 export type CreatePendingUserAuthorizationInput = CreateAuthorizationInput & {
@@ -55,9 +58,9 @@ export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRec
       linkToken,
       grantedBy: actorId,
       label: input.label,
-      expiresAt: input.expiresAt,
       albumId: input.albumId,
       kind: AuthorizationKind.pending,
+      origin: AuthorizationOrigin.owner,
     });
   }
 
@@ -70,11 +73,15 @@ export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRec
     return this.props.grantedToUser;
   }
 
+  grantedBy(): EntityId {
+    return this.props.grantedBy;
+  }
+
   operations(): Operation[] {
     return this.props.operations;
   }
 
-  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+  updateOperations(operations: Operation[], actorId: ActorId): OperationResult<undefined> {
     this.props.operations = operations;
     this.touch(actorId);
     return ok(undefined);
@@ -83,13 +90,13 @@ export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRec
   label(): string | undefined {
     return this.props.label;
   }
-  updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
+  updateLabel(label: string, actorId: ActorId): OperationResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
+  updateExpireDate(expiredDate: Date, actorId: ActorId): OperationResult<undefined> {
     if (expiredDate < new Date()) {
       return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
@@ -101,7 +108,7 @@ export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRec
     return ok(undefined);
   }
 
-  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
+  revokeAuthorization(actorId: ActorId): OperationResult<undefined> {
     if (this.props.expiresAt && this.props.expiresAt < new Date()) {
       return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
     }
@@ -136,6 +143,7 @@ export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRec
       grantedToUser: null,
       id: this.id(),
       kind: AuthorizationKind.public,
+      origin: AuthorizationOrigin.converted,
     };
     const ua = UserAuthorization.create(uaProps, actorId);
     const pla = PublicLinkAuthorization.fromConverted(publicLinkAuthProps, actorId);

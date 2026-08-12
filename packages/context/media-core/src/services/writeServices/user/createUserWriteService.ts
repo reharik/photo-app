@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { PendingUser } from '../../../domain';
 import { UserRepository } from '../../../repositories';
 import { EntityId } from '../../../types';
@@ -15,7 +15,7 @@ export type CreateUserCommand = {
 export type CreateUserResult = { user: PendingUser };
 
 export interface CreateUserWriteService extends WriteServiceBase {
-  (input: CreateUserCommand): Promise<WriteResult<CreateUserResult>>;
+  (input: CreateUserCommand): Promise<OperationResult<CreateUserResult>>;
 }
 
 type CreateUserWriteServiceDeps = { userRepository: UserRepository };
@@ -28,7 +28,7 @@ export const build__CreateUserWriteService =
     lastName,
     phone,
     actorId,
-  }: CreateUserCommand): Promise<WriteResult<CreateUserResult>> => {
+  }: CreateUserCommand): Promise<OperationResult<CreateUserResult>> => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -43,9 +43,12 @@ export const build__CreateUserWriteService =
     }
     const existingUser = await userRepository.getUserByEmail(normalizedEmail);
     if (existingUser) {
-      fail(ContractError.UserAlreadyExists);
+      return fail(ContractError.UserAlreadyExists);
     }
-    const user = PendingUser.create({ email, firstName, lastName, phone }, actorId);
+    const user = PendingUser.create(
+      { email: normalizedEmail, firstName, lastName, phone },
+      actorId,
+    );
 
     await userRepository.save(user);
     return ok({ user });

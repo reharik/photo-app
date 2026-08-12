@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import {
   ensureMediaItemInReadyState,
@@ -22,7 +22,7 @@ export type CreatePublicLinkForMediaItemsCommand = {
 };
 
 export interface CreatePublicLinkForMediaItems extends WriteServiceBase {
-  (input: CreatePublicLinkForMediaItemsCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (input: CreatePublicLinkForMediaItemsCommand): Promise<OperationResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForMediaItemsDeps = {
@@ -38,7 +38,7 @@ export const build__CreatePublicLinkForMediaItems = ({
 }: CreatePublicLinkForMediaItemsDeps): CreatePublicLinkForMediaItems => {
   return async (
     input: CreatePublicLinkForMediaItemsCommand,
-  ): Promise<WriteResult<CreatePublicLinkResponse>> => {
+  ): Promise<OperationResult<CreatePublicLinkResponse>> => {
     const mediaItemIds = dedupeIds(input.mediaItemIds);
     if (mediaItemIds.length === 0) {
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);

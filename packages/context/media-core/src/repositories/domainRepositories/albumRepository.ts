@@ -45,6 +45,7 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
       uow
         .db()<AnyAuthorizationRecord>('access_grant')
         .where({ albumId: id })
+        .whereNull('revokedAt')
         .orderBy('createdAt', 'asc'),
       { operations: Operation, kind: AuthorizationKind },
     );

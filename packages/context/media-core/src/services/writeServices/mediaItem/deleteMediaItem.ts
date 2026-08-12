@@ -1,4 +1,4 @@
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
@@ -11,7 +11,7 @@ import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMed
 import { DeleteMediaItemCommand, DeleteMediaItemResult } from './writeMediaItem.types';
 
 export interface DeleteMediaItem extends WriteServiceBase {
-  (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>>;
+  (input: DeleteMediaItemCommand): Promise<OperationResult<DeleteMediaItemResult>>;
 }
 
 type DeleteMediaItemDeps = {
@@ -27,7 +27,7 @@ export const build__DeleteMediaItem = ({
   albumReadRepository,
   mediaStorage,
 }: DeleteMediaItemDeps): DeleteMediaItem => {
-  return async (input: DeleteMediaItemCommand): Promise<WriteResult<DeleteMediaItemResult>> => {
+  return async (input: DeleteMediaItemCommand): Promise<OperationResult<DeleteMediaItemResult>> => {
     const { viewerId, mediaItemId } = input;
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
     if (!getResult.success) {

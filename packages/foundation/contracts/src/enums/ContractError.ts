@@ -570,6 +570,13 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  CanNotRemoveYourselfFromAlbum: {
+    code: 'CAN_NOT_REMOVE_YOURSELF_FROM_ALBUM',
+    display: 'Can not remove yourself from album',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
   CanNotAddMoreThanOneAlbumOwner: {
     code: 'CAN_NOT_ADD_MORE_THAN_ONE_ALBUM_OWNER',
     display: 'Can not add more than one album owner',
@@ -594,6 +601,20 @@ const contractErrorInput = {
   TooManyRecipients: {
     code: 'TOO_MANY_RECIPIENTS',
     display: 'Too many recipients',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  unknown: {
+    code: 'UNKNOWN',
+    display: 'Something went wrong',
+    category: ErrorCategory.system,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  CanNotUpdateOwnerOfAlbum: {
+    code: 'CAN_NOT_UPDATE_OWNER_OF_ALBUM',
+    display: 'Can not update owner of album',
     category: ErrorCategory.domain,
     area: ErrorArea.album,
     retryable: false,

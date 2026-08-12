@@ -1,7 +1,7 @@
-import type { WriteResult } from '@packages/contracts';
+import type { OperationResult } from '@packages/contracts';
 import type { GraphQLResolveInfo } from 'graphql';
 import type { ResolverFn } from '../generated/types.generated';
-import { MutationPayload, writeResultToPayload } from '../util/writeResultToPayload';
+import { MutationPayload, operationResultToPayload } from '../util/operationResultToPayload';
 import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
@@ -55,16 +55,16 @@ export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext 
   return ctx;
 };
 
-// Write resolvers return a WriteResult<T> — never a hand-built payload. This wrapper owns
-// the single mapping to the GraphQL `{ data, errors }` envelope (writeResultToPayload) AND
+// Write resolvers return a OperationResult<T> — never a hand-built payload. This wrapper owns
+// the single mapping to the GraphQL `{ data, errors }` envelope (operationResultToPayload) AND
 // the rollback decision, so neither can drift per-resolver. A mutation "fails as data": the
 // failure rides in the returned payload's `errors`, never the GraphQL `errors` channel — the
 // client contract depends on failures staying in the payload. The typed `result.success`
 // discriminant replaces the former envelope-scan heuristic; a resolver that returns anything
-// other than WriteResult<T> now fails typecheck.
+// other than OperationResult<T> now fails typecheck.
 export const authenticatedWriteResolver =
   <TParent, TArgs, TValue>(
-    resolver: ResolverFn<WriteResult<TValue>, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
+    resolver: ResolverFn<OperationResult<TValue>, TParent, AuthenticatedWriteGraphQLContext, TArgs>,
   ): ResolverFn<MutationPayload<TValue>, TParent, GraphQLContext, TArgs> =>
   async (parent, args, ctx, info) => {
     let authCtx: AuthenticatedWriteGraphQLContext;
@@ -80,7 +80,7 @@ export const authenticatedWriteResolver =
     if (!result.success) {
       authCtx.uow.shouldRollback = true;
     }
-    return writeResultToPayload(result);
+    return operationResultToPayload(result);
   };
 
 export const authenticatedReadResolver =

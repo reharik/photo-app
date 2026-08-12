@@ -1,4 +1,4 @@
-import { fail, ok, WriteResult } from '@packages/contracts';
+import { fail, ok, OperationResult } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
 import {
   Album,
@@ -23,7 +23,7 @@ export const getOrCreateAllUsers = async (
   userRepository: UserRepository,
   createUserWriteService: CreateUserWriteService,
   actorId: EntityId,
-): Promise<WriteResult<(User | PendingUser)[]>> => {
+): Promise<OperationResult<(User | PendingUser)[]>> => {
   const normalizedEmails = [...new Set(grantedToHandles.map((x) => x.trim().toLowerCase()))];
   const users = await userRepository.getAllUsersByEmail(normalizedEmails);
   const userMap = indexBy(users, (x) => x.email().trim().toLowerCase());
@@ -62,13 +62,11 @@ export const inviteUsers = (
 ): IndependentGroupResult<User | PendingUser, GrantedAuthorization> => {
   return eachIndependently(users, (user) => {
     const payload: AlbumAuthorizationInput = {
-      operations: input.operations,
       actorId: input.viewerId,
       label: input.label,
-      expiresAt: input.expiresAt,
       grantedToUserId: user.id(),
     };
-    const result: WriteResult<GrantedAuthorization> =
+    const result: OperationResult<GrantedAuthorization> =
       user.kind === 'active'
         ? album.grantAuthorization(payload)
         : album.grantPendingUserAuthorization(payload);

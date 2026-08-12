@@ -4,7 +4,7 @@ import {
   MediaAssetKind,
   MediaKind,
   ok,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import {
   buildMediaAssetStorageKey,
@@ -21,7 +21,7 @@ import {
 } from './writeMediaItem.types';
 
 export interface FinalizeMediaItemUpload extends WriteServiceBase {
-  (input: FinalizeMediaItemUploadCommand): Promise<WriteResult<FinalizeMediaItemUploadResult>>;
+  (input: FinalizeMediaItemUploadCommand): Promise<OperationResult<FinalizeMediaItemUploadResult>>;
 }
 
 type FinalizeMediaItemUploadDeps = {
@@ -37,7 +37,7 @@ export const build__FinalizeMediaItemUpload = ({
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
-  ): Promise<WriteResult<FinalizeMediaItemUploadResult>> => {
+  ): Promise<OperationResult<FinalizeMediaItemUploadResult>> => {
     const { viewerId, mediaItemId } = input;
     const mediaItem = await mediaItemRepository.getById(mediaItemId);
     if (!mediaItem) {

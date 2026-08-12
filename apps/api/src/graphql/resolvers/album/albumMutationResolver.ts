@@ -109,6 +109,32 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       });
       return result;
     }),
+
+    RevokeShareAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.revokeShareService({
+        actorId: ctx.viewer.id,
+        albumId: args.input.albumId,
+        authorizationId: args.input.authorizationId,
+      });
+      return result;
+    }),
+
+    RevokePublicLinkAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.revokePublicLinkService({
+        actorId: ctx.viewer.id,
+        albumId: args.input.albumId,
+      });
+      return result;
+    }),
+    UpdateAlbumMemberRole: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.updateAlbumMemberRoleService({
+        albumId: args.input.albumId,
+        albumMemberId: args.input.albumMemberId,
+        role: args.input.role,
+        actorId: ctx.viewer.id,
+      });
+      return result;
+    }),
   },
 };
 

@@ -1,4 +1,11 @@
-import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AppErrorCollection,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import { EntityId } from '../../types/types';
 import { Album } from '../Album/Album';
 
@@ -9,14 +16,19 @@ import { Album } from '../Album/Album';
 export const grantAuthorizationValidation = (
   item: Album,
   grantedToUserId: EntityId,
+  grantedBy: EntityId,
   label?: string,
-  expiresAt?: Date,
-): WriteResult<{
-  status: 'createAuthorization' | 'updateLabel' | 'updateExpireDate' | 'updated';
+): OperationResult<{
+  status: 'createAuthorization' | 'updateLabel' | 'updated';
 }> => {
   const member = item.getAlbumMemberByUserId(grantedToUserId);
   if (member && member.role().equals(AlbumMemberRole.owner)) {
     return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
+  }
+
+  const authorizingMember = item.getAlbumMemberByUserId(grantedBy);
+  if (!authorizingMember?.role().can(Operation.grantAlbumAuthorization)) {
+    return fail(Operation.grantAlbumAuthorization.deniedError);
   }
 
   const existingAuthorization = item
@@ -28,8 +40,6 @@ export const grantAuthorizationValidation = (
   if (label && existingAuthorization.label() !== label) {
     return ok({ status: 'updateLabel' });
   }
-  if (expiresAt && existingAuthorization.expiresAt() !== expiresAt) {
-    return ok({ status: 'updateExpireDate' });
-  }
+
   return ok({ status: 'updated' });
 };

@@ -26,7 +26,7 @@ We use distinct naming to represent different layers of data:
 - `*Result`
   - Output from write services (application layer)
   - Represents the outcome of executing a command
-  - Typically wrapped in `WriteResult<T>`
+  - Typically wrapped in `OperationResult<T>`
 
 ## Rules
 
@@ -34,5 +34,5 @@ We use distinct naming to represent different layers of data:
 - Do NOT reuse projections across unrelated use cases
 - GraphQL mappers should point to `*Projection` types when needed
 - Read services return projections, not rows
-- Write services accept `*Command` and return `WriteResult<*Result>`
+- Write services accept `*Command` and return `OperationResult<*Result>`
 - Do NOT use GraphQL-generated types (`*Input`, `*Payload`) inside write services

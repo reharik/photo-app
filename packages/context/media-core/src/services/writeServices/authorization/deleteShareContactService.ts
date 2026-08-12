@@ -1,10 +1,10 @@
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { ShareContactRepository } from '../../../repositories';
 import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface DeleteShareContactService extends WriteServiceBase {
-  (handle: string, viewerId: EntityId): Promise<WriteResult<{ handle: string }>>;
+  (handle: string, viewerId: EntityId): Promise<OperationResult<{ handle: string }>>;
 }
 
 type DeleteShareContactServiceDeps = {

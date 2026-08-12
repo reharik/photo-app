@@ -3,7 +3,7 @@ import {
   ContractError,
   fail,
   ok,
-  WriteResult,
+  OperationResult,
   type SignupInput,
 } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
@@ -23,7 +23,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
 
 export interface AuthService {
-  verifyCodeAndSetPassword: (credentials: SignupInput) => Promise<WriteResult<{ token: string }>>;
+  verifyCodeAndSetPassword: (
+    credentials: SignupInput,
+  ) => Promise<OperationResult<{ token: string }>>;
 }
 
 type AuthServiceDeps = {
@@ -47,7 +49,10 @@ export const build__AuthService = ({
   activatePendingUserWriteService,
   uow,
 }: AuthServiceDeps): AuthService => {
-  const verifyCode = async (email: string, code: string): Promise<WriteResult<{ id: string }>> => {
+  const verifyCode = async (
+    email: string,
+    code: string,
+  ): Promise<OperationResult<{ id: string }>> => {
     const verificationRow = await emailVerificationRepository.getValidVerification(email);
 
     // create hash first so we have a similar timeline between the different

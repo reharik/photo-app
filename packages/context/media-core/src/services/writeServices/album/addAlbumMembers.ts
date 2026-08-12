@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, UserStatus, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult, UserStatus } from '@packages/contracts';
 import { indexBy, Logger } from '@packages/infrastructure';
 import {
   eachIndependently,
@@ -11,7 +11,9 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumMembersCommand } from './writeAlbum.types';
 
 export interface AddAlbumMembers extends WriteServiceBase {
-  (input: AddAlbumMembersCommand): Promise<WriteResult<IndependentGroupResult<UserRow, string>>>;
+  (
+    input: AddAlbumMembersCommand,
+  ): Promise<OperationResult<IndependentGroupResult<UserRow, string>>>;
 }
 
 type AddAlbumMembersDeps = {
@@ -30,7 +32,7 @@ export const build__AddAlbumMembers = ({
     userIds,
     role,
     actorId,
-  }: AddAlbumMembersCommand): Promise<WriteResult<IndependentGroupResult<UserRow, string>>> => {
+  }: AddAlbumMembersCommand): Promise<OperationResult<IndependentGroupResult<UserRow, string>>> => {
     const album = await albumRepository.getById(albumId);
     if (!album) {
       return fail(ContractError.AlbumNotFound);
@@ -41,7 +43,7 @@ export const build__AddAlbumMembers = ({
     if (missing.length > 0) {
       return fail(ContractError.UserDoesNotExist);
     }
-    const result = eachIndependently(users, (x): WriteResult<string> => {
+    const result = eachIndependently(users, (x): OperationResult<string> => {
       if (!x.userStatus.equals(UserStatus.active)) {
         return fail(ContractError.UserIsNotActive);
       }

@@ -1,38 +1,39 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { AlbumMemberSortBy, Operation, SortDir } from '@packages/contracts';
-import { ArrowLeft } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlbumMemberRole, AlbumMemberSortBy, Operation, SortDir } from '@packages/contracts';
+import { useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import type { AppError, ContractErrorPayload } from '../../../domain/errors/errorTypes';
 import { mapContractError } from '../../../domain/errors/mapToError';
+import { executeMutation } from '../../../domain/graphql/executeMutation';
 import {
+  AddAlbumMembersDocument,
+  type AddAlbumMembersMutation,
   AlbumMembersDocument,
   AlbumSharingExtrasDocument,
+  CreatePublicLinkForAlbumDocument,
+  type CreatePublicLinkForAlbumMutation,
+  GrantUserAuthorizationForAlbumDocument,
+  type GrantUserAuthorizationForAlbumMutation,
   RemoveAlbumMembersDocument,
   type RemoveAlbumMembersMutation,
   ResolveShareRecipientsDocument,
+  RevokePublicLinkAuthenticationDocument,
+  type RevokePublicLinkAuthenticationMutation,
+  RevokeShareAuthenticationDocument,
+  type RevokeShareAuthenticationMutation,
   type ShareContactType,
+  UpdateAlbumMemberRoleDocument,
+  type UpdateAlbumMemberRoleMutation,
   ViewerShareContactsDocument,
 } from '../../../graphql/generated/types';
 import { useAppMutationState } from '../../../hooks/useAppMutation';
 import { AppModal } from '../../../ui/AppModal';
-import { Button } from '../../../ui/Button';
 import { ConfirmationModal } from '../../../ui/ConfirmationModal';
 import { useDeleteShareContact } from '../useDeleteShareContact';
-import { ComposePanel } from './ComposePanel';
-import { ManagePanel } from './ManagePanel';
-import {
-  ResetPublicLinkForAlbumDocument,
-  type ResetPublicLinkForAlbumMutation,
-  RevokeEmailShareDocument,
-  type RevokeEmailShareMutation,
-  type ShareAccessLevel,
-  ShareAlbumWithRecipientsDocument,
-  type ShareAlbumWithRecipientsMutation,
-  UpdateAlbumMemberRoleDocument,
-  type UpdateAlbumMemberRoleMutation,
-} from './preSdlShareDocuments';
-import type { PendingRecipient } from './shareAlbumTypes';
+import type { PublicLinkState } from './PublicLinkSection';
+import { PublicLinkSection } from './PublicLinkSection';
+import type { LocalShareRow, SharedWithRowVM } from './shareAlbumTypes';
+import { ShareSurface } from './ShareSurface';
 
 type ShareAlbumModalProps = {
   albumId: string;
@@ -42,23 +43,26 @@ type ShareAlbumModalProps = {
   onClose: () => void;
 };
 
-type Mode = 'manage' | 'compose';
-
 const MEMBERS_PAGE_LIMIT = 200;
 
-/** Pause before auto-returning to manage once the compose list empties. */
-const RETURN_TO_MANAGE_DELAY_MS = 800;
-
 /**
- * Emails added in quick succession (typing with comma/semicolon commits, or a
- * paste followed by more typing) coalesce into ONE resolveShareRecipients call
- * carrying the whole batch, instead of a request per committed email.
+ * The actions that interpose a confirm. The weight tracks the CAPABILITY, not
+ * the action: promotion and member removal change what a person can do, and a
+ * link reset kills tokens in the wild — so they confirm. Removing a
+ * shared-with row doesn't (re-sharing is trivial, nothing is lost).
  */
-const RESOLVE_BATCH_DELAY_MS = 400;
+type PendingConfirm =
+  | { kind: 'promote'; email: string; userId: string; role: 'CONTRIBUTOR' | 'ADMIN' }
+  | { kind: 'removeMember'; albumMemberId: string }
+  | { kind: 'resetLink' };
 
-const trimmedOrUndefined = (value: string): string | undefined => {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+const normalizeEmail = (input: string): string => input.trim().toLowerCase();
+
+const buildShareUrl = (token: string): string => {
+  if (typeof window === 'undefined') {
+    return `/shared/${token}`;
+  }
+  return `${window.location.origin}/shared/${token}`;
 };
 
 /**
@@ -83,9 +87,12 @@ const toAppError = (error: ContractErrorPayload): AppError => {
 };
 
 /**
- * The Google-Drive-pattern share modal: MANAGE (default — review access, copy
- * the persistent public link, inline role changes) and COMPOSE (add people by
- * email, entered by typing in manage). A mode switch, not tabs.
+ * The share modal: ONE surface, no modes. Committing an email shares it
+ * immediately as a view-only access_grant (least privilege — never a silent
+ * membership); promoting to member is a separate action on the roster row and
+ * writes an album_member row via AddAlbumMembers. Two tables, two lifecycles,
+ * two permission gates — the UI mirrors that instead of hiding it behind a
+ * compose flow.
  */
 export const ShareAlbumModal = ({
   albumId,
@@ -95,19 +102,17 @@ export const ShareAlbumModal = ({
   onClose,
 }: ShareAlbumModalProps) => {
   const client = useApolloClient();
-  const [mode, setMode] = useState<Mode>('manage');
-  const [recipients, setRecipients] = useState<PendingRecipient[]>([]);
-  const [message, setMessage] = useState('');
+  /** Rows added this session — born 'sending', settle to 'shared'/'failed'. */
+  const [localRows, setLocalRows] = useState<LocalShareRow[]>([]);
   const [busyKey, setBusyKey] = useState<string | undefined>(undefined);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
-  const [sentCount, setSentCount] = useState(0);
-  const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | undefined>(undefined);
 
   const memberMutation = useAppMutationState();
+  const removeMemberMutation = useAppMutationState();
   const revokeMutation = useAppMutationState();
   const resetMutation = useAppMutationState();
-  const shareMutation = useAppMutationState();
+  const promoteMutation = useAppMutationState();
+  const createLinkMutation = useAppMutationState();
 
   const { deleteContact } = useDeleteShareContact(onErrorToast);
 
@@ -127,7 +132,7 @@ export const ShareAlbumModal = ({
 
   // emailShares/publicLink are in the schema but their resolvers may not be
   // implemented yet; until they are, this query errors at runtime and the UI
-  // degrades (no email-share rows, link field shows "unavailable") instead of
+  // degrades (no shared-with rows, link section shows unavailable) instead of
   // blocking the members list.
   const extrasQuery = useQuery(AlbumSharingExtrasDocument, {
     variables: { albumId },
@@ -144,272 +149,181 @@ export const ShareAlbumModal = ({
     [contactsQuery.data],
   );
 
-  const members = membersQuery.data?.viewer?.album?.albumMembers.nodes ?? [];
-  const emailShares = (extrasQuery.data?.viewer?.album?.emailShares ?? []).map(
-    (share) => share.email,
+  const members = useMemo(
+    () => membersQuery.data?.viewer?.album?.albumMembers.nodes ?? [],
+    [membersQuery.data],
   );
-  const publicLinkToken = extrasQuery.data?.viewer?.album?.publicLink?.token;
-
-  const manageErrors: AppError[] = [...memberMutation.errors, ...revokeMutation.errors];
+  const extrasAlbum = extrasQuery.data?.viewer?.album;
+  // The persisted roster carries its own account info (displayName/hasAccount/
+  // userId on EmailShare) — these are people the viewer has ALREADY shared
+  // with, so nothing routes through the rate-limited resolve oracle here.
+  const serverShares = useMemo(() => extrasAlbum?.emailShares ?? [], [extrasAlbum]);
 
   /**
-   * Resolve a batch of typed emails against active accounts in one query
-   * (compose-row asymmetry). If resolution fails outright (network, rate
-   * limit), every row degrades to the conservative no-account rendering —
-   * a view link, never a membership.
+   * One batched account-resolution call for TYPED/PASTED input only. Failure
+   * (network, rate limit) degrades to an empty map — affected rows render
+   * conservatively (no promote dropdown), never as memberships.
    */
-  const resolveRecipients = useCallback(
-    async (emails: string[]): Promise<void> => {
-      let resolvedByEmail = new Map<string, { resolved: boolean; displayName?: string }>();
+  const fetchResolution = useCallback(
+    async (
+      emails: string[],
+    ): Promise<Map<string, { hasAccount: boolean; displayName?: string }>> => {
       try {
         const result = await client.query({
           query: ResolveShareRecipientsDocument,
           variables: { albumId, emails },
           fetchPolicy: 'no-cache',
         });
-        resolvedByEmail = new Map(
+        return new Map(
           (result.data?.viewer?.album?.resolveShareRecipients.data ?? []).map((recipient) => [
-            recipient.email.toLowerCase(),
-            { resolved: recipient.resolved, displayName: recipient.displayName },
+            normalizeEmail(recipient.email),
+            { hasAccount: recipient.resolved, displayName: recipient.displayName },
           ]),
         );
       } catch {
-        // fall through with an empty map — all rows resolve to noAccount
+        return new Map();
       }
-      const requested = new Set(emails);
-      setRecipients((prev) =>
-        prev.map((recipient) => {
-          if (!requested.has(recipient.email) || recipient.resolution !== 'pending') {
-            return recipient;
-          }
-          const match = resolvedByEmail.get(recipient.email);
-          const hasAccount = match?.resolved === true;
-          return {
-            ...recipient,
-            resolution: hasAccount ? 'account' : 'noAccount',
-            displayName: hasAccount ? match?.displayName : undefined,
-            // Membership requires an active account; unresolved emails are
-            // pinned to the view-link level.
-            accessLevel: hasAccount ? recipient.accessLevel : 'VIEWER',
-          };
-        }),
-      );
     },
     [albumId, client],
   );
 
-  // Pending-resolution queue: adds collect here and flush as one array call.
-  const pendingResolveRef = useRef<Set<string>>(new Set());
-  const resolveTimerRef = useRef<number | undefined>(undefined);
-
-  const queueResolve = useCallback(
-    (emails: string[]) => {
-      for (const email of emails) {
-        pendingResolveRef.current.add(email);
-      }
-      if (resolveTimerRef.current != null) {
-        window.clearTimeout(resolveTimerRef.current);
-      }
-      resolveTimerRef.current = window.setTimeout(() => {
-        resolveTimerRef.current = undefined;
-        const batch = [...pendingResolveRef.current];
-        pendingResolveRef.current.clear();
-        if (batch.length > 0) {
-          void resolveRecipients(batch);
-        }
-      }, RESOLVE_BATCH_DELAY_MS);
-    },
-    [resolveRecipients],
-  );
-
-  useEffect(
-    () => () => {
-      if (resolveTimerRef.current != null) {
-        window.clearTimeout(resolveTimerRef.current);
-      }
-    },
-    [],
-  );
-
-  const addRecipients = useCallback(
-    (emails: string[]) => {
-      const known = new Set(recipients.map((recipient) => recipient.email));
-      const fresh = [...new Set(emails.map((email) => email.trim().toLowerCase()))].filter(
-        (email) => email.length > 0 && !known.has(email),
+  /** Resolve THIS SESSION'S adds (updates the pending local rows in place). */
+  const resolveLocalRows = useCallback(
+    async (emails: string[]): Promise<void> => {
+      const resolved = await fetchResolution(emails);
+      const requested = new Set(emails);
+      setLocalRows((prev) =>
+        prev.map((row) => {
+          if (!requested.has(row.email) || row.resolution !== 'pending') {
+            return row;
+          }
+          const match = resolved.get(row.email);
+          const hasAccount = match?.hasAccount === true;
+          return {
+            ...row,
+            resolution: hasAccount ? 'account' : 'noAccount',
+            displayName: hasAccount ? match?.displayName : undefined,
+          };
+        }),
       );
-      if (fresh.length > 0) {
-        setRecipients((prev) => [
-          ...prev,
-          ...fresh.map((email): PendingRecipient => ({
-            email,
-            accessLevel: 'CONTRIBUTOR',
-            resolution: 'pending',
-            sendState: 'draft',
-          })),
-        ]);
-        queueResolve(fresh);
-      }
-      setMode('compose');
     },
-    [recipients, queueResolve],
+    [fetchResolution],
   );
-
-  const resetComposeState = useCallback(() => {
-    setRecipients([]);
-    setMessage('');
-    setSentCount(0);
-    setHasAttemptedSend(false);
-    setMode('manage');
-  }, []);
 
   /**
-   * Send a subset of recipients (initial send = all drafts; retries = one or
-   * all retryable failures). Partial failure keeps us in compose: succeeded
-   * rows disappear, failed rows stay with their error inline.
+   * Share a batch (length 1 or N — Enter and paste go through the SAME path).
+   * grantUserAuthorizationForAlbum writes view-only grants, full stop — the
+   * operation set is pinned server-side, so sharing can never grant edit
+   * rights; elevation is the deliberate promote action on the row.
    */
-  const sendRecipients = useCallback(
-    async (subset: PendingRecipient[]): Promise<void> => {
-      if (subset.length === 0) {
-        return;
-      }
-      const emails = new Set(subset.map((recipient) => recipient.email));
-      setRecipients((prev) =>
-        prev.map((recipient) =>
-          emails.has(recipient.email)
-            ? { ...recipient, sendState: 'sending', error: undefined }
-            : recipient,
-        ),
-      );
-
-      const result = await shareMutation.execute(
+  const shareEmails = useCallback(
+    async (emails: string[]): Promise<void> => {
+      // Deliberately NOT useAppMutationState: its in-flight guard would fail a
+      // second batch committed while the first is still on the wire.
+      const result = await executeMutation(
+        client,
         {
-          mutation: ShareAlbumWithRecipientsDocument,
+          mutation: GrantUserAuthorizationForAlbumDocument,
           variables: {
             input: {
               albumId,
-              recipients: subset.map((recipient) => ({
-                email: recipient.email,
-                accessLevel: recipient.accessLevel,
-              })),
-              message: trimmedOrUndefined(message),
+              grantedToHandles: emails,
             },
           },
         },
-        (data: ShareAlbumWithRecipientsMutation) => data.shareAlbumWithRecipients,
+        (data: GrantUserAuthorizationForAlbumMutation) => data.grantUserAuthorizationForAlbum,
       );
-      setHasAttemptedSend(true);
+      const requested = new Set(emails);
 
       if (!result.success) {
         // Whole-operation failure (auth/validation/network): nothing was
-        // shared. Rows return to draft; the envelope errors render in the panel.
-        setRecipients((prev) =>
-          prev.map((recipient) =>
-            emails.has(recipient.email) ? { ...recipient, sendState: 'draft' } : recipient,
+        // shared. Every row in the batch fails with the envelope error.
+        const error = result.errors[0];
+        setLocalRows((prev) =>
+          prev.map((row) =>
+            requested.has(row.email) && row.sendState === 'sending'
+              ? { ...row, sendState: 'failed', error }
+              : row,
           ),
         );
         return;
       }
 
-      const succeeded = new Set(result.data.succeeded.map((entry) => entry.email));
+      const succeeded = new Set(result.data.succeeded.map((entry) => normalizeEmail(entry.email)));
       const failedByEmail = new Map(
-        result.data.failed.map((entry) => [entry.email, toAppError(entry.error)]),
+        result.data.failed.map((entry) => [normalizeEmail(entry.email), toAppError(entry.error)]),
       );
-      setSentCount((prev) => prev + succeeded.size);
-      setRecipients((prev) =>
-        prev
-          .filter((recipient) => !succeeded.has(recipient.email))
-          .map((recipient) => {
-            const error = failedByEmail.get(recipient.email);
-            if (error) {
-              return { ...recipient, sendState: 'failed' as const, error };
-            }
-            return emails.has(recipient.email)
-              ? { ...recipient, sendState: 'draft' as const }
-              : recipient;
-          }),
+      setLocalRows((prev) =>
+        prev.map((row) => {
+          if (!requested.has(row.email)) {
+            return row;
+          }
+          if (succeeded.has(row.email)) {
+            return { ...row, sendState: 'shared' as const, error: undefined };
+          }
+          const error = failedByEmail.get(row.email);
+          return error ? { ...row, sendState: 'failed' as const, error } : row;
+        }),
       );
-    },
-    [albumId, message, shareMutation],
-  );
-
-  const handleSend = useCallback(() => {
-    void sendRecipients(recipients.filter((recipient) => recipient.sendState === 'draft'));
-  }, [recipients, sendRecipients]);
-
-  const handleRetryRecipient = useCallback(
-    (email: string) => {
-      void sendRecipients(recipients.filter((recipient) => recipient.email === email));
-    },
-    [recipients, sendRecipients],
-  );
-
-  const handleRetryAll = useCallback(() => {
-    void sendRecipients(
-      recipients.filter(
-        (recipient) => recipient.sendState === 'failed' && recipient.error?.retryable,
-      ),
-    );
-  }, [recipients, sendRecipients]);
-
-  const handleChangeAccessLevel = useCallback((email: string, level: ShareAccessLevel) => {
-    setRecipients((prev) =>
-      prev.map((recipient) =>
-        recipient.email === email ? { ...recipient, accessLevel: level } : recipient,
-      ),
-    );
-  }, []);
-
-  const handleRemoveRecipient = useCallback((email: string) => {
-    setRecipients((prev) => prev.filter((recipient) => recipient.email !== email));
-  }, []);
-
-  // Once a send has happened and the compose list empties (all succeeded, or
-  // the last failed row was retried/dismissed), return to manage — after a
-  // beat, rather than swapping instantly on the last click.
-  useEffect(() => {
-    if (mode !== 'compose' || !hasAttemptedSend || recipients.length > 0) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      if (sentCount > 0) {
-        onSuccessToast?.(`Shared with ${sentCount} ${sentCount === 1 ? 'person' : 'people'}`);
+      if (succeeded.size > 0) {
+        void extrasQuery.refetch();
       }
-      resetComposeState();
-      void membersQuery.refetch();
-      void extrasQuery.refetch();
-    }, RETURN_TO_MANAGE_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [
-    mode,
-    hasAttemptedSend,
-    recipients.length,
-    sentCount,
-    onSuccessToast,
-    resetComposeState,
-    membersQuery,
-    extrasQuery,
-  ]);
+    },
+    [albumId, client, extrasQuery],
+  );
 
-  /** Back arrow / close guard: confirm before discarding pending recipients. */
-  const requestLeaveCompose = useCallback(() => {
-    if (recipients.length > 0) {
-      setDiscardConfirmOpen(true);
-      return;
-    }
-    resetComposeState();
-  }, [recipients.length, resetComposeState]);
+  /**
+   * THE add handler — array in (length 1 for Enter/blur/suggestion, N for
+   * paste), one resolve call + one share call per batch. Emails already
+   * present as rows are dropped (dedupe on add is a no-op, not an error).
+   */
+  const handleAddEmails = useCallback(
+    (emails: string[]) => {
+      // Members count as "already a row" too — sharing with a member is a
+      // no-op, not an error.
+      const present = new Set([
+        ...localRows.map((row) => row.email),
+        ...serverShares.map((share) => normalizeEmail(share.email)),
+        ...members.map((member) => normalizeEmail(member.email)),
+      ]);
+      const fresh = [...new Set(emails.map(normalizeEmail))].filter(
+        (email) => email.length > 0 && !present.has(email),
+      );
+      if (fresh.length === 0) {
+        return;
+      }
+      setLocalRows((prev) => [
+        ...prev,
+        ...fresh.map((email): LocalShareRow => ({
+          email,
+          resolution: 'pending',
+          sendState: 'sending',
+        })),
+      ]);
+      void resolveLocalRows(fresh);
+      void shareEmails(fresh);
+    },
+    [localRows, serverShares, members, resolveLocalRows, shareEmails],
+  );
 
-  const requestClose = useCallback(() => {
-    // A nested confirmation modal is open: its own Escape/cancel handling wins.
-    if (resetConfirmOpen || discardConfirmOpen) {
-      return;
-    }
-    if (mode === 'compose' && recipients.length > 0) {
-      setDiscardConfirmOpen(true);
-      return;
-    }
-    onClose();
-  }, [resetConfirmOpen, discardConfirmOpen, mode, recipients.length, onClose]);
+  const handleDismissFailed = useCallback((email: string) => {
+    setLocalRows((prev) => prev.filter((row) => row.email !== email));
+  }, []);
+
+  /** S2 retry: put the failed row back in flight and re-run the share path. */
+  const handleRetry = useCallback(
+    (email: string) => {
+      setLocalRows((prev) =>
+        prev.map((row) =>
+          row.email === email && row.sendState === 'failed'
+            ? { ...row, sendState: 'sending', error: undefined }
+            : row,
+        ),
+      );
+      void shareEmails([email]);
+    },
+    [shareEmails],
+  );
 
   const handleChangeMemberRole = async (
     albumMemberId: string,
@@ -419,9 +333,15 @@ export const ShareAlbumModal = ({
     const result = await memberMutation.execute(
       {
         mutation: UpdateAlbumMemberRoleDocument,
-        variables: { input: { albumId, albumMemberId, role } },
+        variables: {
+          input: {
+            albumId,
+            albumMemberId,
+            role: role === 'ADMIN' ? AlbumMemberRole.admin : AlbumMemberRole.contributor,
+          },
+        },
       },
-      (data: UpdateAlbumMemberRoleMutation) => data.updateAlbumMemberRole,
+      (data: UpdateAlbumMemberRoleMutation) => data.UpdateAlbumMemberRole,
     );
     setBusyKey(undefined);
     if (result.success) {
@@ -429,9 +349,10 @@ export const ShareAlbumModal = ({
     }
   };
 
+  /** Executor behind the remove-member confirm (a real capability change). */
   const handleRemoveMember = async (albumMemberId: string): Promise<void> => {
     setBusyKey(albumMemberId);
-    const result = await memberMutation.execute(
+    const result = await removeMemberMutation.execute(
       {
         mutation: RemoveAlbumMembersDocument,
         variables: { input: { albumId, albumMemberIds: [albumMemberId] } },
@@ -440,23 +361,89 @@ export const ShareAlbumModal = ({
     );
     setBusyKey(undefined);
     if (result.success) {
+      setPendingConfirm(undefined);
       onSuccessToast?.('Removed from album');
-      await membersQuery.refetch();
+      // Both rosters move: the member row disappears, and if the person still
+      // holds a view grant they surface back in SHARED WITH (the server
+      // excludes members from emailShares, so the extras data is stale now).
+      await Promise.all([membersQuery.refetch(), extrasQuery.refetch()]);
     }
   };
 
-  const handleRevokeEmailShare = async (email: string): Promise<void> => {
+  /**
+   * Promote a shared-with account holder to member. By the time this control
+   * exists the access_grant is already written, so this is purely the
+   * membership write: AddAlbumMembers (gated on addMembers) — never a re-run
+   * of the share path. The grant is NOT revoked; grants are additive, and the
+   * roster's precedence rule renders the person as a member from now on.
+   * Runs behind the promote confirm.
+   */
+  const handlePromote = async (
+    email: string,
+    userId: string,
+    role: 'CONTRIBUTOR' | 'ADMIN',
+  ): Promise<void> => {
     setBusyKey(email);
-    const result = await revokeMutation.execute(
+    const result = await promoteMutation.execute(
       {
-        mutation: RevokeEmailShareDocument,
-        variables: { input: { albumId, email } },
+        mutation: AddAlbumMembersDocument,
+        variables: {
+          input: {
+            albumId,
+            userIds: [userId],
+            role: role === 'ADMIN' ? AlbumMemberRole.admin : AlbumMemberRole.contributor,
+          },
+        },
       },
-      (data: RevokeEmailShareMutation) => data.revokeEmailShare,
+      (data: AddAlbumMembersMutation) => data.AddAlbumMembers,
     );
     setBusyKey(undefined);
     if (result.success) {
-      onSuccessToast?.('Access revoked');
+      setPendingConfirm(undefined);
+      onSuccessToast?.('Added as a member');
+      // The person renders as a member now — the local share row is done.
+      setLocalRows((prev) => prev.filter((row) => row.email !== email));
+      await Promise.all([membersQuery.refetch(), extrasQuery.refetch()]);
+    }
+  };
+
+  // No confirm: removing a shared-with row loses nothing — re-sharing is
+  // trivial. (Member removal, a real capability change, is the one that
+  // confirms.)
+  const handleRemoveAccess = async (email: string): Promise<void> => {
+    // The revoke mutation keys on the authorization id, which only the
+    // persisted EmailShare row carries — a just-shared row can't be revoked
+    // until the refetch after the share lands its server twin.
+    const share = serverShares.find((s) => normalizeEmail(s.email) === email);
+    if (!share) {
+      onErrorToast?.('This share is still saving — try again in a moment.');
+      return;
+    }
+    setBusyKey(email);
+    const result = await revokeMutation.execute(
+      {
+        mutation: RevokeShareAuthenticationDocument,
+        variables: { input: { albumId, authorizationId: share.id } },
+      },
+      (data: RevokeShareAuthenticationMutation) => data.RevokeShareAuthentication,
+    );
+    setBusyKey(undefined);
+    if (result.success) {
+      onSuccessToast?.('Access removed');
+      setLocalRows((prev) => prev.filter((row) => row.email !== email));
+      await extrasQuery.refetch();
+    }
+  };
+
+  const handleCreateLink = async (): Promise<void> => {
+    const result = await createLinkMutation.execute(
+      {
+        mutation: CreatePublicLinkForAlbumDocument,
+        variables: { input: { albumId } },
+      },
+      (data: CreatePublicLinkForAlbumMutation) => data.createPublicLinkForAlbum,
+    );
+    if (result.success) {
       await extrasQuery.refetch();
     }
   };
@@ -464,107 +451,225 @@ export const ShareAlbumModal = ({
   const handleResetLink = async (): Promise<void> => {
     const result = await resetMutation.execute(
       {
-        mutation: ResetPublicLinkForAlbumDocument,
+        mutation: RevokePublicLinkAuthenticationDocument,
         variables: { input: { albumId } },
       },
-      (data: ResetPublicLinkForAlbumMutation) => data.resetPublicLinkForAlbum,
+      (data: RevokePublicLinkAuthenticationMutation) => data.RevokePublicLinkAuthentication,
     );
     if (result.success) {
-      setResetConfirmOpen(false);
+      setPendingConfirm(undefined);
       onSuccessToast?.('Public link reset');
       await extrasQuery.refetch();
     }
   };
 
-  const title =
-    mode === 'compose' ? (
-      <TitleRow>
-        <BackButton type="button" aria-label="Back to people list" onClick={requestLeaveCompose}>
-          <ArrowLeft size={18} strokeWidth={2} aria-hidden />
-        </BackButton>
-        Share album
-      </TitleRow>
-    ) : (
-      'Share album'
+  /**
+   * Server rows merged with this session's local rows (local state is
+   * fresher, but the server twin is the only source of userId).
+   *
+   * PRECEDENCE RULE: promotion does not revoke the view grant, so a promoted
+   * person holds BOTH an album_member row and an access_grant. Anyone who
+   * appears in both lists renders as a MEMBER — stated here explicitly, never
+   * left to query ordering.
+   */
+  const sharedWith: SharedWithRowVM[] = useMemo(() => {
+    const memberUserIds = new Set(members.map((member) => member.userId));
+    const localEmails = new Set(localRows.map((row) => row.email));
+    const serverByEmail = new Map(
+      serverShares.map((share) => [normalizeEmail(share.email), share]),
     );
 
-  const draftCount = recipients.filter((recipient) => recipient.sendState === 'draft').length;
-  const resolutionPending = recipients.some((recipient) => recipient.resolution === 'pending');
+    const rows: SharedWithRowVM[] = serverShares
+      .filter((share) => !localEmails.has(normalizeEmail(share.email)))
+      .filter((share) => share.userId == null || !memberUserIds.has(share.userId))
+      .map((share) => ({
+        email: normalizeEmail(share.email),
+        displayName: share.hasAccount ? share.displayName : undefined,
+        hasAccount: share.hasAccount,
+        userId: share.userId,
+        state: 'persisted' as const,
+      }));
 
-  const composeFooter = (
-    <>
-      <Button
-        type="button"
-        variant="secondary"
-        size="large"
-        onClick={requestLeaveCompose}
-        disabled={shareMutation.isLoading}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="button"
-        variant="primary"
-        size="large"
-        loading={shareMutation.isLoading}
-        disabled={draftCount === 0 || resolutionPending}
-        onClick={handleSend}
-      >
-        Send
-      </Button>
-    </>
-  );
+    for (const row of localRows) {
+      const server = serverByEmail.get(row.email);
+      if (server?.userId != null && memberUserIds.has(server.userId)) {
+        continue;
+      }
+      rows.push({
+        email: row.email,
+        displayName: row.displayName ?? (server?.hasAccount ? server.displayName : undefined),
+        hasAccount:
+          row.resolution === 'pending' ? server?.hasAccount : row.resolution === 'account',
+        userId: server?.userId,
+        state:
+          row.sendState === 'failed'
+            ? 'failed'
+            : row.sendState === 'shared'
+              ? 'shared'
+              : row.resolution === 'pending'
+                ? 'resolving'
+                : 'sharing',
+        error: row.error,
+      });
+    }
+    return rows;
+  }, [members, serverShares, localRows]);
+
+  // Failed rows are visible (they need their error + retry) but are NOT access —
+  // they never count toward the header.
+  const sharedWithCount = sharedWith.filter((row) => row.state !== 'failed').length;
+
+  const publicLinkState: PublicLinkState = useMemo(() => {
+    if (extrasQuery.loading && !extrasQuery.data) {
+      return { kind: 'loading' };
+    }
+    if (!extrasAlbum) {
+      return { kind: 'unavailable' };
+    }
+    // Nullable by design: null = never created. Never mint one on read.
+    if (!extrasAlbum.publicLink) {
+      return { kind: 'absent' };
+    }
+    return extrasAlbum.publicLink.token
+      ? { kind: 'present', url: buildShareUrl(extrasAlbum.publicLink.token) }
+      : { kind: 'unavailable' };
+  }, [extrasQuery.loading, extrasQuery.data, extrasAlbum]);
+
+  const sharedWithStatus: 'loading' | 'ready' | 'degraded' = extrasAlbum
+    ? 'ready'
+    : extrasQuery.loading
+      ? 'loading'
+      : 'degraded';
+
+  // Promote / remove-member / reset errors render inside their confirm
+  // dialogs, which stay open on failure — only inline-committing actions
+  // surface here.
+  const surfaceErrors: AppError[] = [
+    ...memberMutation.errors,
+    ...revokeMutation.errors,
+    ...createLinkMutation.errors,
+  ];
+
+  // Copy targets for the open confirm (name lookups happen at render time so
+  // a refetch can't strand a stale name in the dialog).
+  const promoteConfirm = pendingConfirm?.kind === 'promote' ? pendingConfirm : undefined;
+  const promoteName = promoteConfirm
+    ? (sharedWith.find((row) => row.email === promoteConfirm.email)?.displayName ??
+      promoteConfirm.email)
+    : undefined;
+  const removeConfirm = pendingConfirm?.kind === 'removeMember' ? pendingConfirm : undefined;
+  const removeMemberRecord = removeConfirm
+    ? members.find((member) => member.id === removeConfirm.albumMemberId)
+    : undefined;
+  const removeMemberName = removeMemberRecord
+    ? `${removeMemberRecord.firstName} ${removeMemberRecord.lastName}`
+    : 'this member';
+
+  const requestClose = useCallback(() => {
+    // A nested confirmation modal is open: its own Escape/cancel handling wins.
+    if (pendingConfirm) {
+      return;
+    }
+    onClose();
+  }, [pendingConfirm, onClose]);
 
   return (
     <>
-      <AppModal
-        onClose={requestClose}
-        title={title}
-        maxWidth="560px"
-        footer={mode === 'compose' ? composeFooter : undefined}
-        closeOnBackdropClick={!shareMutation.isLoading}
-      >
-        {mode === 'manage' ? (
-          <ManagePanel
+      <AppModal onClose={requestClose} title="Share album" maxWidth="560px">
+        <ModalLayout>
+          <ShareSurface
             members={members}
             membersLoading={membersQuery.loading}
-            emailShares={emailShares}
-            publicLinkToken={publicLinkToken}
+            sharedWith={sharedWith}
+            sharedWithCount={sharedWithCount}
+            sharedWithStatus={sharedWithStatus}
             suggestions={suggestions}
             albumOperations={albumOperations}
-            errors={manageErrors}
+            errors={surfaceErrors}
             busyKey={busyKey}
-            onStartCompose={addRecipients}
+            onAddEmails={handleAddEmails}
             onChangeMemberRole={(albumMemberId, role) =>
               void handleChangeMemberRole(albumMemberId, role)
             }
-            onRemoveMember={(albumMemberId) => void handleRemoveMember(albumMemberId)}
-            onRevokeEmailShare={(email) => void handleRevokeEmailShare(email)}
-            onRequestResetLink={() => setResetConfirmOpen(true)}
+            onRemoveMember={(albumMemberId) =>
+              setPendingConfirm({ kind: 'removeMember', albumMemberId })
+            }
+            onPromote={(email, userId, role) =>
+              setPendingConfirm({ kind: 'promote', email, userId, role })
+            }
+            onRemoveAccess={(email) => void handleRemoveAccess(email)}
+            onRetry={handleRetry}
+            onDismissFailed={handleDismissFailed}
             onDeleteContact={deleteContact}
           />
-        ) : (
-          <ComposePanel
-            recipients={recipients}
-            suggestions={suggestions}
-            message={message}
-            sending={shareMutation.isLoading}
-            sentCount={sentCount}
-            envelopeErrors={shareMutation.errors}
-            onAddEmails={addRecipients}
-            onMessageChange={setMessage}
-            onChangeAccessLevel={handleChangeAccessLevel}
-            onRemoveRecipient={handleRemoveRecipient}
-            onRetryRecipient={handleRetryRecipient}
-            onRetryAll={handleRetryAll}
-            onDeleteContact={deleteContact}
-          />
-        )}
+          <PublicLinkWrap>
+            <PublicLinkSection
+              link={publicLinkState}
+              creating={createLinkMutation.isLoading}
+              onCreate={() => void handleCreateLink()}
+              onRequestReset={() => setPendingConfirm({ kind: 'resetLink' })}
+            />
+          </PublicLinkWrap>
+        </ModalLayout>
       </AppModal>
 
-      {resetConfirmOpen && (
+      {promoteConfirm && (
         <ConfirmationModal
-          onClose={() => setResetConfirmOpen(false)}
+          onClose={() => setPendingConfirm(undefined)}
+          onConfirm={() =>
+            handlePromote(promoteConfirm.email, promoteConfirm.userId, promoteConfirm.role)
+          }
+          isSubmitting={promoteMutation.isLoading}
+          mutationErrors={promoteMutation.errors}
+          confirmTone="default"
+          title={
+            promoteConfirm.role === 'ADMIN'
+              ? `Make ${promoteName} an admin?`
+              : `Make ${promoteName} a contributor?`
+          }
+          /*
+            COPY-REVIEW(RAI-79): draft wording — needs product review before
+            ship. A real capability change one dropdown-click away; the body
+            spells out what the role can actually do.
+          */
+          body={
+            <ConfirmBody>
+              {promoteConfirm.role === 'ADMIN'
+                ? 'They’ll be able to add and remove photos, and manage this album’s members and sharing.'
+                : 'They’ll be able to add and remove photos.'}
+            </ConfirmBody>
+          }
+          confirmLabel={promoteConfirm.role === 'ADMIN' ? 'Make admin' : 'Make contributor'}
+          confirmingLabel="Saving…"
+        />
+      )}
+
+      {removeConfirm && (
+        <ConfirmationModal
+          onClose={() => setPendingConfirm(undefined)}
+          onConfirm={() => handleRemoveMember(removeConfirm.albumMemberId)}
+          isSubmitting={removeMemberMutation.isLoading}
+          mutationErrors={removeMemberMutation.errors}
+          title={`Remove ${removeMemberName} from this album?`}
+          /*
+            COPY-REVIEW(RAI-79): draft wording — needs product review before
+            ship. Confirms because membership is a real capability being taken
+            away (removing a view-only share deliberately does NOT confirm).
+          */
+          body={
+            <ConfirmBody>
+              They&apos;ll no longer be a member — they lose the ability to add photos, and this
+              album leaves their list. You can add them back at any time.
+            </ConfirmBody>
+          }
+          confirmLabel="Remove"
+          confirmingLabel="Removing…"
+        />
+      )}
+
+      {pendingConfirm?.kind === 'resetLink' && (
+        <ConfirmationModal
+          onClose={() => setPendingConfirm(undefined)}
           onConfirm={handleResetLink}
           isSubmitting={resetMutation.isLoading}
           mutationErrors={resetMutation.errors}
@@ -572,71 +677,41 @@ export const ShareAlbumModal = ({
           /*
             COPY-REVIEW(RAI-79): draft wording — needs product review before ship.
             Semantics per RAI-79: reset kills EVERY anonymous token on the album
-            (the copied link, forwarded copies, and tokens shed by people who have
-            since converted to members). Named email shares that haven't converted
-            keep their links; memberships are untouched.
+            (the copied link, forwarded copies, and former email-invite tokens
+            shed on signup). Memberships survive; pending email invites survive
+            (named, individually targetable).
           */
           body={
             <ConfirmBody>
-              This turns off the current link for everyone using it — including copies forwarded by
-              other people, and old links belonging to people who have since joined this album
-              (their membership is not affected). A new link will be created, and you&apos;ll need
-              to share it again.
+              The current link stops working, along with any copies people have forwarded. Anyone
+              using one loses access immediately. People you invited by email keep their access. A
+              new link is issued — you&apos;ll need to share it again.
             </ConfirmBody>
           }
           confirmLabel="Reset link"
           confirmingLabel="Resetting…"
         />
       )}
-
-      {discardConfirmOpen && (
-        <ConfirmationModal
-          onClose={() => setDiscardConfirmOpen(false)}
-          onConfirm={() => {
-            setDiscardConfirmOpen(false);
-            resetComposeState();
-          }}
-          title="Discard invitations?"
-          body={
-            <ConfirmBody>
-              You haven&apos;t sent these invitations yet. Going back will discard them.
-            </ConfirmBody>
-          }
-          confirmLabel="Discard"
-        />
-      )}
     </>
   );
 };
 
-const TitleRow = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+/**
+ * Three-region layout: fixed input (in ShareSurface), scrolling roster (in
+ * ShareSurface), fixed public-link footer. max-height CAPS the modal — with a
+ * short roster the column sizes to content, so no dead space; only past the
+ * cap does the roster region start scrolling.
+ */
+const ModalLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  min-height: 0;
 `;
 
-const BackButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: ${({ theme }) => theme.spacing(3.5)};
-  height: ${({ theme }) => theme.spacing(3.5)};
-  padding: 0;
-  border: 0;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  background: transparent;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  cursor: pointer;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.bodyElevated};
-    color: ${({ theme }) => theme.color.bodyText};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.inputBorderFocus};
-    outline-offset: 1px;
-  }
+const PublicLinkWrap = styled.div`
+  flex-shrink: 0;
+  margin-top: ${({ theme }) => theme.spacing(3)};
 `;
 
 const ConfirmBody = styled.p`

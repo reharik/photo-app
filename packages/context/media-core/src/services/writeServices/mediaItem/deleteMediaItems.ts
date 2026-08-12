@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
@@ -14,7 +14,7 @@ import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMed
 import { DeleteMediaItemsCommand, DeleteMediaItemsResult } from './writeMediaItem.types';
 
 export interface DeleteMediaItems extends WriteServiceBase {
-  (input: DeleteMediaItemsCommand): Promise<WriteResult<DeleteMediaItemsResult>>;
+  (input: DeleteMediaItemsCommand): Promise<OperationResult<DeleteMediaItemsResult>>;
 }
 
 type DeleteMediaItemsDeps = {
@@ -32,7 +32,9 @@ export const build__DeleteMediaItems = ({
   albumRepository,
   mediaStorage,
 }: DeleteMediaItemsDeps): DeleteMediaItems => {
-  return async (input: DeleteMediaItemsCommand): Promise<WriteResult<DeleteMediaItemsResult>> => {
+  return async (
+    input: DeleteMediaItemsCommand,
+  ): Promise<OperationResult<DeleteMediaItemsResult>> => {
     const { viewerId } = input;
     const dedupedIds = dedupeIds(input.mediaItemIds);
 

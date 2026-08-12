@@ -1,3 +1,4 @@
+import { AuthorizationKind } from '@packages/contracts';
 import type {
   PublicAccessIdRow,
   PublicAccessReadRepository,
@@ -11,6 +12,7 @@ export const build__PublicAccessReadRepository = ({
   getPublicAccessIdByToken: async (token: string) => {
     const publicAccess = await database<PublicAccessIdRow>('accessGrant')
       .where('accessGrant.linkToken', token)
+      .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
       .whereNull('accessGrant.revokedAt')
       .where((b) => {
         b.whereNull('accessGrant.expiresAt').orWhere(
@@ -28,6 +30,7 @@ export const build__PublicAccessReadRepository = ({
   getPublicAccessById: async (publicAccessId: string) => {
     const publicAccess = await database('accessGrant')
       .where('accessGrant.id', publicAccessId)
+      .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
       .whereNull('accessGrant.revokedAt')
       .where((b) => {
         b.whereNull('accessGrant.expiresAt').orWhere(

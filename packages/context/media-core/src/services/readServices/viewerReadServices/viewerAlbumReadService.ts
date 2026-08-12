@@ -1,8 +1,11 @@
 import {
   AlbumMemberRole,
   ContractError,
+  fail,
+  ok,
   Operation,
   OperationCatalog,
+  OperationResult,
   UserStatus,
 } from '@packages/contracts';
 import { indexBy, indexByUnique, Logger, RateLimiter } from '@packages/infrastructure';
@@ -42,7 +45,7 @@ export interface ViewerAlbumReadService extends ReadServiceBase {
   resolveShareRecipients: (args: {
     albumId: string;
     emails: string[];
-  }) => Promise<ShareRecipient[] | ContractError>;
+  }) => Promise<OperationResult<ShareRecipient[]>>;
 }
 
 export type SortableEnum = StandardEnumItem & { column: string };
@@ -207,18 +210,18 @@ export const build__ViewerAlbumReadService = ({
     }: {
       albumId: string;
       emails: string[];
-    }): Promise<ShareRecipient[] | ContractError> => {
+    }): Promise<OperationResult<ShareRecipient[]>> => {
       const album = await albumReadRepository.getAlbumForViewer({ albumId, viewerId });
       if (!album) {
-        return ContractError.AlbumNotFound;
+        return fail(ContractError.AlbumNotFound);
       }
       if (!album.viewerMemberRole?.can(Operation.grantAlbumAuthorization)) {
-        return Operation.grantAlbumAuthorization.deniedError;
+        return fail(Operation.grantAlbumAuthorization.deniedError);
       }
       const normalizedEmails = [...new Set(emails.map((x) => x.trim().toLowerCase()))];
 
       if (normalizedEmails.length > 25) {
-        return ContractError.TooManyRecipients;
+        return fail(ContractError.TooManyRecipients);
       }
       const resolveShareCheck = await rateLimiter.consume(
         'resolve:shareRecipient',
@@ -233,12 +236,12 @@ export const build__ViewerAlbumReadService = ({
         logger.warn('Resolve share recipient limit exceeded!', {
           viewerId,
         });
-        return ContractError.TooManyAttempts;
+        return fail(ContractError.TooManyAttempts);
       }
 
       const users = await userReadRepository.getByEmails(normalizedEmails);
       const userMap = indexBy(users, (x) => x.email.trim().toLowerCase());
-      return normalizedEmails.map((x) => {
+      const result = normalizedEmails.map((x) => {
         const user = userMap.get(x);
         const resolved = !!user && user.userStatus.equals(UserStatus.active);
         return {
@@ -247,6 +250,7 @@ export const build__ViewerAlbumReadService = ({
           displayName: resolved ? `${user.firstName} ${user.lastName}` : undefined,
         };
       });
+      return ok(result);
     },
   };
 };

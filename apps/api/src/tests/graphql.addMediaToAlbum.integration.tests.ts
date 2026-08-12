@@ -38,7 +38,6 @@ const createAlbumMutation = `
       }
       errors {
         code
-        message
       }
     }
   }
@@ -52,7 +51,6 @@ const createMediaUploadMutation = `
       }
       errors {
         code
-        message
       }
     }
   }
@@ -67,7 +65,6 @@ const finalizeMediaUploadMutation = `
       }
       errors {
         code
-        message
       }
     }
   }
@@ -82,13 +79,12 @@ const addMediaToAlbumMutation = `
       }
       errors {
         code
-        message
       }
     }
   }
 `;
 
-type ContractErrorPayload = { code: string; message: string };
+type ContractErrorPayload = { code: string };
 
 type WriteMutationResponse<T> = {
   data?: T;
@@ -425,7 +421,6 @@ describe('addAlbumItem', () => {
         }
         errors {
           code
-          message
         }
       }
     }

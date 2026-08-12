@@ -278,7 +278,7 @@ fixes, and the two tests are now **un-skipped and passing** as regression guards
   `useScopedContainer` commits only if `!result.errors?.length && !uow.shouldRollback`
   (`unitOfWork.ts`, `contextWrappers.ts`, `useScopedContainer.ts`, `types.ts`). Verified: a
   partial share now returns `PARTIAL_SHARE_FAILURE` **and** leaves zero `access_grant` rows.
-  Note: this is a broad boundary change — _every_ mutation returning a failed WriteResult now
+  Note: this is a broad boundary change — _every_ mutation returning a failed OperationResult now
   rolls back its uow. The full integration suite stays green under it, but it's worth a
   focused eye in review since it changes commit semantics for all write mutations.
 

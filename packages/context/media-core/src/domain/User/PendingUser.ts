@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, UserStatus, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult, UserStatus } from '@packages/contracts';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { CreateUserInput, UserRecord } from './types';
@@ -43,7 +43,7 @@ export class PendingUser extends AggregateRoot<UserRecord> {
   activate(
     { firstName, lastName, phone, passwordHash }: ActivateProps,
     actorId: ActorId,
-  ): WriteResult<void> {
+  ): OperationResult<void> {
     if (phone !== undefined) {
       const digits = phone.replace(/\D/g, '');
       if (digits.length < 10 || digits.length > 15) {

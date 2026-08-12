@@ -165,9 +165,9 @@ Resolver:
 
 ```ts
 const result = await ctx.writeServices.addComment(input);
-return writeResultToPayload(result);
+return operationResultToPayload(result);
 ```
 
 Where the write service returns
-`WriteResult<{ commentId: string; parentCommentId?: string }>` and the
+`OperationResult<{ commentId: string; parentCommentId?: string }>` and the
 helper maps success/failure to the envelope.

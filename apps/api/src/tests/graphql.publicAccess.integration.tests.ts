@@ -181,6 +181,8 @@ describe('publicAccess query (integration)', () => {
       grantedToUser: null,
       linkToken,
       kind: 'PUBLIC',
+      // OWNER: this seeds the canonical owner-minted link (0026 made origin NOT NULL).
+      origin: 'OWNER',
       // COMMENT, not VIEW: the DB CHECK admits 'VIEW' but the domain Operation
       // smart-enum has no such member, so revival throws on read. Mirror the client.
       operations: ['COMMENT'],

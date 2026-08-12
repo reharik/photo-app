@@ -1,6 +1,6 @@
 // Aborts on first failure. Caller's trx rolls back.
 
-import { ContractError, ok, WriteResult } from '@packages/contracts';
+import { ContractError, ok, OperationResult } from '@packages/contracts';
 
 export type IndependentGroupResult<T, R> = {
   succeeded: { item: T; value: R }[];
@@ -22,7 +22,7 @@ export type IndependentGroupResult<T, R> = {
  * failure executed, so the caller's rollback is clean rather than merely correct.
  * Do not "optimize" this to Promise.all.
  *
- * Returns the failing WriteResult unchanged, so `return result` propagates the
+ * Returns the failing OperationResult unchanged, so `return result` propagates the
  * original ContractError up the stack without rewrapping. The caller is expected
  * to roll back its unit of work on failure — this helper does not manage
  * transactions.
@@ -35,8 +35,8 @@ export type IndependentGroupResult<T, R> = {
  */
 export const allOrNothing = async <T, R>(
   items: T[],
-  fn: (item: T) => Promise<WriteResult<R>>,
-): Promise<WriteResult<R[]>> => {
+  fn: (item: T) => Promise<OperationResult<R>>,
+): Promise<OperationResult<R[]>> => {
   const values: R[] = [];
   for (const x of items) {
     const result = await fn(x);
@@ -86,7 +86,7 @@ export const allOrNothing = async <T, R>(
  */
 export const eachIndependently = <T, R>(
   items: T[],
-  fn: (item: T) => WriteResult<R>,
+  fn: (item: T) => OperationResult<R>,
 ): IndependentGroupResult<T, R> => {
   const succeeded: { item: T; value: R }[] = [];
   const failed: { item: T; error: ContractError }[] = [];

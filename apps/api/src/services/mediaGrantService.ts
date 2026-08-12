@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import {
   buildMediaItemBaseStorageKey,
   GrantReadRepository,
@@ -12,7 +12,7 @@ export type AuthorizeMediaViewInput = {
 };
 
 export type MediaGrantService = {
-  authorizeView: (input: AuthorizeMediaViewInput) => Promise<WriteResult<string>>;
+  authorizeView: (input: AuthorizeMediaViewInput) => Promise<OperationResult<string>>;
 };
 
 type MediaGrantServiceDeps = {
@@ -23,7 +23,7 @@ export const build__MediaGrantService = ({
   mediaItemReadRepository,
   grantReadRepository,
 }: MediaGrantServiceDeps): MediaGrantService => ({
-  authorizeView: async (input: AuthorizeMediaViewInput): Promise<WriteResult<string>> => {
+  authorizeView: async (input: AuthorizeMediaViewInput): Promise<OperationResult<string>> => {
     const { mediaId, viewerId, token } = input;
     if (!viewerId && !token) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);

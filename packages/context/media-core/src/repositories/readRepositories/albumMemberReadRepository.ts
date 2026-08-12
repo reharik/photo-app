@@ -52,6 +52,7 @@ export const build__AlbumMemberReadRepository = ({
           'albumMember.role',
           'user.firstName',
           'user.lastName',
+          'user.email',
           'albumMember.createdAt',
           'albumMember.updatedAt',
         ]),

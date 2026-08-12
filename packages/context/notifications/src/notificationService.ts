@@ -1,4 +1,4 @@
-import { ContractError, WriteResult, fail, ok } from '@packages/contracts';
+import { ContractError, OperationResult, fail, ok } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { render } from '@react-email/components';
 import { createElement } from 'react';
@@ -49,7 +49,9 @@ export type NotificationServiceDeps = {
 };
 
 export interface NotificationService {
-  notify: <T extends TemplateName>(payload: NotificationPayload<T>) => Promise<WriteResult<string>>;
+  notify: <T extends TemplateName>(
+    payload: NotificationPayload<T>,
+  ) => Promise<OperationResult<string>>;
 }
 
 export const build__NotificationService = ({
@@ -68,7 +70,7 @@ export const build__NotificationService = ({
   return {
     notify: async <T extends TemplateName>(
       payload: NotificationPayload<T>,
-    ): Promise<WriteResult<string>> => {
+    ): Promise<OperationResult<string>> => {
       const { email, phone } = resolveRecipients(payload.to);
       const availableChannels = resolveChannels(payload.channels, email, phone);
 

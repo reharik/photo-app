@@ -1,10 +1,11 @@
 import {
   AppErrorCollection,
   AuthorizationKind,
+  AuthorizationOrigin,
   fail,
   ok,
   Operation,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
@@ -14,12 +15,14 @@ export type UserAuthorizationProps = AuthorizationProps & {
   grantedToUser: EntityId;
   linkToken: undefined;
   kind: typeof AuthorizationKind.user;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
 export type UserAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: EntityId;
   linkToken: undefined;
   kind: typeof AuthorizationKind.user;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
 export type CreateUserAuthorizationInput = CreateAuthorizationInput & {
@@ -47,10 +50,10 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
       grantedToUser: input.grantedToUser,
       grantedBy: actorId,
       label: input.label,
-      expiresAt: input.expiresAt,
       albumId: input.albumId,
       linkToken: undefined,
       kind: AuthorizationKind.user,
+      origin: AuthorizationOrigin.owner,
     });
   }
 
@@ -67,7 +70,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     return this.props.operations;
   }
 
-  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+  updateOperations(operations: Operation[], actorId: ActorId): OperationResult<undefined> {
     this.props.operations = operations;
     this.touch(actorId);
     return ok(undefined);
@@ -76,13 +79,13 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
   label(): string | undefined {
     return this.props.label;
   }
-  updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
+  updateLabel(label: string, actorId: ActorId): OperationResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
+  updateExpireDate(expiredDate: Date, actorId: ActorId): OperationResult<undefined> {
     if (expiredDate < new Date()) {
       return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
@@ -94,7 +97,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     return ok(undefined);
   }
 
-  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
+  revokeAuthorization(actorId: ActorId): OperationResult<undefined> {
     if (this.props.expiresAt && this.props.expiresAt < new Date()) {
       return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
     }

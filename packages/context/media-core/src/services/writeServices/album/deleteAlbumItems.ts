@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { SystemAlbumItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -6,7 +6,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumItemsCommand, DeleteAlbumItemsResult } from './writeAlbum.types';
 
 export interface DeleteAlbumItems extends WriteServiceBase {
-  (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>>;
+  (input: DeleteAlbumItemsCommand): Promise<OperationResult<DeleteAlbumItemsResult>>;
 }
 
 type DeleteAlbumItemsDeps = {
@@ -18,7 +18,9 @@ export const build__DeleteAlbumItems = ({
   albumRepository,
   systemAlbumItemRepository,
 }: DeleteAlbumItemsDeps): DeleteAlbumItems => {
-  return async (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>> => {
+  return async (
+    input: DeleteAlbumItemsCommand,
+  ): Promise<OperationResult<DeleteAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
     if (albumItemIds.length === 0) {
       return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);

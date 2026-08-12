@@ -91,6 +91,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     const authorizationRefs = await uow
       .db()('access_grant')
       .where({ grantedToUser: userRow.id })
+      .where({ kind: AuthorizationKind.pending.value })
       .whereNull('revoked_at')
       .where((expiry) => {
         expiry.whereNull('expires_at').orWhere('expires_at', '>', uow.db().fn.now());

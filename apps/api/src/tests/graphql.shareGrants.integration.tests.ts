@@ -43,7 +43,7 @@ const createMediaUploadMutation = `
   mutation {
     createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
       data { mediaItemId }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -52,7 +52,7 @@ const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
     finalizeMediaUpload(input: { mediaItemId: $id }) {
       data { mediaItemId status }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -60,14 +60,14 @@ const finalizeMediaUploadMutation = `
 const grantMutation = `
   mutation Grant($input: GrantUserAuthorizationsForMediaItemsInput!) {
     grantUserAuthorizationsForMediaItems(input: $input) {
-      errors { code message }
+      errors { code }
     }
   }
 `;
 
-type WriteMutationResponse<T> = { data?: T; errors: { code: string; message: string }[] };
+type WriteMutationResponse<T> = { data?: T; errors: { code: string }[] };
 type GrantResponse = {
-  grantUserAuthorizationsForMediaItems?: { errors: { code: string; message: string }[] | null };
+  grantUserAuthorizationsForMediaItems?: { errors: { code: string }[] | null };
 };
 
 describe('grantUserAuthorizationsForMediaItems (integration)', () => {
@@ -122,15 +122,13 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     input: {
       mediaItemIds: string[];
       grantedToHandles: string[];
-      operations?: string[];
     },
     context: Record<string, unknown> = loggedInViewer1,
   ) =>
     executeGraphQL<GrantResponse>({
-      // COMMENT/DOWNLOAD are the only operations the domain Operation smart-enum backs
-      // (it has no VIEW, despite the SDL enum listing one) — mirror what the client sends.
+      // The operation set is pinned server-side; the input no longer takes `operations`.
       query: grantMutation,
-      variables: { input: { operations: ['COMMENT'], ...input } },
+      variables: { input },
       context,
     });
 
@@ -248,7 +246,7 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     // successful grants are written to the trx. That failure travels as a `success:false`
     // DATA payload, not a thrown GraphQL error, so it used to commit anyway (the partial
     // grants persisted). The write boundary now flags the per-request uow for rollback when
-    // a mutation returns a failed WriteResult (authenticatedWriteResolver → uow.shouldRollback
+    // a mutation returns a failed OperationResult (authenticatedWriteResolver → uow.shouldRollback
     // → useScopedContainer), so the whole batch is rolled back and no grant rows survive.
     it('rolls back every grant in the batch when one recipient fails', async () => {
       const item1 = await createOwnedMediaItem(loggedInViewer1);

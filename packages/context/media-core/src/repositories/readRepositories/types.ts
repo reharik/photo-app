@@ -6,6 +6,7 @@ import {
   EntityType,
   Operation,
   ReactionEmoji,
+  UserStatus,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
 import { AuditRecord } from '../..';
@@ -52,6 +53,9 @@ export type MediaItemOperationsRow = {
 export type EmailShare = {
   id: EntityId;
   email: string;
+  displayName?: string;
+  hasAccount: boolean;
+  userId?: string;
   createdAt: Date;
 };
 
@@ -72,13 +76,15 @@ export type AuthorizationReadRepository = {
     publicLinkId: EntityId,
     mediaItemIds: EntityId[],
   ) => Promise<MediaItemOperations[]>;
-  getPendingEmailAuthorizationsForAlbum: ({
+  getEmailedAuthorizationsForAlbum: ({
     albumId,
     viewerId,
   }: {
     albumId: EntityId;
     viewerId: EntityId;
-  }) => Promise<EmailShare[]>;
+  }) => Promise<
+    (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
+  >;
   getPublicAuthorizationByAlbum: (args: {
     albumId: EntityId;
     viewerId: EntityId;
@@ -147,6 +153,7 @@ export type AlbumMemberRow = {
   role: AlbumMemberRole;
   firstName: string;
   lastName: string;
+  email: string;
   createdAt: Date;
   updatedAt: Date;
 };

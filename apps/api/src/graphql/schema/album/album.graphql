@@ -25,6 +25,9 @@ type ResolveShareRecipientsResponse {
 type EmailShare {
   id: ID!
   email: String!
+  displayName: String
+  hasAccount: Boolean!
+  userId: ID
   createdAt: DateTime!
 }
 
@@ -75,6 +78,7 @@ type AlbumMember implements Node {
   role: AlbumMemberRole!
   firstName: String!
   lastName: String!
+  email: String!
   createdAt: DateTime!
   updatedAt: DateTime!
 }

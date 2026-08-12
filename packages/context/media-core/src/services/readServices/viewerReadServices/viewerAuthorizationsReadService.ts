@@ -1,3 +1,4 @@
+import { UserStatus } from '@packages/contracts';
 import {
   AuthorizationReadRepository,
   EmailShare,
@@ -13,7 +14,7 @@ export interface viewerAuthorizationsReadService extends ReadServiceBase {
   listEmailSharesForAlbum: (args: { albumId: EntityId }) => Promise<EmailShare[]>;
   getPublicLinkTokenForAlbum: (args: {
     albumId: EntityId;
-  }) => Promise<{ token: string | undefined }>;
+  }) => Promise<{ token: string } | undefined>;
 }
 
 type viewerAuthorizationsReadServiceDeps = {
@@ -46,21 +47,32 @@ export const build__viewerAuthorizationsReadService = ({
       }));
     },
     listEmailSharesForAlbum: async ({ albumId }: { albumId: EntityId }): Promise<EmailShare[]> => {
-      return authorizationReadRepository.getPendingEmailAuthorizationsForAlbum({
+      const result = await authorizationReadRepository.getEmailedAuthorizationsForAlbum({
         albumId,
         viewerId,
       });
+      return result.map((x) => ({
+        id: x.id,
+        email: x.email,
+        displayName:
+          x.userStatus && x.userStatus.equals(UserStatus.active)
+            ? [x.firstName, x.lastName].filter(Boolean).join(' ') || undefined
+            : undefined,
+        hasAccount: x.userStatus ? x.userStatus.equals(UserStatus.active) : false,
+        userId: x.userId,
+        createdAt: x.createdAt,
+      }));
     },
     getPublicLinkTokenForAlbum: async ({
       albumId,
     }: {
       albumId: EntityId;
-    }): Promise<{ token: string | undefined }> => {
+    }): Promise<{ token: string } | undefined> => {
       const row = await authorizationReadRepository.getPublicAuthorizationByAlbum({
         albumId,
         viewerId,
       });
-      return { token: row ? row.linkToken : undefined };
+      return row?.linkToken ? { token: row.linkToken } : undefined;
     },
   };
 };

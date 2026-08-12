@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
 import { dedupeIds, Logger } from '@packages/infrastructure';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from '../../../application';
 import {
@@ -28,7 +28,7 @@ export interface GrantUserAuthorization extends WriteServiceBase {
   (
     input: GrantUserAuthorizationCommand,
     mediaItems: boolean,
-  ): Promise<WriteResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>>;
+  ): Promise<OperationResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>>;
 }
 
 type GrantUserAuthorizationDeps = {
@@ -43,7 +43,7 @@ type GrantUserAuthorizationDeps = {
 const validateExistingAlbum = async (
   albumRepository: AlbumRepository,
   input: GrantUserAuthorizationCommand,
-): Promise<WriteResult<Album>> => {
+): Promise<OperationResult<Album>> => {
   const { viewerId, entityIds } = input;
   const albumId = entityIds[0];
 
@@ -64,7 +64,7 @@ const validateExistingAlbum = async (
 const validateMediaItemsCreateShadowAlbum = async (
   mediaItemRepository: MediaItemRepository,
   input: GrantUserAuthorizationCommand,
-): Promise<WriteResult<Album>> => {
+): Promise<OperationResult<Album>> => {
   const { viewerId, entityIds, label, viewerFirstName } = input;
   const dedupedIds = dedupeIds(entityIds);
 
@@ -112,7 +112,7 @@ export const build__GrantUserAuthorization = ({
   return async (
     input: GrantUserAuthorizationCommand,
     mediaItems: boolean,
-  ): Promise<WriteResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>> => {
+  ): Promise<OperationResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>> => {
     // setup and validation
     const { viewerId, grantedToHandles } = input;
     const granter = await userRepository.getById(viewerId);

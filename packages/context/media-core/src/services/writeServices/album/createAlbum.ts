@@ -1,11 +1,11 @@
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { Album } from '../../../domain/Album/Album';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateAlbumCommand, CreateAlbumResult } from './writeAlbum.types';
 
 export interface CreateAlbum extends WriteServiceBase {
-  (input: CreateAlbumCommand): Promise<WriteResult<CreateAlbumResult>>;
+  (input: CreateAlbumCommand): Promise<OperationResult<CreateAlbumResult>>;
 }
 
 type CreateAlbumDeps = {
@@ -13,7 +13,7 @@ type CreateAlbumDeps = {
 };
 
 export const build__CreateAlbum = ({ albumRepository }: CreateAlbumDeps): CreateAlbum => {
-  return async (input: CreateAlbumCommand): Promise<WriteResult<CreateAlbumResult>> => {
+  return async (input: CreateAlbumCommand): Promise<OperationResult<CreateAlbumResult>> => {
     const { viewerId, title } = input;
     const album = Album.create(
       {

@@ -29,7 +29,7 @@ export const useScopedContainer = (
       const { scope, unitOfWork } = await beginUnitOfWorkScope(container);
       const writeServices = scope.resolve('writeServices');
       // Thread the same uow instance into the context so authenticatedWriteResolver can
-      // flag it for rollback on a failed WriteResult; the predicate below reads it back.
+      // flag it for rollback on a failed OperationResult; the predicate below reads it back.
       extendContext({ writeServices, uow: unitOfWork, kind: 'authenticatedWrite' });
 
       return {

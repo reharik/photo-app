@@ -38,3 +38,14 @@ mutation DeleteShareContact($handle: String!) {
     }
   }
 }
+
+mutation RevokeShareAuthentication($input: RevokeShareAuthenticationInput!) {
+  RevokeShareAuthentication(input: $input) {
+    data {
+      albumId
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

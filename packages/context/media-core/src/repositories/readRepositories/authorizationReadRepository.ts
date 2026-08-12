@@ -3,6 +3,7 @@ import {
   AuthorizationKind,
   AuthorizationOrigin,
   Operation,
+  UserStatus,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
@@ -83,32 +84,56 @@ export const build__AuthorizationReadRepository = ({
     );
   },
 
-  getPendingEmailAuthorizationsForAlbum: async ({
+  getEmailedAuthorizationsForAlbum: async ({
     albumId,
     viewerId,
   }: {
     albumId: EntityId;
     viewerId: EntityId;
-  }): Promise<EmailShare[]> => {
-    return database('accessGrant')
-      .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
-      .where('accessGrant.albumId', albumId)
-      .where('accessGrant.kind', AuthorizationKind.pending.value)
-      .whereNull('accessGrant.revokedAt')
-      .whereExists(
-        database
-          .select(database.raw('1'))
-          .from('albumMember')
-          .where('albumMember.albumId', albumId)
-          .where('albumMember.userId', viewerId)
-          .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
-      )
-      .orderBy('accessGrant.createdAt', 'asc')
-      .select<EmailShare[]>([
-        'access_grant.id',
-        'user.email',
-        'access_grant.createdAt as grantedAt',
-      ]);
+  }): Promise<
+    (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
+  > => {
+    return withEnumRevival(
+      database('accessGrant')
+        .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
+        .where('accessGrant.albumId', albumId)
+        .whereIn('accessGrant.kind', [
+          AuthorizationKind.pending.value,
+          AuthorizationKind.user.value,
+        ])
+        .whereNull('accessGrant.revokedAt')
+        .whereExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember')
+            .where('albumMember.albumId', albumId)
+            .where('albumMember.userId', viewerId)
+            .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
+        )
+        .whereNotExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember as granteeMember')
+            .where('granteeMember.albumId', database.ref('accessGrant.albumId'))
+            .where('granteeMember.userId', database.ref('accessGrant.grantedToUser')),
+        )
+        .orderByRaw(`CASE WHEN "user"."user_status" = ? THEN 0 ELSE 1 END`, [
+          UserStatus.active.value,
+        ])
+        .orderBy('accessGrant.createdAt', 'asc')
+        .select<
+          (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
+        >([
+          'access_grant.id',
+          'user.email',
+          'user.firstName',
+          'user.lastName',
+          'user.id as userId',
+          'user.userStatus',
+          'access_grant.createdAt',
+        ]),
+      { userStatus: UserStatus },
+    );
   },
 
   getMediaItemOperationsFromGrants: async (

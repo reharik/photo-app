@@ -1,14 +1,15 @@
 import {
   AlbumMemberRole,
   AppErrorCollection,
+  AuthorizationOrigin,
   ContractError,
   fail,
   MediaKind,
   ok,
   Operation,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
-import { EnumArraysAreEqual } from '@packages/infrastructure';
+import { eachIndependently } from '../../infrastructure';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
@@ -28,11 +29,9 @@ import { ALBUM_ITEM_ORDER_GAP, ALBUM_ITEM_ORDER_INITIAL } from './albumItemOrder
 import { AlbumMember, AlbumMemberRecord } from './AlbumMember';
 
 export type AlbumAuthorizationInput = {
-  operations: Operation[];
   actorId: ActorId;
   grantedToUserId: EntityId;
   label?: string;
-  expiresAt?: Date;
 };
 
 export type AlbumProps = CreateAlbumInput & {
@@ -121,7 +120,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return max + ALBUM_ITEM_ORDER_GAP;
   }
 
-  addItem(mediaItemId: EntityId, actorId: ActorId, mediaKind: MediaKind): WriteResult<AlbumItem> {
+  addItem(
+    mediaItemId: EntityId,
+    actorId: ActorId,
+    mediaKind: MediaKind,
+  ): OperationResult<AlbumItem> {
     if (this.#items.some((i) => i.mediaItemId() === mediaItemId)) {
       return fail(AppErrorCollection.album.MediaAlreadyInAlbum);
     }
@@ -143,7 +146,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(albumItem);
   }
 
-  reorderItems(orderedAlbumItemIds: EntityId[], actorId: ActorId): WriteResult {
+  reorderItems(orderedAlbumItemIds: EntityId[], actorId: ActorId): OperationResult {
     const reorder = reorderAlbumItems(orderedAlbumItemIds, this.#items, actorId);
     if (!reorder.success) {
       return reorder;
@@ -154,7 +157,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  addMember(userId: EntityId, role: AlbumMemberRole, actorId: ActorId): WriteResult<AlbumMember> {
+  addMember(
+    userId: EntityId,
+    role: AlbumMemberRole,
+    actorId: ActorId,
+  ): OperationResult<AlbumMember> {
     if (role.equals(AlbumMemberRole.owner)) {
       return fail(AppErrorCollection.album.CanNotAddMoreThanOneAlbumOwner);
     }
@@ -171,7 +178,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(newMember);
   }
 
-  removeMember(albumMemberId: EntityId, actorId: ActorId): WriteResult<AlbumMember> {
+  removeMember(albumMemberId: EntityId, actorId: ActorId): OperationResult<AlbumMember> {
     const actingMember = this.#members.find((m) => m.userId() === actorId);
     if (!actingMember || !actingMember.role().can(Operation.removeMembers)) {
       return fail(Operation.removeMembers.deniedError);
@@ -189,6 +196,28 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(targetMember);
   }
 
+  updateMember(
+    albumMemberId: EntityId,
+    role: AlbumMemberRole,
+    actorId: ActorId,
+  ): OperationResult<AlbumMember> {
+    const actingMember = this.#members.find((m) => m.userId() === actorId);
+    if (!actingMember || !actingMember.role().can(Operation.addMembers)) {
+      return fail(Operation.addMembers.deniedError);
+    }
+    const targetMember = this.#members.find((m) => m.id() === albumMemberId);
+    if (!targetMember) {
+      return fail(AppErrorCollection.album.UserIsNotMember);
+    }
+    if (targetMember.role().equals(AlbumMemberRole.owner)) {
+      return fail(AppErrorCollection.album.CanNotUpdateOwnerOfAlbum);
+    }
+    targetMember.changeRole(role, actorId);
+
+    this.touch(actorId);
+    return ok(targetMember);
+  }
+
   coverMediaId(): EntityId | undefined {
     return this.props.coverMediaId ?? undefined;
   }
@@ -201,7 +230,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
   Another way would be to have the albumCoverMedia reference a media item directly with out
   requiring it to be part of the albumItems.  In the later case we must make sure to 
   check that the mediaItem has the status of ready as we wont have the previous albumItem check.*/
-  setCoverMedia(albumItemId: EntityId, actorId: ActorId): WriteResult {
+  setCoverMedia(albumItemId: EntityId, actorId: ActorId): OperationResult {
     const albumItem = this.#items.find((i) => i.id() === albumItemId);
     if (!albumItem) {
       return fail(AppErrorCollection.album.CoverMediaNotPartOfAlbum);
@@ -211,7 +240,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  unsetCoverMedia(actorId: ActorId): WriteResult {
+  unsetCoverMedia(actorId: ActorId): OperationResult {
     this.props.coverMediaId = null;
     this.touch(actorId);
     return ok(undefined);
@@ -225,7 +254,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
    * Removes every album item that references this media (at most one per album under normal DB constraints).
    * If the album cover pointed at this media, clears the cover so the aggregate stays consistent.
    */
-  removeMediaItemFromAlbum(mediaItemId: EntityId, actorId: ActorId): WriteResult {
+  removeMediaItemFromAlbum(mediaItemId: EntityId, actorId: ActorId): OperationResult {
     // TODO: check various invariants when they exist e.g. is album mutable
     this.#removedItems = this.#items.filter((i) => i.mediaItemId() === mediaItemId);
     this.#items = this.#items.filter((i) => i.mediaItemId() !== mediaItemId);
@@ -240,7 +269,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return ok(undefined);
   }
 
-  deleteItems(albumItemIds: EntityId[], actorId: ActorId): WriteResult {
+  deleteItems(albumItemIds: EntityId[], actorId: ActorId): OperationResult {
     // TODO: check various invariants when they exist e.g. is album mutable
     if (albumItemIds.length === 0) {
       return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);
@@ -281,27 +310,25 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return this.#authorizations;
   }
 
-  grantAuthorization(input: AlbumAuthorizationInput): WriteResult<{
+  grantAuthorization(input: AlbumAuthorizationInput): OperationResult<{
     authorization: UserAuthorization;
   }> {
-    const { operations, actorId, grantedToUserId, label, expiresAt } = input;
-    const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
+    const { actorId, grantedToUserId, label } = input;
+    const result = grantAuthorizationValidation(this, grantedToUserId, actorId, label);
     if (!result.success) {
       return result;
     }
 
-    // Maybe this should not be an upsert, we'll see.
+    // this has been stripped down, can probably be cleaned up
     const existingAuthorization = this.#authorizations.find(
       (s) => s.grantedToUser() === grantedToUserId,
     );
     if (!existingAuthorization) {
       const authorization = UserAuthorization.create(
         {
-          operations,
           grantedToUser: grantedToUserId,
           grantedBy: actorId,
           label,
-          expiresAt,
           albumId: this.id(),
         },
         actorId,
@@ -316,14 +343,6 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return ok({ authorization });
     }
 
-    if (expiresAt && result.value.status === 'updateExpireDate') {
-      const updatedExpireDate = existingAuthorization.updateExpireDate(expiresAt, actorId);
-      if (!updatedExpireDate.success) {
-        return updatedExpireDate;
-      }
-      this.touch(actorId);
-    }
-
     if (label && result.value.status === 'updateLabel') {
       const updatedLabel = existingAuthorization.updateLabel(label, actorId);
       if (!updatedLabel.success) {
@@ -331,26 +350,10 @@ export class Album extends AggregateRoot<AlbumRecord> {
       }
       this.touch(actorId);
     }
-    if (operations && !EnumArraysAreEqual(existingAuthorization.operations(), operations)) {
-      const updatedOperations = existingAuthorization.updateOperations(operations, actorId);
-      if (!updatedOperations.success) {
-        return updatedOperations;
-      }
-      this.touch(actorId);
-      // not handling yet. implement please
-      // this.recordEvent(
-      //   'authorizationOperationsUpdated',
-      //   { authorizationId: existingAuthorization.id() },
-      //   actorId,
-      // );
-    }
+
     return ok({ authorization: existingAuthorization });
   }
   /**
-   * ⚠️ NOT WIRED YET — no write service or mutation calls this. When it goes live, the
-   * CALLING SERVICE MUST DELETE THE MATERIALIZED `grant` ROWS SYNCHRONOUSLY, inside the
-   * same unit of work as this revoke. Do not rely on the `authorizationRevoked` event.
-   *
    * Why: this is a soft delete, so the `access_grant` row survives and the FK cascade that
    * used to clear `grant` no longer fires. AuthorizationReconciliation deliberately no
    * longer handles revoke/expire, because post-commit publishing is best-effort — handler
@@ -362,18 +365,29 @@ export class Album extends AggregateRoot<AlbumRecord> {
    * mediaItemReadRepository.getForViewer — treat a `grant` row as sufficient proof of
    * access without checking the authorization behind it. The revoked user would keep
    * listing the album and fetching the bytes forever.
-   *
-   * Gotcha: SystemGrantRepository is a SINGLETON on the raw `database` handle, so calling
-   * it as-is autocommits OUTSIDE the uow — not atomic, and it still deletes if the uow
-   * later rolls back (cutting off a user who was never revoked). Pass `uow.db()` in, or
-   * add a scoped repository that reads it.
-   *
    * The same applies to revokePendingUserAuthorization and revokePublicLink below.
    */
-  revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
-    const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
+  revokeAuthorization(authorizationId: EntityId, actorId: ActorId): OperationResult {
+    const authorization =
+      this.#authorizations.find((s) => s.id() === authorizationId) ??
+      this.#pendingUserAuthorizations.find((s) => s.id() === authorizationId);
     if (!authorization) {
       return fail(AppErrorCollection.authorization.AuthorizationNotFound);
+    }
+    const authorizingMember = this.getAlbumMemberByUserId(actorId);
+    if (!authorizingMember || !authorizingMember.role().can(Operation.grantAlbumAuthorization)) {
+      return fail(Operation.grantAlbumAuthorization.deniedError);
+    }
+
+    // can't revoke from owner
+    const member = this.getAlbumMemberByUserId(authorization.grantedToUser());
+    if (member && member.role().equals(AlbumMemberRole.owner)) {
+      return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
+    }
+
+    // can't revoke yourself
+    if (authorization.grantedToUser() === actorId) {
+      return fail(AppErrorCollection.album.CanNotRemoveYourselfFromAlbum);
     }
 
     // Soft delete
@@ -382,7 +396,6 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return result;
     }
     this.touch(actorId);
-    this.recordEvent('authorizationRevoked', { authorizationId: authorizationId }, actorId);
     return ok(undefined);
   }
 
@@ -390,11 +403,11 @@ export class Album extends AggregateRoot<AlbumRecord> {
     return this.#pendingUserAuthorizations;
   }
 
-  grantPendingUserAuthorization(input: AlbumAuthorizationInput): WriteResult<{
+  grantPendingUserAuthorization(input: AlbumAuthorizationInput): OperationResult<{
     authorization: PendingUserAuthorization;
   }> {
-    const { operations, actorId, grantedToUserId, label, expiresAt } = input;
-    const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
+    const { actorId, grantedToUserId, label } = input;
+    const result = grantAuthorizationValidation(this, grantedToUserId, actorId, label);
     if (!result.success) {
       return result;
     }
@@ -405,11 +418,9 @@ export class Album extends AggregateRoot<AlbumRecord> {
     if (!existingPendingUserAuthorization) {
       const pendingUserAuthorization = PendingUserAuthorization.create(
         {
-          operations,
           grantedToUser: grantedToUserId,
           grantedBy: actorId,
           label,
-          expiresAt,
           albumId: this.id(),
         },
         actorId,
@@ -428,17 +439,6 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return ok({ authorization: pendingUserAuthorization });
     }
 
-    if (expiresAt && result.value.status === 'updateExpireDate') {
-      const updatedExpireDate = existingPendingUserAuthorization.updateExpireDate(
-        expiresAt,
-        actorId,
-      );
-      if (!updatedExpireDate.success) {
-        return updatedExpireDate;
-      }
-      this.touch(actorId);
-    }
-
     if (label && result.value.status === 'updateLabel') {
       const updatedLabel = existingPendingUserAuthorization.updateLabel(label, actorId);
       if (!updatedLabel.success) {
@@ -446,55 +446,8 @@ export class Album extends AggregateRoot<AlbumRecord> {
       }
       this.touch(actorId);
     }
-    if (
-      operations &&
-      !EnumArraysAreEqual(existingPendingUserAuthorization.operations(), operations)
-    ) {
-      const updatedOperations = existingPendingUserAuthorization.updateOperations(
-        operations,
-        actorId,
-      );
-      if (!updatedOperations.success) {
-        return updatedOperations;
-      }
-      this.touch(actorId);
-      // not handling yet
-      // this.recordEvent(
-      //   'authorizationOperationsUpdated',
-      //   { authorizationId: existingAuthorization.id() },
-      //   actorId,
-      // );
-    }
-    return ok({ authorization: existingPendingUserAuthorization });
-  }
-  /**
-   * ⚠️ NOT WIRED YET. As with revokeAuthorization above: when this goes live the calling
-   * service must delete this authorization's materialized `grant` rows synchronously in
-   * the same unit of work. `pendingUserAuthorizationRevoked` has no subscriber and must
-   * not be relied on for teardown. See revokeAuthorization for the full rationale.
-   */
-  revokePendingUserAuthorization(
-    pendingUserAuthorizationId: EntityId,
-    actorId: ActorId,
-  ): WriteResult {
-    const pendingUserAuthorization = this.#pendingUserAuthorizations.find(
-      (s) => s.id() === pendingUserAuthorizationId,
-    );
-    if (!pendingUserAuthorization) {
-      return fail(AppErrorCollection.authorization.AuthorizationNotFound);
-    }
-    // Soft delete
-    const result = pendingUserAuthorization.revokeAuthorization(actorId);
-    if (!result.success) {
-      return result;
-    }
 
-    this.recordEvent(
-      'pendingUserAuthorizationRevoked',
-      { authorizationId: pendingUserAuthorizationId },
-      actorId,
-    );
-    return ok(undefined);
+    return ok({ authorization: existingPendingUserAuthorization });
   }
 
   getPublicLinks(): PublicLinkAuthorization[] {
@@ -503,21 +456,27 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
   grantPublicLink(
     input: Omit<AlbumAuthorizationInput, 'grantedToUserId'>,
-  ): WriteResult<PublicLinkAuthorization> {
-    const { operations, actorId, label, expiresAt } = input;
+  ): OperationResult<PublicLinkAuthorization> {
+    const { actorId, label } = input;
+    const member = this.getAlbumMemberByUserId(actorId);
+    if (!member || !member.role().can(Operation.grantAlbumAuthorization)) {
+      return fail(Operation.grantAlbumAuthorization.deniedError);
+    }
+
     let publicLink = this.#publicLinks.find((x) => {
       const exp = x.expiresAt();
-      return !x.revokedAt() && (!exp || exp > new Date());
+      return (
+        !x.revokedAt() &&
+        (!exp || (exp > new Date() && x.origin().equals(AuthorizationOrigin.owner)))
+      );
     });
 
     if (!publicLink) {
       // creating a new public link creates a new authorization/access_grant
       publicLink = PublicLinkAuthorization.create(
         {
-          operations: operations ?? [],
           grantedBy: actorId,
           label,
-          expiresAt,
           albumId: this.id(),
         },
         actorId,
@@ -532,41 +491,32 @@ export class Album extends AggregateRoot<AlbumRecord> {
 
       return ok(publicLink);
     }
-    if (expiresAt && publicLink.expiresAt() !== expiresAt) {
-      const updatedExpireDate = publicLink.updateExpireDate(expiresAt, actorId);
-      if (!updatedExpireDate.success) {
-        return updatedExpireDate;
-      }
-      this.touch(actorId);
-    }
+
     return ok(publicLink);
   }
 
-  /**
-   * ⚠️ NOT WIRED YET. As with revokeAuthorization above: when this goes live the calling
-   * service must delete this link's materialized `grant` rows synchronously in the same
-   * unit of work. `publicLinkRevoked` has no subscriber and must not be relied on for
-   * teardown. Public links are the sharper case — the token keeps working for anyone who
-   * has it. See revokeAuthorization for the full rationale.
-   */
-  revokePublicLink(publicLinkId: EntityId, actorId: ActorId): WriteResult {
-    const publicLink = this.#publicLinks.find((s) => s.id() === publicLinkId);
-    if (!publicLink) {
-      return fail(AppErrorCollection.authorization.PublicLinkNotFound);
+  revokePublicLinks(actorId: ActorId): OperationResult<EntityId[]> {
+    const authorizingMember = this.getAlbumMemberByUserId(actorId);
+    if (!authorizingMember || !authorizingMember.role().can(Operation.grantAlbumAuthorization)) {
+      return fail(Operation.grantAlbumAuthorization.deniedError);
     }
-
+    if (this.#publicLinks.length === 0) {
+      return ok([]);
+    }
     // Soft delete
-    const result = publicLink.revokeAuthorization(actorId);
-    if (!result.success) {
-      return result;
-    }
+    const authorizationIds = eachIndependently(this.#publicLinks, (x) => {
+      const result = x.revokeAuthorization(actorId);
+      if (!result.success) {
+        return result;
+      }
+      return ok(x.id());
+    });
 
     this.touch(actorId);
-    this.recordEvent('publicLinkRevoked', { authorizationId: publicLink.id() }, actorId);
-    return ok(undefined);
+    return ok(authorizationIds.succeeded.map((x) => x.value));
   }
 
-  activatePendingUserAuthorization(id: string, actorId: string): WriteResult<void> {
+  activatePendingUserAuthorization(id: string, actorId: string): OperationResult<void> {
     const existingAuthorization = this.#pendingUserAuthorizations.find((x) => x.id() === id);
     if (!existingAuthorization) {
       return fail(ContractError.noAuthorizationFoundForId);

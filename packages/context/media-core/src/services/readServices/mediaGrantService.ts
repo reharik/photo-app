@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
 import {
   AlbumMemberReadRepository,
   GrantReadRepository,
@@ -16,8 +16,8 @@ export type AuthorizeAlbumCommentInput = {
 };
 
 export type ValidateOperationService = {
-  authorizeMediaComment: (input: AuthorizeMediaCommentInput) => Promise<WriteResult<void>>;
-  authorizeAlbumComment: (input: AuthorizeAlbumCommentInput) => Promise<WriteResult<void>>;
+  authorizeMediaComment: (input: AuthorizeMediaCommentInput) => Promise<OperationResult<void>>;
+  authorizeAlbumComment: (input: AuthorizeAlbumCommentInput) => Promise<OperationResult<void>>;
 };
 
 type ValidateOperationServiceDeps = {
@@ -30,7 +30,9 @@ export const build__ValidateOperationService = ({
   grantReadRepository,
   albumMemberReadRepository,
 }: ValidateOperationServiceDeps): ValidateOperationService => ({
-  authorizeMediaComment: async (input: AuthorizeMediaCommentInput): Promise<WriteResult<void>> => {
+  authorizeMediaComment: async (
+    input: AuthorizeMediaCommentInput,
+  ): Promise<OperationResult<void>> => {
     const { mediaItemId, viewerId } = input;
     if (!viewerId) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
@@ -61,7 +63,9 @@ export const build__ValidateOperationService = ({
     return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
   },
 
-  authorizeAlbumComment: async (input: AuthorizeAlbumCommentInput): Promise<WriteResult<void>> => {
+  authorizeAlbumComment: async (
+    input: AuthorizeAlbumCommentInput,
+  ): Promise<OperationResult<void>> => {
     const { albumId, viewerId } = input;
     if (!viewerId) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);

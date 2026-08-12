@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
@@ -13,7 +13,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddMediaItemsToAlbumCommand, AddMediaItemsToAlbumResult } from './writeAlbum.types';
 
 export interface AddMediaItemsToAlbum extends WriteServiceBase {
-  (input: AddMediaItemsToAlbumCommand): Promise<WriteResult<AddMediaItemsToAlbumResult>>;
+  (input: AddMediaItemsToAlbumCommand): Promise<OperationResult<AddMediaItemsToAlbumResult>>;
 }
 
 type AddMediaItemsToAlbumDeps = {
@@ -27,7 +27,7 @@ export const build__AddMediaItemsToAlbum = ({
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {
   return async (
     input: AddMediaItemsToAlbumCommand,
-  ): Promise<WriteResult<AddMediaItemsToAlbumResult>> => {
+  ): Promise<OperationResult<AddMediaItemsToAlbumResult>> => {
     const { viewerId, newAlbum } = input;
     const mediaItemIds = dedupeIds(input.mediaItemIds);
 

@@ -11,10 +11,8 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerFirstName: ctx.viewer.firstName,
         viewerLastName: ctx.viewer.lastName,
         entityIds: args.input.mediaItemIds,
-        operations: args.input.operations,
         grantedToHandles: args.input.grantedToHandles,
         label: args.input.label ?? undefined,
-        expiresAt: args.input.expiresAt ?? undefined,
       };
       const result = await ctx.writeServices.grantUserAuthorization(command, true);
       if (!result.success) {
@@ -32,10 +30,8 @@ const authorizationMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerFirstName: ctx.viewer.firstName,
         viewerLastName: ctx.viewer.lastName,
         entityIds: [args.input.albumId],
-        operations: args.input.operations,
         grantedToHandles: args.input.grantedToHandles,
         label: args.input.label ?? undefined,
-        expiresAt: args.input.expiresAt ?? undefined,
       };
       const result = await ctx.writeServices.grantUserAuthorization(command, false);
       if (!result.success) {

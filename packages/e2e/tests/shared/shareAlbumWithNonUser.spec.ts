@@ -13,6 +13,12 @@ import {
 } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
 import { buildPublicMediaDetailUrl, expectPublicMediaUnavailable } from '../../fixtures/navigation';
+import {
+  closeShareAlbumModal,
+  commitShareEmail,
+  openShareAlbumModal,
+  shareAlbumEmailInput,
+} from '../../fixtures/shareAlbumModal';
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
@@ -48,20 +54,13 @@ test.describe('Share an album with an email that is not a user', () => {
 
       await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id, b.id]);
 
-      await userA.page.getByRole('button', { name: 'Share album' }).click();
-      const shareDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-      const recipientInput = shareDialog.getByRole('combobox', { name: 'Recipients' });
-      await recipientInput.fill(recipientEmail);
-      // Commit the typed email to a recipient pill before submitting.
-      await recipientInput.press('Enter');
-      await expect(
-        shareDialog.getByRole('button', { name: `Remove ${recipientEmail.toLowerCase()}` }),
-      ).toBeVisible();
+      const shareDialog = await openShareAlbumModal(userA.page);
       // Only mail sent after this share counts — ignores any earlier invite to the
-      // reused RECIPIENT_EMAIL without wiping the SES store.
+      // reused RECIPIENT_EMAIL without wiping the SES store. Captured BEFORE the
+      // commit: on the one-surface modal the share fires the moment Enter lands.
       const sesBaseline = await countLocalStackSesMessages(request);
-      await shareDialog.getByRole('button', { name: 'Share with user' }).click();
-      await expect(shareDialog).toBeHidden();
+      await commitShareEmail(shareDialog, recipientEmail);
+      await closeShareAlbumModal(userA.page);
 
       // A non-user album share sends the recipient TWO emails: a linkless "…shared an album
       // with you" notification and the guest invite ("…sent you photos") carrying the public
@@ -116,13 +115,13 @@ test.describe('Share an album with an email that is not a user', () => {
 
       await test.step('USER A: shared email is saved as a recipient suggestion', async () => {
         // Sharing with a non-user saves the email as one of User A's share contacts,
-        // so it should surface in the Recipients dropdown the next time A shares.
-        // Done last so the open dialog needs no teardown.
-        await userA.page.getByRole('button', { name: 'Share album' }).click();
-        const reopenedDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-        await reopenedDialog
-          .getByRole('combobox', { name: 'Recipients' })
-          .fill(recipientEmail.toLowerCase());
+        // so it should surface as a suggestion the next time A shares. The catalog
+        // filters out people already in the open album's shared-with list, so the
+        // check needs a FRESH album where the contact is genuinely suggestable.
+        await userA.page.goto('/media');
+        await addMediaItemsToNewAlbum(userA.page, `${albumTitle}-2`, [d.id]);
+        const reopenedDialog = await openShareAlbumModal(userA.page);
+        await shareAlbumEmailInput(reopenedDialog).fill(recipientEmail.toLowerCase());
         // The suggestion popover renders in a portal at the document body (not inside the
         // dialog), so query options at page level. Its accessible name also includes the
         // row's "Remove from saved contacts" control, so match on text content.

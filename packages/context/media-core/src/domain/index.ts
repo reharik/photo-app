@@ -13,7 +13,6 @@ export * from './Authorization/Authorization';
 export * from './Authorization/PendingUserAuthorization';
 export * from './Authorization/PublicLinkAuthorization';
 export * from './Authorization/UserAuthorization';
-export * from './Authorization/authorizationEvents';
 export * from './Authorization/grantAuthorizationValidation';
 export * from './Authorization/eventHandlers/authorizationReconciliation';
 export * from './Authorization/eventHandlers/resolveAuthorizations';

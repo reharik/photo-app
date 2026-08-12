@@ -5,7 +5,12 @@ type Mutation {
 
   AddAlbumMembers(input: AddAlbumMembersInput!): AddAlbumMembersResponse!
   RemoveAlbumMembers(input: RemoveAlbumMembersInput!): RemoveAlbumMembersResponse!
-
+  RevokeShareAuthentication(
+    input: RevokeShareAuthenticationInput!
+  ): RevokeShareAuthenticationResponse!
+  RevokePublicLinkAuthentication(
+    input: RevokePublicLinkAuthenticationInput!
+  ): RevokePublicLinkAuthenticationResponse!
   DeleteAlbumItemsFromAlbum(
     input: DeleteAlbumItemsFromAlbumInput!
   ): DeleteAlbumItemsFromAlbumResponse!
@@ -14,6 +19,51 @@ type Mutation {
   grantUserAuthorizationForAlbum(
     input: GrantUserAuthorizationForAlbumInput!
   ): GrantUserAuthorizationResult!
+
+  UpdateAlbumMemberRole(input: UpdateAlbumMemberRoleInput!): UpdateAlbumMemberRoleResponse!
+}
+
+input UpdateAlbumMemberRoleInput {
+  albumId: ID!
+  albumMemberId: ID!
+  role: AlbumMemberRole!
+}
+
+type UpdateAlbumMemberRoleResponse {
+  data: UpdateAlbumMemberRolePayload
+  errors: [ContractError!]
+}
+
+type UpdateAlbumMemberRolePayload {
+  albumMemberId: ID!
+  role: AlbumMemberRole!
+}
+
+input RevokeShareAuthenticationInput {
+  albumId: ID!
+  authorizationId: ID!
+}
+
+type RevokeShareAuthenticationResponse {
+  data: RevokeShareAuthenticationPayload
+  errors: [ContractError!]
+}
+
+type RevokeShareAuthenticationPayload {
+  albumId: ID!
+}
+
+input RevokePublicLinkAuthenticationInput {
+  albumId: ID!
+}
+
+type RevokePublicLinkAuthenticationResponse {
+  data: RevokePublicLinkAuthenticationPayload
+  errors: [ContractError!]
+}
+
+type RevokePublicLinkAuthenticationPayload {
+  token: String!
 }
 
 input SetCoverMediaInput {
@@ -151,8 +201,6 @@ input DeleteAlbumItemsFromAlbumInput {
 }
 input GrantUserAuthorizationForAlbumInput {
   albumId: ID!
-  operations: [Operation!]!
   grantedToHandles: [String!]!
   label: String
-  expiresAt: DateTime
 }

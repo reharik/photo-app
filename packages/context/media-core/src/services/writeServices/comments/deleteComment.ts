@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -9,7 +9,7 @@ export type DeleteCommentCommand = {
 };
 
 export interface DeleteComment extends WriteServiceBase {
-  (command: DeleteCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
+  (command: DeleteCommentCommand): Promise<OperationResult<{ entityId: EntityId }>>;
 }
 
 type DeleteCommentDeps = {
@@ -17,7 +17,9 @@ type DeleteCommentDeps = {
 };
 
 export const build__DeleteComment = ({ commentRepository }: DeleteCommentDeps): DeleteComment => {
-  return async (command: DeleteCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (
+    command: DeleteCommentCommand,
+  ): Promise<OperationResult<{ entityId: EntityId }>> => {
     const comment = await commentRepository.getById(command.commentId);
     if (!comment) {
       return fail(AppErrorCollection.comment.CommentNotFound);

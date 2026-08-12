@@ -56,7 +56,6 @@ describe('GraphQL media upload integration', () => {
               }
               errors {
                 code
-                message
               }
             }
           }
@@ -105,7 +104,7 @@ describe('GraphQL media upload integration', () => {
       const { response, json } = await executeGraphQL<{
         finalizeMediaUpload: {
           data?: { mediaItemId: string; status: string; size: number };
-          errors: { code: string; message: string }[];
+          errors: { code: string }[];
         };
       }>({
         query: `
@@ -118,7 +117,6 @@ describe('GraphQL media upload integration', () => {
               }
               errors {
                 code
-                message
               }
             }
           }
@@ -132,9 +130,6 @@ describe('GraphQL media upload integration', () => {
       expect(json.data?.finalizeMediaUpload.data).toBeFalsy();
       expect(json.data?.finalizeMediaUpload.errors[0]?.code).toBe(
         AppErrorCollection.mediaItem.MediaBytesNotFound.code,
-      );
-      expect(json.data?.finalizeMediaUpload.errors[0]?.message).toBe(
-        AppErrorCollection.mediaItem.MediaBytesNotFound.display,
       );
     });
   });
@@ -235,7 +230,7 @@ describe('GraphQL media upload integration', () => {
       const { json } = await executeGraphQL<{
         finalizeMediaUpload: {
           data?: { mediaItemId: string; status: string };
-          errors: { code: string; message: string }[];
+          errors: { code: string }[];
         };
       }>({
         query: `
@@ -247,7 +242,6 @@ describe('GraphQL media upload integration', () => {
               }
               errors {
                 code
-                message
               }
             }
           }

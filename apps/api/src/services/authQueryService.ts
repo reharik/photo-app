@@ -1,6 +1,6 @@
 import {
   ok,
-  WriteResult,
+  OperationResult,
   type AuthResponse,
   type LoginInput,
   type User,
@@ -18,7 +18,7 @@ export type SanitizedUser = Omit<User, 'passwordHash'>;
 
 export interface AuthQueryService {
   login: (credentials: LoginInput) => Promise<AuthResponse | undefined>;
-  verifyEmail: (email: string) => Promise<WriteResult<void>>;
+  verifyEmail: (email: string) => Promise<OperationResult<void>>;
   hashPassword: (password: string) => Promise<string>;
 }
 

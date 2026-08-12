@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import {
   eachIndependently,
@@ -10,7 +10,9 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { RemoveAlbumMembersCommand } from './writeAlbum.types';
 
 export interface RemoveAlbumMembers extends WriteServiceBase {
-  (input: RemoveAlbumMembersCommand): Promise<WriteResult<IndependentGroupResult<string, string>>>;
+  (
+    input: RemoveAlbumMembersCommand,
+  ): Promise<OperationResult<IndependentGroupResult<string, string>>>;
 }
 
 type RemoveAlbumMembersDeps = { albumRepository: AlbumRepository; logger: Logger };
@@ -23,7 +25,9 @@ export const build__RemoveAlbumMembers = ({
     albumId,
     albumMemberIds,
     actorId,
-  }: RemoveAlbumMembersCommand): Promise<WriteResult<IndependentGroupResult<string, string>>> => {
+  }: RemoveAlbumMembersCommand): Promise<
+    OperationResult<IndependentGroupResult<string, string>>
+  > => {
     const album = await albumRepository.getById(albumId);
     if (!album) {
       return fail(ContractError.AlbumNotFound);

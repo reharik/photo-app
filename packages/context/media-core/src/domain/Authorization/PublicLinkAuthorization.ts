@@ -1,10 +1,11 @@
 import {
   AppErrorCollection,
   AuthorizationKind,
+  AuthorizationOrigin,
   fail,
   ok,
   Operation,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
@@ -15,18 +16,21 @@ export type PublicLinkAuthorizationProps = AuthorizationProps & {
   grantedToUser: null;
   linkToken: string;
   kind: typeof AuthorizationKind.public;
+  origin: AuthorizationOrigin;
 };
 
 export type PublicLinkAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: null;
   linkToken: string;
   kind: typeof AuthorizationKind.public;
+  origin: AuthorizationOrigin;
 };
 
 export type PublicLinkAuthorizationConversionRecord = AuthorizationRecord & {
   grantedToUser: null;
   linkToken: string;
   kind: typeof AuthorizationKind.public;
+  origin: typeof AuthorizationOrigin.converted;
 };
 
 export type CreatePublicLinkAuthorizationInput = CreateAuthorizationInput & {
@@ -59,13 +63,13 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
       linkToken,
       grantedBy: actorId,
       label: input.label,
-      expiresAt: input.expiresAt,
       albumId: input.albumId,
       // null, not undefined: this is the value that reaches the column. undefined made knex
       // omit granted_to_user entirely, so the record type's claim was only true by way of
       // the `as TRecord` cast in Entity.toPersistence. The conversion path already used null.
       grantedToUser: null,
       kind: AuthorizationKind.public,
+      origin: AuthorizationOrigin.owner,
     });
   }
 
@@ -111,7 +115,7 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return this.props.operations;
   }
 
-  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+  updateOperations(operations: Operation[], actorId: ActorId): OperationResult<undefined> {
     this.props.operations = operations;
     this.touch(actorId);
     return ok(undefined);
@@ -121,13 +125,13 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return this.props.label;
   }
 
-  updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
+  updateLabel(label: string, actorId: ActorId): OperationResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
+  updateExpireDate(expiredDate: Date, actorId: ActorId): OperationResult<undefined> {
     if (expiredDate < new Date()) {
       return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
@@ -139,10 +143,7 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return ok(undefined);
   }
 
-  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
-    if (this.props.expiresAt && this.props.expiresAt < new Date()) {
-      return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
-    }
+  revokeAuthorization(actorId: ActorId): OperationResult<undefined> {
     this.props.revokedAt = new Date();
     this.touch(actorId);
     return ok(undefined);
@@ -162,5 +163,8 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
   }
   linkToken(): string {
     return this.props.linkToken;
+  }
+  origin(): AuthorizationOrigin {
+    return this.props.origin;
   }
 }

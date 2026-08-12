@@ -72,7 +72,7 @@ const createAlbumMutation = `
   mutation CreateAlbum($input: CreateAlbumInput!) {
     createAlbum(input: $input) {
       data { albumId }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -81,7 +81,7 @@ const addMembersMutation = `
   mutation AddMembers($input: AddAlbumMembersInput!) {
     AddAlbumMembers(input: $input) {
       data { albumId albumMemberIds }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -90,7 +90,7 @@ const removeMembersMutation = `
   mutation RemoveMembers($input: RemoveAlbumMembersInput!) {
     RemoveAlbumMembers(input: $input) {
       data { albumId albumMemberIds }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -117,7 +117,7 @@ const albumMembersQuery = `
   }
 `;
 
-type PayloadError = { code: string; message: string };
+type PayloadError = { code: string };
 type MembersMutationResponse = {
   data?: { albumId: string; albumMemberIds: string[] } | null;
   errors: PayloadError[] | null;
@@ -222,6 +222,8 @@ describe('album membership (integration)', () => {
       grantedBy: TEST_VIEWER_1_ID,
       grantedToUser,
       kind: 'USER',
+      // USER rows are never converted; OWNER is the honest value (0026 made origin NOT NULL).
+      origin: 'OWNER',
       // COMMENT, not VIEW: the DB CHECK admits 'VIEW' but the domain Operation
       // smart-enum has no such member — any path that revives operations would throw.
       operations: ['COMMENT'],

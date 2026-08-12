@@ -68,6 +68,7 @@ export type AlbumMemberProjection = {
   role: AlbumMemberRole;
   firstName: string;
   lastName: string;
+  email: string;
   createdAt: Date;
   updatedAt: Date;
 };
