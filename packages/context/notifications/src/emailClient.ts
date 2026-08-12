@@ -1,5 +1,5 @@
 import { SendRawEmailCommand, SESClient, SESClientConfig } from '@aws-sdk/client-ses';
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { EmailConfig } from './types';
 
@@ -15,7 +15,7 @@ export type SendEmailInput = {
 };
 
 export interface EmailService {
-  sendEmail: (input: SendEmailInput) => Promise<WriteResult<{ messageId: string }>>;
+  sendEmail: (input: SendEmailInput) => Promise<OperationResult<{ messageId: string }>>;
 }
 
 export type EmailClientDeps = {
@@ -100,7 +100,7 @@ export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailSe
   const sesClient = new SESClient(sesClientConfig);
 
   return {
-    sendEmail: async (input: SendEmailInput): Promise<WriteResult<{ messageId: string }>> => {
+    sendEmail: async (input: SendEmailInput): Promise<OperationResult<{ messageId: string }>> => {
       logger.info('Sending email', {
         to: input.to,
         subject: input.subject,

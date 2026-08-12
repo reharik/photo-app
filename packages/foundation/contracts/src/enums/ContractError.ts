@@ -1,18 +1,5 @@
 import { enumeration, type Enumeration } from '@reharik/smart-enum';
-
-const errorCategoryInput = [
-  'auth',
-  'conflict',
-  'domain',
-  'network',
-  'system',
-  'validation',
-] as const;
-
-export type ErrorCategory = Enumeration<typeof ErrorCategory>;
-export const ErrorCategory = enumeration<typeof errorCategoryInput>('ErrorCategory', {
-  input: errorCategoryInput,
-});
+import { ErrorCategory } from './graphqlSmartEnums';
 
 const errorAreaInput = [
   'album',
@@ -216,13 +203,7 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
-  MemberNotAllowedToRemoveItems: {
-    code: 'MEMBER_NOT_ALLOWED_TO_REMOVE_ITEMS',
-    display: 'Member not allowed to remove items',
-    category: ErrorCategory.auth,
-    area: ErrorArea.album,
-    retryable: false,
-  },
+
   MemberNotAllowedToEditAlbum: {
     code: 'MEMBER_NOT_ALLOWED_TO_EDIT_ALBUM',
     display: 'Member not allowed to edit album',
@@ -519,6 +500,20 @@ const contractErrorInput = {
     area: ErrorArea.user,
     retryable: false,
   },
+  PartialAlbumMemberCreation: {
+    code: 'PARTIAL_ALBUM_MEMBER_CREATION',
+    display: 'Partial album member creation',
+    category: ErrorCategory.domain,
+    area: ErrorArea.user,
+    retryable: false,
+  },
+  PartialAlbumMemberRemoval: {
+    code: 'PARTIAL_ALBUM_MEMBER_REMOVAL',
+    display: 'Partial album member removal',
+    category: ErrorCategory.domain,
+    area: ErrorArea.user,
+    retryable: false,
+  },
   UserAlreadyExists: {
     code: 'USER_ALREADY_EXISTS',
     display: 'User already exists',
@@ -538,6 +533,90 @@ const contractErrorInput = {
     display: 'missing first or last name',
     category: ErrorCategory.domain,
     area: ErrorArea.user,
+    retryable: false,
+  },
+  CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage: {
+    code: 'CAN_ONLY_REMOVE_OWNED_ITEMS_OR_ITEMS_IN_AN_ALBUM_YOU_MANAGE',
+    display: 'You can only remove items you own or items in an album you manage',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  noAuthorizationFoundForId: {
+    code: 'NO_AUTHORIZATION_FOUND_FOR_ID',
+    display: 'no authorization found for id',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  MemberNotAllowedToAddNewMembers: {
+    code: 'MEMBER_NOT_ALLOWED_TO_ADD_NEW_MEMBERS',
+    display: 'Member not allowed to add new members',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  MemberNotAllowedToRemoveMembers: {
+    code: 'MEMBER_NOT_ALLOWED_TO_REMOVE_MEMBERS',
+    display: 'Member not allowed to remove members',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  CanNotRemoveOwnerOfAlbum: {
+    code: 'CAN_NOT_REMOVE_OWNER_OF_ALBUM',
+    display: 'Can not remove owner of album',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  CanNotRemoveYourselfFromAlbum: {
+    code: 'CAN_NOT_REMOVE_YOURSELF_FROM_ALBUM',
+    display: 'Can not remove yourself from album',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  CanNotAddMoreThanOneAlbumOwner: {
+    code: 'CAN_NOT_ADD_MORE_THAN_ONE_ALBUM_OWNER',
+    display: 'Can not add more than one album owner',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  UserDoesNotExist: {
+    code: 'USER_DOES_NOT_EXIST',
+    display: 'User does not exist',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  UserIsNotActive: {
+    code: 'USER_IS_NOT_ACTIVE',
+    display: 'User is not active',
+    category: ErrorCategory.domain,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  TooManyRecipients: {
+    code: 'TOO_MANY_RECIPIENTS',
+    display: 'Too many recipients',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
+    retryable: false,
+  },
+  unknown: {
+    code: 'UNKNOWN',
+    display: 'Something went wrong',
+    category: ErrorCategory.system,
+    area: ErrorArea.auth,
+    retryable: false,
+  },
+  CanNotUpdateOwnerOfAlbum: {
+    code: 'CAN_NOT_UPDATE_OWNER_OF_ALBUM',
+    display: 'Can not update owner of album',
+    category: ErrorCategory.domain,
+    area: ErrorArea.album,
     retryable: false,
   },
 } as const;

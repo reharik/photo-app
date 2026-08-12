@@ -1,36 +1,44 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  AuthorizationKind,
+  AuthorizationOrigin,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import crypto from 'crypto';
 import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type PublicLinkAuthorizationProps = Omit<
-  AuthorizationProps,
-  'linkToken' | 'grantedToUser'
-> & {
-  grantedToUser: undefined;
+export type PublicLinkAuthorizationProps = AuthorizationProps & {
+  grantedToUser: null;
   linkToken: string;
+  kind: typeof AuthorizationKind.public;
+  origin: AuthorizationOrigin;
 };
 
-export type PublicLinkAuthorizationRecord = Omit<
-  AuthorizationRecord,
-  'linkToken' | 'grantedToUser'
-> & {
-  grantedToUser: undefined;
+export type PublicLinkAuthorizationRecord = AuthorizationRecord & {
+  grantedToUser: null;
   linkToken: string;
+  kind: typeof AuthorizationKind.public;
+  origin: AuthorizationOrigin;
 };
 
-export type CreatePublicLinkAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
-  grantedToUser: undefined;
+export type PublicLinkAuthorizationConversionRecord = AuthorizationRecord & {
+  grantedToUser: null;
+  linkToken: string;
+  kind: typeof AuthorizationKind.public;
+  origin: typeof AuthorizationOrigin.converted;
 };
 
-export const isPublicLinkAuthRecord = (
-  r: AuthorizationRecord,
-): r is PublicLinkAuthorizationRecord => r.linkToken != null && r.grantedToUser == null;
+export type CreatePublicLinkAuthorizationInput = CreateAuthorizationInput & {
+  grantedToUser?: undefined;
+};
 
 export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecord> {
   protected props: PublicLinkAuthorizationProps;
-  public readonly kind = 'publicLink' as const;
 
   private constructor(actorId: ActorId, props: PublicLinkAuthorizationProps, id?: EntityId) {
     super(id, actorId, 'access_grant');
@@ -55,11 +63,45 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
       linkToken,
       grantedBy: actorId,
       label: input.label,
-      expiresAt: input.expiresAt,
-      mediaItemId: input.mediaItemId,
       albumId: input.albumId,
-      grantedToUser: undefined,
+      // null, not undefined: this is the value that reaches the column. undefined made knex
+      // omit granted_to_user entirely, so the record type's claim was only true by way of
+      // the `as TRecord` cast in Entity.toPersistence. The conversion path already used null.
+      grantedToUser: null,
+      kind: AuthorizationKind.public,
+      origin: AuthorizationOrigin.owner,
     });
+  }
+
+  /**
+   * The public-link half of converting a PendingUserAuthorization: same access_grant row
+   * (same id), now carrying only the link token. The pending row is REUSED, not replaced.
+   *
+   * ⚠️ The last two lines are ordered and the order is load-bearing. `rehydrateAudit()`
+   * sets `_isDirty = false` — it exists for rows loaded from the database, which are clean
+   * by definition — so the explicit `_isDirty = true` MUST come after it. Swap them and the
+   * conversion becomes a silent no-op: the entity is dropped from the dirty set, no UPDATE
+   * is issued, and the row stays PENDING while the in-memory aggregate believes it is
+   * PUBLIC. Nothing fails; the grant simply never converts.
+   *
+   * `touch(actorId)` is deliberately NOT used here even though this is a mutation. touch()
+   * would stamp updatedAt/updatedBy with the activating user, and we want the pending row's
+   * original audit values preserved — this converts an existing invitation rather than
+   * recording a fresh act by the activator. Hence rehydrateAudit (restore the stored audit)
+   * plus a manual dirty flag, instead of the usual touch().
+   */
+  static fromConverted(
+    pendingUserAuthProps: PublicLinkAuthorizationConversionRecord,
+    actorId: EntityId,
+  ): PublicLinkAuthorization {
+    const asset = new PublicLinkAuthorization(
+      actorId,
+      pendingUserAuthProps,
+      pendingUserAuthProps.id,
+    );
+    asset.rehydrateAudit(pendingUserAuthProps);
+    asset._isDirty = true;
+    return asset;
   }
 
   static rehydrate(record: PublicLinkAuthorizationRecord): PublicLinkAuthorization {
@@ -73,7 +115,7 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return this.props.operations;
   }
 
-  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+  updateOperations(operations: Operation[], actorId: ActorId): OperationResult<undefined> {
     this.props.operations = operations;
     this.touch(actorId);
     return ok(undefined);
@@ -83,13 +125,13 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return this.props.label;
   }
 
-  updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
+  updateLabel(label: string, actorId: ActorId): OperationResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
+  updateExpireDate(expiredDate: Date, actorId: ActorId): OperationResult<undefined> {
     if (expiredDate < new Date()) {
       return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
@@ -101,18 +143,13 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
     return ok(undefined);
   }
 
-  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
-    if (this.props.expiresAt && this.props.expiresAt < new Date()) {
-      return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
-    }
+  revokeAuthorization(actorId: ActorId): OperationResult<undefined> {
     this.props.revokedAt = new Date();
     this.touch(actorId);
     return ok(undefined);
   }
-  mediaItemId(): EntityId | undefined {
-    return this.props.mediaItemId;
-  }
-  albumId(): EntityId | undefined {
+
+  albumId(): EntityId {
     return this.props.albumId;
   }
   expiresAt(): Date | undefined {
@@ -126,5 +163,8 @@ export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecor
   }
   linkToken(): string {
     return this.props.linkToken;
+  }
+  origin(): AuthorizationOrigin {
+    return this.props.origin;
   }
 }

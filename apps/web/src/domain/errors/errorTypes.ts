@@ -13,8 +13,7 @@ export type Source = 'backend' | 'frontend' | 'system';
 
 export type ContractErrorPayload = {
   code: string;
-  message?: string;
-  field?: string;
+  data?: Record<string, unknown>;
 };
 
 export type FrontendErrorInput = {

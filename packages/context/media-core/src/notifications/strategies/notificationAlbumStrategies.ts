@@ -61,3 +61,22 @@ export const build__NotificationAlbumSharedStrategy = ({
     };
   },
 });
+
+export const build__NotificationGuestAlbumSharedStrategy = ({
+  systemUserRepository,
+}: Deps): NotificationStrategy<'albumSharedWithPendingUser'> => ({
+  handles: ['albumSharedWithPendingUser'],
+  branches: ['asyncWriter'],
+  resolve: async (event): Promise<ResolvedNotification> => {
+    const recipients = await systemUserRepository.getUserContacts([event.userId]);
+    return {
+      recipients,
+      actorId: event.actorId,
+      containerType: EntityType.album,
+      containerId: event.albumId,
+      subjectType: EntityType.authorization, // degenerate: subject == container
+      subjectId: event.authorizationId,
+      kind: NotificationKind.guestAlbumShared,
+    };
+  },
+});

@@ -25,7 +25,7 @@ export type AuthenticatedReadGraphQLContext = InitialAuthenticated & {
 export type AuthenticatedWriteGraphQLContext = InitialAuthenticated & {
   writeServices: WriteServices;
   // The per-request unit of work, threaded in so the write-resolver wrapper can flag
-  // it for rollback when a mutation returns a failed WriteResult (fail-as-data). Same
+  // it for rollback when a mutation returns a failed OperationResult (fail-as-data). Same
   // instance the boundary (useScopedContainer) reads at commit time.
   uow: UnitOfWork;
 };

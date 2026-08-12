@@ -64,7 +64,6 @@ export const build__InAppNotificationRepository = ({
         kind: InAppNotificationType,
         surface: ActivitySurface,
       },
-      { strict: true },
     ),
   deleteWhere: async ({
     viewerId,

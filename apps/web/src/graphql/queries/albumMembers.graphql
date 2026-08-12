@@ -1,0 +1,19 @@
+query AlbumMembers($albumId: ID!, $input: AlbumMemberInput!) {
+  viewer {
+    id
+    album(id: $albumId) {
+      id
+      albumMembers(input: $input) {
+        nodes {
+          id
+          userId
+          role
+          firstName
+          lastName
+          email
+        }
+        totalCount
+      }
+    }
+  }
+}

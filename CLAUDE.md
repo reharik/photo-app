@@ -229,7 +229,7 @@ Reusable Knex query-builder pieces in
 
 ```ts
 database('album')
-  .modify(withViewerMembership(database, viewerId))
+  .modify(withAttachViewerMembership(database, viewerId))
   .modify(withAlbumCoverItem) // some are the modifier directly (no deps)
   .modify(withCollectionInfo(database, collectionInfo)) // standard pagination fragment
   .select(...albumFields);

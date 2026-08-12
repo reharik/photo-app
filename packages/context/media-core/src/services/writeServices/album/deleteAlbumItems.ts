@@ -1,21 +1,26 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
+import { SystemAlbumItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumItemsCommand, DeleteAlbumItemsResult } from './writeAlbum.types';
 
 export interface DeleteAlbumItems extends WriteServiceBase {
-  (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>>;
+  (input: DeleteAlbumItemsCommand): Promise<OperationResult<DeleteAlbumItemsResult>>;
 }
 
 type DeleteAlbumItemsDeps = {
   albumRepository: AlbumRepository;
+  systemAlbumItemRepository: SystemAlbumItemRepository;
 };
 
 export const build__DeleteAlbumItems = ({
   albumRepository,
+  systemAlbumItemRepository,
 }: DeleteAlbumItemsDeps): DeleteAlbumItems => {
-  return async (input: DeleteAlbumItemsCommand): Promise<WriteResult<DeleteAlbumItemsResult>> => {
+  return async (
+    input: DeleteAlbumItemsCommand,
+  ): Promise<OperationResult<DeleteAlbumItemsResult>> => {
     const { viewerId, albumId, albumItemIds } = input;
     if (albumItemIds.length === 0) {
       return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);
@@ -25,12 +30,17 @@ export const build__DeleteAlbumItems = ({
       return getResult;
     }
     const album = getResult.value;
-    const member = album.getAlbumMember(viewerId);
+    const member = album.getAlbumMemberByUserId(viewerId);
     if (!member) {
       return fail(AppErrorCollection.album.UserIsNotMember);
     }
+
     if (!member.role().can(Operation.removeItems)) {
-      return fail(Operation.removeItems.deniedError);
+      const items = await systemAlbumItemRepository.getAlbumItemsByIds({ albumId, albumItemIds });
+      const notOwned = items.some((i) => i.mediaItemOwnerId !== viewerId);
+      if (notOwned) {
+        return fail(AppErrorCollection.album.CanOnlyRemoveOwnedItemsOrItemsInAnAlbumYouManage);
+      }
     }
 
     const deleteResult = album.deleteItems(albumItemIds, viewerId);

@@ -1,4 +1,4 @@
-import { Operation, WriteResult } from '@packages/contracts';
+import { Operation, OperationResult } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
 import type { DBMediaItemRow } from '../../services/readServices/types';
@@ -14,7 +14,7 @@ export const tryAppendOneMediaToAlbum = (
   mediaItem: DBMediaItemRow,
   mediaItemId: EntityId,
   viewerId: EntityId,
-): WriteResult<AlbumItem> => {
+): OperationResult<AlbumItem> => {
   const r1 = ensureMediaItemOwnedByViewer(mediaItem.ownerId, viewerId);
   if (!r1.success) {
     return r1;

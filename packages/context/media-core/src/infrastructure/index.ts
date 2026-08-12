@@ -5,3 +5,4 @@
 export * from './repositories/diffCollectionById';
 export * from './repositories/unitOfWork';
 export * from './repositories/withUnitOfWork';
+export * from './writeServices/groupActionStrategy';

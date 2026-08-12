@@ -11,6 +11,7 @@ import {
 import { countLocalStackSesMessages } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
+import { openSharedAlbum, sharedItemsAlbumTitle } from '../../routines/openSharedAlbum';
 import { setup } from '../../routines/setup';
 
 /**
@@ -112,14 +113,12 @@ test.describe('Signup (email → code → password)', () => {
     });
   });
 
-  // Sharing an INDIVIDUAL item with a not-yet-registered email and then activating that account
-  // surfaces the item in the recipient's "Shared with me". This previously failed on the read
-  // side (the item's grant was album-scoped on a public-link album, which
-  // getMediaItemsSharedWithMe/getAlbumsSharedWithMe both dropped); the grants-from-domain-events
-  // refactor now materializes the item-scoped grant on activation, so it works. Kept ISOLATED:
-  // its read path (item-scoped "Shared with me") differs from the album-scoped landing that the
-  // guest-conversion suite covers.
-  test('pending-user activation materializes the shadow user and their item-scoped grant', async ({
+  // Sharing an INDIVIDUAL item with a not-yet-registered email and then activating that
+  // account surfaces the item to the recipient. Loose items are wrapped in a generated
+  // shadow album, so the grant is album-scoped on that album and the recipient reaches the
+  // item by opening it from the Shared list. Kept ISOLATED: this exercises activation
+  // materializing a PENDING grant, which the guest-conversion suite does not cover.
+  test('pending-user activation materializes the shadow user and their grant', async ({
     userA,
     anonPage,
     request,
@@ -158,7 +157,7 @@ test.describe('Signup (email → code → password)', () => {
     // (AuthorizationReconciliation), which is asynchronous — poll with reloads so a brief
     // materialization lag doesn't flake the check.
     await expect(async () => {
-      await anonPage.goto('/shared/items');
+      await openSharedAlbum(anonPage, sharedItemsAlbumTitle(userA.user), { timeout: 2000 });
       await expect(anonPage.getByTestId(`media-tile-${item.id}`)).toBeVisible({ timeout: 2000 });
     }).toPass({ timeout: 20_000 });
     await expectMediaItemLoaded(anonPage, item.id);

@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { EntityId } from '../..';
 import type { ActorId } from '../../types/types';
 import { AlbumItem } from '../Album/AlbumItem';
@@ -8,7 +8,7 @@ export const reorderAlbumItems = (
   orderedAlbumItemIds: EntityId[],
   items: AlbumItem[],
   actorId: ActorId,
-): WriteResult<AlbumItem[]> => {
+): OperationResult<AlbumItem[]> => {
   if (orderedAlbumItemIds.length !== items.length) {
     return fail(ContractError.InvalidAlbumItemOrder);
   }

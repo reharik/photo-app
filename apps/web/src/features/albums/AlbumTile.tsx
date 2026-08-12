@@ -27,7 +27,7 @@ export const AlbumTile = ({ album, hasUnseen = false }: AlbumTileProps) => {
   }, [coverMediaId, thumbnailUrl]);
 
   return (
-    <TileRoot>
+    <TileRoot data-testid={`album-tile-${album.id}`}>
       <ThumbLink to={`/albums/${album.id}`}>
         <CoverFrame>
           <Print>

@@ -16,6 +16,11 @@ import {
   retrieveLocalStackSesMessages,
 } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
+import {
+  closeShareAlbumModal,
+  commitShareEmail,
+  openShareAlbumModal,
+} from '../../fixtures/shareAlbumModal';
 import { expect, test } from '../../fixtures/test';
 import { USER_A } from '../../fixtures/users';
 import { setup } from '../../routines/setup';
@@ -58,15 +63,12 @@ const shareAlbumWithGuest = async (
   email: string,
 ): Promise<{ albumId: string; shareUrl: string }> => {
   const { albumId } = await addMediaItemsToNewAlbum(ownerPage, albumTitle, mediaItemIds);
-  await ownerPage.getByRole('button', { name: 'Share album' }).click();
-  const dialog = ownerPage.getByRole('dialog', { name: 'Share album' });
-  const recipients = dialog.getByRole('combobox', { name: 'Recipients' });
-  await recipients.fill(email);
-  await recipients.press('Enter');
-  await expect(dialog.getByRole('button', { name: `Remove ${email.toLowerCase()}` })).toBeVisible();
+  const dialog = await openShareAlbumModal(ownerPage);
+  // Captured BEFORE the commit: on the one-surface modal the share (and its
+  // emails) fires the moment Enter lands — there is no submit button.
   const sesBaseline = await countLocalStackSesMessages(request);
-  await dialog.getByRole('button', { name: 'Share with user' }).click();
-  await expect(dialog).toBeHidden();
+  await commitShareEmail(dialog, email);
+  await closeShareAlbumModal(ownerPage);
 
   // A non-user album share sends the recipient TWO emails: an "…shared an album with you"
   // notification (no link) and the actual invite ("…sent you photos") carrying the public

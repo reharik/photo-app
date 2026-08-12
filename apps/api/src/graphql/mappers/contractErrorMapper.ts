@@ -3,8 +3,4 @@ import type { ContractError as GraphqlContractError } from '../generated/types.g
 
 export const toContractErrorPayload = (error: ContractError): GraphqlContractError => ({
   code: error.code,
-  message: error.display,
-  field: undefined,
-  category: error.category,
-  retryable: error.retryable,
 });

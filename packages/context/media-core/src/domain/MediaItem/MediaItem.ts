@@ -3,7 +3,7 @@
  * Encapsulates metadata; can appear in multiple albums via AlbumItem.
  */
 
-import type { MediaAssetKind, Operation } from '@packages/contracts';
+import type { MediaAssetKind } from '@packages/contracts';
 import {
   AppErrorCollection,
   ContractError,
@@ -13,7 +13,7 @@ import {
   MediaItemStatus,
   MediaKind,
   ok,
-  WriteResult,
+  OperationResult,
 } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { DBReactionCounts } from '../../services/readServices/types';
@@ -23,8 +23,6 @@ import {
 } from '../../services/writeServices/mediaItem/writeMediaItem.types';
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
-import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
 import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 
@@ -67,7 +65,6 @@ export type MediaItemRecord = MediaItemProps & {
 export type MediaItemChildRecords = {
   assets: MediaAssetRecord[];
   tags: MediaItemTagRecord[];
-  authorizations: UserAuthorizationRecord[];
   reactions: MediaItemReactionRecord[];
 };
 
@@ -88,9 +85,7 @@ export type CreateMediaItemInput = {
 export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
   #assets: MediaAsset[] = [];
-  #authorizations: UserAuthorization[] = [];
   #removedAssets: MediaAsset[] = [];
-  #removedAuthorizations: UserAuthorization[] = [];
   #tags: MediaItemTag[] = [];
   #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
   #addedTags: Omit<MediaItemTag, 'label'>[] = [];
@@ -139,9 +134,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
     mediaItem.rehydrateAudit(record);
     mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
-    mediaItem.#authorizations = childRecords.authorizations.map((r) =>
-      UserAuthorization.rehydrate(r),
-    );
     mediaItem.#tags = [...(childRecords.tags ?? [])];
     mediaItem.#reactions = [...(childRecords.reactions ?? [])];
     mediaItem.#computedReactionCounts();
@@ -178,7 +170,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  addTags(tags: MediaItemTag[]): WriteResult {
+  addTags(tags: MediaItemTag[]): OperationResult {
     const newTags = tags.map((tag) => ({
       ...tag,
       id: crypto.randomUUID(),
@@ -190,7 +182,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): WriteResult {
+  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): OperationResult {
     this.#tags = this.#tags.filter(
       (t) => !tagIds.some((removeTag) => removeTag.userTagId === t.userTagId),
     );
@@ -209,7 +201,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       takenAt,
     }: { title?: string | null; description?: string | null; takenAt?: Date | null },
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     this.props.title = title;
     this.props.description = description;
     this.props.takenAt = takenAt;
@@ -276,77 +268,8 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     };
   }
 
-  getAuthorizations(): UserAuthorization[] {
-    return this.#authorizations;
-  }
-  grantAuthorization(
-    operations: Operation[],
-    actorId: ActorId,
-    grantedToUserId: EntityId,
-    label?: string,
-    expiresAt?: Date,
-  ): WriteResult<{
-    authorization: UserAuthorization;
-  }> {
-    const result = grantAuthorizationValidation(this, grantedToUserId, label, expiresAt);
-    if (!result.success) {
-      return result;
-    }
-    // Maybe this should not be an upsert, we'll see.
-
-    const existingAuthorization = this.#authorizations.find(
-      (s) => s.grantedToUser() === grantedToUserId,
-    );
-    if (!existingAuthorization) {
-      const authorization = UserAuthorization.create(
-        {
-          operations,
-          grantedToUser: grantedToUserId,
-          grantedBy: actorId,
-          label,
-          expiresAt,
-          mediaItemId: this.id(),
-        },
-        actorId,
-      );
-      this.#authorizations.push(authorization);
-      this.touch(actorId);
-      return ok({ authorization });
-    }
-
-    if (expiresAt && result.value.status === 'updateExpireDate') {
-      const updatedExpireDate = existingAuthorization.updateExpireDate(expiresAt, actorId);
-      if (!updatedExpireDate.success) {
-        return updatedExpireDate;
-      }
-      this.touch(actorId);
-      return ok({ authorization: existingAuthorization });
-    }
-
-    if (label && result.value.status === 'updateLabel') {
-      const updatedLabel = existingAuthorization.updateLabel(label, actorId);
-      if (!updatedLabel.success) {
-        return updatedLabel;
-      }
-      this.touch(actorId);
-      return ok({ authorization: existingAuthorization });
-    }
-    return ok({ authorization: existingAuthorization });
-  }
-
-  revokeAuthorization(authorizationId: EntityId, actorId: ActorId): WriteResult {
-    const authorization = this.#authorizations.find((s) => s.id() === authorizationId);
-    if (!authorization) {
-      return fail(AppErrorCollection.authorization.AuthorizationNotFound);
-    }
-    const result = authorization.revokeAuthorization(actorId);
-    if (!result.success) {
-      return result;
-    }
-    this.touch(actorId);
-    return ok(undefined);
-  }
   /**
+   * After the original object exists in storage: persist size (and optional mime).  /**
    * After the original object exists in storage: persist size (and optional mime).
    * - Photo: pending → PROCESSING (awaiting display/thumbnail derivatives in storage).
    * - Video: pending → READY (no derivative pipeline; UI uses placeholders for thumbnails until a poster pipeline exists).
@@ -355,7 +278,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     input: { sizeBytes: number; mimeType?: string },
     kind: MediaKind,
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     if (!this.props.status.equals(MediaItemStatus.pending)) {
       return fail(AppErrorCollection.mediaItem.StatusNotPending);
     }
@@ -379,7 +302,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   markReadyAfterDerivatives(
     input: { displayWidth: number; displayHeight: number },
     actorId: ActorId,
-  ): WriteResult {
+  ): OperationResult {
     if (!this.props.status.equals(MediaItemStatus.processing)) {
       return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
     }
@@ -395,7 +318,25 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  toggleReaction(item: Reaction, actorId: ActorId): WriteResult {
+  /**
+   * Terminal outcome of the derivative pipeline: processing → failed. Without this the
+   * item sits at PROCESSING forever after a dead job and the upload UI polls until it
+   * times out. Idempotent, and a no-op for any other status (a concurrently-readied or
+   * deleted item must not be dragged back to failed).
+   */
+  markProcessingFailed(actorId: ActorId): OperationResult {
+    if (this.props.status.equals(MediaItemStatus.failed)) {
+      return ok(undefined);
+    }
+    if (!this.props.status.equals(MediaItemStatus.processing)) {
+      return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
+    }
+    this.props.status = MediaItemStatus.failed;
+    this.touch(actorId);
+    return ok(undefined);
+  }
+
+  toggleReaction(item: Reaction, actorId: ActorId): OperationResult {
     const reaction = this.#reactions.find(
       (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,
     );
@@ -436,7 +377,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   childEntities(): ChildEntities {
     return {
       assets: { upsert: this.#assets, removed: this.#removedAssets },
-      authorizations: { upsert: this.#authorizations, removed: this.#removedAuthorizations },
     };
   }
 

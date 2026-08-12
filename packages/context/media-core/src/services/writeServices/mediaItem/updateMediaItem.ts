@@ -1,4 +1,4 @@
-import { ContractError, fail, ok, WriteResult } from '@packages/contracts';
+import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
@@ -10,7 +10,7 @@ import {
 } from './writeMediaItem.types';
 
 export interface UpdateMediaItem extends WriteServiceBase {
-  (input: UpdateMediaItemDetailsCommand): Promise<WriteResult<UpdateMediaItemDetailsResult>>;
+  (input: UpdateMediaItemDetailsCommand): Promise<OperationResult<UpdateMediaItemDetailsResult>>;
 }
 
 type UpdateMediaItemDeps = {
@@ -22,7 +22,7 @@ export const build__UpdateMediaItem = ({
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (
     input: UpdateMediaItemDetailsCommand,
-  ): Promise<WriteResult<UpdateMediaItemDetailsResult>> => {
+  ): Promise<OperationResult<UpdateMediaItemDetailsResult>> => {
     const { viewerId, mediaItemId, takenAt } = input;
 
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);

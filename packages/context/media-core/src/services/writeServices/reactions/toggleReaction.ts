@@ -3,9 +3,9 @@ import {
   EntityType,
   fail,
   ok,
+  OperationResult,
   ReactionEmoji,
   User,
-  WriteResult,
 } from '@packages/contracts';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -23,7 +23,7 @@ export type ToggleReactionCommand = {
 export type ToggleReactionResult = { targetType: EntityType; targetId: EntityId };
 
 export interface ToggleReaction extends WriteServiceBase {
-  (command: ToggleReactionCommand): Promise<WriteResult<ToggleReactionResult>>;
+  (command: ToggleReactionCommand): Promise<OperationResult<ToggleReactionResult>>;
 }
 
 type ToggleReactionDeps = {
@@ -35,7 +35,7 @@ export const build__ToggleReaction = ({
   commentRepository,
   mediaItemRepository,
 }: ToggleReactionDeps): ToggleReaction => {
-  return async (command: ToggleReactionCommand): Promise<WriteResult<ToggleReactionResult>> => {
+  return async (command: ToggleReactionCommand): Promise<OperationResult<ToggleReactionResult>> => {
     const { targetType, targetId, emoji, viewer } = command;
     const newReaction: Reaction = {
       id: crypto.randomUUID(),

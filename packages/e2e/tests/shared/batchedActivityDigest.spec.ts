@@ -11,6 +11,7 @@ import {
   sesMessageBodyIncludes,
 } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded, mediaTile } from '../../fixtures/mediaSelection';
+import { shareAlbumWithEmail } from '../../fixtures/shareAlbumModal';
 import { expect, test } from '../../fixtures/test';
 
 import { setup } from '../../routines/setup';
@@ -83,17 +84,7 @@ test.describe('Batched activity digest', () => {
     const { albumId } = await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id, b.id]);
 
     await test.step('USER A: share album with user B (default comment/download grant)', async () => {
-      await userA.page.getByRole('button', { name: 'Share album' }).click();
-      const shareDialog = userA.page.getByRole('dialog', { name: 'Share album' });
-      const recipientInput = shareDialog.getByRole('combobox', { name: 'Recipients' });
-      await recipientInput.fill(userB.user.email);
-      // The MultiCombobox only counts a recipient once it's committed to a pill.
-      await recipientInput.press('Enter');
-      await expect(
-        shareDialog.getByRole('button', { name: `Remove ${userB.user.email.toLowerCase()}` }),
-      ).toBeVisible();
-      await shareDialog.getByRole('button', { name: 'Share with user' }).click();
-      await expect(shareDialog).toBeHidden();
+      await shareAlbumWithEmail(userA.page, userB.user.email);
     });
 
     await loginViaUi(userB.page, userB.user);

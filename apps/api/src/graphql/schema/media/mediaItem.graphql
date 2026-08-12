@@ -14,7 +14,6 @@ type MediaItem implements ViewableItem & Node {
   tags: [Tag!]!
   createdAt: DateTime!
   updatedAt: DateTime!
-  authorizations: [AuthorizationType]
   operations: [Operation!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
   reactionCounts: ReactionCounts!
@@ -40,6 +39,8 @@ enum Operation {
   COMMENT
   DELETE_MEDIA_ITEM
   EDIT_MEDIA_ITEM
+  ADD_MEMBERS
+  REMOVE_MEMBERS
 }
 
 enum MediaKind {

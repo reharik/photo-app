@@ -1,4 +1,4 @@
-import { notEmpty, Operation, UserStatus } from '@packages/contracts';
+import { AuthorizationKind, notEmpty, Operation, UserStatus } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
@@ -51,7 +51,6 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
           handles.map((x) => x.trim().toLowerCase()),
         ),
       { userStatus: UserStatus },
-      { strict: true },
     );
 
     const pendingIds = users
@@ -63,25 +62,24 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
         .db()<UserAuthorizationRecord>('access_grant')
         .whereIn('grantedToUser', pendingIds)
         .orderBy('createdAt', 'asc'),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
     );
     const authzMap = groupByMapping(authorizationRows, (x) => x.grantedToUser);
 
-    return users
-      .filter(notEmpty)
-      .map((x) =>
-        x.userStatus.equals(UserStatus.active)
-          ? User.rehydrate(x)
-          : PendingUser.rehydrate(x, { authorizations: authzMap.get(x.id) ?? [] }),
-      );
+    return users.filter(notEmpty).map((x) =>
+      x.userStatus.equals(UserStatus.active)
+        ? User.rehydrate(x)
+        : PendingUser.rehydrate(
+            x,
+            (authzMap.get(x.id) ?? []).map((a) => ({ authorizationId: a.id, albumId: a.albumId })),
+          ),
+    );
   };
 
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
       { userStatus: UserStatus },
-      { strict: true },
     );
 
     if (!userRow) {
@@ -90,15 +88,16 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     if (userRow.userStatus.equals(UserStatus.active)) {
       return User.rehydrate(userRow);
     }
-    const authorizationRows = await withEnumRevival(
-      uow
-        .db()<UserAuthorizationRecord>('access_grant')
-        .where({ grantedToUser: userRow.id })
-        .orderBy('createdAt', 'asc'),
-      { operation: Operation },
-      { strict: true },
-    );
-    return PendingUser.rehydrate(userRow, { authorizations: authorizationRows });
+    const authorizationRefs = await uow
+      .db()('access_grant')
+      .where({ grantedToUser: userRow.id })
+      .where({ kind: AuthorizationKind.pending.value })
+      .whereNull('revoked_at')
+      .where((expiry) => {
+        expiry.whereNull('expires_at').orWhere('expires_at', '>', uow.db().fn.now());
+      })
+      .select<{ authorizationId: string; albumId: string }[]>(['id as authorizationId', 'albumId']);
+    return PendingUser.rehydrate(userRow, authorizationRefs);
   };
 
   const save = async (user: User | PendingUser): Promise<void> => {

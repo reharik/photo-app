@@ -1,4 +1,4 @@
-import { ContractError, fail, WriteResult } from '@packages/contracts';
+import { ContractError, fail, OperationResult } from '@packages/contracts';
 import { EmailService } from '../emailClient.js';
 import { EmailConfig } from '../types.js';
 
@@ -14,7 +14,7 @@ export interface Channel {
 }
 
 export interface EmailChannel extends Channel {
-  sendEmail: (input: EmailSendInput) => Promise<WriteResult<{ messageId: string }>>;
+  sendEmail: (input: EmailSendInput) => Promise<OperationResult<{ messageId: string }>>;
 }
 
 export type EmailChannelDeps = {
@@ -23,7 +23,7 @@ export type EmailChannelDeps = {
 };
 
 export const build__EmailChannel = ({ config, emailClient }: EmailChannelDeps): EmailChannel => ({
-  sendEmail: async (input: EmailSendInput): Promise<WriteResult<{ messageId: string }>> => {
+  sendEmail: async (input: EmailSendInput): Promise<OperationResult<{ messageId: string }>> => {
     const fromEmail = config.fromEmail.trim();
     if (!fromEmail) {
       return fail(ContractError.EmailNotConfigured);

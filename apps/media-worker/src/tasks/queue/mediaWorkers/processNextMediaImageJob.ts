@@ -35,6 +35,7 @@ export type MediaImageStorageResult = { kind: 'failed'; message: string } | { ki
 export interface ProcessNextMediaImageJob extends WorkerJobProcessorBase {
   loadForProcessing: (mediaItemId: EntityId) => Promise<MediaImageJobLoadResult>;
   saveProcessedItem: (mediaItem: MediaItem) => Promise<void>;
+  markItemFailed: (mediaItemId: EntityId, actorId: EntityId) => Promise<boolean>;
 }
 
 type ProcessNextMediaImageJobDeps = {
@@ -75,9 +76,29 @@ export const build__ProcessNextMediaImageJob = ({
     await mediaItemRepository.save(mediaItem);
   };
 
+  /**
+   * Terminal-failure bookkeeping: move the item off PROCESSING so the upload UI stops
+   * polling. Returns false when there is nothing to mark (item gone, or already in a
+   * status the transition does not apply to) — a dead job must not be resurrected by a
+   * failure to record its own failure.
+   */
+  const markItemFailed = async (mediaItemId: EntityId, actorId: EntityId): Promise<boolean> => {
+    const mediaItem = await mediaItemRepository.getById(mediaItemId);
+    if (!mediaItem) {
+      return false;
+    }
+    const result = mediaItem.markProcessingFailed(actorId);
+    if (!result.success) {
+      return false;
+    }
+    await mediaItemRepository.save(mediaItem);
+    return true;
+  };
+
   return {
     loadForProcessing,
     saveProcessedItem,
+    markItemFailed,
   };
 };
 
@@ -86,6 +107,14 @@ const serializeError = (e: unknown): string => {
     return `${e.name}: ${e.message}`;
   }
   return String(e);
+};
+
+/** After this many claimed attempts a thrown (transient-looking) failure becomes terminal. */
+const MAX_MEDIA_IMAGE_JOB_ATTEMPTS = 5;
+
+const retryBackoffMs = (attemptCount: number): number => {
+  const capped = Math.max(0, attemptCount - 1);
+  return Math.min(60_000, 250 * 2 ** capped);
 };
 
 type RunImageStoragePipelineDeps = {
@@ -268,8 +297,49 @@ export const build__RunNextMediaImageJob = ({
       await mediaProcessingJobRepository.markSucceeded(job.id, actorId);
     };
 
+    /**
+     * Terminal failure: the job row is the durable record, so mark it first — if the
+     * item update then throws, we have a FAILED job to read rather than a claimed job
+     * stuck in PROCESSING that nothing will ever retry. Moving the item off PROCESSING
+     * is best-effort on top of that.
+     */
     const finishFailed = async (message: string): Promise<void> => {
       await mediaProcessingJobRepository.markFailed(job.id, actorId, message);
+      try {
+        const marked = await withUnitOfWork(container, async (scope) => {
+          const processor = scope.resolve('processNextMediaImageJob');
+          return processor.markItemFailed(job.mediaItemId, actorId);
+        });
+        if (!marked) {
+          logger.warn('Media item not moved to failed status', {
+            jobId: job.id,
+            mediaItemId: job.mediaItemId,
+          });
+        }
+      } catch (e) {
+        logger.error('Failed to mark media item as failed after job failure', {
+          err: serializeError(e),
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+        });
+      }
+    };
+
+    const finishRetry = async (message: string): Promise<void> => {
+      const delay = retryBackoffMs(job.attemptCount);
+      await mediaProcessingJobRepository.markPendingRetry(
+        job.id,
+        actorId,
+        message,
+        new Date(Date.now() + delay),
+      );
+      logger.warn('Media image processing job scheduled for retry', {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+        attemptCount: job.attemptCount,
+        retryDelayMs: delay,
+        message,
+      });
     };
 
     try {
@@ -345,7 +415,20 @@ export const build__RunNextMediaImageJob = ({
           attemptCount: job.attemptCount,
         });
       }
-      await finishFailed(message);
+      // A thrown error is transient-looking (S3, DB, decode) — retry with backoff and
+      // only give up, and fail the item, once the attempts are exhausted. Deterministic
+      // rejections above are terminal on the first pass and never reach here.
+      if (job.attemptCount >= MAX_MEDIA_IMAGE_JOB_ATTEMPTS) {
+        await finishFailed(message);
+        logger.error('Media image processing job marked failed (terminal)', {
+          jobId: job.id,
+          mediaItemId: job.mediaItemId,
+          attemptCount: job.attemptCount,
+          message,
+        });
+      } else {
+        await finishRetry(message);
+      }
       return 'processed';
     }
   };

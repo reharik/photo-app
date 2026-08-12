@@ -3,10 +3,10 @@ import {
   EntityType,
   fail,
   ok,
+  OperationResult,
   ReactionEmoji,
   toDisplayName,
   User,
-  WriteResult,
 } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 import { Comment } from '../../../domain';
@@ -38,7 +38,7 @@ export type AddCommentCommand = {
 };
 
 export interface AddComment extends WriteServiceBase {
-  (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
+  (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>>;
 }
 
 type AddCommentDeps = {
@@ -54,7 +54,7 @@ export const build__AddComment = ({
   validateOperationService,
   toggleReaction,
 }: AddCommentDeps): AddComment => {
-  return async (command: AddCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
       viewerId: command.authorId,

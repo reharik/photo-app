@@ -1,4 +1,5 @@
 import { indexByUnique } from '@packages/infrastructure';
+import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
 import { PublicReadServiceBase } from '../readServiceBaseType';
 import { mapMediaItemRowToDBMediaItemRow } from '../readServiceMappers';
@@ -21,12 +22,14 @@ export interface PublicAlbumReadService extends PublicReadServiceBase {
 
 type PublicAlbumReadServiceDeps = {
   albumReadRepository: AlbumReadRepository;
+  albumItemReadRepository: AlbumItemReadRepository;
   enrichMediaItems: EnrichMediaItems;
   publicLinkId: string;
 };
 
 export const build__PublicAlbumReadService = ({
   albumReadRepository,
+  albumItemReadRepository,
   enrichMediaItems,
   publicLinkId,
 }: PublicAlbumReadServiceDeps): PublicAlbumReadService => {
@@ -78,7 +81,7 @@ export const build__PublicAlbumReadService = ({
       albumId: string;
       collectionInfo: PublicAlbumItemCollectionInfo;
     }): Promise<PagedList<PublicAlbumItemProjection>> => {
-      const albumItemsResult = await albumReadRepository.listAlbumItemsForPublicLink({
+      const albumItemsResult = await albumItemReadRepository.listAlbumItemsForPublicLink({
         albumId,
         publicLinkId,
         collectionInfo,

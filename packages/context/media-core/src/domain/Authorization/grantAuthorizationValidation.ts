@@ -1,24 +1,34 @@
-import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AppErrorCollection,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import { EntityId } from '../../types/types';
 import { Album } from '../Album/Album';
-import { MediaItem } from '../MediaItem/MediaItem';
 
-export const grantAuthorizationValidation = <T extends Album | MediaItem>(
-  item: T,
+/**
+ * Album-only: MediaItem no longer carries authorizations. Loose items are wrapped in
+ * a shadow album and granted at album scope (see grantUserAuthorization).
+ */
+export const grantAuthorizationValidation = (
+  item: Album,
   grantedToUserId: EntityId,
+  grantedBy: EntityId,
   label?: string,
-  expiresAt?: Date,
-): WriteResult<{
-  status: 'createAuthorization' | 'updateLabel' | 'updateExpireDate' | 'updated';
+): OperationResult<{
+  status: 'createAuthorization' | 'updateLabel' | 'updated';
 }> => {
-  if (item instanceof Album) {
-    const member = item.getAlbumMember(grantedToUserId);
-
-    if (member && member.role().equals(AlbumMemberRole.owner)) {
-      return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
-    }
-  } else if (item instanceof MediaItem && item.ownerId() === grantedToUserId) {
+  const member = item.getAlbumMemberByUserId(grantedToUserId);
+  if (member && member.role().equals(AlbumMemberRole.owner)) {
     return fail(AppErrorCollection.authorization.CanNotGrantAuthorizationToOwner);
+  }
+
+  const authorizingMember = item.getAlbumMemberByUserId(grantedBy);
+  if (!authorizingMember?.role().can(Operation.grantAlbumAuthorization)) {
+    return fail(Operation.grantAlbumAuthorization.deniedError);
   }
 
   const existingAuthorization = item
@@ -30,8 +40,6 @@ export const grantAuthorizationValidation = <T extends Album | MediaItem>(
   if (label && existingAuthorization.label() !== label) {
     return ok({ status: 'updateLabel' });
   }
-  if (expiresAt && existingAuthorization.expiresAt() !== expiresAt) {
-    return ok({ status: 'updateExpireDate' });
-  }
+
   return ok({ status: 'updated' });
 };

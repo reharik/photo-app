@@ -1,24 +1,52 @@
-import { Operation } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AuthorizationKind,
+  AuthorizationOrigin,
+  Operation,
+  UserStatus,
+} from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
-import type { AuthorizationReadRepository, AuthorizationRow, MediaItemOperations } from './types';
+import type {
+  AuthorizationReadRepository,
+  AuthorizationRow,
+  EmailShare,
+  MediaItemOperations,
+} from './types';
 
 type AuthorizationReadRepositoryDeps = { database: Knex };
 
 const shareSelectColumns = [
   'access_grant.id',
   'access_grant.granted_to_user',
+  'access_grant.kind',
+  'access_grant.origin',
   'access_grant.operations',
   'access_grant.label as description',
+  'access_grant.link_token',
   'access_grant.expires_at',
   'access_grant.revoked_at',
   'access_grant.created_at',
 ];
 
+const rolesThatCan = (op: Operation) =>
+  AlbumMemberRole.items()
+    .filter((r) => r.can(op))
+    .map((r) => r.value);
+
 export const build__AuthorizationReadRepository = ({
   database,
 }: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
+  /**
+   * "Who have I shared this photo with?"
+   *
+   * Grants are album-scoped only — sharing loose items wraps them in a shadow album
+   * first (see grantUserAuthorization), so there is no access_grant.media_item_id to
+   * filter on any more. Reach the grants through every album that carries the item,
+   * shadow or real; DISTINCT because one grant can be reached via several albumItem
+   * rows. Ownership is still enforced on the media item itself.
+   */
   getGrantedAuthorizationsForOwnedMediaItem: async ({
     mediaItemId,
     ownerId,
@@ -28,13 +56,13 @@ export const build__AuthorizationReadRepository = ({
   }): Promise<AuthorizationRow[]> => {
     return withEnumRevival(
       database('accessGrant')
-        .innerJoin('mediaItem', 'mediaItem.id', 'accessGrant.mediaItemId')
-        .where('accessGrant.mediaItemId', mediaItemId)
+        .innerJoin('albumItem', 'albumItem.albumId', 'accessGrant.albumId')
+        .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
+        .where('albumItem.mediaItemId', mediaItemId)
         .andWhere('mediaItem.ownerId', ownerId)
         .orderBy('accessGrant.createdAt', 'asc')
-        .select<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation },
-      { strict: true },
+        .distinct<AuthorizationRow[]>(...shareSelectColumns),
+      { operations: Operation, kind: AuthorizationKind },
     );
   },
   getGrantedAuthorizationsForOwnedAlbum: async ({
@@ -52,8 +80,59 @@ export const build__AuthorizationReadRepository = ({
         .andWhere('albumMember.role', 'owner')
         .orderBy('accessGrant.createdAt', 'asc')
         .select<AuthorizationRow[]>(...shareSelectColumns),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation, kind: AuthorizationKind },
+    );
+  },
+
+  getEmailedAuthorizationsForAlbum: async ({
+    albumId,
+    viewerId,
+  }: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }): Promise<
+    (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
+  > => {
+    return withEnumRevival(
+      database('accessGrant')
+        .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
+        .where('accessGrant.albumId', albumId)
+        .whereIn('accessGrant.kind', [
+          AuthorizationKind.pending.value,
+          AuthorizationKind.user.value,
+        ])
+        .whereNull('accessGrant.revokedAt')
+        .whereExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember')
+            .where('albumMember.albumId', albumId)
+            .where('albumMember.userId', viewerId)
+            .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
+        )
+        .whereNotExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember as granteeMember')
+            .where('granteeMember.albumId', database.ref('accessGrant.albumId'))
+            .where('granteeMember.userId', database.ref('accessGrant.grantedToUser')),
+        )
+        .orderByRaw(`CASE WHEN "user"."user_status" = ? THEN 0 ELSE 1 END`, [
+          UserStatus.active.value,
+        ])
+        .orderBy('accessGrant.createdAt', 'asc')
+        .select<
+          (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
+        >([
+          'access_grant.id',
+          'user.email',
+          'user.firstName',
+          'user.lastName',
+          'user.id as userId',
+          'user.userStatus',
+          'access_grant.createdAt',
+        ]),
+      { userStatus: UserStatus },
     );
   },
 
@@ -77,8 +156,7 @@ export const build__AuthorizationReadRepository = ({
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
         ),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation },
     );
   },
   getPublicMediaItemOperationsFromGrants: async (
@@ -101,8 +179,32 @@ export const build__AuthorizationReadRepository = ({
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
         ),
-      { operation: Operation },
-      { strict: true },
+      { operations: Operation },
+    );
+  },
+  getPublicAuthorizationByAlbum: ({
+    albumId,
+    viewerId,
+  }: {
+    albumId: EntityId;
+    viewerId: EntityId;
+  }): Promise<AuthorizationRow> => {
+    return withEnumRevival(
+      database('accessGrant')
+        .where('accessGrant.albumId', albumId)
+        .where('accessGrant.kind', AuthorizationKind.public.value)
+        .where('accessGrant.origin', AuthorizationOrigin.owner.value)
+        .whereNull('accessGrant.revokedAt')
+        .whereExists(
+          database
+            .select(database.raw('1'))
+            .from('albumMember')
+            .where('albumMember.albumId', albumId)
+            .where('albumMember.userId', viewerId)
+            .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
+        )
+        .first<AuthorizationRow>(...shareSelectColumns),
+      { operations: Operation, kind: AuthorizationKind, origin: AuthorizationOrigin },
     );
   },
 });

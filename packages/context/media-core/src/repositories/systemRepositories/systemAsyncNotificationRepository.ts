@@ -91,7 +91,6 @@ export const build__SystemAsyncNotificationRepository = ({
         containerType: EntityType,
         subjectType: EntityType,
       },
-      { strict: true },
     );
   },
   claimIndividualNotifications: (windowSeconds: number) => {
@@ -110,7 +109,6 @@ export const build__SystemAsyncNotificationRepository = ({
         containerType: EntityType,
         subjectType: EntityType,
       },
-      { strict: true },
     );
   },
   deleteCompletedRecords: async (ids: string[]): Promise<void> => {

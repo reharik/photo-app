@@ -1,4 +1,4 @@
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
@@ -11,7 +11,7 @@ import {
 } from './writeMediaItem.types';
 
 export interface UpdateMediaItemTags extends WriteServiceBase {
-  (input: UpdateMediaItemTagsCommand): Promise<WriteResult<UpdateMediaItemTagsResult>>;
+  (input: UpdateMediaItemTagsCommand): Promise<OperationResult<UpdateMediaItemTagsResult>>;
 }
 
 type UpdateMediaItemTagsDeps = {
@@ -25,7 +25,7 @@ export const build__UpdateMediaItemTags = ({
 }: UpdateMediaItemTagsDeps): UpdateMediaItemTags => {
   return async (
     input: UpdateMediaItemTagsCommand,
-  ): Promise<WriteResult<UpdateMediaItemTagsResult>> => {
+  ): Promise<OperationResult<UpdateMediaItemTagsResult>> => {
     const { viewerId, mediaItemId, tags } = input;
 
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);

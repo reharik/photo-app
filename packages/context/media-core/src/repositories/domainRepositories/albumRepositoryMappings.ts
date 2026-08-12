@@ -1,5 +1,4 @@
-import { Operation } from '@packages/contracts';
-import { AuthorizationRecord } from '../../domain/Authorization/Authorization';
+import { AuthorizationKind, Operation } from '@packages/contracts';
 
 export type PublicLinkWithAuthorizationRaw = {
   id: string;
@@ -16,7 +15,7 @@ export type PublicLinkWithAuthorizationRaw = {
 
 export type AuthorizationRaw = {
   authorizationId: string;
-  authorizationAlbumId?: string;
+  authorizationAlbumId: string;
   authorizationGrantedToUser?: string;
   authorizationGrantedBy: string;
   authorizationOperations: Operation[];
@@ -27,6 +26,7 @@ export type AuthorizationRaw = {
   authorizationUpdatedAt: Date;
   authorizationCreatedBy: string;
   authorizationUpdatedBy: string;
+  authorizationKind: AuthorizationKind;
 };
 
 export const authorizationSelectColumns = [
@@ -44,21 +44,23 @@ export const authorizationSelectColumns = [
   'accessGrant.updatedBy as authorizationUpdatedBy',
 ];
 
-export const authorizationRawToAuthorizationRecord = (
-  row: AuthorizationRaw,
-): AuthorizationRecord => {
-  return {
-    id: row.authorizationId,
-    grantedToUser: row.authorizationGrantedToUser,
-    grantedBy: row.authorizationGrantedBy,
-    operations: row.authorizationOperations,
-    label: row.authorizationLabel,
-    albumId: row.authorizationAlbumId,
-    expiresAt: row.authorizationExpiresAt,
-    revokedAt: row.authorizationRevokedAt,
-    createdAt: row.authorizationCreatedAt,
-    updatedAt: row.authorizationUpdatedAt,
-    createdBy: row.authorizationCreatedBy,
-    updatedBy: row.authorizationUpdatedBy,
-  };
-};
+// delete me please 8/3/26
+// export const authorizationRawToAuthorizationRecord = (
+//   row: AuthorizationRaw,
+// ): AuthorizationRecord => {
+//   return {
+//     id: row.authorizationId,
+//     grantedToUser: row.authorizationGrantedToUser,
+//     grantedBy: row.authorizationGrantedBy,
+//     operations: row.authorizationOperations,
+//     label: row.authorizationLabel,
+//     albumId: row.authorizationAlbumId,
+//     expiresAt: row.authorizationExpiresAt,
+//     revokedAt: row.authorizationRevokedAt,
+//     createdAt: row.authorizationCreatedAt,
+//     updatedAt: row.authorizationUpdatedAt,
+//     createdBy: row.authorizationCreatedBy,
+//     updatedBy: row.authorizationUpdatedBy,
+//     kind: row.authorizationKind,
+//   };
+// };

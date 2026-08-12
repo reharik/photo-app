@@ -8,6 +8,7 @@ import {
 } from '../../fixtures/localstackSes';
 import { expectMediaItemLoaded, selectMediaItems } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
+import { sharedItemsAlbumTitle } from '../../routines/openSharedAlbum';
 import { setup } from '../../routines/setup';
 
 // Shared with the album non-user spec; both reuse this fixed address, so each resets
@@ -58,17 +59,27 @@ test.describe('Share individual items with an email that is not a user', () => {
       await shareDialog.getByRole('button', { name: 'Share with user' }).click();
       await expect(shareDialog).toBeHidden();
 
+      // Sharing loose items now wraps them in a shadow album, so this path sends the
+      // recipient the SAME two emails an album share does: a linkless activity digest
+      // and the guest invite carrying the /shared/{token} URL. The digest usually lands
+      // first, so match on the message that actually yields a share URL rather than the
+      // first one addressed to the recipient (mirrors shareAlbumWithNonUser.spec.ts).
       let resolvedShareUrl = '';
       await expect
         .poll(
           async () => {
             const messages = (await retrieveLocalStackSesMessages(request)).slice(sesBaseline);
-            const message = findSesMessageForRecipient(messages, recipientEmail);
-            if (!message) {
-              return false;
+            for (const message of messages) {
+              if (!findSesMessageForRecipient([message], recipientEmail)) {
+                continue;
+              }
+              const url = extractShareInviteUrl(message, env.webBaseUrl) ?? '';
+              if (url.length > 0) {
+                resolvedShareUrl = url;
+                return true;
+              }
             }
-            resolvedShareUrl = extractShareInviteUrl(message, env.webBaseUrl) ?? '';
-            return resolvedShareUrl.length > 0;
+            return false;
           },
           { timeout: 30_000 },
         )
@@ -76,6 +87,13 @@ test.describe('Share individual items with an email that is not a user', () => {
       const shareUrl = resolvedShareUrl;
 
       await anonPage.goto(shareUrl);
+
+      // The link resolves to the generated shadow album that wraps the shared items —
+      // assert the title so this pins the CORRECT album, not merely "some album whose
+      // grid happens to contain a and b".
+      await expect(
+        anonPage.getByRole('heading', { name: sharedItemsAlbumTitle(userA.user) }),
+      ).toBeVisible();
 
       await expectMediaItemLoaded(anonPage, a.id);
       await expectMediaItemLoaded(anonPage, b.id);

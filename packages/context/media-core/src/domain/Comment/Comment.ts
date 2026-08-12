@@ -4,7 +4,7 @@
  *
  */
 
-import { EntityType, ok, WriteResult } from '@packages/contracts';
+import { EntityType, ok, OperationResult } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { EnumSubset } from '@reharik/smart-enum';
 import { DBReactionCounts } from '../../services/readServices/types';
@@ -152,7 +152,7 @@ export class Comment extends AggregateRoot<CommentRecord> {
     return this.props.authorId;
   }
 
-  toggleReaction(item: Reaction, actorId: ActorId): WriteResult {
+  toggleReaction(item: Reaction, actorId: ActorId): OperationResult {
     const reaction = this.#reactions.find(
       (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,
     );

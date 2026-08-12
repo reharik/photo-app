@@ -1,6 +1,8 @@
-import { assertNever, match } from '@packages/contracts';
+import { assertNever } from '@packages/contracts';
 import { groupByMapping, indexByUnique } from '@packages/infrastructure';
 import {
+  isAuthorizationKind,
+  PendingUserAuthorizationRow,
   PublicLinkAuthorizationRow,
   SystemAuthorizationRepository,
   SystemUserRepository,
@@ -10,23 +12,27 @@ import { SystemAlbumItemRepository } from '../../../repositories/systemRepositor
 import { EntityId } from '../../../types';
 import { DomainEvent } from '../../domainEvents/DomainEvent';
 
+/**
+ * MATERIALIZATION ONLY. Every kind here grows or re-syncs the `grant` projection for a
+ * LIVE authorization. Teardown (revoke/expire) is deliberately absent — see the note on
+ * Album.revokeAuthorization: a lost teardown is a security failure and must not ride the
+ * best-effort post-commit bus, so it belongs in the calling service's transaction.
+ */
 export type AuthorizationEvent = Extract<
   DomainEvent,
   {
     kind:
+      | 'albumSharedWithPendingUser'
       | 'albumSharedWithPublicLink'
       | 'albumSharedWithUser'
-      | 'authorizationExpired'
-      | 'authorizationRevoked'
       | 'mediaItemAddedToAlbum'
       | 'mediaItemRemovedFromAlbum'
-      | 'mediaItemsSharedWithUser'
       | 'pendingUserActivated';
   }
 >;
 
 type AuthorizationEntry = {
-  authorization: PublicLinkAuthorizationRow | UserAuthorizationRow;
+  authorization: PublicLinkAuthorizationRow | UserAuthorizationRow | PendingUserAuthorizationRow;
   mediaItemIds: EntityId[];
 };
 type AuthorizationMap = Map<string, AuthorizationEntry>;
@@ -50,22 +56,31 @@ export const build__ResolveAuthorizations = ({
   systemUserRepository,
 }: ResolveAuthorizationsDeps): ResolveAuthorizations => {
   const getMediaItemIds = (
-    authorization: PublicLinkAuthorizationRow | UserAuthorizationRow,
-    itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
+    authorization: PublicLinkAuthorizationRow | UserAuthorizationRow | PendingUserAuthorizationRow,
+    itemsByAlbum: Map<string, { mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]>,
   ): EntityId[] => {
-    return match(
-      authorization.target,
-      {
-        album: (t, m) => m.get(t.albumId)?.map((x) => x.mediaItemId) ?? [],
-        mediaItem: (t) => [t.mediaItemId],
-      },
-      itemsByAlbum,
+    const granteeIsOwner = (
+      authorization:
+        PublicLinkAuthorizationRow | UserAuthorizationRow | PendingUserAuthorizationRow,
+      item: { mediaItemId: EntityId; mediaItemOwnerId: EntityId },
+    ) => {
+      return isAuthorizationKind(authorization, 'USER')
+        ? authorization.grantedToUser === item.mediaItemOwnerId
+        : false;
+    };
+    return (
+      itemsByAlbum
+        .get(authorization.albumId)
+        ?.filter((x) => !granteeIsOwner(authorization, x))
+        .map((x) => x.mediaItemId) ?? []
     );
   };
 
   const buildMap = (
-    authorizations: (PublicLinkAuthorizationRow | UserAuthorizationRow)[],
-    itemsByAlbum: Map<string, { mediaItemId: EntityId }[]>,
+    authorizations: (
+      PublicLinkAuthorizationRow | UserAuthorizationRow | PendingUserAuthorizationRow
+    )[],
+    itemsByAlbum: Map<string, { mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]>,
   ): AuthorizationMap => {
     return new Map(
       authorizations.map((authorization) => [
@@ -84,7 +99,7 @@ export const build__ResolveAuthorizations = ({
     switch (event.kind) {
       case 'mediaItemRemovedFromAlbum':
       case 'mediaItemAddedToAlbum': {
-        const { publicLinkAuthorizations, userAuthorizations } =
+        const { publicLinkAuthorizations, pendingUserAuthorizations, userAuthorizations } =
           await systemAuthorizationRepository.getAuthorizationsByAlbumId([event.albumId]);
 
         const activeUserMap = indexByUnique(
@@ -94,52 +109,38 @@ export const build__ResolveAuthorizations = ({
         const activeUserAuths = userAuthorizations.filter((a) =>
           activeUserMap.has(a.grantedToUser),
         ); // multi-user filter
-        const itemsByAlbum = groupByMapping(
-          await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
-          (x) => x.albumId,
-        );
+        const albumItems = await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]);
+        const itemsByAlbum = groupByMapping(albumItems, (x) => x.albumId);
+        // All three kinds materialize here. Pending authorizations deliberately SKIP the
+        // active-user filter above: that filter drops USER rows whose grantee has no active
+        // account, and a pending grantee never has one — running them through it would drop
+        // every pending row. Omitting them entirely (what this did before 0024 made the kind
+        // representable) means an invitee's grants stop growing the moment they are issued:
+        // shared items land, later additions do not, until activation re-materializes.
         return {
           authorizationMap: buildMap(
-            [...activeUserAuths, ...publicLinkAuthorizations],
+            [...activeUserAuths, ...pendingUserAuthorizations, ...publicLinkAuthorizations],
             itemsByAlbum,
           ),
         };
       }
 
+      case 'albumSharedWithPublicLink':
+      case 'albumSharedWithPendingUser':
       case 'albumSharedWithUser': {
-        if (!(await isActive(event.userId))) {
-          return empty();
-        }
-        const { userAuthorizations } = await systemAuthorizationRepository.getAuthorizationsByIds([
-          event.authorizationId,
-        ]);
-        const itemsByAlbum = groupByMapping(
-          await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
-          (x) => x.albumId,
-        );
-        return { authorizationMap: buildMap(userAuthorizations, itemsByAlbum) };
-      }
-
-      case 'albumSharedWithPublicLink': {
-        const { publicLinkAuthorizations } =
+        const { userAuthorizations, pendingUserAuthorizations, publicLinkAuthorizations } =
           await systemAuthorizationRepository.getAuthorizationsByIds([event.authorizationId]);
+        const authorizations = [
+          ...userAuthorizations,
+          ...pendingUserAuthorizations,
+          ...publicLinkAuthorizations,
+        ];
+
         const itemsByAlbum = groupByMapping(
           await systemAlbumItemRepository.getItemsByAlbumIds([event.albumId]),
           (x) => x.albumId,
         );
-        return { authorizationMap: buildMap(publicLinkAuthorizations, itemsByAlbum) };
-      }
-
-      case 'mediaItemsSharedWithUser': {
-        if (!(await isActive(event.userId))) {
-          return empty();
-        }
-        const { userAuthorizations } = await systemAuthorizationRepository.getAuthorizationsByIds(
-          event.authorizationIds,
-        );
-        return {
-          authorizationMap: buildMap(userAuthorizations, new Map()),
-        };
+        return { authorizationMap: buildMap(authorizations, itemsByAlbum) };
       }
 
       case 'pendingUserActivated': {
@@ -151,24 +152,13 @@ export const build__ResolveAuthorizations = ({
         );
         const itemsByAlbum = groupByMapping(
           await systemAlbumItemRepository.getItemsByAlbumIds(
-            userAuthorizations.flatMap((a) =>
-              a.target.kind === 'album' ? [a.target.albumId] : [],
-            ),
+            userAuthorizations.map((a) => a.albumId),
           ),
           (x) => x.albumId,
         );
         return { authorizationMap: buildMap(userAuthorizations, itemsByAlbum) };
       }
 
-      case 'authorizationExpired':
-      case 'authorizationRevoked': {
-        const { userAuthorizations, publicLinkAuthorizations } =
-          await systemAuthorizationRepository.getAuthorizationsByIds([event.authorizationId]);
-        const all = [...userAuthorizations, ...publicLinkAuthorizations];
-        return {
-          authorizationMap: new Map(all.map((a) => [a.id, { authorization: a, mediaItemIds: [] }])),
-        };
-      }
       default: {
         return assertNever(event);
       }

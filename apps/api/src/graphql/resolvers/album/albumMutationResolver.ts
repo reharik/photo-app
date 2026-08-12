@@ -1,7 +1,15 @@
-import type { AddMediaItemsToAlbumCommand, ReorderAlbumItemsCommand } from '@packages/media-core';
+import { ok } from '@packages/contracts';
+import type {
+  AddAlbumMembersCommand,
+  AddMediaItemsToAlbumCommand,
+  RemoveAlbumMembersCommand,
+  ReorderAlbumItemsCommand,
+} from '@packages/media-core';
 import { authenticatedWriteResolver } from '../../context/contextWrappers';
 import type {
+  MutationAddAlbumMembersArgs,
   MutationAddMediaItemsToAlbumArgs,
+  MutationRemoveAlbumMembersArgs,
   MutationReorderAlbumItemsArgs,
   Resolvers,
 } from '../../generated/types.generated';
@@ -28,6 +36,41 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         };
         const result = await ctx.writeServices.addMediaItemsToAlbum(command);
         return result;
+      },
+    ),
+    AddAlbumMembers: authenticatedWriteResolver(
+      async (_parent, args: MutationAddAlbumMembersArgs, ctx) => {
+        const command: AddAlbumMembersCommand = {
+          actorId: ctx.viewer.id,
+          role: args.input.role,
+          userIds: args.input.userIds,
+          albumId: args.input.albumId ?? undefined,
+        };
+        const result = await ctx.writeServices.addAlbumMembers(command);
+        if (!result.success) {
+          return result;
+        }
+        return ok({
+          albumId: args.input.albumId,
+          albumMemberIds: result.value.succeeded.map((x) => x.value),
+        });
+      },
+    ),
+    RemoveAlbumMembers: authenticatedWriteResolver(
+      async (_parent, args: MutationRemoveAlbumMembersArgs, ctx) => {
+        const command: RemoveAlbumMembersCommand = {
+          actorId: ctx.viewer.id,
+          albumMemberIds: args.input.albumMemberIds,
+          albumId: args.input.albumId ?? undefined,
+        };
+        const result = await ctx.writeServices.removeAlbumMembers(command);
+        if (!result.success) {
+          return result;
+        }
+        return ok({
+          albumId: args.input.albumId,
+          albumMemberIds: result.value.succeeded.map((x) => x.value),
+        });
       },
     ),
     ReorderAlbumItems: authenticatedWriteResolver(
@@ -63,6 +106,32 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
       const result = await ctx.writeServices.unsetCoverMedia({
         viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
+      });
+      return result;
+    }),
+
+    RevokeShareAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.revokeShareService({
+        actorId: ctx.viewer.id,
+        albumId: args.input.albumId,
+        authorizationId: args.input.authorizationId,
+      });
+      return result;
+    }),
+
+    RevokePublicLinkAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.revokePublicLinkService({
+        actorId: ctx.viewer.id,
+        albumId: args.input.albumId,
+      });
+      return result;
+    }),
+    UpdateAlbumMemberRole: authenticatedWriteResolver(async (_parent, args, ctx) => {
+      const result = await ctx.writeServices.updateAlbumMemberRoleService({
+        albumId: args.input.albumId,
+        albumMemberId: args.input.albumMemberId,
+        role: args.input.role,
+        actorId: ctx.viewer.id,
       });
       return result;
     }),

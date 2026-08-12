@@ -1,12 +1,12 @@
 /**
  * GUARD: the GraphQL write boundary must ROLL BACK the per-request unit of work when a
- * resolver returns a FAILED WriteResult (`success:false`) — even though that failure
+ * resolver returns a FAILED OperationResult (`success:false`) — even though that failure
  * travels as DATA in the `{ errors:[...] }` payload, never as a GraphQL `errors` entry.
  *
  * This is the exact property that was silently false in production: the boundary used to
  * commit whenever the GraphQL `errors` channel was empty, so a "fail-as-data" mutation
  * that had already written rows committed those rows anyway. The fix:
- *   authenticatedWriteResolver  — reads the typed WriteResult.success and, on failure,
+ *   authenticatedWriteResolver  — reads the typed OperationResult.success and, on failure,
  *                                 sets `uow.shouldRollback = true` (contextWrappers.ts).
  *   useScopedContainer          — commits iff `!result.errors?.length && !uow.shouldRollback`,
  *                                 otherwise rolls back (useScopedContainer.ts).
@@ -47,7 +47,7 @@ const createMediaUploadMutation = `
   mutation {
     createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
       data { mediaItemId }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -56,7 +56,7 @@ const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
     finalizeMediaUpload(input: { mediaItemId: $id }) {
       data { mediaItemId status }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -64,17 +64,17 @@ const finalizeMediaUploadMutation = `
 const grantMutation = `
   mutation Grant($input: GrantUserAuthorizationsForMediaItemsInput!) {
     grantUserAuthorizationsForMediaItems(input: $input) {
-      errors { code message }
+      errors { code }
     }
   }
 `;
 
-type WriteMutationResponse<T> = { data?: T; errors: { code: string; message: string }[] };
+type WriteMutationResponse<T> = { data?: T; errors: { code: string }[] };
 type GrantResponse = {
-  grantUserAuthorizationsForMediaItems?: { errors: { code: string; message: string }[] | null };
+  grantUserAuthorizationsForMediaItems?: { errors: { code: string }[] | null };
 };
 
-describe('write boundary: uow rollback on failed WriteResult (integration)', () => {
+describe('write boundary: uow rollback on failed OperationResult (integration)', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   let container: AwilixContainer<AppCradle>;
   let database: Knex;
@@ -118,14 +118,19 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
     expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
       MediaItemStatus.processing.value,
     );
+    // The worker that advances PROCESSING → READY does not run in integration tests, and
+    // the share path refuses non-READY items. Promote directly, as the worker would.
+    await database('mediaItem')
+      .where({ id: mediaItemId })
+      .update({ status: MediaItemStatus.ready.value });
     return mediaItemId;
   };
 
   const share = (input: { mediaItemIds: string[]; grantedToHandles: string[] }) =>
     executeGraphQL<GrantResponse>({
-      // COMMENT is a real domain Operation (the SDL enum's VIEW is unbacked) — mirror the client.
+      // The operation set is pinned server-side; the input no longer takes `operations`.
       query: grantMutation,
-      variables: { input: { operations: ['COMMENT'], ...input } },
+      variables: { input },
       context: loggedInViewer1,
     });
 
@@ -133,8 +138,10 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
   const persistedRowCounts = async () => {
     const [accessGrants, publicAlbums, shadowUsers, shareContacts] = await Promise.all([
       database('accessGrant').count<{ count: string }[]>('* as count').first(),
+      // Identified by the flag, not a fixed title: the generated shadow album's title is
+      // derived from the sharer's first name ("Photos from {firstName}").
       database('album')
-        .where({ title: 'Public Link Album' })
+        .where({ isShadowAlbum: true })
         .count<{ count: string }[]>('* as count')
         .first(),
       // Shadow (PENDING) users are the non-seeded users this op mints for a non-user handle.
@@ -158,13 +165,13 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
       const item2 = await createOwnedMediaItem();
       const nonUserEmail = `shadow-${randomUUID()}@example.test`;
 
-      // Recipients that WRITE before the failure:
-      //   VIEWER_A_EMAIL  -> valid user: item-scoped access_grant rows + share_contact.
-      //   nonUserEmail    -> non-user:   a PENDING shadow user, a "Public Link Album",
-      //                                  and a tokenized public-link access_grant.
-      //   VIEWER_1_EMAIL  -> self (the owner): the per-item grant that FAILS, forcing the
-      //                                  service to return fail(PartialShareFailure) AFTER
-      //                                  everything above was already written to the trx.
+      // Recipients that WRITE before the failure (all hung off the generated shadow album):
+      //   VIEWER_A_EMAIL  -> valid user: an album-scoped access_grant + share_contact.
+      //   nonUserEmail    -> non-user:   a PENDING shadow user and a tokenized public-link
+      //                                  access_grant on that album.
+      //   VIEWER_1_EMAIL  -> self (the owner): the grant that FAILS, forcing the service to
+      //                                  return fail(PartialShareFailure) AFTER everything
+      //                                  above was already written to the trx.
       const res = await share({
         mediaItemIds: [item1, item2],
         grantedToHandles: [VIEWER_A_EMAIL, nonUserEmail, VIEWER_1_EMAIL],
@@ -196,11 +203,16 @@ describe('write boundary: uow rollback on failed WriteResult (integration)', () 
       expect(res.json.errors).toBeUndefined();
       expect(res.json.data?.grantUserAuthorizationsForMediaItems?.errors ?? []).toEqual([]);
 
-      // The item-scoped grant for Viewer A survived the commit...
-      const itemGrants = await database('accessGrant')
-        .where({ grantedToUser: TEST_VIEWER_A_ID, mediaItemId: item })
+      // The album-scoped grant for Viewer A, on the shadow album built from the shared
+      // item, survived the commit...
+      const shadowAlbum = await database('album')
+        .where({ isShadowAlbum: true })
+        .first<{ id: string }>();
+      expect(shadowAlbum).toBeDefined();
+      const albumGrants = await database('accessGrant')
+        .where({ grantedToUser: TEST_VIEWER_A_ID, albumId: shadowAlbum.id })
         .whereNull('linkToken');
-      expect(itemGrants).toHaveLength(1);
+      expect(albumGrants).toHaveLength(1);
 
       // ...and so did the share_contact projection (proves commit, not rollback).
       const counts = await persistedRowCounts();

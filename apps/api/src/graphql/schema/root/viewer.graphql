@@ -12,9 +12,6 @@ type Viewer {
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
-  sharedWithMeMediaItems(
-    input: ViewerSharedWithMeMediaItemsInput!
-  ): SharedWithMeMediaItemCollectionPayload!
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
   inAppNotification: [InAppNotification!]!
@@ -49,10 +46,6 @@ input ViewerAlbumsInput {
 
 input ViewerMediaItemsInput {
   collectionInfo: MediaItemCollectionInput!
-}
-
-input ViewerSharedWithMeMediaItemsInput {
-  collectionInfo: SharedWithMeMediaItemCollectionInput!
 }
 
 input ViewerSharedWithMeAlbumsInput {

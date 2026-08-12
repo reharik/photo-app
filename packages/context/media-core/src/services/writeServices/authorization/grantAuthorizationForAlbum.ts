@@ -1,72 +1,132 @@
+import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
+import { dedupeIds, Logger } from '@packages/infrastructure';
+import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from '../../../application';
 import {
-  AppErrorCollection,
-  ContractError,
-  fail,
-  ok,
-  Operation,
-  WriteResult,
-} from '@packages/contracts';
-import { Logger } from '@packages/infrastructure';
-import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
-import { PendingUser, PublicLinkSharedWithUser, User } from '../../../domain';
-import { UnitOfWork } from '../../../infrastructure';
+  loadRequiredAlbum,
+  loadRequiredMediaItem,
+} from '../../../application/support/resourceLoaders';
+import { Album, MediaItem, PendingUser, User } from '../../../domain';
+import {
+  formatFailures,
+  IndependentGroupResult,
+} from '../../../infrastructure/writeServices/groupActionStrategy';
+import { MediaItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { CreateUserWriteService } from '../user/createUserWriteService';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { GrantUserAuthorizationCommand, GrantUserAuthorizationResult } from './grantTypes';
+import { GrantUserAuthorizationCommand } from './grantTypes';
 import {
   getOrCreateAllUsers,
-  invitePendingUsers,
+  GrantedAuthorization,
   inviteUsers,
   saveNewShareContacts,
 } from './inviteUsersService';
 
-export interface GrantUserAuthorizationForAlbum extends WriteServiceBase {
-  (input: GrantUserAuthorizationCommand): Promise<WriteResult<GrantUserAuthorizationResult>>;
+export interface GrantUserAuthorization extends WriteServiceBase {
+  (
+    input: GrantUserAuthorizationCommand,
+    mediaItems: boolean,
+  ): Promise<OperationResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>>;
 }
 
-type GrantUserAuthorizationForAlbumDeps = {
+type GrantUserAuthorizationDeps = {
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
+  mediaItemRepository: MediaItemRepository;
   shareContactRepository: ShareContactRepository;
   createUserWriteService: CreateUserWriteService;
   logger: Logger;
-  uow: UnitOfWork;
 };
 
-export const build__GrantUserAuthorizationForAlbum = ({
+const validateExistingAlbum = async (
+  albumRepository: AlbumRepository,
+  input: GrantUserAuthorizationCommand,
+): Promise<OperationResult<Album>> => {
+  const { viewerId, entityIds } = input;
+  const albumId = entityIds[0];
+
+  const getResult = await loadRequiredAlbum(albumId, albumRepository);
+  if (!getResult.success) {
+    return getResult;
+  }
+  const album = getResult.value;
+
+  const member = album.getAlbumMemberByUserId(viewerId);
+  if (!member || !member.role().can(Operation.grantAlbumAuthorization)) {
+    return fail(Operation.grantAlbumAuthorization.deniedError);
+  }
+
+  return ok(album);
+};
+
+const validateMediaItemsCreateShadowAlbum = async (
+  mediaItemRepository: MediaItemRepository,
+  input: GrantUserAuthorizationCommand,
+): Promise<OperationResult<Album>> => {
+  const { viewerId, entityIds, label, viewerFirstName } = input;
+  const dedupedIds = dedupeIds(entityIds);
+
+  if (dedupedIds.length === 0) {
+    return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);
+  }
+
+  const mediaItems: MediaItem[] = [];
+  for (const id of dedupedIds) {
+    const loaded = await loadRequiredMediaItem(id, mediaItemRepository);
+    if (!loaded.success) {
+      return loaded;
+    }
+    const ownership = ensureMediaItemOwnedByViewer(loaded.value.ownerId(), viewerId);
+    if (!ownership.success) {
+      return ownership;
+    }
+    const isReady = ensureMediaItemInReadyState(loaded.value);
+    if (!isReady.success) {
+      return isReady;
+    }
+    mediaItems.push(loaded.value);
+  }
+  const album = Album.create(
+    {
+      title: label ?? `Photos from ${viewerFirstName}`,
+      isShadowAlbum: true,
+    },
+    input.viewerId,
+  );
+  mediaItems.forEach((mediaItem) => {
+    album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
+  });
+  return ok(album);
+};
+
+export const build__GrantUserAuthorization = ({
   albumRepository,
   userRepository,
+  mediaItemRepository,
   shareContactRepository,
   createUserWriteService,
   logger,
-  uow,
-}: GrantUserAuthorizationForAlbumDeps): GrantUserAuthorizationForAlbum => {
+}: GrantUserAuthorizationDeps): GrantUserAuthorization => {
   return async (
     input: GrantUserAuthorizationCommand,
-  ): Promise<WriteResult<GrantUserAuthorizationResult>> => {
+    mediaItems: boolean,
+  ): Promise<OperationResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>> => {
     // setup and validation
-    const { viewerId, entityIds, grantedToHandles } = input;
-    const albumId = entityIds[0];
-
-    const getResult = await loadRequiredAlbum(albumId, albumRepository);
-    if (!getResult.success) {
-      return getResult;
-    }
-    const album = getResult.value;
-
-    const member = album.getAlbumMember(viewerId);
-    if (!member || !member.role().can(Operation.grantAlbumAuthorization)) {
-      return fail(Operation.grantAlbumAuthorization.deniedError);
-    }
-
+    const { viewerId, grantedToHandles } = input;
     const granter = await userRepository.getById(viewerId);
     if (!granter) {
       return fail(AppErrorCollection.user.UserNotFound);
     }
+    const isValid = mediaItems
+      ? await validateMediaItemsCreateShadowAlbum(mediaItemRepository, input)
+      : await validateExistingAlbum(albumRepository, input);
 
+    if (!isValid.success) {
+      return isValid;
+    }
+    const album = isValid.value;
     // invitations
     const userResult = await getOrCreateAllUsers(
       grantedToHandles,
@@ -77,53 +137,23 @@ export const build__GrantUserAuthorizationForAlbum = ({
     if (!userResult.success) {
       return userResult;
     }
-    const activeUsers = userResult.value.filter((u): u is User => u.kind === 'active');
-    const pendingUsers = userResult.value.filter((u): u is PendingUser => u.kind === 'pending');
 
     // active → album.grantAuthorization emits its own domain events, runs for
     // both pending and active.  In event handler pending users don't get grants.
     // Once they activate the grants will be created.
-    const activeResult = inviteUsers([...activeUsers, ...pendingUsers], album, input);
-
-    // pending → public link + serviceEvents (no domain events)
-    const pendingResult = invitePendingUsers(pendingUsers, album, input, logger);
-    let pendingUserServiceEvents: PublicLinkSharedWithUser[] = [];
-    if (!pendingResult.success) {
-      logger.warn('PendingUser album invite failed', {
-        failures: pendingUsers.map((d) => ({
-          userId: d.id(),
-          albumId: album.id(),
-          error: pendingResult.error,
-        })),
-      });
-    } else {
-      pendingUserServiceEvents = pendingResult.value;
-    }
-
-    // ALL-OR-NOTHING GUARD — mirror the mediaItem path. Until the share UI renders the
-    // errors array, a partial active-grant failure is a silent "shared!" lie, so fail the
-    // whole op (rolls back uow). Pending failures stay non-fatal (logged above). See RAI-XX.
-    if (activeResult.errors.length > 0) {
-      logger.warn('partial album grant', {
-        failures: activeResult.errors.map((d) => ({
-          userId: d.user.id(),
-          albumId: album.id(),
-          code: d.error.code,
-        })),
-      });
-      return fail(ContractError.PartialShareFailure);
+    const inviteResult = inviteUsers(userResult.value, album, input);
+    if (inviteResult.failed.length > 0) {
+      logger.warn(formatFailures(inviteResult.failed, 'partial album grant', (x) => x.id()));
     }
 
     // only persist contacts for people who actually got a grant
-    const invitedUsers = [
-      ...activeResult.invitedUsers,
-      ...(pendingResult.success ? pendingUsers : []),
-    ];
-    await saveNewShareContacts(invitedUsers, granter, shareContactRepository);
-
+    await saveNewShareContacts(
+      inviteResult.succeeded.map((x) => x.item),
+      granter,
+      shareContactRepository,
+    );
     await albumRepository.save(album);
-    uow.collectEvents(pendingUserServiceEvents);
 
-    return ok({ invitedUsers, errors: activeResult.errors });
+    return ok(inviteResult);
   };
 };

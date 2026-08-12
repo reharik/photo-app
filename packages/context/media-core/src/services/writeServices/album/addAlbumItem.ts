@@ -5,7 +5,7 @@ import {
   loadRequiredReadOnlyMediaItem,
 } from '../../../application/support/resourceLoaders';
 
-import { ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 
@@ -13,7 +13,7 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
 
 export interface AddAlbumItem extends WriteServiceBase {
-  (input: AddAlbumItemCommand, trx: Knex.Transaction): Promise<WriteResult<AddAlbumItemResult>>;
+  (input: AddAlbumItemCommand, trx: Knex.Transaction): Promise<OperationResult<AddAlbumItemResult>>;
 }
 
 type AddAlbumItemDeps = {
@@ -25,7 +25,7 @@ export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
 }: AddAlbumItemDeps): AddAlbumItem => {
-  return async (input: AddAlbumItemCommand): Promise<WriteResult<AddAlbumItemResult>> => {
+  return async (input: AddAlbumItemCommand): Promise<OperationResult<AddAlbumItemResult>> => {
     const { viewerId, albumId, mediaItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {

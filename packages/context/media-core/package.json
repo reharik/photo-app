@@ -37,8 +37,8 @@
     "@aws-sdk/s3-request-presigner": "^3.1028.0",
     "@packages/contracts": "*",
     "@packages/infrastructure": "*",
-    "@reharik/smart-enum": "^0.7.0",
-    "@reharik/smart-enum-knex": "^0.0.3",
+    "@reharik/smart-enum": "^0.9.0",
+    "@reharik/smart-enum-knex": "^0.1.0",
     "knex": "^3.1.0"
   },
   "devDependencies": {
@@ -46,7 +46,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
     "concurrently": "^9.2.1",
-    "ioc-manifest": "^2.3.6",
+    "ioc-manifest": "^2.4.0",
     "jest": "30.4.1",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"

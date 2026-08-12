@@ -20,7 +20,7 @@ import { groupByTakenDatePreservingOrder } from '../media/grid/groupBy/makeDateS
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
-import { GrantAlbumShareModal } from '../sharing/GrantAlbumShareModal';
+import { ShareAlbumModal } from '../sharing/shareAlbum/ShareAlbumModal';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
 import { AddToAlbumHeaderButton } from './AddToAlbumHeaderButton';
 import { AlbumSectionMetadata, type AlbumGroupBy } from './AlbumSectionMetadata';
@@ -283,8 +283,9 @@ export const AlbumSection = ({
         />
       )}
       {modalState.shareAlbumOpen && (
-        <GrantAlbumShareModal
+        <ShareAlbumModal
           albumId={album.id}
+          albumOperations={album.operations}
           onSuccessToast={(message) => setToastMessage(message)}
           onErrorToast={(message) => setToastMessage(message)}
           onClose={() => modalState.setShareAlbumOpen(false)}

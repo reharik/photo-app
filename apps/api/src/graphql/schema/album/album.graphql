@@ -2,7 +2,7 @@ type Album implements ViewableItem & Node {
   id: ID!
   title: String!
   coverMedia: MediaItem
-  # members: (input: ViewerAlbumItemsInput): AlbumItemCollectionPayload!
+  albumMembers(input: AlbumMemberInput!): AlbumMemberCollectionPayload!
   createdAt: DateTime!
   updatedAt: DateTime!
   owner: Owner
@@ -10,13 +10,50 @@ type Album implements ViewableItem & Node {
   ownerLastName: String
   items(input: ViewerAlbumItemsInput!): AlbumItemCollectionPayload!
   comments(input: CommentsInput!): CommentCollectionPayload!
+  resolveShareRecipients(emails: [String!]!): ResolveShareRecipientsResponse!
   operations: [Operation!]!
   itemCount: Int!
+  emailShares: [EmailShare!]!
+  publicLink: PublicLink
+}
+
+type ResolveShareRecipientsResponse {
+  data: [ShareRecipient!]
+  errors: [ContractError!]
+}
+
+type EmailShare {
+  id: ID!
+  email: String!
+  displayName: String
+  hasAccount: Boolean!
+  userId: ID
+  createdAt: DateTime!
+}
+
+type PublicLink {
+  token: String
 }
 
 type Owner {
   firstName: String
   lastName: String
+}
+
+input AlbumMemberInput {
+  collectionInfo: AlbumMemberCollectionInput!
+}
+
+input AlbumMemberCollectionInput {
+  pageInfo: PageInfoInput!
+  sortBy: AlbumMemberSortBy!
+  sortDir: SortDir!
+}
+
+type AlbumMemberCollectionPayload {
+  nodes: [AlbumMember!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
 }
 
 input ViewerAlbumItemsInput {
@@ -35,18 +72,32 @@ type AlbumItemCollectionPayload {
   pageInfo: PageInfo!
 }
 
-# YAGNI
-# type AlbumMember implements Node {
-#   id: ID!
-#   role: AlbumMemberRole!
-#   createdAt: DateTime!
-#   updatedAt: DateTime!
-# }
+type AlbumMember implements Node {
+  id: ID!
+  userId: ID!
+  role: AlbumMemberRole!
+  firstName: String!
+  lastName: String!
+  email: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
 
 enum AlbumMemberRole {
   OWNER
   CONTRIBUTOR
   ADMIN
+}
+
+enum AlbumMemberSortBy {
+  ROLE
+    @enumMeta(
+      props: [
+        { name: "column", value: "role" }
+        { name: "table", value: "album_member" }
+        { name: "nullsLast", value: "true" }
+      ]
+    )
 }
 
 type AlbumItem implements ViewableItem & Node {
@@ -83,4 +134,10 @@ enum AlbumItemSortBy {
         { name: "nullsLast", value: "false" }
       ]
     )
+}
+
+type ShareRecipient {
+  email: String!
+  resolved: Boolean!
+  displayName: String
 }

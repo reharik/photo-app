@@ -73,6 +73,59 @@ describe('build__ProcessNextMediaImageJob', () => {
     });
   });
 
+  describe('When markItemFailed is called', () => {
+    it('should move a processing item to failed and persist it', async () => {
+      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
+      const item = createUploadedPhoto();
+      const processor = build__ProcessNextMediaImageJob({
+        mediaItemRepository: {
+          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
+          save,
+          delete: jest.fn(),
+          ensureUserTagId: jest.fn(),
+        },
+      });
+
+      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(true);
+      expect(item.status().equals(MediaItemStatus.failed)).toBe(true);
+      expect(save).toHaveBeenCalledWith(item);
+    });
+
+    it('should report nothing to mark when the item is missing', async () => {
+      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
+      const processor = build__ProcessNextMediaImageJob({
+        mediaItemRepository: {
+          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(undefined),
+          save,
+          delete: jest.fn(),
+          ensureUserTagId: jest.fn(),
+        },
+      });
+
+      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(false);
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('should not drag an already-ready item back to failed', async () => {
+      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
+      const item = createUploadedPhoto();
+      item.markReadyAfterDerivatives({ displayWidth: 1, displayHeight: 1 }, ACTOR_ID);
+
+      const processor = build__ProcessNextMediaImageJob({
+        mediaItemRepository: {
+          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
+          save,
+          delete: jest.fn(),
+          ensureUserTagId: jest.fn(),
+        },
+      });
+
+      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(false);
+      expect(item.status().equals(MediaItemStatus.ready)).toBe(true);
+      expect(save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('When saveProcessedItem is called', () => {
     it('should persist through the media item repository', async () => {
       const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);

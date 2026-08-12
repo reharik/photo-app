@@ -1,3 +1,4 @@
+import { AuthorizationKind } from '@packages/contracts';
 import { Knex } from 'knex';
 
 export const withActivePublicLink =
@@ -9,6 +10,7 @@ export const withActivePublicLink =
         .from('accessGrant as ag')
         .where('ag.albumId', albumId)
         .where('ag.id', publicLinkId)
+        .whereIn('ag.kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
         .whereNull('ag.revokedAt')
         .andWhere((expiry) => {
           expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', db.raw('now()'));

@@ -24,7 +24,14 @@ export const mapToAppError = (
 };
 
 export const mapContractError = (input: ContractErrorPayload): AppError => {
-  return mapToAppError(ContractError.fromValue(input.code), input, 'backend');
+  return mapToAppError(
+    ContractError.tryFromValue(input.code) ?? ContractError.unknown,
+    {
+      message: input.data?.message as string | undefined,
+      field: input.data?.field as string | undefined,
+    },
+    'backend',
+  );
 };
 
 export const mapFrontendError = (input: FrontendErrorInput): AppError => {

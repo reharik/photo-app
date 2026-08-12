@@ -1,27 +1,29 @@
-import { ContractError, fail, notEmpty, ok, WriteResult } from '@packages/contracts';
-import { indexBy, Logger } from '@packages/infrastructure';
+import { fail, ok, OperationResult } from '@packages/contracts';
+import { indexBy } from '@packages/infrastructure';
 import {
   Album,
-  MediaItem,
-  MediaItemsSharedWithUser,
+  AlbumAuthorizationInput,
   PendingUser,
-  PublicLinkSharedWithUser,
+  PendingUserAuthorization,
   User,
+  UserAuthorization,
 } from '../../../domain';
-import { UserAuthorization } from '../../../domain/Authorization/UserAuthorization';
+import {
+  eachIndependently,
+  IndependentGroupResult,
+} from '../../../infrastructure/writeServices/groupActionStrategy';
 import { ShareContactRepository } from '../../../repositories';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
 import { EntityId } from '../../../types';
-import {} from '../mediaItem/writeMediaItem.types';
 import { CreateUserWriteService } from '../user/createUserWriteService';
-import { GrantUserAuthorizationCommand, InviteUsersForMediaItemsResult } from './grantTypes';
+import { GrantUserAuthorizationCommand } from './grantTypes';
 
 export const getOrCreateAllUsers = async (
   grantedToHandles: string[],
   userRepository: UserRepository,
   createUserWriteService: CreateUserWriteService,
   actorId: EntityId,
-): Promise<WriteResult<(User | PendingUser)[]>> => {
+): Promise<OperationResult<(User | PendingUser)[]>> => {
   const normalizedEmails = [...new Set(grantedToHandles.map((x) => x.trim().toLowerCase()))];
   const users = await userRepository.getAllUsersByEmail(normalizedEmails);
   const userMap = indexBy(users, (x) => x.email().trim().toLowerCase());
@@ -52,111 +54,22 @@ export const saveNewShareContacts = async (
   await Promise.all(newShareContactPromises);
 };
 
+export type GrantedAuthorization = { authorization: UserAuthorization | PendingUserAuthorization };
 export const inviteUsers = (
   users: (User | PendingUser)[],
   album: Album,
   input: GrantUserAuthorizationCommand,
-): {
-  errors: { user: User | PendingUser; error: ContractError }[];
-  invitedUsers: (User | PendingUser)[];
-} => {
-  const errors: { user: User | PendingUser; error: ContractError }[] = [];
-  const invitedUsers: (User | PendingUser)[] = [];
-
-  for (const user of users) {
-    const result = album.grantAuthorization(
-      input.operations,
-      input.viewerId,
-      user.id(),
-      input.label,
-      input.expiresAt,
-    );
-    if (result.success) {
-      invitedUsers.push(user);
-    } else {
-      errors.push({ user, error: result.error });
-    }
-  }
-  return { errors, invitedUsers };
-};
-
-export const invitePendingUsers = (
-  users: PendingUser[],
-  album: Album,
-  input: GrantUserAuthorizationCommand,
-  logger: Logger,
-): WriteResult<PublicLinkSharedWithUser[]> => {
-  const serviceEvents: PublicLinkSharedWithUser[] = [];
-  const result = album.grantPublicLink(input.viewerId, input.expiresAt, input.operations);
-  if (!result.success) {
-    return fail(result.error);
-  }
-
-  const publicLinkAuthorization = result.value;
-  for (const user of users) {
-    serviceEvents.push({
-      kind: 'publicLinkSharedWithUser',
-      userId: user.id(),
-      publicLinkAuthorizationId: publicLinkAuthorization.id(),
-      occurredAt: new Date(),
+): IndependentGroupResult<User | PendingUser, GrantedAuthorization> => {
+  return eachIndependently(users, (user) => {
+    const payload: AlbumAuthorizationInput = {
       actorId: input.viewerId,
-    });
-  }
-
-  logger.debug(`Pending User service events recorded: ${JSON.stringify(serviceEvents, null, 4)}`);
-  return ok(serviceEvents);
-};
-
-export const inviteUsersForMediaItems = (
-  users: (PendingUser | User)[],
-  mediaItems: MediaItem[],
-  input: GrantUserAuthorizationCommand,
-  logger: Logger,
-): InviteUsersForMediaItemsResult => {
-  const errors: { user: PendingUser | User; error: ContractError }[] = [];
-  const errorDetail: { user: PendingUser | User; mediaItem: MediaItem; error: ContractError }[] =
-    [];
-  const serviceEvents: MediaItemsSharedWithUser[] = [];
-  const authorizations: UserAuthorization[] = [];
-
-  for (const user of users) {
-    const userAuthz: UserAuthorization[] = [];
-    const userErrors: typeof errorDetail = [];
-
-    for (const mediaItem of mediaItems) {
-      const result = mediaItem.grantAuthorization(
-        input.operations,
-        input.viewerId,
-        user.id(),
-        input.label,
-        input.expiresAt,
-      );
-      if (result.success) {
-        userAuthz.push(result.value.authorization); // ← was pushing to global `authorizations`
-      } else {
-        userErrors.push({ user, mediaItem, error: result.error });
-      }
-    }
-
-    authorizations.push(...userAuthz); // feed the global list once, per user
-
-    if (user.kind === 'active' && userAuthz.length > 0) {
-      serviceEvents.push({
-        kind: 'mediaItemsSharedWithUser',
-        userId: user.id(),
-        mediaItemIds: userAuthz.map((x) => x.mediaItemId()).filter(notEmpty),
-        occurredAt: new Date(),
-        actorId: input.viewerId,
-        authorizationIds: userAuthz.map((x) => x.id()),
-      });
-    }
-
-    if (userErrors.length > 0) {
-      errors.push({ user, error: userErrors[0].error });
-      errorDetail.push(...userErrors);
-    }
-  }
-
-  logger.debug(`Service events recorded: ${JSON.stringify(serviceEvents, null, 4)}`);
-  return { errors, errorDetail, serviceEvents, authorizations };
+      label: input.label,
+      grantedToUserId: user.id(),
+    };
+    const result: OperationResult<GrantedAuthorization> =
+      user.kind === 'active'
+        ? album.grantAuthorization(payload)
+        : album.grantPendingUserAuthorization(payload);
+    return result;
+  });
 };

@@ -6,14 +6,10 @@ generates:
       mode: enums
       serializeAs: value
       emitDescriptionsAsDisplay: true
-      # Hand-authored in src/enums/operations.ts (deniedError, etc.)
-      skipEnums:
-        - Operation
-        - AlbumMemberRole
-        - ReactionEmoji
-        - ErrorCategory
+      # Hand-authored in src/enums/ (deniedError, etc.). Their define<Name>Input
+      # pins are emitted into graphqlSmartEnums.ts; enumRegistry goes to the
+      # sibling graphqlSmartEnumsRegistry.ts so the module graph stays acyclic.
       externalEnums:
         Operation: './operation'
         AlbumMemberRole: './albumMemberRole'
         ReactionEmoji: './reactionEmojis'
-        ErrorCategory: './ContractError'

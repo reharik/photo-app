@@ -118,7 +118,6 @@ describe('GraphQL', () => {
                 }
                 errors {
                   code
-                  message
                 }
               }
             }
@@ -153,7 +152,6 @@ describe('GraphQL', () => {
                 }
                 errors {
                   code
-                  message
                 }
               }
             }

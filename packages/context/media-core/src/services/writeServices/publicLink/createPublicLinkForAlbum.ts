@@ -1,4 +1,4 @@
-import { AlbumMemberRole, AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { ok, OperationResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { EntityId } from '../../../types/types';
@@ -18,7 +18,7 @@ export type CreatePublicLinkResponse = {
 };
 
 export interface CreatePublicLinkForAlbum extends WriteServiceBase {
-  (input: CreatePublicLinkForAlbumCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (input: CreatePublicLinkForAlbumCommand): Promise<OperationResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForAlbumDeps = {
@@ -30,18 +30,16 @@ export const build__CreatePublicLinkForAlbum = ({
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
     input: CreatePublicLinkForAlbumCommand,
-  ): Promise<WriteResult<CreatePublicLinkResponse>> => {
+  ): Promise<OperationResult<CreatePublicLinkResponse>> => {
     const loadedAlbum = await loadRequiredAlbum(input.albumId, albumRepository);
     if (!loadedAlbum.success) {
       return loadedAlbum;
     }
     const album = loadedAlbum.value;
-    const member = album.getAlbumMember(input.viewerId);
-    if (!member || !member.role().equals(AlbumMemberRole.owner)) {
-      return fail(AppErrorCollection.album.NotAllowedToGrantAuthorizationForAlbum);
-    }
 
-    const publicLinkResult = album.grantPublicLink(input.viewerId, input.expiresAt);
+    const publicLinkResult = album.grantPublicLink({
+      actorId: input.viewerId,
+    });
     if (!publicLinkResult.success) {
       return publicLinkResult;
     }

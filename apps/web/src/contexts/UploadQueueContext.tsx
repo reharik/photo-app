@@ -111,6 +111,9 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
       onItemReady: (mediaItemId) => {
         dispatch({ type: 'markReady', payload: { mediaItemId } });
       },
+      onItemFailed: (mediaItemId) => {
+        dispatch({ type: 'markFailed', payload: { mediaItemId } });
+      },
     });
   }, [state.items, client]);
 

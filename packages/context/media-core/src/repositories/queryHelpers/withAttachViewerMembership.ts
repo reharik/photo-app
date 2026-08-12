@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
 
-export const withViewerMembership =
+export const withAttachViewerMembership =
   (db: Knex, viewerId: string) =>
   (qb: Knex.QueryBuilder): void => {
     qb.leftJoin('albumMember', (join) => {

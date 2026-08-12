@@ -19,17 +19,10 @@ const NAV_LINKS: NavigationItem[] = [
   // "root wins" rule it activates "Albums" even for a shared album.
   { label: 'Recent', to: '/media', activePaths: ['/', '/media'], activePrefix: '/media' },
   { label: 'Albums', to: '/albums', activePrefix: '/albums' },
-  {
-    label: 'Shared',
-    children: [
-      {
-        label: 'Items',
-        to: '/shared/items',
-        activePaths: ['/shared/items', '/shared-with-me'],
-      },
-      { label: 'Albums', to: '/shared/albums' },
-    ],
-  },
+  // Flat, not a parent: the "Items" child is gone (sharing loose media now creates a
+  // shadow album), so "Shared" has a single destination and a dropdown of one would be
+  // noise. The legacy /shared/items and /shared-with-me paths redirect here.
+  { label: 'Shared', to: '/shared/albums', activePaths: ['/shared/albums'] },
 ];
 
 type OpenMenu = null | 'nav' | 'profile';
@@ -56,32 +49,19 @@ export const AppShell = () => {
     anyUnseenMatching((r) => r.surface.equals(surface));
   const recentUnseen = anySurface(ActivitySurface.recent);
   const albumsUnseen = anySurface(ActivitySurface.albums);
-  const sharedItemsUnseen = anySurface(ActivitySurface.sharedItems);
+  // SHARED_ITEMS is gone from ActivitySurface along with the shared-items surface it fed.
+  // Shares of loose media land in a shadow album and arrive as sharedAlbums activity, as
+  // do replies on a photo you don't own — so this one dot covers both.
   const sharedAlbumsUnseen = anySurface(ActivitySurface.sharedAlbums);
-  const sharedUnseen = sharedItemsUnseen || sharedAlbumsUnseen;
 
   const navLinks = useMemo<NavigationItem[]>(
     () =>
       NAV_LINKS.map((item) => {
         if (isNavigationParent(item)) {
-          if (item.label !== 'Shared') {
-            return item;
-          }
-          // Aggregate dot on the parent; per-category dots on the children so you can
-          // see whether the activity is in shared photos or shared albums.
-          return {
-            ...item,
-            hasUnseen: sharedUnseen,
-            children: item.children.map((child) => {
-              if (child.to === '/shared/items') {
-                return { ...child, hasUnseen: sharedItemsUnseen };
-              }
-              if (child.to === '/shared/albums') {
-                return { ...child, hasUnseen: sharedAlbumsUnseen };
-              }
-              return child;
-            }),
-          };
+          return item;
+        }
+        if (item.to === '/shared/albums') {
+          return { ...item, hasUnseen: sharedAlbumsUnseen };
         }
         if (item.to === '/albums') {
           return { ...item, hasUnseen: albumsUnseen };
@@ -91,7 +71,7 @@ export const AppShell = () => {
         }
         return item;
       }),
-    [recentUnseen, albumsUnseen, sharedUnseen, sharedItemsUnseen, sharedAlbumsUnseen],
+    [recentUnseen, albumsUnseen, sharedAlbumsUnseen],
   );
 
   useEffect(() => {

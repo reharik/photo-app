@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -10,13 +10,13 @@ export type EditCommentCommand = {
 };
 
 export interface EditComment extends WriteServiceBase {
-  (command: EditCommentCommand): Promise<WriteResult<{ entityId: EntityId }>>;
+  (command: EditCommentCommand): Promise<OperationResult<{ entityId: EntityId }>>;
 }
 
 type EditCommentDeps = { commentRepository: CommentRepository };
 
 export const build__EditComment = ({ commentRepository }: EditCommentDeps): EditComment => {
-  return async (command: EditCommentCommand): Promise<WriteResult<{ entityId: EntityId }>> => {
+  return async (command: EditCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
     const comment = await commentRepository.getById(command.commentId);
     if (!comment) {
       return fail(AppErrorCollection.comment.CommentNotFound);

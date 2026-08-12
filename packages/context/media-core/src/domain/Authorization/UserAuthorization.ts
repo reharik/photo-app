@@ -1,24 +1,33 @@
-import { AppErrorCollection, fail, ok, Operation, WriteResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  AuthorizationKind,
+  AuthorizationOrigin,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import { ActorId, EntityId } from '../../types/types';
 import { Entity } from '../Entity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
-export type UserAuthorizationProps = Omit<AuthorizationProps, 'linkToken' | 'grantedToUser'> & {
+export type UserAuthorizationProps = AuthorizationProps & {
   grantedToUser: EntityId;
   linkToken: undefined;
+  kind: typeof AuthorizationKind.user;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
-export type UserAuthorizationRecord = Omit<AuthorizationRecord, 'linkToken' | 'grantedToUser'> & {
+export type UserAuthorizationRecord = AuthorizationRecord & {
   grantedToUser: EntityId;
   linkToken: undefined;
+  kind: typeof AuthorizationKind.user;
+  origin: typeof AuthorizationOrigin.owner;
 };
 
-export type CreateUserAuthorizationInput = Omit<CreateAuthorizationInput, 'grantedToUser'> & {
+export type CreateUserAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser: EntityId;
 };
-
-export const isUserAuthRecord = (r: AuthorizationRecord): r is UserAuthorizationRecord =>
-  r.grantedToUser != null && r.linkToken == null;
 
 export class UserAuthorization extends Entity<UserAuthorizationRecord> {
   protected props: UserAuthorizationProps;
@@ -41,10 +50,10 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
       grantedToUser: input.grantedToUser,
       grantedBy: actorId,
       label: input.label,
-      expiresAt: input.expiresAt,
-      mediaItemId: input.mediaItemId,
       albumId: input.albumId,
       linkToken: undefined,
+      kind: AuthorizationKind.user,
+      origin: AuthorizationOrigin.owner,
     });
   }
 
@@ -61,7 +70,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     return this.props.operations;
   }
 
-  updateOperations(operations: Operation[], actorId: ActorId): WriteResult<undefined> {
+  updateOperations(operations: Operation[], actorId: ActorId): OperationResult<undefined> {
     this.props.operations = operations;
     this.touch(actorId);
     return ok(undefined);
@@ -70,13 +79,13 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
   label(): string | undefined {
     return this.props.label;
   }
-  updateLabel(label: string, actorId: ActorId): WriteResult<undefined> {
+  updateLabel(label: string, actorId: ActorId): OperationResult<undefined> {
     this.props.label = label;
     this.touch(actorId);
     return ok(undefined);
   }
 
-  updateExpireDate(expiredDate: Date, actorId: ActorId): WriteResult<undefined> {
+  updateExpireDate(expiredDate: Date, actorId: ActorId): OperationResult<undefined> {
     if (expiredDate < new Date()) {
       return fail(AppErrorCollection.authorization.ExpireDateCannotBeInPast);
     }
@@ -88,7 +97,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     return ok(undefined);
   }
 
-  revokeAuthorization(actorId: ActorId): WriteResult<undefined> {
+  revokeAuthorization(actorId: ActorId): OperationResult<undefined> {
     if (this.props.expiresAt && this.props.expiresAt < new Date()) {
       return fail(AppErrorCollection.authorization.CannotRevokeAuthorizationIfAlreadyExpired);
     }
@@ -96,9 +105,7 @@ export class UserAuthorization extends Entity<UserAuthorizationRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
-  mediaItemId(): EntityId | undefined {
-    return this.props.mediaItemId;
-  }
+
   albumId(): EntityId | undefined {
     return this.props.albumId;
   }

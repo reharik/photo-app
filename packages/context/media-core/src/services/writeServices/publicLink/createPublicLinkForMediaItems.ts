@@ -1,6 +1,9 @@
-import { AppErrorCollection, fail, ok, WriteResult } from '@packages/contracts';
+import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
-import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
+import {
+  ensureMediaItemInReadyState,
+  ensureMediaItemOwnedByViewer,
+} from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
@@ -19,7 +22,7 @@ export type CreatePublicLinkForMediaItemsCommand = {
 };
 
 export interface CreatePublicLinkForMediaItems extends WriteServiceBase {
-  (input: CreatePublicLinkForMediaItemsCommand): Promise<WriteResult<CreatePublicLinkResponse>>;
+  (input: CreatePublicLinkForMediaItemsCommand): Promise<OperationResult<CreatePublicLinkResponse>>;
 }
 
 type CreatePublicLinkForMediaItemsDeps = {
@@ -35,7 +38,7 @@ export const build__CreatePublicLinkForMediaItems = ({
 }: CreatePublicLinkForMediaItemsDeps): CreatePublicLinkForMediaItems => {
   return async (
     input: CreatePublicLinkForMediaItemsCommand,
-  ): Promise<WriteResult<CreatePublicLinkResponse>> => {
+  ): Promise<OperationResult<CreatePublicLinkResponse>> => {
     const mediaItemIds = dedupeIds(input.mediaItemIds);
     if (mediaItemIds.length === 0) {
       return fail(AppErrorCollection.mediaItem.DeleteMediaItemsEmptyList);
@@ -44,7 +47,7 @@ export const build__CreatePublicLinkForMediaItems = ({
     const album = Album.create(
       {
         title: input.name ?? `Photos from ${input.viewerFirstName}`,
-        isPublicLinkAlbum: true,
+        isShadowAlbum: true,
       },
       input.viewerId,
     );
@@ -61,6 +64,10 @@ export const build__CreatePublicLinkForMediaItems = ({
       );
       if (!ownershipResult.success) {
         return ownershipResult;
+      }
+      const isReady = ensureMediaItemInReadyState(loadedMediaItem.value);
+      if (!isReady.success) {
+        return isReady;
       }
       album.addItem(mediaItemId, input.viewerId, loadedMediaItem.value.kind());
     }

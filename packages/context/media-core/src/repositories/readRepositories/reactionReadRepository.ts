@@ -42,8 +42,7 @@ export const build__ReactionReadRepository = ({
         .where('user_id', viewerId)
         .where('target_type', targetType.value)
         .whereIn('target_id', targetIds),
-      { reactionEmoji: ReactionEmoji },
-      { strict: true },
+      { emoji: ReactionEmoji },
     );
   },
 });

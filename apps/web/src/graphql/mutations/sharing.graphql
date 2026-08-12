@@ -12,7 +12,15 @@ mutation grantUserAuthorizationsForMediaItems($input: GrantUserAuthorizationsFor
 mutation GrantUserAuthorizationForAlbum($input: GrantUserAuthorizationForAlbumInput!) {
   grantUserAuthorizationForAlbum(input: $input) {
     data {
-      userIds
+      succeeded {
+        email
+      }
+      failed {
+        email
+        error {
+          code
+        }
+      }
     }
     errors {
       ...errorsFragment
@@ -24,6 +32,17 @@ mutation DeleteShareContact($handle: String!) {
   deleteShareContact(handle: $handle) {
     data {
       handle
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation RevokeShareAuthentication($input: RevokeShareAuthenticationInput!) {
+  RevokeShareAuthentication(input: $input) {
+    data {
+      albumId
     }
     errors {
       ...errorsFragment

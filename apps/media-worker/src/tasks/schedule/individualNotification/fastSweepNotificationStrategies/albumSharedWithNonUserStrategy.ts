@@ -28,13 +28,12 @@ export const build__AlbumSharedWithNonUserStrategy = ({
     const albumIds = [...new Set(rows.map((x) => x.containerId))];
     const albums = await systemAlbumRepository.getAlbumTitlesById(albumIds);
     const albumMap = indexBy(albums);
-
     const results: PayloadResult<'guestAlbumShared'>[] = [];
     for (const row of rows) {
       const recipientEmail = userMap.get(row.recipientId)?.email;
-      const publicLinkAuthorization =
-        await systemAuthorizationRepository.getPublicLinkAuthorizationById(row.subjectId);
-      const token = publicLinkAuthorization.linkToken;
+      const pendingUserAuthorization =
+        await systemAuthorizationRepository.getPendingUserAuthorizationById(row.subjectId);
+      const token = pendingUserAuthorization.linkToken;
       if (!recipientEmail || !token) {
         results.push({ row, kind: 'skipped', reason: 'no recipient email or token' });
         continue;

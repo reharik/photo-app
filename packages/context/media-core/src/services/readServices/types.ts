@@ -1,6 +1,7 @@
 import {
   AlbumItemSortBy,
   AlbumMemberRole,
+  AlbumMemberSortBy,
   AlbumSortBy,
   EntityType,
   MediaItemSortBy,
@@ -9,14 +10,29 @@ import {
   Operation,
   ReactionEmoji,
   SharedWithMeAlbumSortBy,
-  SharedWithMeMediaItemSortBy,
   SortDir,
+  UserStatus,
 } from '@packages/contracts';
 import { CollectionInfo, EntityId, PageInfo } from '../../types';
 
 export type PagedList<T> = {
   nodes: T[];
   totalCount: number;
+};
+
+export type UserRow = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  postalCode?: string;
+  state?: string;
+  country?: string;
+  userStatus: UserStatus;
 };
 
 export type AlbumProjection = {
@@ -44,6 +60,17 @@ export type AlbumItemProjection = {
   updatedAt: Date;
   mediaItem: MediaItemProjection;
   operations: Operation[];
+};
+
+export type AlbumMemberProjection = {
+  id: string;
+  userId: string;
+  role: AlbumMemberRole;
+  firstName: string;
+  lastName: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type NamespacedMediaItemRow = {
@@ -97,14 +124,15 @@ export interface AlbumItemCollectionInfo extends CollectionInfo<AlbumItemSortBy>
   sortDir: SortDir;
 }
 
+export interface AlbumMemberCollectionInfo extends CollectionInfo<AlbumMemberSortBy> {
+  pageInfo: PageInfo;
+  sortBy: AlbumMemberSortBy;
+  sortDir: SortDir;
+}
+
 export interface SharedWithMeAlbumCollectionInfo extends CollectionInfo<SharedWithMeAlbumSortBy> {
   pageInfo: PageInfo;
   sortBy: SharedWithMeAlbumSortBy;
-  sortDir: SortDir;
-}
-export interface SharedWithMeMediaItemCollectionInfo extends CollectionInfo<SharedWithMeMediaItemSortBy> {
-  pageInfo: PageInfo;
-  sortBy: SharedWithMeMediaItemSortBy;
   sortDir: SortDir;
 }
 
@@ -116,15 +144,6 @@ export type AuthorizationProjection = {
   expiresAt?: Date;
   revokedAt?: Date;
   createdAt?: Date;
-};
-
-export type SharedWithMeItemProjection = {
-  id: EntityId;
-  sharedAt: Date;
-  sharedBy: EntityId;
-  sharedByFirstName: string;
-  sharedByLastName: string;
-  mediaItem: MediaItemProjection;
 };
 
 export type SharedWithMeAlbumProjection = {

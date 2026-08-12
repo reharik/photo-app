@@ -1,7 +1,9 @@
 /**
  * Integration coverage for grantUserAuthorizationsForMediaItems (the share write
- * path) against real Postgres, asserting the persisted `access_grant` rows — NOT
- * just the response payload. Closes the gaps the e2e specs can't see:
+ * path) against real Postgres, asserting the persisted rows — NOT just the response
+ * payload. This mutation now runs through the merged grantUserAuthorization service,
+ * which wraps loose media items in a generated shadow album and grants at ALBUM scope.
+ * Closes the gaps the e2e specs can't see:
  *  - mixed recipients (active + non-user) resolved in ONE call,
  *  - the ownership guard (share an item you don't own),
  *  - the PartialShareFailure all-or-nothing guarantee.
@@ -41,7 +43,7 @@ const createMediaUploadMutation = `
   mutation {
     createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
       data { mediaItemId }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -50,7 +52,7 @@ const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
     finalizeMediaUpload(input: { mediaItemId: $id }) {
       data { mediaItemId status }
-      errors { code message }
+      errors { code }
     }
   }
 `;
@@ -58,14 +60,14 @@ const finalizeMediaUploadMutation = `
 const grantMutation = `
   mutation Grant($input: GrantUserAuthorizationsForMediaItemsInput!) {
     grantUserAuthorizationsForMediaItems(input: $input) {
-      errors { code message }
+      errors { code }
     }
   }
 `;
 
-type WriteMutationResponse<T> = { data?: T; errors: { code: string; message: string }[] };
+type WriteMutationResponse<T> = { data?: T; errors: { code: string }[] };
 type GrantResponse = {
-  grantUserAuthorizationsForMediaItems?: { errors: { code: string; message: string }[] | null };
+  grantUserAuthorizationsForMediaItems?: { errors: { code: string }[] | null };
 };
 
 describe('grantUserAuthorizationsForMediaItems (integration)', () => {
@@ -108,6 +110,11 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     expect(finalized.json.data?.finalizeMediaUpload.data?.status).toBe(
       MediaItemStatus.processing.value,
     );
+    // The worker that advances PROCESSING → READY does not run in integration tests, and
+    // the share path refuses non-READY items. Promote directly, as the worker would.
+    await database('mediaItem')
+      .where({ id: mediaItemId })
+      .update({ status: MediaItemStatus.ready.value });
     return mediaItemId;
   };
 
@@ -115,28 +122,32 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     input: {
       mediaItemIds: string[];
       grantedToHandles: string[];
-      operations?: string[];
     },
     context: Record<string, unknown> = loggedInViewer1,
   ) =>
     executeGraphQL<GrantResponse>({
-      // COMMENT/DOWNLOAD are the only operations the domain Operation smart-enum backs
-      // (it has no VIEW, despite the SDL enum listing one) — mirror what the client sends.
+      // The operation set is pinned server-side; the input no longer takes `operations`.
       query: grantMutation,
-      variables: { input: { operations: ['COMMENT'], ...input } },
+      variables: { input },
       context,
     });
 
+  // User-addressed grants are matched by grantedToUser alone: PUBLIC rows have a NULL
+  // grantee so they can never match. Do NOT filter on link_token nullness — a PENDING
+  // grant carries BOTH the grantee and the invite token under the kind discriminator,
+  // so the old `whereNull('linkToken')` heuristic silently excluded pending recipients.
   const itemGrantsFor = (grantedToUser: string, mediaItemId: string) =>
-    database('accessGrant').where({ grantedToUser, mediaItemId }).whereNull('linkToken');
+    database('accessGrant').where({ grantedToUser, mediaItemId });
+
+  const albumGrantsFor = (grantedToUser: string, albumId: string) =>
+    database('accessGrant').where({ grantedToUser, albumId });
 
   describe('mixed recipients (active + non-user) in one call', () => {
-    // Regression guard: sharing the SAME media item with more than one recipient in one
-    // call used to crash with `duplicate key ... "access_grant_pkey"` because the item
-    // aggregate was saved once PER authorization (N recipients → N concurrent saves of the
-    // same rows). grantAuthorizationForMediaItems now de-dupes item ids before saving, so
-    // each item is persisted once regardless of recipient count.
-    it('materializes item grants for the active user AND a shadow user + album grant for the non-user', async () => {
+    // Sharing loose media items no longer mints one grant per (recipient × item). The
+    // merged grantUserAuthorization service wraps the selected items in a generated
+    // "shadow" album (isShadowAlbum) and grants at ALBUM scope for every recipient —
+    // one code path for both the album share and the media-item share.
+    it('grants album scope on the generated shadow album for the active user AND a shadow user', async () => {
       const item1 = await createOwnedMediaItem(loggedInViewer1);
       const item2 = await createOwnedMediaItem(loggedInViewer1);
       const nonUserEmail = `shadow-${randomUUID()}@example.test`;
@@ -150,9 +161,30 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
       expect(res.json.errors).toBeUndefined();
       expect(res.json.data?.grantUserAuthorizationsForMediaItems?.errors ?? []).toEqual([]);
 
-      // Active recipient: one item-scoped grant per item (granted_to_user set, no token).
-      expect(await itemGrantsFor(TEST_VIEWER_A_ID, item1)).toHaveLength(1);
-      expect(await itemGrantsFor(TEST_VIEWER_A_ID, item2)).toHaveLength(1);
+      // The shadow album carrying the shared items.
+      //
+      // Found by the isShadowAlbum flag rather than by title: the title is generated
+      // from the sharer's first name, so matching on it would couple this test to a seed
+      // fixture's name. The DB is reset after every test, so the flag identifies exactly
+      // the album this call created.
+      const shadowAlbum = await database('album')
+        .where({ isShadowAlbum: true })
+        .first<{ id: string; title: string }>();
+      expect(shadowAlbum).toBeDefined();
+      // Untitled shares fall back to "Photos from {viewerFirstName}"; the sharer here is the
+      // default logged-in viewer, seeded as firstName 'Demo' in ensureTestViewerUsers.
+      expect(shadowAlbum.title).toBe('Photos from Demo');
+
+      // Both selected items were folded into it.
+      const albumItems = await database('albumItem')
+        .where({ albumId: shadowAlbum.id })
+        .select('mediaItemId');
+      expect(albumItems.map((r) => r.mediaItemId).sort()).toEqual([item1, item2].sort());
+
+      // Active recipient: a single album-scoped USER grant, not one grant per item.
+      const viewerAGrants = await albumGrantsFor(TEST_VIEWER_A_ID, shadowAlbum.id);
+      expect(viewerAGrants).toHaveLength(1);
+      expect(viewerAGrants[0].kind).toBe('USER');
 
       // Non-user recipient: a PENDING shadow user row was minted for the email...
       const shadow = await database('user')
@@ -165,31 +197,23 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
           : (shadow?.userStatus as { value: string }).value;
       expect(status).toBe('PENDING');
 
-      // ...and the shadow user also got an item-scoped grant per item (materializes for
-      // them on activation).
-      expect(await itemGrantsFor(shadow.id, item1)).toHaveLength(1);
-      expect(await itemGrantsFor(shadow.id, item2)).toHaveLength(1);
+      // ...and it too gets an album-scoped grant, which materializes on activation.
+      const shadowGrants = await albumGrantsFor(shadow.id, shadowAlbum.id);
+      expect(shadowGrants).toHaveLength(1);
 
-      // The non-user branch additionally built a public-link album with a tokenized
-      // public-link grant (link_token set, no granted_to_user), in the SAME call — proving
-      // the active item-grant branch and the public-link branch both committed in one uow.
-      //
-      // Found by the isPublicLinkAlbum flag rather than by title: the title is no longer a
-      // fixed string but is generated from the sharer's first name, so matching on it would
-      // couple this test to a seed fixture's name. The DB is reset after every test, so the
-      // flag identifies exactly the album this call created.
-      const publicAlbum = await database('album')
-        .where({ isPublicLinkAlbum: true })
-        .first<{ id: string; title: string }>();
-      expect(publicAlbum).toBeDefined();
-      // Untitled shares fall back to "Photos from {viewerFirstName}"; the sharer here is the
-      // default logged-in viewer, seeded as firstName 'Demo' in ensureTestViewerUsers.
-      expect(publicAlbum.title).toBe('Photos from Demo');
-      const linkGrant = await database('accessGrant')
-        .where({ albumId: publicAlbum.id })
-        .whereNotNull('linkToken')
-        .first();
-      expect(linkGrant).toBeDefined();
+      // Under the kind discriminator the pending invite is ONE row carrying BOTH the
+      // grantee and the invite token (kind PENDING). No separate public-link row is
+      // minted at share time — activation later splits the PENDING row into USER +
+      // PUBLIC, reusing its id.
+      expect(shadowGrants[0].kind).toBe('PENDING');
+      expect(shadowGrants[0].linkToken).toBeTruthy();
+      expect(
+        await database('accessGrant').where({ albumId: shadowAlbum.id, kind: 'PUBLIC' }),
+      ).toHaveLength(0);
+
+      // No item-scoped grants are written on this path any more.
+      expect(await itemGrantsFor(TEST_VIEWER_A_ID, item1)).toHaveLength(0);
+      expect(await itemGrantsFor(shadow.id, item1)).toHaveLength(0);
     });
   });
 
@@ -222,7 +246,7 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
     // successful grants are written to the trx. That failure travels as a `success:false`
     // DATA payload, not a thrown GraphQL error, so it used to commit anyway (the partial
     // grants persisted). The write boundary now flags the per-request uow for rollback when
-    // a mutation returns a failed WriteResult (authenticatedWriteResolver → uow.shouldRollback
+    // a mutation returns a failed OperationResult (authenticatedWriteResolver → uow.shouldRollback
     // → useScopedContainer), so the whole batch is rolled back and no grant rows survive.
     it('rolls back every grant in the batch when one recipient fails', async () => {
       const item1 = await createOwnedMediaItem(loggedInViewer1);
@@ -239,11 +263,11 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
       expect(errs.map((e) => e.code)).toContain(ContractError.PartialShareFailure.code);
 
       // All-or-nothing: the grants that DID succeed (Viewer A) must not survive.
-      expect(await itemGrantsFor(TEST_VIEWER_A_ID, item1)).toHaveLength(0);
-      expect(await itemGrantsFor(TEST_VIEWER_A_ID, item2)).toHaveLength(0);
       expect(await database('accessGrant').where({ grantedToUser: TEST_VIEWER_A_ID })).toHaveLength(
         0,
       );
+      // ...and neither does the shadow album the batch built to hang them off.
+      expect(await database('album').where({ isShadowAlbum: true })).toHaveLength(0);
     });
   });
 });

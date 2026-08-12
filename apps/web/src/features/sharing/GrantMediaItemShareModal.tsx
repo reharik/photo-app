@@ -69,10 +69,8 @@ export const GrantMediaItemShareModal = ({
 
     const input: GrantUserAuthorizationsForMediaItemsInput = {
       mediaItemIds,
-      operations: values.operations,
       grantedToHandles: values.grantedToHandles,
       label: values.label,
-      expiresAt: values.expiresAt,
     };
     const result = await grantUserAuthorization(
       {

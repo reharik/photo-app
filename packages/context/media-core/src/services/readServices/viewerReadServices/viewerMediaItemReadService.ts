@@ -1,15 +1,7 @@
-import {
-  AuthorizationReadRepository,
-  MediaItemReadRepository,
-} from '../../../repositories/readRepositories/types';
+import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
 import { ReadServiceBase } from '../readServiceBaseType';
-import {
-  AuthorizationProjection,
-  MediaItemCollectionInfo,
-  MediaItemProjection,
-  PagedList,
-} from '../types';
+import { MediaItemCollectionInfo, MediaItemProjection, PagedList } from '../types';
 import { EnrichMediaItems } from './enrichMediaItems';
 
 export interface ViewerMediaItemReadService extends ReadServiceBase {
@@ -19,21 +11,16 @@ export interface ViewerMediaItemReadService extends ReadServiceBase {
   getMediaItemForViewer: (args: {
     mediaItemId: EntityId;
   }) => Promise<MediaItemProjection | undefined>;
-  listGrantedAuthorizationsForOwnedMediaItem: (
-    mediaItemId: EntityId,
-  ) => Promise<AuthorizationProjection[]>;
 }
 
 type ViewerMediaItemReadServiceDeps = {
   mediaItemReadRepository: MediaItemReadRepository;
-  authorizationReadRepository: AuthorizationReadRepository;
   enrichMediaItems: EnrichMediaItems;
   viewerId: string;
 };
 
 export const build__ViewerMediaItemReadService = ({
   mediaItemReadRepository,
-  authorizationReadRepository,
   enrichMediaItems,
   viewerId,
 }: ViewerMediaItemReadServiceDeps): ViewerMediaItemReadService => {
@@ -63,26 +50,8 @@ export const build__ViewerMediaItemReadService = ({
 
     return node[0];
   };
-  const listGrantedAuthorizationsForOwnedMediaItem = async (
-    mediaItemId: EntityId,
-  ): Promise<AuthorizationProjection[]> => {
-    const rows = await authorizationReadRepository.getGrantedAuthorizationsForOwnedMediaItem({
-      mediaItemId,
-      ownerId: viewerId,
-    });
-    return rows.map((row) => ({
-      id: row.id,
-      grantedToUserId: row.grantedToUser,
-      operations: row.operations,
-      label: row.description,
-      expiresAt: row.expiresAt,
-      revokedAt: row.revokedAt,
-      createdAt: row.createdAt,
-    }));
-  };
   return {
     listMediaItems,
     getMediaItemForViewer,
-    listGrantedAuthorizationsForOwnedMediaItem,
   };
 };

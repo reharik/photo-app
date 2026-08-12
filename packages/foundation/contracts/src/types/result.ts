@@ -1,13 +1,13 @@
 import { ContractError } from '../enums/ContractError';
 
 /**
- * WriteResult<T, E>
+ * OperationResult<T, E>
  *
  * Standard result type for write operations (command side).
  *
  * PATTERN
  * -------
- * We use WriteResult to model *expected business/domain failures* as data,
+ * We use OperationResult to model *expected business/domain failures* as data,
  * instead of throwing exceptions.
  *
  * - success → ok(value)
@@ -36,8 +36,8 @@ import { ContractError } from '../enums/ContractError';
  * ----
  * resolver → write service → domain (AR) → repo
  *
- * - Domain + service layers may propagate WriteResult
- * - Resolver is the boundary that converts WriteResult → API response
+ * - Domain + service layers may propagate OperationResult
+ * - Resolver is the boundary that converts OperationResult → API response
  *
  * GOAL
  * ----
@@ -45,17 +45,19 @@ import { ContractError } from '../enums/ContractError';
  * while avoiding excessive Result plumbing in non-domain layers.
  */
 
-export type WriteResult<T = void, E = ContractError> =
+export type OperationResult<T = void, E = ContractError> =
   { success: true; value: T } | { success: false; error: E };
 
-export const ok = <T, E extends ContractError = ContractError>(value: T): WriteResult<T, E> => ({
+export const ok = <T, E extends ContractError = ContractError>(
+  value: T,
+): OperationResult<T, E> => ({
   success: true,
   value,
 });
 
 export const fail = <T = void, E extends ContractError = ContractError>(
   error: E,
-): WriteResult<T, E> => ({
+): OperationResult<T, E> => ({
   success: false,
   error,
 });
@@ -68,7 +70,7 @@ export type BatchResult<TIn, TOut, E = ContractError> = {
 
 export const WriteToBatch = <TIn, TOut, E = ContractError>(
   batch: BatchResult<TIn, TOut, E>,
-  result: WriteResult<TOut, E>,
+  result: OperationResult<TOut, E>,
   item: TIn,
 ) => {
   if (result.success) {

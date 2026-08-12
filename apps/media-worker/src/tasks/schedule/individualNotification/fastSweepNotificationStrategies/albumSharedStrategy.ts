@@ -1,4 +1,4 @@
-import { AsyncNotificationKind, UserStatus } from '@packages/contracts';
+import { AsyncNotificationKind } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
 import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
 import { Config } from '../../../../config';
@@ -26,9 +26,9 @@ export const build__AlbumSharedStrategy = ({
       if (!recipient?.email) {
         return { row, kind: 'skipped', reason: 'no recipient email' };
       }
-      if (recipient.userStatus.equals(UserStatus.pending)) {
-        return { row, kind: 'skipped', reason: 'User is pending' };
-      }
+      // if (recipient.userStatus.equals(UserStatus.pending)) {
+      //   return { row, kind: 'skipped', reason: 'User is pending' };
+      // }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.containerId);
       // An empty share is an upstream bug, not an email — don't send, just record it.

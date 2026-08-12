@@ -1,4 +1,4 @@
-import { EntityType, InAppNotificationType, ok, WriteResult } from '@packages/contracts';
+import { EntityType, InAppNotificationType, ok, OperationResult } from '@packages/contracts';
 import { InAppNotificationRepository } from '../../repositories/readRepositories/inAppNotificationRepository';
 import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';
@@ -16,9 +16,9 @@ export type ClearByIdsCommand = {
 };
 
 export interface MarkActivitySeen extends WriteServiceBase {
-  clearBySurface: (input: ClearBySurfaceCommand) => Promise<WriteResult<{ success: boolean }>>;
+  clearBySurface: (input: ClearBySurfaceCommand) => Promise<OperationResult<{ success: boolean }>>;
 
-  clearByIds: (input: ClearByIdsCommand) => Promise<WriteResult<{ success: boolean }>>;
+  clearByIds: (input: ClearByIdsCommand) => Promise<OperationResult<{ success: boolean }>>;
 }
 
 type MarkActivitySeenDeps = {

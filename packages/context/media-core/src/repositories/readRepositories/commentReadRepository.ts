@@ -42,7 +42,6 @@ export const build__CommentReadRepository = ({
         .offset(pageInfo.offset),
 
       { targetType: EntityType },
-      { strict: true },
     );
   },
   getByIdForAuthorization: async ({
@@ -56,7 +55,6 @@ export const build__CommentReadRepository = ({
         .where('id', commentId)
         .first<DBCommentRow>(...commentSelectColumns),
       { targetType: EntityType },
-      { strict: true },
     );
   },
 });

@@ -32,14 +32,16 @@ export const build__IntervalGate = ({
     const queueTasks = workerTasks.filter((x) => x.type === 'queue');
     const slowOpen = now - slowSweepSet.lastRun > slowSweepSet.interval;
     const fastOpen = now - fastSweepSet.lastRun > fastSweepSet.interval;
+    // debug, not info: these fire on every interval regardless of whether there
+    // is any work, and at dev sweep intervals they drown out real job logs.
     if (slowOpen) {
-      logger.info(
+      logger.debug(
         `[Interval-Gate] slow gate opened: intervalMs=${slowSweepSet.interval} msSinceLastFire=${slowSweepSet.lastRun - now}`,
       );
       slowSweepSet.lastRun = now;
     }
     if (fastOpen) {
-      logger.info(
+      logger.debug(
         `[Interval-Gate] fast gate opened: intervalMs=${fastSweepSet.interval} msSinceLastFire=${fastSweepSet.lastRun - now}`,
       );
       fastSweepSet.lastRun = now;

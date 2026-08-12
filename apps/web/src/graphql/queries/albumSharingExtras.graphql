@@ -1,0 +1,18 @@
+query AlbumSharingExtras($albumId: ID!) {
+  viewer {
+    id
+    album(id: $albumId) {
+      id
+      emailShares {
+        id
+        email
+        displayName
+        hasAccount
+        userId
+      }
+      publicLink {
+        token
+      }
+    }
+  }
+}

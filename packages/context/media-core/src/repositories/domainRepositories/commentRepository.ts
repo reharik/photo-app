@@ -18,7 +18,6 @@ export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): Commen
     const comment = await withEnumRevival(
       uow.db()<CommentRecord>('comment').where({ id }).first(),
       { targetType: EntityType },
-      { strict: true },
     );
 
     if (!comment) {
@@ -31,7 +30,6 @@ export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): Commen
         .where({ targetId: id, targetType: EntityType.comment })
         .orderBy('createdAt', 'asc'),
       { emoji: ReactionEmoji, targetType: EntityType },
-      { strict: true },
     );
 
     const childRecords = {

@@ -1,0 +1,35 @@
+mutation AddAlbumMembers($input: AddAlbumMembersInput!) {
+  AddAlbumMembers(input: $input) {
+    data {
+      albumId
+      albumMemberIds
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation RemoveAlbumMembers($input: RemoveAlbumMembersInput!) {
+  RemoveAlbumMembers(input: $input) {
+    data {
+      albumId
+      albumMemberIds
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}
+
+mutation UpdateAlbumMemberRole($input: UpdateAlbumMemberRoleInput!) {
+  UpdateAlbumMemberRole(input: $input) {
+    data {
+      albumMemberId
+      role
+    }
+    errors {
+      ...errorsFragment
+    }
+  }
+}

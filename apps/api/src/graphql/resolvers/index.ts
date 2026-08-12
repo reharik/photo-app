@@ -23,6 +23,7 @@ import { reactorResolvers } from './reactors/reactorResolver.js';
 import publicAccessResolver from './root/publicAccessResolver.js';
 import viewerMutationResolvers from './root/ViewerMutationResolver.js';
 import viewerResolvers from './root/viewerResolver.js';
+import scalarResolvers from './scalarResolvers.js';
 import sharedWithMeResolvers from './sharedWithMe/sharedWithMeResolver.js';
 
 /**
@@ -32,6 +33,7 @@ import sharedWithMeResolvers from './sharedWithMe/sharedWithMeResolver.js';
  * and Query fields fell through to default resolvers → nullable fields returned null.
  */
 export const resolvers = mergeResolvers([
+  scalarResolvers,
   albumMutationResolvers,
   albumResolvers,
   mediaItemUploadResolvers,

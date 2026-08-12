@@ -316,11 +316,11 @@ think manual cache writes are needed, stop and ask before implementing.
 
 ## Resolver Boundary Mapping
 
-- Write services return `WriteResult<T>` (a discriminated union of
+- Write services return `OperationResult<T>` (a discriminated union of
   success/value vs. failure/error). This shape stays in the service
   and application layers.
-- GraphQL mutation resolvers convert `WriteResult<T>` to the
-  `{ data, errors }` envelope using `writeResultToPayload(result)`.
+- GraphQL mutation resolvers convert `OperationResult<T>` to the
+  `{ data, errors }` envelope using `operationResultToPayload(result)`.
   Do NOT hand-roll the ternary at each resolver.
 - Do NOT have services return the `{ data, errors }` shape directly —
   that would leak transport concerns into the service layer.
