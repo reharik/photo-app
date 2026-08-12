@@ -33,6 +33,26 @@ import type { Knex } from 'knex';
  *
  * ⚠️ down() is LOSSY — origin cannot be reconstructed once dropped (that irrecoverability
  * is the entire reason the column exists).
+ *
+ * ── Legacy data note ────────────────────────────────────────────────────────────────────
+ * An earlier revision of this migration left PUBLIC rows NULL on purpose, so the NOT NULL
+ * alter would fail loudly rather than invent a classification. Against prod it did exactly
+ * that, which was the design working — and it surfaced two facts that make the correct
+ * classification unambiguous:
+ *
+ *   1. Every pre-existing row predates the pending-user conversion flow, so NOTHING can
+ *      legitimately be 'CONVERTED'. All existing rows are 'OWNER' by construction.
+ *
+ *   2. The old "create shareable link" action minted a FRESH token on every click, so an
+ *      album can hold several live public tokens (prod had one album with four, all minted
+ *      within four hours of each other and all carrying {DOWNLOAD,COMMENT} — an operation
+ *      set the current view-only model no longer produces). The canonical-link model allows
+ *      exactly one live OWNER token per album, so the surplus must be revoked or the partial
+ *      unique index below cannot be created.
+ *
+ * The backfill therefore keeps the NEWEST public token per album as the canonical OWNER link
+ * and revokes the rest. Revoked rows still receive origin = 'OWNER' because the column is
+ * NOT NULL; the index ignores them via its revoked_at clause.
  */
 export const up = async (knex: Knex): Promise<void> => {
   // Nullable first, backfill, then tighten (the 0019/0024 pattern). Adding a NOT NULL
@@ -41,11 +61,47 @@ export const up = async (knex: Knex): Promise<void> => {
     table.string('origin', 32).nullable();
   });
 
-  // USER and PENDING rows are never converted, so 'OWNER' is the honest value for them.
-  // PUBLIC rows cannot be classified — that unclassifiability is what this migration
-  // exists to fix — so they are left NULL on purpose: the NOT NULL alter below then fails
-  // loudly rather than this migration inventing a classification.
+  // USER and PENDING rows are never converted — 'OWNER' is the honest value.
   await knex('access_grant').whereIn('kind', ['USER', 'PENDING']).update({ origin: 'OWNER' });
+
+  // PUBLIC rows: keep the newest live token per album as the canonical OWNER link.
+  await knex.raw(`
+    WITH ranked AS (
+      SELECT id, row_number() OVER (PARTITION BY album_id ORDER BY created_at DESC) AS rn
+      FROM access_grant
+      WHERE kind = 'PUBLIC' AND revoked_at IS NULL
+    )
+    UPDATE access_grant
+    SET origin = 'OWNER'
+    WHERE id IN (SELECT id FROM ranked WHERE rn = 1)
+  `);
+
+  // Surplus live public tokens from the old mint-per-click behaviour: revoke them. They keep
+  // origin = 'OWNER' (NOT NULL) but drop out of the partial unique index via revoked_at.
+  await knex.raw(`
+    WITH ranked AS (
+      SELECT id, row_number() OVER (PARTITION BY album_id ORDER BY created_at DESC) AS rn
+      FROM access_grant
+      WHERE kind = 'PUBLIC' AND revoked_at IS NULL
+    )
+    UPDATE access_grant
+    SET origin = 'OWNER', revoked_at = now()
+    WHERE id IN (SELECT id FROM ranked WHERE rn > 1)
+  `);
+
+  // Grant rows for the tokens just revoked must go with them. Revocation without projection
+  // teardown fails OPEN — the authorization reads as revoked while `grant` still permits
+  // access, and the lazy-on-read reconciler cannot heal it (it detects MISSING grants, not
+  // EXTRA ones). Same transaction as the revoke, by the same reasoning the revoke services use.
+  await knex.raw(`
+    DELETE FROM "grant"
+    WHERE access_grant_id IN (
+      SELECT id FROM access_grant WHERE kind = 'PUBLIC' AND revoked_at IS NOT NULL
+    )
+  `);
+
+  // Any PUBLIC row already revoked before this migration ran still needs a value.
+  await knex('access_grant').whereNull('origin').update({ origin: 'OWNER' });
 
   await knex.schema.alterTable('access_grant', (table) => {
     table.string('origin', 32).notNullable().alter();
@@ -58,7 +114,9 @@ export const up = async (knex: Knex): Promise<void> => {
   `);
 };
 
-// Lossy: origin cannot be reconstructed once dropped — see the header note.
+// Lossy: origin cannot be reconstructed once dropped — see the header note. The revocations
+// and grant deletions performed by up() are NOT undone; they were data corrections, not
+// schema changes, and the pre-existing surplus tokens are not recoverable.
 export const down = async (knex: Knex): Promise<void> => {
   await knex.raw('DROP INDEX access_grant_album_canonical_public_link_unique');
 
