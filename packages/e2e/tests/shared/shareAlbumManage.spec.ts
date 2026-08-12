@@ -108,9 +108,7 @@ test.describe('Share album management', () => {
 
     await test.step('removing the member falls back to the surviving view grant', async () => {
       const reopened = userA.page.getByRole('dialog', { name: 'Share album' });
-      await reopened
-        .getByRole('button', { name: `Remove ${RECIPIENT_NAME} from album` })
-        .click();
+      await reopened.getByRole('button', { name: `Remove ${RECIPIENT_NAME} from album` }).click();
       await userA.page.getByRole('button', { name: 'Remove', exact: true }).click();
       await expectToast(userA.page, 'Removed from album');
       // Promotion never revoked the original access_grant, so once membership

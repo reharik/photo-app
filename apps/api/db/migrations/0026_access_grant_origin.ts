@@ -45,9 +45,7 @@ export const up = async (knex: Knex): Promise<void> => {
   // PUBLIC rows cannot be classified — that unclassifiability is what this migration
   // exists to fix — so they are left NULL on purpose: the NOT NULL alter below then fails
   // loudly rather than this migration inventing a classification.
-  await knex('access_grant')
-    .whereIn('kind', ['USER', 'PENDING'])
-    .update({ origin: 'OWNER' });
+  await knex('access_grant').whereIn('kind', ['USER', 'PENDING']).update({ origin: 'OWNER' });
 
   await knex.schema.alterTable('access_grant', (table) => {
     table.string('origin', 32).notNullable().alter();

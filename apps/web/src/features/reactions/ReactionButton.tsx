@@ -1,5 +1,4 @@
 import { EntityType, ReactionEmoji } from '@packages/contracts';
-import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import { JSX } from 'react';
 import styled from 'styled-components';
@@ -45,7 +44,7 @@ export const ReactionButton = ({
       >
         <ReactionIcon
           aria-hidden
-          name={emoji.iconName as IconName}
+          name={emoji.iconName}
           $reacted={hasReaction}
           $fillColor={emoji.fillColor}
         />

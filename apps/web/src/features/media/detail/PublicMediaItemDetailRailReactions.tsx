@@ -1,5 +1,4 @@
 import { ReactionEmoji } from '@packages/contracts';
-import type { IconName } from 'lucide-react/dynamic';
 import { DynamicIcon } from 'lucide-react/dynamic';
 import type { JSX } from 'react';
 import styled from 'styled-components';
@@ -30,11 +29,7 @@ export const PublicMediaItemDetailRailReactions = ({
 
   return (
     <Root>
-      <HeartIcon
-        aria-hidden
-        name={heartEmoji.iconName as IconName}
-        $fillColor={heartEmoji.fillColor}
-      />
+      <HeartIcon aria-hidden name={heartEmoji.iconName} $fillColor={heartEmoji.fillColor} />
       <CountText>{formatPublicReactionCount(heartCount)}</CountText>
     </Root>
   );
