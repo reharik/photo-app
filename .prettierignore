@@ -29,6 +29,10 @@ packages/foundation/contracts/src/types/index.ts
 packages/foundation/infrastructure/src/logger/index.ts
 packages/foundation/infrastructure/src/utilities/index.ts
 
+# Committed generated files
+packages/foundation/contracts/src/enums/graphqlSmartEnums.ts
+packages/foundation/contracts/src/enums/graphqlSmartEnumsRegistry.ts
+
 # Transient artifacts (should not be committed either — see .gitignore)
 /graph.json
 /stdout.json
