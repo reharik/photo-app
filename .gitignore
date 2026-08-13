@@ -51,3 +51,4 @@ caddy_config/
 
 # Optional loose schema file at repo root (API schema is tracked at apps/api/.../schema.graphql)
 /schema.graphql
+.obsidian/

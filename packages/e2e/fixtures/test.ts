@@ -68,6 +68,10 @@ export const test = base.extend<Fixtures>({
       await use(session);
     } finally {
       try {
+        // Contributor specs have B upload media of their own, so B needs the
+        // owned-rows sweep too — deleting B's media_item rows cascades the
+        // album_item rows they contributed to A's albums.
+        await cleanupOwnedRows(session.userId);
         await cleanupGrantsToRecipient(session.userId);
       } finally {
         await session.context.close();

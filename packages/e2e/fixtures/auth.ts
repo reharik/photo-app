@@ -23,6 +23,12 @@ export const resetLoginRateLimit = async (email: string): Promise<void> => {
  * login UI itself.
  *
  * Use `loginViaUi` when the test actually exercises the login screen.
+ *
+ * This MUST stay a real POST to /api/auth/login with the server setting the
+ * cookie. Never hand-construct a synthetic token/cookie here — that's how this
+ * helper drifts from what real auth does without any test failing.
+ * foundation.spec.ts deliberately keeps the UI login path as the canary for
+ * that drift.
  */
 export const loginViaApi = async (context: BrowserContext, user: TestUser): Promise<void> => {
   await resetLoginRateLimit(user.email);
