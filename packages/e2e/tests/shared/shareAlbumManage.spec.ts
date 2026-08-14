@@ -21,9 +21,6 @@ import { setup } from '../../routines/setup';
  * TAKES access away or changes its shape.
  */
 
-/** How the seeded USER_B renders in member rows (firstName + lastName). */
-const RECIPIENT_NAME = 'E2e Recipient';
-
 test.describe('Share album management', () => {
   test('removing access revokes the grant end to end', async ({
     userA,
@@ -70,6 +67,8 @@ test.describe('Share album management', () => {
     uniqueSuffix,
   }) => {
     const [a] = await setup(grabTestImages, userA, 1);
+    // Member rows render "firstName lastName" — derive from the per-test user.
+    const recipientName = userB.user.displayName;
     const albumTitle = `e2e-manage-roles-${uniqueSuffix}`;
     await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id]);
     const dialog = await openShareAlbumModal(userA.page);
@@ -85,13 +84,13 @@ test.describe('Share album management', () => {
       await userA.page.getByRole('button', { name: 'Make contributor' }).click();
       await expectToast(userA.page, 'Added as a member');
       await expect(
-        dialog.getByRole('button', { name: `Change role for ${RECIPIENT_NAME}` }),
+        dialog.getByRole('button', { name: `Change role for ${recipientName}` }),
       ).toContainText('Contributor');
     });
 
     await test.step('change the member role to admin', async () => {
       const roleTrigger = dialog.getByRole('button', {
-        name: `Change role for ${RECIPIENT_NAME}`,
+        name: `Change role for ${recipientName}`,
       });
       await roleTrigger.click();
       await userA.page.getByRole('menuitem', { name: 'Admin' }).click();
@@ -102,20 +101,20 @@ test.describe('Share album management', () => {
       await closeShareAlbumModal(userA.page);
       const reopened = await openShareAlbumModal(userA.page);
       await expect(
-        reopened.getByRole('button', { name: `Change role for ${RECIPIENT_NAME}` }),
+        reopened.getByRole('button', { name: `Change role for ${recipientName}` }),
       ).toContainText('Admin');
     });
 
     await test.step('removing the member falls back to the surviving view grant', async () => {
       const reopened = userA.page.getByRole('dialog', { name: 'Share album' });
-      await reopened.getByRole('button', { name: `Remove ${RECIPIENT_NAME} from album` }).click();
+      await reopened.getByRole('button', { name: `Remove ${recipientName} from album` }).click();
       await userA.page.getByRole('button', { name: 'Remove', exact: true }).click();
       await expectToast(userA.page, 'Removed from album');
       // Promotion never revoked the original access_grant, so once membership
       // is gone the person reappears in SHARED WITH under that grant.
       await expect(removeAccessButton(reopened, userB.user.email)).toBeVisible();
       await expect(
-        reopened.getByRole('button', { name: `Change role for ${RECIPIENT_NAME}` }),
+        reopened.getByRole('button', { name: `Change role for ${recipientName}` }),
       ).toHaveCount(0);
     });
   });

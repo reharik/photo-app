@@ -3,12 +3,11 @@ import { getDb } from './db';
 import type { TestUser } from './users';
 
 /**
- * Clears the `login:attempt` throttle rows for one email. The api throttles login
- * to 5 / 15 min per email, and `rate_limit_event` rows persist across runs against
- * the shared dev DB. Nearly every test logs the seed users in through `setup()`, so
- * without this the counter accumulates across specs and trips ("Too many attempts")
- * partway through the suite — typically by the time the shared tests run. Keyed to
- * the login bucket + this email so it never touches unrelated bookkeeping.
+ * Clears the `login:attempt` throttle rows for one email (5 / 15 min per email;
+ * successful logins count too). With per-test factory users this is normally a
+ * no-op — each attempt gets a fresh email — but it's kept as cheap insurance for
+ * any caller that logs the same identity in repeatedly. Keyed to the login
+ * bucket + this email so it never touches other workers' bookkeeping.
  */
 export const resetLoginRateLimit = async (email: string): Promise<void> => {
   await getDb()('rate_limit_event')
@@ -23,6 +22,12 @@ export const resetLoginRateLimit = async (email: string): Promise<void> => {
  * login UI itself.
  *
  * Use `loginViaUi` when the test actually exercises the login screen.
+ *
+ * This MUST stay a real POST to /api/auth/login with the server setting the
+ * cookie. Never hand-construct a synthetic token/cookie here — that's how this
+ * helper drifts from what real auth does without any test failing.
+ * foundation.spec.ts deliberately keeps the UI login path as the canary for
+ * that drift.
  */
 export const loginViaApi = async (context: BrowserContext, user: TestUser): Promise<void> => {
   await resetLoginRateLimit(user.email);

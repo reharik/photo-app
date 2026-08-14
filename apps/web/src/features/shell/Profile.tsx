@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { ShellUserAvatar } from './ShellUserAvatar';
 
 export type ProfileProps = {
@@ -15,6 +16,7 @@ export type ProfileProps = {
 export const Profile = (props: ProfileProps) => {
   const { displayName, variant, mobileMenuOpen = false, onMobileMenuToggle } = props;
   const { logout } = useAuth();
+  const { canInstall, promptInstall } = useInstallPrompt();
   const navigate = useNavigate();
 
   const handleLogout = async (): Promise<void> => {
@@ -48,7 +50,18 @@ export const Profile = (props: ProfileProps) => {
             role="menu"
             aria-labelledby="app-shell-profile-trigger"
           >
-            <SignOutMenuItem
+            {canInstall ? (
+              <ProfileMenuItem
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  void promptInstall();
+                }}
+              >
+                Install app
+              </ProfileMenuItem>
+            ) : null}
+            <ProfileMenuItem
               type="button"
               role="menuitem"
               onClick={() => {
@@ -56,7 +69,7 @@ export const Profile = (props: ProfileProps) => {
               }}
             >
               Sign out
-            </SignOutMenuItem>
+            </ProfileMenuItem>
           </ProfileDropdown>
         ) : null}
       </MobileProfileRoot>
@@ -83,7 +96,18 @@ export const Profile = (props: ProfileProps) => {
           role="menu"
           aria-labelledby="app-shell-profile-trigger-desktop"
         >
-          <SignOutMenuItem
+          {canInstall ? (
+            <ProfileMenuItem
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                void promptInstall();
+              }}
+            >
+              Install app
+            </ProfileMenuItem>
+          ) : null}
+          <ProfileMenuItem
             type="button"
             role="menuitem"
             onClick={() => {
@@ -91,7 +115,7 @@ export const Profile = (props: ProfileProps) => {
             }}
           >
             Sign out
-          </SignOutMenuItem>
+          </ProfileMenuItem>
         </ProfileDropdown>
       ) : null}
     </DesktopProfileRoot>
@@ -148,7 +172,7 @@ const ProfileDropdown = styled.div`
   z-index: 40;
 `;
 
-const SignOutMenuItem = styled.button`
+const ProfileMenuItem = styled.button`
   display: block;
   width: 100%;
   margin: 0;

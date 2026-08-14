@@ -48,11 +48,21 @@ export const build__MediaGrantService = ({
       token,
     });
 
-    if (!granted) {
-      return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
+    if (granted) {
+      return ok(buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id));
     }
 
-    const baseStorageKey = buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id);
-    return ok(baseStorageKey);
+    if (viewerId) {
+      const memberGrant = await grantReadRepository.hasAlbumMembershipForMediaItem({
+        mediaItemId: mediaId,
+        viewerId,
+      });
+
+      if (memberGrant) {
+        return ok(buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id));
+      }
+    }
+
+    return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
   },
 });

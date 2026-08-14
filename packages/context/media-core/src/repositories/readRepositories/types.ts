@@ -109,10 +109,16 @@ export type HasActiveAccessGrantPermissionInput = {
   operation: Operation;
 };
 
+export type HasAlbumMembershipForMediaItemInput = {
+  mediaItemId: string;
+  viewerId: string;
+};
+
 export type GrantReadRepository = {
   hasActiveGrant: (input: HasActiveGrantInput) => Promise<boolean>;
   hasActiveGrantPermission: (input: HasActiveGrantPermissionInput) => Promise<boolean>;
   hasActiveAccessGrantPermission: (input: HasActiveAccessGrantPermissionInput) => Promise<boolean>;
+  hasAlbumMembershipForMediaItem: (input: HasAlbumMembershipForMediaItemInput) => Promise<boolean>;
 };
 
 export type AlbumReadRepository = {

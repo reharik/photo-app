@@ -1,10 +1,10 @@
 import { test as base, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { cleanupGrantsToRecipient, cleanupOwnedRows } from './cleanup';
-import { closeDb, getUserIdByEmail } from './db';
+import { cleanupTestUser } from './cleanup';
+import { closeDb } from './db';
 // Import disabled alongside the afterAll SES clear below (kept for easy re-enable).
 // import { clearLocalStackSesMessages } from './localstackSes';
 import { grabTestImages, type GrabTestImagesResult } from './testAssets';
-import { USER_A, USER_B, type TestUser } from './users';
+import { buildTestUser, insertTestUser, type TestUser, type TestUserRole } from './users';
 
 export type UserSession = {
   user: TestUser;
@@ -32,10 +32,20 @@ type Fixtures = {
   grabTestImages: (count: number) => GrabTestImagesResult[];
 };
 
-const makeSession = async (browser: Browser, user: TestUser): Promise<UserSession> => {
+/**
+ * Creates a fresh user row for THIS test (and this retry attempt — the
+ * uniqueSuffix changes per attempt, so CI retries never reuse an email or its
+ * rate-limit counters), plus a fresh browser context.
+ */
+const makeSession = async (
+  browser: Browser,
+  role: TestUserRole,
+  uniqueSuffix: string,
+): Promise<UserSession> => {
+  const user = buildTestUser(role, uniqueSuffix);
+  const userId = await insertTestUser(user);
   const context = await browser.newContext();
   const page = await context.newPage();
-  const userId = await getUserIdByEmail(user.email);
   return { user, context, page, userId, box: true };
 };
 
@@ -49,26 +59,28 @@ export const test = base.extend<Fixtures>({
     await use((count: number) => grabTestImages(count, uniqueSuffix));
   },
 
-  userA: async ({ browser }, use) => {
-    const session = await makeSession(browser, USER_A);
+  userA: async ({ browser, uniqueSuffix }, use) => {
+    const session = await makeSession(browser, 'owner', uniqueSuffix);
     try {
       await use(session);
     } finally {
       try {
-        await cleanupOwnedRows(session.userId);
+        await cleanupTestUser(session.userId);
       } finally {
         await session.context.close();
       }
     }
   },
 
-  userB: async ({ browser }, use) => {
-    const session = await makeSession(browser, USER_B);
+  userB: async ({ browser, uniqueSuffix }, use) => {
+    const session = await makeSession(browser, 'recipient', uniqueSuffix);
     try {
       await use(session);
     } finally {
       try {
-        await cleanupGrantsToRecipient(session.userId);
+        // Deleting the user row cascades B's own media (contributor specs have
+        // B upload) AND both grant directions — no recipient-side sweep needed.
+        await cleanupTestUser(session.userId);
       } finally {
         await session.context.close();
       }

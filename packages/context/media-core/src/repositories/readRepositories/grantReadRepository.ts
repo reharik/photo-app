@@ -3,6 +3,7 @@ import type {
   HasActiveAccessGrantPermissionInput,
   HasActiveGrantInput,
   HasActiveGrantPermissionInput,
+  HasAlbumMembershipForMediaItemInput,
   ReadRepositoryDeps,
 } from './types';
 
@@ -42,6 +43,15 @@ export const build__GrantReadRepository = ({
         expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', database.fn.now());
       })
       .andWhereRaw('? = ANY(COALESCE("grant".operations, ag.operations))', [input.operation.value])
+      .first();
+  },
+  hasAlbumMembershipForMediaItem: (
+    input: HasAlbumMembershipForMediaItemInput,
+  ): Promise<boolean> => {
+    return database('albumItem')
+      .join('albumMember', 'albumMember.albumId', 'albumItem.albumId')
+      .where('albumItem.mediaItemId', input.mediaItemId)
+      .where('albumMember.userId', input.viewerId)
       .first();
   },
 });

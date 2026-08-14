@@ -23,16 +23,40 @@ export const authTestEmail = (prefix: string, kind = 'user'): string =>
 export const AUTH_PASSWORD = 'newPassword9';
 
 /**
- * Resets throttle bookkeeping and removes users a suite created (matched by email prefix).
- * The verification endpoints throttle by IP (30 / 15 min) and email (5 / 15 min) and login
- * by email (5 / 15 min); `rate_limit_event` rows persist across runs against the shared dev
- * DB, so without wiping them a few reruns silently trip a limit and no code is ever emailed.
- * Every FK into `user` is ON DELETE CASCADE, so deleting the user row also clears its grants,
- * authorizations, share-contacts, and pending notifications.
+ * Drains the IP-keyed 'email_verification:issue' throttle bucket (30 / 15 min —
+ * loopback for everyone locally, since app.proxy is false outside prod). The api
+ * has NO sweep job for `rate_limit_event`, so this is the bucket's ONLY drain;
+ * without it the third back-to-back run inside 15 minutes trips the limit —
+ * which returns a blind 200 and silently sends no code, surfacing 30s later as
+ * an unrelated-looking SES poll timeout.
+ *
+ * Deliberately NOT per-test-scoped: the bucket is shared by nature (one IP for
+ * every local worker). Deleting its rows can only RELIEVE a counter that would
+ * otherwise block, so a worker draining it mid-sibling-test is harmless —
+ * unlike the identity cleanup below, which must never see another test's rows.
  */
-export const resetAuthState = async (emailPrefix: string): Promise<void> => {
+export const drainIpVerificationBucket = async (): Promise<void> => {
+  await getDb()('rate_limit_event').where({ bucket: 'email_verification:issue' }).delete();
+};
+
+/**
+ * Removes the identities ONE test created, matched by that test's own email
+ * prefix — the prefix must embed `uniqueSuffix` (see each spec's `prefixFor`)
+ * so this can never match a sibling test's in-flight rows. The per-FILE prefix
+ * version of this ran in beforeEach/afterAll and, under fullyParallel, each
+ * worker re-ran the file's hooks and deleted other workers' in-flight users
+ * mid-test (the Phase 2c parallelism failure). Keep it per-test.
+ *
+ * Every FK into `user` is ON DELETE CASCADE, so deleting the user row also
+ * clears its grants, authorizations, share-contacts, and pending notifications.
+ * Email-keyed rate-limit rows for these throwaway addresses are cleared too —
+ * they'd otherwise accumulate forever (no api-side sweep). One residue this
+ * does NOT cover: a run killed mid-test leaves that test's rows behind, since
+ * no later run shares its prefix. Unique emails make those orphans inert.
+ */
+export const cleanupAuthIdentities = async (emailPrefix: string): Promise<void> => {
   const db = getDb();
-  await db('rate_limit_event').delete();
+  await db('rate_limit_event').where('key', 'like', `${emailPrefix}-%`).delete();
 
   const users = await db<{ id: string }>('user')
     .where('email', 'like', `${emailPrefix}-%`)

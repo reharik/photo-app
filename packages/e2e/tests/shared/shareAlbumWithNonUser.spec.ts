@@ -22,21 +22,22 @@ import {
 import { expect, test } from '../../fixtures/test';
 import { setup } from '../../routines/setup';
 
-// Shared with the items non-user spec; both reuse this fixed address, so each resets
-// the shadow user it leaves behind (see cleanupRecipientByEmail) before running.
-const RECIPIENT_EMAIL = 'nonUser@email.com';
+// Per-test unique (uniqueSuffix embeds the worker index): a fixed address here
+// would let concurrent tests delete each other's in-flight shadow user and match
+// each other's invite mail in the shared SES store. Must stay lowercase — the
+// share flow creates a `user` row from it and email has a lowercase CHECK.
+const recipientEmailFor = (uniqueSuffix: string): string =>
+  `nonuser-album-${uniqueSuffix}@example.test`;
 
 /**
  * Scenario 2 — Share an album with a non-user email.
  */
 test.describe('Share an album with an email that is not a user', () => {
-  test.beforeEach(async () => {
-    // Reset the shadow user, which cascades away any un-sent pending notification so no
-    // stale invite to RECIPIENT_EMAIL can still be delivered. Both non-user specs reuse
-    // this address; the poll below matches the first email to it AFTER a per-test
-    // baseline (see sesBaseline), so already-delivered invites are ignored without
-    // deleting them.
-    await cleanupRecipientByEmail(RECIPIENT_EMAIL);
+  test.afterEach(async ({ uniqueSuffix }) => {
+    // The recipient email is unique per test, so this isn't defending against
+    // cross-spec reuse — it stops the shadow user (and its pending grant rows)
+    // this test minted from accumulating in the shared dev DB run after run.
+    await cleanupRecipientByEmail(recipientEmailFor(uniqueSuffix));
   });
 
   test.describe('When User A shares a multi-item album with User X', () => {
@@ -50,14 +51,14 @@ test.describe('Share an album with an email that is not a user', () => {
       const [a, b, c, d] = await setup(grabTestImages, userA, 4);
 
       const albumTitle = `e2e-share-album-${uniqueSuffix}`;
-      const recipientEmail = RECIPIENT_EMAIL;
+      const recipientEmail = recipientEmailFor(uniqueSuffix);
 
       await addMediaItemsToNewAlbum(userA.page, albumTitle, [a.id, b.id]);
 
       const shareDialog = await openShareAlbumModal(userA.page);
-      // Only mail sent after this share counts — ignores any earlier invite to the
-      // reused RECIPIENT_EMAIL without wiping the SES store. Captured BEFORE the
-      // commit: on the one-surface modal the share fires the moment Enter lands.
+      // Only mail sent after this share counts, without wiping the shared SES
+      // store. Captured BEFORE the commit: on the one-surface modal the share
+      // fires the moment Enter lands.
       const sesBaseline = await countLocalStackSesMessages(request);
       await commitShareEmail(shareDialog, recipientEmail);
       await closeShareAlbumModal(userA.page);

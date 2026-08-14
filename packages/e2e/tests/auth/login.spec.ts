@@ -1,7 +1,5 @@
-import { resetLoginRateLimit } from '../../fixtures/auth';
 import { expectLoggedIn } from '../../fixtures/authFlows';
 import { expect, test } from '../../fixtures/test';
-import { USER_A } from '../../fixtures/users';
 
 /**
  * A1 — the login SCREEN as a subject (not the `loginViaApi`/`loginViaUi` setup helpers).
@@ -13,16 +11,15 @@ import { USER_A } from '../../fixtures/users';
  *
  * The login rate-limit ("Too many attempts", 5 / 15 min) is deliberately NOT exercised here:
  * provoking it needs five real submissions and pollutes the shared `rate_limit_event` table
- * for little branch value over the wrong/unknown/valid outcomes below.
+ * for little branch value over the wrong/unknown/valid outcomes below. The three attempts
+ * this journey makes land on a per-test fresh email, so no reset is needed either.
+ *
+ * `userA` supplies the real account (created fresh for this test); the form itself is
+ * driven on the anonymous page.
  */
 test.describe('Login screen', () => {
-  test.beforeEach(async () => {
-    // The valid attempt at the end counts against USER_A's login bucket; clear it so repeated
-    // suite runs don't accumulate toward the 5/15min lockout mid-journey.
-    await resetLoginRateLimit(USER_A.email);
-  });
-
   test('rejects bad credentials existence-blindly, then a correct password logs in', async ({
+    userA,
     anonPage,
   }) => {
     await anonPage.goto('/login');
@@ -43,7 +40,7 @@ test.describe('Login screen', () => {
     });
 
     await test.step('Wrong password for a REAL email returns the identical message', async () => {
-      await email.fill(USER_A.email);
+      await email.fill(userA.user.email);
       await password.fill('definitely-the-wrong-password');
       await signIn.click();
       await expect(errorText).toBeVisible();
@@ -51,7 +48,7 @@ test.describe('Login screen', () => {
     });
 
     await test.step('Correct credentials log in', async () => {
-      await password.fill(USER_A.password);
+      await password.fill(userA.user.password);
       await signIn.click();
       await expectLoggedIn(anonPage);
     });

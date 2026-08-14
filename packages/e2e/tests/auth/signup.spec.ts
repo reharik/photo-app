@@ -3,8 +3,9 @@ import type { Page } from '@playwright/test';
 import {
   AUTH_PASSWORD,
   authTestEmail,
+  cleanupAuthIdentities,
+  drainIpVerificationBucket,
   expectLoggedIn,
-  resetAuthState,
   startSignup,
   waitForVerificationCode,
 } from '../../fixtures/authFlows';
@@ -29,6 +30,9 @@ import { setup } from '../../routines/setup';
 
 const EMAIL_PREFIX = 'rai76-signup';
 
+/** Per-test email prefix: embeds uniqueSuffix so cleanup only matches this test's rows. */
+const prefixFor = (uniqueSuffix: string): string => `${EMAIL_PREFIX}-${uniqueSuffix}`;
+
 /** Fill the details-step fields without submitting, so a test can re-submit to retry. */
 const fillDetails = async (
   page: Page,
@@ -49,19 +53,25 @@ const clickCreateAccount = (page: Page): Promise<void> =>
   page.getByRole('button', { name: 'Create Account' }).click();
 
 test.describe('Signup (email → code → password)', () => {
+  // Only relieves a counter shared by every worker (same loopback IP) — safe to
+  // run per-test even while sibling tests are mid-flight in other workers.
   test.beforeEach(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+    await drainIpVerificationBucket();
   });
 
-  test.afterAll(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+  // Per-test scope: the prefix embeds uniqueSuffix, so this delete can only
+  // ever match THIS test's identities. A per-file prefix here ran on every
+  // worker under fullyParallel and deleted sibling tests' in-flight users.
+  test.afterEach(async ({ uniqueSuffix }) => {
+    await cleanupAuthIdentities(prefixFor(uniqueSuffix));
   });
 
   test('journey: existence-blind email step, name + code errors recover, resend completes signup', async ({
     anonPage,
     request,
+    uniqueSuffix,
   }) => {
-    const email = authTestEmail(EMAIL_PREFIX);
+    const email = authTestEmail(prefixFor(uniqueSuffix));
 
     await test.step('email step is existence-blind and advances to the details step', async () => {
       await startSignup(anonPage, email);
@@ -123,9 +133,10 @@ test.describe('Signup (email → code → password)', () => {
     anonPage,
     request,
     grabTestImages,
+    uniqueSuffix,
   }) => {
     const [item] = await setup(grabTestImages, userA, 1);
-    const email = authTestEmail(EMAIL_PREFIX, 'pending');
+    const email = authTestEmail(prefixFor(uniqueSuffix), 'pending');
 
     // User A shares the item with a not-yet-registered email → mints a pending (shadow) user
     // plus a pending grant to them.

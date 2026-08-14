@@ -35,16 +35,3 @@ export const closeDb = async (): Promise<void> => {
     cached = undefined;
   }
 };
-
-type UserRow = { id: string; email: string };
-
-export const getUserIdByEmail = async (email: string): Promise<string> => {
-  const db = getDb();
-  const row = await db<UserRow>('user').where({ email }).first('id');
-  if (!row) {
-    throw new Error(
-      `Test user "${email}" not found. Run the api db seeds first (npm run db:seed:local --workspace=@app/api).`,
-    );
-  }
-  return row.id;
-};

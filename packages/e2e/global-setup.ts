@@ -1,14 +1,22 @@
-// eslint-disable-next-line @nx/enforce-module-boundaries -- e2e setup seeds the api's users directly; apps/api exposes no package entry for this helper.
-import { ensureSeedUsers } from '../../apps/api/db/seedUsers';
-
 import { closeDb, getDb } from './fixtures/db';
 
 /**
- * Ensures api seed users exist before e2e runs (integration tests may truncate `user`).
+ * Tests create their own users per test (see `fixtures/users.ts`), so no seed
+ * data is required here anymore. This just fails fast, with a clear error,
+ * when Postgres isn't reachable — the alternative is 25 tests each timing out
+ * in their user-factory fixture.
  */
 const globalSetup = async (): Promise<void> => {
-  await ensureSeedUsers(getDb());
-  await closeDb();
+  try {
+    await getDb().raw('select 1');
+  } catch (error) {
+    throw new Error(
+      `E2e global setup could not reach Postgres (${String(error)}). ` +
+        'Is the local stack running? See packages/e2e/README.md.',
+    );
+  } finally {
+    await closeDb();
+  }
 };
 
 export default globalSetup;

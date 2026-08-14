@@ -2,7 +2,7 @@ import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { copyFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loginViaUi } from './auth';
+import { loginViaApi } from './auth';
 import { E2E_ASSETS_DIR, grabTestImages, GrabTestImagesResult } from './testAssets';
 import type { TestUser } from './users';
 
@@ -58,13 +58,16 @@ export const expectLibraryPage = async (page: Page): Promise<void> => {
 /**
  * Signs in, opens the recent-media screen, and waits until the shell is ready.
  * Auth uses the API (fast setup); the screen under test is always the UI.
+ * `expectLibraryPage` re-asserts the authenticated shell ("Recent" nav link +
+ * upload input) — the same readiness signal `loginViaUi` waits for — so this
+ * must not return before the app is actually navigable.
  */
 export const loginAndOpenLibrary = async (
   page: Page,
   context: BrowserContext,
   user: TestUser,
 ): Promise<void> => {
-  await loginViaUi(page, user);
+  await loginViaApi(context, user);
   await page.goto('/media');
   await expectLibraryPage(page);
 };

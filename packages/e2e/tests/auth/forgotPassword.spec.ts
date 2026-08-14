@@ -5,8 +5,9 @@ import { logoutViaApi } from '../../fixtures/auth';
 import {
   AUTH_PASSWORD,
   authTestEmail,
+  cleanupAuthIdentities,
+  drainIpVerificationBucket,
   expectLoggedIn,
-  resetAuthState,
   startSignup,
   waitForVerificationCode,
 } from '../../fixtures/authFlows';
@@ -33,6 +34,9 @@ import { setup } from '../../routines/setup';
  */
 
 const EMAIL_PREFIX = 'rai-forgot';
+
+/** Per-test email prefix: embeds uniqueSuffix so cleanup only matches this test's rows. */
+const prefixFor = (uniqueSuffix: string): string => `${EMAIL_PREFIX}-${uniqueSuffix}`;
 
 /** Drive the forgot-password email step and return once the code step is showing. */
 const requestPasswordReset = async (page: Page, email: string): Promise<void> => {
@@ -63,19 +67,25 @@ const shareNewAlbumWithEmail = async (
 };
 
 test.describe('Forgot-password door', () => {
+  // Only relieves a counter shared by every worker (same loopback IP) — safe to
+  // run per-test even while sibling tests are mid-flight in other workers.
   test.beforeEach(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+    await drainIpVerificationBucket();
   });
 
-  test.afterAll(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+  // Per-test scope: the prefix embeds uniqueSuffix, so this delete can only
+  // ever match THIS test's identities. A per-file prefix here ran on every
+  // worker under fullyParallel and deleted sibling tests' in-flight users.
+  test.afterEach(async ({ uniqueSuffix }) => {
+    await cleanupAuthIdentities(prefixFor(uniqueSuffix));
   });
 
   test('journey: never-registered email — code error hides names, valid code reveals them, same code resubmits', async ({
     anonPage,
     request,
+    uniqueSuffix,
   }) => {
-    const email = authTestEmail(EMAIL_PREFIX, 'new');
+    const email = authTestEmail(prefixFor(uniqueSuffix), 'new');
     await requestPasswordReset(anonPage, email);
     const code = await waitForVerificationCode(request, email);
     const { first, last } = nameFields(anonPage);
@@ -130,7 +140,7 @@ test.describe('Forgot-password door', () => {
     uniqueSuffix,
   }) => {
     const [a, b] = await setup(grabTestImages, userA, 2);
-    const email = authTestEmail(EMAIL_PREFIX, 'pending');
+    const email = authTestEmail(prefixFor(uniqueSuffix), 'pending');
 
     const albumId = await shareNewAlbumWithEmail(
       userA.page,
@@ -171,8 +181,9 @@ test.describe('Forgot-password door', () => {
     anonPage,
     anonContext,
     request,
+    uniqueSuffix,
   }) => {
-    const email = authTestEmail(EMAIL_PREFIX, 'active');
+    const email = authTestEmail(prefixFor(uniqueSuffix), 'active');
     const newPassword = 'resetPassword9';
 
     await test.step('create an active account via signup', async () => {
