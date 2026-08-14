@@ -5,7 +5,8 @@ import {
   AUTH_PASSWORD,
   authTestEmail,
   expectLoggedIn,
-  resetAuthState,
+  cleanupAuthIdentities,
+  drainIpVerificationBucket,
   waitForVerificationCode,
 } from '../../fixtures/authFlows';
 import { env } from '../../fixtures/env';
@@ -42,6 +43,9 @@ import { setup } from '../../routines/setup';
  */
 
 const EMAIL_PREFIX = 'rai-guest';
+
+/** Per-test email prefix: embeds uniqueSuffix so cleanup only matches this test's rows. */
+const prefixFor = (uniqueSuffix: string): string => `${EMAIL_PREFIX}-${uniqueSuffix}`;
 
 /**
  * User A creates an album and shares it with a not-yet-registered email. Returns the album id
@@ -108,12 +112,18 @@ const expectOnCodeStep = async (page: Page, email: string): Promise<void> => {
 };
 
 test.describe('Guest conversion (public album → offer → signup → album)', () => {
+  // Only relieves a counter shared by every worker (same loopback IP) — safe to
+  // run per-test even while sibling tests are mid-flight in other workers.
   test.beforeEach(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+    await drainIpVerificationBucket();
   });
 
-  test.afterAll(async () => {
-    await resetAuthState(EMAIL_PREFIX);
+  // Per-test scope: the prefix embeds uniqueSuffix, so this delete can only
+  // ever match THIS test's identities. A per-file prefix here ran on every
+  // worker under fullyParallel and deleted sibling tests' in-flight users
+  // mid-test — the Phase 2c failure took out both tests in this file.
+  test.afterEach(async ({ uniqueSuffix }) => {
+    await cleanupAuthIdentities(prefixFor(uniqueSuffix));
   });
 
   test('journey: the offer reveals in place, carries the email past the signup form, and banked signup lands on the album', async ({
@@ -128,7 +138,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     // The offer's attribution renders the owner's first + last name — exactly
     // how the factory user's displayName is composed.
     const ownerName = userA.user.displayName;
-    const bankedEmail = authTestEmail(EMAIL_PREFIX, 'banked');
+    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix),'banked');
     const { albumId, shareUrl } = await shareAlbumWithGuest(
       userA.page,
       request,
@@ -211,7 +221,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     uniqueSuffix,
   }) => {
     const [a, b] = await setup(grabTestImages, userA, 2);
-    const bankedEmail = authTestEmail(EMAIL_PREFIX, 'banked');
+    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix),'banked');
     // B1 proves this exact setup DOES land the banked email on the album — the positive control.
     // B2 changes ONLY the email handed to the offer.
     const { albumId, shareUrl } = await shareAlbumWithGuest(
@@ -234,7 +244,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     });
     anonPage.on('pageerror', (err) => record(err.message));
 
-    const wrongEmail = authTestEmail(EMAIL_PREFIX, 'wrong');
+    const wrongEmail = authTestEmail(prefixFor(uniqueSuffix),'wrong');
 
     await test.step('open the public album and hand the offer a DIFFERENT email', async () => {
       await anonPage.goto(shareUrl);
