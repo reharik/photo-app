@@ -22,7 +22,6 @@ import {
   openShareAlbumModal,
 } from '../../fixtures/shareAlbumModal';
 import { expect, test } from '../../fixtures/test';
-import { USER_A } from '../../fixtures/users';
 import { setup } from '../../routines/setup';
 
 /**
@@ -43,12 +42,6 @@ import { setup } from '../../routines/setup';
  */
 
 const EMAIL_PREFIX = 'rai-guest';
-
-/**
- * The offer's attribution renders the owner's first + last name, which is exactly how the
- * seeded owner's displayName is composed (`firstName: 'E2e'`, `lastName: 'Owner'`).
- */
-const ownerName = USER_A.displayName;
 
 /**
  * User A creates an album and shares it with a not-yet-registered email. Returns the album id
@@ -132,6 +125,9 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     browser,
   }) => {
     const [a, b] = await setup(grabTestImages, userA, 2);
+    // The offer's attribution renders the owner's first + last name — exactly
+    // how the factory user's displayName is composed.
+    const ownerName = userA.user.displayName;
     const bankedEmail = authTestEmail(EMAIL_PREFIX, 'banked');
     const { albumId, shareUrl } = await shareAlbumWithGuest(
       userA.page,

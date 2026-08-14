@@ -18,10 +18,13 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
-  fullyParallel: false,
+  // Safe since per-test unique users (each test creates and deletes its own
+  // rows; teardown can't touch a concurrent test's data). Ceiling is host CPU
+  // (3-4 Chromium contexts + Vite + dockerized api/worker), not the DB.
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1,
+  workers: 3,
   // Non-TTY terminals (e.g. Cursor) make `list` print only one truncated line.
   // verboseFailuresReporter dumps the full error immediately on failure.
   reporter: process.env.CI

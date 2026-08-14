@@ -24,15 +24,22 @@ export const AUTH_PASSWORD = 'newPassword9';
 
 /**
  * Resets throttle bookkeeping and removes users a suite created (matched by email prefix).
- * The verification endpoints throttle by IP (30 / 15 min) and email (5 / 15 min) and login
- * by email (5 / 15 min); `rate_limit_event` rows persist across runs against the shared dev
- * DB, so without wiping them a few reruns silently trip a limit and no code is ever emailed.
  * Every FK into `user` is ON DELETE CASCADE, so deleting the user row also clears its grants,
  * authorizations, share-contacts, and pending notifications.
+ *
+ * The rate-limit deletes are SCOPED, not a global wipe (a global wipe would erase other
+ * concurrent workers' counters). But the 'email_verification:issue' bucket delete must stay:
+ * that bucket is keyed by IP (30 / 15 min — loopback for everyone locally, since app.proxy
+ * is false outside prod) and the api has NO sweep job for `rate_limit_event`, so this is the
+ * bucket's ONLY drain. Without it, the third back-to-back run inside 15 minutes trips the
+ * limit — which returns a blind 200 and silently sends no code, surfacing 30s later as an
+ * unrelated-looking SES poll timeout. Email-keyed buckets are cleared only for this suite's
+ * own prefix.
  */
 export const resetAuthState = async (emailPrefix: string): Promise<void> => {
   const db = getDb();
-  await db('rate_limit_event').delete();
+  await db('rate_limit_event').where({ bucket: 'email_verification:issue' }).delete();
+  await db('rate_limit_event').where('key', 'like', `${emailPrefix}-%`).delete();
 
   const users = await db<{ id: string }>('user')
     .where('email', 'like', `${emailPrefix}-%`)
