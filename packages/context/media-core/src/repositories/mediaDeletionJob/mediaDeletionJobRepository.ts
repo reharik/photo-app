@@ -1,6 +1,5 @@
 import { MediaItemStatus } from '@packages/contracts';
 import type { Knex } from 'knex';
-import { DatabaseError } from 'pg';
 
 import type { EntityId } from '../../types/types';
 import { createQueueClaimable } from '../queueClaimable';
@@ -23,11 +22,6 @@ export type MediaDeletionJobRow = {
 };
 
 export type MediaDeletionJobRepository = {
-  enqueueIfNoneActive: (input: {
-    mediaItemId: EntityId;
-    storageKey: string;
-    actorId: EntityId;
-  }) => Promise<void>;
   claimNextAvailableJob: () => Promise<MediaDeletionJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<void>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<void>;
@@ -37,10 +31,6 @@ export type MediaDeletionJobRepository = {
     lastError: string,
     availableAt: Date,
   ) => Promise<void>;
-};
-
-const isUniqueViolation = (e: unknown): boolean => {
-  return e instanceof DatabaseError && e.code === '23505';
 };
 
 type MediaDeletionJobRepositoryDeps = {
@@ -55,32 +45,7 @@ export const build__MediaDeletionJobRepository = ({
     attemptCountColumn: 'attempt_count',
   });
 
-  const enqueueIfNoneActive = async (input: {
-    mediaItemId: EntityId;
-    storageKey: string;
-    actorId: EntityId;
-  }): Promise<void> => {
-    try {
-      await database('mediaDeletionJob').insert({
-        id: crypto.randomUUID(),
-        mediaItemId: input.mediaItemId,
-        storageKey: input.storageKey,
-        status: MediaItemStatus.pending.value,
-        attemptCount: 0,
-        availableAt: database.fn.now(),
-        createdBy: input.actorId,
-        updatedBy: input.actorId,
-      });
-    } catch (e) {
-      if (isUniqueViolation(e)) {
-        return;
-      }
-      throw e;
-    }
-  };
-
   return {
-    enqueueIfNoneActive,
     claimNextAvailableJob: queue.claimNextAvailableJob,
     markSucceeded: queue.markSucceeded,
     markFailed: queue.markFailed,
