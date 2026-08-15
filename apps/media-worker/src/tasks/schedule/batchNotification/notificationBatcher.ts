@@ -58,8 +58,15 @@ export const build__NotificationBatcher = ({
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
-        logger.warn(`User ${recipientId} has no email`);
-        for (const row of rowsForRecipient) outcomes.push({ row, result: 'skipped' });
+        logger.warn(
+          '[notificationBatcher] no user row / email for recipient — rows will be deleted without sending',
+          {
+            recipientId,
+            rowIds: rowsForRecipient.map((x) => x.id),
+          },
+        );
+        for (const row of rowsForRecipient)
+          outcomes.push({ row, result: 'skipped', reason: 'no user row / email for recipient_id' });
         continue;
       }
       const data = new Map<BatchedPayloadKind, ActivitySection>();
@@ -93,7 +100,7 @@ export const build__NotificationBatcher = ({
       systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds),
       systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds),
     ]);
-    logs.forEach((x) => logger.info(x));
+    logs.forEach((x) => logger.info(x.message, x.meta));
 
     return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };

@@ -18,6 +18,7 @@ export const build__NotificationPendingUserStrategy = ({
   systemAuthorizationRepository,
   logger,
 }: Deps): NotificationStrategy<'albumSharedWithPendingUser'> => ({
+  name: 'NotificationPendingUserStrategy',
   handles: ['albumSharedWithPendingUser'],
   branches: ['asyncWriter'],
   resolve: async (event): Promise<ResolvedNotification> => {
