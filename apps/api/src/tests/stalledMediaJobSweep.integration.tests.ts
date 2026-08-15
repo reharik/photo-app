@@ -8,6 +8,12 @@
  * The sweep (releaseStalledJobs) flips rows whose startedAt predates the stall
  * threshold back to PENDING so the queue can claim them again.
  *
+ * The reclaim is capped: a stall never throws, so the worker's catch-path attempt
+ * check can never fire for it — without a cap here the sweep would resurrect a
+ * worker-killing job forever. At/over MAX_MEDIA_PROCESSING_JOB_ATTEMPTS the row is
+ * FAILED instead, and its media_item is moved off PROCESSING (mirroring the
+ * worker's terminal-failure path) so a stranded job isn't traded for a stranded item.
+ *
  * These are autocommit table-gateway writes — no UoW involved. Rows are arranged by
  * direct insert with a backdated startedAt; producing a real stall is not attempted.
  * The slow-cadence timer is the interval gate's behavior, not this task's, and is
@@ -17,6 +23,7 @@ import { randomUUID } from 'node:crypto';
 
 import { jest } from '@jest/globals';
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -95,11 +102,12 @@ describe('stalled media job sweep (integration)', () => {
     availableAt?: Date;
     createdBy?: string;
     updatedBy?: string;
-  }): Promise<string> => {
-    const id = randomUUID();
+  }): Promise<{ jobId: string; mediaItemId: string }> => {
+    const jobId = randomUUID();
+    const mediaItemId = await insertItem();
     const row: Record<string, unknown> = {
-      id,
-      mediaItemId: await insertItem(),
+      id: jobId,
+      mediaItemId,
       status: seed.status,
       attemptCount: seed.attemptCount ?? 1,
       availableAt: seed.availableAt ?? minutesAgo(30),
@@ -110,7 +118,7 @@ describe('stalled media job sweep (integration)', () => {
       row.startedAt = seed.startedAt;
     }
     await database('mediaProcessingJob').insert(row);
-    return id;
+    return { jobId, mediaItemId };
   };
 
   const getJob = (id: string): Promise<JobRow> =>
@@ -119,7 +127,7 @@ describe('stalled media job sweep (integration)', () => {
   describe('when a PROCESSING row started beyond the stall threshold', () => {
     it('releases it back to PENDING, available now, with the reclaim recorded', async () => {
       const insertedAvailableAt = minutesAgo(30);
-      const jobId = await insertJob({
+      const { jobId } = await insertJob({
         status: MediaItemStatus.processing.value,
         startedAt: minutesAgo(20),
         availableAt: insertedAvailableAt,
@@ -143,7 +151,7 @@ describe('stalled media job sweep (integration)', () => {
 
   describe('when a PROCESSING row started just now (live job in flight)', () => {
     it('is untouched — every column, not just status', async () => {
-      const jobId = await insertJob({
+      const { jobId } = await insertJob({
         status: MediaItemStatus.processing.value,
         startedAt: new Date(),
         attemptCount: 3,
@@ -163,7 +171,7 @@ describe('stalled media job sweep (integration)', () => {
 
   describe('when a PENDING row is old enough to match the time predicate', () => {
     it('is untouched — the status predicate holds', async () => {
-      const jobId = await insertJob({
+      const { jobId } = await insertJob({
         status: MediaItemStatus.pending.value,
         startedAt: minutesAgo(20),
       });
@@ -179,7 +187,7 @@ describe('stalled media job sweep (integration)', () => {
 
   describe('when a stalled row has accumulated attempts', () => {
     it('keeps attemptCount — resetting it would give a poison item infinite retries', async () => {
-      const jobId = await insertJob({
+      const { jobId } = await insertJob({
         status: MediaItemStatus.processing.value,
         startedAt: minutesAgo(20),
         attemptCount: 2,
@@ -194,9 +202,38 @@ describe('stalled media job sweep (integration)', () => {
     });
   });
 
+  describe('when a stalled row is at the attempt cap', () => {
+    it('goes FAILED — not PENDING — and its media item is moved off PROCESSING', async () => {
+      const { jobId, mediaItemId } = await insertJob({
+        status: MediaItemStatus.processing.value,
+        startedAt: minutesAgo(20),
+        attemptCount: MAX_MEDIA_PROCESSING_JOB_ATTEMPTS,
+      });
+
+      const { sweep, logger } = createSweep();
+      const outcome = await sweep();
+
+      expect(outcome).toBe('processed');
+      // The poison-job signal is a distinct alert from "a worker died".
+      expect(logger.error).toHaveBeenCalledTimes(1);
+      expect(logger.warn).not.toHaveBeenCalled();
+
+      const row = await getJob(jobId);
+      expect(row.status).toBe(MediaItemStatus.failed.value);
+      expect(row.lastError).toBe('Reclaimed: exceeded max attempts while stalled');
+
+      // Mirrors the worker's terminal-failure path (PROCESSING → FAILED): a FAILED
+      // job with a still-PROCESSING item would be the same silent hang, one table over.
+      const item = await database('mediaItem')
+        .where({ id: mediaItemId })
+        .first<{ status: string }>();
+      expect(item?.status).toBe(MediaItemStatus.failed.value);
+    });
+  });
+
   describe('when the reclaimed row was created and last updated by different actors', () => {
     it('stamps updatedBy from the row own createdBy (bare column reference)', async () => {
-      const jobId = await insertJob({
+      const { jobId } = await insertJob({
         status: MediaItemStatus.processing.value,
         startedAt: minutesAgo(20),
         createdBy: TEST_VIEWER_1_ID,
@@ -214,21 +251,29 @@ describe('stalled media job sweep (integration)', () => {
     });
   });
 
-  describe('when two rows are stalled', () => {
-    it('releases both and reports the count', async () => {
+  describe('when rows are stalled on both sides of the attempt cap', () => {
+    it('returns both counts — released and failed', async () => {
       await insertJob({ status: MediaItemStatus.processing.value, startedAt: minutesAgo(20) });
       await insertJob({ status: MediaItemStatus.processing.value, startedAt: minutesAgo(25) });
+      await insertJob({
+        status: MediaItemStatus.processing.value,
+        startedAt: minutesAgo(25),
+        attemptCount: MAX_MEDIA_PROCESSING_JOB_ATTEMPTS,
+      });
 
-      const { sweep, logger } = createSweep();
-      const outcome = await sweep();
+      const repository = container.resolve('mediaProcessingJobRepository');
+      const result = await repository.releaseStalledJobs(minutesAgo(10));
 
-      expect(outcome).toBe('processed');
-      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('released 2'));
+      expect(result).toEqual({ released: 2, failed: 1 });
 
       const released = await database('mediaProcessingJob').where({
         status: MediaItemStatus.pending.value,
       });
+      const failed = await database('mediaProcessingJob').where({
+        status: MediaItemStatus.failed.value,
+      });
       expect(released).toHaveLength(2);
+      expect(failed).toHaveLength(1);
     });
   });
 
