@@ -1,10 +1,7 @@
 import type { Logger } from '@packages/infrastructure';
 import type { Config } from './config.js';
-import { IocGeneratedCradle } from './generated/ioc-registry.types';
 import { IntervalGate } from './intervalGate.js';
-import type { WorkerTaskOutcome } from './types.js';
-
-type WorkerTasks = IocGeneratedCradle['workerTasks'];
+import type { WorkerTask, WorkerTaskOutcome } from './types.js';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -23,7 +20,10 @@ export type RunMediaWorkerLoop = {
  * both fall through without counting as work. A thrown run() propagates to the
  * caller's try/catch and skips the remaining tasks this pass.
  */
-export const runWorkerTasksOnce = async (tasks: WorkerTasks, logger: Logger): Promise<boolean> => {
+export const runWorkerTasksOnce = async (
+  tasks: ReadonlyArray<WorkerTask>,
+  logger: Logger,
+): Promise<boolean> => {
   if (tasks.length === 0) {
     return false;
   }

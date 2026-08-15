@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { NotificationCadence } from '@packages/contracts';
+import { SweepCadence } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 
 import type { Config } from '../config.js';
+import type { WorkerTasks } from '../generated/ioc-registry.types.js';
 import { build__IntervalGate, type IntervalGate } from '../intervalGate';
 import { build__RunMediaWorkerLoop, runWorkerTasksOnce } from '../runMediaWorkerLoop';
 import type { WorkerTask, WorkerTaskOutcome } from '../types.js';
@@ -315,9 +316,8 @@ describe('build__IntervalGate', () => {
     run: noopRun(),
   });
 
-  const scheduleTask = (name: string, order: number, cadence: NotificationCadence): WorkerTask => ({
+  const scheduleTask = (name: string, cadence: SweepCadence): WorkerTask => ({
     name,
-    order,
     type: 'schedule',
     cadence,
     run: noopRun(),
@@ -331,15 +331,20 @@ describe('build__IntervalGate', () => {
     const gate = build__IntervalGate({
       logger: createMockLogger(),
       config,
+      // The generated WorkerTasks union narrows each task's `name` to its real
+      // literal; the gate only relies on the WorkerTask shape, so fakes with
+      // test names are cast through it.
       workerTasks: [
         queueTask('deletion', 100),
-        scheduleTask('fast-sweep', 200, NotificationCadence.immediate),
-        scheduleTask('slow-sweep', 300, NotificationCadence.batched),
-      ],
+        scheduleTask('fast-sweep', SweepCadence.fast),
+        scheduleTask('slow-sweep', SweepCadence.slow),
+      ] as unknown as WorkerTasks,
     });
 
-    // First call: both gates open (lastRun starts at 0) → all three, ordered by `order`.
-    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'fast-sweep', 'slow-sweep']);
+    // First call: both gates open (lastRun starts at 0) → all three, in structural
+    // order: queue tasks (sorted by `order`) first, then the slow set, then the fast
+    // set. `order` no longer ranks scheduled tasks — only queue tasks carry one.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'slow-sweep', 'fast-sweep']);
 
     // Immediate second call: the sweep gates just fired, so only the always-due queue task remains.
     expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion']);

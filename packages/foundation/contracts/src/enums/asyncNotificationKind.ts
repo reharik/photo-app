@@ -2,19 +2,23 @@ import { enumeration, type Enumeration } from '@reharik/smart-enum';
 import { InAppNotificationType } from './graphqlSmartEnums';
 import { NotificationKind } from './notificationKind';
 
-const cadenceInput = ['immediate', 'batched'];
-export type NotificationCadence = Enumeration<typeof NotificationCadence>;
-export const NotificationCadence = enumeration<typeof cadenceInput>('NotificationCadence', {
+// "Does this notification wait for company" — a delivery-batching axis, distinct
+// from `channel` (email/sms) and from SweepCadence (worker scheduling intervals).
+// Do not widen with scheduling members: that would weaken the exhaustiveness
+// checks over notification kinds by covering a space no notification occupies.
+const cadenceInput = ['immediate', 'batched'] as const;
+export type Batching = Enumeration<typeof Batching>;
+export const Batching = enumeration<typeof cadenceInput>('Batching', {
   input: cadenceInput,
 });
 
 const input = {
-  albumShared: { cadence: NotificationCadence.immediate, emailTemplate: 'albumShareInvite' },
-  guestAlbumShared: { cadence: NotificationCadence.immediate, emailTemplate: 'albumGuestInvite' },
-  itemAdded: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
-  commentPosted: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
-  replyPosted: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
-  reactionAdded: { cadence: NotificationCadence.batched, emailTemplate: 'albumActivity' },
+  albumShared: { cadence: Batching.immediate, emailTemplate: 'albumShareInvite' },
+  guestAlbumShared: { cadence: Batching.immediate, emailTemplate: 'albumGuestInvite' },
+  itemAdded: { cadence: Batching.batched, emailTemplate: 'albumActivity' },
+  commentPosted: { cadence: Batching.batched, emailTemplate: 'albumActivity' },
+  replyPosted: { cadence: Batching.batched, emailTemplate: 'albumActivity' },
+  reactionAdded: { cadence: Batching.batched, emailTemplate: 'albumActivity' },
 };
 
 export type AsyncNotificationKind = Enumeration<typeof AsyncNotificationKind>;

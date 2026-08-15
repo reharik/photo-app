@@ -1,4 +1,4 @@
-import { NotificationCadence } from '@packages/contracts';
+import { SweepCadence } from '@packages/contracts';
 
 export type WorkerTaskOutcome = 'processed' | 'idle';
 
@@ -8,19 +8,31 @@ export type WorkerTaskOutcome = 'processed' | 'idle';
  * on 'processed'. Type-only module — intentionally no `build__*` factory, so it
  * is never registered as an IoC contract.
  */
-export type WorkerTask = {
+export type WorkerTask = QueueWorkerTask | ScheduledWorkerTask;
+
+/**
+ * Exported because it is the `workerTasks` IoC group's baseType: group membership
+ * is NOMINAL (extends chains / type-alias intersections), so the WorkerTask union
+ * itself can never collect members — the shared base is what every per-task
+ * contract interface transitively reaches. The generated group type is the union
+ * of member contracts, which stays discriminated on `type`.
+ */
+export type WorkerTaskBase = {
   name: string;
-  type: 'schedule' | 'queue';
-  // Which cadence should be used for this task Cadences are predefined ms durations.
-  // Only a schedule type would have a Cadence. a queue drains on every interval
-  cadence?: NotificationCadence;
   /** Do one unit of work. 'processed' resets the idle backoff and restarts the
    *  pass from the highest-priority task; 'idle' falls through to the next task. */
   run: () => Promise<WorkerTaskOutcome>;
-  /** Execution priority within the loop: lower runs first. The pass walks tasks
-   *  in ascending `order`, and a 'processed' outcome restarts the pass from the
-   *  top — so the lowest-`order` due task always gets first claim each cycle.
+};
+export type QueueWorkerTask = WorkerTaskBase & {
+  type: 'queue';
+  /** Execution priority among queue tasks: lower runs first. The pass walks queue
+   *  tasks in ascending `order`, and a 'processed' outcome restarts the pass from
+   *  the top — so the lowest-`order` due task always gets first claim each cycle.
    *  Keep these values spaced (e.g. 100, 200) to leave room to insert tasks
    *  between existing ones without renumbering. */
-  order?: number;
+  order: number;
+};
+export type ScheduledWorkerTask = WorkerTaskBase & {
+  type: 'schedule';
+  cadence: SweepCadence;
 };
