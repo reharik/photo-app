@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import type { Logger } from '@packages/infrastructure';
 import type {
   MediaItemRepository,
   MediaProcessingJobRepository,
@@ -7,7 +8,6 @@ import type {
   MediaStorage,
 } from '@packages/media-core';
 import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS, MediaItem } from '@packages/media-core';
-import type { Logger } from '@packages/infrastructure';
 import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../config.js';

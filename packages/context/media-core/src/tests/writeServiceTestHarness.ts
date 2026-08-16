@@ -1,8 +1,8 @@
 import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
-import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { Album } from '../domain/Album/Album.js';
+import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';

@@ -53,7 +53,7 @@ export const build__FastSweepNotification = ({
     for (const [kind, kindRows] of byKind) {
       const strategy = fastSweepNotificationStrategies.find((s) => s.kind.value === kind);
       if (!strategy) {
-        kindRows.forEach((row) => [...outcomes, { row, result: 'skipped' }]);
+        kindRows.forEach((row) => outcomes.push({ row, result: 'skipped' }));
         logger.warn(
           '[notification-send] no send strategy for kind — rows left in queue unprocessed',
           {

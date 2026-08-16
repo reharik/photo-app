@@ -36,3 +36,5 @@ export type ScheduledWorkerTask = WorkerTaskBase & {
   type: 'schedule';
   cadence: SweepCadence;
 };
+
+export const isQueueTask = (x: WorkerTask): x is QueueWorkerTask => x.type === 'queue';

@@ -450,8 +450,9 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       const guest2Id = await userIdByEmail(guest2);
       const [invite1] = await grantRowsFor(albumId, guest1Id);
       const [invite2] = await grantRowsFor(albumId, guest2Id);
-      expect(await database('asyncNotification').whereIn('subjectId', [invite1.id, invite2.id]))
-        .toHaveLength(2);
+      expect(
+        await database('asyncNotification').whereIn('subjectId', [invite1.id, invite2.id]),
+      ).toHaveLength(2);
 
       // Orphan guest2's queued row: its authorization vanishes (out-of-band delete —
       // the row-gone case the strategy must survive; a cascade from an album delete

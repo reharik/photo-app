@@ -2,8 +2,13 @@ import { SweepCadence } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { Config } from './config';
 import { WorkerTasks } from './generated/ioc-registry.types';
-import { QueueWorkerTask, ScheduledWorkerTask, WorkerTask } from './types';
+import { isQueueTask, ScheduledWorkerTask, WorkerTask } from './types';
 
+type SweepSet = {
+  lastRun: number;
+  interval: number;
+  tasks: ScheduledWorkerTask[];
+};
 export interface IntervalGate {
   getTasksDue: () => WorkerTask[];
 }
@@ -17,8 +22,6 @@ const isScheduledWith =
   (cadence: SweepCadence) =>
   (x: WorkerTask): x is ScheduledWorkerTask =>
     x.type === 'schedule' && x.cadence.equals(cadence);
-
-const isQueueTask = (x: WorkerTask): x is QueueWorkerTask => x.type === 'queue';
 
 // This is dumb refactor to strategies and inject.  Maybe subtype WorkerTasks or something
 export const build__IntervalGate = ({
@@ -39,6 +42,13 @@ export const build__IntervalGate = ({
     interval: config.fastSweepIntervalMS,
     tasks: allTasks.filter(isScheduledWith(SweepCadence.fast)),
   };
+  const withStamp = (task: ScheduledWorkerTask, set: SweepSet): ScheduledWorkerTask => ({
+    ...task,
+    run: () =>
+      task.run().finally(() => {
+        set.lastRun = Date.now();
+      }),
+  });
   const getTasksDue = () => {
     const now = Date.now();
     // filter() returns a fresh array, so the in-place sort below is safe; the sweep
@@ -49,23 +59,19 @@ export const build__IntervalGate = ({
     // debug, not info: these fire on every interval regardless of whether there
     // is any work, and at dev sweep intervals they drown out real job logs.
     if (slowOpen) {
-      const msSinceLastFire = now - slowSweepSet.lastRun;
       logger.debug(
-        `[Interval-Gate] slow gate opened: intervalMs=${slowSweepSet.interval} msSinceLastFire=${msSinceLastFire}`,
+        `[Interval-Gate] slow gate opened: intervalMs=${slowSweepSet.interval} msSinceLastFire=${now - slowSweepSet.lastRun}`,
       );
-      slowSweepSet.lastRun = now;
     }
     if (fastOpen) {
-      const msSinceLastFire = now - fastSweepSet.lastRun;
       logger.debug(
-        `[Interval-Gate] fast gate opened: intervalMs=${fastSweepSet.interval} msSinceLastFire=${msSinceLastFire}`,
+        `[Interval-Gate] fast gate opened: intervalMs=${fastSweepSet.interval} msSinceLastFire=${now - fastSweepSet.lastRun}`,
       );
-      fastSweepSet.lastRun = now;
     }
     return [
       ...queueTasks.sort((a, b) => a.order - b.order),
-      ...(slowOpen ? slowSweepSet.tasks : []),
-      ...(fastOpen ? fastSweepSet.tasks : []),
+      ...(slowOpen ? slowSweepSet.tasks.map((t) => withStamp(t, slowSweepSet)) : []),
+      ...(fastOpen ? fastSweepSet.tasks.map((t) => withStamp(t, fastSweepSet)) : []),
     ];
   };
   return { getTasksDue };

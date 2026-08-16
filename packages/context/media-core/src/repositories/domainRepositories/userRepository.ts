@@ -1,13 +1,14 @@
 import { AuthorizationKind, notEmpty, Operation, UserStatus } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
+import { UserAuthorizationRecord } from '../../domain';
 import { PendingUser } from '../../domain/User/PendingUser';
 import { UserRecord } from '../../domain/User/types';
 import { User } from '../../domain/User/User';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { persist } from './AggregateRepo';
 
 export interface UserRepository extends RequestScopeLifeCycle {
@@ -59,8 +60,13 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
 
     const authorizationRows = await withEnumRevival(
       uow
-        .db()<UserAuthorizationRecord>('access_grant')
+        .db()('access_grant')
         .whereIn('grantedToUser', pendingIds)
+        // .modify()'s type params don't infer from the receiver; without them the row type
+        // erases to `any` and withEnumRevival stops checking mapping keys.
+        .modify<UserAuthorizationRecord, UserAuthorizationRecord[]>(
+          withLiveAuthorizationFilter(uow.db()),
+        )
         .orderBy('createdAt', 'asc'),
       { operations: Operation, kind: AuthorizationKind },
     );
@@ -76,6 +82,8 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
     );
   };
 
+  // This is used at login but if the user is pending then we get the authorizations
+  // in order to convert
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
@@ -92,10 +100,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
       .db()('access_grant')
       .where({ grantedToUser: userRow.id })
       .where({ kind: AuthorizationKind.pending.value })
-      .whereNull('revoked_at')
-      .where((expiry) => {
-        expiry.whereNull('expires_at').orWhere('expires_at', '>', uow.db().fn.now());
-      })
+      .modify(withLiveAuthorizationFilter(uow.db()))
       .select<{ authorizationId: string; albumId: string }[]>(['id as authorizationId', 'albumId']);
     return PendingUser.rehydrate(userRow, authorizationRefs);
   };

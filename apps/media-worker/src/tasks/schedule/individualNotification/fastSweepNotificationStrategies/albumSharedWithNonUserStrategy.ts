@@ -1,5 +1,5 @@
 import { AsyncNotificationKind } from '@packages/contracts';
-import { indexBy } from '@packages/infrastructure';
+import { indexBy, Logger } from '@packages/infrastructure';
 import {
   AsyncNotification,
   SystemAlbumRepository,
@@ -13,12 +13,14 @@ type AlbumSharedWithNonUserStrategyDeps = {
   systemAlbumRepository: SystemAlbumRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
   config: Config;
+  logger: Logger;
 };
 
 export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
   systemAuthorizationRepository,
+  logger,
 }: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'guestAlbumShared'> => ({
   kind: AsyncNotificationKind.guestAlbumShared,
   execute: async (
@@ -33,6 +35,19 @@ export const build__AlbumSharedWithNonUserStrategy = ({
       const recipientEmail = userMap.get(row.recipientId)?.email;
       const pendingUserAuthorization =
         await systemAuthorizationRepository.getPendingUserAuthorizationById(row.subjectId);
+      if (!pendingUserAuthorization) {
+        logger.warn('skipping notification: authorization no longer exists', {
+          notificationId: row.id,
+          subjectId: row.subjectId,
+          kind: row.kind.value,
+        });
+        results.push({
+          row,
+          kind: 'skipped',
+          reason: `authorization no longer exists, notificationId: ${row.id}, subjectId: ${row.subjectId}, kind: ${row.kind.value}`,
+        });
+        continue;
+      }
       const token = pendingUserAuthorization.linkToken;
       if (!recipientEmail) {
         results.push({ row, kind: 'skipped', reason: 'no user row / email for recipient_id' });

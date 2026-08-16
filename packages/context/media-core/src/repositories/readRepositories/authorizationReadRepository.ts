@@ -8,6 +8,7 @@ import {
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { Knex } from 'knex';
 import type { EntityId } from '../../types/types';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   AuthorizationReadRepository,
   AuthorizationRow,
@@ -60,6 +61,7 @@ export const build__AuthorizationReadRepository = ({
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('albumItem.mediaItemId', mediaItemId)
         .andWhere('mediaItem.ownerId', ownerId)
+        .modify(withLiveAuthorizationFilter(database))
         .orderBy('accessGrant.createdAt', 'asc')
         .distinct<AuthorizationRow[]>(...shareSelectColumns),
       { operations: Operation, kind: AuthorizationKind },
@@ -78,6 +80,7 @@ export const build__AuthorizationReadRepository = ({
         .where('accessGrant.albumId', albumId)
         .andWhere('albumMember.userId', ownerId)
         .andWhere('albumMember.role', 'owner')
+        .modify(withLiveAuthorizationFilter(database))
         .orderBy('accessGrant.createdAt', 'asc')
         .select<AuthorizationRow[]>(...shareSelectColumns),
       { operations: Operation, kind: AuthorizationKind },
@@ -101,7 +104,7 @@ export const build__AuthorizationReadRepository = ({
           AuthorizationKind.pending.value,
           AuthorizationKind.user.value,
         ])
-        .whereNull('accessGrant.revokedAt')
+        .modify(withLiveAuthorizationFilter(database))
         .whereExists(
           database
             .select(database.raw('1'))
@@ -147,11 +150,8 @@ export const build__AuthorizationReadRepository = ({
       database('grant as g')
         .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
         .whereIn('g.media_item_id', mediaItemIds)
+        .modify(withLiveAuthorizationFilter(database, 'ag'))
         .where('g.granted_to_user', viewerId)
-        .whereNull('ag.revoked_at')
-        .where((expiry) => {
-          expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', database.fn.now());
-        })
         .select<MediaItemOperations[]>(
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
@@ -171,10 +171,7 @@ export const build__AuthorizationReadRepository = ({
         .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
         .whereIn('g.media_item_id', mediaItemIds)
         .where('ag.id', publicLinkId)
-        .whereNull('ag.revoked_at')
-        .where((expiry) => {
-          expiry.whereNull('ag.expires_at').orWhere('ag.expires_at', '>', database.fn.now());
-        })
+        .modify(withLiveAuthorizationFilter(database, 'ag'))
         .select<MediaItemOperations[]>(
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
@@ -194,7 +191,7 @@ export const build__AuthorizationReadRepository = ({
         .where('accessGrant.albumId', albumId)
         .where('accessGrant.kind', AuthorizationKind.public.value)
         .where('accessGrant.origin', AuthorizationOrigin.owner.value)
-        .whereNull('accessGrant.revokedAt')
+        .modify(withLiveAuthorizationFilter(database))
         .whereExists(
           database
             .select(database.raw('1'))

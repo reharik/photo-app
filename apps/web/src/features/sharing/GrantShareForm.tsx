@@ -2,20 +2,15 @@ import React, { useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import type { AppError } from '../../domain/errors/errorTypes';
 
-import { Operation } from '@packages/contracts';
-import { DateTime } from 'luxon';
 import { ShareContactType } from '../../graphql/generated/types';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { FormInput } from '../../ui/FormInput';
 import { MultiCombobox, type MultiComboboxOption } from '../../ui/MultiCombobox';
 import { Button, HStack, VStack } from '../../ui/Primitives';
 import { ShareTokenResult } from './ShareTokenResult';
-import { enumItemsFromValueDisplay } from './shareGrantOptionMapping';
 
 export type GrantSharePublicLinkFormValues = {
-  operations: Operation[];
   label?: string;
-  expiresAt?: DateTime;
 };
 
 export type GrantShareUserFormValues = GrantSharePublicLinkFormValues & {
@@ -24,7 +19,6 @@ export type GrantShareUserFormValues = GrantSharePublicLinkFormValues & {
 
 type GrantShareFormProps = {
   suggestions: ShareContactType[];
-  operationOptions: readonly MultiComboboxOption[];
   onSubmit: (input: GrantShareUserFormValues) => Promise<void>;
   /** When set, shows a "Create shareable link" path that does not require a handle. */
   onCreatePublicLink?: (input: GrantSharePublicLinkFormValues) => Promise<void>;
@@ -77,7 +71,6 @@ const contactsToRecipientOptions = (contacts: ShareContactType[]): MultiCombobox
 
 export const GrantShareForm = ({
   suggestions,
-  operationOptions,
   onSubmit,
   onCreatePublicLink,
   onDeleteContact,
@@ -87,9 +80,7 @@ export const GrantShareForm = ({
   onClose,
 }: GrantShareFormProps) => {
   const [recipients, setRecipients] = useState<MultiComboboxOption[]>([]);
-  const [operations, setOperations] = useState<MultiComboboxOption[]>(() => [...operationOptions]);
   const [label, setLabel] = useState('');
-  const [expiresAt, setExpiresAt] = useState<DateTime | undefined>();
   const [recipientsError, setRecipientsError] = useState<string | undefined>(undefined);
 
   const recipientOptions = useMemo(() => contactsToRecipientOptions(suggestions), [suggestions]);
@@ -124,9 +115,7 @@ export const GrantShareForm = ({
   );
 
   const sharedFormValues = (): GrantSharePublicLinkFormValues => ({
-    operations: enumItemsFromValueDisplay(Operation, operations),
     label: trimmedOrUndefined(label),
-    expiresAt,
   });
 
   const handleSubmit = async (event: React.ChangeEvent<HTMLFormElement>) => {
@@ -186,29 +175,11 @@ export const GrantShareForm = ({
           onDeleteItem={onDeleteContact}
           deleteItemLabel="Remove from saved contacts"
         />
-        <MultiCombobox
-          label="Additional Permissions"
-          hint="Anyone you share with can always view."
-          value={operations}
-          onChange={setOperations}
-          items={operationOptions}
-          allowCustomValue={false}
-          disabled={isLoading}
-        />
         <FormInput
           label="Label (optional)"
           placeholder="e.g. Family album"
           value={label}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => setLabel(event.target.value)}
-          disabled={isLoading}
-        />
-        <FormInput
-          type="date"
-          label="Expires (optional)"
-          value={expiresAt?.toISO() ?? ''}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-            setExpiresAt(DateTime.fromISO(event.target.value))
-          }
           disabled={isLoading}
         />
         {onCreatePublicLink && (

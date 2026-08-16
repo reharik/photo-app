@@ -2,13 +2,11 @@ import { BatchedPayloadKind, notEmpty } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import { SystemAsyncNotificationRepository, SystemUserRepository } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
-import { pickEnum } from '@reharik/smart-enum';
 import { Config } from '../../../config';
 import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
-const Drivers = pickEnum(BatchedPayloadKind, ['comment', 'album']);
 export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
 
 type NotificationBatcherDeps = {
@@ -35,10 +33,14 @@ export const build__NotificationBatcher = ({
     if (!rows.length) return 'idle';
     logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
 
-    // null recipientId = cadence-filter leak upstream; log but don't process
+    // outcomes surfaced by processors (skipped rows) merge with send outcomes below
+    const outcomes: RowOutcome[] = [];
+
+    // null recipientId = cadence-filter leak upstream; log and process
     const bad = rows.filter((r) => !notEmpty(r.recipientId));
     if (bad.length) {
       logger.error(`[batcher] claimed ${bad.length} null-recipient row(s) — cadence filter leak`);
+      bad.forEach((row) => outcomes.push({ row, result: 'skipped', reason: 'null-recipient' }));
     }
 
     const recipientMap = groupByMapping(
@@ -54,7 +56,7 @@ export const build__NotificationBatcher = ({
     const payloads = await Promise.all(activityPayloads);
 
     // outcomes surfaced by processors (skipped rows) merge with send outcomes below
-    const outcomes: RowOutcome[] = payloads.flatMap((x) => x.outcomes);
+    outcomes.push(...payloads.flatMap((x) => x.outcomes));
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
@@ -70,27 +72,23 @@ export const build__NotificationBatcher = ({
         continue;
       }
       const data = new Map<BatchedPayloadKind, ActivitySection>();
-      let hasDriver = false;
       payloads.forEach((x) => {
         const activity = x.activity.get(recipientId);
         if (activity) {
           data.set(x.kind, activity);
-          hasDriver ||= Drivers.has(x.kind);
         }
       });
-      if (hasDriver) {
-        const payload: NotificationPayload<'activityDigest'> = {
-          to: recipientEmail.email,
-          template: 'activityDigest',
-          data: { data, appUrl: config.clientUrl },
-          channels: ['email'],
-        };
-        const r = await notificationService.notify(payload);
-        const result = r.success ? 'sent' : 'failed';
+      const payload: NotificationPayload<'activityDigest'> = {
+        to: recipientEmail.email,
+        template: 'activityDigest',
+        data: { data, appUrl: config.clientUrl },
+        channels: ['email'],
+      };
+      const r = await notificationService.notify(payload);
+      const result = r.success ? 'sent' : 'failed';
 
-        // one send → fan its fate across all this recipient's rows (reactions ride along)
-        for (const row of rowsForRecipient) outcomes.push({ row, result });
-      }
+      // one send → fan its fate across all this recipient's rows (reactions ride along)
+      for (const row of rowsForRecipient) outcomes.push({ row, result });
     }
 
     logger.info('[notificationBatcher] send loop complete', summarizeOutcomes(outcomes));

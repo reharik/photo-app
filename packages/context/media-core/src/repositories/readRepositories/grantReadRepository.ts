@@ -1,3 +1,4 @@
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   GrantReadRepository,
   HasActiveAccessGrantPermissionInput,
@@ -21,6 +22,7 @@ export const build__GrantReadRepository = ({
       .join('grant', 'accessGrant.id', 'grant.accessGrantId')
       .where('accessGrant.linkToken', input.token)
       .where('grant.mediaItemId', input.mediaItemId)
+      .modify(withLiveAuthorizationFilter(database))
       .first();
   },
   hasActiveGrantPermission: (input: HasActiveGrantPermissionInput): Promise<boolean> => {
@@ -28,6 +30,7 @@ export const build__GrantReadRepository = ({
       .join('access_grant as ag', 'ag.id', 'grant.access_grant_id')
       .where('grant.media_item_id', input.mediaItemId)
       .where('grant.granted_to_user', input.viewerId)
+      .modify(withLiveAuthorizationFilter(database, 'ag'))
       .whereRaw('? = ANY(COALESCE("grant".operations, ag.operations))', [input.operation.value])
       .first();
   },
@@ -38,10 +41,7 @@ export const build__GrantReadRepository = ({
       .join('grant', 'ag.id', 'grant.accessGrantId')
       .where('ag.albumId', input.albumId)
       .where('grant.granted_to_user', input.viewerId)
-      .whereNull('ag.revokedAt')
-      .andWhere((expiry) => {
-        expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', database.fn.now());
-      })
+      .modify(withLiveAuthorizationFilter(database, 'ag'))
       .andWhereRaw('? = ANY(COALESCE("grant".operations, ag.operations))', [input.operation.value])
       .first();
   },

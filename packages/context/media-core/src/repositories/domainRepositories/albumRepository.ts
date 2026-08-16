@@ -13,6 +13,7 @@ import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthoriz
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types/types';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { persist } from './AggregateRepo';
 
 export interface AlbumRepository extends RequestScopeLifeCycle {
@@ -43,9 +44,13 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
 
     const authorizationRows = await withEnumRevival(
       uow
-        .db()<AnyAuthorizationRecord>('access_grant')
+        .db()('access_grant')
         .where({ albumId: id })
-        .whereNull('revokedAt')
+        // .modify()'s type params don't infer from the receiver; without them the row type
+        // erases to `any` and withEnumRevival stops checking mapping keys.
+        .modify<AnyAuthorizationRecord, AnyAuthorizationRecord[]>(
+          withLiveAuthorizationFilter(uow.db()),
+        )
         .orderBy('createdAt', 'asc'),
       { operations: Operation, kind: AuthorizationKind },
     );

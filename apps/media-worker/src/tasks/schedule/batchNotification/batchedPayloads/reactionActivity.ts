@@ -73,10 +73,13 @@ export const build__ReactionActivity = ({
         line,
       };
     });
-
     const outcomes: RowOutcome[] = resolved
       .filter((r) => r.result === 'skipped')
-      .map(({ row }) => ({ row, result: 'skipped' }));
+      .map(({ row, reason }) => ({
+        row,
+        result: 'skipped' as const,
+        reason,
+      }));
 
     // group only the survivors, and only for building the section
     const survivors = resolved.filter((r) => r.result === 'resolved');

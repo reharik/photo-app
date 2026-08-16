@@ -27,7 +27,6 @@ const publicLinkMutationResolvers: Pick<Resolvers, 'Mutation'> = {
         viewerLastName: ctx.viewer.lastName,
         mediaItemIds: args.input.mediaItemIds,
         name: args.input.name ?? undefined,
-        expiresAt: args.input.expiresAt ?? undefined,
       };
 
       return ctx.writeServices.createPublicLinkForMediaItems(command);

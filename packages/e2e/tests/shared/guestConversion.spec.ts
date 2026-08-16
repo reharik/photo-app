@@ -4,9 +4,9 @@ import { addMediaItemsToNewAlbum } from '../../fixtures/album';
 import {
   AUTH_PASSWORD,
   authTestEmail,
-  expectLoggedIn,
   cleanupAuthIdentities,
   drainIpVerificationBucket,
+  expectLoggedIn,
   waitForVerificationCode,
 } from '../../fixtures/authFlows';
 import { env } from '../../fixtures/env';
@@ -138,7 +138,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     // The offer's attribution renders the owner's first + last name — exactly
     // how the factory user's displayName is composed.
     const ownerName = userA.user.displayName;
-    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix),'banked');
+    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix), 'banked');
     const { albumId, shareUrl } = await shareAlbumWithGuest(
       userA.page,
       request,
@@ -221,7 +221,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     uniqueSuffix,
   }) => {
     const [a, b] = await setup(grabTestImages, userA, 2);
-    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix),'banked');
+    const bankedEmail = authTestEmail(prefixFor(uniqueSuffix), 'banked');
     // B1 proves this exact setup DOES land the banked email on the album — the positive control.
     // B2 changes ONLY the email handed to the offer.
     const { albumId, shareUrl } = await shareAlbumWithGuest(
@@ -244,7 +244,7 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     });
     anonPage.on('pageerror', (err) => record(err.message));
 
-    const wrongEmail = authTestEmail(prefixFor(uniqueSuffix),'wrong');
+    const wrongEmail = authTestEmail(prefixFor(uniqueSuffix), 'wrong');
 
     await test.step('open the public album and hand the offer a DIFFERENT email', async () => {
       await anonPage.goto(shareUrl);

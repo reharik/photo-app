@@ -1,11 +1,13 @@
 import { Knex } from 'knex';
-import { activeGrantChecks } from './withActiveGrants';
+import { withActiveGrants } from './withLiveAuthorizationFilter';
 
-const activeAlbumGrantExists = (db: Knex, viewerId: string) => {
-  const sub = db.select(db.raw('1')).from('accessGrant as ag2');
-  activeGrantChecks(sub, db, viewerId, 'ag2');
-  return sub.whereNotNull('ag2.albumId').where('ag2.albumId', db.ref('album.id'));
-};
+const activeAlbumGrantExists = (db: Knex, viewerId: string) =>
+  db
+    .select(db.raw('1'))
+    .from('accessGrant as ag2')
+    .whereNotNull('ag2.albumId')
+    .where('ag2.albumId', db.ref('album.id'))
+    .modify(withActiveGrants(db, viewerId, 'ag2'));
 
 export const withViewableByMemberOrAlbumGrant =
   (db: Knex, viewerId: string) =>

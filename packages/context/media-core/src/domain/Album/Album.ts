@@ -365,7 +365,6 @@ export class Album extends AggregateRoot<AlbumRecord> {
    * mediaItemReadRepository.getForViewer — treat a `grant` row as sufficient proof of
    * access without checking the authorization behind it. The revoked user would keep
    * listing the album and fetching the bytes forever.
-   * The same applies to revokePendingUserAuthorization and revokePublicLink below.
    */
   revokeAuthorization(authorizationId: EntityId, actorId: ActorId): OperationResult {
     const authorization =
@@ -438,14 +437,23 @@ export class Album extends AggregateRoot<AlbumRecord> {
       );
       return ok({ authorization: pendingUserAuthorization });
     }
-
-    if (label && result.value.status === 'updateLabel') {
-      const updatedLabel = existingPendingUserAuthorization.updateLabel(label, actorId);
-      if (!updatedLabel.success) {
-        return updatedLabel;
-      }
-      this.touch(actorId);
-    }
+    this.recordEvent(
+      'albumSharedWithPendingUser',
+      {
+        userId: grantedToUserId,
+        albumId: this.id(),
+        authorizationId: existingPendingUserAuthorization.id(),
+      },
+      actorId,
+    );
+    // TODO if this is not causing problems remove it and remove it from the validation above as well
+    // if (label && result.value.status === 'updateLabel') {
+    //   const updatedLabel = existingPendingUserAuthorization.updateLabel(label, actorId);
+    //   if (!updatedLabel.success) {
+    //     return updatedLabel;
+    //   }
+    //   this.touch(actorId);
+    // }
 
     return ok({ authorization: existingPendingUserAuthorization });
   }
