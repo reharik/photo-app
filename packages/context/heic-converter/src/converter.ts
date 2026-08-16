@@ -1,3 +1,10 @@
+// heic-convert ships no types; the ambient declaration must ride along with this
+// file into consumers that compile it as source (exports `development` condition),
+// whose programs never load this package's tsconfig `include`. An import can't do
+// that — ambient declare-module files only enter a program via include/reference.
+// (@types/heic-convert exists but types the result as Uint8Array, not Buffer.)
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../types/heic-convert.d.ts" />
 import { promises as fsPromises } from 'node:fs';
 import { Readable, type Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
