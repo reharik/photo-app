@@ -1,15 +1,16 @@
-import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaKind } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
+  MAX_MEDIA_PROCESSING_JOB_ATTEMPTS,
+  withUnitOfWork,
   type EntityId,
   type MediaItem,
   type MediaItemRepository,
   type MediaProcessingJobRepository,
   type MediaProcessingJobRow,
   type MediaStorage,
-  withUnitOfWork,
 } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 
@@ -27,7 +28,14 @@ export type RunNextMediaImageJob = () => Promise<ProcessNextMediaImageJobResult>
 export type MediaImageJobLoadResult =
   | { kind: 'not_found' }
   | { kind: 'already_ready' }
-  | { kind: 'failed'; message: string }
+  /** Not processable YET (e.g. still PENDING) — retry with backoff, don't kill the job. */
+  | { kind: 'transient'; message: string }
+  /**
+   * Will never become processable — terminal. `itemAlreadyTerminal` means the item
+   * is already in a terminal/foreign state (FAILED, mid-deletion), so the runner
+   * must record the job failure WITHOUT trying to drag the item to FAILED.
+   */
+  | { kind: 'failed'; message: string; itemAlreadyTerminal?: boolean }
   | { kind: 'loaded'; mediaItem: MediaItem };
 
 export type MediaImageStorageResult = { kind: 'failed'; message: string } | { kind: 'ok' };
@@ -51,10 +59,6 @@ export const build__ProcessNextMediaImageJob = ({
       return { kind: 'not_found' };
     }
 
-    if (mediaItem.status().equals(MediaItemStatus.ready)) {
-      return { kind: 'already_ready' };
-    }
-
     if (!mediaItem.kind().equals(MediaKind.photo)) {
       return {
         kind: 'failed',
@@ -62,14 +66,42 @@ export const build__ProcessNextMediaImageJob = ({
       };
     }
 
-    if (!mediaItem.status().equals(MediaItemStatus.processing)) {
-      return {
+    // Exhaustive by construction: a new MediaItemStatus member is a compile error
+    // here, not a silent fall-through. The old boolean guard ("not PROCESSING →
+    // terminal failure") conflated "isn't processable yet" with "never will be" —
+    // and killed jobs for items that another worker had already finished.
+    return mediaItem.status().match<MediaImageJobLoadResult>({
+      processing: () => ({ kind: 'loaded', mediaItem }),
+      ready: () => ({ kind: 'already_ready' }),
+      pending: () => ({
+        kind: 'transient',
+        message: 'Media item not yet processable (status: PENDING)',
+      }),
+      uploaded: () => ({
+        kind: 'transient',
+        message: 'Media item not yet processable (status: UPLOADED)',
+      }),
+      failed: () => ({
         kind: 'failed',
-        message: `Media item not processable (status: ${mediaItem.status().value})`,
-      };
-    }
-
-    return { kind: 'loaded', mediaItem };
+        message: 'Media item already marked failed — not resurrecting',
+        itemAlreadyTerminal: true,
+      }),
+      deletePending: () => ({
+        kind: 'failed',
+        message: 'Media item is pending deletion',
+        itemAlreadyTerminal: true,
+      }),
+      deleteFailed: () => ({
+        kind: 'failed',
+        message: 'Media item is in a failed-deletion state',
+        itemAlreadyTerminal: true,
+      }),
+      succeeded: () => ({
+        kind: 'failed',
+        message: 'Media item in unexpected status SUCCEEDED',
+        itemAlreadyTerminal: true,
+      }),
+    });
   };
 
   const saveProcessedItem = async (mediaItem: MediaItem): Promise<void> => {
@@ -109,8 +141,9 @@ const serializeError = (e: unknown): string => {
   return String(e);
 };
 
-/** After this many claimed attempts a thrown (transient-looking) failure becomes terminal. */
-const MAX_MEDIA_IMAGE_JOB_ATTEMPTS = 5;
+// Attempt cap lives in media-core (MAX_MEDIA_PROCESSING_JOB_ATTEMPTS) — shared
+// with the stalled-job sweep, which enforces the same budget for stalls that
+// never reach the catch path below.
 
 const retryBackoffMs = (attemptCount: number): number => {
   const capped = Math.max(0, attemptCount - 1);
@@ -301,10 +334,15 @@ export const build__RunNextMediaImageJob = ({
      * Terminal failure: the job row is the durable record, so mark it first — if the
      * item update then throws, we have a FAILED job to read rather than a claimed job
      * stuck in PROCESSING that nothing will ever retry. Moving the item off PROCESSING
-     * is best-effort on top of that.
+     * is best-effort on top of that. Pass markItem: false when the item is already in
+     * a terminal/foreign state (FAILED, mid-deletion) — attempting the transition
+     * there can only fail and log a misleading warning.
      */
-    const finishFailed = async (message: string): Promise<void> => {
+    const finishFailed = async (message: string, { markItem = true } = {}): Promise<void> => {
       await mediaProcessingJobRepository.markFailed(job.id, actorId, message);
+      if (!markItem) {
+        return;
+      }
       try {
         const marked = await withUnitOfWork(container, async (scope) => {
           const processor = scope.resolve('processNextMediaImageJob');
@@ -358,11 +396,32 @@ export const build__RunNextMediaImageJob = ({
       }
 
       if (loadResult.kind === 'already_ready') {
+        // Another worker (or a duplicate claim) already finished this item. The job
+        // is done, not failed — marking it FAILED here would make the job table lie
+        // about a successfully processed item.
         logger.info('Media image job skipped: item already ready', {
           jobId: job.id,
           mediaItemId: job.mediaItemId,
         });
         await finishSucceeded();
+        return 'processed';
+      }
+
+      if (loadResult.kind === 'transient') {
+        // Not processable YET — retry with backoff instead of killing the job.
+        // The attempt cap still applies (each claim increments attemptCount and
+        // this path never throws, so the catch-path cap check would never see it).
+        if (job.attemptCount >= MAX_MEDIA_PROCESSING_JOB_ATTEMPTS) {
+          logger.error('Media image job marked failed (terminal): transient state never resolved', {
+            jobId: job.id,
+            mediaItemId: job.mediaItemId,
+            attemptCount: job.attemptCount,
+            message: loadResult.message,
+          });
+          await finishFailed(loadResult.message);
+        } else {
+          await finishRetry(loadResult.message);
+        }
         return 'processed';
       }
 
@@ -372,7 +431,7 @@ export const build__RunNextMediaImageJob = ({
           mediaItemId: job.mediaItemId,
           message: loadResult.message,
         });
-        await finishFailed(loadResult.message);
+        await finishFailed(loadResult.message, { markItem: !loadResult.itemAlreadyTerminal });
         return 'processed';
       }
 
@@ -418,7 +477,7 @@ export const build__RunNextMediaImageJob = ({
       // A thrown error is transient-looking (S3, DB, decode) — retry with backoff and
       // only give up, and fail the item, once the attempts are exhausted. Deterministic
       // rejections above are terminal on the first pass and never reach here.
-      if (job.attemptCount >= MAX_MEDIA_IMAGE_JOB_ATTEMPTS) {
+      if (job.attemptCount >= MAX_MEDIA_PROCESSING_JOB_ATTEMPTS) {
         await finishFailed(message);
         logger.error('Media image processing job marked failed (terminal)', {
           jobId: job.id,

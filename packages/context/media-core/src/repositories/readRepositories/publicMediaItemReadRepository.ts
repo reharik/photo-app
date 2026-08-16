@@ -2,6 +2,7 @@ import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DBPublicMediaItemRow } from '../../services/readServices/types';
 import type { EntityId } from '../../types/types';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type { PublicMediaItemReadRepository, ReadRepositoryDeps } from './types';
 
 export type { PublicMediaItemReadRepository } from './types';
@@ -33,14 +34,7 @@ export const build__PublicMediaItemReadRepository = ({
         .join('grant', 'mediaItem.id', 'grant.mediaItemId')
         .join('accessGrant', 'accessGrant.id', 'grant.accessGrantId')
         .where('accessGrant.id', publicLinkId)
-        .whereNull('accessGrant.revokedAt')
-        .where((b) => {
-          b.whereNull('accessGrant.expiresAt').orWhere(
-            'accessGrant.expiresAt',
-            '>',
-            database.fn.now(),
-          );
-        })
+        .modify(withLiveAuthorizationFilter(database))
         .where('mediaItem.id', mediaItemId)
         .first<DBPublicMediaItemRow>(...DBPublicMediaItemRowFields),
       {

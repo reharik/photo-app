@@ -1,10 +1,7 @@
 import type { Logger } from '@packages/infrastructure';
 import type { Config } from './config.js';
-import { IocGeneratedCradle } from './generated/ioc-registry.types';
 import { IntervalGate } from './intervalGate.js';
-import type { WorkerTaskOutcome } from './types.js';
-
-type WorkerTasks = IocGeneratedCradle['workerTasks'];
+import { isQueueTask, type WorkerTask, type WorkerTaskOutcome } from './types.js';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -23,7 +20,10 @@ export type RunMediaWorkerLoop = {
  * both fall through without counting as work. A thrown run() propagates to the
  * caller's try/catch and skips the remaining tasks this pass.
  */
-export const runWorkerTasksOnce = async (tasks: WorkerTasks, logger: Logger): Promise<boolean> => {
+export const runWorkerTasksOnce = async (
+  tasks: ReadonlyArray<WorkerTask>,
+  logger: Logger,
+): Promise<boolean> => {
   if (tasks.length === 0) {
     return false;
   }
@@ -41,6 +41,23 @@ export const runWorkerTasksOnce = async (tasks: WorkerTasks, logger: Logger): Pr
     }
   }
   return false;
+};
+
+export const runAllTasks = async (
+  tasks: ReadonlyArray<WorkerTask>,
+  logger: Logger,
+): Promise<boolean> => {
+  let didWork = false;
+  for (const task of tasks) {
+    try {
+      const outcome = await task.run();
+      if (outcome === 'processed') didWork = true;
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      logger.error(`[mediaWorker] task "${task.name}" threw`, err);
+    }
+  }
+  return didWork;
 };
 
 /** Log an idle heartbeat at info roughly every 30s at the default 2s poll interval. */
@@ -72,14 +89,24 @@ export const build__RunMediaWorkerLoop = ({
 
     while (!stopRequested) {
       try {
-        // get all tasks that are due (queue tasks are always due)
-        // execute them in a priority order, this means run all due tasks
-        // in a loop. Execute the highest priority and return. loop again
-        // till there is no more work to be done. Then fall through to the
-        // sleep.
+        // Two-phase pass. Queue tasks first, with restart-from-top preemption: run the
+        // highest-priority due task, return on the first 'processed', and re-poll so the
+        // lowest-order task always gets the next claim. Only when the queue reports idle
+        // do due sweeps run — all of them, no early return, each stamping its own gate on
+        // completion. This keeps a busy queue from consuming a sweep's interval slot
+        // without ever firing it.
         const tasks = intervalGate.getTasksDue();
-        const didWork = await runWorkerTasksOnce(tasks, logger);
+        const queueTasks = tasks.filter(isQueueTask);
+        const sweepTasks = tasks.filter((t) => !isQueueTask(t));
+
+        const didWork = await runWorkerTasksOnce(queueTasks, logger);
         if (didWork) {
+          idleCycles = 0;
+          continue;
+        }
+
+        const sweepDidWork = await runAllTasks(sweepTasks, logger);
+        if (sweepDidWork) {
           idleCycles = 0;
           continue;
         }

@@ -11,6 +11,7 @@ import {
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
+import { UnitOfWork } from '../../../infrastructure';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
@@ -28,12 +29,14 @@ type FinalizeMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
+  uow: UnitOfWork;
 };
 
 export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,
+  uow,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
@@ -80,10 +83,15 @@ export const build__FinalizeMediaItemUpload = ({
     await mediaItemRepository.save(mediaItem);
 
     if (mediaItem.kind().equals(MediaKind.photo)) {
-      await mediaProcessingJobRepository.enqueueIfNoneActive({
-        mediaItemId: mediaItem.id(),
-        actorId: viewerId,
-      });
+      // Same transaction as mediaItemRepository.save above: the job row must not be
+      // visible to the worker before the item's PROCESSING status commits.
+      await mediaProcessingJobRepository.enqueueIfNoneActive(
+        {
+          mediaItemId: mediaItem.id(),
+          actorId: viewerId,
+        },
+        uow,
+      );
     }
 
     return ok({

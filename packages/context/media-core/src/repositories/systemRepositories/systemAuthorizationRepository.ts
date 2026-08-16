@@ -2,11 +2,14 @@ import { assertNever, AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Knex } from 'knex';
 import { EntityId } from '../../types';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 
 export type SystemAuthorizationRepository = {
   getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
   getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
-  getPendingUserAuthorizationById: (id: EntityId) => Promise<PendingUserAuthorizationRow>;
+  getPendingUserAuthorizationById: (
+    id: EntityId,
+  ) => Promise<PendingUserAuthorizationRow | undefined>;
 };
 
 export type Authorizations = {
@@ -142,16 +145,9 @@ export const build__SystemAuthorizationRepository = ({
   getAuthorizationsByAlbumId: async (albumIds: EntityId[]): Promise<Authorizations> => {
     const rows = await withEnumRevival(
       database('access_grant')
-        .select<AnyAuthorizationRow[]>(authorizationFields)
         .whereIn('albumId', albumIds)
-        .whereNull('accessGrant.revokedAt')
-        .where((b) => {
-          b.whereNull('accessGrant.expiresAt').orWhere(
-            'accessGrant.expiresAt',
-            '>',
-            database.fn.now(),
-          );
-        }),
+        .modify(withLiveAuthorizationFilter(database))
+        .select<AnyAuthorizationRow[]>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );
     return partitionByKind(rows);
@@ -160,18 +156,27 @@ export const build__SystemAuthorizationRepository = ({
   getAuthorizationsByIds: async (ids: EntityId[]): Promise<Authorizations> => {
     const rows = await withEnumRevival(
       database('access_grant')
-        .select<AnyAuthorizationRow[]>(authorizationFields)
-        .whereIn('id', ids),
+        .whereIn('id', ids)
+        .modify(withLiveAuthorizationFilter(database))
+        .select<AnyAuthorizationRow[]>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );
     return partitionByKind(rows);
   },
 
-  getPendingUserAuthorizationById: async (id: EntityId): Promise<PendingUserAuthorizationRow> => {
+  getPendingUserAuthorizationById: async (
+    id: EntityId,
+  ): Promise<PendingUserAuthorizationRow | undefined> => {
     const row = await withEnumRevival(
-      database('access_grant').first<AnyAuthorizationRow>(authorizationFields).where({ id }),
+      database('access_grant')
+        .where({ id })
+        .modify(withLiveAuthorizationFilter(database))
+        .first<AnyAuthorizationRow>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );
+    if (!row) {
+      return undefined;
+    }
     // Selecting by id alone can return any of the three kinds, so the row is typed as the
     // union and the guard both enforces and narrows. `.first<PublicLinkAuthorizationRow>()`
     // asserted the answer instead of proving it.

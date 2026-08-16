@@ -17,9 +17,12 @@ type Deps = {
 export const build__AsyncWriter =
   ({ systemAsyncNotificationRepository, logger }: Deps): AsyncWriter =>
   async (n) => {
-    logger.debug(
-      `[AsyncWriter] writing ${n.kind.key} row for recipient: ${n.recipients.map((x) => x.id).join(',')}`,
-    );
+    logger.info('[AsyncWriter] enqueueing async_notification row(s)', {
+      kind: n.kind.value,
+      recipientIds: n.recipients.map((x) => x.id),
+      containerId: n.containerId,
+      subjectId: n.subjectId,
+    });
     await Promise.all(
       n.recipients.map((r) =>
         systemAsyncNotificationRepository.upsertRecipientRow({

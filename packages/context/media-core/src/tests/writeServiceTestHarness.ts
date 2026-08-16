@@ -2,6 +2,7 @@ import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { Album } from '../domain/Album/Album.js';
+import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
@@ -17,6 +18,10 @@ import { build__FinalizeMediaItemUpload } from '../services/writeServices/mediaI
 // repository test doubles in these specs still accept an optional `trx`
 // argument, so this sentinel is threaded through their `save(...)` calls.
 export const testTrx = {} as Knex.Transaction;
+
+// Stand-in unit of work for services that pass their uow through to repo methods
+// (e.g. finalize's transactional job enqueue). db() hands back the same sentinel.
+export const testUow = { db: () => testTrx } as unknown as UnitOfWork;
 
 export const createTestDatabase = (): Knex => {
   const transaction = async <R>(callback: (trx: Knex.Transaction) => Promise<R>): Promise<R> =>
@@ -67,6 +72,7 @@ export const createFinalizeService = (
     mediaItemRepository,
     mediaStorage,
     mediaProcessingJobRepository,
+    uow: testUow,
   });
 
 export const createAlbumService = (_harness: WriteTestHarness, albumRepository: AlbumRepository) =>

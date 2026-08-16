@@ -1,5 +1,5 @@
 import { AsyncNotificationKind } from '@packages/contracts';
-import { indexBy } from '@packages/infrastructure';
+import { indexBy, Logger } from '@packages/infrastructure';
 import {
   AsyncNotification,
   SystemAlbumRepository,
@@ -13,12 +13,14 @@ type AlbumSharedWithNonUserStrategyDeps = {
   systemAlbumRepository: SystemAlbumRepository;
   systemAuthorizationRepository: SystemAuthorizationRepository;
   config: Config;
+  logger: Logger;
 };
 
 export const build__AlbumSharedWithNonUserStrategy = ({
   config,
   systemAlbumRepository,
   systemAuthorizationRepository,
+  logger,
 }: AlbumSharedWithNonUserStrategyDeps): FastSweepNotificationStrategy<'guestAlbumShared'> => ({
   kind: AsyncNotificationKind.guestAlbumShared,
   execute: async (
@@ -33,16 +35,38 @@ export const build__AlbumSharedWithNonUserStrategy = ({
       const recipientEmail = userMap.get(row.recipientId)?.email;
       const pendingUserAuthorization =
         await systemAuthorizationRepository.getPendingUserAuthorizationById(row.subjectId);
+      if (!pendingUserAuthorization) {
+        logger.warn('skipping notification: authorization no longer exists', {
+          notificationId: row.id,
+          subjectId: row.subjectId,
+          kind: row.kind.value,
+        });
+        results.push({
+          row,
+          kind: 'skipped',
+          reason: `authorization no longer exists, notificationId: ${row.id}, subjectId: ${row.subjectId}, kind: ${row.kind.value}`,
+        });
+        continue;
+      }
       const token = pendingUserAuthorization.linkToken;
-      if (!recipientEmail || !token) {
-        results.push({ row, kind: 'skipped', reason: 'no recipient email or token' });
+      if (!recipientEmail) {
+        results.push({ row, kind: 'skipped', reason: 'no user row / email for recipient_id' });
+        continue;
+      }
+      if (!token) {
+        results.push({ row, kind: 'skipped', reason: 'authorization has no link_token' });
         continue;
       }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.containerId);
       // An empty share is an upstream bug, not an email — don't send, just record it.
-      if ((album?.itemCount ?? 0) === 0) {
-        results.push({ row, kind: 'skipped', reason: 'empty album share (itemCount 0)' });
+      // Album-missing and album-empty are distinct failures; keep them distinguishable.
+      if (!album) {
+        results.push({ row, kind: 'skipped', reason: 'album row not found for container_id' });
+        continue;
+      }
+      if ((album.itemCount ?? 0) === 0) {
+        results.push({ row, kind: 'skipped', reason: 'album is empty (itemCount 0)' });
         continue;
       }
       results.push({

@@ -19,5 +19,6 @@ export * from './operationCatalog';
 export * from './reactionEmojis';
 export * from './resourceType';
 export * from './subjectType';
+export * from './sweepCadence';
 export * from './userRole';
 export * from './userStatus';

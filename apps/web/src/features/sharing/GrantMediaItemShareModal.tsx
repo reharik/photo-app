@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client/react';
-import { Operation } from '@packages/contracts';
 import { useMemo, useState } from 'react';
 import {
   CreatePublicLinkForMediaItemsDocument,
@@ -18,7 +17,6 @@ import {
   type GrantSharePublicLinkFormValues,
   type GrantShareUserFormValues,
 } from './GrantShareForm';
-import { valueDisplayFromEnumMembers } from './shareGrantOptionMapping';
 import { useDeleteShareContact } from './useDeleteShareContact';
 
 type GrantMediaItemShareModalProps = {
@@ -55,11 +53,6 @@ export const GrantMediaItemShareModal = ({
   const suggestions: ShareContactType[] = useMemo(
     () => contactsQuery.data?.viewer?.shareContacts ?? [],
     [contactsQuery.data],
-  );
-
-  const operationOptions = useMemo(
-    () => valueDisplayFromEnumMembers([Operation.download, Operation.comment]),
-    [],
   );
 
   const handleSubmit = async (values: GrantShareUserFormValues): Promise<void> => {
@@ -102,7 +95,6 @@ export const GrantMediaItemShareModal = ({
     const input: CreatePublicLinkForMediaItemsInput = {
       mediaItemIds,
       name: values.label,
-      expiresAt: values.expiresAt,
     };
     const result = await createPublicLinkForMediaItems(
       {
@@ -130,7 +122,6 @@ export const GrantMediaItemShareModal = ({
     >
       <GrantShareForm
         suggestions={suggestions}
-        operationOptions={operationOptions}
         onSubmit={handleSubmit}
         onCreatePublicLink={handleCreatePublicLink}
         onDeleteContact={deleteContact}

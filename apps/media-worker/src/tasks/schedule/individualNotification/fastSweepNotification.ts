@@ -53,8 +53,14 @@ export const build__FastSweepNotification = ({
     for (const [kind, kindRows] of byKind) {
       const strategy = fastSweepNotificationStrategies.find((s) => s.kind.value === kind);
       if (!strategy) {
-        kindRows.forEach((row) => [...outcomes, { row, result: 'skipped' }]);
-        logger.warn(`[notification-send] no strategy for kind '${kind}'`);
+        kindRows.forEach((row) => outcomes.push({ row, result: 'skipped' }));
+        logger.warn(
+          '[notification-send] no send strategy for kind — rows left in queue unprocessed',
+          {
+            kind,
+            rowIds: kindRows.map((x) => x.id),
+          },
+        );
         continue;
       }
       promises.push(strategy.execute(kindRows, userMap));
@@ -64,8 +70,15 @@ export const build__FastSweepNotification = ({
     // execute per-kind batch
     for (const r of results) {
       if (r.kind === 'skipped') {
-        logger.warn(`[notification-send] skipped ${r.row.kind.value}: ${r.reason}`);
-        outcomes.push({ row: r.row, result: 'skipped' });
+        logger.warn('[notification-send] row skipped, will be deleted without sending', {
+          reason: r.reason,
+          rowId: r.row.id,
+          kind: r.row.kind.value,
+          recipientId: r.row.recipientId,
+          containerId: r.row.containerId,
+          subjectId: r.row.subjectId,
+        });
+        outcomes.push({ row: r.row, result: 'skipped', reason: r.reason });
         continue;
       }
       const sent = await notificationService.notify(r.payload);
@@ -77,7 +90,7 @@ export const build__FastSweepNotification = ({
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     await systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds);
     await systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
-    logs.forEach((x) => logger.info(x));
+    logs.forEach((x) => logger.info(x.message, x.meta));
     return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };
 };

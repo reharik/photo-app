@@ -1,4 +1,5 @@
 import { AuthorizationKind } from '@packages/contracts';
+import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   PublicAccessIdRow,
   PublicAccessReadRepository,
@@ -13,14 +14,7 @@ export const build__PublicAccessReadRepository = ({
     const publicAccess = await database<PublicAccessIdRow>('accessGrant')
       .where('accessGrant.linkToken', token)
       .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
-      .whereNull('accessGrant.revokedAt')
-      .where((b) => {
-        b.whereNull('accessGrant.expiresAt').orWhere(
-          'accessGrant.expiresAt',
-          '>',
-          database.fn.now(),
-        );
-      })
+      .modify(withLiveAuthorizationFilter(database))
       .first<PublicAccessIdRow>('id as publicAccessId');
     if (!publicAccess) {
       return undefined;
@@ -31,14 +25,7 @@ export const build__PublicAccessReadRepository = ({
     const publicAccess = await database('accessGrant')
       .where('accessGrant.id', publicAccessId)
       .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
-      .whereNull('accessGrant.revokedAt')
-      .where((b) => {
-        b.whereNull('accessGrant.expiresAt').orWhere(
-          'accessGrant.expiresAt',
-          '>',
-          database.fn.now(),
-        );
-      })
+      .modify(withLiveAuthorizationFilter(database))
       .first<PublicAccessRow>();
     if (!publicAccess) {
       return undefined;

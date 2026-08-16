@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { NotificationCadence } from '@packages/contracts';
+import { SweepCadence } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 
 import type { Config } from '../config.js';
+import type { WorkerTasks } from '../generated/ioc-registry.types.js';
 import { build__IntervalGate, type IntervalGate } from '../intervalGate';
-import { build__RunMediaWorkerLoop, runWorkerTasksOnce } from '../runMediaWorkerLoop';
+import { build__RunMediaWorkerLoop, runAllTasks, runWorkerTasksOnce } from '../runMediaWorkerLoop';
 import type { WorkerTask, WorkerTaskOutcome } from '../types.js';
 
 type MockLogger = Logger & {
@@ -31,6 +32,20 @@ const makeTask = (
   order: number,
   run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
 ): WorkerTask => ({ name, order, type: 'queue', run });
+
+/** A scheduled (sweep) WorkerTask whose run() is the supplied mock. */
+const makeSweep = (
+  name: string,
+  cadence: SweepCadence,
+  run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
+): WorkerTask => ({ name, type: 'schedule', cadence, run });
+
+/** Yield N microtask turns so the (timer-parked) loop coroutine can advance. */
+const pump = async (turns: number): Promise<void> => {
+  for (let i = 0; i < turns; i++) {
+    await Promise.resolve();
+  }
+};
 
 /**
  * Stub IntervalGate returning a fixed due-list — the loop resolves its tasks through
@@ -247,6 +262,119 @@ describe('build__RunMediaWorkerLoop', () => {
       await first;
     });
   });
+
+  describe('Two-phase pass: queue segment first, sweeps only when the queue is drained', () => {
+    it('defers sweeps while the queue processes, then runs them once the queue goes idle', async () => {
+      const calls: string[] = [];
+      let queueCalls = 0;
+      const queueRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+        queueCalls += 1;
+        calls.push('queue');
+        return queueCalls === 1 ? 'processed' : 'idle';
+      });
+      const sweepRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+        calls.push('sweep');
+        return 'idle';
+      });
+      const logger = createMockLogger();
+
+      const loop = build__RunMediaWorkerLoop({
+        config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
+        logger,
+        intervalGate: makeGate([
+          makeTask('queue', 100, queueRun),
+          makeSweep('sweep', SweepCadence.slow, sweepRun),
+        ]),
+      });
+
+      const done = loop.start();
+      await pump(30);
+
+      // Pass 1: queue 'processed' → restart WITHOUT running the sweep.
+      // Pass 2: queue 'idle' → sweep segment runs → sweep 'idle' → park on the poll sleep.
+      expect(calls).toEqual(['queue', 'queue', 'sweep']);
+
+      loop.stop();
+      await jest.runOnlyPendingTimersAsync();
+      await done;
+    });
+
+    it('runs every due sweep in the pass — an earlier sweep processing does not skip later ones — and re-polls immediately after sweep work', async () => {
+      const calls: string[] = [];
+      const queueRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+        calls.push('queue');
+        return 'idle';
+      });
+      let sweepACalls = 0;
+      const sweepARun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+        sweepACalls += 1;
+        calls.push('sweepA');
+        return sweepACalls === 1 ? 'processed' : 'idle';
+      });
+      const sweepBRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+        calls.push('sweepB');
+        return 'idle';
+      });
+      const logger = createMockLogger();
+
+      const loop = build__RunMediaWorkerLoop({
+        config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
+        logger,
+        intervalGate: makeGate([
+          makeTask('queue', 100, queueRun),
+          makeSweep('sweepA', SweepCadence.slow, sweepARun),
+          makeSweep('sweepB', SweepCadence.fast, sweepBRun),
+        ]),
+      });
+
+      const done = loop.start();
+      await pump(40);
+
+      // Pass 1: queue idle → sweepA 'processed' AND sweepB still runs (no early
+      // return inside the sweep segment) → sweep work → immediate re-poll, no sleep.
+      // Pass 2: all idle → park. Both passes happen without any timer advance.
+      expect(calls).toEqual(['queue', 'sweepA', 'sweepB', 'queue', 'sweepA', 'sweepB']);
+
+      loop.stop();
+      await jest.runOnlyPendingTimersAsync();
+      await done;
+    });
+
+    it('contains a throwing sweep: logs it, still runs the remaining sweeps, and does not surface a loop error', async () => {
+      const queueRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
+      const sweepARun = jest
+        .fn<() => Promise<WorkerTaskOutcome>>()
+        .mockRejectedValueOnce(new Error('sweep boom'))
+        .mockResolvedValue('idle');
+      const sweepBRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
+      const logger = createMockLogger();
+
+      const loop = build__RunMediaWorkerLoop({
+        config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
+        logger,
+        intervalGate: makeGate([
+          makeTask('queue', 100, queueRun),
+          makeSweep('sweepA', SweepCadence.slow, sweepARun),
+          makeSweep('sweepB', SweepCadence.fast, sweepBRun),
+        ]),
+      });
+
+      const done = loop.start();
+      await pump(30);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        '[mediaWorker] task "sweepA" threw',
+        expect.any(Error),
+      );
+      expect(sweepBRun).toHaveBeenCalled();
+      const loopErrors = logger.error.mock.calls.filter((c) => c[0] === 'Media worker loop error');
+      expect(loopErrors).toHaveLength(0);
+
+      loop.stop();
+      await jest.runOnlyPendingTimersAsync();
+      await done;
+    });
+  });
 });
 
 describe('runWorkerTasksOnce', () => {
@@ -304,6 +432,64 @@ describe('runWorkerTasksOnce', () => {
   });
 });
 
+describe('runAllTasks', () => {
+  // The sweep segment: every task in the list runs to completion each pass —
+  // no early return, and one task's failure never blocks the others.
+
+  it('runs every task — a processed outcome does not stop later tasks', async () => {
+    const calls: string[] = [];
+    const first = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      calls.push('first');
+      return 'processed';
+    });
+    const second = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      calls.push('second');
+      return 'idle';
+    });
+
+    const didWork = await runAllTasks(
+      [
+        makeSweep('first', SweepCadence.slow, first),
+        makeSweep('second', SweepCadence.fast, second),
+      ],
+      createMockLogger(),
+    );
+
+    expect(didWork).toBe(true);
+    expect(calls).toEqual(['first', 'second']);
+  });
+
+  it('returns false when every task is idle', async () => {
+    const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
+
+    const didWork = await runAllTasks(
+      [makeSweep('sweep', SweepCadence.slow, run)],
+      createMockLogger(),
+    );
+
+    expect(didWork).toBe(false);
+  });
+
+  it('logs a throwing task and continues to the rest instead of aborting', async () => {
+    const boom = jest.fn<() => Promise<WorkerTaskOutcome>>().mockRejectedValue(new Error('boom'));
+    const after = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
+    const logger = createMockLogger();
+
+    const didWork = await runAllTasks(
+      [makeSweep('boom', SweepCadence.slow, boom), makeSweep('after', SweepCadence.fast, after)],
+      logger,
+    );
+
+    expect(logger.error).toHaveBeenCalledWith('[mediaWorker] task "boom" threw', expect.any(Error));
+    expect(after).toHaveBeenCalledTimes(1);
+    expect(didWork).toBe(true);
+  });
+
+  it('returns false for an empty list', async () => {
+    await expect(runAllTasks([], createMockLogger())).resolves.toBe(false);
+  });
+});
+
 describe('build__IntervalGate', () => {
   const noopRun = (): jest.Mock<() => Promise<WorkerTaskOutcome>> =>
     jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
@@ -315,33 +501,178 @@ describe('build__IntervalGate', () => {
     run: noopRun(),
   });
 
-  const scheduleTask = (name: string, order: number, cadence: NotificationCadence): WorkerTask => ({
+  const scheduleTask = (
+    name: string,
+    cadence: SweepCadence,
+    run: jest.Mock<() => Promise<WorkerTaskOutcome>> = noopRun(),
+  ): WorkerTask => ({
     name,
-    order,
     type: 'schedule',
     cadence,
-    run: noopRun(),
+    run,
   });
 
-  // Long sweep windows so the gates are open on the first call and closed on the
-  // immediate second call (elapsed ≈ 0 ms « interval).
+  // Long sweep windows so the gates are open on the first call (lastRun starts
+  // at 0) and stay closed once stamped (elapsed ≈ 0 ms « interval).
   const config = { slowSweepIntervalMS: 1_000_000, fastSweepIntervalMS: 1_000_000 } as Config;
 
-  it('always returns queue tasks and includes scheduled tasks only while their gate is open', () => {
-    const gate = build__IntervalGate({
+  // The generated WorkerTasks union narrows each task's `name` to its real
+  // literal; the gate only relies on the WorkerTask shape, so fakes with
+  // test names are cast through it.
+  const gateWith = (tasks: WorkerTask[], cfg: Config = config): IntervalGate =>
+    build__IntervalGate({
       logger: createMockLogger(),
-      config,
-      workerTasks: [
-        queueTask('deletion', 100),
-        scheduleTask('fast-sweep', 200, NotificationCadence.immediate),
-        scheduleTask('slow-sweep', 300, NotificationCadence.batched),
-      ],
+      config: cfg,
+      workerTasks: tasks as unknown as WorkerTasks,
     });
 
-    // First call: both gates open (lastRun starts at 0) → all three, ordered by `order`.
-    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'fast-sweep', 'slow-sweep']);
+  it('returns queue tasks first (sorted by order), then due slow tasks, then due fast tasks', () => {
+    const gate = gateWith([
+      queueTask('deletion', 100),
+      scheduleTask('fast-sweep', SweepCadence.fast),
+      scheduleTask('slow-sweep', SweepCadence.slow),
+    ]);
 
-    // Immediate second call: the sweep gates just fired, so only the always-due queue task remains.
-    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion']);
+    // Both gates open at boot (lastRun starts at 0) → all three, in structural
+    // order. `order` no longer ranks scheduled tasks — only queue tasks carry one.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'slow-sweep', 'fast-sweep']);
+  });
+
+  it('keeps a due sweep due across calls until it actually RUNS — gate-open does not stamp', () => {
+    // Regression: the gate used to stamp lastRun when the gate opened, so a due
+    // sweep skipped by a busy queue pass was charged for a slot it never ran.
+    const gate = gateWith([
+      queueTask('deletion', 100),
+      scheduleTask('slow-sweep', SweepCadence.slow),
+    ]);
+
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'slow-sweep']);
+    // Immediate second and third calls: the sweep never ran, so it is still due.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'slow-sweep']);
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['deletion', 'slow-sweep']);
+  });
+
+  it('closes only the sweep set whose task ran', async () => {
+    const gate = gateWith([
+      scheduleTask('slow-sweep', SweepCadence.slow),
+      scheduleTask('fast-sweep', SweepCadence.fast),
+    ]);
+
+    const due = gate.getTasksDue();
+    expect(due.map((t) => t.name)).toEqual(['slow-sweep', 'fast-sweep']);
+
+    await due.find((t) => t.name === 'slow-sweep')!.run();
+
+    // Slow just ran → stamped closed; fast never ran → still due.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['fast-sweep']);
+  });
+
+  it('stamps at run COMPLETION, not at invocation', async () => {
+    let resolveRun!: (outcome: WorkerTaskOutcome) => void;
+    const inFlightRun = jest
+      .fn<() => Promise<WorkerTaskOutcome>>()
+      .mockReturnValue(new Promise<WorkerTaskOutcome>((res) => (resolveRun = res)));
+    const gate = gateWith([scheduleTask('slow-sweep', SweepCadence.slow, inFlightRun)]);
+
+    const [slow] = gate.getTasksDue();
+    const inFlight = slow.run();
+
+    // Still un-stamped while the run is in flight.
+    expect(gate.getTasksDue().map((t) => t.name)).toEqual(['slow-sweep']);
+
+    resolveRun('idle');
+    await inFlight;
+
+    expect(gate.getTasksDue()).toEqual([]);
+  });
+
+  it('stamps even when the sweep run rejects, so a crashing sweep cannot hot-loop', async () => {
+    const rejectingRun = jest
+      .fn<() => Promise<WorkerTaskOutcome>>()
+      .mockRejectedValue(new Error('boom'));
+    const gate = gateWith([scheduleTask('slow-sweep', SweepCadence.slow, rejectingRun)]);
+
+    const [slow] = gate.getTasksDue();
+    await expect(slow.run()).rejects.toThrow('boom');
+
+    expect(gate.getTasksDue()).toEqual([]);
+  });
+
+  it('reopens a sweep gate after its interval elapses', async () => {
+    jest.useFakeTimers();
+    try {
+      const gate = gateWith([scheduleTask('slow-sweep', SweepCadence.slow)], {
+        slowSweepIntervalMS: 1_000,
+        fastSweepIntervalMS: 1_000,
+      } as Config);
+
+      const [slow] = gate.getTasksDue();
+      await slow.run();
+      expect(gate.getTasksDue()).toEqual([]);
+
+      jest.setSystemTime(Date.now() + 1_001);
+
+      expect(gate.getTasksDue().map((t) => t.name)).toEqual(['slow-sweep']);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('the stamping wrapper preserves the task outcome and name', async () => {
+    const processedRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
+    const gate = gateWith([scheduleTask('slow-sweep', SweepCadence.slow, processedRun)]);
+
+    const [slow] = gate.getTasksDue();
+    expect(slow.name).toBe('slow-sweep');
+    await expect(slow.run()).resolves.toBe('processed');
+  });
+});
+
+describe('IntervalGate + loop composition', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('a sweep due during a queue burst runs once the queue drains — exactly once, not lost, not repeated', async () => {
+    // Regression for the composed bug: stamp-at-open + early return meant a queue
+    // burst at gate-open time consumed the sweep's slot without running it.
+    let queueCalls = 0;
+    const queueRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      queueCalls += 1;
+      return queueCalls <= 2 ? 'processed' : 'idle';
+    });
+    const sweepRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
+    const logger = createMockLogger();
+
+    const gate = build__IntervalGate({
+      logger,
+      config: { slowSweepIntervalMS: 1_000_000, fastSweepIntervalMS: 1_000_000 } as Config,
+      workerTasks: [
+        makeTask('image', 100, queueRun),
+        makeSweep('slow-sweep', SweepCadence.slow, sweepRun),
+      ] as unknown as WorkerTasks,
+    });
+    const loop = build__RunMediaWorkerLoop({
+      config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
+      logger,
+      intervalGate: gate,
+    });
+
+    const done = loop.start();
+    await pump(60);
+
+    // Pass 1+2: queue 'processed', sweep due-but-deferred (and NOT charged).
+    // Pass 3: queue idle → sweep finally runs ('processed') → immediate re-poll.
+    // Pass 4: gate now stamped closed, queue idle → park on the poll sleep.
+    expect(sweepRun).toHaveBeenCalledTimes(1);
+    expect(queueRun).toHaveBeenCalledTimes(4);
+
+    loop.stop();
+    await jest.runOnlyPendingTimersAsync();
+    await done;
   });
 });

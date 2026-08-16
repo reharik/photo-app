@@ -19,6 +19,7 @@ export const build__NotificationCommentStrategy = ({
   systemMediaItemRepository,
   systemUserRepository,
 }: Deps): NotificationStrategy<'commentPosted'> => ({
+  name: 'NotificationCommentStrategy',
   handles: ['commentPosted'],
   branches: ['inAppWriter', 'asyncWriter'],
   resolve: async (event) => {

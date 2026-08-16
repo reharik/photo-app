@@ -1,5 +1,6 @@
 import { AuthorizationKind } from '@packages/contracts';
 import { Knex } from 'knex';
+import { withLiveAuthorizationFilter } from './withLiveAuthorizationFilter';
 
 export const withActivePublicLink =
   (db: Knex, albumId: string, publicLinkId: string) =>
@@ -11,9 +12,6 @@ export const withActivePublicLink =
         .where('ag.albumId', albumId)
         .where('ag.id', publicLinkId)
         .whereIn('ag.kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
-        .whereNull('ag.revokedAt')
-        .andWhere((expiry) => {
-          expiry.whereNull('ag.expiresAt').orWhere('ag.expiresAt', '>', db.raw('now()'));
-        }),
+        .modify(withLiveAuthorizationFilter(db, 'ag')),
     );
   };

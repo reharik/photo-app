@@ -20,6 +20,7 @@ export const build__NotificationReactionStrategy = ({
   systemMediaItemRepository,
   systemUserRepository,
 }: Deps): NotificationStrategy<'reactionAdded'> => ({
+  name: 'NotificationReactionStrategy',
   handles: ['reactionAdded'],
   branches: ['asyncWriter'], // <- the grid hole, as data
   resolve: async (event) => {

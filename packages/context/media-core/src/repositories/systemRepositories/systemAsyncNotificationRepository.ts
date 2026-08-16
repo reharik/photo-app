@@ -1,7 +1,7 @@
 import {
   AsyncNotificationKind,
+  Batching,
   EntityType,
-  NotificationCadence,
   NotificationContainerType,
   NotificationKind,
   NotificationSubjectType,
@@ -83,7 +83,7 @@ export const build__SystemAsyncNotificationRepository = ({
         .whereIn(
           'kind',
           AsyncNotificationKind.items()
-            .filter((x) => x.cadence.equals(NotificationCadence.batched))
+            .filter((x) => x.cadence.equals(Batching.batched))
             .map((x) => x.value),
         ),
       {
@@ -101,7 +101,7 @@ export const build__SystemAsyncNotificationRepository = ({
         .whereIn(
           'kind',
           AsyncNotificationKind.items()
-            .filter((x) => x.cadence.equals(NotificationCadence.immediate))
+            .filter((x) => x.cadence.equals(Batching.immediate))
             .map((x) => x.value),
         ),
       {

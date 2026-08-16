@@ -19,6 +19,7 @@ export const build__NotificationAddedToAlbumStrategy = ({
   systemAuthorizationRepository,
   systemUserRepository,
 }: Deps): NotificationStrategy<'mediaItemAddedToAlbum'> => ({
+  name: 'NotificationAddedToAlbumStrategy',
   handles: ['mediaItemAddedToAlbum'],
   branches: ['inAppWriter', 'asyncWriter'],
   resolve: async (event): Promise<ResolvedNotification> => {
@@ -46,6 +47,7 @@ export const build__NotificationAddedToAlbumStrategy = ({
 export const build__NotificationAlbumSharedStrategy = ({
   systemUserRepository,
 }: Deps): NotificationStrategy<'albumSharedWithUser'> => ({
+  name: 'NotificationAlbumSharedStrategy',
   handles: ['albumSharedWithUser'],
   branches: ['inAppWriter', 'asyncWriter'],
   resolve: async (event): Promise<ResolvedNotification> => {
@@ -65,6 +67,7 @@ export const build__NotificationAlbumSharedStrategy = ({
 export const build__NotificationGuestAlbumSharedStrategy = ({
   systemUserRepository,
 }: Deps): NotificationStrategy<'albumSharedWithPendingUser'> => ({
+  name: 'NotificationGuestAlbumSharedStrategy',
   handles: ['albumSharedWithPendingUser'],
   branches: ['asyncWriter'],
   resolve: async (event): Promise<ResolvedNotification> => {

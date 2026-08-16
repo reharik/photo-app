@@ -33,8 +33,10 @@ export default defineIocConfig({
   },
   groups: {
     workerTasks: {
+      // Nominal-heritage membership can't target the WorkerTask UNION; the shared
+      // base is what every per-task contract interface transitively extends.
       kind: 'collection',
-      baseType: 'WorkerTask',
+      baseType: 'WorkerTaskBase',
     },
     fastSweepNotificationStrategies: {
       kind: 'collection',

@@ -1,29 +1,52 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaItemStatus } from '@packages/contracts';
-import { build__MediaProcessingJobRepository } from '@packages/media-core';
-import { DatabaseError } from 'pg';
+import { build__MediaProcessingJobRepository, type UnitOfWork } from '@packages/media-core';
 
 import type { AppCradle } from '../generated/ioc-composed.js';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
+/** The repo itself is constructed on the raw singleton handle (claim path). */
+const rawDatabase = Object.assign(jest.fn(), { fn: { now: () => 'NOW()' } });
+
+/**
+ * Fake uow whose db() records inserts and the conflict-handling chain — the enqueue
+ * must go through the caller's transaction, never the raw handle.
+ */
+const createFakeUow = () => {
+  const inserts: unknown[] = [];
+  const chains: string[] = [];
+  const trx = Object.assign(
+    jest.fn(() => ({
+      insert: (row: unknown) => {
+        inserts.push(row);
+        return {
+          onConflict: (...args: unknown[]) => {
+            chains.push(args.length === 0 ? 'onConflict()' : 'onConflict(target)');
+            return {
+              ignore: () => {
+                chains.push('ignore()');
+                return Promise.resolve();
+              },
+            };
+          },
+        };
+      },
+    })),
+    { fn: { now: () => 'NOW()' } },
+  );
+  const uow = { db: () => trx } as unknown as UnitOfWork;
+  return { uow, inserts, chains };
+};
+
 describe('build__MediaProcessingJobRepository', () => {
   describe('enqueueIfNoneActive', () => {
-    describe('When insert succeeds', () => {
-      it('should insert a pending job row', async () => {
-        const inserts: unknown[] = [];
-        const database = Object.assign(
-          jest.fn(() => ({
-            insert: (row: unknown) => {
-              inserts.push(row);
-              return Promise.resolve();
-            },
-          })),
-          { fn: { now: () => 'NOW()' } },
-        );
+    describe('When called with a unit of work', () => {
+      it('should insert a pending job row through the uow transaction with ON CONFLICT DO NOTHING', async () => {
+        const { uow, inserts, chains } = createFakeUow();
 
-        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
-        await repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID });
+        const repo = build__MediaProcessingJobRepository({ database: rawDatabase } as AppCradle);
+        await repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }, uow);
 
         expect(inserts).toHaveLength(1);
         expect(inserts[0]).toEqual(
@@ -36,40 +59,32 @@ describe('build__MediaProcessingJobRepository', () => {
           }),
         );
         expect(typeof (inserts[0] as { id: string }).id).toBe('string');
+        // Targetless ON CONFLICT DO NOTHING (any arbiter, incl. the partial unique
+        // index) — NOT try/catch on 23505, which would abort the caller's trx.
+        expect(chains).toEqual(['onConflict()', 'ignore()']);
+        // The raw handle must not have been queried — autocommit here is the
+        // enqueue-before-commit race.
+        expect(rawDatabase).not.toHaveBeenCalled();
       });
     });
 
-    describe('When insert fails with unique violation', () => {
-      it('should swallow the error', async () => {
-        const err = new DatabaseError('duplicate key', 10, 'error');
-        err.code = '23505';
-
-        const database = Object.assign(
-          jest.fn(() => ({
-            insert: () => Promise.reject(err),
-          })),
-          { fn: { now: () => 'NOW()' } },
-        );
-
-        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
-        await expect(
-          repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
-        ).resolves.toBeUndefined();
-      });
-    });
-
-    describe('When insert fails for another reason', () => {
+    describe('When the transactional insert fails for a non-conflict reason', () => {
       it('should propagate the error', async () => {
-        const database = Object.assign(
+        const trx = Object.assign(
           jest.fn(() => ({
-            insert: () => Promise.reject(new Error('connection refused')),
+            insert: () => ({
+              onConflict: () => ({
+                ignore: () => Promise.reject(new Error('connection refused')),
+              }),
+            }),
           })),
           { fn: { now: () => 'NOW()' } },
         );
+        const uow = { db: () => trx } as unknown as UnitOfWork;
 
-        const repo = build__MediaProcessingJobRepository({ database } as AppCradle);
+        const repo = build__MediaProcessingJobRepository({ database: rawDatabase } as AppCradle);
         await expect(
-          repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
+          repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }, uow),
         ).rejects.toThrow('connection refused');
       });
     });
