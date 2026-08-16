@@ -10,7 +10,7 @@ export const withLiveAuthorizationFilter =
   };
 
 export const withActiveGrants =
-  (db: Knex, viewerId: EntityId, table?: string) =>
+  (db: Knex, viewerId: EntityId, table = 'accessGrant') =>
   (qb: Knex.QueryBuilder): void => {
     qb.where(`${table}.grantedToUser`, viewerId).modify(withLiveAuthorizationFilter(db, table));
   };
