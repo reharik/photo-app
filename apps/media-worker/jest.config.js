@@ -30,8 +30,11 @@ export default {
   // Jest owns `*.tests.ts`; single-`test` files (`*.test.ts`, e.g. the exif
   // suites) run under node:test via `node --test` (see project.json), so keep
   // them out of jest to avoid double-running / runner-API clashes.
+  // `*.integration.tests.ts` needs a real Postgres and runs only under
+  // jest.integration.config.js (`nx run media-worker:test-integration`) — the
+  // plain `test` target executes in CI's DB-less Test job.
   testMatch: ['**/tests/**/*.tests.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '\\.test\\.ts$'],
+  testPathIgnorePatterns: ['/node_modules/', '\\.test\\.ts$', '\\.integration\\.tests\\.ts$'],
   transformIgnorePatterns: [
     'node_modules/(?!(@reharik/smart-enum|@reharik/smart-enum-knex|case-anything|@network|koa|@koa|only|http-errors|statuses)/)',
   ],

@@ -212,11 +212,15 @@ jobs:
     # note in the header.
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    # Real-Postgres integration suite (apps/api/src/tests/*.integration.tests.ts). The unit
-    # `test` job runs jest.config.js, which IGNORES *.integration.tests.ts and has no DB, so
-    # these never ran in CI. This job stands up Postgres and runs jest.integration.config.js
-    # (via `nx run api:test-integration`). It guards the write-boundary uow-rollback property
-    # (graphql.uowRollbackBoundary.integration.tests.ts) among the rest of the suite.
+    # Real-Postgres integration suites (apps/api and apps/media-worker
+    # src/tests/*.integration.tests.ts). The unit `test` job runs each project's
+    # jest.config.js, which IGNORES *.integration.tests.ts and has no DB, so these never
+    # ran in CI. This job stands up Postgres and runs the jest.integration.config.js of
+    # both projects (via `nx run <proj>:test-integration`). The api suite guards the
+    # write-boundary uow-rollback property (graphql.uowRollbackBoundary.integration.tests.ts)
+    # among the rest; the worker suite covers its DB-backed sweeps. The worker's config
+    # reads the same POSTGRES_* job env (its .env is git-ignored, absent here), and the
+    # api's migrations create the schema for both.
     services:
       postgres:
         image: postgres:16-alpine
@@ -275,8 +279,10 @@ jobs:
         run: npm run gen:gql:all
       - name: DB migrate
         run: npm run db:migrate
-      - name: Integration tests (real Postgres)
+      - name: API integration tests (real Postgres)
         run: npm run test:integration:api
+      - name: Worker integration tests (real Postgres)
+        run: npm run test:integration:worker
 
   build:
     name: Build

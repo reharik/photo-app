@@ -18,6 +18,10 @@
  * direct insert with a backdated startedAt; producing a real stall is not attempted.
  * The slow-cadence timer is the interval gate's behavior, not this task's, and is
  * deliberately untested here.
+ *
+ * Harness: the worker's own container (real Postgres, schema migrated by the api's
+ * migrations). Moved here from apps/api — the sweep is worker code and needs no
+ * GraphQL; the api harness was only ever borrowed for its DB.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -27,9 +31,10 @@ import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import { build__StalledMediaJobSweep } from '../../../media-worker/src/tasks/schedule/stalledMediaJobSweep/stalledMediaJobSweep.js';
-import type { AppCradle } from '../di/generated/ioc-composed.js';
-import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
+import { destroyWorkerContainer, initializeWorkerContainer } from '../container.js';
+import type { AppCradle } from '../generated/ioc-composed.js';
+import { build__StalledMediaJobSweep } from '../tasks/schedule/stalledMediaJobSweep/stalledMediaJobSweep.js';
+import { ensureTestViewerUsers } from './ensureTestViewerUsers';
 import { resetIntegrationTestDb } from './resetDb';
 import { TEST_VIEWER_1_ID, TEST_VIEWER_B_ID } from './testViewerIds';
 
@@ -52,13 +57,17 @@ describe('stalled media job sweep (integration)', () => {
   let database: Knex;
 
   beforeAll(async () => {
-    const setup = await setupGraphqlIntegrationTests();
-    container = setup.container;
+    container = initializeWorkerContainer();
     database = container.resolve('database');
+    await ensureTestViewerUsers(database);
   });
 
   afterEach(async () => {
     await resetIntegrationTestDb(database);
+  });
+
+  afterAll(async () => {
+    await destroyWorkerContainer();
   });
 
   const createFakeLogger = () => ({
