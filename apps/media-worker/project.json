@@ -101,6 +101,14 @@
         }
       }
     },
+    "test-integration": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "command": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.integration.config.js --runInBand --passWithNoTests",
+        "cwd": "{projectRoot}"
+      }
+    },
     "format": {
       "executor": "nx:run-commands",
       "options": {

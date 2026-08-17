@@ -21,31 +21,23 @@
  *      undefined; the row itself survives — it's the revoked_at filter, not a delete).
  *      This is the dead-invite-link fix: the send strategy puts linkToken in the email
  *      body, so a revoked grant leaking through here would mail a dead link.
- *  D.  the guest-invite send sweep skips a row whose authorization no longer exists
- *      instead of throwing. Before the strategy fix this was a TypeError that aborted the
- *      whole pass, taking every other queued notification down with it. Observable
- *      outcomes: the pass completes, the healthy row still sends, both rows are cleaned up.
+ *  (D — the guest-invite send sweep surviving a row whose authorization is gone — is
+ *  worker behavior and lives in apps/media-worker/src/tests/
+ *  fastSweepOrphanedAuthorization.integration.tests.ts. Scenario B here still pins that
+ *  the api-side event bus produces the async_notification rows that sweep consumes.)
  *
  * Harness: the shared GraphQL integration setup (real Postgres, real container, real
  * post-commit event bus — async_notification rows are written by the dispatcher and are
- * assertable because the worker sweep does not run here). The sweep in D is hand-built
- * from the media-worker factories with container-resolved repos, the same pattern as
- * stalledMediaJobSweep.integration.tests.ts. Accept in A2 mirrors the controller's
- * uow-scope path, same as authPasswordReset.integration.tests.ts.
+ * assertable because the worker sweep does not run here). Accept in A2 mirrors the
+ * controller's uow-scope path, same as authPasswordReset.integration.tests.ts.
  */
-import { jest } from '@jest/globals';
-import { ok } from '@packages/contracts';
 import { beginUnitOfWorkScope, registerDomainEventHandlers } from '@packages/media-core';
-import type { NotificationService } from '@packages/notifications';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import { DateTime } from 'luxon';
 import assert from 'node:assert';
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { Config as WorkerConfig } from '../../../media-worker/src/config.js';
-import { build__FastSweepNotification } from '../../../media-worker/src/tasks/schedule/individualNotification/fastSweepNotification.js';
-import { build__AlbumSharedWithNonUserStrategy } from '../../../media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.js';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
@@ -122,7 +114,7 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     database = container.resolve('database');
     // The shared setup builds the container but (unlike index.ts's bootstrap) never wires
     // the post-commit event bus, so no suite before this one observed post-commit effects.
-    // B and D assert on async_notification rows written by the NotificationDispatcher, so
+    // B asserts on async_notification rows written by the NotificationDispatcher, so
     // mirror the boot wiring here. Scoped to this file: jest gives each test file its own
     // module registry, hence its own container and eventPublisher.
     registerDomainEventHandlers(
@@ -405,99 +397,6 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       const row = await database('accessGrant').where({ id: invite.id }).first<GrantRow>();
       expect(row).toBeDefined();
       expect(row.revokedAt).toBeInstanceOf(Date);
-    });
-  });
-
-  describe('D — send sweep survives a row whose authorization is gone', () => {
-    const createFakeLogger = () => ({
-      error: jest.fn(),
-      warn: jest.fn(),
-      info: jest.fn(),
-      http: jest.fn(),
-      verbose: jest.fn(),
-      debug: jest.fn(),
-    });
-
-    it('skips + cleans the orphaned row and still sends the healthy one in the same claim', async () => {
-      const guest1 = `guest1-${randomUUID()}@example.test`;
-      const guest2 = `guest2-${randomUUID()}@example.test`;
-      const albumId = await createAlbum('sweep-survives-orphan');
-
-      // The send strategy refuses empty albums, so give it one item (direct insert —
-      // the worker that readies real uploads does not run here).
-      const mediaItemId = randomUUID();
-      await database('mediaItem').insert({
-        id: mediaItemId,
-        ownerId: TEST_VIEWER_1_ID,
-        kind: 'PHOTO',
-        mimeType: 'image/png',
-        sizeBytes: 67,
-        status: 'READY',
-        createdBy: TEST_VIEWER_1_ID,
-        updatedBy: TEST_VIEWER_1_ID,
-      });
-      await database('albumItem').insert({
-        id: randomUUID(),
-        albumId,
-        mediaItemId,
-        orderIndex: 0,
-        createdBy: TEST_VIEWER_1_ID,
-        updatedBy: TEST_VIEWER_1_ID,
-      });
-
-      await shareAlbum(albumId, [guest1, guest2]);
-      const guest1Id = await userIdByEmail(guest1);
-      const guest2Id = await userIdByEmail(guest2);
-      const [invite1] = await grantRowsFor(albumId, guest1Id);
-      const [invite2] = await grantRowsFor(albumId, guest2Id);
-      expect(
-        await database('asyncNotification').whereIn('subjectId', [invite1.id, invite2.id]),
-      ).toHaveLength(2);
-
-      // Orphan guest2's queued row: its authorization vanishes (out-of-band delete —
-      // the row-gone case the strategy must survive; a cascade from an album delete
-      // produces the same state).
-      await database('accessGrant').where({ id: invite2.id }).delete();
-
-      const notify = jest.fn<NotificationService['notify']>(async () => ok('sent-id'));
-      const logger = createFakeLogger();
-      const workerConfig = {
-        clientUrl: 'http://sweep.test',
-        debounceEmailWindowSeconds: 0,
-      } as WorkerConfig;
-      const sweep = build__FastSweepNotification({
-        logger,
-        notificationService: { notify },
-        systemAsyncNotificationRepository: container.resolve('systemAsyncNotificationRepository'),
-        systemUserRepository: container.resolve('systemUserRepository'),
-        config: workerConfig,
-        fastSweepNotificationStrategies: [
-          build__AlbumSharedWithNonUserStrategy({
-            config: workerConfig,
-            systemAlbumRepository: container.resolve('systemAlbumRepository'),
-            systemAuthorizationRepository: container.resolve('systemAuthorizationRepository'),
-            logger,
-          }),
-        ],
-      });
-
-      // Before the strategy fix this pass threw (TypeError on the missing row) and
-      // NOTHING in the claim was sent or cleaned up.
-      const outcome = await sweep();
-      expect(outcome).toBe('processed');
-
-      // The healthy row sent — with guest1's live invite link.
-      expect(notify).toHaveBeenCalledTimes(1);
-      const payload = notify.mock.calls[0][0];
-      expect(payload.to).toBe(guest1);
-      expect(payload.template).toBe('guestAlbumShared');
-      const data = payload.data as { inviteUrl: string };
-      expect(data.inviteUrl).toBe(`http://sweep.test/shared/${invite1.linkToken}`);
-
-      // Both rows are gone from the queue: sent → deleted, skipped → deleted.
-      expect(
-        await database('asyncNotification').whereIn('subjectId', [invite1.id, invite2.id]),
-      ).toHaveLength(0);
     });
   });
 });

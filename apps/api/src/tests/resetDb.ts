@@ -34,6 +34,10 @@ export const cleanMediaStorageRoot = async (mediaStorageRoot: string): Promise<v
  * Clears app-owned rows for integration tests. Uses physical PostgreSQL table names
  * (Knex models use camelCase; raw SQL does not).
  *
+ * ⚠️ The TRUNCATE table list below is DUPLICATED in apps/media-worker/src/tests/resetDb.ts
+ * (deliberately — no shared test-support package). When a migration adds a table,
+ * update BOTH copies.
+ *
  * Re-seed stable test users afterward — `beforeAll` only runs once per suite, so
  * `afterEach` must restore `user` rows tests rely on for FKs and auth.
  */

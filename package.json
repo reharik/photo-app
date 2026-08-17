@@ -78,6 +78,7 @@
     "test:e2e:trace": "nx run e2e:test:trace",
     "test:e2e:ui": "nx run e2e:test:ui",
     "test:integration:api": "nx run api:test-integration",
+    "test:integration:worker": "nx run media-worker:test-integration",
     "test:media-core": "nx test media-core",
     "test:web": "nx test web",
     "test:worker": "nx test media-worker",
