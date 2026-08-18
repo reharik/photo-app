@@ -1,0 +1,1 @@
+Successfully validated SNS topic for Amazon SES event publishing.

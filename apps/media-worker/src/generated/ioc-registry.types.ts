@@ -3,6 +3,7 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Logger } from '@packages/infrastructure';
 import type {
+  EmailDeliveryRepository,
   MediaDeletionJobRepository,
   MediaItemRepository,
   MediaProcessingJobRepository,
@@ -113,6 +114,7 @@ export type WorkerTasks = ReadonlyArray<
 
 export interface IocExternals {
   container: AwilixContainer<IocGeneratedCradle>;
+  emailDeliveryRepository: EmailDeliveryRepository;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemRepository: MediaItemRepository;

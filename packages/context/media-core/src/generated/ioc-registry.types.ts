@@ -13,6 +13,7 @@ import type { AsyncWriter } from '../notifications/writers/asyncWriter.js';
 import type { InAppWriter } from '../notifications/writers/inAppWriter.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { CommentRepository } from '../repositories/domainRepositories/commentRepository.js';
+import type { EmailDeliveryRepository } from '../repositories/domainRepositories/emailDeliverRepository.js';
 import type { EmailVerificationRepository } from '../repositories/domainRepositories/emailVerificationRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { NotificationRepository } from '../repositories/domainRepositories/notificationRepository.js';
@@ -79,6 +80,7 @@ import type { GrantUserAuthorization } from '../services/writeServices/authoriza
 import type { AddComment } from '../services/writeServices/comments/addComment.js';
 import type { DeleteComment } from '../services/writeServices/comments/deleteComment.js';
 import type { EditComment } from '../services/writeServices/comments/editComment.js';
+import type { CreateEmailDeliveryService } from '../services/writeServices/EmailDelivery/createEmailDeliveryService.js';
 import type { MarkActivitySeen } from '../services/writeServices/markActivitySeen.js';
 import type { CreateMediaUpload } from '../services/writeServices/mediaItem/createMediaItemUpload.js';
 import type { DeleteMediaItem } from '../services/writeServices/mediaItem/deleteMediaItem.js';
@@ -113,6 +115,7 @@ export interface IocGeneratedCradle {
   commentReadService: CommentReadService;
   commentRepository: CommentRepository;
   createAlbum: CreateAlbum;
+  createEmailDeliveryService: CreateEmailDeliveryService;
   createMediaItemUpload: CreateMediaUpload;
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
@@ -137,6 +140,7 @@ export interface IocGeneratedCradle {
     >
   >;
   editComment: EditComment;
+  emailDeliveryRepository: EmailDeliveryRepository;
   emailVerificationRepository: EmailVerificationRepository;
   enrichMediaItems: EnrichMediaItems;
   eventPublisher: EventPublisher;
@@ -237,6 +241,7 @@ export interface IocGeneratedCradle {
     addComment: AddComment;
     addMediaItemsToAlbum: AddMediaItemsToAlbum;
     createAlbum: CreateAlbum;
+    createEmailDeliveryService: CreateEmailDeliveryService;
     createMediaUpload: CreateMediaUpload;
     createPublicLinkForAlbum: CreatePublicLinkForAlbum;
     createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;
@@ -322,6 +327,7 @@ export type WriteServices = {
   addComment: AddComment;
   addMediaItemsToAlbum: AddMediaItemsToAlbum;
   createAlbum: CreateAlbum;
+  createEmailDeliveryService: CreateEmailDeliveryService;
   createMediaUpload: CreateMediaUpload;
   createPublicLinkForAlbum: CreatePublicLinkForAlbum;
   createPublicLinkForMediaItems: CreatePublicLinkForMediaItems;

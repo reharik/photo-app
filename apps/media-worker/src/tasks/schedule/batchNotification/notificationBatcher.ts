@@ -1,6 +1,11 @@
-import { BatchedPayloadKind, notEmpty } from '@packages/contracts';
+import { BatchedPayloadKind, EmailKind, notEmpty, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
-import { SystemAsyncNotificationRepository, SystemUserRepository } from '@packages/media-core';
+import {
+  EmailDelivery,
+  EmailDeliveryRepository,
+  SystemAsyncNotificationRepository,
+  SystemUserRepository,
+} from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
 import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
@@ -15,6 +20,7 @@ type NotificationBatcherDeps = {
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   batchedEmailActivity: BatchedEmailActivity;
+  emailDeliveryRepository: EmailDeliveryRepository;
   config: Config;
 };
 
@@ -24,6 +30,7 @@ export const build__NotificationBatcher = ({
   systemAsyncNotificationRepository,
   systemUserRepository,
   batchedEmailActivity,
+  emailDeliveryRepository,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
   return async (): Promise<WorkerTaskOutcome> => {
@@ -43,20 +50,30 @@ export const build__NotificationBatcher = ({
       bad.forEach((row) => outcomes.push({ row, result: 'skipped', reason: 'null-recipient' }));
     }
 
-    const recipientMap = groupByMapping(
-      rows.filter((r) => notEmpty(r.recipientId)),
-      (x) => x.recipientId,
-    );
+    const candidates = rows.filter((r) => notEmpty(r.recipientId));
 
-    const userIds = [...recipientMap.keys()];
-    const recipientEmailMap = indexBy(await systemUserRepository.getUserContacts(userIds));
-
-    const activityPayloads = batchedEmailActivity.map((x) => x.execute(rows));
+    const activityPayloads = batchedEmailActivity.map((x) => x.execute(candidates));
     // section processors are independent — run together
     const payloads = await Promise.all(activityPayloads);
 
     // outcomes surfaced by processors (skipped rows) merge with send outcomes below
-    outcomes.push(...payloads.flatMap((x) => x.outcomes));
+    outcomes.push(...payloads.flatMap((x) => x.deadRows));
+    const liveRows = payloads.flatMap((x) => x.livingRows);
+    const accountedFor = new Set([...outcomes.map((o) => o.row.id), ...liveRows.map((r) => r.id)]);
+    const orphans = candidates.filter((r) => !accountedFor.has(r.id));
+    if (orphans.length) {
+      logger.error('[batcher] rows matched no section processor', {
+        rowIds: orphans.map((r) => r.id),
+      });
+      orphans.forEach((row) =>
+        outcomes.push({ row, result: 'skipped', reason: 'no section processor' }),
+      );
+    }
+    const recipientMap = groupByMapping(liveRows, (x) => x.recipientId);
+
+    const userIds = [...recipientMap.keys()];
+    const recipientEmailMap = indexBy(await systemUserRepository.getUserContacts(userIds));
+
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
@@ -67,8 +84,9 @@ export const build__NotificationBatcher = ({
             rowIds: rowsForRecipient.map((x) => x.id),
           },
         );
-        for (const row of rowsForRecipient)
+        for (const row of rowsForRecipient) {
           outcomes.push({ row, result: 'skipped', reason: 'no user row / email for recipient_id' });
+        }
         continue;
       }
       const data = new Map<BatchedPayloadKind, ActivitySection>();
@@ -78,6 +96,13 @@ export const build__NotificationBatcher = ({
           data.set(x.kind, activity);
         }
       });
+      if (data.size === 0) {
+        for (const row of rowsForRecipient) {
+          outcomes.push({ row, result: 'skipped', reason: 'no activity sections for recipient' });
+        }
+        continue;
+      }
+
       const payload: NotificationPayload<'activityDigest'> = {
         to: recipientEmail.email,
         template: 'activityDigest',
@@ -85,7 +110,27 @@ export const build__NotificationBatcher = ({
         channels: ['email'],
       };
       const r = await notificationService.notify(payload);
-      const result = r.success ? 'sent' : 'failed';
+
+      let result = 'failed' as 'skipped' | 'sent' | 'failed';
+      if (r.success) {
+        result = 'sent';
+        const newEmailDelivery = EmailDelivery.create(
+          {
+            sesMessageId: r.value,
+            emailKind: EmailKind.activityDigest,
+            recipientEmail: recipientEmail.email,
+          },
+          SYSTEM_ACTOR_ID,
+        );
+        try {
+          await emailDeliveryRepository.save(newEmailDelivery);
+        } catch (e) {
+          logger.error(
+            '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',
+            { sesMessageId: r.value, error: e },
+          );
+        }
+      }
 
       // one send → fan its fate across all this recipient's rows (reactions ride along)
       for (const row of rowsForRecipient) outcomes.push({ row, result });

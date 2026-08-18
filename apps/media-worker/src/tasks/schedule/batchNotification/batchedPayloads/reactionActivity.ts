@@ -30,39 +30,49 @@ type ReactionActivityDeps = {
 export const build__ReactionActivity = ({
   systemUserRepository,
   systemCommentRepository,
-  logger,
 }: ReactionActivityDeps): ReactionActivity => ({
   execute: async (rows): Promise<ActivityResult> => {
     const reactionRowKind = pickEnum(AsyncNotificationKind, ['reactionAdded']);
     const reactionRows = filterByMember(rows, 'kind', reactionRowKind);
-    const users = await systemUserRepository.getActiveUsers(reactionRows.map((x) => x.actorId));
+    const users = await systemUserRepository.getActiveUsers(
+      reactionRows.map((x) => x.actorId).filter(notEmpty),
+    );
     const userMap = indexBy(users);
 
-    const commentRowKind = pickEnum(EntityType, ['comment']);
-    const commentReactionRows = filterByMember(rows, 'containerType', commentRowKind).map(
+    const commentContainerKind = pickEnum(EntityType, ['comment']);
+    const commentIds = filterByMember(reactionRows, 'containerType', commentContainerKind).map(
       (x) => x.containerId,
     );
-    const comments = await systemCommentRepository.getCommentsByIds(commentReactionRows);
+    const comments = await systemCommentRepository.getCommentsByIds(commentIds);
     const mediaIdMap = indexBy(
       comments,
       (x) => x.id,
       (x) => x.targetId,
     );
 
-    // resolve each row ONCE → row + its fate + (if resolved) the rendered line
+    // resolve each row ONCE → row + its fate + (if resolved) the rendered line.
+    // Link-target resolution happens HERE, not at render time, so a deleted
+    // comment is a fate with a reason instead of a mid-render disappearance.
     const resolved = reactionRows.map((row) => {
-      const user = userMap.get(row.actorId);
+      const user = row.actorId ? userMap.get(row.actorId) : undefined;
       if (!user) {
+        return { row, result: 'skipped' as const, reason: 'actor not found / inactive' };
+      }
+      // A reaction's link target is the underlying media item. When the reaction
+      // is on the media item itself, that IS the containerId; when it's on a
+      // comment, resolve the comment's targetId (mediaIdMap is keyed by comment id).
+      const mediaId = EntityType.mediaItem.equals(row.containerType)
+        ? row.containerId
+        : mediaIdMap.get(row.containerId);
+      if (!mediaId) {
         return {
           row,
           result: 'skipped' as const,
-          recipientId: row.recipientId,
-          reason: 'actor not found / inactive',
+          reason: 'reaction target comment missing — deleted since enqueue?',
         };
       }
-      const reactorName = toDisplayName(user);
       const line: ReactionItem = {
-        reactorName,
+        reactorName: toDisplayName(user),
         reactionTargetType: row.containerType as EnumSubset<EntityType, 'comment' | 'mediaItem'>,
       };
       return {
@@ -70,48 +80,37 @@ export const build__ReactionActivity = ({
         result: 'resolved' as const,
         recipientId: row.recipientId,
         targetItemId: row.containerId,
+        mediaId,
         line,
       };
     });
-    const outcomes: RowOutcome[] = resolved
-      .filter((r) => r.result === 'skipped')
-      .map(({ row, reason }) => ({
-        row,
-        result: 'skipped' as const,
-        reason,
-      }));
 
-    // group only the survivors, and only for building the section
-    const survivors = resolved.filter((r) => r.result === 'resolved');
+    const deadRows: RowOutcome[] = resolved
+      .filter((r) => r.result === 'skipped')
+      .map(({ row, reason }) => ({ row, result: 'skipped' as const, reason }));
+
+    const survivors = resolved.filter(
+      (r): r is Extract<(typeof resolved)[number], { result: 'resolved' }> =>
+        r.result === 'resolved',
+    );
     const byRecipient = groupByMapping(survivors, (r) => r.recipientId);
 
     const reactionSection = new Map<string, ReactionSection>();
     for (const [recipientId, rs] of byRecipient) {
       const byItem = groupByMapping(rs, (r) => r.targetItemId);
-      const items = [...byItem]
-        .map(([containerId, itemRs]) => {
-          // A reaction's link target is the underlying media item. When the reaction
-          // is on the media item itself, that IS the containerId; when it's on a
-          // comment, resolve the comment's targetId (mediaIdMap is keyed by comment id).
-          const containerType = itemRs[0]?.row.containerType;
-          const mediaId =
-            containerType && containerType.equals(EntityType.mediaItem)
-              ? containerId
-              : mediaIdMap.get(containerId);
-          if (!mediaId) {
-            logger.warn('reaction row missing mediaId, skipping');
-            return;
-          }
-          return {
-            containerId,
-            mediaId,
-            reactions: itemRs.map((r) => r.line),
-          };
-        })
-        .filter(notEmpty);
+      const items = [...byItem].map(([containerId, itemRs]) => ({
+        containerId,
+        mediaId: itemRs[0].mediaId, // uniform per group: targetItemId ⇒ same target ⇒ same mediaId
+        reactions: itemRs.map((r) => r.line),
+      }));
       reactionSection.set(recipientId, items);
     }
 
-    return { kind: BatchedPayloadKind.reaction, activity: reactionSection, outcomes };
+    return {
+      kind: BatchedPayloadKind.reaction,
+      activity: reactionSection,
+      deadRows,
+      livingRows: survivors.map((r) => r.row),
+    };
   },
 });

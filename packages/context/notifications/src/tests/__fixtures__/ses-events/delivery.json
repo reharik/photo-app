@@ -1,0 +1,46 @@
+{
+  "eventType": "Delivery",
+  "mail": {
+    "timestamp": "2026-08-17T15:18:46.943Z",
+    "source": "invites@homeroll.app",
+    "sourceArn": "arn:aws:ses:us-east-1:709865789463:identity/homeroll.app",
+    "sendingAccountId": "709865789463",
+    "messageId": "010001a0104dc39f-e65a49f3-664b-4079-94e0-75125c8a6a3a-000000",
+    "destination": ["success@simulator.amazonses.com"],
+    "headersTruncated": false,
+    "headers": [
+      { "name": "From", "value": "invites@homeroll.app" },
+      { "name": "To", "value": "success@simulator.amazonses.com" },
+      { "name": "Subject", "value": "chain test" },
+      { "name": "MIME-Version", "value": "1.0" },
+      { "name": "Content-Type", "value": "text/plain; charset=UTF-8" },
+      { "name": "Content-Transfer-Encoding", "value": "7bit" }
+    ],
+    "commonHeaders": {
+      "from": ["invites@homeroll.app"],
+      "to": ["success@simulator.amazonses.com"],
+      "messageId": "010001a0104dc39f-e65a49f3-664b-4079-94e0-75125c8a6a3a-000000",
+      "subject": "chain test"
+    },
+    "tags": {
+      "ses:source-tls-version": ["TLSv1.3"],
+      "ses:operation": ["SendEmail"],
+      "ses:configuration-set": ["homeroll-events"],
+      "ses:recipient-isp": ["AmazonSES"],
+      "ses:outgoing-tls-version": ["TLSv1.3"],
+      "ses:source-ip": ["136.49.200.151"],
+      "ses:from-domain": ["homeroll.app"],
+      "ses:sender-identity": ["homeroll.app"],
+      "ses:caller-identity": ["AWSReservedSSO_AdministratorAccess_5d9c514feea949fd"],
+      "ses:outgoing-ip": ["54.240.8.221"]
+    }
+  },
+  "delivery": {
+    "timestamp": "2026-08-17T15:18:47.266Z",
+    "processingTimeMillis": 323,
+    "recipients": ["success@simulator.amazonses.com"],
+    "smtpResponse": "250 Ok",
+    "remoteMtaIp": "32.197.85.202",
+    "reportingMTA": "a8-221.smtp-out.amazonses.com"
+  }
+}

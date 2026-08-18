@@ -7,6 +7,7 @@ export * from './domainRepositories/AggregateRepo';
 export * from './domainRepositories/albumRepository';
 export * from './domainRepositories/albumRepositoryMappings';
 export * from './domainRepositories/commentRepository';
+export * from './domainRepositories/emailDeliverRepository';
 export * from './domainRepositories/emailVerificationRepository';
 export * from './domainRepositories/mediaItemRepository';
 export * from './domainRepositories/notificationRepository';

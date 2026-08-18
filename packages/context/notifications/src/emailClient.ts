@@ -115,6 +115,7 @@ export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailSe
         const command = new SendRawEmailCommand({
           Source: input.fromEmail, // IMPORTANT: bare email for SES identity check
           RawMessage: { Data: rawMessage },
+          ConfigurationSetName: 'homeroll-events',
         });
 
         const result = await sesClient.send(command);

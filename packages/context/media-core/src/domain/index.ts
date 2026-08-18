@@ -3,6 +3,7 @@
  */
 
 export * from './AggregateRoot';
+export * from './EmailDelivery';
 export * from './Entity';
 export * from './Album/Album';
 export * from './Album/AlbumItem';

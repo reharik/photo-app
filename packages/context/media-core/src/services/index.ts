@@ -22,6 +22,7 @@ export * from './readServices/viewerReadServices/viewerSharedContactsReadService
 export * from './readServices/viewerReadServices/viewerSharedWithMeAlbumReadService';
 export * from './writeServices/markActivitySeen';
 export * from './writeServices/writeServiceBaseType';
+export * from './writeServices/EmailDelivery/createEmailDeliveryService';
 export * from './writeServices/album/addAlbumItem';
 export * from './writeServices/album/addAlbumMembers';
 export * from './writeServices/album/addMediaItemsToAlbum';

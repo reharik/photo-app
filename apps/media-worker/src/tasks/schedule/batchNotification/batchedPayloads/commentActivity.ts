@@ -46,13 +46,19 @@ export const build__CommentActivity = ({
     );
     const users = await systemUserRepository.getUserContacts(comments.map((x) => x.authorId));
     const userMap = indexBy(users);
-
     const commentMap = indexBy(comments);
 
-    // resolve each row ONCE → row + its fate + (if resolved) the rendered line
+    // resolve each row ONCE → row + its fate + (if resolved) the rendered line.
+    // Invariant: every claimed row of this section's kinds exits as exactly one
+    // of skipped (with reason) or resolved (→ livingRows).
     const resolved = commentRows.map((row) => {
       const comment = commentMap.get(row.subjectId);
-      if (!comment) return { row, result: 'skipped' as const }; // hard-deleted → accounted, not eaten
+      if (!comment)
+        return {
+          row,
+          result: 'skipped' as const,
+          reason: 'comment missing — deleted since enqueue?',
+        };
       const user = userMap.get(comment.authorId);
       const commenterName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
       return {
@@ -64,12 +70,14 @@ export const build__CommentActivity = ({
       };
     });
 
-    const outcomes: RowOutcome[] = resolved
+    const deadRows: RowOutcome[] = resolved
       .filter((r) => r.result === 'skipped')
-      .map(({ row }) => ({ row, result: 'skipped' }));
+      .map(({ row, reason }) => ({ row, result: 'skipped' as const, reason }));
 
-    // group only the survivors, and only for building the section
-    const survivors = resolved.filter((r) => r.result === 'resolved');
+    const survivors = resolved.filter(
+      (r): r is Extract<(typeof resolved)[number], { result: 'resolved' }> =>
+        r.result === 'resolved',
+    );
     const byRecipient = groupByMapping(survivors, (r) => r.recipientId);
 
     const commentSection = new Map<string, CommentSection>();
@@ -82,6 +90,11 @@ export const build__CommentActivity = ({
       commentSection.set(recipientId, items);
     }
 
-    return { kind: BatchedPayloadKind.comment, activity: commentSection, outcomes };
+    return {
+      kind: BatchedPayloadKind.comment,
+      activity: commentSection,
+      deadRows,
+      livingRows: survivors.map((r) => r.row),
+    };
   },
 });
