@@ -8,7 +8,9 @@
 
 export type ContentCounts = { photos: number; videos?: number };
 
-const total = (counts: ContentCounts): number => counts.photos + (counts.videos ?? 0);
+// Number() is not decoration: these counts arrive from the DB, and a bigint that
+// slips through as a string turns `+` into concatenation ("36" + 0 === "360").
+const total = (counts: ContentCounts): number => Number(counts.photos) + Number(counts.videos ?? 0);
 
 // Bare noun. No arg (or any count that isn't exactly 1) → plural "photos";
 // contentNoun(1) → singular "photo". The optional count exists only so the

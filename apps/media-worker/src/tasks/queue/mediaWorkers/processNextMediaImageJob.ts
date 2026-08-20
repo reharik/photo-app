@@ -15,8 +15,8 @@ import {
 import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../../../config.js';
-import type { AppCradle } from '../../../generated/ioc-composed.js';
 import { extractCaptureTime } from '../../../infrastructure/exif/extractCaptureTime.js';
+import { RequestScope } from '../../../types.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator.js';
 import { readStreamToBuffer } from './readStreamToBuffer.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
@@ -298,7 +298,7 @@ const runImageStoragePipeline = async ({
 };
 
 type RunNextMediaImageJobDeps = {
-  container: AwilixContainer<AppCradle>;
+  container: AwilixContainer<RequestScope>;
   config: Config;
   logger: Logger;
   mediaProcessingJobRepository: MediaProcessingJobRepository;

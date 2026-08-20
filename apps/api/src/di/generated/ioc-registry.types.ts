@@ -18,10 +18,9 @@ import type { NotificationService } from '@packages/notifications';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import type { Config } from '../../config.js';
-import type { CradleExtras } from '../../container.js';
 import type { AuthController } from '../../controllers/authController.js';
 import type { MediaServeController } from '../../controllers/mediaServeController.js';
-import type { GraphQLContextFactory } from '../../graphql/context/types.js';
+import type { GraphQLContextFactory, RequestScope } from '../../graphql/context/types.js';
 import type { GraphQLServer, YogaApp } from '../../graphql/server/createGraphQLServer.js';
 import type { KnexConfig } from '../../knexfile.js';
 import type { KoaServer } from '../../koaServer.js';
@@ -44,10 +43,10 @@ export interface IocGeneratedCradle {
   authQueryService: AuthQueryService;
   authService: AuthService;
   config: Config;
-  createGraphQLContext: GraphQLContextFactory;
+  createGraphQlContext: GraphQLContextFactory;
   database: Knex<any, any[]>;
   errorHandler: ErrorHandler;
-  graphQLServer: GraphQLServer;
+  graphQlServer: GraphQLServer;
   knexConfig: KnexConfig;
   koaServer: KoaServer;
   mediaAuthMiddleware: MediaAuthMiddleware;
@@ -67,10 +66,10 @@ export interface IocGeneratedCradle {
 export interface IocExternals {
   activatePendingUserWriteService: ActivatePendingUserWriteService;
   authMiddleware: AuthMiddleware;
-  container: AwilixContainer<IocGeneratedCradle & CradleExtras>;
+  container: AwilixContainer<RequestScope>;
   emailVerificationRepository: EmailVerificationRepository;
   grantReadRepository: GrantReadRepository;
-  graphQLContextFactory: GraphQLContextFactory;
+  graphQlContextFactory: GraphQLContextFactory;
   logger: Logger;
   mediaItemReadRepository: MediaItemReadRepository;
   mediaStorage: MediaStorage;

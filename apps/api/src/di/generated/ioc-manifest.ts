@@ -27,7 +27,7 @@ import * as ioc_services_mediaGrantService from '../../services/mediaGrantServic
 import * as ioc_services_tokenVerifier from '../../services/tokenVerifier.js';
 
 export const iocManifest = {
-  manifestSchemaVersion: 2,
+  manifestSchemaVersion: 3,
 
   moduleImports: [
     ioc_config,
@@ -158,13 +158,13 @@ export const iocManifest = {
       },
     },
     GraphQLContextFactory: {
-      createGraphQLContext: {
+      createGraphQlContext: {
         exportName: 'build__CreateGraphQLContext',
-        registrationKey: 'createGraphQLContext',
+        registrationKey: 'createGraphQlContext',
         modulePath: 'graphql/context/createGraphQLContext.ts',
         relImport: '../../graphql/context/createGraphQLContext.js',
         contractName: 'GraphQLContextFactory',
-        implementationName: 'createGraphQLContext',
+        implementationName: 'createGraphQlContext',
         lifetime: 'singleton',
         moduleIndex: 3,
         default: true,
@@ -173,13 +173,13 @@ export const iocManifest = {
       },
     },
     GraphQLServer: {
-      graphQLServer: {
+      graphQlServer: {
         exportName: 'build__GraphQLServer',
-        registrationKey: 'graphQLServer',
+        registrationKey: 'graphQlServer',
         modulePath: 'graphql/server/createGraphQLServer.ts',
         relImport: '../../graphql/server/createGraphQLServer.js',
         contractName: 'GraphQLServer',
-        implementationName: 'graphQLServer',
+        implementationName: 'graphQlServer',
         lifetime: 'singleton',
         moduleIndex: 4,
         default: true,

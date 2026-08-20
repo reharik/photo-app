@@ -28,7 +28,7 @@ type IocManifestGroupRoots = {
   readonly batchedEmailActivity: {
     readonly kind: 'collection';
     readonly baseType: 'BatchedEmailPayload';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/batchNotification/batchedPayloads/types.ts:BatchedEmailPayload';
+    readonly baseTypeId: '@app/media-worker/src/tasks/schedule/batchNotification/batchedPayloads/types.ts:BatchedEmailPayload';
     readonly members: readonly [
       { readonly contractName: 'AlbumActivity'; readonly registrationKey: 'albumActivity' },
       { readonly contractName: 'CommentActivity'; readonly registrationKey: 'commentActivity' },
@@ -38,7 +38,7 @@ type IocManifestGroupRoots = {
   readonly fastSweepNotificationStrategies: {
     readonly kind: 'collection';
     readonly baseType: 'FastSweepNotificationStrategy';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy';
+    readonly baseTypeId: '@app/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy';
     readonly members: readonly [
       {
         readonly contractName: 'FastSweepNotificationStrategy';
@@ -53,7 +53,7 @@ type IocManifestGroupRoots = {
   readonly workerTasks: {
     readonly kind: 'collection';
     readonly baseType: 'WorkerTaskBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/apps/media-worker/src/types.ts:WorkerTaskBase';
+    readonly baseTypeId: '@app/media-worker/src/types.ts:WorkerTaskBase';
     readonly members: readonly [
       {
         readonly contractName: 'FastSweepNotificationTask';
@@ -74,7 +74,7 @@ type IocManifestGroupRoots = {
 };
 
 export const iocManifest = {
-  manifestSchemaVersion: 2,
+  manifestSchemaVersion: 3,
 
   moduleImports: [
     ioc_config,
@@ -430,7 +430,7 @@ export const iocManifest = {
     kind: 'collection',
     baseType: 'BatchedEmailPayload',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/batchNotification/batchedPayloads/types.ts:BatchedEmailPayload',
+      '@app/media-worker/src/tasks/schedule/batchNotification/batchedPayloads/types.ts:BatchedEmailPayload',
     members: [
       {
         contractName: 'AlbumActivity',
@@ -452,7 +452,7 @@ export const iocManifest = {
     kind: 'collection',
     baseType: 'FastSweepNotificationStrategy',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/apps/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy',
+      '@app/media-worker/src/tasks/schedule/individualNotification/fastSweepNotificationStrategies/types.ts:FastSweepNotificationStrategy',
     members: [
       {
         contractName: 'FastSweepNotificationStrategy',
@@ -469,8 +469,7 @@ export const iocManifest = {
   workerTasks: {
     kind: 'collection',
     baseType: 'WorkerTaskBase',
-    baseTypeId:
-      '/home/reharik/Development/photoapp-cc/apps/media-worker/src/types.ts:WorkerTaskBase',
+    baseTypeId: '@app/media-worker/src/types.ts:WorkerTaskBase',
     members: [
       {
         contractName: 'FastSweepNotificationTask',

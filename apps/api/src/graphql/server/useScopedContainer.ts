@@ -2,17 +2,17 @@ import { beginUnitOfWorkScope, endUnitOfWork } from '@packages/media-core';
 import { asValue, AwilixContainer } from 'awilix';
 import { DocumentNode, Kind, OperationDefinitionNode } from 'graphql';
 import { isAsyncIterable, type Plugin } from 'graphql-yoga';
-import { Cradle } from '../../container';
 import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
   InitialAuthenticated,
   InitialPublic,
   PublicGraphQLContext,
+  RequestScope,
 } from '../context/types';
 
 export const useScopedContainer = (
-  container: AwilixContainer<Cradle>,
+  container: AwilixContainer<RequestScope>,
 ): Plugin<
   AuthenticatedReadGraphQLContext | AuthenticatedWriteGraphQLContext | PublicGraphQLContext
 > => {
@@ -53,7 +53,7 @@ export const useScopedContainer = (
 
 const createReadContext = (
   context: InitialAuthenticated | InitialPublic,
-  scope: AwilixContainer<Cradle>,
+  scope: AwilixContainer<RequestScope>,
 ): AuthenticatedReadGraphQLContext | PublicGraphQLContext => {
   if (context.kind === 'authenticated') {
     scope.register({ viewerId: asValue(context.viewer.id) });

@@ -1,16 +1,17 @@
 import { User } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
-import type { UnitOfWork } from '@packages/media-core';
+import { UnitOfWork } from '@packages/media-core';
+import type {
+  AgnosticReadServices,
+  PublicReadServices,
+  ReadServices,
+  WriteServices,
+} from '@packages/media-core/iocTypes';
 import type { NotificationService } from '@packages/notifications';
 import type { YogaInitialContext } from 'graphql-yoga';
 import type Koa from 'koa';
 import type { Config } from '../../config';
-import type { AppCradle } from '../../di/generated/ioc-composed';
-
-type PublicReadServices = AppCradle['publicReadServices'];
-type ReadServices = AppCradle['readServices'];
-type WriteServices = AppCradle['writeServices'];
-type AgnosticReadServices = AppCradle['agnosticReadServices'];
+import { AuthService } from '../../services/authService';
 
 type GraphQLContextShared = {
   config: Config;
@@ -54,3 +55,14 @@ export type GraphQLInitialContext = YogaInitialContext & Koa.Context;
 export interface GraphQLContextFactory {
   (initialContext: GraphQLInitialContext): InitialAuthenticated | InitialPublic;
 }
+
+export type RequestScope = {
+  readServices: ReadServices; // object-group aliases — generated, legal to name
+  agnosticReadServices: AgnosticReadServices;
+  publicReadServices: PublicReadServices;
+  writeServices: WriteServices;
+  viewerId: string; // scopeProvided — you register these at runtime
+  publicLinkId: string;
+  unitOfWork: UnitOfWork;
+  authService: AuthService;
+};

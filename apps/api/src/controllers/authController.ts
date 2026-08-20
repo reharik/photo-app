@@ -4,7 +4,7 @@ import { beginUnitOfWorkScope } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
-import type { Cradle } from '../container.js';
+import { RequestScope } from '../graphql/context/types.js';
 import type { AuthQueryService } from '../services/authQueryService.js';
 
 export interface AuthController {
@@ -18,7 +18,7 @@ export interface AuthController {
 
 type AuthControllerDeps = {
   authQueryService: AuthQueryService;
-  container: AwilixContainer<Cradle>;
+  container: AwilixContainer<RequestScope>;
   logger: Logger;
   rateLimiter: RateLimiter;
 };

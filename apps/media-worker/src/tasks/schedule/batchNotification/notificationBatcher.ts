@@ -2,14 +2,15 @@ import { BatchedPayloadKind, EmailKind, notEmpty, SYSTEM_ACTOR_ID } from '@packa
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
   EmailDelivery,
-  EmailDeliveryRepository,
   SystemAsyncNotificationRepository,
   SystemUserRepository,
+  withUnitOfWork,
 } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
+import { AwilixContainer } from 'awilix';
 import { Config } from '../../../config';
 import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
-import { WorkerTaskOutcome } from '../../../types';
+import { RequestScope, WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
 export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
@@ -20,7 +21,7 @@ type NotificationBatcherDeps = {
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   batchedEmailActivity: BatchedEmailActivity;
-  emailDeliveryRepository: EmailDeliveryRepository;
+  container: AwilixContainer<RequestScope>;
   config: Config;
 };
 
@@ -30,7 +31,7 @@ export const build__NotificationBatcher = ({
   systemAsyncNotificationRepository,
   systemUserRepository,
   batchedEmailActivity,
-  emailDeliveryRepository,
+  container,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
   return async (): Promise<WorkerTaskOutcome> => {
@@ -123,7 +124,10 @@ export const build__NotificationBatcher = ({
           SYSTEM_ACTOR_ID,
         );
         try {
-          await emailDeliveryRepository.save(newEmailDelivery);
+          await withUnitOfWork(container, async (scope) => {
+            const repo = scope.resolve('emailDeliveryRepository');
+            return repo.save(newEmailDelivery);
+          });
         } catch (e) {
           logger.error(
             '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',

@@ -8,7 +8,7 @@ import * as ioc_logger_coreLogger from '../logger/coreLogger.js';
 import * as ioc_rateLimiter_rateLimiter from '../rateLimiter/rateLimiter.js';
 
 export const iocManifest = {
-  manifestSchemaVersion: 2,
+  manifestSchemaVersion: 3,
 
   moduleImports: [
     ioc_logger_coreLogger,

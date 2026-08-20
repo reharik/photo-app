@@ -5,7 +5,6 @@ import type { Context, Next } from 'koa';
 import type { TokenVerifier } from '../services/tokenVerifier.js';
 
 export type AuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
-export type OptionalAuthMiddleware = AuthMiddleware;
 
 type AuthMiddlewareDeps = {
   tokenVerifier: TokenVerifier;
@@ -52,10 +51,7 @@ type OptionalAuthMiddlewareDeps = {
 };
 
 export const build__OptionalAuthMiddleware =
-  ({
-    tokenVerifier,
-    publicAccessReadService,
-  }: OptionalAuthMiddlewareDeps): OptionalAuthMiddleware =>
+  ({ tokenVerifier, publicAccessReadService }: OptionalAuthMiddlewareDeps): AuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.cookies.get('token');
     ctx.isLoggedIn = false;

@@ -53,7 +53,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
     container: asValue(container),
     mediaStorage: asValue(integrationTestMediaStorage),
     notificationService: asValue(noopNotificationService),
-    createGraphQLContext: asValue((initialContext: GraphQLInitialContext) => {
+    createGraphQlContext: asValue((initialContext: GraphQLInitialContext) => {
       try {
         return baseGraphQLContextFactory(initialContext);
       } catch {

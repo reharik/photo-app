@@ -11,7 +11,7 @@ import {
 import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../../../config.js';
-import type { AppCradle } from '../../../generated/ioc-composed.js';
+import { RequestScope } from '../../../types.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 
 export type ProcessNextMediaDeletionJobResult = 'processed' | 'idle';
@@ -59,7 +59,7 @@ const retryBackoffMs = (attemptCount: number): number => {
 };
 
 type RunNextMediaDeletionJobDeps = {
-  container: AwilixContainer<AppCradle>;
+  container: AwilixContainer<RequestScope>;
   config: Config;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;

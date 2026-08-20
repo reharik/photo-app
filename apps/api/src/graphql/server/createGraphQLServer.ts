@@ -3,8 +3,7 @@ import Koa from 'koa';
 
 import { AwilixContainer } from 'awilix';
 import type { Config } from '../../config.js';
-import { Cradle } from '../../container.js';
-import type { GraphQLContextFactory } from '../context/types.js';
+import type { GraphQLContextFactory, RequestScope } from '../context/types.js';
 import { schema } from '../schema';
 import { useScopedContainer } from './useScopedContainer.js';
 
@@ -29,14 +28,14 @@ interface GraphQLServerDeps {
 }
 
 type YogaAppDeps = {
-  graphQLContextFactory: GraphQLContextFactory;
+  graphQlContextFactory: GraphQLContextFactory;
   config: Config;
 
-  container: AwilixContainer<Cradle>;
+  container: AwilixContainer<RequestScope>;
 };
 
 export const build__YogaApp = ({
-  graphQLContextFactory,
+  graphQlContextFactory,
   config,
   container,
 }: YogaAppDeps): YogaApp => {
@@ -44,7 +43,7 @@ export const build__YogaApp = ({
     plugins: [useScopedContainer(container)],
     schema,
     graphqlEndpoint: config.graphqlHttpPath,
-    context: graphQLContextFactory,
+    context: graphQlContextFactory,
   }) as YogaApp;
 };
 

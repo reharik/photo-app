@@ -3,7 +3,6 @@ Re-run `npm run gen:manifest` after changing factories or IoC config.
 */
 import type { Logger } from '@packages/infrastructure';
 import type {
-  EmailDeliveryRepository,
   MediaDeletionJobRepository,
   MediaItemRepository,
   MediaProcessingJobRepository,
@@ -43,6 +42,7 @@ import type { FastSweepNotificationStrategy } from '../tasks/schedule/individual
 import type { FastSweepNotificationTask } from '../tasks/schedule/individualNotification/fastSweepNotificationTask.js';
 import type { StalledMediaJobSweep } from '../tasks/schedule/stalledMediaJobSweep/stalledMediaJobSweep.js';
 import type { StalledMediaJobSweepTask } from '../tasks/schedule/stalledMediaJobSweep/stalledMediaJobSweepTask.js';
+import type { RequestScope } from '../types.js';
 
 export interface IocGeneratedCradle {
   albumActivity: AlbumActivity;
@@ -113,8 +113,7 @@ export type WorkerTasks = ReadonlyArray<
 >;
 
 export interface IocExternals {
-  container: AwilixContainer<IocGeneratedCradle>;
-  emailDeliveryRepository: EmailDeliveryRepository;
+  container: AwilixContainer<RequestScope>;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaItemRepository: MediaItemRepository;

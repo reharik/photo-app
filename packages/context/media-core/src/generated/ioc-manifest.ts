@@ -100,7 +100,7 @@ type IocManifestGroupRoots = {
   readonly agnosticReadServices: {
     readonly kind: 'object';
     readonly baseType: 'AgnosticReadServiceBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:AgnosticReadServiceBase';
+    readonly baseTypeId: '@packages/media-core/src/services/readServices/readServiceBaseType.ts:AgnosticReadServiceBase';
     readonly members: {
       readonly commentReadService: {
         readonly contractName: 'CommentReadService';
@@ -115,7 +115,7 @@ type IocManifestGroupRoots = {
   readonly domainEventHandlers: {
     readonly kind: 'collection';
     readonly baseType: 'DomainEventHandler';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/domain/domainEvents/eventPublisher.ts:DomainEventHandler';
+    readonly baseTypeId: '@packages/media-core/src/domain/domainEvents/eventPublisher.ts:DomainEventHandler';
     readonly members: readonly [
       {
         readonly contractName: 'DomainEventHandler';
@@ -130,7 +130,7 @@ type IocManifestGroupRoots = {
   readonly notificationStrategies: {
     readonly kind: 'collection';
     readonly baseType: 'NotificationStrategy';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/notifications/types.ts:NotificationStrategy';
+    readonly baseTypeId: '@packages/media-core/src/notifications/types.ts:NotificationStrategy';
     readonly members: readonly [
       {
         readonly contractName: 'NotificationStrategy';
@@ -157,7 +157,7 @@ type IocManifestGroupRoots = {
   readonly notificationWriters: {
     readonly kind: 'object';
     readonly baseType: 'NotificationWriter';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/notifications/writers/inAppWriter.ts:NotificationWriter';
+    readonly baseTypeId: '@packages/media-core/src/notifications/writers/inAppWriter.ts:NotificationWriter';
     readonly members: {
       readonly asyncWriter: {
         readonly contractName: 'AsyncWriter';
@@ -172,7 +172,7 @@ type IocManifestGroupRoots = {
   readonly publicReadServices: {
     readonly kind: 'object';
     readonly baseType: 'PublicReadServiceBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase';
+    readonly baseTypeId: '@packages/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase';
     readonly members: {
       readonly publicAlbumReadService: {
         readonly contractName: 'PublicAlbumReadService';
@@ -187,7 +187,7 @@ type IocManifestGroupRoots = {
   readonly readServices: {
     readonly kind: 'object';
     readonly baseType: 'ReadServiceBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase';
+    readonly baseTypeId: '@packages/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase';
     readonly members: {
       readonly viewerAlbumReadService: {
         readonly contractName: 'ViewerAlbumReadService';
@@ -222,7 +222,7 @@ type IocManifestGroupRoots = {
   readonly writeServices: {
     readonly kind: 'object';
     readonly baseType: 'WriteServiceBase';
-    readonly baseTypeId: '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/writeServices/writeServiceBaseType.ts:WriteServiceBase';
+    readonly baseTypeId: '@packages/media-core/src/services/writeServices/writeServiceBaseType.ts:WriteServiceBase';
     readonly members: {
       readonly activatePendingUserWriteService: {
         readonly contractName: 'ActivatePendingUserWriteService';
@@ -353,7 +353,7 @@ type IocManifestGroupRoots = {
 };
 
 export const iocManifest = {
-  manifestSchemaVersion: 2,
+  manifestSchemaVersion: 3,
 
   moduleImports: [
     ioc_application_media_s3MediaStorage,
@@ -1874,7 +1874,7 @@ export const iocManifest = {
     kind: 'object',
     baseType: 'AgnosticReadServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:AgnosticReadServiceBase',
+      '@packages/media-core/src/services/readServices/readServiceBaseType.ts:AgnosticReadServiceBase',
     members: {
       commentReadService: {
         contractName: 'CommentReadService',
@@ -1891,8 +1891,7 @@ export const iocManifest = {
   domainEventHandlers: {
     kind: 'collection',
     baseType: 'DomainEventHandler',
-    baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/domain/domainEvents/eventPublisher.ts:DomainEventHandler',
+    baseTypeId: '@packages/media-core/src/domain/domainEvents/eventPublisher.ts:DomainEventHandler',
     members: [
       {
         contractName: 'DomainEventHandler',
@@ -1909,8 +1908,7 @@ export const iocManifest = {
   notificationStrategies: {
     kind: 'collection',
     baseType: 'NotificationStrategy',
-    baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/notifications/types.ts:NotificationStrategy',
+    baseTypeId: '@packages/media-core/src/notifications/types.ts:NotificationStrategy',
     members: [
       {
         contractName: 'NotificationStrategy',
@@ -1939,8 +1937,7 @@ export const iocManifest = {
   notificationWriters: {
     kind: 'object',
     baseType: 'NotificationWriter',
-    baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/notifications/writers/inAppWriter.ts:NotificationWriter',
+    baseTypeId: '@packages/media-core/src/notifications/writers/inAppWriter.ts:NotificationWriter',
     members: {
       asyncWriter: {
         contractName: 'AsyncWriter',
@@ -1958,7 +1955,7 @@ export const iocManifest = {
     kind: 'object',
     baseType: 'PublicReadServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase',
+      '@packages/media-core/src/services/readServices/readServiceBaseType.ts:PublicReadServiceBase',
     members: {
       publicAlbumReadService: {
         contractName: 'PublicAlbumReadService',
@@ -1976,7 +1973,7 @@ export const iocManifest = {
     kind: 'object',
     baseType: 'ReadServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase',
+      '@packages/media-core/src/services/readServices/readServiceBaseType.ts:ReadServiceBase',
     members: {
       viewerAlbumReadService: {
         contractName: 'ViewerAlbumReadService',
@@ -2014,7 +2011,7 @@ export const iocManifest = {
     kind: 'object',
     baseType: 'WriteServiceBase',
     baseTypeId:
-      '/home/reharik/Development/photoapp-cc/packages/context/media-core/src/services/writeServices/writeServiceBaseType.ts:WriteServiceBase',
+      '@packages/media-core/src/services/writeServices/writeServiceBaseType.ts:WriteServiceBase',
     members: {
       activatePendingUserWriteService: {
         contractName: 'ActivatePendingUserWriteService',

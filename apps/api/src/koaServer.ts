@@ -24,7 +24,7 @@ type KoaServerDeps = {
   rootRouter: RootRouter;
   authMiddleware: AuthMiddleware;
   logger: Logger;
-  graphQLServer: GraphQLServer;
+  graphQlServer: GraphQLServer;
   errorHandler: ErrorHandler;
   requestLogger: RequestLogger;
   database: Knex;
@@ -37,7 +37,7 @@ export const build__KoaServer = ({
   authMiddleware,
   logger,
 
-  graphQLServer,
+  graphQlServer,
   errorHandler,
   requestLogger,
   database,
@@ -84,7 +84,7 @@ export const build__KoaServer = ({
   app.use(rootRouter.routes()).use(rootRouter.allowedMethods());
 
   // 8. GraphQL endpoint
-  app.use(graphQLServer);
+  app.use(graphQlServer);
 
   // Health check endpoint (no /api prefix, no auth required)
   app.use(async (ctx, next) => {
