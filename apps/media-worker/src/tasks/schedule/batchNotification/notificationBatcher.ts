@@ -4,13 +4,15 @@ import {
   EmailDelivery,
   SystemAsyncNotificationRepository,
   SystemUserRepository,
-  withUnitOfWork,
 } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
-import { AwilixContainer } from 'awilix';
 import { Config } from '../../../config';
-import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
-import { RequestScope, WorkerTaskOutcome } from '../../../types';
+import {
+  BatchedEmailActivity,
+  OpenEmailDeliveryContextScope,
+} from '../../../generated/ioc-registry.types';
+import { EmailDeliveryContext } from '../../../infrastructure/database/emailDeliveryContext';
+import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
 
 export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
@@ -21,7 +23,7 @@ type NotificationBatcherDeps = {
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   batchedEmailActivity: BatchedEmailActivity;
-  container: AwilixContainer<RequestScope>;
+  openEmailDeliveryContextScope: OpenEmailDeliveryContextScope;
   config: Config;
 };
 
@@ -31,9 +33,30 @@ export const build__NotificationBatcher = ({
   systemAsyncNotificationRepository,
   systemUserRepository,
   batchedEmailActivity,
-  container,
+  openEmailDeliveryContextScope,
   config,
 }: NotificationBatcherDeps): NotificationBatcher => {
+  /**
+   * One transactional phase: open the delivery scope, start its uow, run the
+   * work, and settle the transaction exactly once — commit on return, roll back
+   * on throw — before disposing the scope. Deliberately local to this batcher
+   * (not a shared util): the two queue runners keep their own copies.
+   */
+  const inDeliveryScope = async <T>(fn: (op: EmailDeliveryContext) => Promise<T>): Promise<T> => {
+    const { emailDeliveryContext, dispose } = openEmailDeliveryContextScope();
+    await emailDeliveryContext.start();
+    try {
+      const result = await fn(emailDeliveryContext);
+      await emailDeliveryContext.finalize(true);
+      return result;
+    } catch (e) {
+      await emailDeliveryContext.finalize(false);
+      throw e;
+    } finally {
+      await dispose();
+    }
+  };
+
   return async (): Promise<WorkerTaskOutcome> => {
     const rows = await systemAsyncNotificationRepository.claimNotificationBatch(
       config.debounceEmailWindowSeconds,
@@ -124,10 +147,7 @@ export const build__NotificationBatcher = ({
           SYSTEM_ACTOR_ID,
         );
         try {
-          await withUnitOfWork(container, async (scope) => {
-            const repo = scope.resolve('emailDeliveryRepository');
-            return repo.save(newEmailDelivery);
-          });
+          await inDeliveryScope((op) => op.emailDeliveryRepository.save(newEmailDelivery));
         } catch (e) {
           logger.error(
             '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',

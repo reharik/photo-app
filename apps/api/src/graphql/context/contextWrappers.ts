@@ -6,7 +6,7 @@ import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
   GraphQLContext,
-  PublicGraphQLContext,
+  PublicReadGraphQLContext,
 } from './types';
 
 // The guards throw a bare error when the resolved context kind doesn't match what a
@@ -36,7 +36,7 @@ export const requireAuthenticatedReadContext = (
   if (ctx.kind !== 'authenticatedRead') {
     throw new Error('Not authenticated');
   }
-  return ctx as AuthenticatedReadGraphQLContext;
+  return ctx;
 };
 
 export const requireAuthenticatedWriteContext = (
@@ -45,11 +45,11 @@ export const requireAuthenticatedWriteContext = (
   if (ctx.kind !== 'authenticatedWrite') {
     throw new Error('Not authenticated');
   }
-  return ctx as AuthenticatedWriteGraphQLContext;
+  return ctx;
 };
 
-export const requirePublicContext = (ctx: GraphQLContext): PublicGraphQLContext => {
-  if (ctx.kind !== 'public') {
+export const requirePublicContext = (ctx: GraphQLContext): PublicReadGraphQLContext => {
+  if (ctx.kind !== 'publicRead') {
     throw new Error('Public access context required');
   }
   return ctx;
@@ -78,7 +78,7 @@ export const authenticatedWriteResolver =
     // Signal intent only — the boundary (useScopedContainer) owns the actual rollback.
     // Latching to true; any single failed field rolls back the whole per-request uow.
     if (!result.success) {
-      authCtx.uow.shouldRollback = true;
+      authCtx.flagFailure();
     }
     return operationResultToPayload(result);
   };
@@ -100,10 +100,10 @@ export const authenticatedReadResolver =
 
 export const publicResolver =
   <TParent, TArgs, TResult>(
-    resolver: ResolverFn<TResult, TParent, PublicGraphQLContext, TArgs>,
+    resolver: ResolverFn<TResult, TParent, PublicReadGraphQLContext, TArgs>,
   ): ResolverFn<TResult, TParent, GraphQLContext, TArgs> =>
   (parent, args, ctx, info) => {
-    let publicCtx: PublicGraphQLContext;
+    let publicCtx: PublicReadGraphQLContext;
     try {
       publicCtx = requirePublicContext(ctx);
     } catch (err) {

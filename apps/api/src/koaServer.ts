@@ -21,7 +21,7 @@ export type KoaServer = http.Server;
 
 type KoaServerDeps = {
   mediaPublicRouter: MediaPublicRouter;
-  rootRouter: RootRouter;
+  apiRouter: RootRouter;
   authMiddleware: AuthMiddleware;
   logger: Logger;
   graphQlServer: GraphQLServer;
@@ -33,7 +33,7 @@ type KoaServerDeps = {
 
 export const build__KoaServer = ({
   mediaPublicRouter,
-  rootRouter,
+  apiRouter,
   authMiddleware,
   logger,
 
@@ -81,7 +81,7 @@ export const build__KoaServer = ({
 
   // 7. Routes (the actual request handling)
 
-  app.use(rootRouter.routes()).use(rootRouter.allowedMethods());
+  app.use(apiRouter.routes()).use(apiRouter.allowedMethods());
 
   // 8. GraphQL endpoint
   app.use(graphQlServer);

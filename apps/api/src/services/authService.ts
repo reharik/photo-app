@@ -18,6 +18,7 @@ import {
 } from '@packages/media-core';
 import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
+import { ScopeRoot } from 'ioc-manifest';
 import jwt from 'jsonwebtoken';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
@@ -26,6 +27,7 @@ export interface AuthService {
   verifyCodeAndSetPassword: (
     credentials: SignupInput,
   ) => Promise<OperationResult<{ token: string }>>;
+  start: () => Promise<void>;
 }
 
 type AuthServiceDeps = {
@@ -48,7 +50,7 @@ export const build__AuthService = ({
   systemEmailVerificationRepository,
   activatePendingUserWriteService,
   uow,
-}: AuthServiceDeps): AuthService => {
+}: AuthServiceDeps): ScopeRoot<AuthService, Record<string, never>> => {
   const verifyCode = async (
     email: string,
     code: string,
@@ -138,7 +140,7 @@ export const build__AuthService = ({
           // No verification row / too many attempts / bad code. The bad-code attempt
           // bump was already durably committed out-of-band by verifyCode; the reset
           // transaction itself has no writes to keep, so roll it back.
-          await uow.rollback();
+          await uow.complete(false);
           return codeVerifiedResult;
         }
         const verificationId = codeVerifiedResult.value.id;
@@ -165,7 +167,8 @@ export const build__AuthService = ({
           );
 
           if (!activateResult.success) {
-            await uow.rollback();
+            await uow.complete(false);
+
             // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
             // generic ErrorActivatingUser: the forgot-password door lands a brand-new email
             // here with no name, and the FE reveals the name fields off that exact reason.
@@ -180,7 +183,8 @@ export const build__AuthService = ({
         }
 
         await emailVerificationRepository.completeConsumption(verificationId);
-        await uow.commit();
+        await uow.complete(true);
+
         committed = true;
 
         // Post-commit, best-effort: emailing the user must not affect the committed
@@ -191,7 +195,7 @@ export const build__AuthService = ({
         // Any throw after uow.start() (db error, assertNever, etc.) leaves an open trx —
         // roll it back before rethrowing, unless we already committed.
         if (!committed) {
-          await uow.rollback();
+          await uow.complete(false);
         }
         throw error;
       }
@@ -202,5 +206,6 @@ export const build__AuthService = ({
     when you get the user use the repository that calls for straight user, not pendingUser.  this will
     not find a user for this auth and it will be ignored.
 */
+    start: uow.start,
   };
 };

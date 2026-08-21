@@ -1,9 +1,9 @@
-import { asValue, AwilixContainer, type NameAndRegistrationPair } from 'awilix';
+import { AwilixContainer } from 'awilix';
 
 import type { IocScopeProvided } from '../../generated/ioc-registry.types.js';
 import type { UnitOfWork } from './unitOfWork.js';
 
-type UnitOfWorkRootCradle = { unitOfWork: UnitOfWork };
+type UnitOfWorkRootCradle = { uow: UnitOfWork };
 type UnitOfWorkScopeCradle<C extends UnitOfWorkRootCradle> = C & IocScopeProvided;
 
 export type UnitOfWorkScope<C extends UnitOfWorkRootCradle = UnitOfWorkRootCradle> = {
@@ -15,20 +15,17 @@ export const beginUnitOfWorkScope = async <C extends UnitOfWorkRootCradle>(
   container: AwilixContainer<C>,
 ): Promise<UnitOfWorkScope<C>> => {
   const scope = container.createScope() as AwilixContainer<UnitOfWorkScopeCradle<C>>;
-  const unitOfWork = scope.resolve('unitOfWork');
+  // `uow` is an ordinary SCOPED registration now — resolving it here materializes the
+  // one instance this scope will hand to every repo resolved from it. The old
+  // resolve('unitOfWork') + asValue re-registration existed only because the contract
+  // was a transient exposed under a second key; both are gone with the rename.
+  const unitOfWork = scope.resolve('uow');
   await unitOfWork.start();
-  scope.register({
-    uow: asValue(unitOfWork),
-  } as NameAndRegistrationPair<UnitOfWorkScopeCradle<C>>);
   return { scope, unitOfWork };
 };
 
 export const endUnitOfWork = async (unitOfWork: UnitOfWork, success: boolean): Promise<void> => {
-  if (success) {
-    await unitOfWork.commit();
-  } else {
-    await unitOfWork.rollback();
-  }
+  await unitOfWork.complete(success);
 };
 
 export const withUnitOfWork = async <C extends UnitOfWorkRootCradle, T>(

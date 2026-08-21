@@ -8,10 +8,9 @@ import type {
   MediaStorage,
 } from '@packages/media-core';
 import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS, MediaItem } from '@packages/media-core';
-import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../config.js';
-import type { AppCradle } from '../generated/ioc-composed.js';
+import type { OpenMediaJobContextScope } from '../generated/ioc-registry.types.js';
 import {
   build__ProcessNextMediaImageJob,
   build__RunNextMediaImageJob,
@@ -233,25 +232,17 @@ describe('build__RunNextMediaImageJob (claim-guard classification)', () => {
     releaseStalledJobs: jest.fn<MediaProcessingJobRepository['releaseStalledJobs']>(),
   });
 
-  /** Fake container: withUnitOfWork resolves a no-op uow, then our processor. */
-  const createFakeContainer = (processor: ProcessNextMediaImageJob) => {
-    const unitOfWork = {
-      id: 'test-uow',
-      shouldRollback: false,
-      start: async () => {},
-      commit: async () => {},
-      rollback: async () => {},
-      db: () => {
-        throw new Error('uow.db() must not be reached in these scenarios');
+  /** Fake opener: hands back the processor over a no-op transaction bracket. */
+  const createFakeOpener =
+    (processor: ProcessNextMediaImageJob): OpenMediaJobContextScope =>
+    () => ({
+      mediaJobContext: {
+        processNextMediaImageJob: processor,
+        start: async () => {},
+        finalize: async () => {},
       },
-      collectEvents: () => {},
-    };
-    const scope = {
-      resolve: (key: string) => (key === 'unitOfWork' ? unitOfWork : processor),
-      register: () => {},
-    };
-    return { createScope: () => scope } as unknown as AwilixContainer<AppCradle>;
-  };
+      dispose: async () => {},
+    });
 
   const createRunner = (item: MediaItem, job: MediaProcessingJobRow) => {
     const processor = build__ProcessNextMediaImageJob({
@@ -264,7 +255,7 @@ describe('build__RunNextMediaImageJob (claim-guard classification)', () => {
     });
     const jobRepo = createJobRepo(job);
     const runner = build__RunNextMediaImageJob({
-      container: createFakeContainer(processor),
+      openMediaJobContextScope: createFakeOpener(processor),
       config: {} as Config,
       logger: createMockLogger(),
       mediaProcessingJobRepository: jobRepo,
@@ -338,7 +329,7 @@ describe('build__RunNextMediaImageJob (claim-guard classification)', () => {
       const job = jobRow(1);
       const jobRepo = createJobRepo(job);
       const runner = build__RunNextMediaImageJob({
-        container: createFakeContainer(processor),
+        openMediaJobContextScope: createFakeOpener(processor),
         config: {} as Config,
         logger: createMockLogger(),
         mediaProcessingJobRepository: jobRepo,

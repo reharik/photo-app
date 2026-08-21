@@ -1,76 +1,111 @@
-import { beginUnitOfWorkScope, endUnitOfWork } from '@packages/media-core';
-import { asValue, AwilixContainer } from 'awilix';
 import { DocumentNode, Kind, OperationDefinitionNode } from 'graphql';
 import { isAsyncIterable, type Plugin } from 'graphql-yoga';
 import {
+  OpenAuthenticatedReadGraphQlContextScope,
+  OpenAuthenticatedWriteGraphQlContextScope,
+  OpenPublicRequestContextScope,
+} from '../../di/generated/ioc-registry.types';
+import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
-  InitialAuthenticated,
-  InitialPublic,
-  PublicGraphQLContext,
-  RequestScope,
+  GraphQLContext,
+  InitialGraphQLContext,
+  PublicReadGraphQLContext,
 } from '../context/types';
 
-export const useScopedContainer = (
-  container: AwilixContainer<RequestScope>,
-): Plugin<
-  AuthenticatedReadGraphQLContext | AuthenticatedWriteGraphQLContext | PublicGraphQLContext
-> => {
-  return {
-    async onExecute({ args, extendContext }) {
-      const op = getOperationType(args.document, args.operationName);
-      if (op !== 'mutation') {
-        const scope = container.createScope();
-        const readContext = createReadContext(args.contextValue, scope);
-        extendContext(readContext);
-        return;
-      }
+type ScopedContainerPluginDeps = {
+  openAuthenticatedReadGraphQlContextScope: OpenAuthenticatedReadGraphQlContextScope;
+  openAuthenticatedWriteGraphQlContextScope: OpenAuthenticatedWriteGraphQlContextScope;
+  openPublicRequestContextScope: OpenPublicRequestContextScope;
+};
 
-      const { scope, unitOfWork } = await beginUnitOfWorkScope(container);
-      const writeServices = scope.resolve('writeServices');
-      // Thread the same uow instance into the context so authenticatedWriteResolver can
-      // flag it for rollback on a failed OperationResult; the predicate below reads it back.
-      extendContext({ writeServices, uow: unitOfWork, kind: 'authenticatedWrite' });
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ScopedContainerPlugin extends Plugin<InitialGraphQLContext | GraphQLContext> {}
+
+export const build__UseScopedContainer = ({
+  openAuthenticatedReadGraphQlContextScope,
+  openAuthenticatedWriteGraphQlContextScope,
+  openPublicRequestContextScope,
+}: ScopedContainerPluginDeps): ScopedContainerPlugin => ({
+  async onExecute({ args, extendContext }) {
+    const ctx = args.contextValue;
+
+    // stage-2 kinds = context already extended (the union admits them; runtime never delivers them here)
+    if (ctx.kind !== 'authenticated' && ctx.kind !== 'public') {
+      return;
+    }
+
+    if (ctx.kind === 'authenticated') {
+      const op = getOperationType(args.document, args.operationName);
+
+      if (op === 'mutation') {
+        const { authenticatedWriteGraphQlContext, dispose } =
+          openAuthenticatedWriteGraphQlContextScope({
+            viewerId: ctx.viewer.id,
+          });
+        await authenticatedWriteGraphQlContext.start();
+        extendContext({
+          ...ctx,
+          ...authenticatedWriteGraphQlContext,
+          kind: 'authenticatedWrite',
+        } satisfies AuthenticatedWriteGraphQLContext);
+
+        return {
+          async onExecuteDone({ result }) {
+            if (isAsyncIterable(result)) {
+              await authenticatedWriteGraphQlContext.finalize(false);
+              await dispose();
+              return;
+            }
+            await authenticatedWriteGraphQlContext.finalize(!result.errors?.length);
+            await dispose();
+          },
+        };
+      }
+      const { authenticatedReadGraphQlContext, dispose } = openAuthenticatedReadGraphQlContextScope(
+        {
+          viewerId: ctx.viewer.id,
+        },
+      );
+
+      extendContext({
+        ...ctx,
+        ...authenticatedReadGraphQlContext,
+        kind: 'authenticatedRead',
+      } satisfies AuthenticatedReadGraphQLContext);
 
       return {
         async onExecuteDone({ result }) {
           if (isAsyncIterable(result)) {
-            // streaming (defer/stream/subscription) — not your mutation case
-            // commit or rollback? see note below
+            await dispose();
             return;
-          }
-          // result is now narrowed to SingleExecutionResult — .errors works.
-          // Commit only if there was NO GraphQL error AND no mutation field flagged the
-          // uow for rollback. Failures travel as data in the payload (fail-as-data), so
-          // they never reach result.errors — authenticatedWriteResolver detects them and
-          // sets uow.shouldRollback. Any single failed field rolls back the whole request.
-          await endUnitOfWork(unitOfWork, !result.errors?.length && !unitOfWork.shouldRollback);
+          } // TODO streaming
+          await dispose();
         },
       };
-    },
-  };
-};
+    }
 
-const createReadContext = (
-  context: InitialAuthenticated | InitialPublic,
-  scope: AwilixContainer<RequestScope>,
-): AuthenticatedReadGraphQLContext | PublicGraphQLContext => {
-  if (context.kind === 'authenticated') {
-    scope.register({ viewerId: asValue(context.viewer.id) });
-    const readServices = scope.resolve('readServices');
-    const agnosticReadServices = scope.resolve('agnosticReadServices');
-    return { ...context, readServices, agnosticReadServices, kind: 'authenticatedRead' };
-  }
-  if (context.kind !== 'public') {
-    throw new Error('Not public');
-  }
-  scope.register({ publicLinkId: asValue(context.publicLinkId) });
-  return {
-    ...context,
-    publicReadServices: scope.resolve('publicReadServices'),
-    agnosticReadServices: scope.resolve('agnosticReadServices'),
-  };
-};
+    const { publicRequestContext, dispose } = openPublicRequestContextScope({
+      publicLinkId: ctx.publicLinkId,
+    });
+
+    extendContext({
+      ...ctx,
+      ...publicRequestContext,
+      kind: 'publicRead',
+    } satisfies PublicReadGraphQLContext);
+
+    return {
+      async onExecuteDone({ result }) {
+        if (isAsyncIterable(result)) {
+          await dispose();
+          return;
+        }
+        await dispose();
+      },
+    };
+  },
+});
 
 const getOperationType = (
   document: DocumentNode,

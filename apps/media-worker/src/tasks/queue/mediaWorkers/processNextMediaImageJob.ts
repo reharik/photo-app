@@ -4,7 +4,6 @@ import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
   MAX_MEDIA_PROCESSING_JOB_ATTEMPTS,
-  withUnitOfWork,
   type EntityId,
   type MediaItem,
   type MediaItemRepository,
@@ -12,11 +11,11 @@ import {
   type MediaProcessingJobRow,
   type MediaStorage,
 } from '@packages/media-core';
-import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../../../config.js';
+import type { OpenMediaJobContextScope } from '../../../generated/ioc-registry.types.js';
+import type { MediaJobContext } from '../../../infrastructure/database/mediaJobContext.js';
 import { extractCaptureTime } from '../../../infrastructure/exif/extractCaptureTime.js';
-import { RequestScope } from '../../../types.js';
 import { generateImageDerivatives } from './imageDerivativeGenerator.js';
 import { readStreamToBuffer } from './readStreamToBuffer.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
@@ -298,7 +297,7 @@ const runImageStoragePipeline = async ({
 };
 
 type RunNextMediaImageJobDeps = {
-  container: AwilixContainer<RequestScope>;
+  openMediaJobContextScope: OpenMediaJobContextScope;
   config: Config;
   logger: Logger;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
@@ -306,12 +305,33 @@ type RunNextMediaImageJobDeps = {
 };
 
 export const build__RunNextMediaImageJob = ({
-  container,
+  openMediaJobContextScope,
   config,
   logger,
   mediaProcessingJobRepository,
   mediaStorage,
 }: RunNextMediaImageJobDeps): RunNextMediaImageJob => {
+  /**
+   * One transactional phase: open the job scope, start its uow, run the work,
+   * and settle the transaction exactly once — commit on return, roll back on
+   * throw — before disposing the scope. Deliberately local to this runner (not
+   * a shared util): the deletion runner keeps its own copy over its own root.
+   */
+  const inJobScope = async <T>(fn: (op: MediaJobContext) => Promise<T>): Promise<T> => {
+    const { mediaJobContext, dispose } = openMediaJobContextScope();
+    await mediaJobContext.start();
+    try {
+      const result = await fn(mediaJobContext);
+      await mediaJobContext.finalize(true);
+      return result;
+    } catch (e) {
+      await mediaJobContext.finalize(false);
+      throw e;
+    } finally {
+      await dispose();
+    }
+  };
+
   return async (): Promise<ProcessNextMediaImageJobResult> => {
     const job = await mediaProcessingJobRepository.claimNextAvailableJob();
     if (!job) {
@@ -344,10 +364,9 @@ export const build__RunNextMediaImageJob = ({
         return;
       }
       try {
-        const marked = await withUnitOfWork(container, async (scope) => {
-          const processor = scope.resolve('processNextMediaImageJob');
-          return processor.markItemFailed(job.mediaItemId, actorId);
-        });
+        const marked = await inJobScope((op) =>
+          op.processNextMediaImageJob.markItemFailed(job.mediaItemId, actorId),
+        );
         if (!marked) {
           logger.warn('Media item not moved to failed status', {
             jobId: job.id,
@@ -381,10 +400,9 @@ export const build__RunNextMediaImageJob = ({
     };
 
     try {
-      const loadResult = await withUnitOfWork(container, async (scope) => {
-        const processor = scope.resolve('processNextMediaImageJob');
-        return processor.loadForProcessing(job.mediaItemId);
-      });
+      const loadResult = await inJobScope((op) =>
+        op.processNextMediaImageJob.loadForProcessing(job.mediaItemId),
+      );
 
       if (loadResult.kind === 'not_found') {
         logger.warn('Media image job failed: media item not found', {
@@ -447,10 +465,7 @@ export const build__RunNextMediaImageJob = ({
         return 'processed';
       }
 
-      await withUnitOfWork(container, async (scope) => {
-        const processor = scope.resolve('processNextMediaImageJob');
-        await processor.saveProcessedItem(loadResult.mediaItem);
-      });
+      await inJobScope((op) => op.processNextMediaImageJob.saveProcessedItem(loadResult.mediaItem));
 
       await finishSucceeded();
       logger.info('Media image processing job succeeded', {

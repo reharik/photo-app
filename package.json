@@ -47,6 +47,7 @@
     "gen:gql:web": "nx gen-gql web",
     "gen:api": "nx gen-gql api && nx gen-ioc api",
     "gen:web": "nx gen-gql web",
+    "ioc:validate:api": "npm --workspace @app/api run ioc:validate",
     "ioc:discovery:api": "npm --workspace @app/api run ioc:discover",
     "ioc:discovery:infrastructure": "npm --workspace @packages/infrastructure run ioc:discover",
     "ioc:discovery:media-core": "npm --workspace @packages/media-core run ioc:discover",
@@ -88,7 +89,7 @@
   },
   "dependencies": {
     "@reharik/smart-enum": "^0.9.0",
-    "ioc-manifest": "3.1.0-rc.0",
+    "ioc-manifest": "3.1.0-rc.2",
     "knip": "^6.4.1"
   },
   "devDependencies": {

@@ -1,11 +1,10 @@
 import { createYoga } from 'graphql-yoga';
 import Koa from 'koa';
 
-import { AwilixContainer } from 'awilix';
 import type { Config } from '../../config.js';
-import type { GraphQLContextFactory, RequestScope } from '../context/types.js';
+import type { GraphQLContextFactory } from '../context/types.js';
 import { schema } from '../schema';
-import { useScopedContainer } from './useScopedContainer.js';
+import { ScopedContainerPlugin } from './useScopedContainer.js';
 
 /**
  * App-local contract for graphql-yoga so ioc-manifest can resolve a named contract symbol.
@@ -28,22 +27,21 @@ interface GraphQLServerDeps {
 }
 
 type YogaAppDeps = {
-  graphQlContextFactory: GraphQLContextFactory;
+  createGraphQlContext: GraphQLContextFactory;
   config: Config;
-
-  container: AwilixContainer<RequestScope>;
+  useScopedContainer: ScopedContainerPlugin;
 };
 
 export const build__YogaApp = ({
-  graphQlContextFactory,
+  createGraphQlContext,
   config,
-  container,
+  useScopedContainer,
 }: YogaAppDeps): YogaApp => {
   return createYoga<Koa.ParameterizedContext>({
-    plugins: [useScopedContainer(container)],
+    plugins: [useScopedContainer],
     schema,
     graphqlEndpoint: config.graphqlHttpPath,
-    context: graphQlContextFactory,
+    context: createGraphQlContext,
   }) as YogaApp;
 };
 

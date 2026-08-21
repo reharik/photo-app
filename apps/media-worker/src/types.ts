@@ -1,7 +1,4 @@
 import { SweepCadence } from '@packages/contracts';
-import { EmailDeliveryRepository, UnitOfWork } from '@packages/media-core';
-import { ProcessNextMediaDeletionJob } from './tasks/queue/mediaWorkers/processNextMediaDeletionJob';
-import { ProcessNextMediaImageJob } from './tasks/queue/mediaWorkers/processNextMediaImageJob';
 
 export type WorkerTaskOutcome = 'processed' | 'idle';
 
@@ -41,10 +38,3 @@ export type ScheduledWorkerTask = WorkerTaskBase & {
 };
 
 export const isQueueTask = (x: WorkerTask): x is QueueWorkerTask => x.type === 'queue';
-
-export type RequestScope = {
-  processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
-  processNextMediaImageJob: ProcessNextMediaImageJob;
-  emailDeliveryRepository: EmailDeliveryRepository;
-  unitOfWork: UnitOfWork;
-};

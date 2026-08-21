@@ -1,10 +1,8 @@
 import { type User } from '@packages/contracts';
 import type { Logger, RateLimiter } from '@packages/infrastructure';
-import { beginUnitOfWorkScope } from '@packages/media-core';
-import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
-import { RequestScope } from '../graphql/context/types.js';
+import type { OpenAuthServiceScope } from '../di/generated/ioc-registry.types.js';
 import type { AuthQueryService } from '../services/authQueryService.js';
 
 export interface AuthController {
@@ -18,16 +16,16 @@ export interface AuthController {
 
 type AuthControllerDeps = {
   authQueryService: AuthQueryService;
-  container: AwilixContainer<RequestScope>;
   logger: Logger;
   rateLimiter: RateLimiter;
+  openAuthServiceScope: OpenAuthServiceScope;
 };
 
 export const build__AuthController = ({
   authQueryService,
-  container,
   logger,
   rateLimiter,
+  openAuthServiceScope,
 }: AuthControllerDeps): AuthController => ({
   login: async (ctx: Context): Promise<Context> => {
     const { email, password } = ctx.request.body as {
@@ -178,36 +176,39 @@ export const build__AuthController = ({
     // Start + register the uow on a fresh scope, but do NOT wrap in withUnitOfWork:
     // verifyCodeAndSetPassword owns finalization (commit on success, rollback on failure),
     // so an unconditional endUnitOfWork here would wrongly commit the failure paths.
-    const { scope } = await beginUnitOfWorkScope(container);
-    const svc = scope.resolve('authService');
-    const result = await svc.verifyCodeAndSetPassword({
-      email,
-      password,
-      code,
-      firstName,
-      lastName,
-      phone,
-      smsOptIn,
-    });
-
-    if (!result.success) {
-      logger.warn('Set password attempt failed from controller', {
+    const { authService, dispose } = openAuthServiceScope();
+    await authService.start();
+    try {
+      const result = await authService.verifyCodeAndSetPassword({
         email,
-        ip: ctx.ip,
+        password,
+        code,
+        firstName,
+        lastName,
+        phone,
+        smsOptIn,
       });
-      ctx.status = 400;
-      // reason.error will be "INVALID_CODE", "EXPIRED", "TOO_MANY_ATTEMPTS"
-      ctx.body = { error: result.error };
-      return ctx;
+
+      if (!result.success) {
+        logger.warn('Set password attempt failed from controller', {
+          email,
+          ip: ctx.ip,
+        });
+        ctx.status = 400;
+        // reason.error will be "INVALID_CODE", "EXPIRED", "TOO_MANY_ATTEMPTS"
+        ctx.body = { error: result.error };
+        return ctx;
+      }
+
+      ctx.cookies.set('token', result.value.token, {
+        httpOnly: true,
+        secure: ctx.app.env === 'production',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      });
+    } finally {
+      await dispose();
     }
-
-    ctx.cookies.set('token', result.value.token, {
-      httpOnly: true,
-      secure: ctx.app.env === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
-
     ctx.status = 200;
     ctx.body = {
       message: 'Operation completed successfully',

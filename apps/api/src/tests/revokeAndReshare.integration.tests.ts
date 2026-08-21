@@ -29,9 +29,9 @@
  * Harness: the shared GraphQL integration setup (real Postgres, real container, real
  * post-commit event bus — async_notification rows are written by the dispatcher and are
  * assertable because the worker sweep does not run here). Accept in A2 mirrors the
- * controller's uow-scope path, same as authPasswordReset.integration.tests.ts.
+ * controller's AuthService scope-root opener, same as authPasswordReset.integration.tests.ts.
  */
-import { beginUnitOfWorkScope, registerDomainEventHandlers } from '@packages/media-core';
+import { registerDomainEventHandlers } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import { DateTime } from 'luxon';
@@ -237,7 +237,7 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(invite2.linkToken).toBeTruthy();
       expect(invite2.linkToken).not.toBe(invite1.linkToken);
 
-      // Accept: the same uow-scope path the auth controller drives.
+      // Accept: the same AuthService scope-root opener the auth controller drives.
       await database('emailVerification').insert({
         id: randomUUID(),
         email: guestEmail,
@@ -246,16 +246,23 @@ describe('revoked authorizations and re-sharing (integration)', () => {
         consumedAt: null,
         attemptCount: 0,
       });
-      const { scope } = await beginUnitOfWorkScope(container);
-      const result = await scope.resolve('authService').verifyCodeAndSetPassword({
-        email: guestEmail,
-        password: 'newPassword9',
-        code: VALID_CODE,
-        firstName: 'Guest',
-        lastName: 'Accepted',
-        smsOptIn: false,
-      });
-      expect(result.success).toBe(true);
+      // The service self-settles (complete(true) on success), so this bracket only
+      // starts the scope and disposes it.
+      const { authService, dispose } = container.resolve('openAuthServiceScope')();
+      await authService.start();
+      try {
+        const result = await authService.verifyCodeAndSetPassword({
+          email: guestEmail,
+          password: 'newPassword9',
+          code: VALID_CODE,
+          firstName: 'Guest',
+          lastName: 'Accepted',
+          smsOptIn: false,
+        });
+        expect(result.success).toBe(true);
+      } finally {
+        await dispose();
+      }
 
       const userRow = await database('user')
         .where({ id: guestId })

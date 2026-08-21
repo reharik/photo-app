@@ -6,9 +6,15 @@
  * already-committed user. DB effects (counter-persists, atomic consume) live in
  * authPasswordReset.integration.tests.ts.
  *
- * Oracle: E1 no row → reject+rollback; E2 locked → reject+rollback (no bump);
- * E3 bad code → reject+rollback + attempt bump; E4 activate fails → rollback;
- * E6 success → save+consume then commit then notify (in that order).
+ * Settlement surface: the uow has a single `complete(ok)` — there is no commit/
+ * rollback pair any more. The fake records the boolean it was handed, so every
+ * oracle below still says WHICH path settles WHICH way: `complete(true)` is the
+ * commit, `complete(false)` is the rollback, and the call count pins "exactly once".
+ *
+ * Oracle: E1 no row → reject+complete(false); E2 locked → reject+complete(false)
+ * (no bump); E3 bad code → reject+complete(false) + attempt bump; E4 activate
+ * fails → complete(false); E6 success → save+consume then complete(true) then
+ * notify (in that order).
  */
 import assert from 'node:assert';
 
@@ -47,7 +53,9 @@ const VALID_ID = 'verification-1';
 
 type Harness = {
   order: string[];
-  uow: jest.Mocked<Pick<UnitOfWork, 'commit' | 'rollback'>>;
+  complete: jest.Mock<UnitOfWork['complete']>;
+  /** The `ok` argument of every `complete(ok)` call, in order. */
+  completions: () => boolean[];
   notify: jest.Mock<NotificationService['notify']>;
   save: jest.Mock<UserRepository['save']>;
   getUserByEmail: jest.Mock<UserRepository['getUserByEmail']>;
@@ -74,14 +82,25 @@ const codeHashFor = (code: string): string =>
 const makeHarness = (): Harness => {
   const order: string[] = [];
 
-  const uow = {
-    commit: jest.fn(async () => {
-      order.push('commit');
-    }),
-    rollback: jest.fn(async () => {
-      order.push('rollback');
-    }),
-  } as unknown as jest.Mocked<Pick<UnitOfWork, 'commit' | 'rollback'>>;
+  // One settlement call, not two: `complete(true)` IS the commit and `complete(false)`
+  // IS the rollback, so the ordering oracle keeps its original vocabulary while the
+  // fake is structurally a real UnitOfWork (no cast).
+  const complete = jest.fn<UnitOfWork['complete']>(async (ok: boolean) => {
+    order.push(ok ? 'commit' : 'rollback');
+  });
+  const uow: UnitOfWork = {
+    id: 'unit-test-uow',
+    start: async () => {},
+    // The service under test never touches the transaction handle directly — it goes
+    // through the repositories, which are faked. Matching the real contract (db()
+    // throws until start()) keeps an accidental use loud rather than silently undefined.
+    db: () => {
+      throw new Error('db() is not available in this unit test');
+    },
+    complete,
+    collectEvents: () => {},
+    flagRollback: () => {},
+  };
 
   const notify = jest.fn<NotificationService['notify']>(async () => {
     order.push('notify');
@@ -128,7 +147,14 @@ const makeHarness = (): Harness => {
     config,
     notificationService: { notify },
     activatePendingUserWriteService: activatePendingUser,
-    userRepository: { getUserByEmail, save } as unknown as UserRepository,
+    userRepository: {
+      getUserByEmail,
+      save,
+      // Unused by this write path; present so the fake satisfies UserRepository outright.
+      getById: jest.fn<UserRepository['getById']>(),
+      getByHandle: jest.fn<UserRepository['getByHandle']>(),
+      getAllUsersByEmail: jest.fn<UserRepository['getAllUsersByEmail']>(),
+    },
     emailVerificationRepository: {
       getValidVerification,
       completeConsumption,
@@ -136,12 +162,13 @@ const makeHarness = (): Harness => {
     systemEmailVerificationRepository: {
       bumpValidationAttempts,
     },
-    uow: uow as unknown as UnitOfWork,
+    uow,
   });
 
   return {
     order,
-    uow,
+    complete,
+    completions: () => complete.mock.calls.map(([ok]) => ok),
     notify,
     save,
     getUserByEmail,
@@ -188,8 +215,8 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      // Settled exactly once, as a rollback.
+      expect(h.completions()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
       expect(h.bumpValidationAttempts).not.toHaveBeenCalled();
     });
@@ -205,8 +232,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       assert(!result.success);
       expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
       expect(h.bumpValidationAttempts).not.toHaveBeenCalled();
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
     });
   });
@@ -223,7 +249,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       expect(h.bumpValidationAttempts).toHaveBeenCalledWith(VALID_ID);
       // bump is awaited before the rollback so it is durable regardless of the trx.
       expect(h.order).toEqual(['bump', 'rollback']);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
     });
   });
@@ -243,8 +269,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
       expect(h.completeConsumption).not.toHaveBeenCalled();
     });
@@ -261,7 +286,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       expect(typeof result.value.token).toBe('string');
       // Ordering oracle: write + consume happen inside the uow, THEN commit, THEN notify.
       expect(h.order).toEqual(['save', 'consume', 'commit', 'notify']);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([true]);
       expect(h.notify).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'welcome', channels: ['email'] }),
       );
@@ -274,8 +299,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       const result = await h.service.verifyCodeAndSetPassword(creds());
 
       expect(result.success).toBe(true);
-      expect(h.uow.commit).toHaveBeenCalledTimes(1);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([true]);
     });
 
     it('a notify REJECTION propagates but does NOT roll back the committed uow', async () => {
@@ -285,9 +309,9 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       });
 
       await expect(h.service.verifyCodeAndSetPassword(creds())).rejects.toThrow('SES exploded');
-      // committed flag guards the catch: commit ran, rollback must NOT.
-      expect(h.uow.commit).toHaveBeenCalledTimes(1);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      // committed flag guards the catch: the single settlement was the commit, and the
+      // catch must NOT add a second complete(false) on top of it.
+      expect(h.completions()).toEqual([true]);
     });
   });
 
@@ -299,8 +323,7 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       });
 
       await expect(h.service.verifyCodeAndSetPassword(creds())).rejects.toThrow('db write failed');
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([false]);
     });
   });
 });

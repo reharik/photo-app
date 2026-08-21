@@ -2,20 +2,19 @@
  * RAI-76: Rewritten for the post-refactor controller. The old
  * forgotPassword/resetPassword handlers are gone; the controller now exposes
  * login, logout, emailVerification, setPassword, me, publicAccess and depends on
- * `authQueryService` (login/verifyEmail), a `rateLimiter`, and the IoC
- * `container` (setPassword opens a uow scope and resolves the scoped
- * `authService`). These are unit tests: the container + services are faked, so
- * `beginUnitOfWorkScope` runs against a stub scope. The real DB behavior of
- * verifyCodeAndSetPassword is covered in the integration tests.
+ * `authQueryService` (login/verifyEmail), a `rateLimiter`, and the generated
+ * `openAuthServiceScope` opener (setPassword opens the AuthService scope root,
+ * starts it, and disposes it in a finally). These are unit tests: the opener and
+ * the services behind it are faked, so no container is involved at all. The real
+ * DB behavior of verifyCodeAndSetPassword is covered in the integration tests.
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, ok } from '@packages/contracts';
 import type { Logger, RateLimiter, RateLimitResult } from '@packages/infrastructure';
-import type { AwilixContainer } from 'awilix';
 import type { Context } from 'koa';
 
-import type { Cradle } from '../container.js';
 import { build__AuthController } from '../controllers/authController.js';
+import type { OpenAuthServiceScope } from '../di/generated/ioc-registry.types.js';
 import type { AuthQueryService } from '../services/authQueryService.js';
 import type { AuthService } from '../services/authService.js';
 
@@ -48,43 +47,38 @@ const createCtx = (body: Record<string, unknown>, state: Record<string, unknown>
 const cookieSetOf = (ctx: Context): jest.Mock => (ctx.cookies as unknown as { set: jest.Mock }).set;
 
 describe('build__AuthController', () => {
-  let authQueryService: jest.Mocked<Pick<AuthQueryService, 'login' | 'verifyEmail'>>;
+  let authQueryService: jest.Mocked<AuthQueryService>;
   let rateLimiter: jest.Mocked<RateLimiter>;
-  let authService: jest.Mocked<Pick<AuthService, 'verifyCodeAndSetPassword'>>;
-  let uowStart: jest.Mock;
+  let authService: jest.Mocked<AuthService>;
+  let dispose: jest.Mock<() => Promise<void>>;
   let authController: ReturnType<typeof build__AuthController>;
 
   beforeEach(() => {
     authQueryService = {
       login: jest.fn<AuthQueryService['login']>(),
       verifyEmail: jest.fn<AuthQueryService['verifyEmail']>(),
+      hashPassword: jest.fn<AuthQueryService['hashPassword']>(),
     };
     rateLimiter = {
       consume: jest.fn<RateLimiter['consume']>().mockResolvedValue(allowed),
     };
+    // AuthService is scope-rooted: it has no root-cradle key, so there is nothing to
+    // resolve. `start` lives on the service itself (it delegates to the scope's own
+    // uow.start), which is what the old `uowStart` stub stood in for.
     authService = {
       verifyCodeAndSetPassword: jest.fn<AuthService['verifyCodeAndSetPassword']>(),
+      start: jest.fn<AuthService['start']>(async () => undefined),
     };
-    uowStart = jest.fn(async () => undefined);
+    dispose = jest.fn<() => Promise<void>>(async () => undefined);
 
-    // Minimal fake container: beginUnitOfWorkScope() calls createScope(),
-    // resolve('unitOfWork'), unitOfWork.start(), register(), then the controller
-    // resolves 'authService' from that same scope.
-    const scope = {
-      resolve: (key: string) => {
-        if (key === 'unitOfWork') return { start: uowStart };
-        if (key === 'authService') return authService;
-        throw new Error(`unexpected resolve(${key})`);
-      },
-      register: jest.fn(),
-    };
-    const container = {
-      createScope: () => scope,
-    } as unknown as AwilixContainer<Cradle>;
+    // Fake opener: zero-arg (the AuthService root declares an empty lbv set), hands
+    // back the faked service over a no-op scope bracket. Structurally typed against
+    // the generated alias — no casts.
+    const openAuthServiceScope: OpenAuthServiceScope = () => ({ authService, dispose });
 
     authController = build__AuthController({
-      authQueryService: authQueryService as unknown as AuthQueryService,
-      container,
+      authQueryService,
+      openAuthServiceScope,
       logger,
       rateLimiter,
     });
@@ -205,7 +199,7 @@ describe('build__AuthController', () => {
       expect(authService.verifyCodeAndSetPassword).not.toHaveBeenCalled();
     });
 
-    it('opens a uow scope, resolves authService, and returns 400 on a domain failure', async () => {
+    it('opens the authService scope, starts it, and returns 400 on a domain failure', async () => {
       authService.verifyCodeAndSetPassword.mockResolvedValue(
         fail(ContractError.InvalidEmailVerificationCode),
       );
@@ -217,7 +211,9 @@ describe('build__AuthController', () => {
         lastName: 'Family',
       });
       await authController.setPassword(ctx);
-      expect(uowStart).toHaveBeenCalledTimes(1);
+      expect(authService.start).toHaveBeenCalledTimes(1);
+      // The controller's finally must tear the scope down even on the failure path.
+      expect(dispose).toHaveBeenCalledTimes(1);
       expect(authService.verifyCodeAndSetPassword).toHaveBeenCalledWith(
         expect.objectContaining({
           email: 'user@example.test',

@@ -81,8 +81,8 @@ anywhere. Two access tiers:
 - **System repos** (`System*`, singleton, raw Knex): ungated reads/writes for
   viewer-less work (album titles, user emails, notification/activity sweeps).
 - **Scoped domain repos via UoW**: `MediaItemRepository` etc. depend on `uow` and are
-  only resolvable inside `withUnitOfWork(container, fn)`. The worker opens a short UoW
-  scope around just the DB load/save.
+  only resolvable inside a scope opened by a generated **ScopeRoot opener** (see
+  "Scope roots" below). The worker opens a short scope around just the DB load/save.
 
 Where the API would gate on a viewer, the worker either uses a `System*` repo or
 supplies an **actor id taken from the job row** (`job.createdBy`) for audit columns
@@ -96,11 +96,26 @@ scope. **Storage I/O is not transactional with the DB** — hence the idempotent
 
 - retry design on the deletion side.
 
+## Scope roots (`src/infrastructure/database/*Context.ts`)
+
+Per-job transactional scopes are opened by **generated openers**, not by hand off the
+root container. One `ScopeRoot` per runner tree — `MediaJobContext`,
+`MediaDeletionJobContext`, `EmailDeliveryContext` — each an arity-1 `ScopeRoot<C>`
+(empty lbv: the worker has no viewer, nothing enters at the boundary), exposing the
+scoped service its consumer needs plus `start` / `finalize(ok)` delegating to the
+scope's own `uow`. Codegen emits `openXScope(): { x, dispose }` into
+`src/generated/ioc-registry.types.ts`; the consumer injects the opener by its generated
+alias and brackets each phase with a **local** `inJobScope` helper (open → `start()` →
+work → `finalize(true|false)` → `dispose()` in `finally`). The helper is deliberately
+duplicated per consumer rather than hoisted — one root per tree, no shared bag.
+
+`withUnitOfWork` / `beginUnitOfWorkScope` are **not used in the worker** any more.
+
 ## Boot (`main.ts` / `container.ts`)
 
-The root container **registers itself as `container`** so tasks can resolve it and call
-`withUnitOfWork(container, ...)` to open per-job UoW scopes.
+The root container no longer registers itself as `container` — nothing resolves it out
+of the cradle. `main.ts` resolves the loop and its collaborators directly at boot.
 
 Adding a new job type = add a `build__XxxTask` returning a `WorkerTask` (it auto-joins
-`workerTasks`) + a runner that claims via a `QueueClaimable` and does work inside
-`withUnitOfWork`. Then `npm run gen:ioc:worker`.
+`workerTasks`) + a runner that claims via a `QueueClaimable` and does its transactional
+work inside its own ScopeRoot's opener. Then `npm run gen:ioc:worker`.

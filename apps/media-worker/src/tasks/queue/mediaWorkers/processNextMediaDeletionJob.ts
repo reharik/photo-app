@@ -6,12 +6,11 @@ import {
   type MediaDeletionJobRow,
   type MediaItemRepository,
   type MediaStorage,
-  withUnitOfWork,
 } from '@packages/media-core';
-import type { AwilixContainer } from 'awilix';
 
 import type { Config } from '../../../config.js';
-import { RequestScope } from '../../../types.js';
+import type { OpenMediaDeletionJobContextScope } from '../../../generated/ioc-registry.types.js';
+import type { MediaDeletionJobContext } from '../../../infrastructure/database/mediaDeletionJobContext.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 
 export type ProcessNextMediaDeletionJobResult = 'processed' | 'idle';
@@ -59,7 +58,7 @@ const retryBackoffMs = (attemptCount: number): number => {
 };
 
 type RunNextMediaDeletionJobDeps = {
-  container: AwilixContainer<RequestScope>;
+  openMediaDeletionJobContextScope: OpenMediaDeletionJobContextScope;
   config: Config;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
@@ -91,12 +90,33 @@ const deleteStorageObjects = async ({
 };
 
 export const build__RunNextMediaDeletionJob = ({
-  container,
+  openMediaDeletionJobContextScope,
   config,
   logger,
   mediaDeletionJobRepository,
   mediaStorage,
 }: RunNextMediaDeletionJobDeps): RunNextMediaDeletionJob => {
+  /**
+   * One transactional phase: open the job scope, start its uow, run the work,
+   * and settle the transaction exactly once — commit on return, roll back on
+   * throw — before disposing the scope. Deliberately local to this runner (not
+   * a shared util): the image runner keeps its own copy over its own root.
+   */
+  const inJobScope = async <T>(fn: (op: MediaDeletionJobContext) => Promise<T>): Promise<T> => {
+    const { mediaDeletionJobContext, dispose } = openMediaDeletionJobContextScope();
+    await mediaDeletionJobContext.start();
+    try {
+      const result = await fn(mediaDeletionJobContext);
+      await mediaDeletionJobContext.finalize(true);
+      return result;
+    } catch (e) {
+      await mediaDeletionJobContext.finalize(false);
+      throw e;
+    } finally {
+      await dispose();
+    }
+  };
+
   return async (): Promise<ProcessNextMediaDeletionJobResult> => {
     const job = await mediaDeletionJobRepository.claimNextAvailableJob();
     if (!job) {
@@ -133,10 +153,9 @@ export const build__RunNextMediaDeletionJob = ({
     try {
       await deleteStorageObjects({ config, mediaStorage, logger, job });
 
-      const rowDeleted = await withUnitOfWork(container, async (scope) => {
-        const processor = scope.resolve('processNextMediaDeletionJob');
-        return processor.deleteMediaItemIfPresent(job.mediaItemId);
-      });
+      const rowDeleted = await inJobScope((op) =>
+        op.processNextMediaDeletionJob.deleteMediaItemIfPresent(job.mediaItemId),
+      );
 
       if (rowDeleted) {
         logger.info('Media item row deleted', {
