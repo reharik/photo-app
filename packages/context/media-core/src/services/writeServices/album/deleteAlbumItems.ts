@@ -2,6 +2,7 @@ import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packa
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { SystemAlbumItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumItemsCommand, DeleteAlbumItemsResult } from './writeAlbum.types';
 
@@ -12,16 +13,18 @@ export interface DeleteAlbumItems extends WriteServiceBase {
 type DeleteAlbumItemsDeps = {
   albumRepository: AlbumRepository;
   systemAlbumItemRepository: SystemAlbumItemRepository;
+  viewerId: EntityId;
 };
 
 export const build__DeleteAlbumItems = ({
   albumRepository,
   systemAlbumItemRepository,
+  viewerId,
 }: DeleteAlbumItemsDeps): DeleteAlbumItems => {
   return async (
     input: DeleteAlbumItemsCommand,
   ): Promise<OperationResult<DeleteAlbumItemsResult>> => {
-    const { viewerId, albumId, albumItemIds } = input;
+    const { albumId, albumItemIds } = input;
     if (albumItemIds.length === 0) {
       return fail(AppErrorCollection.album.DeleteAlbumItemsNoItemIds);
     }

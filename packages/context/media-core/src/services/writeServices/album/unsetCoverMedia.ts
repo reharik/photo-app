@@ -2,6 +2,7 @@ import { ok, Operation, OperationResult } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { UnsetCoverMediaCommand, UnsetCoverMediaResult } from './writeAlbum.types';
 
@@ -11,13 +12,15 @@ export interface UnsetCoverMedia extends WriteServiceBase {
 
 type UnsetCoverMediaDeps = {
   albumRepository: AlbumRepository;
+  viewerId: EntityId;
 };
 
 export const build__UnsetCoverMedia = ({
   albumRepository,
+  viewerId,
 }: UnsetCoverMediaDeps): UnsetCoverMedia => {
   return async (input: UnsetCoverMediaCommand): Promise<OperationResult<UnsetCoverMediaResult>> => {
-    const { viewerId, albumId } = input;
+    const { albumId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {
       return r1;

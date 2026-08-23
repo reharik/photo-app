@@ -5,7 +5,6 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     deleteAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       return ctx.writeServices.deleteAlbum({
-        viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
       });
     }),
@@ -13,7 +12,6 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     markSurfaceSeen: authenticatedWriteResolver(
       async (_parent, { containerType, containerId, kind }, ctx) => {
         return ctx.writeServices.markActivitySeen.clearBySurface({
-          viewerId: ctx.viewer.id,
           containerType,
           containerId,
           kind,
@@ -22,12 +20,12 @@ const viewerMutationResolvers: Pick<Resolvers, 'Mutation'> = {
     ),
 
     markItemsSeen: authenticatedWriteResolver(async (_parent, { ids }, ctx) => {
-      return ctx.writeServices.markActivitySeen.clearByIds({ viewerId: ctx.viewer.id, ids });
+      return ctx.writeServices.markActivitySeen.clearByIds({ ids });
     }),
 
     deleteShareContact: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const { handle } = args;
-      return ctx.writeServices.deleteShareContactService(handle, ctx.viewer.id);
+      return ctx.writeServices.deleteShareContactService(handle);
     }),
   },
 };

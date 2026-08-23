@@ -4,6 +4,7 @@
     "./src/repositories",
     "./src/services",
     "./src/domain",
+    "./src/domainEvents",
     "./src/types",
     "./src/infrastructure",
     "./src/repositories/queryHelpers"

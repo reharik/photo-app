@@ -1,5 +1,5 @@
+import { DomainEvent } from '../domainEvents/DomainEvent';
 import { Entity } from './Entity';
-import { DomainEvent } from './domainEvents/DomainEvent';
 
 export abstract class AggregateRoot<
   TRecord extends Record<string, unknown>,

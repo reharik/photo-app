@@ -1,7 +1,7 @@
 import type { Logger } from '@packages/infrastructure';
-import { type PublicAccessReadService } from '@packages/media-core';
 import type { Context, Next } from 'koa';
 
+import { AgnosticReadServices } from '@packages/media-core/iocTypes';
 import type { TokenVerifier } from '../services/tokenVerifier.js';
 
 export type AuthMiddleware = (ctx: Context, next: Next) => Promise<void>;
@@ -47,11 +47,11 @@ export const build__AuthMiddleware =
 
 type OptionalAuthMiddlewareDeps = {
   tokenVerifier: TokenVerifier;
-  publicAccessReadService: PublicAccessReadService;
+  agnosticReadServices: AgnosticReadServices;
 };
 
 export const build__OptionalAuthMiddleware =
-  ({ tokenVerifier, publicAccessReadService }: OptionalAuthMiddlewareDeps): AuthMiddleware =>
+  ({ tokenVerifier, agnosticReadServices }: OptionalAuthMiddlewareDeps): AuthMiddleware =>
   async (ctx: Context, next: Next) => {
     const token = ctx.cookies.get('token');
     ctx.isLoggedIn = false;
@@ -66,7 +66,8 @@ export const build__OptionalAuthMiddleware =
 
     const publicToken = ctx.cookies.get('public');
     if (publicToken) {
-      const publicAccessId = await publicAccessReadService.validateToken(publicToken);
+      const publicAccessId =
+        await agnosticReadServices.publicAccessReadService.validateToken(publicToken);
       ctx.state.publicAccessId = publicAccessId;
     }
     await next();

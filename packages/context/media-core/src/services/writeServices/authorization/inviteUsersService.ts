@@ -22,7 +22,6 @@ export const getOrCreateAllUsers = async (
   grantedToHandles: string[],
   userRepository: UserRepository,
   createUserWriteService: CreateUserWriteService,
-  actorId: EntityId,
 ): Promise<OperationResult<(User | PendingUser)[]>> => {
   const normalizedEmails = [...new Set(grantedToHandles.map((x) => x.trim().toLowerCase()))];
   const users = await userRepository.getAllUsersByEmail(normalizedEmails);
@@ -30,7 +29,7 @@ export const getOrCreateAllUsers = async (
   const nonUsers = normalizedEmails.filter((x) => !userMap.has(x));
 
   const newUserPromises = nonUsers.map((x) =>
-    createUserWriteService({ email: x, firstName: '', lastName: '', actorId }),
+    createUserWriteService({ email: x, firstName: '', lastName: '' }),
   );
   const result = await Promise.all(newUserPromises);
   const failure = result.find((x) => !x.success);
@@ -59,10 +58,11 @@ export const inviteUsers = (
   users: (User | PendingUser)[],
   album: Album,
   input: GrantUserAuthorizationCommand,
+  actorId: EntityId,
 ): IndependentGroupResult<User | PendingUser, GrantedAuthorization> => {
   return eachIndependently(users, (user) => {
     const payload: AlbumAuthorizationInput = {
-      actorId: input.viewerId,
+      actorId,
       label: input.label,
       grantedToUserId: user.id(),
     };

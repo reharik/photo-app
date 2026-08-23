@@ -26,8 +26,6 @@ export * from './User/PendingUser';
 export * from './User/User';
 export * from './User/types';
 export * from './User/userEvents';
-export * from './domainEvents/DomainEvent';
-export * from './domainEvents/eventPublisher';
 export * from './utilities/entityGuard';
 export * from './utilities/reorderAlbumItems';
 export * from './utilities/serializeAggregates';

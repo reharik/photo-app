@@ -1,6 +1,7 @@
 import { EmailKind, ok, OperationResult } from '@packages/contracts';
 import { EmailDelivery } from '../../../domain/EmailDelivery';
 import { EmailDeliveryRepository } from '../../../repositories/domainRepositories/emailDeliverRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface CreateEmailDeliveryService extends WriteServiceBase {
@@ -8,22 +9,24 @@ export interface CreateEmailDeliveryService extends WriteServiceBase {
     sesMessageId: string,
     emailKind: EmailKind,
     recipientEmail: string,
-    actorId: string,
     authorizationId?: string,
   ): Promise<OperationResult<void>>;
 }
 
 type CreateEmailDeliveryServiceDeps = {
   emailDeliveryRepository: EmailDeliveryRepository;
+  viewerId: EntityId;
 };
 
 export const build__CreateEmailDeliveryService =
-  ({ emailDeliveryRepository }: CreateEmailDeliveryServiceDeps): CreateEmailDeliveryService =>
+  ({
+    emailDeliveryRepository,
+    viewerId,
+  }: CreateEmailDeliveryServiceDeps): CreateEmailDeliveryService =>
   async (
     sesMessageId: string,
     emailKind: EmailKind,
     recipientEmail: string,
-    actorId: string,
     authorizationId?: string,
   ) => {
     const newDelivery = EmailDelivery.create(
@@ -33,7 +36,7 @@ export const build__CreateEmailDeliveryService =
         recipientEmail,
         authorizationId,
       },
-      actorId,
+      viewerId,
     );
     await emailDeliveryRepository.save(newDelivery);
     return ok(undefined);

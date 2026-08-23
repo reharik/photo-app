@@ -1,5 +1,5 @@
 import { Logger } from '@packages/infrastructure';
-import { DomainEventHandlers } from '../../generated/ioc-registry.types';
+import { DomainEventHandlers } from '../generated/ioc-registry.types';
 import { DomainEvent } from './DomainEvent';
 
 export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['kind']> = (

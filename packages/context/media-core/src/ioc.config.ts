@@ -14,6 +14,7 @@ export default defineIocConfig({
       'dist/**',
       '**/dist/**',
       '**/node_modules/**',
+      'domain/**',
     ],
     factoryPrefix: 'build__',
   },

@@ -9,6 +9,7 @@ import {
   AlbumReadRepository,
   MediaItemReadRepository,
 } from '../../../repositories/readRepositories/types';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemsCommand, DeleteMediaItemsResult } from './writeMediaItem.types';
@@ -23,6 +24,7 @@ type DeleteMediaItemsDeps = {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   mediaStorage: MediaStorage;
+  viewerId: EntityId;
 };
 
 export const build__DeleteMediaItems = ({
@@ -31,11 +33,11 @@ export const build__DeleteMediaItems = ({
   albumReadRepository,
   albumRepository,
   mediaStorage,
+  viewerId,
 }: DeleteMediaItemsDeps): DeleteMediaItems => {
   return async (
     input: DeleteMediaItemsCommand,
   ): Promise<OperationResult<DeleteMediaItemsResult>> => {
-    const { viewerId } = input;
     const dedupedIds = dedupeIds(input.mediaItemIds);
 
     if (dedupedIds.length === 0) {

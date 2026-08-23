@@ -2,7 +2,6 @@ import { AlbumMemberRole } from '@packages/contracts';
 import { EntityId } from '../../../types';
 
 export type CreateAlbumCommand = {
-  viewerId: string;
   title: string;
   description?: string;
 };
@@ -12,7 +11,6 @@ export type CreateAlbumResult = {
 };
 
 export type AddAlbumItemCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
   mediaItemId: EntityId;
 };
@@ -23,7 +21,6 @@ export type AddAlbumItemResult = {
 };
 
 export type DeleteAlbumItemsCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
   albumItemIds: EntityId[];
 };
@@ -34,7 +31,6 @@ export type DeleteAlbumItemsResult = {
 };
 
 export type ReorderAlbumItemsCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
   /** Desired order (album item ids, complete permutation of the album’s items). */
   albumItemIds: EntityId[];
@@ -45,7 +41,6 @@ export type ReorderAlbumItemsResult = {
 };
 
 export type DeleteAlbumCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
 };
 
@@ -54,7 +49,6 @@ export type DeleteAlbumResult = {
 };
 
 export type SetCoverMediaCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
   albumItemId: EntityId;
 };
@@ -64,7 +58,6 @@ export type SetCoverMediaResult = {
 };
 
 export type UnsetCoverMediaCommand = {
-  viewerId: EntityId;
   albumId: EntityId;
 };
 
@@ -78,7 +71,6 @@ export type NewAlbumInAddMediaItems = {
 };
 
 export type AddMediaItemsToAlbumCommand = {
-  viewerId: EntityId;
   mediaItemIds: EntityId[];
   albumId?: EntityId;
   newAlbum?: NewAlbumInAddMediaItems;
@@ -93,7 +85,6 @@ export type AddAlbumMembersCommand = {
   albumId: string;
   userIds: EntityId[];
   role: AlbumMemberRole;
-  actorId: string;
 };
 
 export type AddAlbumMembersResult = {
@@ -104,8 +95,6 @@ export type AddAlbumMembersResult = {
 export type RemoveAlbumMembersCommand = {
   albumId: string;
   albumMemberIds: EntityId[];
-
-  actorId: string;
 };
 
 export type RemoveAlbumMembersResult = {

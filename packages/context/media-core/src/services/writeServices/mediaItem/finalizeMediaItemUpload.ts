@@ -15,6 +15,7 @@ import { UnitOfWork } from '../../../infrastructure';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   FinalizeMediaItemUploadCommand,
@@ -30,6 +31,7 @@ type FinalizeMediaItemUploadDeps = {
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
   uow: UnitOfWork;
+  viewerId: EntityId;
 };
 
 export const build__FinalizeMediaItemUpload = ({
@@ -37,11 +39,12 @@ export const build__FinalizeMediaItemUpload = ({
   mediaStorage,
   mediaProcessingJobRepository,
   uow,
+  viewerId,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
   ): Promise<OperationResult<FinalizeMediaItemUploadResult>> => {
-    const { viewerId, mediaItemId } = input;
+    const { mediaItemId } = input;
     const mediaItem = await mediaItemRepository.getById(mediaItemId);
     if (!mediaItem) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotFound);

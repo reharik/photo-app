@@ -39,7 +39,7 @@
     "@packages/contracts": "*",
     "@packages/infrastructure": "*",
     "@react-email/components": "^1.0.12",
-    "ioc-manifest": "3.1.0-rc.2",
+    "ioc-manifest": "4.0.0-rc.3",
     "react": "^19.0.0"
   },
   "devDependencies": {

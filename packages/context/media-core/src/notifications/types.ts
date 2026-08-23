@@ -3,7 +3,7 @@ import {
   NotificationKind,
   NotificationSubjectType,
 } from '@packages/contracts';
-import { DomainEvent } from '../domain';
+import { DomainEvent } from '../domainEvents';
 import { UserContact } from '../repositories';
 import { EntityId } from '../types';
 

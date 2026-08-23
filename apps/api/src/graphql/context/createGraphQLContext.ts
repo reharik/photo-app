@@ -10,7 +10,7 @@ type ContextDeps = {
   logger: Logger;
 };
 
-export const build__CreateGraphQLContext = ({
+export const build__GraphQLContextFactory = ({
   config,
   logger,
 }: ContextDeps): GraphQLContextFactory => {

@@ -1,3 +1,4 @@
+import { DomainEventHandler } from '../../../domainEvents/eventPublisher';
 import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
 import {
   isAuthorizationKind,
@@ -7,7 +8,6 @@ import {
   SystemGrantRepository,
   UpsertGrantInput,
 } from '../../../repositories/systemRepositories/systemGrantRepository';
-import { DomainEventHandler } from '../../domainEvents/eventPublisher';
 import { ResolveAuthorizations } from './resolveAuthorizations';
 
 type AuthorizationReconciliationDeps = {

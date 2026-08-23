@@ -6,6 +6,7 @@ import {
   IndependentGroupResult,
 } from '../../../infrastructure/writeServices/groupActionStrategy';
 import { AlbumRepository, UserReadRepository } from '../../../repositories';
+import { EntityId } from '../../../types';
 import { UserRow } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumMembersCommand } from './writeAlbum.types';
@@ -20,18 +21,19 @@ type AddAlbumMembersDeps = {
   albumRepository: AlbumRepository;
   userReadRepository: UserReadRepository;
   logger: Logger;
+  viewerId: EntityId;
 };
 
 export const build__AddAlbumMembers = ({
   albumRepository,
   userReadRepository,
   logger,
+  viewerId,
 }: AddAlbumMembersDeps): AddAlbumMembers => {
   return async ({
     albumId,
     userIds,
     role,
-    actorId,
   }: AddAlbumMembersCommand): Promise<OperationResult<IndependentGroupResult<UserRow, string>>> => {
     const album = await albumRepository.getById(albumId);
     if (!album) {
@@ -47,7 +49,7 @@ export const build__AddAlbumMembers = ({
       if (!x.userStatus.equals(UserStatus.active)) {
         return fail(ContractError.UserIsNotActive);
       }
-      const addMemberResult = album.addMember(x.id, role, actorId);
+      const addMemberResult = album.addMember(x.id, role, viewerId);
       if (!addMemberResult.success) {
         return addMemberResult;
       }

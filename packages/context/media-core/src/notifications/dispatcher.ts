@@ -1,5 +1,5 @@
 import { Logger } from '@packages/infrastructure';
-import { DomainEventHandler } from '../domain/domainEvents/eventPublisher';
+import { DomainEventHandler } from '../domainEvents/eventPublisher';
 import { NotificationStrategies, NotificationWriters } from '../generated/ioc-registry.types';
 
 type Deps = {

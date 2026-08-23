@@ -4,16 +4,20 @@ import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface DeleteShareContactService extends WriteServiceBase {
-  (handle: string, viewerId: EntityId): Promise<OperationResult<{ handle: string }>>;
+  (handle: string): Promise<OperationResult<{ handle: string }>>;
 }
 
 type DeleteShareContactServiceDeps = {
+  viewerId: EntityId;
   shareContactRepository: ShareContactRepository;
 };
 
 export const build__DeleteShareContactService =
-  ({ shareContactRepository }: DeleteShareContactServiceDeps): DeleteShareContactService =>
-  async (handle: string, viewerId: EntityId) => {
+  ({
+    viewerId,
+    shareContactRepository,
+  }: DeleteShareContactServiceDeps): DeleteShareContactService =>
+  async (handle: string) => {
     void (await shareContactRepository.deleteContact(handle, viewerId));
     return ok({ handle });
   };

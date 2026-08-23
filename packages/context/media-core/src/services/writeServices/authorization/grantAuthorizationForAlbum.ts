@@ -6,6 +6,7 @@ import {
   loadRequiredMediaItem,
 } from '../../../application/support/resourceLoaders';
 import { Album, MediaItem, PendingUser, User } from '../../../domain';
+import { WriteServices } from '../../../generated/ioc-registry.types';
 import {
   formatFailures,
   IndependentGroupResult,
@@ -14,7 +15,7 @@ import { MediaItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { CreateUserWriteService } from '../user/createUserWriteService';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantUserAuthorizationCommand } from './grantTypes';
 import {
@@ -36,15 +37,18 @@ type GrantUserAuthorizationDeps = {
   userRepository: UserRepository;
   mediaItemRepository: MediaItemRepository;
   shareContactRepository: ShareContactRepository;
-  createUserWriteService: CreateUserWriteService;
+  writeServices: WriteServices;
+
   logger: Logger;
+  viewerId: EntityId;
 };
 
 const validateExistingAlbum = async (
   albumRepository: AlbumRepository,
   input: GrantUserAuthorizationCommand,
+  viewerId: EntityId,
 ): Promise<OperationResult<Album>> => {
-  const { viewerId, entityIds } = input;
+  const { entityIds } = input;
   const albumId = entityIds[0];
 
   const getResult = await loadRequiredAlbum(albumId, albumRepository);
@@ -64,8 +68,9 @@ const validateExistingAlbum = async (
 const validateMediaItemsCreateShadowAlbum = async (
   mediaItemRepository: MediaItemRepository,
   input: GrantUserAuthorizationCommand,
+  viewerId: EntityId,
 ): Promise<OperationResult<Album>> => {
-  const { viewerId, entityIds, label, viewerFirstName } = input;
+  const { entityIds, label, viewerFirstName } = input;
   const dedupedIds = dedupeIds(entityIds);
 
   if (dedupedIds.length === 0) {
@@ -93,7 +98,7 @@ const validateMediaItemsCreateShadowAlbum = async (
       title: label ?? `Photos from ${viewerFirstName}`,
       isShadowAlbum: true,
     },
-    input.viewerId,
+    viewerId,
   );
   mediaItems.forEach((mediaItem) => {
     album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
@@ -106,22 +111,23 @@ export const build__GrantUserAuthorization = ({
   userRepository,
   mediaItemRepository,
   shareContactRepository,
-  createUserWriteService,
+  writeServices,
   logger,
+  viewerId,
 }: GrantUserAuthorizationDeps): GrantUserAuthorization => {
   return async (
     input: GrantUserAuthorizationCommand,
     mediaItems: boolean,
   ): Promise<OperationResult<IndependentGroupResult<User | PendingUser, GrantedAuthorization>>> => {
     // setup and validation
-    const { viewerId, grantedToHandles } = input;
+    const { grantedToHandles } = input;
     const granter = await userRepository.getById(viewerId);
     if (!granter) {
       return fail(AppErrorCollection.user.UserNotFound);
     }
     const isValid = mediaItems
-      ? await validateMediaItemsCreateShadowAlbum(mediaItemRepository, input)
-      : await validateExistingAlbum(albumRepository, input);
+      ? await validateMediaItemsCreateShadowAlbum(mediaItemRepository, input, viewerId)
+      : await validateExistingAlbum(albumRepository, input, viewerId);
 
     if (!isValid.success) {
       return isValid;
@@ -131,8 +137,7 @@ export const build__GrantUserAuthorization = ({
     const userResult = await getOrCreateAllUsers(
       grantedToHandles,
       userRepository,
-      createUserWriteService,
-      viewerId,
+      writeServices.createUserWriteService,
     );
     if (!userResult.success) {
       return userResult;
@@ -141,7 +146,7 @@ export const build__GrantUserAuthorization = ({
     // active → album.grantAuthorization emits its own domain events, runs for
     // both pending and active.  In event handler pending users don't get grants.
     // Once they activate the grants will be created.
-    const inviteResult = inviteUsers(userResult.value, album, input);
+    const inviteResult = inviteUsers(userResult.value, album, input, viewerId);
     if (inviteResult.failed.length > 0) {
       logger.warn(formatFailures(inviteResult.failed, 'partial album grant', (x) => x.id()));
     }

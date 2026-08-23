@@ -4,7 +4,7 @@ import Koa from 'koa';
 import type { Config } from '../../config.js';
 import type { GraphQLContextFactory } from '../context/types.js';
 import { schema } from '../schema';
-import { ScopedContainerPlugin } from './useScopedContainer.js';
+import { UseScopedContainer } from './useScopedContainer.js';
 
 /**
  * App-local contract for graphql-yoga so ioc-manifest can resolve a named contract symbol.
@@ -27,13 +27,13 @@ interface GraphQLServerDeps {
 }
 
 type YogaAppDeps = {
-  createGraphQlContext: GraphQLContextFactory;
+  graphQlContextFactory: GraphQLContextFactory;
   config: Config;
-  useScopedContainer: ScopedContainerPlugin;
+  useScopedContainer: UseScopedContainer;
 };
 
 export const build__YogaApp = ({
-  createGraphQlContext,
+  graphQlContextFactory,
   config,
   useScopedContainer,
 }: YogaAppDeps): YogaApp => {
@@ -41,7 +41,7 @@ export const build__YogaApp = ({
     plugins: [useScopedContainer],
     schema,
     graphqlEndpoint: config.graphqlHttpPath,
-    context: createGraphQlContext,
+    context: graphQlContextFactory,
   }) as YogaApp;
 };
 

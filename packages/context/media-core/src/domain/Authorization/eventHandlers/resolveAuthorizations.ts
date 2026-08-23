@@ -1,5 +1,6 @@
 import { assertNever } from '@packages/contracts';
 import { groupByMapping, indexByUnique } from '@packages/infrastructure';
+import { DomainEvent } from '../../../domainEvents/DomainEvent';
 import {
   isAuthorizationKind,
   PendingUserAuthorizationRow,
@@ -10,7 +11,6 @@ import {
 } from '../../../repositories';
 import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
 import { EntityId } from '../../../types';
-import { DomainEvent } from '../../domainEvents/DomainEvent';
 
 /**
  * MATERIALIZATION ONLY. Every kind here grows or re-syncs the `grant` projection for a

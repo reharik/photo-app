@@ -11,7 +11,7 @@ import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
 import type { AuthMiddleware } from './middleware/authMiddleware.js';
 import type { ErrorHandler } from './middleware/errorHandler.js';
 import type { RequestLogger } from './middleware/requestLogger.js';
-import type { RootRouter } from './routes/apiRouter.js';
+import type { APIRouter } from './routes/apiRouter.js';
 import type { MediaPublicRouter } from './routes/mediaPublicRouter.js';
 
 setDefaultSerializationMode('value');
@@ -21,7 +21,7 @@ export type KoaServer = http.Server;
 
 type KoaServerDeps = {
   mediaPublicRouter: MediaPublicRouter;
-  apiRouter: RootRouter;
+  apiRouter: APIRouter;
   authMiddleware: AuthMiddleware;
   logger: Logger;
   graphQlServer: GraphQLServer;

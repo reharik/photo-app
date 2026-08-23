@@ -1,7 +1,7 @@
 import { Logger } from '@packages/infrastructure';
 import { Knex } from 'knex';
-import { DomainEvent } from '../../domain/domainEvents/DomainEvent';
-import { EventPublisher } from '../../domain/domainEvents/eventPublisher';
+import { DomainEvent } from '../../domainEvents/DomainEvent';
+import { EventPublisher } from '../../domainEvents/eventPublisher';
 import { RequestScopeLifeCycle } from '../../services';
 
 export interface UnitOfWork extends RequestScopeLifeCycle {

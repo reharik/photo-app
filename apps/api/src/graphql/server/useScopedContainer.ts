@@ -13,20 +13,20 @@ import {
   PublicReadGraphQLContext,
 } from '../context/types';
 
-type ScopedContainerPluginDeps = {
+type UseScopedContainerDeps = {
   openAuthenticatedReadGraphQlContextScope: OpenAuthenticatedReadGraphQlContextScope;
   openAuthenticatedWriteGraphQlContextScope: OpenAuthenticatedWriteGraphQlContextScope;
   openPublicRequestContextScope: OpenPublicRequestContextScope;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ScopedContainerPlugin extends Plugin<InitialGraphQLContext | GraphQLContext> {}
+export interface UseScopedContainer extends Plugin<InitialGraphQLContext | GraphQLContext> {}
 
 export const build__UseScopedContainer = ({
   openAuthenticatedReadGraphQlContextScope,
   openAuthenticatedWriteGraphQlContextScope,
   openPublicRequestContextScope,
-}: ScopedContainerPluginDeps): ScopedContainerPlugin => ({
+}: UseScopedContainerDeps): UseScopedContainer => ({
   async onExecute({ args, extendContext }) {
     const ctx = args.contextValue;
 

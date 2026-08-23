@@ -1,5 +1,5 @@
+import { DomainEventBase } from '../../domainEvents/DomainEvent';
 import { EntityId } from '../../types/types';
-import { DomainEventBase } from '../domainEvents/DomainEvent';
 
 export interface MediaItemAddedToAlbum extends DomainEventBase {
   kind: 'mediaItemAddedToAlbum';

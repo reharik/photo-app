@@ -6,7 +6,7 @@ import { registerIocFromManifest } from 'ioc-manifest';
 import type { Knex } from 'knex';
 
 import type { Cradle } from '../container.js';
-import { build__CreateGraphQLContext } from '../graphql/context/createGraphQLContext.js';
+import { build__GraphQLContextFactory } from '../graphql/context/createGraphQLContext.js';
 import type { GraphQLInitialContext } from '../graphql/context/types.js';
 
 import { composedManifests, composedRegistrationOverrides } from '../di/generated/ioc-composed.js';
@@ -43,7 +43,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
 
   const config = container.resolve('config');
   const logger = container.resolve('logger');
-  const baseGraphQLContextFactory = build__CreateGraphQLContext({
+  const baseGraphQLContextFactory = build__GraphQLContextFactory({
     notificationService: noopNotificationService,
     config,
     logger,
@@ -53,7 +53,7 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
     container: asValue(container),
     mediaStorage: asValue(integrationTestMediaStorage),
     notificationService: asValue(noopNotificationService),
-    createGraphQlContext: asValue((initialContext: GraphQLInitialContext) => {
+    graphQlContextFactory: asValue((initialContext: GraphQLInitialContext) => {
       try {
         return baseGraphQLContextFactory(initialContext);
       } catch {

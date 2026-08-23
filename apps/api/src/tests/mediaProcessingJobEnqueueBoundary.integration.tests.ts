@@ -100,10 +100,11 @@ describe('media processing job enqueue boundary (integration)', () => {
   const finalizeInOpenUow = async (
     mediaItemId: string,
   ): Promise<{ finish: (act: 'commit' | 'rollback') => Promise<void> }> => {
-    const { authenticatedWriteGraphQlContext: writeScope, dispose } =
-      container.resolve('openAuthenticatedWriteGraphQlContextScope')({
-        viewerId: TEST_VIEWER_1_ID,
-      });
+    const { authenticatedWriteGraphQlContext: writeScope, dispose } = container.resolve(
+      'openAuthenticatedWriteGraphQlContextScope',
+    )({
+      viewerId: TEST_VIEWER_1_ID,
+    });
     await writeScope.start();
     let open = true;
     const finish = async (act: 'commit' | 'rollback'): Promise<void> => {
@@ -116,7 +117,6 @@ describe('media processing job enqueue boundary (integration)', () => {
     };
     try {
       const result = await writeScope.writeServices.finalizeMediaItemUpload({
-        viewerId: TEST_VIEWER_1_ID,
         mediaItemId,
       });
       expect(result.success).toBe(true);

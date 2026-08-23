@@ -3,7 +3,6 @@ import { UploadTarget } from '../../../application/media/MediaStorage';
 import { EntityId } from '../../../types/types';
 
 export type FinalizeMediaItemUploadCommand = {
-  viewerId: EntityId;
   mediaItemId: EntityId;
 };
 
@@ -16,7 +15,6 @@ export type FinalizeMediaItemUploadResult = {
 };
 
 export type CreateMediaUploadCommand = {
-  viewerId: string;
   kind: MediaKind;
   mimeType: string;
   originalFileName?: string;
@@ -30,7 +28,6 @@ export type CreateMediaUploadResult = {
 };
 
 export type DeleteMediaItemCommand = {
-  viewerId: EntityId;
   mediaItemId: EntityId;
 };
 
@@ -39,7 +36,6 @@ export type DeleteMediaItemResult = {
 };
 
 export type DeleteMediaItemsCommand = {
-  viewerId: EntityId;
   mediaItemIds: EntityId[];
 };
 
@@ -48,7 +44,6 @@ export type DeleteMediaItemsResult = {
 };
 
 export type UpdateMediaItemDetailsCommand = {
-  viewerId: EntityId;
   mediaItemId: EntityId;
   title?: string | null;
   description?: string | null;
@@ -79,7 +74,6 @@ export type MediaItemTagInput = Omit<MediaItemTag, 'userTagId'> & {
 };
 
 export type UpdateMediaItemTagsCommand = {
-  viewerId: EntityId;
   mediaItemId: EntityId;
   tags: { userTagId?: EntityId; label: string }[];
 };
@@ -104,12 +98,6 @@ export type Reaction = {
 
 export type MediaItemReactionInput = Omit<Reaction, 'userId'> & {
   userId?: EntityId;
-};
-
-export type UpdateMediaItemReactionsCommand = {
-  viewerId: EntityId;
-  mediaItemId: EntityId;
-  tags: MediaItemReactionInput[];
 };
 
 export type UpdateMediaItemReactionsResult = {
