@@ -17,6 +17,7 @@
     ]
   },
   "targetDefaults": {
+    "ioc": { "cache": false },
     "build": {
       "cache": true,
       "inputs": ["prod", "^prod"],
