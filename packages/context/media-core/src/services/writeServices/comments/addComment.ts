@@ -48,20 +48,25 @@ type AddCommentDeps = {
   writeServices: WriteServices;
 };
 
-export const build__AddComment = (deps: AddCommentDeps): AddComment => {
+export const build__AddComment = ({
+  commentRepository,
+  userReadRepository,
+  validateOperationService,
+  writeServices,
+}: AddCommentDeps): AddComment => {
   return async (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
-    const result = await deps.validateOperationService.authorizeMediaComment({
+    const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
     });
     if (!result.success) {
       return result;
     }
-    const user = await deps.userReadRepository.getById(command.authorId);
+    const user = await userReadRepository.getById(command.authorId);
     if (!user) {
       return fail(AppErrorCollection.user.UserNotFound);
     }
     if (command.parentCommentId) {
-      const parentComment = await deps.commentRepository.getById(command.parentCommentId);
+      const parentComment = await commentRepository.getById(command.parentCommentId);
       if (!parentComment) {
         return fail(AppErrorCollection.comment.CommentNotFound);
       }
@@ -88,8 +93,8 @@ export const build__AddComment = (deps: AddCommentDeps): AddComment => {
       command.authorId,
     );
 
-    await deps.commentRepository.save(comment);
-    await deps.writeServices.toggleReaction({
+    await commentRepository.save(comment);
+    await writeServices.toggleReaction({
       targetType: EntityType.mediaItem,
       targetId: command.targetId,
       emoji: ReactionEmoji.comment,
