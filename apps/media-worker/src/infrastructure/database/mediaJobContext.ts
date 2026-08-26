@@ -1,7 +1,9 @@
-import { UnitOfWork } from '@packages/media-core';
+import {
+  MediaItemRepository,
+  MediaProcessingJobRepository,
+  UnitOfWork,
+} from '@packages/media-core';
 import { ScopeRoot } from 'ioc-manifest';
-
-import { ProcessNextMediaImageJob } from '../../tasks/queue/mediaWorkers/processNextMediaImageJob.js';
 
 /**
  * Scope root for one media-image job phase. The runner opens this once per
@@ -13,21 +15,26 @@ import { ProcessNextMediaImageJob } from '../../tasks/queue/mediaWorkers/process
  * The root settles its own transaction, so `start`/`finalize` delegate to `uow`.
  */
 export interface MediaJobContext {
-  processNextMediaImageJob: ProcessNextMediaImageJob;
+  mediaItemRepository: MediaItemRepository;
+  mediaProcessingJobRepository: MediaProcessingJobRepository;
+  uow: UnitOfWork;
   start: () => Promise<void>;
   finalize: (ok: boolean) => Promise<void>;
 }
 
 type MediaJobContextDeps = {
-  processNextMediaImageJob: ProcessNextMediaImageJob;
+  mediaItemRepository: MediaItemRepository;
+  mediaProcessingJobRepository: MediaProcessingJobRepository;
   uow: UnitOfWork;
 };
-
 export const build__MediaJobContext = ({
-  processNextMediaImageJob,
+  mediaItemRepository,
+  mediaProcessingJobRepository,
   uow,
 }: MediaJobContextDeps): ScopeRoot<MediaJobContext> => ({
-  processNextMediaImageJob,
+  mediaItemRepository,
+  mediaProcessingJobRepository,
+  uow,
   start: uow.start,
   finalize: uow.complete,
 });

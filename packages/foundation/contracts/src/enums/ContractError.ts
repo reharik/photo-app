@@ -619,6 +619,20 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  AssetNotProcessing: {
+    code: 'ASSET_NOT_PROCESSING',
+    display: 'Asset not processing',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  MediaItemNotProcessing: {
+    code: 'MEDIA_ITEM_NOT_PROCESSING',
+    display: 'Media item not processing',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

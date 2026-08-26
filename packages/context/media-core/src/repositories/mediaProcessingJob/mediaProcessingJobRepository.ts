@@ -1,9 +1,9 @@
-import { MediaItemStatus } from '@packages/contracts';
+import { MediaItemStatus, MediaJobStatus } from '@packages/contracts';
 import type { Knex } from 'knex';
 
 import { UnitOfWork } from '../../infrastructure';
 import type { EntityId } from '../../types/types';
-import { createQueueClaimable } from '../queueClaimable';
+import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
 /**
  * Attempt budget for one media processing job, shared by the two places that
@@ -16,7 +16,7 @@ export const MAX_MEDIA_PROCESSING_JOB_ATTEMPTS = 5;
 export type MediaProcessingJobRow = {
   id: EntityId;
   mediaItemId: EntityId;
-  status: MediaItemStatus;
+  status: MediaJobStatus;
   attemptCount: number;
   availableAt: Date;
   createdAt: Date;
@@ -34,14 +34,19 @@ export type MediaProcessingJobRepository = {
     uow: UnitOfWork,
   ) => Promise<void>;
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
-  markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<void>;
-  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<void>;
+  markSucceeded: (jobId: EntityId, actorId: EntityId, uow?: UnitOfWork) => Promise<boolean>;
+  markFailed: (
+    jobId: EntityId,
+    actorId: EntityId,
+    lastError: string,
+    uow: UnitOfWork,
+  ) => Promise<boolean>;
   markPendingRetry: (
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    availableAt: Date,
-  ) => Promise<void>;
+    uow: UnitOfWork,
+  ) => Promise<RetryOutcome>;
   releaseStalledJobs: (stalledBefore: Date) => Promise<ReleaseStalledJobsResult>;
 };
 
@@ -59,7 +64,7 @@ type MediaProcessingJobRepositoryDeps = {
 export const build__MediaProcessingJobRepository = ({
   database,
 }: MediaProcessingJobRepositoryDeps): MediaProcessingJobRepository => {
-  const queue = createQueueClaimable<MediaProcessingJobRow>(database, {
+  const jobRepo = createJobQueueRepository<MediaProcessingJobRow>(database, {
     table: 'mediaProcessingJob',
     attemptCountColumn: 'attempt_count',
   });
@@ -150,10 +155,10 @@ export const build__MediaProcessingJobRepository = ({
 
   return {
     enqueueIfNoneActive,
-    claimNextAvailableJob: queue.claimNextAvailableJob,
-    markSucceeded: queue.markSucceeded,
-    markFailed: queue.markFailed,
-    markPendingRetry: queue.markPendingRetry,
+    claimNextAvailableJob: jobRepo.claimNextAvailableJob,
+    markSucceeded: jobRepo.markSucceeded,
+    markFailed: jobRepo.markFailed,
+    markPendingRetry: jobRepo.markPendingRetry,
     releaseStalledJobs,
   };
 };

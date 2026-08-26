@@ -52,11 +52,6 @@ const serializeError = (e: unknown): string => {
   return String(e);
 };
 
-const retryBackoffMs = (attemptCount: number): number => {
-  const capped = Math.max(0, attemptCount - 1);
-  return Math.min(60_000, 250 * 2 ** capped);
-};
-
 type RunNextMediaDeletionJobDeps = {
   openMediaDeletionJobContextScope: OpenMediaDeletionJobContextScope;
   config: Config;
@@ -141,13 +136,7 @@ export const build__RunNextMediaDeletionJob = ({
     };
 
     const finishRetry = async (message: string): Promise<void> => {
-      const delay = retryBackoffMs(job.attemptCount);
-      await mediaDeletionJobRepository.markPendingRetry(
-        job.id,
-        actorId,
-        message,
-        new Date(Date.now() + delay),
-      );
+      await mediaDeletionJobRepository.markPendingRetry(job.id, actorId, message);
     };
 
     try {
@@ -199,12 +188,10 @@ export const build__RunNextMediaDeletionJob = ({
           message,
         });
       } else {
-        const delay = retryBackoffMs(job.attemptCount);
         await finishRetry(message);
         logger.warn('Media deletion job scheduled for retry', {
           jobId: job.id,
           attemptCount: job.attemptCount,
-          retryDelayMs: delay,
           message,
         });
       }

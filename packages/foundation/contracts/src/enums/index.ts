@@ -15,6 +15,7 @@ export * from './frontendUploadStatus';
 export * from './frontendUploadStep';
 export * from './graphqlSmartEnums';
 export * from './graphqlSmartEnumsRegistry';
+export * from './mediaItemStatus';
 export * from './notificationKind';
 export * from './operation';
 export * from './operationCatalog';

@@ -1,49 +1,14 @@
+// container.ts
 import { AwilixContainer, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
-import type { Knex } from 'knex';
 import {
   composedManifests,
   composedRegistrationOverrides,
   type AppCradle,
 } from './generated/ioc-composed.js';
 
-let container: AwilixContainer<AppCradle> | undefined;
-
-const initializeWorkerContainer = (): AwilixContainer<AppCradle> => {
-  if (container) {
-    return container;
-  }
-
-  const _container = createContainer<AppCradle>({
-    injectionMode: 'PROXY',
-  });
-
-  // No `container: asValue(_container)` self-registration: scopes are now opened by
-  // the generated `open*Scope` openers, which are injected like any other dep. Nothing
-  // resolves the root container out of the cradle any more.
-  registerIocFromManifest(_container, composedManifests, composedRegistrationOverrides);
-
-  container = _container;
+export const createWorkerContainer = (): AwilixContainer<AppCradle> => {
+  const container = createContainer<AppCradle>();
+  registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
   return container;
 };
-
-const getWorkerContainer = (): AwilixContainer<AppCradle> => {
-  if (!container) {
-    throw new Error(
-      '[ioc] container has not been initialized yet. Call initializeWorkerContainer() first.',
-    );
-  }
-
-  return container;
-};
-
-const destroyWorkerContainer = async (): Promise<void> => {
-  if (!container) {
-    return;
-  }
-  const db = container.resolve<Knex>('database');
-  await db.destroy();
-  container = undefined;
-};
-
-export { destroyWorkerContainer, getWorkerContainer, initializeWorkerContainer };

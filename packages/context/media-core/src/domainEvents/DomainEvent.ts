@@ -1,14 +1,14 @@
+import { EntityId } from '../types';
 import {
   AlbumSharedWithPendingUser,
   AlbumSharedWithPublicLink,
   AlbumSharedWithUser,
   MediaItemAddedToAlbum,
   MediaItemRemovedFromAlbum,
-} from '../domain/Album/albumEvents';
-import { EntityId } from '../types';
+} from './albumEvents';
 
-import { CommentPosted, ReactionAdded } from '../domain/Comment/commentEvents';
-import { PendingUserActivated } from '../domain/User/userEvents';
+import { CommentPosted, ReactionAdded } from './commentEvents';
+import { PendingUserActivated } from './userEvents';
 
 export type DomainEventKind = DomainEvent['kind']; // 'mediaItemAddedToAlbum' | 'MediaItemProcessed'
 

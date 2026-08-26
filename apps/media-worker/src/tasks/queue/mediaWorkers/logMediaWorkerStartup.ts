@@ -11,72 +11,74 @@ const serializeProbeError = (e: unknown): string => {
   return String(e);
 };
 
-export const logMediaWorkerStartup = async ({
-  config,
-  logger,
-  database,
-}: {
-  config: Config;
-  logger: Logger;
-  database: Knex;
-}): Promise<void> => {
-  const explicitCredentialsConfigured = Boolean(config.awsAccessKeyId && config.awsSecretAccessKey);
+export interface LogMediaWorkerStartup {
+  (): Promise<void>;
+}
 
-  logger.info('Media worker configuration', {
-    nodeEnv: config.nodeEnv,
-    logLevel: config.logLevel,
-    postgresHost: config.postgresHost,
-    postgresPort: config.postgresPort,
-    postgresDatabase: config.postgresDatabase,
-    s3Bucket: config.s3Bucket,
-    awsRegion: config.awsRegion,
-    explicitCredentialsConfigured,
-    pollIntervalMs: config.mediaWorkerPollIntervalMs,
-  });
+type LogMediaWorkerStartupDeps = { config: Config; logger: Logger; database: Knex };
 
-  try {
-    await database.raw('select 1 as ok');
-    logger.info('Postgres connectivity check succeeded', {
-      host: config.postgresHost,
-      port: config.postgresPort,
-      database: config.postgresDatabase,
+export const build__LogMediaWorkerStartup =
+  ({ config, logger, database }: LogMediaWorkerStartupDeps): LogMediaWorkerStartup =>
+  async () => {
+    const explicitCredentialsConfigured = Boolean(
+      config.awsAccessKeyId && config.awsSecretAccessKey,
+    );
+
+    logger.info('Media worker configuration', {
+      nodeEnv: config.nodeEnv,
+      logLevel: config.logLevel,
+      postgresHost: config.postgresHost,
+      postgresPort: config.postgresPort,
+      postgresDatabase: config.postgresDatabase,
+      s3Bucket: config.s3Bucket,
+      awsRegion: config.awsRegion,
+      explicitCredentialsConfigured,
+      pollIntervalMs: config.mediaWorkerPollIntervalMs,
     });
-  } catch (e) {
-    if (e instanceof Error) {
-      logger.error('Postgres connectivity check failed', e, {
+
+    try {
+      await database.raw('select 1 as ok');
+      logger.info('Postgres connectivity check succeeded', {
         host: config.postgresHost,
         port: config.postgresPort,
         database: config.postgresDatabase,
       });
-    } else {
-      logger.error('Postgres connectivity check failed', {
-        err: serializeProbeError(e),
-        host: config.postgresHost,
-        port: config.postgresPort,
-        database: config.postgresDatabase,
-      });
+    } catch (e) {
+      if (e instanceof Error) {
+        logger.error('Postgres connectivity check failed', e, {
+          host: config.postgresHost,
+          port: config.postgresPort,
+          database: config.postgresDatabase,
+        });
+      } else {
+        logger.error('Postgres connectivity check failed', {
+          err: serializeProbeError(e),
+          host: config.postgresHost,
+          port: config.postgresPort,
+          database: config.postgresDatabase,
+        });
+      }
     }
-  }
 
-  const s3Client = new S3Client({ region: config.awsRegion });
-  try {
-    await s3Client.send(new HeadBucketCommand({ Bucket: config.s3Bucket }));
-    logger.info('S3 connectivity check succeeded', {
-      bucket: config.s3Bucket,
-      region: config.awsRegion,
-    });
-  } catch (e) {
-    if (e instanceof Error) {
-      logger.error('S3 connectivity check failed', e, {
+    const s3Client = new S3Client({ region: config.awsRegion });
+    try {
+      await s3Client.send(new HeadBucketCommand({ Bucket: config.s3Bucket }));
+      logger.info('S3 connectivity check succeeded', {
         bucket: config.s3Bucket,
         region: config.awsRegion,
       });
-    } else {
-      logger.error('S3 connectivity check failed', {
-        err: serializeProbeError(e),
-        bucket: config.s3Bucket,
-        region: config.awsRegion,
-      });
+    } catch (e) {
+      if (e instanceof Error) {
+        logger.error('S3 connectivity check failed', e, {
+          bucket: config.s3Bucket,
+          region: config.awsRegion,
+        });
+      } else {
+        logger.error('S3 connectivity check failed', {
+          err: serializeProbeError(e),
+          bucket: config.s3Bucket,
+          region: config.awsRegion,
+        });
+      }
     }
-  }
-};
+  };

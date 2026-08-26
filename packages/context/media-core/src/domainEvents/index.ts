@@ -3,4 +3,10 @@
  */
 
 export * from './DomainEvent';
+export * from './albumEvents';
+export * from './authorizationReconciliation';
+export * from './commentEvents';
 export * from './eventPublisher';
+export * from './registerDomainEventHandlers';
+export * from './resolveAuthorizations';
+export * from './userEvents';

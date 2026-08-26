@@ -57,6 +57,7 @@ export const build__AddComment = ({
   return async (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
+      viewerId: command.viewer.id,
     });
     if (!result.success) {
       return result;

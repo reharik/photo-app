@@ -3,12 +3,12 @@
  * Encapsulates metadata; can appear in multiple albums via AlbumItem.
  */
 
-import type { MediaAssetKind } from '@packages/contracts';
 import {
   AppErrorCollection,
   ContractError,
   EntityType,
   fail,
+  MediaAssetKind,
   MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
@@ -28,14 +28,11 @@ import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 
 interface AssetMetadata {
   kind: MediaAssetKind;
-  mimeType?: string;
+  mimeType: string;
   sizeBytes: number;
   width?: number;
   height?: number;
 }
-type ApplyCaptureTimeResult =
-  | { kind: 'applied'; takenAtUtc: Date; offsetMinutes: number | undefined }
-  | { kind: 'skipped'; reason: 'no-exif-date' | 'already-set' };
 
 export type MediaItemTagRecord = Omit<MediaItemTag, 'id'> & {
   id: string;
@@ -249,23 +246,78 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return this.props.height;
   }
 
-  applyExifCaptureTime(input: {
-    takenAtUtc?: Date;
-    takenAtUtcOffsetMinutes?: number;
-  }): ApplyCaptureTimeResult {
-    if (input.takenAtUtc == null) {
-      return { kind: 'skipped', reason: 'no-exif-date' };
+  applyProcessingResults(
+    result: {
+      capture: { takenAtUtc?: Date; takenAtUtcOffsetMinutes?: number };
+      displayAsset: AssetMetadata;
+      thumbnailAsset: AssetMetadata;
+      originalAsset?: AssetMetadata;
+    },
+    actorId: EntityId,
+  ) {
+    const { capture, displayAsset, thumbnailAsset, originalAsset } = result;
+    if (!this.props.status.equals(MediaItemStatus.processing)) {
+      return fail(AppErrorCollection.mediaItem.MediaItemNotProcessing);
     }
-    if (this.props.takenAt != null) {
-      return { kind: 'skipped', reason: 'already-set' };
+    const w = Math.round(displayAsset.width || 0);
+    const h = Math.round(displayAsset.height || 0);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+      return fail(ContractError.InvalidMediaDimensions);
     }
-    this.props.takenAt = input.takenAtUtc;
-    this.props.takenAtUtcOffsetMinutes = input.takenAtUtcOffsetMinutes;
-    return {
-      kind: 'applied',
-      takenAtUtc: input.takenAtUtc,
-      offsetMinutes: input.takenAtUtcOffsetMinutes,
-    };
+
+    if (
+      this.#assets.find(
+        (a) => a.kind().equals(MediaAssetKind.thumbnail) || a.kind().equals(MediaAssetKind.display),
+      )
+    ) {
+      return fail(AppErrorCollection.mediaItem.AssetKindAlreadyExists);
+    }
+
+    if (originalAsset) {
+      const original = this.#assets.find((a) => a.kind().equals(MediaAssetKind.original));
+      if (!original) {
+        return fail(AppErrorCollection.mediaItem.AssetNotFound);
+      }
+      if (!original.status().equals(MediaAssetStatus.processing)) {
+        return fail(AppErrorCollection.mediaItem.AssetNotProcessing);
+      }
+      // Mutating inside the Guard, not great but ok since this is the last
+      // guard. If you feel like moving things around you'll have to pull this
+      // back out.
+      original.applyUploadedObjectMetadata(originalAsset, actorId);
+    }
+
+    const thumb = MediaAsset.create(
+      {
+        kind: MediaAssetKind.thumbnail,
+        mimeType: thumbnailAsset.mimeType,
+        mediaItemId: this.id(),
+      },
+      actorId,
+    );
+
+    const display = MediaAsset.create(
+      {
+        kind: MediaAssetKind.display,
+        mimeType: displayAsset.mimeType,
+        mediaItemId: this.id(),
+      },
+      actorId,
+    );
+    thumb.applyUploadedObjectMetadata(thumbnailAsset, actorId);
+    display.applyUploadedObjectMetadata(displayAsset, actorId);
+    this.#assets.push(thumb, display);
+
+    if (capture.takenAtUtc != null && this.props.takenAt == null) {
+      this.props.takenAt = capture.takenAtUtc;
+      this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes;
+    }
+
+    this.props.width = w;
+    this.props.height = h;
+    this.props.status = MediaItemStatus.ready;
+    this.touch(actorId);
+    return ok(undefined);
   }
 
   /**
@@ -295,28 +347,28 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  /**
-   * After display (and thumbnail) derivatives exist in storage: processing (or legacy uploaded) → ready.
-   * Item-level width/height reflect the display derivative dimensions.
-   */
-  markReadyAfterDerivatives(
-    input: { displayWidth: number; displayHeight: number },
-    actorId: ActorId,
-  ): OperationResult {
-    if (!this.props.status.equals(MediaItemStatus.processing)) {
-      return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
-    }
-    const w = Math.round(input.displayWidth);
-    const h = Math.round(input.displayHeight);
-    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
-      return fail(ContractError.InvalidMediaDimensions);
-    }
-    this.props.width = w;
-    this.props.height = h;
-    this.props.status = MediaItemStatus.ready;
-    this.touch(actorId);
-    return ok(undefined);
-  }
+  // /**
+  //  * After display (and thumbnail) derivatives exist in storage: processing (or legacy uploaded) → ready.
+  //  * Item-level width/height reflect the display derivative dimensions.
+  //  */
+  // markReadyAfterDerivatives(
+  //   input: { displayWidth: number; displayHeight: number },
+  //   actorId: ActorId,
+  // ): OperationResult {
+  //   if (!this.props.status.equals(MediaItemStatus.processing)) {
+  //     return fail(AppErrorCollection.mediaItem.StatusNotUploaded);
+  //   }
+  //   const w = Math.round(input.displayWidth);
+  //   const h = Math.round(input.displayHeight);
+  //   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+  //     return fail(ContractError.InvalidMediaDimensions);
+  //   }
+  //   this.props.width = w;
+  //   this.props.height = h;
+  //   this.props.status = MediaItemStatus.ready;
+  //   this.touch(actorId);
+  //   return ok(undefined);
+  // }
 
   /**
    * Terminal outcome of the derivative pipeline: processing → failed. Without this the

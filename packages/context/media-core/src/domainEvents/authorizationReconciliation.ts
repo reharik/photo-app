@@ -1,13 +1,13 @@
-import { DomainEventHandler } from '../../../domainEvents/eventPublisher';
-import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
+import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
 import {
   isAuthorizationKind,
   SystemAuthorizationRepository,
-} from '../../../repositories/systemRepositories/systemAuthorizationRepository';
+} from '../repositories/systemRepositories/systemAuthorizationRepository';
 import {
   SystemGrantRepository,
   UpsertGrantInput,
-} from '../../../repositories/systemRepositories/systemGrantRepository';
+} from '../repositories/systemRepositories/systemGrantRepository';
+import { DomainEventHandler } from './eventPublisher';
 import { ResolveAuthorizations } from './resolveAuthorizations';
 
 type AuthorizationReconciliationDeps = {

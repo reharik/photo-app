@@ -65,7 +65,7 @@ export const build__FinalizeMediaItemUpload = ({
     const result = mediaItem.updateAssetWithMetadata({
       kind: MediaAssetKind.original,
       sizeBytes: objectMetadata.size,
-      mimeType: objectMetadata.mimeType,
+      mimeType: objectMetadata.mimeType || '',
     });
     if (!result.success) {
       return result;

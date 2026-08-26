@@ -13,3 +13,4 @@ generates:
         Operation: './operation'
         AlbumMemberRole: './albumMemberRole'
         ReactionEmoji: './reactionEmojis'
+        MediaItemStatus: './mediaItemStatus'

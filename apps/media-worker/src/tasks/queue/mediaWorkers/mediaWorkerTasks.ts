@@ -1,6 +1,6 @@
 import { QueueWorkerTask } from '../../../types';
+import { ProcessNextMediaImageJob } from './processMediaImage/processNextMediaImageJob';
 import { RunNextMediaDeletionJob } from './processNextMediaDeletionJob';
-import { RunNextMediaImageJob } from './processNextMediaImageJob';
 
 // Priority-ordered tasks: deletion before image. Queue tasks are always due —
 // the claim inside each runner is itself the work-probe (returns 'idle' when
@@ -36,14 +36,14 @@ export interface MediaImageTask extends QueueWorkerTask {
 }
 
 type MediaImageTaskDeps = {
-  runNextMediaImageJob: RunNextMediaImageJob;
+  processNextMediaImageJob: ProcessNextMediaImageJob;
 };
 
 export const build__MediaImageTask = ({
-  runNextMediaImageJob,
+  processNextMediaImageJob,
 }: MediaImageTaskDeps): MediaImageTask => ({
   name: 'media-image',
   type: 'queue',
-  run: runNextMediaImageJob,
+  run: processNextMediaImageJob,
   order: 200,
 });

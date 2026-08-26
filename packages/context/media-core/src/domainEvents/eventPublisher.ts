@@ -1,5 +1,4 @@
 import { Logger } from '@packages/infrastructure';
-import { DomainEventHandlers } from '../generated/ioc-registry.types';
 import { DomainEvent } from './DomainEvent';
 
 export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['kind']> = (
@@ -49,21 +48,4 @@ export const build__EventPublisher = ({ logger }: EventPublisherDeps): EventPubl
       }
     },
   };
-};
-
-export const registerDomainEventHandlers = (
-  eventPublisher: EventPublisher,
-  domainEventHandlers: DomainEventHandlers,
-  logger: Logger,
-) => {
-  const handlerNames = new Set();
-  for (const handler of domainEventHandlers) {
-    for (const kind of handler.handles) {
-      handlerNames.add(kind);
-      eventPublisher.register(kind, handler);
-    }
-  }
-  logger.info(
-    `[DomainEventPublisher] domainEventHandlers registered: ${[...handlerNames].join('\n')}`,
-  );
 };

@@ -48,16 +48,6 @@ const mediaItemSortByInput = {
   createdAt: { column: 'created_at', table: 'media_item', nullsLast: 'false' },
   takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
 } as const;
-const mediaItemStatusInput = [
-  'deleteFailed',
-  'deletePending',
-  'failed',
-  'pending',
-  'processing',
-  'ready',
-  'succeeded',
-  'uploaded',
-] as const;
 const mediaKindInput = ['photo', 'video'] as const;
 const sharedWithMeAlbumSortByInput = {
   sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
@@ -74,7 +64,6 @@ export type InAppNotificationType = Enumeration<typeof InAppNotificationType>;
 export type MediaAssetKind = Enumeration<typeof MediaAssetKind>;
 export type MediaAssetStatus = Enumeration<typeof MediaAssetStatus>;
 export type MediaItemSortBy = Enumeration<typeof MediaItemSortBy>;
-export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
 export type MediaKind = Enumeration<typeof MediaKind>;
 export type SharedWithMeAlbumSortBy = Enumeration<typeof SharedWithMeAlbumSortBy>;
 export type SortDir = Enumeration<typeof SortDir>;
@@ -117,10 +106,6 @@ export const MediaAssetStatus = enumeration<typeof mediaAssetStatusInput>('Media
 });
 export const MediaItemSortBy = enumeration<typeof mediaItemSortByInput>('MediaItemSortBy', {
   input: mediaItemSortByInput,
-  serializeAs: 'value',
-});
-export const MediaItemStatus = enumeration<typeof mediaItemStatusInput>('MediaItemStatus', {
-  input: mediaItemStatusInput,
   serializeAs: 'value',
 });
 export const MediaKind = enumeration<typeof mediaKindInput>('MediaKind', {
@@ -176,6 +161,53 @@ export const defineAlbumMemberRoleInput = <
   const X extends Record<AlbumMemberRoleKeys, Record<string, unknown>>,
 >(
   input: Exact<X, AlbumMemberRoleKeys>,
+): X => input;
+
+export const mediaItemStatusKeys = [
+  'deleteFailed',
+  'deletePending',
+  'failed',
+  'pending',
+  'processing',
+  'ready',
+  'uploaded',
+] as const;
+export type MediaItemStatusKeys = (typeof mediaItemStatusKeys)[number];
+
+/**
+ * Pin the MediaItemStatus input to the schema's value set.
+ *
+ * One entry per schema value. A missing key or a key not in the schema is a
+ * compile error, so this enum cannot drift from the SDL. Values and display
+ * strings are derived from the key; unlike generated enums, schema
+ * descriptions are NOT applied as display strings. Pass `display` in an
+ * entry to use them, or `value` to override the wire value.
+ *
+ * Returns the input unchanged (typed): build the enum from it exactly like
+ * any other smart enum. The return type is the plain input type so that
+ * declaration emit in consuming packages stays cheap.
+ *
+ * @param input Per-member extras, keyed by schema value.
+ * @example
+ * ```ts
+ * import { enumeration, type Enumeration } from '@reharik/smart-enum';
+ *
+ * const input = defineMediaItemStatusInput({
+ *   deleteFailed: { some: 'extra' },
+ *   // ...one entry per schema value
+ * });
+ *
+ * export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;
+ * export const MediaItemStatus = enumeration<typeof input>('MediaItemStatus', {
+ *   input,
+ *   serializeAs: 'value',
+ * });
+ * ```
+ */
+export const defineMediaItemStatusInput = <
+  const X extends Record<MediaItemStatusKeys, Record<string, unknown>>,
+>(
+  input: Exact<X, MediaItemStatusKeys>,
 ): X => input;
 
 export const operationKeys = [
