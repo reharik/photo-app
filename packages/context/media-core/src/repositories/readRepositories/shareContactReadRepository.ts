@@ -6,10 +6,12 @@ export type ShareContactReadRepository = {
 };
 
 export const build__ShareContactReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): ShareContactReadRepository => ({
   getShareSuggestions: async (userId: EntityId): Promise<ShareContactSuggestion[]> => {
-    const rows = await database<ShareContactRow>('shareContact')
+    await uow.join();
+    const rows = await uow
+      .db()<ShareContactRow>('shareContact')
       .where({ userId })
       .orderBy('lastSharedAt', 'desc')
       .select<{ contactUserId: EntityId; handle: string }[]>('contactUserId', 'handle');

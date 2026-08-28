@@ -23,9 +23,11 @@ type AuthedDeps = {
 export const build__AuthenticatedReadGraphQLContext = ({
   readServices,
   agnosticReadServices,
+  uow,
 }: AuthedDeps): ScopeRoot<AuthenticatedReadScopeServices, { viewerId: EntityId }> => ({
   readServices: readServices,
   agnosticReadServices: agnosticReadServices,
+  finalize: uow.settle,
 });
 
 export const build__AuthenticatedWriteGraphQLContext = ({
@@ -37,22 +39,24 @@ export const build__AuthenticatedWriteGraphQLContext = ({
   readServices: readServices,
   agnosticReadServices: agnosticReadServices,
   writeServices: writeServices,
-  start: uow.start,
   flagFailure: () => {
-    uow.flagRollback();
+    uow.flagRollbackOnly();
   },
-  finalize: uow.complete,
+  finalize: uow.settle,
 });
 
 type PublicDeps = {
   publicReadServices: PublicReadServices;
   agnosticReadServices: AgnosticReadServices;
+  uow: UnitOfWork;
 };
 
 export const build__PublicRequestContext = ({
   publicReadServices,
   agnosticReadServices,
+  uow,
 }: PublicDeps): ScopeRoot<PublicReadScopeServices, { publicLinkId: string }> => ({
   publicReadServices: publicReadServices,
   agnosticReadServices: agnosticReadServices,
+  finalize: uow.settle,
 });

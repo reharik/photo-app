@@ -43,7 +43,6 @@ export const build__UseScopedContainer = ({
           openAuthenticatedWriteGraphQlContextScope({
             viewerId: ctx.viewer.id,
           });
-        await authenticatedWriteGraphQlContext.start();
         extendContext({
           ...ctx,
           ...authenticatedWriteGraphQlContext,
@@ -77,9 +76,11 @@ export const build__UseScopedContainer = ({
       return {
         async onExecuteDone({ result }) {
           if (isAsyncIterable(result)) {
+            await authenticatedReadGraphQlContext.finalize(false);
             await dispose();
             return;
           } // TODO streaming
+          await authenticatedReadGraphQlContext.finalize(false);
           await dispose();
         },
       };
@@ -98,9 +99,11 @@ export const build__UseScopedContainer = ({
     return {
       async onExecuteDone({ result }) {
         if (isAsyncIterable(result)) {
+          await publicRequestContext.finalize(false);
           await dispose();
           return;
         }
+        await publicRequestContext.finalize(false);
         await dispose();
       },
     };

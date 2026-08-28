@@ -1,4 +1,5 @@
 import type { Logger } from '@packages/infrastructure';
+import { UnitOfWork } from '@packages/media-core';
 import type { Config } from './config.js';
 import { IntervalGate } from './intervalGate.js';
 import { isQueueTask, type WorkerTask, type WorkerTaskOutcome } from './types.js';
@@ -23,6 +24,7 @@ export type RunMediaWorkerLoop = {
 export const runWorkerTasksOnce = async (
   tasks: ReadonlyArray<WorkerTask>,
   logger: Logger,
+  uow: UnitOfWork,
 ): Promise<boolean> => {
   if (tasks.length === 0) {
     return false;
@@ -31,7 +33,9 @@ export const runWorkerTasksOnce = async (
     let outcome: WorkerTaskOutcome;
     try {
       outcome = await task.run();
+      await uow.settle(false);
     } catch (e) {
+      await uow.settle(false);
       const err = e instanceof Error ? e : new Error(String(e));
       logger.error(`[mediaWorker] task "${task.name}" threw`, err);
       throw e;
@@ -46,13 +50,16 @@ export const runWorkerTasksOnce = async (
 export const runAllTasks = async (
   tasks: ReadonlyArray<WorkerTask>,
   logger: Logger,
+  uow: UnitOfWork,
 ): Promise<boolean> => {
   let didWork = false;
   for (const task of tasks) {
     try {
       const outcome = await task.run();
+      await uow.settle(false);
       if (outcome === 'processed') didWork = true;
     } catch (e) {
+      await uow.settle(false);
       const err = e instanceof Error ? e : new Error(String(e));
       logger.error(`[mediaWorker] task "${task.name}" threw`, err);
     }
@@ -67,12 +74,14 @@ type RunMediaWorkerLoopDeps = {
   config: Config;
   logger: Logger;
   intervalGate: IntervalGate;
+  uow: UnitOfWork;
 };
 
 export const build__RunMediaWorkerLoop = ({
   config,
   logger,
   intervalGate,
+  uow,
 }: RunMediaWorkerLoopDeps): RunMediaWorkerLoop => {
   let running = false;
   let stopRequested = false;
@@ -99,13 +108,13 @@ export const build__RunMediaWorkerLoop = ({
         const queueTasks = tasks.filter(isQueueTask);
         const sweepTasks = tasks.filter((t) => !isQueueTask(t));
 
-        const didWork = await runWorkerTasksOnce(queueTasks, logger);
+        const didWork = await runWorkerTasksOnce(queueTasks, logger, uow);
         if (didWork) {
           idleCycles = 0;
           continue;
         }
 
-        const sweepDidWork = await runAllTasks(sweepTasks, logger);
+        const sweepDidWork = await runAllTasks(sweepTasks, logger, uow);
         if (sweepDidWork) {
           idleCycles = 0;
           continue;

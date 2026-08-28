@@ -1,6 +1,5 @@
 import { MediaJobStatus } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
 
 import { UnitOfWork } from '../infrastructure';
 import type { EntityId } from '../types/types';
@@ -22,7 +21,7 @@ export type ClaimableRow = {
   completedAt?: Date;
   lastError?: string;
 };
-export type RetryOutcome = 'retrying' | 'exhausted' | 'notOwned' | 'failed';
+export type RetryOutcome = 'retrying' | 'exhausted' | 'notOwned';
 type QueueClaimableConfig = {
   /** Knex table identifier (camelCase; the knex case-mapping layer maps it to snake_case). */
   table: string;
@@ -40,18 +39,12 @@ const truncateError = (message: string, maxLen: number): string => {
 
 export type QueueClaimable<TRow extends ClaimableRow> = {
   claimNextAvailableJob: () => Promise<TRow | undefined>;
-  markSucceeded: (jobId: EntityId, actorId: EntityId, uow?: UnitOfWork) => Promise<boolean>;
-  markFailed: (
-    jobId: EntityId,
-    actorId: EntityId,
-    lastError: string,
-    uow: UnitOfWork,
-  ) => Promise<boolean>;
+  markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
+  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
   markPendingRetry: (
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    uow: UnitOfWork,
   ) => Promise<RetryOutcome>;
 };
 
@@ -60,60 +53,65 @@ const RETRY_CAP_SECONDS = 3600;
 const MAX_ATTEMPTS = 3;
 
 export const createJobQueueRepository = <TRow extends ClaimableRow>(
-  database: Knex,
+  uow: UnitOfWork,
   { table, attemptCountColumn }: QueueClaimableConfig,
 ): QueueClaimable<TRow> => {
   const claimNextAvailableJob = async (): Promise<TRow | undefined> => {
-    const rows = await database.transaction(async (trx: Knex.Transaction) => {
-      // No `.select()` — defaults to `select *`, matching the original SQL. The
-      // builder type args are intentionally untyped here (knex's conditional
-      // table types don't resolve over a generic TRow); the runtime chain is
-      // unchanged and the row shape is reasserted via the cast below.
-      const selected = await trx(table)
+    // The claim owns its own boundary: FOR UPDATE SKIP LOCKED must commit
+    // independently so the PROCESSING flip is visible to other workers before
+    // the caller does any downstream work. begin() throws if a boundary is
+    // already open — that's deliberate, this must never be a savepoint.
+    await uow.beginIsolatedOnly();
+    try {
+      const selected = await uow
+        .db()(table)
         .where({ status: MediaJobStatus.pending.value })
-        .andWhere('availableAt', '<=', trx.fn.now())
+        .andWhere('availableAt', '<=', uow.db().fn.now())
         .orderBy('availableAt', 'asc')
         .orderBy('id', 'asc')
         .forUpdate()
         .skipLocked()
-        .limit(1);
+        .limit(1)
+        .select<Pick<ClaimableRow, 'id'>[]>('id');
 
-      const next = selected[0] as Pick<TRow, 'id'> | undefined;
+      const next = selected[0];
       if (!next) {
-        return [] as TRow[];
+        await uow.complete(true);
+        return undefined;
       }
 
       const updated = await withEnumRevival(
-        trx(table)
+        uow
+          .db()(table)
           .where({ id: next.id, status: MediaJobStatus.pending.value })
           .update({
             status: MediaJobStatus.processing.value,
-            startedAt: trx.fn.now(),
-            attemptCount: trx.raw('?? + 1', [attemptCountColumn]),
-            updatedAt: trx.fn.now(),
+            startedAt: uow.db().fn.now(),
+            attemptCount: uow.db().raw('?? + 1', [attemptCountColumn]),
+            updatedAt: uow.db().fn.now(),
           })
           .returning('*'),
         { status: MediaJobStatus },
       );
 
-      return updated as TRow[];
-    });
-
-    return rows[0];
+      await uow.complete(true);
+      return updated[0] as TRow;
+    } catch (e) {
+      await uow.complete(false);
+      throw e;
+    }
   };
 
-  const markSucceeded = async (
-    jobId: EntityId,
-    actorId: EntityId,
-    uow?: UnitOfWork,
-  ): Promise<boolean> => {
-    const count = await (uow?.db() || database)('mediaProcessingJob')
+  const markSucceeded = async (jobId: EntityId, actorId: EntityId): Promise<boolean> => {
+    await uow.join();
+    const count = await uow
+      .db()(table)
       .where({ id: jobId, status: MediaJobStatus.processing.value })
       .update({
         status: MediaJobStatus.succeeded.value,
-        completedAt: database.fn.now(),
-        lastError: undefined,
-        updatedAt: database.fn.now(),
+        completedAt: uow.db().fn.now(),
+        lastError: null,
+        updatedAt: uow.db().fn.now(),
         updatedBy: actorId,
       });
     return count === 1;
@@ -123,16 +121,16 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    uow: UnitOfWork,
   ): Promise<boolean> => {
+    await uow.join();
     const count = await uow
       .db()(table)
       .where({ id: jobId, status: MediaJobStatus.processing.value })
       .update({
         status: MediaJobStatus.failed.value,
-        completedAt: database.fn.now(),
+        completedAt: uow.db().fn.now(),
         lastError: truncateError(lastError, 8000),
-        updatedAt: database.fn.now(),
+        updatedAt: uow.db().fn.now(),
         updatedBy: actorId,
       });
     return count === 1;
@@ -147,19 +145,21 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
     jobId: EntityId,
     actorId: EntityId,
     reason: string,
-    uow: UnitOfWork,
   ): Promise<RetryOutcome> => {
+    await uow.join();
+    // first here is ok vs exists because a) it is awaited and b) the value
+    // is needed for the max attempts call
     const row = await uow
       .db()(table)
       .where({ id: jobId, status: MediaJobStatus.processing.value })
-      .first();
+      .first<Record<string, number>>(attemptCountColumn);
 
     if (!row) {
       return 'notOwned';
     }
 
     if (row[attemptCountColumn] >= MAX_ATTEMPTS) {
-      await markFailed(jobId, actorId, `attempts exhausted (${MAX_ATTEMPTS}): ${reason}`, uow);
+      await markFailed(jobId, actorId, `attempts exhausted (${MAX_ATTEMPTS}): ${reason}`);
       return 'exhausted';
     }
 
@@ -173,12 +173,12 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
       .where({ id: jobId, status: MediaJobStatus.processing.value })
       .update({
         status: MediaJobStatus.pending.value,
-        availableAt: database.raw("now() + (? || ' seconds')::interval", [backoff]),
+        availableAt: uow.db().raw("now() + (? || ' seconds')::interval", [backoff]),
         lastError: reason,
-        updatedAt: database.fn.now(),
+        updatedAt: uow.db().fn.now(),
         updatedBy: actorId,
       });
-    return count === 1 ? 'retrying' : 'failed';
+    return count === 1 ? 'retrying' : 'notOwned';
   };
 
   return {

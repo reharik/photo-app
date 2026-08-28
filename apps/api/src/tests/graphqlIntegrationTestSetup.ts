@@ -5,7 +5,7 @@ import { asValue, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
 import type { Knex } from 'knex';
 
-import type { Cradle } from '../container.js';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { build__GraphQLContextFactory } from '../graphql/context/createGraphQLContext.js';
 import type { GraphQLInitialContext } from '../graphql/context/types.js';
 
@@ -14,7 +14,7 @@ import { ensureTestViewerUsers } from './ensureTestViewerUsers';
 import { createExecuteGraphQL } from './executeGQL';
 import { createIntegrationTestMediaStorage } from './integrationTestMediaStorage';
 
-const registerTestKnexForGlobalTeardown = (container: AwilixContainer<Cradle>): void => {
+const registerTestKnexForGlobalTeardown = (container: AwilixContainer<AppCradle>): void => {
   if (process.env.NODE_ENV !== 'test') {
     return;
   }
@@ -31,12 +31,12 @@ const noopNotificationService: NotificationService = {
  * Uses in-memory MediaStorage so tests do not require S3 or a local media directory.
  */
 export const setupGraphqlIntegrationTests = async (): Promise<{
-  container: AwilixContainer<Cradle>;
+  container: AwilixContainer<AppCradle>;
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   integrationTestMediaStorage: ReturnType<typeof createIntegrationTestMediaStorage>;
 }> => {
   const integrationTestMediaStorage = createIntegrationTestMediaStorage();
-  const container = createContainer<Cradle>({
+  const container = createContainer<AppCradle>({
     injectionMode: 'PROXY',
   });
   registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);

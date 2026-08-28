@@ -16,10 +16,10 @@ const mediaItemStatusInput = {
   deleteFailed: { work: WorkVerdict.terminal },
   deletePending: { work: WorkVerdict.terminal },
   failed: { work: WorkVerdict.terminal },
-  pending: { work: WorkVerdict.terminal },
+  pending: { work: WorkVerdict.retryable },
   processing: { work: WorkVerdict.processable },
   ready: { work: WorkVerdict.succeeded },
-  uploaded: { work: WorkVerdict.terminal },
+  uploaded: { work: WorkVerdict.retryable },
 };
 
 export type MediaItemStatus = Enumeration<typeof MediaItemStatus>;

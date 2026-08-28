@@ -20,7 +20,7 @@ const DBPublicMediaItemRowFields = [
 ];
 
 export const build__PublicMediaItemReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): PublicMediaItemReadRepository => ({
   getPublicMediaItem: async ({
     mediaItemId,
@@ -29,12 +29,14 @@ export const build__PublicMediaItemReadRepository = ({
     mediaItemId: EntityId;
     publicLinkId: EntityId;
   }): Promise<DBPublicMediaItemRow | undefined> => {
+    await uow.join();
     const mediaItem = await withEnumRevival(
-      database('mediaItem')
+      uow
+        .db()('mediaItem')
         .join('grant', 'mediaItem.id', 'grant.mediaItemId')
         .join('accessGrant', 'accessGrant.id', 'grant.accessGrantId')
         .where('accessGrant.id', publicLinkId)
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .where('mediaItem.id', mediaItemId)
         .first<DBPublicMediaItemRow>(...DBPublicMediaItemRowFields),
       {

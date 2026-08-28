@@ -90,10 +90,10 @@ const makeHarness = (): Harness => {
   });
   const uow: UnitOfWork = {
     id: 'unit-test-uow',
-    start: async () => {},
+    begin: async () => {},
     // The service under test never touches the transaction handle directly — it goes
     // through the repositories, which are faked. Matching the real contract (db()
-    // throws until start()) keeps an accidental use loud rather than silently undefined.
+    // throws until begin()) keeps an accidental use loud rather than silently undefined.
     db: () => {
       throw new Error('db() is not available in this unit test');
     },

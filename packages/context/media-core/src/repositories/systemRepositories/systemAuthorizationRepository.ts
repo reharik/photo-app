@@ -1,6 +1,6 @@
 import { assertNever, AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { EntityId } from '../../types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
@@ -19,7 +19,7 @@ export type Authorizations = {
 };
 
 export type SystemAuthorizationRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 type AuthorizationRow = {
@@ -140,13 +140,15 @@ const partitionByKind = (rows: AnyAuthorizationRow[]): Authorizations => {
 };
 
 export const build__SystemAuthorizationRepository = ({
-  database,
+  uow,
 }: SystemAuthorizationRepositoryDeps): SystemAuthorizationRepository => ({
   getAuthorizationsByAlbumId: async (albumIds: EntityId[]): Promise<Authorizations> => {
+    await uow.join();
     const rows = await withEnumRevival(
-      database('access_grant')
+      uow
+        .db()('access_grant')
         .whereIn('albumId', albumIds)
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .select<AnyAuthorizationRow[]>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );
@@ -154,10 +156,12 @@ export const build__SystemAuthorizationRepository = ({
   },
 
   getAuthorizationsByIds: async (ids: EntityId[]): Promise<Authorizations> => {
+    await uow.join();
     const rows = await withEnumRevival(
-      database('access_grant')
+      uow
+        .db()('access_grant')
         .whereIn('id', ids)
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .select<AnyAuthorizationRow[]>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );
@@ -167,10 +171,12 @@ export const build__SystemAuthorizationRepository = ({
   getPendingUserAuthorizationById: async (
     id: EntityId,
   ): Promise<PendingUserAuthorizationRow | undefined> => {
+    await uow.join();
     const row = await withEnumRevival(
-      database('access_grant')
+      uow
+        .db()('access_grant')
         .where({ id })
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .first<AnyAuthorizationRow>(authorizationFields),
       { operations: Operation, kind: AuthorizationKind },
     );

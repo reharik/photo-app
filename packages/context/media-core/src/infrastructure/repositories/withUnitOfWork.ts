@@ -20,7 +20,7 @@ export const beginUnitOfWorkScope = async <C extends UnitOfWorkRootCradle>(
   // resolve('unitOfWork') + asValue re-registration existed only because the contract
   // was a transient exposed under a second key; both are gone with the rename.
   const unitOfWork = scope.resolve('uow');
-  await unitOfWork.start();
+  await unitOfWork.begin();
   return { scope, unitOfWork };
 };
 

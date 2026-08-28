@@ -1,6 +1,6 @@
 import { AlbumItemSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow, PagedList } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
 import {
@@ -67,10 +67,10 @@ export const albumItemWithMediaSelectColumns = [
   ...mediaItemSelectColumns,
 ];
 
-type AlbumItemReadRepositoryDeps = { database: Knex };
+type AlbumItemReadRepositoryDeps = { uow: UnitOfWork };
 
 export const build__AlbumItemReadRepository = ({
-  database,
+  uow,
 }: AlbumItemReadRepositoryDeps): AlbumItemReadRepository => ({
   getViewableAlbumItemsForViewer: async ({
     albumId,
@@ -81,16 +81,18 @@ export const build__AlbumItemReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<PagedList<AlbumItemWithMediaRow>> => {
+    await uow.join();
     const rows = (await withEnumRevival(
-      database('albumItem')
+      uow
+        .db()('albumItem')
         .innerJoin('album', 'albumItem.albumId', 'album.id')
-        .modify(withAttachViewerMembership(database, viewerId))
+        .modify(withAttachViewerMembership(uow.db(), viewerId))
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('album.id', albumId)
         .andWhere('mediaItem.status', MediaItemStatus.ready)
-        .modify(withAlbumItemViewableByMemberOrGrant(database, viewerId))
+        .modify(withAlbumItemViewableByMemberOrGrant(uow.db(), viewerId))
         .select(...albumItemWithMediaSelectColumns)
-        .modify(withCollectionInfo(database, collectionInfo)),
+        .modify(withCollectionInfo(uow.db(), collectionInfo)),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,
@@ -108,12 +110,14 @@ export const build__AlbumItemReadRepository = ({
     publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<PagedList<AlbumItemWithMediaRow>> => {
-    const query = database('albumItem')
+    await uow.join();
+    const query = uow
+      .db()('albumItem')
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
       .where('albumItem.albumId', albumId)
       .where('mediaItem.status', MediaItemStatus.ready.value)
-      .modify(withActivePublicLink(database, albumId, publicLinkId))
-      .modify(withCollectionInfo(database, collectionInfo))
+      .modify(withActivePublicLink(uow.db(), albumId, publicLinkId))
+      .modify(withCollectionInfo(uow.db(), collectionInfo))
       .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
         ...albumItemWithMediaSelectColumns,
       );
@@ -132,8 +136,10 @@ export const build__AlbumItemReadRepository = ({
     albumId: string;
     albumItemIds: string[];
   }): Promise<AlbumItemWithMediaRow[]> => {
+    await uow.join();
     return withEnumRevival(
-      database('albumItem')
+      uow
+        .db()('albumItem')
         .innerJoin('album', 'albumItem.albumId', 'album.id')
         .leftJoin('albumMember', 'albumMember.albumId', 'album.id')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')

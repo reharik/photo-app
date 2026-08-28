@@ -21,14 +21,16 @@ type EmailVerificationRepositoryDeps = { uow: UnitOfWork };
 export const build__EmailVerificationRepository = ({
   uow,
 }: EmailVerificationRepositoryDeps): EmailVerificationRepository => ({
-  getValidVerification: (email: string) => {
+  getValidVerification: async (email: string) => {
+    await uow.join();
     return uow
       .db()('emailVerification')
       .where({ email, consumedAt: null })
       .andWhere('expiresAt', '>', uow.db().fn.now())
       .first<emailVerificationRow>();
   },
-  completeConsumption: (id: EntityId) => {
+  completeConsumption: async (id: EntityId) => {
+    await uow.join();
     return uow.db()('emailVerification').where({ id }).update({ consumedAt: uow.db().fn.now() });
   },
 });

@@ -8,13 +8,15 @@ import type {
 } from './types';
 
 export const build__PublicAccessReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): PublicAccessReadRepository => ({
   getPublicAccessIdByToken: async (token: string) => {
-    const publicAccess = await database<PublicAccessIdRow>('accessGrant')
+    await uow.join();
+    const publicAccess = await uow
+      .db()<PublicAccessIdRow>('accessGrant')
       .where('accessGrant.linkToken', token)
       .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
-      .modify(withLiveAuthorizationFilter(database))
+      .modify(withLiveAuthorizationFilter(uow.db()))
       .first<PublicAccessIdRow>('id as publicAccessId');
     if (!publicAccess) {
       return undefined;
@@ -22,10 +24,12 @@ export const build__PublicAccessReadRepository = ({
     return publicAccess;
   },
   getPublicAccessById: async (publicAccessId: string) => {
-    const publicAccess = await database('accessGrant')
+    await uow.join();
+    const publicAccess = await uow
+      .db()('accessGrant')
       .where('accessGrant.id', publicAccessId)
       .whereIn('kind', [AuthorizationKind.public.value, AuthorizationKind.pending.value])
-      .modify(withLiveAuthorizationFilter(database))
+      .modify(withLiveAuthorizationFilter(uow.db()))
       .first<PublicAccessRow>();
     if (!publicAccess) {
       return undefined;

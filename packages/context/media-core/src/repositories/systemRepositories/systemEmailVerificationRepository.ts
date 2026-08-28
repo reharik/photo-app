@@ -12,12 +12,10 @@ export type SystemEmailVerificationRepositoryDeps = {
 export const build__SystemEmailVerificationRepository = ({
   database,
 }: SystemEmailVerificationRepositoryDeps): SystemEmailVerificationRepository => ({
-  // Autocommit on its own pooled connection — deliberately OUTSIDE any unit of work.
-  // The attempt counter must persist even when the surrounding password-reset transaction
-  // is rolled back (invalid-code path), otherwise the `attemptCount >= 3` lockout can never
-  // trigger. A single statement on raw `database` commits immediately; callers must await it
-  // BEFORE rolling back the uow so the bump is durable regardless of the transaction outcome.
-  bumpValidationAttempts: (id: EntityId) => {
+  // Autocommit, OUTSIDE the uow, on its own pooled connection. The attempt
+  // counter must survive the rollback that follows on the invalid-code path,
+  // or the >= 3 lockout can never trigger. Do not "clean this up" to uow.db().
+  bumpValidationAttempts: async (id: EntityId) => {
     return database('emailVerification').where({ id }).increment('attemptCount', 1);
   },
 });

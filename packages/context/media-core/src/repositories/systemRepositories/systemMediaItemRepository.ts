@@ -1,6 +1,6 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { EntityId } from '../../types';
 
 export type SystemMediaItemRepository = {
@@ -8,7 +8,7 @@ export type SystemMediaItemRepository = {
 };
 
 type SystemMediaItemRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export type MediaItemOwner = {
@@ -20,11 +20,12 @@ export type MediaItemOwner = {
 const mediaItemFields = ['id', 'ownerId', 'kind', 'status'];
 
 export const build__SystemMediaItemRepository = ({
-  database,
+  uow,
 }: SystemMediaItemRepositoryDeps): SystemMediaItemRepository => ({
   getMediaItemById: async (mediaItemId: EntityId) => {
+    await uow.join();
     return await withEnumRevival(
-      database('mediaItem').where({ id: mediaItemId }).first<MediaItemOwner>(mediaItemFields),
+      uow.db()('mediaItem').where({ id: mediaItemId }).first<MediaItemOwner>(mediaItemFields),
       { kind: MediaKind, status: MediaItemStatus },
     );
   },

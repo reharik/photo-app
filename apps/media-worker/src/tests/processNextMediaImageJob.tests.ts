@@ -1,211 +1,54 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import type {
+  MediaItemOwner,
   MediaItemRepository,
   MediaProcessingJobRepository,
   MediaProcessingJobRow,
-  MediaStorage,
+  SystemMediaItemRepository,
+  UnitOfWork,
 } from '@packages/media-core';
-import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS, MediaItem } from '@packages/media-core';
+import { MediaItem } from '@packages/media-core';
 
-import type { Config } from '../config.js';
-import type { OpenMediaJobContextScope } from '../generated/ioc-registry.types.js';
-import {
-  build__ProcessNextMediaImageJob,
-  build__RunNextMediaImageJob,
-  type ProcessNextMediaImageJob,
-} from '../tasks/queue/mediaWorkers/processNextMediaImageJob.js';
+import type { ClaimJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/claimJobRow.js';
+import { build__ClaimJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/claimJobRow.js';
+import type {
+  CompleteJobRow,
+  CompletionResult,
+} from '../tasks/queue/mediaWorkers/processMediaImage/completeJobRow.js';
+import { build__CompleteJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/completeJobRow.js';
+import type {
+  InJobScope,
+  MediaJobContext,
+} from '../tasks/queue/mediaWorkers/processMediaImage/inJobScope.js';
+import type {
+  MediaJobWorkflow,
+  PipelineJobWorkflow,
+  PipelineResult,
+} from '../tasks/queue/mediaWorkers/processMediaImage/processNextMediaImageJob.js';
+import { build__ProcessNextMediaImageJob } from '../tasks/queue/mediaWorkers/processMediaImage/processNextMediaImageJob.js';
+import type { RecordJobFailure } from '../tasks/queue/mediaWorkers/processMediaImage/recordJobFailure.js';
+import { build__RecordJobFailure } from '../tasks/queue/mediaWorkers/processMediaImage/recordJobFailure.js';
+import type { RunImageStoragePipeline } from '../tasks/queue/mediaWorkers/processMediaImage/runImageStoragePipeline.js';
 
 const ACTOR_ID = '11111111-1111-4111-8111-111111111111';
 const MEDIA_ITEM_ID = '33333333-3333-4333-8333-333333333333';
+const JOB_ID = '44444444-4444-4444-8444-444444444444';
 
-const createUploadedPhoto = (): MediaItem => {
-  const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
-  item.completeUploadedWithMetadata(
-    { sizeBytes: 10, mimeType: 'image/jpeg' },
-    MediaKind.photo,
-    ACTOR_ID,
-  );
-  return item;
-};
+const createMockLogger = (): Logger =>
+  ({
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    http: jest.fn(),
+    verbose: jest.fn(),
+    debug: jest.fn(),
+  }) as unknown as Logger;
 
-describe('build__ProcessNextMediaImageJob', () => {
-  describe('When loadForProcessing is called', () => {
-    it('should return not_found when the media item is missing', async () => {
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(undefined),
-          save: jest.fn(),
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.loadForProcessing(MEDIA_ITEM_ID)).resolves.toEqual({
-        kind: 'not_found',
-      });
-    });
-
-    it('should return already_ready when the item is ready', async () => {
-      const item = createUploadedPhoto();
-      item.markReadyAfterDerivatives({ displayWidth: 1, displayHeight: 1 }, ACTOR_ID);
-
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save: jest.fn(),
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.loadForProcessing(MEDIA_ITEM_ID)).resolves.toEqual({
-        kind: 'already_ready',
-      });
-    });
-
-    it('should classify a PENDING item as transient, not a terminal failure', async () => {
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
-
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save: jest.fn(),
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      const result = await processor.loadForProcessing(MEDIA_ITEM_ID);
-      expect(result.kind).toBe('transient');
-    });
-
-    it('should classify an already-FAILED item as terminal without re-marking the item', async () => {
-      const item = createUploadedPhoto();
-      item.markProcessingFailed(ACTOR_ID);
-
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save: jest.fn(),
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.loadForProcessing(MEDIA_ITEM_ID)).resolves.toEqual({
-        kind: 'failed',
-        message: 'Media item already marked failed — not resurrecting',
-        itemAlreadyTerminal: true,
-      });
-    });
-
-    it('should return loaded when the item is processable', async () => {
-      const item = createUploadedPhoto();
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save: jest.fn(),
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      const result = await processor.loadForProcessing(MEDIA_ITEM_ID);
-      expect(result.kind).toBe('loaded');
-      if (result.kind === 'loaded') {
-        expect(result.mediaItem.id()).toBe(item.id());
-        expect(result.mediaItem.status().equals(MediaItemStatus.processing)).toBe(true);
-      }
-    });
-  });
-
-  describe('When markItemFailed is called', () => {
-    it('should move a processing item to failed and persist it', async () => {
-      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
-      const item = createUploadedPhoto();
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save,
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(true);
-      expect(item.status().equals(MediaItemStatus.failed)).toBe(true);
-      expect(save).toHaveBeenCalledWith(item);
-    });
-
-    it('should report nothing to mark when the item is missing', async () => {
-      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(undefined),
-          save,
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(false);
-      expect(save).not.toHaveBeenCalled();
-    });
-
-    it('should not drag an already-ready item back to failed', async () => {
-      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
-      const item = createUploadedPhoto();
-      item.markReadyAfterDerivatives({ displayWidth: 1, displayHeight: 1 }, ACTOR_ID);
-
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save,
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await expect(processor.markItemFailed(MEDIA_ITEM_ID, ACTOR_ID)).resolves.toBe(false);
-      expect(item.status().equals(MediaItemStatus.ready)).toBe(true);
-      expect(save).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('When saveProcessedItem is called', () => {
-    it('should persist through the media item repository', async () => {
-      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
-      const item = createUploadedPhoto();
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn(),
-          save,
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-
-      await processor.saveProcessedItem(item);
-      expect(save).toHaveBeenCalledWith(item);
-    });
-  });
-});
-
-describe('build__RunNextMediaImageJob (claim-guard classification)', () => {
-  const createMockLogger = (): Logger =>
-    ({
-      error: jest.fn(),
-      warn: jest.fn(),
-      info: jest.fn(),
-      http: jest.fn(),
-      verbose: jest.fn(),
-      debug: jest.fn(),
-    }) as unknown as Logger;
-
-  const jobRow = (attemptCount: number): MediaProcessingJobRow => ({
-    id: '44444444-4444-4444-8444-444444444444',
+const jobRow = (attemptCount = 1): MediaProcessingJobRow =>
+  ({
+    id: JOB_ID,
     mediaItemId: MEDIA_ITEM_ID,
     status: MediaItemStatus.processing,
     attemptCount,
@@ -215,136 +58,505 @@ describe('build__RunNextMediaImageJob (claim-guard classification)', () => {
     createdBy: ACTOR_ID,
     updatedBy: ACTOR_ID,
     startedAt: new Date(),
-  });
+  }) as unknown as MediaProcessingJobRow;
 
-  const createJobRepo = (job: MediaProcessingJobRow) => ({
-    enqueueIfNoneActive: jest.fn<MediaProcessingJobRepository['enqueueIfNoneActive']>(),
-    claimNextAvailableJob: jest
-      .fn<MediaProcessingJobRepository['claimNextAvailableJob']>()
-      .mockResolvedValue(job),
-    markSucceeded: jest
-      .fn<MediaProcessingJobRepository['markSucceeded']>()
-      .mockResolvedValue(undefined),
-    markFailed: jest.fn<MediaProcessingJobRepository['markFailed']>().mockResolvedValue(undefined),
-    markPendingRetry: jest
-      .fn<MediaProcessingJobRepository['markPendingRetry']>()
-      .mockResolvedValue(undefined),
-    releaseStalledJobs: jest.fn<MediaProcessingJobRepository['releaseStalledJobs']>(),
-  });
+const createJobRepo = () => ({
+  enqueueIfNoneActive: jest.fn<MediaProcessingJobRepository['enqueueIfNoneActive']>(),
+  claimNextAvailableJob: jest
+    .fn<MediaProcessingJobRepository['claimNextAvailableJob']>()
+    .mockResolvedValue(jobRow()),
+  markSucceeded: jest.fn<MediaProcessingJobRepository['markSucceeded']>().mockResolvedValue(true),
+  markFailed: jest.fn<MediaProcessingJobRepository['markFailed']>().mockResolvedValue(true),
+  markPendingRetry: jest
+    .fn<MediaProcessingJobRepository['markPendingRetry']>()
+    .mockResolvedValue('retrying'),
+  releaseStalledJobs: jest.fn<MediaProcessingJobRepository['releaseStalledJobs']>(),
+});
 
-  /** Fake opener: hands back the processor over a no-op transaction bracket. */
-  const createFakeOpener =
-    (processor: ProcessNextMediaImageJob): OpenMediaJobContextScope =>
-    () => ({
-      mediaJobContext: {
-        processNextMediaImageJob: processor,
-        start: async () => {},
-        finalize: async () => {},
-      },
-      dispose: async () => {},
-    });
+const createItemRepo = (item?: MediaItem) => ({
+  getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
+  save: jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined),
+  delete: jest.fn<MediaItemRepository['delete']>(),
+  ensureUserTagId: jest.fn<MediaItemRepository['ensureUserTagId']>(),
+});
 
-  const createRunner = (item: MediaItem, job: MediaProcessingJobRow) => {
-    const processor = build__ProcessNextMediaImageJob({
-      mediaItemRepository: {
-        getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-        save: jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined),
-        delete: jest.fn(),
-        ensureUserTagId: jest.fn(),
-      },
-    });
-    const jobRepo = createJobRepo(job);
-    const runner = build__RunNextMediaImageJob({
-      openMediaJobContextScope: createFakeOpener(processor),
-      config: {} as Config,
-      logger: createMockLogger(),
-      mediaProcessingJobRepository: jobRepo,
-      mediaStorage: {} as MediaStorage,
-    });
-    return { runner, jobRepo };
+/** The claim-time projection: id/owner/kind/status only, not the aggregate. */
+const itemProjection = (
+  status: MediaItemStatus,
+  kind: MediaKind = MediaKind.photo,
+): MediaItemOwner => ({
+  id: MEDIA_ITEM_ID,
+  ownerId: ACTOR_ID,
+  kind,
+  status,
+});
+
+const createSystemItemRepo = (item: MediaItemOwner | undefined) =>
+  ({
+    getMediaItemById: jest
+      .fn<SystemMediaItemRepository['getMediaItemById']>()
+      .mockResolvedValue(item as MediaItemOwner),
+  }) as unknown as SystemMediaItemRepository & {
+    getMediaItemById: jest.Mock<SystemMediaItemRepository['getMediaItemById']>;
   };
+
+/** A photo aggregate sitting in PROCESSING, i.e. ready for the pipeline result. */
+const processingPhoto = (): MediaItem => {
+  const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
+  item.addAsset(MediaAssetKind.original, 'image/jpeg');
+  item.completeUploadedWithMetadata(
+    { sizeBytes: 10, mimeType: 'image/jpeg' },
+    MediaKind.photo,
+    ACTOR_ID,
+  );
+  return item;
+};
+
+const pipelineResult = (): PipelineResult => ({
+  capture: {},
+  displayAsset: {
+    kind: MediaAssetKind.display,
+    mimeType: 'image/jpeg',
+    sizeBytes: 2048,
+    width: 1200,
+    height: 800,
+  },
+  thumbnailAsset: {
+    kind: MediaAssetKind.thumbnail,
+    mimeType: 'image/jpeg',
+    sizeBytes: 512,
+    width: 200,
+    height: 200,
+  },
+});
+
+/**
+ * Runs the callback against the supplied context and records the commit flag,
+ * standing in for the real scope open/start/finalize/dispose bracket. Whether a
+ * phase commits or rolls back is the whole point of these units, so the flag is
+ * captured rather than discarded.
+ */
+const createFakeInJobScope = (ctx: Partial<MediaJobContext>) => {
+  const commits: boolean[] = [];
+  const inJobScope: InJobScope = async (fn) => {
+    const { commit, value } = await fn(ctx as MediaJobContext);
+    commits.push(commit);
+    return value;
+  };
+  return { inJobScope, commits };
+};
+
+describe('build__ClaimJobRow', () => {
+  const build = (item: MediaItemOwner | undefined, job: MediaProcessingJobRow | undefined) => {
+    const mediaProcessingJobRepository = createJobRepo();
+    mediaProcessingJobRepository.claimNextAvailableJob.mockResolvedValue(job);
+    const systemMediaItemRepository = createSystemItemRepo(item);
+    const claimJobRow = build__ClaimJobRow({
+      mediaProcessingJobRepository,
+      systemMediaItemRepository,
+      logger: createMockLogger(),
+    });
+    return { claimJobRow, mediaProcessingJobRepository };
+  };
+
+  describe('When the queue is empty', () => {
+    it('should report idle without touching the job row', async () => {
+      const { claimJobRow, mediaProcessingJobRepository } = build(undefined, undefined);
+
+      const result = await claimJobRow();
+
+      expect(result).toEqual({
+        status: 'stop',
+        level: 'debug',
+        outcome: 'idle',
+        message: 'No jobs ready',
+      });
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When the media item is missing', () => {
+    it('should fail the job terminally', async () => {
+      const { claimJobRow, mediaProcessingJobRepository } = build(undefined, jobRow());
+
+      const result = await claimJobRow();
+
+      expect(result.status).toBe('stop');
+      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+        'media item not found',
+      );
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When a non-photo was enqueued for image processing', () => {
+    it('should fail the job terminally — no retry will make it a photo', async () => {
+      const { claimJobRow, mediaProcessingJobRepository } = build(
+        itemProjection(MediaItemStatus.processing, MediaKind.video),
+        jobRow(),
+      );
+
+      await claimJobRow();
+
+      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+        'not a photo',
+      );
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+    });
+  });
 
   describe('When a job is claimed against an already-READY item', () => {
     it('should mark the job succeeded — never failed — so the job table does not lie', async () => {
-      const item = createUploadedPhoto();
-      item.markReadyAfterDerivatives({ displayWidth: 1, displayHeight: 1 }, ACTOR_ID);
-      const job = jobRow(1);
-      const { runner, jobRepo } = createRunner(item, job);
+      const { claimJobRow, mediaProcessingJobRepository } = build(
+        itemProjection(MediaItemStatus.ready),
+        jobRow(),
+      );
 
-      await expect(runner()).resolves.toBe('processed');
+      const result = await claimJobRow();
 
-      expect(jobRepo.markSucceeded).toHaveBeenCalledWith(job.id, ACTOR_ID);
-      expect(jobRepo.markFailed).not.toHaveBeenCalled();
-      expect(jobRepo.markPendingRetry).not.toHaveBeenCalled();
+      expect(result.status).toBe('stop');
+      expect(mediaProcessingJobRepository.markSucceeded).toHaveBeenCalledWith(JOB_ID, ACTOR_ID);
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
     });
   });
 
   describe('When a job is claimed against a still-PENDING item', () => {
-    it('should schedule a retry with backoff, not kill the job', async () => {
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
-      const job = jobRow(1);
-      const { runner, jobRepo } = createRunner(item, job);
-
-      await expect(runner()).resolves.toBe('processed');
-
-      expect(jobRepo.markPendingRetry).toHaveBeenCalledWith(
-        job.id,
-        ACTOR_ID,
-        'Media item not yet processable (status: PENDING)',
-        expect.any(Date),
+    it('should requeue with backoff, not kill the job', async () => {
+      // The enqueue-before-commit race: the job row can become visible a beat
+      // before the item's PROCESSING status commits. PENDING is retryable, so a
+      // claim that loses that race must come back, not go terminal.
+      const { claimJobRow, mediaProcessingJobRepository } = build(
+        itemProjection(MediaItemStatus.pending),
+        jobRow(),
       );
-      expect(jobRepo.markFailed).not.toHaveBeenCalled();
-      expect(jobRepo.markSucceeded).not.toHaveBeenCalled();
-    });
 
-    it('should give up once the attempt cap is reached — a job must reach a terminal state', async () => {
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
-      const job = jobRow(MAX_MEDIA_PROCESSING_JOB_ATTEMPTS);
-      const { runner, jobRepo } = createRunner(item, job);
+      const result = await claimJobRow();
 
-      await expect(runner()).resolves.toBe('processed');
-
-      expect(jobRepo.markFailed).toHaveBeenCalledWith(
-        job.id,
+      expect(result.status).toBe('stop');
+      expect(mediaProcessingJobRepository.markPendingRetry).toHaveBeenCalledWith(
+        JOB_ID,
         ACTOR_ID,
-        'Media item not yet processable (status: PENDING)',
+        `item not yet processable (${MediaItemStatus.pending.value})`,
       );
-      expect(jobRepo.markPendingRetry).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
     });
   });
 
   describe('When a job is claimed against an already-FAILED item', () => {
-    it('should mark the job failed without trying to re-mark the item', async () => {
-      const item = createUploadedPhoto();
-      item.markProcessingFailed(ACTOR_ID);
-      const save = jest.fn<MediaItemRepository['save']>().mockResolvedValue(undefined);
-      const processor = build__ProcessNextMediaImageJob({
-        mediaItemRepository: {
-          getById: jest.fn<MediaItemRepository['getById']>().mockResolvedValue(item),
-          save,
-          delete: jest.fn(),
-          ensureUserTagId: jest.fn(),
-        },
-      });
-      const job = jobRow(1);
-      const jobRepo = createJobRepo(job);
-      const runner = build__RunNextMediaImageJob({
-        openMediaJobContextScope: createFakeOpener(processor),
-        config: {} as Config,
-        logger: createMockLogger(),
-        mediaProcessingJobRepository: jobRepo,
-        mediaStorage: {} as MediaStorage,
-      });
-
-      await expect(runner()).resolves.toBe('processed');
-
-      expect(jobRepo.markFailed).toHaveBeenCalledWith(
-        job.id,
-        ACTOR_ID,
-        'Media item already marked failed — not resurrecting',
+    it('should fail the job without resurrecting the item', async () => {
+      const { claimJobRow, mediaProcessingJobRepository } = build(
+        itemProjection(MediaItemStatus.failed),
+        jobRow(),
       );
-      // itemAlreadyTerminal: the runner must not attempt the item transition at all.
-      expect(save).not.toHaveBeenCalled();
+
+      const result = await claimJobRow();
+
+      expect(result.status).toBe('stop');
+      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(JOB_ID, ACTOR_ID, '');
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When the item is processable', () => {
+    it('should hand the claimed job on to the pipeline', async () => {
+      const job = jobRow();
+      const { claimJobRow, mediaProcessingJobRepository } = build(
+        itemProjection(MediaItemStatus.processing),
+        job,
+      );
+
+      const result = await claimJobRow();
+
+      expect(result).toEqual({ status: 'continue', job });
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('build__CompleteJobRow', () => {
+  const build = (item: MediaItem | undefined, claimed = true) => {
+    const mediaProcessingJobRepository = createJobRepo();
+    mediaProcessingJobRepository.markSucceeded.mockResolvedValue(claimed);
+    const mediaItemRepository = createItemRepo(item);
+    const { inJobScope, commits } = createFakeInJobScope({
+      mediaItemRepository,
+      mediaProcessingJobRepository,
+    });
+    const completeJobRow = build__CompleteJobRow({ inJobScope });
+    return { completeJobRow, mediaItemRepository, mediaProcessingJobRepository, commits };
+  };
+
+  describe('When the job is still owned and the item applies cleanly', () => {
+    it('should apply the results, save the item, and commit', async () => {
+      const item = processingPhoto();
+      const { completeJobRow, mediaItemRepository, commits } = build(item);
+
+      const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      expect(result).toEqual({ outcome: 'completed' });
+      expect(item.status()).toBe(MediaItemStatus.ready);
+      expect(item.width()).toBe(1200);
+      expect(item.height()).toBe(800);
+      expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
+      expect(commits).toEqual([true]);
+    });
+  });
+
+  describe('When the stalled sweep already reclaimed the job', () => {
+    it('should report notOwned and roll back without touching the item', async () => {
+      const item = processingPhoto();
+      const { completeJobRow, mediaItemRepository, commits } = build(item, false);
+
+      const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      expect(result.outcome).toBe('notOwned');
+      // Ownership is decided by the job-row update; losing it must stop us before
+      // we read, let alone write, the item.
+      expect(mediaItemRepository.getById).not.toHaveBeenCalled();
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+      expect(commits).toEqual([false]);
+    });
+  });
+
+  describe('When the item was deleted mid-pipeline', () => {
+    it('should report itemGone and roll back', async () => {
+      const { completeJobRow, mediaItemRepository, commits } = build(undefined);
+
+      const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      expect(result.outcome).toBe('itemGone');
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+      expect(commits).toEqual([false]);
+    });
+  });
+
+  describe('When the aggregate rejects the results', () => {
+    it('should report applyFailed and roll back so the job can be requeued', async () => {
+      // Still PENDING — never finalized — so applyProcessingResults refuses it.
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
+      const { completeJobRow, mediaItemRepository, commits } = build(item);
+
+      const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      expect(result.outcome).toBe('applyFailed');
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+      expect(commits).toEqual([false]);
+    });
+  });
+});
+
+describe('build__RecordJobFailure', () => {
+  const build = (item: MediaItem | undefined) => {
+    const mediaProcessingJobRepository = createJobRepo();
+    const mediaItemRepository = createItemRepo(item);
+    const { inJobScope, commits } = createFakeInJobScope({
+      mediaItemRepository,
+      mediaProcessingJobRepository,
+      uow: {} as UnitOfWork,
+    });
+    const recordJobFailure = build__RecordJobFailure({ inJobScope });
+    return { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository, commits };
+  };
+
+  describe('When the failure is retryable and attempts remain', () => {
+    it('should requeue the job and leave the item in PROCESSING', async () => {
+      const item = processingPhoto();
+      const { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository } = build(item);
+      mediaProcessingJobRepository.markPendingRetry.mockResolvedValue('retrying');
+
+      await recordJobFailure(jobRow(), ACTOR_ID, 'S3 timeout', true);
+
+      expect(mediaProcessingJobRepository.markPendingRetry).toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
+      // The job is coming back, so the item must NOT be dragged to FAILED.
+      expect(item.status()).toBe(MediaItemStatus.processing);
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When the failure is retryable but attempts are exhausted', () => {
+    it('should fail the item too, so the upload stops hanging in PROCESSING', async () => {
+      const item = processingPhoto();
+      const { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository } = build(item);
+      mediaProcessingJobRepository.markPendingRetry.mockResolvedValue('exhausted');
+
+      await recordJobFailure(jobRow(), ACTOR_ID, 'S3 timeout', true);
+
+      expect(item.status()).toBe(MediaItemStatus.failed);
+      expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
+    });
+  });
+
+  describe('When the failure is not retryable', () => {
+    it('should terminal-fail the job and the item without consulting the cap', async () => {
+      const item = processingPhoto();
+      const { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository } = build(item);
+
+      await recordJobFailure(jobRow(), ACTOR_ID, 'not a photo', false);
+
+      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      expect(item.status()).toBe(MediaItemStatus.failed);
+      expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
+    });
+  });
+
+  describe('When the job is no longer ours', () => {
+    it('should leave the item alone — someone else owns the outcome', async () => {
+      const item = processingPhoto();
+      const { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository } = build(item);
+      mediaProcessingJobRepository.markFailed.mockResolvedValue(false);
+
+      await recordJobFailure(jobRow(), ACTOR_ID, 'boom', false);
+
+      expect(item.status()).toBe(MediaItemStatus.processing);
+      expect(mediaItemRepository.getById).not.toHaveBeenCalled();
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe('build__ProcessNextMediaImageJob', () => {
+  const build = (overrides: {
+    claim?: MediaJobWorkflow;
+    pipeline?: PipelineJobWorkflow | (() => Promise<PipelineJobWorkflow>);
+    completion?: CompletionResult;
+  }) => {
+    const claimJobRow = jest
+      .fn<ClaimJobRow>()
+      .mockResolvedValue(overrides.claim ?? { status: 'continue', job: jobRow() });
+
+    const runImageStoragePipeline = jest.fn<RunImageStoragePipeline>();
+    if (typeof overrides.pipeline === 'function') {
+      runImageStoragePipeline.mockImplementation(overrides.pipeline);
+    } else {
+      runImageStoragePipeline.mockResolvedValue(
+        overrides.pipeline ?? { status: 'continue', pipelineResult: pipelineResult() },
+      );
+    }
+
+    const completeJobRow = jest
+      .fn<CompleteJobRow>()
+      .mockResolvedValue(overrides.completion ?? { outcome: 'completed' });
+    const recordJobFailure = jest.fn<RecordJobFailure>().mockResolvedValue(undefined);
+    const logger = createMockLogger();
+
+    const run = build__ProcessNextMediaImageJob({
+      logger,
+      claimJobRow,
+      runImageStoragePipeline,
+      completeJobRow,
+      recordJobFailure,
+    });
+    return { run, logger, runImageStoragePipeline, completeJobRow, recordJobFailure };
+  };
+
+  describe('When the claim stops the job', () => {
+    it('should return the claim outcome without running the pipeline', async () => {
+      const { run, runImageStoragePipeline, recordJobFailure } = build({
+        claim: { status: 'stop', level: 'debug', outcome: 'idle', message: 'No jobs ready' },
+      });
+
+      await expect(run()).resolves.toBe('idle');
+      expect(runImageStoragePipeline).not.toHaveBeenCalled();
+      // The claim already settled the job row; the runner must not double-write.
+      expect(recordJobFailure).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When the storage pipeline stops', () => {
+    it('should record a terminal, non-retryable failure', async () => {
+      const { run, recordJobFailure, completeJobRow } = build({
+        pipeline: { status: 'stop', message: 'Original object not found in storage' },
+      });
+
+      await expect(run()).resolves.toBe('processed');
+      expect(completeJobRow).not.toHaveBeenCalled();
+      expect(recordJobFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID }),
+        ACTOR_ID,
+        'Original object not found in storage',
+        false,
+      );
+    });
+  });
+
+  describe('When completion succeeds', () => {
+    it('should report processed and record no failure', async () => {
+      const { run, recordJobFailure } = build({});
+
+      await expect(run()).resolves.toBe('processed');
+      expect(recordJobFailure).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When the results could not be applied', () => {
+    it('should record a RETRYABLE failure so the rolled-back work is reattempted', async () => {
+      const { run, recordJobFailure } = build({
+        completion: { outcome: 'applyFailed', message: 'Could not apply results' },
+      });
+
+      await expect(run()).resolves.toBe('processed');
+      expect(recordJobFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID }),
+        ACTOR_ID,
+        'Could not apply results',
+        true,
+      );
+    });
+  });
+
+  describe('When the job was reclaimed or its item vanished', () => {
+    it('should not record a failure — the rollback already undid the work', async () => {
+      const { run, recordJobFailure, logger } = build({
+        completion: { outcome: 'notOwned', message: 'Job no longer owned' },
+      });
+
+      await expect(run()).resolves.toBe('processed');
+      expect(recordJobFailure).not.toHaveBeenCalled();
+      expect(logger.warn).toHaveBeenCalledWith('Job no longer owned');
+    });
+  });
+
+  describe('When the pipeline throws', () => {
+    it('should record a retryable failure for an ordinary error', async () => {
+      const { run, recordJobFailure } = build({
+        pipeline: () => Promise.reject(new Error('socket hang up')),
+      });
+
+      await expect(run()).resolves.toBe('processed');
+      expect(recordJobFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID }),
+        ACTOR_ID,
+        'socket hang up',
+        true,
+      );
+    });
+
+    it('should record a NON-retryable failure for a programmer error', async () => {
+      // A TypeError will not fix itself on the next attempt; retrying it just
+      // burns the attempt budget.
+      const { run, recordJobFailure } = build({
+        pipeline: () => Promise.reject(new TypeError('x is not a function')),
+      });
+
+      await expect(run()).resolves.toBe('processed');
+      expect(recordJobFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID }),
+        ACTOR_ID,
+        'x is not a function',
+        false,
+      );
     });
   });
 });

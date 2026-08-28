@@ -63,6 +63,19 @@ export const build__ClaimJobRow =
         outcome: 'processed',
       };
     }
+    if (mediaItem.status.work.equals(WorkVerdict.retryable)) {
+      await mediaProcessingJobRepository.markPendingRetry(
+        job.id,
+        actorId,
+        `item not yet processable (${mediaItem.status.value})`,
+      );
+      return {
+        status: 'stop',
+        level: 'warn',
+        outcome: 'processed',
+        message: `Item not yet processable — requeued with backoff. jobId: ${job.id}, status: ${mediaItem.status.value}`,
+      };
+    }
     if (mediaItem.status.work.equals(WorkVerdict.succeeded)) {
       await mediaProcessingJobRepository.markSucceeded(job.id, actorId);
       return {

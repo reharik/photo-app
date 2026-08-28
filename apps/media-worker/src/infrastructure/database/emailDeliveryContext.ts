@@ -25,6 +25,6 @@ export const build__EmailDeliveryContext = ({
   uow,
 }: EmailDeliveryContextDeps): ScopeRoot<EmailDeliveryContext> => ({
   emailDeliveryRepository,
-  start: uow.start,
+  start: uow.begin,
   finalize: uow.complete,
 });

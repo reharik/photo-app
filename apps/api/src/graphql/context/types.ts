@@ -29,12 +29,13 @@ export type InitialGraphQLContext = InitialAuthenticated | InitialPublic;
 export interface AuthenticatedReadScopeServices {
   readServices: ReadServices;
   agnosticReadServices: AgnosticReadServices;
+  finalize: (transportOk: boolean) => Promise<void>;
 }
 export interface AuthenticatedWriteScopeServices {
   readServices: ReadServices;
   agnosticReadServices: AgnosticReadServices;
   writeServices: WriteServices;
-  start: () => Promise<void>;
+
   flagFailure: () => void;
   finalize: (transportOk: boolean) => Promise<void>;
 }
@@ -42,6 +43,7 @@ export interface AuthenticatedWriteScopeServices {
 export interface PublicReadScopeServices {
   publicReadServices: PublicReadServices;
   agnosticReadServices: AgnosticReadServices;
+  finalize: (transportOk: boolean) => Promise<void>;
 }
 
 // ── stage 2: post-scope, what resolvers see ─────────────────

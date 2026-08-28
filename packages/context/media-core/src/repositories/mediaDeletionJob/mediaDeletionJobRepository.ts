@@ -1,5 +1,4 @@
 import { MediaJobStatus } from '@packages/contracts';
-import type { Knex } from 'knex';
 
 import { UnitOfWork } from '../../infrastructure';
 import type { EntityId } from '../../types/types';
@@ -25,28 +24,22 @@ export type MediaDeletionJobRow = {
 export type MediaDeletionJobRepository = {
   claimNextAvailableJob: () => Promise<MediaDeletionJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId, uow?: UnitOfWork) => Promise<boolean>;
-  markFailed: (
-    jobId: EntityId,
-    actorId: EntityId,
-    lastError: string,
-    uow: UnitOfWork,
-  ) => Promise<boolean>;
+  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
   markPendingRetry: (
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    uow: UnitOfWork,
   ) => Promise<RetryOutcome>;
 };
 
 type MediaDeletionJobRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export const build__MediaDeletionJobRepository = ({
-  database,
+  uow,
 }: MediaDeletionJobRepositoryDeps): MediaDeletionJobRepository => {
-  const jobRepo = createJobQueueRepository<MediaDeletionJobRow>(database, {
+  const jobRepo = createJobQueueRepository<MediaDeletionJobRow>(uow, {
     table: 'mediaDeletionJob',
     attemptCountColumn: 'attempt_count',
   });

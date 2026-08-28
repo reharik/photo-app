@@ -1,5 +1,4 @@
-import { MediaItemStatus, MediaJobStatus } from '@packages/contracts';
-import type { Knex } from 'knex';
+import { MediaJobStatus } from '@packages/contracts';
 
 import { UnitOfWork } from '../../infrastructure';
 import type { EntityId } from '../../types/types';
@@ -11,7 +10,7 @@ import { createJobQueueRepository, RetryOutcome } from '../createJobQueueReposit
  * exhausted) and the stalled-job sweep (a stall never throws, so without this
  * cap the sweep would resurrect a worker-killing job forever).
  */
-export const MAX_MEDIA_PROCESSING_JOB_ATTEMPTS = 5;
+export const MAX_MEDIA_PROCESSING_JOB_ATTEMPTS = 3;
 
 export type MediaProcessingJobRow = {
   id: EntityId;
@@ -34,18 +33,12 @@ export type MediaProcessingJobRepository = {
     uow: UnitOfWork,
   ) => Promise<void>;
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
-  markSucceeded: (jobId: EntityId, actorId: EntityId, uow?: UnitOfWork) => Promise<boolean>;
-  markFailed: (
-    jobId: EntityId,
-    actorId: EntityId,
-    lastError: string,
-    uow: UnitOfWork,
-  ) => Promise<boolean>;
+  markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
+  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
   markPendingRetry: (
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    uow: UnitOfWork,
   ) => Promise<RetryOutcome>;
   releaseStalledJobs: (stalledBefore: Date) => Promise<ReleaseStalledJobsResult>;
 };
@@ -58,13 +51,13 @@ export type ReleaseStalledJobsResult = {
 };
 
 type MediaProcessingJobRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export const build__MediaProcessingJobRepository = ({
-  database,
+  uow,
 }: MediaProcessingJobRepositoryDeps): MediaProcessingJobRepository => {
-  const jobRepo = createJobQueueRepository<MediaProcessingJobRow>(database, {
+  const jobRepo = createJobQueueRepository<MediaProcessingJobRow>(uow, {
     table: 'mediaProcessingJob',
     attemptCountColumn: 'attempt_count',
   });
@@ -72,20 +65,18 @@ export const build__MediaProcessingJobRepository = ({
   // The enqueue must ride the caller's request transaction so the job row and the
   // item's status change commit (or roll back) together — a job visible before the
   // item's PROCESSING status commits gets claimed against a still-PENDING item and
-  // rejected terminally. The uow parameter is required, not optional: an autocommit
-  // fallback here is exactly the race this signature exists to prevent. The claim
-  // side stays on the raw singleton handle — FOR UPDATE SKIP LOCKED needs its own
-  // short transaction, never a savepoint on a request's.
-  const enqueueIfNoneActive = async (
-    input: { mediaItemId: EntityId; actorId: EntityId },
-    uow: UnitOfWork,
-  ): Promise<void> => {
+  // rejected terminally.
+  const enqueueIfNoneActive = async (input: {
+    mediaItemId: EntityId;
+    actorId: EntityId;
+  }): Promise<void> => {
+    await uow.join();
     await uow
       .db()('mediaProcessingJob')
       .insert({
         id: crypto.randomUUID(),
         mediaItemId: input.mediaItemId,
-        status: MediaItemStatus.pending.value,
+        status: MediaJobStatus.pending.value,
         attemptCount: 0,
         availableAt: uow.db().fn.now(),
         createdBy: input.actorId,
@@ -110,43 +101,47 @@ export const build__MediaProcessingJobRepository = ({
    * updatedBy from the row's own createdBy (the actor that enqueued the work).
    */
   const releaseStalledJobs = async (stalledBefore: Date): Promise<ReleaseStalledJobsResult> => {
-    const released = await database('mediaProcessingJob')
-      .where({ status: MediaItemStatus.processing.value })
+    await uow.join();
+    const released = await uow
+      .db()('mediaProcessingJob')
+      .where({ status: MediaJobStatus.processing.value })
       .where('startedAt', '<', stalledBefore)
       .where('attemptCount', '<', MAX_MEDIA_PROCESSING_JOB_ATTEMPTS)
       .update({
-        status: MediaItemStatus.pending.value,
+        status: MediaJobStatus.pending.value,
         lastError: 'Reclaimed: stalled in PROCESSING',
-        availableAt: database.fn.now(),
+        availableAt: uow.db().fn.now(),
         startedAt: null,
-        updatedAt: database.fn.now(),
-        updatedBy: database.ref('createdBy'),
+        updatedAt: uow.db().fn.now(),
+        updatedBy: uow.db().ref('createdBy'),
       });
 
-    const failedRows = await database('mediaProcessingJob')
-      .where({ status: MediaItemStatus.processing.value })
+    const failedRows = await uow
+      .db()('mediaProcessingJob')
+      .where({ status: MediaJobStatus.processing.value })
       .where('startedAt', '<', stalledBefore)
       .where('attemptCount', '>=', MAX_MEDIA_PROCESSING_JOB_ATTEMPTS)
       .update({
-        status: MediaItemStatus.failed.value,
+        status: MediaJobStatus.failed.value,
         lastError: 'Reclaimed: exceeded max attempts while stalled',
-        completedAt: database.fn.now(),
-        updatedAt: database.fn.now(),
-        updatedBy: database.ref('createdBy'),
+        completedAt: uow.db().fn.now(),
+        updatedAt: uow.db().fn.now(),
+        updatedBy: uow.db().ref('createdBy'),
       })
       .returning<{ mediaItemId: EntityId }[]>('mediaItemId');
 
     if (failedRows.length > 0) {
-      await database('mediaItem')
+      await uow
+        .db()('mediaItem')
         .whereIn(
           'id',
           failedRows.map((row) => row.mediaItemId),
         )
-        .where({ status: MediaItemStatus.processing.value })
+        .where({ status: MediaJobStatus.processing.value })
         .update({
-          status: MediaItemStatus.failed.value,
-          updatedAt: database.fn.now(),
-          updatedBy: database.ref('createdBy'),
+          status: MediaJobStatus.failed.value,
+          updatedAt: uow.db().fn.now(),
+          updatedBy: uow.db().ref('createdBy'),
         });
     }
 

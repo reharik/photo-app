@@ -21,7 +21,7 @@ const albumFields = [
 ];
 
 export const build__SharedWithMeReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): SharedWithMeReadRepository => ({
   getAlbumsSharedWithMe: async ({
     viewerId,
@@ -30,14 +30,16 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     collectionInfo: SharedWithMeAlbumCollectionInfo;
   }): Promise<PagedList<SharedAlbumRow>> => {
-    const query = database('accessGrant')
+    await uow.join();
+    const query = uow
+      .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
-      .modify(withAttachViewerMembership(database, viewerId))
+      .modify(withAttachViewerMembership(uow.db(), viewerId))
       .modify(withAlbumCoverItem)
-      .modify(withAlbumItemCount(database))
+      .modify(withAlbumItemCount(uow.db()))
       .modify(withGrantedBy('album'))
-      .modify(withActiveGrants(database, viewerId))
-      .modify(withCollectionInfo(database, collectionInfo))
+      .modify(withActiveGrants(uow.db(), viewerId))
+      .modify(withCollectionInfo(uow.db(), collectionInfo))
       .select<(SharedAlbumRow & { totalCount: number })[]>(...albumFields);
 
     const rows = await withEnumRevival(query, {
@@ -54,13 +56,15 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     albumId: string;
   }): Promise<SharedAlbumRow | undefined> => {
-    const query = database('accessGrant')
+    await uow.join();
+    const query = uow
+      .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
-      .modify(withAttachViewerMembership(database, viewerId))
+      .modify(withAttachViewerMembership(uow.db(), viewerId))
       .modify(withAlbumCoverItem)
-      .modify(withAlbumItemCount(database))
+      .modify(withAlbumItemCount(uow.db()))
       .modify(withGrantedBy('album'))
-      .modify(withActiveGrants(database, viewerId))
+      .modify(withActiveGrants(uow.db(), viewerId))
       .select<SharedAlbumRow>(...albumFields)
       .where('album.id', albumId);
 

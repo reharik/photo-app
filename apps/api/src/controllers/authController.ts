@@ -173,11 +173,9 @@ export const build__AuthController = ({
       return ctx;
     }
 
-    // Start + register the uow on a fresh scope, but do NOT wrap in withUnitOfWork:
-    // verifyCodeAndSetPassword owns finalization (commit on success, rollback on failure),
-    // so an unconditional endUnitOfWork here would wrongly commit the failure paths.
+    // The service commits on success; settle() in the finally rolls back anything
+    // left open on the failure and throw paths.
     const { authService, dispose } = openAuthServiceScope();
-    await authService.start();
     try {
       const result = await authService.verifyCodeAndSetPassword({
         email,
@@ -207,6 +205,7 @@ export const build__AuthController = ({
         maxAge: 1000 * 60 * 60 * 24 * 7,
       });
     } finally {
+      await authService.settle(false);
       await dispose();
     }
     ctx.status = 200;

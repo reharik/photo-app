@@ -9,7 +9,7 @@ import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
-import { persist } from './AggregateRepo';
+import { Persist } from './AggregateRepo';
 
 export interface UserRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<User | undefined>;
@@ -19,10 +19,11 @@ export interface UserRepository extends RequestScopeLifeCycle {
   save: (user: User | PendingUser) => Promise<void>;
 }
 
-type UserRepositoryDeps = { uow: UnitOfWork };
+type UserRepositoryDeps = { uow: UnitOfWork; persist: Persist };
 
-export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserRepository => {
+export const build__UserRepository = ({ uow, persist }: UserRepositoryDeps): UserRepository => {
   const getById = async (id: EntityId): Promise<User | undefined> => {
+    await uow.join();
     const userRow = await uow.db()<UserRecord>('user').where({ id }).first();
 
     if (!userRow) {
@@ -34,6 +35,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
 
   const getByHandle = async (handle: string): Promise<User | undefined> => {
     // using email for handle for now.
+    await uow.join();
     const userRow = await uow.db()<UserRecord>('user').where({ email: handle }).first();
 
     if (!userRow) {
@@ -44,6 +46,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
   };
 
   const getAllUsersByEmail = async (handles: string[]): Promise<(User | PendingUser)[]> => {
+    await uow.join();
     const users = await withEnumRevival(
       uow
         .db()<UserRecord>('user')
@@ -85,6 +88,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
   // This is used at login but if the user is pending then we get the authorizations
   // in order to convert
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
+    await uow.join();
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
       { userStatus: UserStatus },
@@ -106,7 +110,7 @@ export const build__UserRepository = ({ uow }: UserRepositoryDeps): UserReposito
   };
 
   const save = async (user: User | PendingUser): Promise<void> => {
-    await persist(user, uow);
+    await persist(user);
   };
 
   return {

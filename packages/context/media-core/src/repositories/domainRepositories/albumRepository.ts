@@ -14,7 +14,7 @@ import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
-import { persist } from './AggregateRepo';
+import { Persist } from './AggregateRepo';
 
 export interface AlbumRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<Album | undefined>;
@@ -24,10 +24,12 @@ export interface AlbumRepository extends RequestScopeLifeCycle {
 
 type AlbumRepositoryDeps = {
   uow: UnitOfWork;
+  persist: Persist;
 };
 
-export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepository => {
+export const build__AlbumRepository = ({ uow, persist }: AlbumRepositoryDeps): AlbumRepository => {
   const getById = async (id: EntityId): Promise<Album | undefined> => {
+    await uow.join();
     const albumRow = await uow.db()<AlbumRecord>('album').where({ id }).first();
     if (!albumRow) return undefined;
 
@@ -85,10 +87,11 @@ export const build__AlbumRepository = ({ uow }: AlbumRepositoryDeps): AlbumRepos
   };
 
   const save = async (album: Album): Promise<void> => {
-    await persist(album, uow);
+    await persist(album);
   };
 
   const deleteAlbum = async (album: Album): Promise<void> => {
+    await uow.join();
     await uow.db()<AlbumRecord>('album').where({ id: album.id() }).delete();
   };
 

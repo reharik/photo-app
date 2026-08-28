@@ -32,14 +32,16 @@ const DBmediaItemRowFields = [
 ];
 
 export const build__MediaItemReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): MediaItemReadRepository => ({
   getByIdForAuthorization: async ({
     mediaItemId,
   }: {
     mediaItemId: EntityId;
   }): Promise<DBMediaItemRow | undefined> => {
-    const row = await database<DBMediaItemRow>('mediaItem')
+    await uow.join();
+    const row = await uow
+      .db()<DBMediaItemRow>('mediaItem')
       .where({ id: mediaItemId })
       .first<DBMediaItemRow>(...DBmediaItemRowFields);
 
@@ -52,8 +54,10 @@ export const build__MediaItemReadRepository = ({
     mediaItemId: EntityId;
     viewerId: EntityId;
   }): Promise<DBMediaItemRow | undefined> => {
+    await uow.join();
     const mediaItem = await withEnumRevival(
-      database<DBMediaItemRow>('mediaItem')
+      uow
+        .db()<DBMediaItemRow>('mediaItem')
         .where('id', mediaItemId)
         .first<DBMediaItemRow>(...DBmediaItemRowFields),
       {
@@ -65,7 +69,8 @@ export const build__MediaItemReadRepository = ({
     if (!mediaItem) return undefined;
     if (mediaItem.ownerId === viewerId) return mediaItem;
 
-    const hasGrant = await database<boolean>('grant')
+    const hasGrant = await uow
+      .db()<boolean>('grant')
       .where('mediaItemId', mediaItemId)
       .where('grantedToUser', viewerId)
       .first();
@@ -79,8 +84,10 @@ export const build__MediaItemReadRepository = ({
     mediaItemIds: EntityId[];
     viewerId: EntityId;
   }): Promise<DBMediaItemRow[]> => {
+    await uow.join();
     const rows = await withEnumRevival(
-      database<DBMediaItemRow>('mediaItem')
+      uow
+        .db()<DBMediaItemRow>('mediaItem')
         .whereIn('id', mediaItemIds)
         .andWhere('ownerId', viewerId)
         .select<DBMediaItemRow[]>(...DBmediaItemRowFields),
@@ -99,8 +106,10 @@ export const build__MediaItemReadRepository = ({
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<PagedList<DBMediaItemRow>> => {
+    await uow.join();
     const rows = (await withEnumRevival(
-      database('mediaItem')
+      uow
+        .db()('mediaItem')
         .where({ ownerId: viewerId })
         .andWhere('status', MediaItemStatus.ready.value)
         .orderBy(
@@ -116,7 +125,7 @@ export const build__MediaItemReadRepository = ({
         )
         .orderBy('mediaItem.id', 'asc') // tie-breaker
         .select<(DBMediaItemRow & { totalCount: number })[]>(...DBmediaItemRowFields)
-        .select(database.raw('COUNT(*) OVER ()::int AS "totalCount"'))
+        .select(uow.db().raw('COUNT(*) OVER ()::int AS "totalCount"'))
         .limit(collectionInfo.pageInfo.limit)
         .offset(collectionInfo.pageInfo.offset),
       {
@@ -135,7 +144,9 @@ export const build__MediaItemReadRepository = ({
       return [];
     }
 
-    return database('media_item_tag')
+    await uow.join();
+    return uow
+      .db()('media_item_tag')
       .join('mediaItem', 'mediaItemTag.mediaItemId', 'mediaItem.id')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
       .whereIn('mediaItemTag.mediaItemId', mediaItemIds)

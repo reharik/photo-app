@@ -31,7 +31,6 @@
  * assertable because the worker sweep does not run here). Accept in A2 mirrors the
  * controller's AuthService scope-root opener, same as authPasswordReset.integration.tests.ts.
  */
-import { registerDomainEventHandlers } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import { DateTime } from 'luxon';
@@ -117,11 +116,9 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     // B asserts on async_notification rows written by the NotificationDispatcher, so
     // mirror the boot wiring here. Scoped to this file: jest gives each test file its own
     // module registry, hence its own container and eventPublisher.
-    registerDomainEventHandlers(
-      container.resolve('eventPublisher'),
-      container.resolve('domainEventHandlers'),
-      container.resolve('logger'),
-    );
+    // Handler registration is an IoC factory now (build__RegisterDomainEventHandlers),
+    // so it is resolved and invoked rather than called with hand-passed collaborators.
+    container.resolve('registerDomainEventHandlers')();
   });
 
   afterEach(async () => {

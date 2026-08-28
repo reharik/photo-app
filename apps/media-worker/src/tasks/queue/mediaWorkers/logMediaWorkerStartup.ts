@@ -1,24 +1,17 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Logger } from '@packages/infrastructure';
-import type { Knex } from 'knex';
 
+import { UnitOfWork } from '@packages/media-core';
 import type { Config } from '../../../config';
-
-const serializeProbeError = (e: unknown): string => {
-  if (e instanceof Error) {
-    return `${e.name}: ${e.message}`;
-  }
-  return String(e);
-};
 
 export interface LogMediaWorkerStartup {
   (): Promise<void>;
 }
 
-type LogMediaWorkerStartupDeps = { config: Config; logger: Logger; database: Knex };
+type LogMediaWorkerStartupDeps = { config: Config; logger: Logger; uow: UnitOfWork };
 
 export const build__LogMediaWorkerStartup =
-  ({ config, logger, database }: LogMediaWorkerStartupDeps): LogMediaWorkerStartup =>
+  ({ config, logger, uow }: LogMediaWorkerStartupDeps): LogMediaWorkerStartup =>
   async () => {
     const explicitCredentialsConfigured = Boolean(
       config.awsAccessKeyId && config.awsSecretAccessKey,
@@ -37,27 +30,22 @@ export const build__LogMediaWorkerStartup =
     });
 
     try {
-      await database.raw('select 1 as ok');
+      await uow.begin();
+      await uow.db().raw('select 1 as ok');
+      await uow.complete(true);
       logger.info('Postgres connectivity check succeeded', {
         host: config.postgresHost,
         port: config.postgresPort,
         database: config.postgresDatabase,
       });
     } catch (e) {
-      if (e instanceof Error) {
-        logger.error('Postgres connectivity check failed', e, {
-          host: config.postgresHost,
-          port: config.postgresPort,
-          database: config.postgresDatabase,
-        });
-      } else {
-        logger.error('Postgres connectivity check failed', {
-          err: serializeProbeError(e),
-          host: config.postgresHost,
-          port: config.postgresPort,
-          database: config.postgresDatabase,
-        });
-      }
+      await uow.complete(false);
+      logger.error('Postgres connectivity check failed', e, {
+        host: config.postgresHost,
+        port: config.postgresPort,
+        database: config.postgresDatabase,
+      });
+      throw e;
     }
 
     const s3Client = new S3Client({ region: config.awsRegion });
@@ -68,17 +56,10 @@ export const build__LogMediaWorkerStartup =
         region: config.awsRegion,
       });
     } catch (e) {
-      if (e instanceof Error) {
-        logger.error('S3 connectivity check failed', e, {
-          bucket: config.s3Bucket,
-          region: config.awsRegion,
-        });
-      } else {
-        logger.error('S3 connectivity check failed', {
-          err: serializeProbeError(e),
-          bucket: config.s3Bucket,
-          region: config.awsRegion,
-        });
-      }
+      logger.error('S3 connectivity check failed', e, {
+        bucket: config.s3Bucket,
+        region: config.awsRegion,
+      });
+      throw e;
     }
   };

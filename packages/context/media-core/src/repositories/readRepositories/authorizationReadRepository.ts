@@ -6,7 +6,7 @@ import {
   UserStatus,
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
@@ -16,7 +16,7 @@ import type {
   MediaItemOperations,
 } from './types';
 
-type AuthorizationReadRepositoryDeps = { database: Knex };
+type AuthorizationReadRepositoryDeps = { uow: UnitOfWork };
 
 const shareSelectColumns = [
   'access_grant.id',
@@ -37,7 +37,7 @@ const rolesThatCan = (op: Operation) =>
     .map((r) => r.value);
 
 export const build__AuthorizationReadRepository = ({
-  database,
+  uow,
 }: AuthorizationReadRepositoryDeps): AuthorizationReadRepository => ({
   /**
    * "Who have I shared this photo with?"
@@ -55,13 +55,15 @@ export const build__AuthorizationReadRepository = ({
     mediaItemId: EntityId;
     ownerId: EntityId;
   }): Promise<AuthorizationRow[]> => {
+    await uow.join();
     return withEnumRevival(
-      database('accessGrant')
+      uow
+        .db()('accessGrant')
         .innerJoin('albumItem', 'albumItem.albumId', 'accessGrant.albumId')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('albumItem.mediaItemId', mediaItemId)
         .andWhere('mediaItem.ownerId', ownerId)
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .orderBy('accessGrant.createdAt', 'asc')
         .distinct<AuthorizationRow[]>(...shareSelectColumns),
       { operations: Operation, kind: AuthorizationKind },
@@ -74,13 +76,15 @@ export const build__AuthorizationReadRepository = ({
     albumId: EntityId;
     ownerId: EntityId;
   }): Promise<AuthorizationRow[]> => {
+    await uow.join();
     return withEnumRevival(
-      database('accessGrant')
+      uow
+        .db()('accessGrant')
         .innerJoin('albumMember', 'albumMember.albumId', 'accessGrant.albumId')
         .where('accessGrant.albumId', albumId)
         .andWhere('albumMember.userId', ownerId)
         .andWhere('albumMember.role', 'owner')
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .orderBy('accessGrant.createdAt', 'asc')
         .select<AuthorizationRow[]>(...shareSelectColumns),
       { operations: Operation, kind: AuthorizationKind },
@@ -96,29 +100,33 @@ export const build__AuthorizationReadRepository = ({
   }): Promise<
     (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
   > => {
+    await uow.join();
     return withEnumRevival(
-      database('accessGrant')
+      uow
+        .db()('accessGrant')
         .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
         .where('accessGrant.albumId', albumId)
         .whereIn('accessGrant.kind', [
           AuthorizationKind.pending.value,
           AuthorizationKind.user.value,
         ])
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .whereExists(
-          database
-            .select(database.raw('1'))
+          uow
+            .db()
+            .select(uow.db().raw('1'))
             .from('albumMember')
             .where('albumMember.albumId', albumId)
             .where('albumMember.userId', viewerId)
             .whereIn('albumMember.role', rolesThatCan(Operation.grantAlbumAuthorization)),
         )
         .whereNotExists(
-          database
-            .select(database.raw('1'))
+          uow
+            .db()
+            .select(uow.db().raw('1'))
             .from('albumMember as granteeMember')
-            .where('granteeMember.albumId', database.ref('accessGrant.albumId'))
-            .where('granteeMember.userId', database.ref('accessGrant.grantedToUser')),
+            .where('granteeMember.albumId', uow.db().ref('accessGrant.albumId'))
+            .where('granteeMember.userId', uow.db().ref('accessGrant.grantedToUser')),
         )
         .orderByRaw(`CASE WHEN "user"."user_status" = ? THEN 0 ELSE 1 END`, [
           UserStatus.active.value,
@@ -146,11 +154,13 @@ export const build__AuthorizationReadRepository = ({
     if (mediaItemIds.length === 0) {
       return [];
     }
+    await uow.join();
     return withEnumRevival(
-      database('grant as g')
+      uow
+        .db()('grant as g')
         .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
         .whereIn('g.media_item_id', mediaItemIds)
-        .modify(withLiveAuthorizationFilter(database, 'ag'))
+        .modify(withLiveAuthorizationFilter(uow.db(), 'ag'))
         .where('g.granted_to_user', viewerId)
         .select<MediaItemOperations[]>(
           'g.media_item_id as mediaItemId',
@@ -166,12 +176,14 @@ export const build__AuthorizationReadRepository = ({
     if (mediaItemIds.length === 0) {
       return [];
     }
+    await uow.join();
     return withEnumRevival(
-      database('grant as g')
+      uow
+        .db()('grant as g')
         .join('access_grant as ag', 'g.access_grant_id', 'ag.id')
         .whereIn('g.media_item_id', mediaItemIds)
         .where('ag.id', publicLinkId)
-        .modify(withLiveAuthorizationFilter(database, 'ag'))
+        .modify(withLiveAuthorizationFilter(uow.db(), 'ag'))
         .select<MediaItemOperations[]>(
           'g.media_item_id as mediaItemId',
           'g.operations as operations',
@@ -179,22 +191,25 @@ export const build__AuthorizationReadRepository = ({
       { operations: Operation },
     );
   },
-  getPublicAuthorizationByAlbum: ({
+  getPublicAuthorizationByAlbum: async ({
     albumId,
     viewerId,
   }: {
     albumId: EntityId;
     viewerId: EntityId;
   }): Promise<AuthorizationRow> => {
+    await uow.join();
     return withEnumRevival(
-      database('accessGrant')
+      uow
+        .db()('accessGrant')
         .where('accessGrant.albumId', albumId)
         .where('accessGrant.kind', AuthorizationKind.public.value)
         .where('accessGrant.origin', AuthorizationOrigin.owner.value)
-        .modify(withLiveAuthorizationFilter(database))
+        .modify(withLiveAuthorizationFilter(uow.db()))
         .whereExists(
-          database
-            .select(database.raw('1'))
+          uow
+            .db()
+            .select(uow.db().raw('1'))
             .from('albumMember')
             .where('albumMember.albumId', albumId)
             .where('albumMember.userId', viewerId)

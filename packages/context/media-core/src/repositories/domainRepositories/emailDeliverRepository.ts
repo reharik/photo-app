@@ -1,18 +1,17 @@
 import { EmailDelivery } from '../../domain/EmailDelivery';
-import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services';
-import { persist } from './AggregateRepo';
+import { Persist } from './AggregateRepo';
 
 export interface EmailDeliveryRepository extends RequestScopeLifeCycle {
   save: (emailDelivery: EmailDelivery) => Promise<void>;
 }
 
-type EmailDeliveryRepositoryDeps = { uow: UnitOfWork };
+type EmailDeliveryRepositoryDeps = { persist: Persist };
 
 export const build__EmailDeliveryRepository = ({
-  uow,
+  persist,
 }: EmailDeliveryRepositoryDeps): EmailDeliveryRepository => ({
   save: async (emailDelivery: EmailDelivery): Promise<void> => {
-    await persist(emailDelivery, uow);
+    await persist(emailDelivery);
   },
 });

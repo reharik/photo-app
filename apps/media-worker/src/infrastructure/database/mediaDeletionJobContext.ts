@@ -27,6 +27,6 @@ export const build__MediaDeletionJobContext = ({
   uow,
 }: MediaDeletionJobContextDeps): ScopeRoot<MediaDeletionJobContext> => ({
   processNextMediaDeletionJob,
-  start: uow.start,
+  start: uow.begin,
   finalize: uow.complete,
 });

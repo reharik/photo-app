@@ -31,7 +31,7 @@ import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import { destroyWorkerContainer, initializeWorkerContainer } from '../container.js';
+import { createWorkerContainer } from '../container.js';
 import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__StalledMediaJobSweep } from '../tasks/schedule/stalledMediaJobSweep/stalledMediaJobSweep.js';
 import { ensureTestViewerUsers } from './ensureTestViewerUsers';
@@ -57,7 +57,7 @@ describe('stalled media job sweep (integration)', () => {
   let database: Knex;
 
   beforeAll(async () => {
-    container = initializeWorkerContainer();
+    container = createWorkerContainer();
     database = container.resolve('database');
     await ensureTestViewerUsers(database);
   });
@@ -67,7 +67,10 @@ describe('stalled media job sweep (integration)', () => {
   });
 
   afterAll(async () => {
-    await destroyWorkerContainer();
+    // The container is a plain factory now, with no module-global to tear down —
+    // what still has to be released is the knex pool, or jest hangs on the open
+    // handle.
+    await database.destroy();
   });
 
   const createFakeLogger = () => ({

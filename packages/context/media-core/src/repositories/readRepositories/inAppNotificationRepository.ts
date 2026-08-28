@@ -7,7 +7,7 @@ import {
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { EntityId } from '../../types';
 import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
@@ -48,14 +48,16 @@ export interface InAppNotificationRepository {
   ) => Promise<void>;
 }
 
-type InAppNotificationRepositoryDeps = { database: Knex };
+type InAppNotificationRepositoryDeps = { uow: UnitOfWork };
 
 export const build__InAppNotificationRepository = ({
-  database,
+  uow,
 }: InAppNotificationRepositoryDeps): InAppNotificationRepository => ({
-  getInAppNotification: async (viewerId: EntityId): Promise<InAppNotification[]> =>
-    await withEnumRevival(
-      database('inAppNotification')
+  getInAppNotification: async (viewerId: EntityId): Promise<InAppNotification[]> => {
+    await uow.join();
+    return withEnumRevival(
+      uow
+        .db()('inAppNotification')
         .where({ viewerId })
         .select<InAppNotification[]>(inAppNotificationFields),
       {
@@ -64,14 +66,16 @@ export const build__InAppNotificationRepository = ({
         kind: InAppNotificationType,
         surface: ActivitySurface,
       },
-    ),
+    );
+  },
   deleteWhere: async ({
     viewerId,
     containerType,
     containerId,
     kind,
   }: DeleteWhereInput): Promise<void> => {
-    await database('inAppNotification').delete().where(
+    await uow.join();
+    await uow.db()('inAppNotification').delete().where(
       prepareForDatabase({
         viewerId,
         containerType,
@@ -87,15 +91,18 @@ export const build__InAppNotificationRepository = ({
     viewerId: EntityId;
     ids: EntityId[];
   }): Promise<void> => {
-    await database('inAppNotification').delete().where({ viewerId }).and.whereIn('id', ids);
+    await uow.join();
+    await uow.db()('inAppNotification').delete().where({ viewerId }).and.whereIn('id', ids);
   },
 
   // Clears ALL unseen activity at this container (every activity_kind) for the
   // viewer. Keyed on container_type + container_id only — opening an album must not
   // leave per-mediaItem (comment) dots behind, and vice versa.
   markSeen: async (containerType: EntityType, viewerId: EntityId, containerId?: string) => {
+    await uow.join();
     const filterOnContainerId = containerId ? { containerId } : {};
-    await database('inAppNotification')
+    await uow
+      .db()('inAppNotification')
       .delete()
       .where({ containerType: containerType.value, ...filterOnContainerId, viewerId });
   },

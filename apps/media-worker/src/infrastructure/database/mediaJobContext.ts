@@ -35,6 +35,6 @@ export const build__MediaJobContext = ({
   mediaItemRepository,
   mediaProcessingJobRepository,
   uow,
-  start: uow.start,
+  start: uow.begin,
   finalize: uow.complete,
 });

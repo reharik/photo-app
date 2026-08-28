@@ -26,11 +26,7 @@ export const build__CompleteJobRow =
     inJobScope(async (ctx): Promise<{ commit: boolean; value: CompletionResult }> => {
       // Job row first: WHERE status = PROCESSING is the ownership check. If the
       // stalled sweep reclaimed this job, we lose the race here and touch nothing.
-      const claimed = await ctx.mediaProcessingJobRepository.markSucceeded(
-        job.id,
-        actorId,
-        ctx.uow,
-      );
+      const claimed = await ctx.mediaProcessingJobRepository.markSucceeded(job.id, actorId);
 
       if (!claimed) {
         return {

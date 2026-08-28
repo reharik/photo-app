@@ -1,20 +1,23 @@
 import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { CommentRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
+import { CommentRecord, Persist, RequestScopeLifeCycle, UnitOfWork } from '../..';
 import { Comment } from '../../domain/Comment/Comment';
 import type { EntityId } from '../../types/types';
 import { ReactionRecord } from '../readRepositories/types';
-import { persist } from './AggregateRepo';
 
 export interface CommentRepository extends RequestScopeLifeCycle {
   getById: (id: EntityId) => Promise<Comment | undefined>;
   save: (comment: Comment) => Promise<void>;
 }
 
-type CommentRepositoryDeps = { uow: UnitOfWork };
+type CommentRepositoryDeps = { uow: UnitOfWork; persist: Persist };
 
-export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): CommentRepository => {
+export const build__CommentRepository = ({
+  uow,
+  persist,
+}: CommentRepositoryDeps): CommentRepository => {
   const getById = async (id: EntityId): Promise<Comment | undefined> => {
+    await uow.join();
     const comment = await withEnumRevival(
       uow.db()<CommentRecord>('comment').where({ id }).first(),
       { targetType: EntityType },
@@ -40,7 +43,7 @@ export const build__CommentRepository = ({ uow }: CommentRepositoryDeps): Commen
   };
 
   const save = async (comment: Comment): Promise<void> => {
-    await persist(comment, uow);
+    await persist(comment);
   };
 
   return {

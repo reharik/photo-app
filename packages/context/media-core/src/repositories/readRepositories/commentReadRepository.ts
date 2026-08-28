@@ -19,7 +19,7 @@ const commentSelectColumns = [
 ];
 
 export const build__CommentReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): CommentReadRepository => ({
   getCommentsForTarget: async ({
     targetType,
@@ -30,11 +30,13 @@ export const build__CommentReadRepository = ({
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }): Promise<DBCommentRow[]> => {
+    await uow.join();
     const { pageInfo } = collectionInfo;
     return withEnumRevival(
-      database('comment')
+      uow
+        .db()('comment')
         .select(...commentSelectColumns)
-        .select(database.raw('COUNT(*) OVER () AS "totalCount"'))
+        .select(uow.db().raw('COUNT(*) OVER () AS "totalCount"'))
         .where('target_type', targetType)
         .where('target_id', targetId)
         .whereNull('deleted_at')
@@ -49,8 +51,10 @@ export const build__CommentReadRepository = ({
   }: {
     commentId: EntityId;
   }): Promise<DBCommentRow | undefined> => {
+    await uow.join();
     return withEnumRevival(
-      database('comment')
+      uow
+        .db()('comment')
         .select(...commentSelectColumns)
         .where('id', commentId)
         .first<DBCommentRow>(...commentSelectColumns),

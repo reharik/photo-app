@@ -6,7 +6,7 @@ import {
   NotificationSubjectType,
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { EntityId } from '../../types';
 
 export type SystemInAppNotificationRepository = {
@@ -14,7 +14,7 @@ export type SystemInAppNotificationRepository = {
 };
 
 export type SystemInAppNotificationRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export type InAppNotification = {
@@ -31,10 +31,12 @@ export type InAppNotification = {
 
 type InAppNotificationInput = Omit<InAppNotification, 'kind'> & { kind: NotificationKind };
 export const build__SystemInAppNotificationRepository = ({
-  database,
+  uow,
 }: SystemInAppNotificationRepositoryDeps): SystemInAppNotificationRepository => ({
   upsertActivityRow: async (upsert: InAppNotificationInput) => {
-    await database('inAppNotification')
+    await uow.join();
+    await uow
+      .db()('inAppNotification')
       .insert(prepareForDatabase({ ...upsert }))
       .onConflict(['viewerId', 'containerType', 'containerId', 'subjectType', 'subjectId'])
       .ignore();

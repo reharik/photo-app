@@ -1,6 +1,6 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow } from '../../services';
 import { EntityId } from '../../types';
 import { albumItemWithMediaSelectColumns } from '../readRepositories/albumItemReadRepository';
@@ -21,14 +21,16 @@ export type SystemAlbumItemRepository = {
 };
 
 type SystemAlbumItemRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export const build__SystemAlbumItemRepository = ({
-  database,
+  uow,
 }: SystemAlbumItemRepositoryDeps): SystemAlbumItemRepository => ({
   getItemsByAlbumIds: async (albumIds: EntityId[]) => {
-    return database('albumItem')
+    await uow.join();
+    return uow
+      .db()('albumItem')
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
       .select<
         { id: EntityId; albumId: EntityId; mediaItemId: EntityId; mediaItemOwnerId: EntityId }[]
@@ -42,8 +44,10 @@ export const build__SystemAlbumItemRepository = ({
     albumId: EntityId;
     albumItemIds: EntityId[];
   }) => {
+    await uow.join();
     return withEnumRevival(
-      database('albumItem')
+      uow
+        .db()('albumItem')
         .innerJoin('album', 'albumItem.albumId', 'album.id')
         .leftJoin('albumMember', 'albumMember.albumId', 'album.id')
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')

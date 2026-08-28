@@ -8,8 +8,7 @@ import {
   ReactionEmoji,
   UserStatus,
 } from '@packages/contracts';
-import type { Knex } from 'knex';
-import { AuditRecord } from '../..';
+import { AuditRecord, UnitOfWork } from '../..';
 import {
   AlbumMemberCollectionInfo,
   AlbumWithCoverRow,
@@ -24,7 +23,7 @@ import {
 } from '../../services/readServices/types';
 import type { CollectionInfo, EntityId, PageInfo } from '../../types/types';
 
-export type ReadRepositoryDeps = { database: Knex };
+export type ReadRepositoryDeps = { uow: UnitOfWork };
 
 export type AuthorizationRow = {
   id: EntityId;
