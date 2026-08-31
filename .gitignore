@@ -5,7 +5,7 @@ node_modules
 .history
 .vscode
 dist
-
+.ioc-generation-state.json
 
 .nx/cache
 .nx/workspace-data
