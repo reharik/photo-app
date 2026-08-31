@@ -1,10 +1,11 @@
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 import { withAlbumItemCount } from '../queryHelpers';
 
-export type SystemAlbumRepository = {
+export interface SystemAlbumRepository extends RequestScopeLifeCycle {
   getAlbumTitlesById: (albumIds: EntityId[]) => Promise<AlbumTitle[]>;
-};
+}
 
 type SystemAlbumRepositoryDeps = {
   uow: UnitOfWork;

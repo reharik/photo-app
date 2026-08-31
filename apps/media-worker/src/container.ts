@@ -9,6 +9,8 @@ import {
 
 export const createWorkerContainer = (): AwilixContainer<AppCradle> => {
   const container = createContainer<AppCradle>();
-  registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
+  registerIocFromManifest(container, composedManifests, composedRegistrationOverrides, {
+    strict: false,
+  });
   return container;
 };

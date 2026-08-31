@@ -1,9 +1,5 @@
 import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
-import {
-  buildMediaItemBaseStorageKey,
-  GrantReadRepository,
-  MediaItemReadRepository,
-} from '@packages/media-core';
+import { buildMediaItemBaseStorageKey, SystemMediaGrantRepository } from '@packages/media-core';
 
 export type AuthorizeMediaViewInput = {
   mediaId: string;
@@ -16,12 +12,10 @@ export type MediaGrantService = {
 };
 
 type MediaGrantServiceDeps = {
-  mediaItemReadRepository: MediaItemReadRepository;
-  grantReadRepository: GrantReadRepository;
+  systemMediaGrantRepository: SystemMediaGrantRepository;
 };
 export const build__MediaGrantService = ({
-  mediaItemReadRepository,
-  grantReadRepository,
+  systemMediaGrantRepository,
 }: MediaGrantServiceDeps): MediaGrantService => ({
   authorizeView: async (input: AuthorizeMediaViewInput): Promise<OperationResult<string>> => {
     const { mediaId, viewerId, token } = input;
@@ -29,37 +23,37 @@ export const build__MediaGrantService = ({
       return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
     }
 
-    const mediaItemRow = await mediaItemReadRepository.getByIdForAuthorization({
+    const mediaItemOwnerId = await systemMediaGrantRepository.getMediaItemOwnerId({
       mediaItemId: mediaId,
     });
-    if (!mediaItemRow) {
+    if (!mediaItemOwnerId) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotFound);
     }
 
-    const isOwner = viewerId !== undefined && mediaItemRow.ownerId === viewerId;
+    const isOwner = viewerId !== undefined && mediaItemOwnerId.ownerId === viewerId;
 
     if (isOwner) {
-      return ok(buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id));
+      return ok(buildMediaItemBaseStorageKey(mediaItemOwnerId.ownerId, mediaItemOwnerId.id));
     }
 
-    const granted = await grantReadRepository.hasActiveGrant({
+    const granted = await systemMediaGrantRepository.hasActiveGrant({
       mediaItemId: mediaId,
       viewerId,
       token,
     });
 
     if (granted) {
-      return ok(buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id));
+      return ok(buildMediaItemBaseStorageKey(mediaItemOwnerId.ownerId, mediaItemOwnerId.id));
     }
 
     if (viewerId) {
-      const memberGrant = await grantReadRepository.hasAlbumMembershipForMediaItem({
+      const memberGrant = await systemMediaGrantRepository.hasAlbumMembershipForMediaItem({
         mediaItemId: mediaId,
         viewerId,
       });
 
       if (memberGrant) {
-        return ok(buildMediaItemBaseStorageKey(mediaItemRow.ownerId, mediaItemRow.id));
+        return ok(buildMediaItemBaseStorageKey(mediaItemOwnerId.ownerId, mediaItemOwnerId.id));
       }
     }
 

@@ -4,6 +4,7 @@ import {
   GrantReadRepository,
   MediaItemReadRepository,
 } from '../../repositories/readRepositories/types';
+import { RequestScopeLifeCycle } from './readServiceBaseType';
 
 export type AuthorizeMediaCommentInput = {
   mediaItemId: string;
@@ -15,10 +16,10 @@ export type AuthorizeAlbumCommentInput = {
   viewerId?: string;
 };
 
-export type ValidateOperationService = {
+export interface ValidateOperationService extends RequestScopeLifeCycle {
   authorizeMediaComment: (input: AuthorizeMediaCommentInput) => Promise<OperationResult<void>>;
   authorizeAlbumComment: (input: AuthorizeAlbumCommentInput) => Promise<OperationResult<void>>;
-};
+}
 
 type ValidateOperationServiceDeps = {
   mediaItemReadRepository: MediaItemReadRepository;

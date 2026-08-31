@@ -38,22 +38,60 @@ export const build__UnitOfWork = ({
   let events: DomainEvent[] = [];
   let shouldRollback = false;
 
-  const completeTransaction = async (ok: boolean) => {
-    if (!trx) {
-      return;
-    }
-    if (ok && !shouldRollback) {
-      await trx.commit();
-      await eventPublisher.publish(events);
-      logger.debug(`[uow:${id}] committed`);
-    } else {
-      await trx.rollback();
-      logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
-    }
+  const reset = () => {
     trx = undefined;
     events = [];
     shouldRollback = false;
   };
+
+  /**
+   * Commit-THEN-publish. The handlers write through THIS uow, so the committed
+   * transaction has to be cleared before they run: leave it in place and their first
+   * `join()` reuses a dead handle, every write throws "Transaction query already
+   * complete", and eventPublisher swallows it — a silently dead post-commit bus.
+   *
+   * Clearing it means their first repository call opens a FRESH transaction, which
+   * belongs to nobody but us: the request boundary already settled as far as it is
+   * concerned, so we commit it here. Events recorded by a handler are not re-published
+   * — the bus is deliberately one hop deep and best-effort (no outbox, no retry).
+   */
+  const publishPostCommit = async () => {
+    const published = events;
+    reset();
+    if (!published.length) {
+      return;
+    }
+    try {
+      await eventPublisher.publish(published);
+      if (trx) {
+        await trx.commit();
+        logger.debug(`[uow:${id}] post-commit handler transaction committed`);
+      }
+    } catch (e) {
+      if (trx) {
+        await trx.rollback();
+      }
+      logger.error(`[uow:${id}] post-commit handler transaction failed`, e);
+    } finally {
+      reset();
+    }
+  };
+
+  const completeTransaction = async (ok: boolean) => {
+    if (!trx) {
+      return;
+    }
+    if (!ok || shouldRollback) {
+      await trx.rollback();
+      logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+      reset();
+      return;
+    }
+    await trx.commit();
+    logger.debug(`[uow:${id}] committed`);
+    await publishPostCommit();
+  };
+  let openedAt: string | undefined;
   return {
     id,
     beginIsolatedOnly: async () => {
@@ -61,10 +99,11 @@ export const build__UnitOfWork = ({
         throw new Error(`[uow:${id}] Transaction already active when beginIsolatedOnly called`);
       }
       trx = await database.transaction();
-      logger.info(`[uow:${id}] Transaction begun in isolation`);
+      logger.debug(`[uow:${id}] Transaction begun in isolation`);
     },
     join: async () => {
       if (!trx) {
+        openedAt = new Error().stack;
         logger.debug(`[uow:${id}] New transaction created`);
         trx = await database.transaction();
       }
@@ -82,18 +121,16 @@ export const build__UnitOfWork = ({
     },
     settle: async (ok: boolean) => {
       if (!trx) {
-        events = [];
-        shouldRollback = false;
+        reset();
         return;
       }
-      logger.debug(`[uow:${id}] settle resolving an open transaction`);
+      logger.warn(`[uow:${id}] settle resolving an open transaction`, { openedAt });
+
       try {
         await completeTransaction(ok);
       } catch (e) {
         logger.error(`[uow:${id}] settle failed to resolve the transaction`, e);
-        trx = undefined;
-        events = [];
-        shouldRollback = false;
+        reset();
       }
     },
     collectEvents: (newEvents: DomainEvent[]) => {

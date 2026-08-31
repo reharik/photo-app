@@ -93,7 +93,8 @@ describe('media processing job enqueue boundary (integration)', () => {
 
   /**
    * Run finalize inside a manually-held write scope and hand control back between the
-   * write and the settlement. `finalize(ok)` is the scope root's one settlement call —
+   * write and the settlement. There is nothing to start: the uow joins lazily on the
+   * first repository call, and `finalize(ok)` is the scope root's one settlement call —
    * true commits, false rolls back. Settles on any failure so an open trx never leaks
    * into afterEach (TRUNCATE would block on it forever).
    */
@@ -105,7 +106,6 @@ describe('media processing job enqueue boundary (integration)', () => {
     )({
       viewerId: TEST_VIEWER_1_ID,
     });
-    await writeScope.start();
     let open = true;
     const finish = async (act: 'commit' | 'rollback'): Promise<void> => {
       open = false;

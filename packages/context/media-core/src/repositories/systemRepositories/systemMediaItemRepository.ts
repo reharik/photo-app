@@ -1,11 +1,12 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemMediaItemRepository = {
+export interface SystemMediaItemRepository extends RequestScopeLifeCycle {
   getMediaItemById: (mediaItemId: EntityId) => Promise<MediaItemOwner>;
-};
+}
 
 type SystemMediaItemRepositoryDeps = {
   uow: UnitOfWork;

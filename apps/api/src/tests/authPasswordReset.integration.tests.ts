@@ -155,19 +155,22 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
 
   /**
    * Mirror the controller exactly: open the AuthService scope root through its
-   * generated opener, start it, run the write, dispose in a finally. `authService` is
-   * scope-rooted — it has no root-cradle key, so the OPENER is what comes off the
-   * container. The service owns settlement (complete(true) on success, complete(false)
-   * on every failure path), so this bracket deliberately does not settle anything.
+   * generated opener, run the write, then settle and dispose in a finally.
+   * `authService` is scope-rooted — it has no root-cradle key, so the OPENER is what
+   * comes off the container. There is nothing to start (the uow joins lazily on the
+   * first repository call), and the service only settles ONE way — complete(true) on
+   * success, because notifyUser must run post-commit. Every failure and throw path
+   * returns with the transaction still open, so the bracket's settle(false) is what
+   * actually rolls it back — and it is inert after a commit.
    */
   const runVerify = async (
     creds: SignupInput,
   ): Promise<Awaited<ReturnType<AuthService['verifyCodeAndSetPassword']>>> => {
     const { authService, dispose } = container.resolve('openAuthServiceScope')();
-    await authService.start();
     try {
       return await authService.verifyCodeAndSetPassword(creds);
     } finally {
+      await authService.settle(false);
       await dispose();
     }
   };

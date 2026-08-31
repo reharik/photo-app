@@ -14,7 +14,7 @@ import { WriteServices } from '../../../generated/ioc-registry.types';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
-import { ValidateOperationService } from '../../readServices/mediaGrantService';
+import { ValidateOperationService } from '../../readServices/ValidateOperationService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {

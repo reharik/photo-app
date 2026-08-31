@@ -1,6 +1,7 @@
 import { AlbumItemSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { AlbumItemWithMediaRow, PagedList } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
 import {
@@ -11,7 +12,7 @@ import {
 } from '../queryHelpers';
 import { withActivePublicLink } from '../queryHelpers/withActivePublicLink';
 
-export type AlbumItemReadRepository = {
+export interface AlbumItemReadRepository extends RequestScopeLifeCycle {
   /** Album items for public share-link viewing (no membership check). READY media only. */
   listAlbumItemsForPublicLink: ({
     albumId,
@@ -38,7 +39,7 @@ export type AlbumItemReadRepository = {
     albumId: string;
     albumItemIds: string[];
   }) => Promise<AlbumItemWithMediaRow[]>;
-};
+}
 
 const mediaItemSelectColumns = [
   'mediaItem.id as mediaItemId',

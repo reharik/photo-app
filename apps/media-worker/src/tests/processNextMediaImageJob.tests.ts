@@ -19,10 +19,6 @@ import type {
 } from '../tasks/queue/mediaWorkers/processMediaImage/completeJobRow.js';
 import { build__CompleteJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/completeJobRow.js';
 import type {
-  InJobScope,
-  MediaJobContext,
-} from '../tasks/queue/mediaWorkers/processMediaImage/inJobScope.js';
-import type {
   MediaJobWorkflow,
   PipelineJobWorkflow,
   PipelineResult,
@@ -131,19 +127,29 @@ const pipelineResult = (): PipelineResult => ({
 });
 
 /**
- * Runs the callback against the supplied context and records the commit flag,
- * standing in for the real scope open/start/finalize/dispose bracket. Whether a
- * phase commits or rolls back is the whole point of these units, so the flag is
- * captured rather than discarded.
+ * Each unit drives its own transaction boundary now — there is no scope wrapper
+ * between it and the uow — so the uow IS the oracle. Whether a phase commits or
+ * rolls back is the whole point of these units, so `complete(ok)`'s argument is
+ * captured rather than discarded. `db()` throws: every collaborator is faked, so
+ * a unit reaching for the handle directly is a mistake, not a silent undefined.
  */
-const createFakeInJobScope = (ctx: Partial<MediaJobContext>) => {
+const createFakeUow = () => {
   const commits: boolean[] = [];
-  const inJobScope: InJobScope = async (fn) => {
-    const { commit, value } = await fn(ctx as MediaJobContext);
-    commits.push(commit);
-    return value;
-  };
-  return { inJobScope, commits };
+  const uow = {
+    id: 'fake-uow',
+    beginIsolatedOnly: async () => {},
+    join: async () => {},
+    db: () => {
+      throw new Error('db() is not available in this unit test');
+    },
+    complete: async (ok: boolean) => {
+      commits.push(ok);
+    },
+    settle: async () => {},
+    collectEvents: () => {},
+    flagRollbackOnly: () => {},
+  } as unknown as UnitOfWork;
+  return { uow, commits };
 };
 
 describe('build__ClaimJobRow', () => {
@@ -151,17 +157,19 @@ describe('build__ClaimJobRow', () => {
     const mediaProcessingJobRepository = createJobRepo();
     mediaProcessingJobRepository.claimNextAvailableJob.mockResolvedValue(job);
     const systemMediaItemRepository = createSystemItemRepo(item);
+    const { uow, commits } = createFakeUow();
     const claimJobRow = build__ClaimJobRow({
       mediaProcessingJobRepository,
       systemMediaItemRepository,
       logger: createMockLogger(),
+      uow,
     });
-    return { claimJobRow, mediaProcessingJobRepository };
+    return { claimJobRow, mediaProcessingJobRepository, commits };
   };
 
   describe('When the queue is empty', () => {
     it('should report idle without touching the job row', async () => {
-      const { claimJobRow, mediaProcessingJobRepository } = build(undefined, undefined);
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(undefined, undefined);
 
       const result = await claimJobRow();
 
@@ -173,12 +181,14 @@ describe('build__ClaimJobRow', () => {
       });
       expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+      // Nothing was read or written, so no boundary was opened to settle.
+      expect(commits).toEqual([]);
     });
   });
 
   describe('When the media item is missing', () => {
     it('should fail the job terminally', async () => {
-      const { claimJobRow, mediaProcessingJobRepository } = build(undefined, jobRow());
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(undefined, jobRow());
 
       const result = await claimJobRow();
 
@@ -189,12 +199,15 @@ describe('build__ClaimJobRow', () => {
         'media item not found',
       );
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      // Every guard path owns its boundary: the verdict has to be committed, not
+      // left open for the loop's settle to roll back.
+      expect(commits).toEqual([true]);
     });
   });
 
   describe('When a non-photo was enqueued for image processing', () => {
     it('should fail the job terminally — no retry will make it a photo', async () => {
-      const { claimJobRow, mediaProcessingJobRepository } = build(
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(
         itemProjection(MediaItemStatus.processing, MediaKind.video),
         jobRow(),
       );
@@ -207,12 +220,13 @@ describe('build__ClaimJobRow', () => {
         'not a photo',
       );
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      expect(commits).toEqual([true]);
     });
   });
 
   describe('When a job is claimed against an already-READY item', () => {
     it('should mark the job succeeded — never failed — so the job table does not lie', async () => {
-      const { claimJobRow, mediaProcessingJobRepository } = build(
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(
         itemProjection(MediaItemStatus.ready),
         jobRow(),
       );
@@ -223,6 +237,7 @@ describe('build__ClaimJobRow', () => {
       expect(mediaProcessingJobRepository.markSucceeded).toHaveBeenCalledWith(JOB_ID, ACTOR_ID);
       expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      expect(commits).toEqual([true]);
     });
   });
 
@@ -231,7 +246,7 @@ describe('build__ClaimJobRow', () => {
       // The enqueue-before-commit race: the job row can become visible a beat
       // before the item's PROCESSING status commits. PENDING is retryable, so a
       // claim that loses that race must come back, not go terminal.
-      const { claimJobRow, mediaProcessingJobRepository } = build(
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(
         itemProjection(MediaItemStatus.pending),
         jobRow(),
       );
@@ -246,12 +261,13 @@ describe('build__ClaimJobRow', () => {
       );
       expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+      expect(commits).toEqual([true]);
     });
   });
 
   describe('When a job is claimed against an already-FAILED item', () => {
     it('should fail the job without resurrecting the item', async () => {
-      const { claimJobRow, mediaProcessingJobRepository } = build(
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(
         itemProjection(MediaItemStatus.failed),
         jobRow(),
       );
@@ -259,16 +275,23 @@ describe('build__ClaimJobRow', () => {
       const result = await claimJobRow();
 
       expect(result.status).toBe('stop');
-      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(JOB_ID, ACTOR_ID, '');
+      // The reason is written to lastError, not left blank: a terminal job row has
+      // to say which item state abandoned it.
+      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
+        JOB_ID,
+        ACTOR_ID,
+        `item abandoned (${MediaItemStatus.failed.value})`,
+      );
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
+      expect(commits).toEqual([true]);
     });
   });
 
   describe('When the item is processable', () => {
     it('should hand the claimed job on to the pipeline', async () => {
       const job = jobRow();
-      const { claimJobRow, mediaProcessingJobRepository } = build(
+      const { claimJobRow, mediaProcessingJobRepository, commits } = build(
         itemProjection(MediaItemStatus.processing),
         job,
       );
@@ -279,6 +302,9 @@ describe('build__ClaimJobRow', () => {
       expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      // The claim's own read closes before the pipeline runs — it must not hold a
+      // transaction open across the S3 round trip.
+      expect(commits).toEqual([true]);
     });
   });
 });
@@ -288,11 +314,12 @@ describe('build__CompleteJobRow', () => {
     const mediaProcessingJobRepository = createJobRepo();
     mediaProcessingJobRepository.markSucceeded.mockResolvedValue(claimed);
     const mediaItemRepository = createItemRepo(item);
-    const { inJobScope, commits } = createFakeInJobScope({
-      mediaItemRepository,
+    const { uow, commits } = createFakeUow();
+    const completeJobRow = build__CompleteJobRow({
       mediaProcessingJobRepository,
+      mediaItemRepository,
+      uow,
     });
-    const completeJobRow = build__CompleteJobRow({ inJobScope });
     return { completeJobRow, mediaItemRepository, mediaProcessingJobRepository, commits };
   };
 
@@ -359,12 +386,12 @@ describe('build__RecordJobFailure', () => {
   const build = (item: MediaItem | undefined) => {
     const mediaProcessingJobRepository = createJobRepo();
     const mediaItemRepository = createItemRepo(item);
-    const { inJobScope, commits } = createFakeInJobScope({
-      mediaItemRepository,
+    const { uow, commits } = createFakeUow();
+    const recordJobFailure = build__RecordJobFailure({
       mediaProcessingJobRepository,
-      uow: {} as UnitOfWork,
+      mediaItemRepository,
+      uow,
     });
-    const recordJobFailure = build__RecordJobFailure({ inJobScope });
     return { recordJobFailure, mediaItemRepository, mediaProcessingJobRepository, commits };
   };
 

@@ -1,9 +1,10 @@
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import type { ReadRepositoryDeps, ShareContactRow, ShareContactSuggestion } from './types';
 
-export type ShareContactReadRepository = {
+export interface ShareContactReadRepository extends RequestScopeLifeCycle {
   getShareSuggestions: (userId: EntityId) => Promise<ShareContactSuggestion[]>;
-};
+}
 
 export const build__ShareContactReadRepository = ({
   uow,

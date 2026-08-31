@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { SweepCadence } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
+import type { UnitOfWork } from '@packages/media-core';
 
 import type { Config } from '../config.js';
 import type { WorkerTasks } from '../generated/ioc-registry.types.js';
@@ -40,6 +41,30 @@ const makeSweep = (
   run: jest.Mock<() => Promise<WorkerTaskOutcome>>,
 ): WorkerTask => ({ name, type: 'schedule', cadence, run });
 
+/**
+ * The loop is the safety net for task transactions: a task that returns (or throws)
+ * with a boundary still open must not carry it into the next task, so the loop
+ * settles the uow after every run. `settle(false)` is a no-op when nothing is open,
+ * which is the normal case — tasks that own a boundary complete it themselves.
+ */
+const createFakeUow = () => {
+  const settlements: boolean[] = [];
+  const uow = {
+    join: async () => {},
+    beginIsolatedOnly: async () => {},
+    db: () => {
+      throw new Error('db() is not available in this unit test');
+    },
+    complete: async () => {},
+    settle: async (ok: boolean) => {
+      settlements.push(ok);
+    },
+    collectEvents: () => {},
+    flagRollbackOnly: () => {},
+  } as unknown as UnitOfWork;
+  return { uow, settlements };
+};
+
 /** Yield N microtask turns so the (timer-parked) loop coroutine can advance. */
 const pump = async (turns: number): Promise<void> => {
   for (let i = 0; i < turns; i++) {
@@ -73,6 +98,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
         intervalGate: makeGate([
@@ -107,6 +133,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
         intervalGate: makeGate([
@@ -136,6 +163,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
         intervalGate: makeGate([
@@ -165,6 +193,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 100 } as Config,
         logger,
         intervalGate: makeGate([
@@ -206,6 +235,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 50 } as Config,
         logger,
         intervalGate: makeGate([
@@ -242,6 +272,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10 } as Config,
         logger,
         intervalGate: makeGate([
@@ -279,6 +310,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
         intervalGate: makeGate([
@@ -318,6 +350,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
         intervalGate: makeGate([
@@ -350,6 +383,7 @@ describe('build__RunMediaWorkerLoop', () => {
       const logger = createMockLogger();
 
       const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
         config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
         logger,
         intervalGate: makeGate([
@@ -399,13 +433,18 @@ describe('runWorkerTasksOnce', () => {
       return 'processed';
     });
 
+    const { uow, settlements } = createFakeUow();
     const didWork = await runWorkerTasksOnce(
       [task('first', first), task('second', second)],
       createMockLogger(),
+      uow,
     );
 
     expect(didWork).toBe(true);
     expect(calls).toEqual(['first', 'second']);
+    // One settle per task run: a task must never inherit the previous task's
+    // open boundary.
+    expect(settlements).toEqual([false, false]);
   });
 
   it('breaks back to the top on processed without running lower-priority tasks', async () => {
@@ -415,6 +454,7 @@ describe('runWorkerTasksOnce', () => {
     const didWork = await runWorkerTasksOnce(
       [task('first', first), task('second', second)],
       createMockLogger(),
+      createFakeUow().uow,
     );
 
     expect(didWork).toBe(true);
@@ -425,7 +465,11 @@ describe('runWorkerTasksOnce', () => {
   it('treats a due task that returns idle as no work and falls through', async () => {
     const run = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
 
-    const didWork = await runWorkerTasksOnce([task('queue', run)], createMockLogger());
+    const didWork = await runWorkerTasksOnce(
+      [task('queue', run)],
+      createMockLogger(),
+      createFakeUow().uow,
+    );
 
     expect(didWork).toBe(false);
     expect(run).toHaveBeenCalledTimes(1);
@@ -453,6 +497,7 @@ describe('runAllTasks', () => {
         makeSweep('second', SweepCadence.fast, second),
       ],
       createMockLogger(),
+      createFakeUow().uow,
     );
 
     expect(didWork).toBe(true);
@@ -465,6 +510,7 @@ describe('runAllTasks', () => {
     const didWork = await runAllTasks(
       [makeSweep('sweep', SweepCadence.slow, run)],
       createMockLogger(),
+      createFakeUow().uow,
     );
 
     expect(didWork).toBe(false);
@@ -475,18 +521,23 @@ describe('runAllTasks', () => {
     const after = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
     const logger = createMockLogger();
 
+    const { uow, settlements } = createFakeUow();
     const didWork = await runAllTasks(
       [makeSweep('boom', SweepCadence.slow, boom), makeSweep('after', SweepCadence.fast, after)],
       logger,
+      uow,
     );
 
     expect(logger.error).toHaveBeenCalledWith('[mediaWorker] task "boom" threw', expect.any(Error));
     expect(after).toHaveBeenCalledTimes(1);
     expect(didWork).toBe(true);
+    // The thrower's boundary is rolled back before the next sweep starts, not
+    // left for it to trip over.
+    expect(settlements).toEqual([false, false]);
   });
 
   it('returns false for an empty list', async () => {
-    await expect(runAllTasks([], createMockLogger())).resolves.toBe(false);
+    await expect(runAllTasks([], createMockLogger(), createFakeUow().uow)).resolves.toBe(false);
   });
 });
 
@@ -657,6 +708,7 @@ describe('IntervalGate + loop composition', () => {
       ] as unknown as WorkerTasks,
     });
     const loop = build__RunMediaWorkerLoop({
+      uow: createFakeUow().uow,
       config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
       logger,
       intervalGate: gate,

@@ -97,7 +97,7 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
       await uow.complete(true);
       return updated[0] as TRow;
     } catch (e) {
-      await uow.complete(false);
+      await uow.settle(false);
       throw e;
     }
   };

@@ -1,5 +1,10 @@
-import { EntityId, MediaProcessingJobRow } from '@packages/media-core';
-import { InJobScope } from './inJobScope';
+import {
+  EntityId,
+  MediaItemRepository,
+  MediaProcessingJobRepository,
+  MediaProcessingJobRow,
+  UnitOfWork,
+} from '@packages/media-core';
 
 export interface RecordJobFailure {
   (
@@ -10,32 +15,41 @@ export interface RecordJobFailure {
   ): Promise<void>;
 }
 
-type RecordJobFailureDeps = { inJobScope: InJobScope };
+type RecordJobFailureDeps = {
+  mediaProcessingJobRepository: MediaProcessingJobRepository;
+  mediaItemRepository: MediaItemRepository;
+  uow: UnitOfWork;
+};
 
 export const build__RecordJobFailure =
-  ({ inJobScope }: RecordJobFailureDeps): RecordJobFailure =>
-  async (job, actorId, message, retryable): Promise<void> =>
-    inJobScope(async (ctx): Promise<{ commit: boolean; value: undefined }> => {
+  ({
+    mediaProcessingJobRepository,
+    mediaItemRepository,
+    uow,
+  }: RecordJobFailureDeps): RecordJobFailure =>
+  async (job, actorId, message, retryable): Promise<void> => {
+    await uow.join();
+
+    try {
       // Retryable: the queue decides whether attempts remain. Non-retryable
       // goes terminal immediately, no cap consulted.
       const failItem = retryable
-        ? (await ctx.mediaProcessingJobRepository.markPendingRetry(
-            job.id,
-            actorId,
-            message,
-            ctx.uow,
-          )) === 'exhausted'
-        : await ctx.mediaProcessingJobRepository.markFailed(job.id, actorId, message, ctx.uow);
+        ? (await mediaProcessingJobRepository.markPendingRetry(job.id, actorId, message)) ===
+          'exhausted'
+        : await mediaProcessingJobRepository.markFailed(job.id, actorId, message);
 
       // Only fail the item if we actually owned the job — a false from either
       // write means the sweep reclaimed it and someone else is responsible.
       if (failItem) {
-        const item = await ctx.mediaItemRepository.getById(job.mediaItemId);
+        const item = await mediaItemRepository.getById(job.mediaItemId);
         if (item) {
           item.markProcessingFailed(actorId);
-          await ctx.mediaItemRepository.save(item);
+          await mediaItemRepository.save(item);
         }
       }
-
-      return { commit: true, value: undefined };
-    });
+      await uow.complete(true);
+    } catch (e) {
+      await uow.settle(false);
+      throw e;
+    }
+  };

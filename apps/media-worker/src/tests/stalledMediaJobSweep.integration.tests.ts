@@ -84,9 +84,12 @@ describe('stalled media job sweep (integration)', () => {
 
   const createSweep = () => {
     const logger = createFakeLogger();
+    // Same container, so the sweep and the repository share one scoped uow — the
+    // sweep completes the very transaction the repository's writes joined.
     const sweep = build__StalledMediaJobSweep({
       logger,
       mediaProcessingJobRepository: container.resolve('mediaProcessingJobRepository'),
+      uow: container.resolve('uow'),
     });
     return { sweep, logger };
   };
@@ -277,6 +280,12 @@ describe('stalled media job sweep (integration)', () => {
       const result = await repository.releaseStalledJobs(minutesAgo(10));
 
       expect(result).toEqual({ released: 2, failed: 1 });
+
+      // releaseStalledJobs JOINS the scope's transaction and deliberately leaves it
+      // open — settling belongs to the caller that owns the boundary (the sweep, in
+      // production). Without this commit the rows below are invisible to `database`'s
+      // own connection, and afterEach's TRUNCATE blocks on the lock forever.
+      await container.resolve('uow').complete(true);
 
       const released = await database('mediaProcessingJob').where({
         status: MediaItemStatus.pending.value,

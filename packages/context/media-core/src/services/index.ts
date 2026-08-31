@@ -3,10 +3,11 @@
  */
 
 export * from './readServices/MediaItemOperationsService';
-export * from './readServices/mediaGrantService';
+export * from './readServices/ValidateOperationService';
 export * from './readServices/readReactionService';
 export * from './readServices/readServiceBaseType';
 export * from './readServices/readServiceMappers';
+export * from './readServices/tokenAccessReadService';
 export * from './readServices/types';
 export * from './readServices/comments/commentReadService';
 export * from './readServices/publicReadServices/publicAccessReadService';

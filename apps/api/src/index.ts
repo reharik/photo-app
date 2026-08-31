@@ -5,7 +5,7 @@ const bootstrap = async () => {
   dotenv.config();
   const container = createAppContainer(); // AwilixContainer<AppCradle>
   await container.cradle.attachGlobalHandlers(container);
-  await container.cradle.app();
+  await container.cradle.server.start();
 };
 
 void bootstrap();

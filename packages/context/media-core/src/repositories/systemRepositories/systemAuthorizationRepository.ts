@@ -1,16 +1,17 @@
 import { assertNever, AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
-export type SystemAuthorizationRepository = {
+export interface SystemAuthorizationRepository extends RequestScopeLifeCycle {
   getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
   getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
   getPendingUserAuthorizationById: (
     id: EntityId,
   ) => Promise<PendingUserAuthorizationRow | undefined>;
-};
+}
 
 export type Authorizations = {
   publicLinkAuthorizations: PublicLinkAuthorizationRow[];

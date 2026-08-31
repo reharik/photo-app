@@ -63,11 +63,12 @@ describe('build__AuthController', () => {
       consume: jest.fn<RateLimiter['consume']>().mockResolvedValue(allowed),
     };
     // AuthService is scope-rooted: it has no root-cradle key, so there is nothing to
-    // resolve. `start` lives on the service itself (it delegates to the scope's own
-    // uow.start), which is what the old `uowStart` stub stood in for.
+    // resolve. There is no `start` any more — the uow joins lazily on the first
+    // repository call — so the only boundary verb the controller drives is
+    // `settle`, which delegates to the scope's own uow.settle.
     authService = {
       verifyCodeAndSetPassword: jest.fn<AuthService['verifyCodeAndSetPassword']>(),
-      start: jest.fn<AuthService['start']>(async () => undefined),
+      settle: jest.fn<AuthService['settle']>(async () => undefined),
     };
     dispose = jest.fn<() => Promise<void>>(async () => undefined);
 
@@ -199,7 +200,7 @@ describe('build__AuthController', () => {
       expect(authService.verifyCodeAndSetPassword).not.toHaveBeenCalled();
     });
 
-    it('opens the authService scope, starts it, and returns 400 on a domain failure', async () => {
+    it('opens the authService scope, settles it, and returns 400 on a domain failure', async () => {
       authService.verifyCodeAndSetPassword.mockResolvedValue(
         fail(ContractError.InvalidEmailVerificationCode),
       );
@@ -211,7 +212,9 @@ describe('build__AuthController', () => {
         lastName: 'Family',
       });
       await authController.setPassword(ctx);
-      expect(authService.start).toHaveBeenCalledTimes(1);
+      // The service returns from its failure paths without settling, so the
+      // controller's finally is the only thing that rolls the request back.
+      expect(authService.settle).toHaveBeenCalledWith(false);
       // The controller's finally must tear the scope down even on the failure path.
       expect(dispose).toHaveBeenCalledTimes(1);
       expect(authService.verifyCodeAndSetPassword).toHaveBeenCalledWith(
@@ -245,6 +248,10 @@ describe('build__AuthController', () => {
         'session-jwt',
         expect.objectContaining({ httpOnly: true }),
       );
+      // settle(false) runs on the success path too — it is inert once the service
+      // has already committed, so the controller does not have to branch on it.
+      expect(authService.settle).toHaveBeenCalledWith(false);
+      expect(dispose).toHaveBeenCalledTimes(1);
     });
   });
 

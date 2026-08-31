@@ -111,17 +111,18 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     container = setup.container;
     executeGraphQL = setup.executeGraphQL;
     database = container.resolve('database');
-    // The shared setup builds the container but (unlike index.ts's bootstrap) never wires
-    // the post-commit event bus, so no suite before this one observed post-commit effects.
-    // B asserts on async_notification rows written by the NotificationDispatcher, so
-    // mirror the boot wiring here. Scoped to this file: jest gives each test file its own
-    // module registry, hence its own container and eventPublisher.
-    // Handler registration is an IoC factory now (build__RegisterDomainEventHandlers),
-    // so it is resolved and invoked rather than called with hand-passed collaborators.
-    container.resolve('registerDomainEventHandlers')();
+    // No handler wiring step any more: the publisher injects the domainEventHandlers
+    // group and builds its dispatch map itself, so any container that can resolve an
+    // eventPublisher already has the post-commit bus. B asserts on async_notification
+    // rows written by that bus.
   });
 
   afterEach(async () => {
+    // Reads join the request transaction now, so a repository resolved straight off
+    // the container leaves one open — there is no GraphQL boundary here to settle it,
+    // and TRUNCATE below would block on the lock forever. settle(false) is a no-op
+    // when nothing is open, which is the case for the tests that go through yoga.
+    await container.resolve('uow').settle(false);
     await resetIntegrationTestDb(database);
   });
 
@@ -243,10 +244,10 @@ describe('revoked authorizations and re-sharing (integration)', () => {
         consumedAt: null,
         attemptCount: 0,
       });
-      // The service self-settles (complete(true) on success), so this bracket only
-      // starts the scope and disposes it.
+      // The service commits itself on success and returns without settling on every
+      // failure path, so the bracket settles like the controller does — a rollback that
+      // is inert once the commit has happened.
       const { authService, dispose } = container.resolve('openAuthServiceScope')();
-      await authService.start();
       try {
         const result = await authService.verifyCodeAndSetPassword({
           email: guestEmail,
@@ -258,6 +259,7 @@ describe('revoked authorizations and re-sharing (integration)', () => {
         });
         expect(result.success).toBe(true);
       } finally {
+        await authService.settle(false);
         await dispose();
       }
 

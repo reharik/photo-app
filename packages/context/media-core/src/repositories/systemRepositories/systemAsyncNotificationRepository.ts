@@ -10,15 +10,16 @@ import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemAsyncNotificationRepository = {
+export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;
   claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;
   claimIndividualNotifications: (window: number) => Promise<AsyncNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
   bumpRecordAttemptsByIds: (ids: string[]) => Promise<void>;
-};
+}
 
 export type SystemAsyncNotificationRepositoryDeps = {
   uow: UnitOfWork;
@@ -77,6 +78,10 @@ export const build__SystemAsyncNotificationRepository = ({
       .onConflict(['channel', 'kind', 'recipientId', 'containerType', 'containerId'])
       .merge({ dirtySince: uow.db().fn.now() });
   },
+  // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
+  // only while exactly one worker process runs. A second worker would select
+  // the same rows and double-send. Add SKIP LOCKED + a claim flip before
+  // scaling out.
   claimNotificationBatch: async (windowSeconds: number) => {
     await uow.join();
     return withEnumRevival(
@@ -97,6 +102,10 @@ export const build__SystemAsyncNotificationRepository = ({
       },
     );
   },
+  // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
+  // only while exactly one worker process runs. A second worker would select
+  // the same rows and double-send. Add SKIP LOCKED + a claim flip before
+  // scaling out.
   claimIndividualNotifications: async (windowSeconds: number) => {
     await uow.join();
     return withEnumRevival(

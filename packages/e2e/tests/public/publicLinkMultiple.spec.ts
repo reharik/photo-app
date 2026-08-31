@@ -36,16 +36,22 @@ test.describe('Create a public link for multiple media items', () => {
       const tileOne = anonPage.getByTestId(`media-tile-${a.id}`);
       await tileOne.getByRole('link').first().click();
       await expectPublicMediaDetailUrl(anonPage, a.id);
+      // The URL assertions alone pass with every DISPLAY derivative 404ing —
+      // navigation is only worth anything if each item actually renders.
+      await expectMediaItemLoaded(anonPage, a.id);
 
       const nextBtn = anonPage.getByRole('button', { name: 'Next image' });
       const prevBtn = anonPage.getByRole('button', { name: 'Previous image' });
 
       await nextBtn.click();
       await expectPublicMediaDetailUrl(anonPage, b.id);
+      await expectMediaItemLoaded(anonPage, b.id);
       await nextBtn.click();
       await expectPublicMediaDetailUrl(anonPage, c.id);
+      await expectMediaItemLoaded(anonPage, c.id);
       await prevBtn.click();
       await expectPublicMediaDetailUrl(anonPage, b.id);
+      await expectMediaItemLoaded(anonPage, b.id);
 
       await expect(anonPage.getByLabel('Add a comment…')).toHaveCount(0);
       await expect(anonPage.getByLabel('Add a reply')).toHaveCount(0);

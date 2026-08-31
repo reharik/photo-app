@@ -1,14 +1,11 @@
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemGrantRepository = {
-  pruneGrantsForAuthorization: (
-    authId: EntityId,
-    keepIds: EntityId[],
-    uow?: UnitOfWork,
-  ) => Promise<void>;
+export interface SystemGrantRepository extends RequestScopeLifeCycle {
+  pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[]) => Promise<void>;
   upsertGrants: (input: UpsertGrantInput[]) => Promise<void>;
-};
+}
 
 export type SystemGrantRepositoryDeps = {
   uow: UnitOfWork;

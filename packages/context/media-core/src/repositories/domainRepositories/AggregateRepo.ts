@@ -4,8 +4,9 @@ import { AggregateRoot } from '../../domain';
 import type { Entity, VOCollection } from '../../domain/Entity';
 import { serializeValue } from '../../domain/utilities/serializeAggregates';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
-export interface Persist {
+export interface Persist extends RequestScopeLifeCycle {
   <T extends AggregateRoot<Record<string, unknown>>>(aggregate: T): Promise<void>;
 }
 

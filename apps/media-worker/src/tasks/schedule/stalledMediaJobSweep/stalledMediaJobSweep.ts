@@ -19,7 +19,6 @@ export const build__StalledMediaJobSweep = ({
     const stalledBefore = new Date(Date.now() - STALLED_AFTER_MS);
 
     try {
-      await uow.begin();
       const { released, failed } =
         await mediaProcessingJobRepository.releaseStalledJobs(stalledBefore);
       await uow.complete(true);
@@ -38,7 +37,7 @@ export const build__StalledMediaJobSweep = ({
       }
       return released + failed > 0 ? 'processed' : 'idle';
     } catch (e) {
-      await uow.complete(false);
+      await uow.settle(false);
       logger.error('Release of stalled Jobs failed', e);
       throw e;
     }

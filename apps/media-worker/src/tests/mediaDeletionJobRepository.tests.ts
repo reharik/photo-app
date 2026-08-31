@@ -33,9 +33,11 @@ const createFakeUow = (row: Record<string, unknown> | undefined) => {
     },
   );
   const uow = {
-    begin: async () => {},
+    join: async () => {},
+    beginIsolatedOnly: async () => {},
     db: () => db,
     complete: async () => {},
+    settle: async () => {},
   } as unknown as UnitOfWork;
   return { uow, updates };
 };

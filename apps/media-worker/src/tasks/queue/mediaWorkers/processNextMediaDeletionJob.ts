@@ -2,6 +2,7 @@ import { MediaAssetKind } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import {
   buildMediaAssetStorageKey,
+  UnitOfWork,
   type MediaDeletionJobRepository,
   type MediaDeletionJobRow,
   type MediaItemRepository,
@@ -9,16 +10,11 @@ import {
 } from '@packages/media-core';
 
 import type { Config } from '../../../config.js';
-import type { OpenMediaDeletionJobContextScope } from '../../../generated/ioc-registry.types.js';
-import type { MediaDeletionJobContext } from '../../../infrastructure/database/mediaDeletionJobContext.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 
 export type ProcessNextMediaDeletionJobResult = 'processed' | 'idle';
 
 export type RunNextMediaDeletionJob = () => Promise<ProcessNextMediaDeletionJobResult>;
-
-/** After this many claimed attempts, the job is marked failed (storage deletes remain idempotent if re-enqueued manually). */
-const MAX_MEDIA_DELETION_JOB_ATTEMPTS = 8;
 
 export interface ProcessNextMediaDeletionJob extends WorkerJobProcessorBase {
   deleteMediaItemIfPresent: (mediaItemId: string) => Promise<boolean>;
@@ -53,11 +49,12 @@ const serializeError = (e: unknown): string => {
 };
 
 type RunNextMediaDeletionJobDeps = {
-  openMediaDeletionJobContextScope: OpenMediaDeletionJobContextScope;
   config: Config;
   logger: Logger;
   mediaDeletionJobRepository: MediaDeletionJobRepository;
   mediaStorage: MediaStorage;
+  uow: UnitOfWork;
+  processNextMediaDeletionJob: ProcessNextMediaDeletionJob;
 };
 
 const deleteStorageObjects = async ({
@@ -85,34 +82,15 @@ const deleteStorageObjects = async ({
 };
 
 export const build__RunNextMediaDeletionJob = ({
-  openMediaDeletionJobContextScope,
   config,
   logger,
   mediaDeletionJobRepository,
   mediaStorage,
+  uow,
+  processNextMediaDeletionJob,
 }: RunNextMediaDeletionJobDeps): RunNextMediaDeletionJob => {
-  /**
-   * One transactional phase: open the job scope, start its uow, run the work,
-   * and settle the transaction exactly once — commit on return, roll back on
-   * throw — before disposing the scope. Deliberately local to this runner (not
-   * a shared util): the image runner keeps its own copy over its own root.
-   */
-  const inJobScope = async <T>(fn: (op: MediaDeletionJobContext) => Promise<T>): Promise<T> => {
-    const { mediaDeletionJobContext, dispose } = openMediaDeletionJobContextScope();
-    await mediaDeletionJobContext.start();
-    try {
-      const result = await fn(mediaDeletionJobContext);
-      await mediaDeletionJobContext.finalize(true);
-      return result;
-    } catch (e) {
-      await mediaDeletionJobContext.finalize(false);
-      throw e;
-    } finally {
-      await dispose();
-    }
-  };
-
   return async (): Promise<ProcessNextMediaDeletionJobResult> => {
+    // claimNextAvailableJob manages it's own UOW lifecycle
     const job = await mediaDeletionJobRepository.claimNextAvailableJob();
     if (!job) {
       return 'idle';
@@ -127,23 +105,13 @@ export const build__RunNextMediaDeletionJob = ({
 
     const actorId = job.createdBy;
 
-    const finishSucceeded = async (): Promise<void> => {
-      await mediaDeletionJobRepository.markSucceeded(job.id, actorId);
-    };
-
-    const finishFailedTerminal = async (message: string): Promise<void> => {
-      await mediaDeletionJobRepository.markFailed(job.id, actorId, message);
-    };
-
-    const finishRetry = async (message: string): Promise<void> => {
-      await mediaDeletionJobRepository.markPendingRetry(job.id, actorId, message);
-    };
-
     try {
       await deleteStorageObjects({ config, mediaStorage, logger, job });
 
-      const rowDeleted = await inJobScope((op) =>
-        op.processNextMediaDeletionJob.deleteMediaItemIfPresent(job.mediaItemId),
+      await uow.join();
+
+      const rowDeleted = await processNextMediaDeletionJob.deleteMediaItemIfPresent(
+        job.mediaItemId,
       );
 
       if (rowDeleted) {
@@ -158,43 +126,29 @@ export const build__RunNextMediaDeletionJob = ({
         });
       }
 
-      await finishSucceeded();
+      await mediaDeletionJobRepository.markSucceeded(job.id, actorId);
+      await uow.complete(true);
       logger.info('Media deletion job succeeded', { jobId: job.id, mediaItemId: job.mediaItemId });
       return 'processed';
     } catch (e) {
       const message = serializeError(e);
-      if (e instanceof Error) {
-        logger.error('Media deletion job failed', e, {
-          jobId: job.id,
-          mediaItemId: job.mediaItemId,
-          storageKey: job.storageKey,
-          attemptCount: job.attemptCount,
-        });
-      } else {
-        logger.error('Media deletion job failed', {
-          err: String(e),
-          jobId: job.id,
-          mediaItemId: job.mediaItemId,
-          storageKey: job.storageKey,
-          attemptCount: job.attemptCount,
-        });
-      }
+      logger.error('Media deletion job failed', e, {
+        jobId: job.id,
+        mediaItemId: job.mediaItemId,
+        storageKey: job.storageKey,
+        attemptCount: job.attemptCount,
+      });
 
-      if (job.attemptCount >= MAX_MEDIA_DELETION_JOB_ATTEMPTS) {
-        await finishFailedTerminal(message);
-        logger.error('Media deletion job marked failed (terminal)', {
+      const outcome = await mediaDeletionJobRepository.markPendingRetry(job.id, actorId, message);
+      if (outcome === 'exhausted') {
+        logger.error('Media deletion job marked failed (attempts exhausted)', {
           jobId: job.id,
-          attemptCount: job.attemptCount,
           message,
         });
       } else {
-        await finishRetry(message);
-        logger.warn('Media deletion job scheduled for retry', {
-          jobId: job.id,
-          attemptCount: job.attemptCount,
-          message,
-        });
+        logger.warn('Media deletion job scheduled for retry', { jobId: job.id, message });
       }
+      await uow.complete(true);
       return 'processed';
     }
   };

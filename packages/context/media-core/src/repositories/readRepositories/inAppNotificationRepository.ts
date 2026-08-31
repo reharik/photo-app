@@ -8,6 +8,7 @@ import {
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
@@ -37,7 +38,7 @@ type DeleteWhereInput = {
   kind: InAppNotificationType;
 };
 
-export interface InAppNotificationRepository {
+export interface InAppNotificationRepository extends RequestScopeLifeCycle {
   getInAppNotification: (viewerId: EntityId) => Promise<InAppNotification[]>;
   deleteWhere: ({ viewerId, containerType, containerId, kind }: DeleteWhereInput) => Promise<void>;
   deleteByIds: ({ viewerId, ids }: { viewerId: EntityId; ids: EntityId[] }) => Promise<void>;

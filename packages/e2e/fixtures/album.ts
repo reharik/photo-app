@@ -271,10 +271,19 @@ export const setAlbumCover = async (page: Page, mediaItemId: string): Promise<vo
 
   const coverThumb = modal.getByTestId(mediaItemId);
   await expect(coverThumb).toBeVisible();
+  // Scoped to the picker: the album grid behind the modal carries this testid too.
+  await expectMediaItemLoaded(page, mediaItemId, modal);
   await coverThumb.click();
 
   await expect(modal).toBeHidden({ timeout: UPLOAD_TIMEOUT_MS });
   await expect(page.getByRole('main').getByTestId(mediaItemId)).toBeVisible({
     timeout: UPLOAD_TIMEOUT_MS,
   });
+
+  // The line above is about the item's ordinary GRID tile — it was already visible
+  // before the cover was ever set, so it says nothing about this function's job.
+  // The header cover is tagged `album-cover-{id}`; assert that, and that it decodes.
+  const albumCover = page.getByRole('main').getByTestId(`album-cover-${mediaItemId}`);
+  await expect(albumCover).toBeVisible({ timeout: UPLOAD_TIMEOUT_MS });
+  await expectMediaItemLoaded(page, `album-cover-${mediaItemId}`, page.getByRole('main'));
 };

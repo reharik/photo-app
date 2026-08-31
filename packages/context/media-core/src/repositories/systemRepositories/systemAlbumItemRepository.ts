@@ -2,10 +2,11 @@ import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow } from '../../services';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 import { albumItemWithMediaSelectColumns } from '../readRepositories/albumItemReadRepository';
 
-export type SystemAlbumItemRepository = {
+export interface SystemAlbumItemRepository extends RequestScopeLifeCycle {
   getItemsByAlbumIds: (
     albumId: EntityId[],
   ) => Promise<
@@ -18,7 +19,7 @@ export type SystemAlbumItemRepository = {
     albumId: EntityId;
     albumItemIds: EntityId[];
   }) => Promise<AlbumItemWithMediaRow[]>;
-};
+}
 
 type SystemAlbumItemRepositoryDeps = {
   uow: UnitOfWork;

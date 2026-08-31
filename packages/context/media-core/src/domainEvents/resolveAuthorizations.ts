@@ -9,6 +9,7 @@ import {
   UserAuthorizationRow,
 } from '../repositories';
 import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
+import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { EntityId } from '../types';
 import { DomainEvent } from './DomainEvent';
 
@@ -39,7 +40,7 @@ type AuthorizationMap = Map<string, AuthorizationEntry>;
 
 export type ResolvedAuthorizations = { authorizationMap: AuthorizationMap };
 
-export interface ResolveAuthorizations {
+export interface ResolveAuthorizations extends RequestScopeLifeCycle {
   (event: AuthorizationEvent): Promise<ResolvedAuthorizations>;
 }
 

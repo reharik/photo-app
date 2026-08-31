@@ -9,6 +9,7 @@ import {
   UserStatus,
 } from '@packages/contracts';
 import { AuditRecord, UnitOfWork } from '../..';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import {
   AlbumMemberCollectionInfo,
   AlbumWithCoverRow,
@@ -58,7 +59,7 @@ export type EmailShare = {
   createdAt: Date;
 };
 
-export type AuthorizationReadRepository = {
+export interface AuthorizationReadRepository extends RequestScopeLifeCycle {
   getGrantedAuthorizationsForOwnedMediaItem: (args: {
     mediaItemId: EntityId;
     ownerId: EntityId;
@@ -88,13 +89,7 @@ export type AuthorizationReadRepository = {
     albumId: EntityId;
     viewerId: EntityId;
   }) => Promise<AuthorizationRow>;
-};
-
-export type HasActiveGrantInput = {
-  mediaItemId: string;
-  viewerId?: string;
-  token?: string;
-};
+}
 
 export type HasActiveGrantPermissionInput = {
   mediaItemId: string;
@@ -108,19 +103,12 @@ export type HasActiveAccessGrantPermissionInput = {
   operation: Operation;
 };
 
-export type HasAlbumMembershipForMediaItemInput = {
-  mediaItemId: string;
-  viewerId: string;
-};
-
-export type GrantReadRepository = {
-  hasActiveGrant: (input: HasActiveGrantInput) => Promise<boolean>;
+export interface GrantReadRepository extends RequestScopeLifeCycle {
   hasActiveGrantPermission: (input: HasActiveGrantPermissionInput) => Promise<boolean>;
   hasActiveAccessGrantPermission: (input: HasActiveAccessGrantPermissionInput) => Promise<boolean>;
-  hasAlbumMembershipForMediaItem: (input: HasAlbumMembershipForMediaItemInput) => Promise<boolean>;
-};
+}
 
-export type AlbumReadRepository = {
+export interface AlbumReadRepository extends RequestScopeLifeCycle {
   listByViewerId: ({
     viewerId,
     collectionInfo,
@@ -148,7 +136,7 @@ export type AlbumReadRepository = {
     albumId: string;
     publicLinkId: string;
   }) => Promise<AlbumWithCoverRow | undefined>;
-};
+}
 
 export type AlbumIdRow = { id: string };
 
@@ -163,7 +151,7 @@ export type AlbumMemberRow = {
   updatedAt: Date;
 };
 
-export type AlbumMemberReadRepository = {
+export interface AlbumMemberReadRepository extends RequestScopeLifeCycle {
   getMemberByUserId: ({
     albumId,
     viewerId,
@@ -180,7 +168,7 @@ export type AlbumMemberReadRepository = {
     viewerId: string;
     collectionInfo: AlbumMemberCollectionInfo;
   }) => Promise<PagedList<AlbumMemberRow>>;
-};
+}
 
 export type ReactionRecord = {
   id: EntityId;
@@ -194,23 +182,23 @@ export type DBCommentRow = Omit<CommentRow, 'reactionCounts'> & {
   reactionCounts: DBReactionCounts;
 };
 
-export type CommentReadRepository = {
+export interface CommentReadRepository extends RequestScopeLifeCycle {
   getCommentsForTarget: (args: {
     targetType: EntityType;
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }) => Promise<DBCommentRow[]>;
   getByIdForAuthorization: (args: { commentId: EntityId }) => Promise<DBCommentRow | undefined>;
-};
+}
 
-export type ReactionReadRepository = {
+export interface ReactionReadRepository extends RequestScopeLifeCycle {
   countForTarget: (args: { targetType: EntityType; targetId: EntityId }) => Promise<number>;
   viewerReactionsForTargets: (args: {
     viewerId: EntityId;
     targetType: EntityType;
     targetIds: EntityId[];
   }) => Promise<DbReactionRow[]>;
-};
+}
 
 export type DbReactionRow = {
   id: EntityId;
@@ -238,7 +226,7 @@ export type SharedAlbumRow = {
   sharedByLastName: string;
 } & AlbumWithCoverRow;
 
-export type SharedWithMeReadRepository = {
+export interface SharedWithMeReadRepository extends RequestScopeLifeCycle {
   getAlbumsSharedWithMe: ({
     viewerId,
     collectionInfo,
@@ -253,14 +241,14 @@ export type SharedWithMeReadRepository = {
     viewerId: EntityId;
     albumId: string;
   }) => Promise<SharedAlbumRow | undefined>;
-};
+}
 
 export type MediaItemTagRow = {
   mediaItemId: EntityId;
   label: string;
 };
 
-export type MediaItemReadRepository = {
+export interface MediaItemReadRepository extends RequestScopeLifeCycle {
   /** Loads by id only (no ownership filter). Used for authz after access rules are applied. */
   getByIdForAuthorization: ({
     mediaItemId,
@@ -286,15 +274,15 @@ export type MediaItemReadRepository = {
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<PagedList<DBMediaItemRow>>;
   listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<MediaItemTagRow[]>;
-};
+}
 
-export type UserReadRepository = {
+export interface UserReadRepository extends RequestScopeLifeCycle {
   getById: (userId: EntityId) => Promise<UserRow | undefined>;
   getByIds: (userIds: EntityId[]) => Promise<UserRow[]>;
   getByEmails: (emails: string[]) => Promise<UserRow[]>;
-};
+}
 
-export type PublicMediaItemReadRepository = {
+export interface PublicMediaItemReadRepository extends RequestScopeLifeCycle {
   getPublicMediaItem: ({
     mediaItemId,
     publicLinkId,
@@ -302,7 +290,7 @@ export type PublicMediaItemReadRepository = {
     mediaItemId: EntityId;
     publicLinkId: EntityId;
   }) => Promise<DBPublicMediaItemRow | undefined>;
-};
+}
 
 export type PublicAccessRow = {
   id: string;
@@ -315,7 +303,6 @@ export type PublicAccessRow = {
 
 export type PublicAccessIdRow = { publicAccessId: string };
 
-export type PublicAccessReadRepository = {
-  getPublicAccessIdByToken: (token: string) => Promise<PublicAccessIdRow | undefined>;
+export interface PublicAccessReadRepository extends RequestScopeLifeCycle {
   getPublicAccessById: (publicAccessId: string) => Promise<PublicAccessRow | undefined>;
-};
+}

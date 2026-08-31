@@ -188,6 +188,8 @@ describe('fast sweep — orphaned authorization (integration)', () => {
       notificationService: { notify },
       systemAsyncNotificationRepository: container.resolve('systemAsyncNotificationRepository'),
       systemUserRepository: container.resolve('systemUserRepository'),
+      // Same container, so the sweep and the system repositories share one scoped uow.
+      uow: container.resolve('uow'),
       config: workerConfig,
       fastSweepNotificationStrategies: [
         build__AlbumSharedWithNonUserStrategy({

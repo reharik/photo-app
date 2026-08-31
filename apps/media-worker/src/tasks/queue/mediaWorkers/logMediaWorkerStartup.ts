@@ -30,7 +30,7 @@ export const build__LogMediaWorkerStartup =
     });
 
     try {
-      await uow.begin();
+      await uow.join();
       await uow.db().raw('select 1 as ok');
       await uow.complete(true);
       logger.info('Postgres connectivity check succeeded', {
@@ -39,7 +39,7 @@ export const build__LogMediaWorkerStartup =
         database: config.postgresDatabase,
       });
     } catch (e) {
-      await uow.complete(false);
+      await uow.settle(false);
       logger.error('Postgres connectivity check failed', e, {
         host: config.postgresHost,
         port: config.postgresPort,

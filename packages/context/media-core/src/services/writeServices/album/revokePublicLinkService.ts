@@ -1,5 +1,4 @@
 import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
-import { UnitOfWork } from '../../../infrastructure';
 import { AlbumRepository, SystemGrantRepository } from '../../../repositories';
 import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -13,7 +12,6 @@ type RevokePublicLinkServiceInput = {
 };
 type RevokePublicLinkServiceDeps = {
   albumRepository: AlbumRepository;
-  uow: UnitOfWork;
   systemGrantRepository: SystemGrantRepository;
   viewerId: EntityId;
 };
@@ -21,7 +19,6 @@ type RevokePublicLinkServiceDeps = {
 export const build__RevokePublicLinkService = ({
   albumRepository,
   systemGrantRepository,
-  uow,
   viewerId,
 }: RevokePublicLinkServiceDeps): RevokePublicLinkService => {
   return async ({
@@ -45,7 +42,7 @@ export const build__RevokePublicLinkService = ({
     await albumRepository.save(album);
 
     await Promise.all(
-      revokeResult.value.map((x) => systemGrantRepository.pruneGrantsForAuthorization(x, [], uow)),
+      revokeResult.value.map((x) => systemGrantRepository.pruneGrantsForAuthorization(x, [])),
     );
     return ok({ token: publicLink.linkToken() });
   };

@@ -1,11 +1,12 @@
 import { CommentRecord } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemCommentRepository = {
+export interface SystemCommentRepository extends RequestScopeLifeCycle {
   getCommentById: (commentId: EntityId) => Promise<CommentRecord>;
   getCommentsByIds: (commentIds: EntityId[]) => Promise<CommentRecord[]>;
-};
+}
 
 type systemCommentRepositoryDeps = {
   uow: UnitOfWork;

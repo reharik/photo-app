@@ -5,6 +5,7 @@ import {
 } from '@packages/contracts';
 import { DomainEvent } from '../domainEvents';
 import { UserContact } from '../repositories';
+import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { EntityId } from '../types';
 
 export type NotificationBranch = 'inAppWriter' | 'asyncWriter';
@@ -27,9 +28,11 @@ export type ResolvedNotification = {
 
 // One per event kind. `branches` declares routing — the grid holes live here,
 // as data, not as missing files.
-export type NotificationStrategy<K extends DomainEvent['kind'] = DomainEvent['kind']> = {
+export interface NotificationStrategy<
+  K extends DomainEvent['kind'] = DomainEvent['kind'],
+> extends RequestScopeLifeCycle {
   name: string; // log identity — which strategy won the dispatcher's kind lookup
   handles: K[];
   branches: NotificationBranch[];
   resolve: (event: Extract<DomainEvent, { kind: K }>) => Promise<ResolvedNotification>;
-};
+}

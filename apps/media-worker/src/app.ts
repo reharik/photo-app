@@ -1,5 +1,4 @@
 import { Logger } from '@packages/infrastructure';
-import { RegisterDomainEventHandlers } from '@packages/media-core';
 import { Knex } from 'knex';
 import { AttachGlobalHandlers } from './attachGlobalHandlers';
 import { RunMediaWorkerLoop } from './runMediaWorkerLoop';
@@ -13,7 +12,6 @@ type AppDeps = {
   logger: Logger;
   database: Knex;
   runMediaWorkerLoop: RunMediaWorkerLoop;
-  registerDomainEventHandlers: RegisterDomainEventHandlers;
   logMediaWorkerStartup: LogMediaWorkerStartup;
   attachGlobalHandlers: AttachGlobalHandlers;
 };
@@ -24,12 +22,10 @@ export const build__App =
     logger,
     database,
     runMediaWorkerLoop,
-    registerDomainEventHandlers,
     logMediaWorkerStartup,
     attachGlobalHandlers,
   }: AppDeps): App =>
   async () => {
-    registerDomainEventHandlers();
     await logMediaWorkerStartup();
 
     const workerPromise = runMediaWorkerLoop.start();

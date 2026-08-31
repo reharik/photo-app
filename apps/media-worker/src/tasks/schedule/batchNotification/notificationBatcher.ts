@@ -2,18 +2,17 @@ import { BatchedPayloadKind, EmailKind, notEmpty, SYSTEM_ACTOR_ID } from '@packa
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
   EmailDelivery,
+  EmailDeliveryRepository,
   SystemAsyncNotificationRepository,
   SystemUserRepository,
+  UnitOfWork,
 } from '@packages/media-core';
 import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
 import { Config } from '../../../config';
-import {
-  BatchedEmailActivity,
-  OpenEmailDeliveryContextScope,
-} from '../../../generated/ioc-registry.types';
-import { EmailDeliveryContext } from '../../../infrastructure/database/emailDeliveryContext';
+import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';
 import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
+import { ActivityResult } from './batchedPayloads/types';
 
 export type NotificationBatcher = () => Promise<WorkerTaskOutcome>;
 
@@ -23,8 +22,10 @@ type NotificationBatcherDeps = {
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
   systemUserRepository: SystemUserRepository;
   batchedEmailActivity: BatchedEmailActivity;
-  openEmailDeliveryContextScope: OpenEmailDeliveryContextScope;
+  // openEmailDeliveryContextScope: OpenEmailDeliveryContextScope;
   config: Config;
+  uow: UnitOfWork;
+  emailDeliveryRepository: EmailDeliveryRepository;
 };
 
 export const build__NotificationBatcher = ({
@@ -33,35 +34,24 @@ export const build__NotificationBatcher = ({
   systemAsyncNotificationRepository,
   systemUserRepository,
   batchedEmailActivity,
-  openEmailDeliveryContextScope,
   config,
+  uow,
+  emailDeliveryRepository,
 }: NotificationBatcherDeps): NotificationBatcher => {
-  /**
-   * One transactional phase: open the delivery scope, start its uow, run the
-   * work, and settle the transaction exactly once — commit on return, roll back
-   * on throw — before disposing the scope. Deliberately local to this batcher
-   * (not a shared util): the two queue runners keep their own copies.
-   */
-  const inDeliveryScope = async <T>(fn: (op: EmailDeliveryContext) => Promise<T>): Promise<T> => {
-    const { emailDeliveryContext, dispose } = openEmailDeliveryContextScope();
-    await emailDeliveryContext.start();
-    try {
-      const result = await fn(emailDeliveryContext);
-      await emailDeliveryContext.finalize(true);
-      return result;
-    } catch (e) {
-      await emailDeliveryContext.finalize(false);
-      throw e;
-    } finally {
-      await dispose();
-    }
-  };
-
   return async (): Promise<WorkerTaskOutcome> => {
+    // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
+    // only while exactly one worker process runs. A second worker would select
+    // the same rows and double-send. Add SKIP LOCKED + a claim flip before
+    // scaling out.
+    await uow.join();
     const rows = await systemAsyncNotificationRepository.claimNotificationBatch(
       config.debounceEmailWindowSeconds,
     );
-    if (!rows.length) return 'idle';
+    if (!rows.length) {
+      await uow.complete(true);
+      return 'idle';
+    }
+
     logger.info(`[notificationBatcher] claimed ${rows.length} row(s)`);
 
     // outcomes surfaced by processors (skipped rows) merge with send outcomes below
@@ -76,9 +66,10 @@ export const build__NotificationBatcher = ({
 
     const candidates = rows.filter((r) => notEmpty(r.recipientId));
 
-    const activityPayloads = batchedEmailActivity.map((x) => x.execute(candidates));
-    // section processors are independent — run together
-    const payloads = await Promise.all(activityPayloads);
+    const payloads: ActivityResult[] = [];
+    for (const activity of batchedEmailActivity) {
+      payloads.push(await activity.execute(candidates));
+    }
 
     // outcomes surfaced by processors (skipped rows) merge with send outcomes below
     outcomes.push(...payloads.flatMap((x) => x.deadRows));
@@ -97,7 +88,8 @@ export const build__NotificationBatcher = ({
 
     const userIds = [...recipientMap.keys()];
     const recipientEmailMap = indexBy(await systemUserRepository.getUserContacts(userIds));
-
+    await uow.complete(true);
+    // begin ses processing
     for (const [recipientId, rowsForRecipient] of recipientMap) {
       const recipientEmail = recipientEmailMap.get(recipientId);
       if (!recipientEmail) {
@@ -147,8 +139,11 @@ export const build__NotificationBatcher = ({
           SYSTEM_ACTOR_ID,
         );
         try {
-          await inDeliveryScope((op) => op.emailDeliveryRepository.save(newEmailDelivery));
+          await uow.join();
+          await emailDeliveryRepository.save(newEmailDelivery);
+          await uow.complete(true);
         } catch (e) {
+          await uow.settle(false);
           logger.error(
             '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',
             { sesMessageId: r.value, error: e },
@@ -161,14 +156,21 @@ export const build__NotificationBatcher = ({
     }
 
     logger.info('[notificationBatcher] send loop complete', summarizeOutcomes(outcomes));
-
     const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
-    await Promise.all([
-      systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds),
-      systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds),
-    ]);
-    logs.forEach((x) => logger.info(x.message, x.meta));
-
+    try {
+      await uow.join();
+      await systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds);
+      await systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
+      await uow.complete(true);
+      logs.forEach((x) => logger.info(x.message, x.meta));
+    } catch (e) {
+      await uow.settle(false);
+      logger.error(
+        '[notificationBatcher] outcome cleanup failed — rows not settled, next pass will re-send',
+        e,
+        { deleteCount: deleteIds.length, bumpCount: bumpRowIds.length },
+      );
+    }
     return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };
 };

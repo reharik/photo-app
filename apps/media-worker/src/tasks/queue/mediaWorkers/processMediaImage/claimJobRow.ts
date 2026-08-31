@@ -1,6 +1,10 @@
 import { MediaKind, WorkVerdict } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
-import { MediaProcessingJobRepository, SystemMediaItemRepository } from '@packages/media-core';
+import {
+  MediaProcessingJobRepository,
+  SystemMediaItemRepository,
+  UnitOfWork,
+} from '@packages/media-core';
 import { MediaJobWorkflow } from './processNextMediaImageJob';
 
 export interface ClaimJobRow {
@@ -11,6 +15,7 @@ type ClaimJobRowDeps = {
   systemMediaItemRepository: SystemMediaItemRepository;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
   logger: Logger;
+  uow: UnitOfWork;
 };
 
 export const build__ClaimJobRow =
@@ -18,8 +23,10 @@ export const build__ClaimJobRow =
     mediaProcessingJobRepository,
     systemMediaItemRepository,
     logger,
+    uow,
   }: ClaimJobRowDeps): ClaimJobRow =>
   async (): Promise<MediaJobWorkflow> => {
+    // claimNextAvailableJob manages it's own UOW lifecycle
     const job = await mediaProcessingJobRepository.claimNextAvailableJob();
     if (!job) {
       return { status: 'stop', level: 'debug', outcome: 'idle', message: 'No jobs ready' };
@@ -33,10 +40,12 @@ export const build__ClaimJobRow =
       attemptCount: job.attemptCount,
     });
 
+    await uow.join();
     const mediaItem = await systemMediaItemRepository.getMediaItemById(job.mediaItemId);
 
     if (!mediaItem) {
       await mediaProcessingJobRepository.markFailed(job.id, actorId, 'media item not found');
+      await uow.complete(true);
       return {
         status: 'stop',
         level: 'error',
@@ -46,6 +55,7 @@ export const build__ClaimJobRow =
     }
     if (!mediaItem.kind.equals(MediaKind.photo)) {
       await mediaProcessingJobRepository.markFailed(job.id, actorId, 'not a photo');
+      await uow.complete(true);
       return {
         status: 'stop',
         level: 'error',
@@ -55,7 +65,12 @@ export const build__ClaimJobRow =
     }
 
     if (mediaItem.status.work.equals(WorkVerdict.terminal)) {
-      await mediaProcessingJobRepository.markFailed(job.id, actorId, '');
+      await mediaProcessingJobRepository.markFailed(
+        job.id,
+        actorId,
+        `item abandoned (${mediaItem.status.value})`,
+      );
+      await uow.complete(true);
       return {
         status: 'stop',
         level: 'error',
@@ -69,6 +84,7 @@ export const build__ClaimJobRow =
         actorId,
         `item not yet processable (${mediaItem.status.value})`,
       );
+      await uow.complete(true);
       return {
         status: 'stop',
         level: 'warn',
@@ -78,6 +94,7 @@ export const build__ClaimJobRow =
     }
     if (mediaItem.status.work.equals(WorkVerdict.succeeded)) {
       await mediaProcessingJobRepository.markSucceeded(job.id, actorId);
+      await uow.complete(true);
       return {
         status: 'stop',
         level: 'info',
@@ -85,5 +102,6 @@ export const build__ClaimJobRow =
         message: `Item already ready — closing orphaned job. jobId: ${job.id}`,
       };
     }
+    await uow.complete(true);
     return { status: 'continue', job };
   };

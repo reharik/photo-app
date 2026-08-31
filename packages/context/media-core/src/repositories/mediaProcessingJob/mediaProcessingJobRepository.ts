@@ -1,6 +1,7 @@
 import { MediaJobStatus } from '@packages/contracts';
 
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
@@ -27,11 +28,8 @@ export type MediaProcessingJobRow = {
   lastError?: string;
 };
 
-export type MediaProcessingJobRepository = {
-  enqueueIfNoneActive: (
-    input: { mediaItemId: EntityId; actorId: EntityId },
-    uow: UnitOfWork,
-  ) => Promise<void>;
+export interface MediaProcessingJobRepository extends RequestScopeLifeCycle {
+  enqueueIfNoneActive: (input: { mediaItemId: EntityId; actorId: EntityId }) => Promise<void>;
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
@@ -41,7 +39,7 @@ export type MediaProcessingJobRepository = {
     lastError: string,
   ) => Promise<RetryOutcome>;
   releaseStalledJobs: (stalledBefore: Date) => Promise<ReleaseStalledJobsResult>;
-};
+}
 
 export type ReleaseStalledJobsResult = {
   /** Stalled jobs under the attempt cap, put back to PENDING for another claim. */

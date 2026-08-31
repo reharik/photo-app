@@ -1,5 +1,4 @@
 import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
-import { UnitOfWork } from '../../../infrastructure';
 import { AlbumRepository, SystemGrantRepository } from '../../../repositories';
 import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
@@ -14,7 +13,6 @@ type RevokeShareServiceInput = {
 };
 type RevokeShareServiceDeps = {
   albumRepository: AlbumRepository;
-  uow: UnitOfWork;
   systemGrantRepository: SystemGrantRepository;
   viewerId: EntityId;
 };
@@ -22,7 +20,6 @@ type RevokeShareServiceDeps = {
 export const build__RevokeShareService = ({
   albumRepository,
   systemGrantRepository,
-  uow,
   viewerId,
 }: RevokeShareServiceDeps): RevokeShareService => {
   return async ({
@@ -39,7 +36,7 @@ export const build__RevokeShareService = ({
     }
     await albumRepository.save(album);
 
-    await systemGrantRepository.pruneGrantsForAuthorization(authorizationId, [], uow);
+    await systemGrantRepository.pruneGrantsForAuthorization(authorizationId, []);
     return ok({ albumId });
   };
 };

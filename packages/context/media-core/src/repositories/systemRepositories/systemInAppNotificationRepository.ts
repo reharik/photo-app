@@ -7,11 +7,12 @@ import {
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemInAppNotificationRepository = {
+export interface SystemInAppNotificationRepository extends RequestScopeLifeCycle {
   upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;
-};
+}
 
 export type SystemInAppNotificationRepositoryDeps = {
   uow: UnitOfWork;
