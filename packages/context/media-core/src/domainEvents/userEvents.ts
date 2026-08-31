@@ -1,5 +1,5 @@
 import { EntityId } from '../types';
-import { DomainEventBase } from './DomainEvent';
+import { DomainEventBase } from './domainEvent';
 
 export interface PendingUserActivated extends DomainEventBase {
   kind: 'pendingUserActivated';

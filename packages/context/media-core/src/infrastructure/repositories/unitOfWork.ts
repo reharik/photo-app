@@ -1,6 +1,6 @@
 import { Logger } from '@packages/infrastructure';
 import { Knex } from 'knex';
-import { DomainEvent } from '../../domainEvents/DomainEvent';
+import { DomainEvent } from '../../domainEvents/domainEvent';
 import { EventPublisher } from '../../domainEvents/eventPublisher';
 import { RequestScopeLifeCycle } from '../../services';
 

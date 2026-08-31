@@ -11,7 +11,7 @@ import {
 import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
 import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { EntityId } from '../types';
-import { DomainEvent } from './DomainEvent';
+import { DomainEvent } from './domainEvent';
 
 /**
  * MATERIALIZATION ONLY. Every kind here grows or re-syncs the `grant` projection for a

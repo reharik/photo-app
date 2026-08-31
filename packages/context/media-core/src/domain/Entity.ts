@@ -1,4 +1,4 @@
-import { DomainEvent, DomainEventKind, EventPayload } from '../domainEvents/DomainEvent';
+import { DomainEvent, DomainEventKind, EventPayload } from '../domainEvents/domainEvent';
 import type { ActorId, EntityId } from '../types/types';
 import { serializeValue } from './utilities/serializeAggregates';
 
