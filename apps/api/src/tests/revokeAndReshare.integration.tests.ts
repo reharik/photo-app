@@ -29,9 +29,8 @@
  * Harness: the shared GraphQL integration setup (real Postgres, real container, real
  * post-commit event bus — async_notification rows are written by the dispatcher and are
  * assertable because the worker sweep does not run here). Accept in A2 mirrors the
- * controller's uow-scope path, same as authPasswordReset.integration.tests.ts.
+ * controller's AuthService scope-root opener, same as authPasswordReset.integration.tests.ts.
  */
-import { beginUnitOfWorkScope, registerDomainEventHandlers } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 import { DateTime } from 'luxon';
@@ -112,19 +111,18 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     container = setup.container;
     executeGraphQL = setup.executeGraphQL;
     database = container.resolve('database');
-    // The shared setup builds the container but (unlike index.ts's bootstrap) never wires
-    // the post-commit event bus, so no suite before this one observed post-commit effects.
-    // B asserts on async_notification rows written by the NotificationDispatcher, so
-    // mirror the boot wiring here. Scoped to this file: jest gives each test file its own
-    // module registry, hence its own container and eventPublisher.
-    registerDomainEventHandlers(
-      container.resolve('eventPublisher'),
-      container.resolve('domainEventHandlers'),
-      container.resolve('logger'),
-    );
+    // No handler wiring step any more: the publisher injects the domainEventHandlers
+    // group and builds its dispatch map itself, so any container that can resolve an
+    // eventPublisher already has the post-commit bus. B asserts on async_notification
+    // rows written by that bus.
   });
 
   afterEach(async () => {
+    // Reads join the request transaction now, so a repository resolved straight off
+    // the container leaves one open — there is no GraphQL boundary here to settle it,
+    // and TRUNCATE below would block on the lock forever. settle(false) is a no-op
+    // when nothing is open, which is the case for the tests that go through yoga.
+    await container.resolve('uow').settle(false);
     await resetIntegrationTestDb(database);
   });
 
@@ -237,7 +235,7 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(invite2.linkToken).toBeTruthy();
       expect(invite2.linkToken).not.toBe(invite1.linkToken);
 
-      // Accept: the same uow-scope path the auth controller drives.
+      // Accept: the same AuthService scope-root opener the auth controller drives.
       await database('emailVerification').insert({
         id: randomUUID(),
         email: guestEmail,
@@ -246,16 +244,24 @@ describe('revoked authorizations and re-sharing (integration)', () => {
         consumedAt: null,
         attemptCount: 0,
       });
-      const { scope } = await beginUnitOfWorkScope(container);
-      const result = await scope.resolve('authService').verifyCodeAndSetPassword({
-        email: guestEmail,
-        password: 'newPassword9',
-        code: VALID_CODE,
-        firstName: 'Guest',
-        lastName: 'Accepted',
-        smsOptIn: false,
-      });
-      expect(result.success).toBe(true);
+      // The service commits itself on success and returns without settling on every
+      // failure path, so the bracket settles like the controller does — a rollback that
+      // is inert once the commit has happened.
+      const { authService, dispose } = container.resolve('openAuthServiceScope')();
+      try {
+        const result = await authService.verifyCodeAndSetPassword({
+          email: guestEmail,
+          password: 'newPassword9',
+          code: VALID_CODE,
+          firstName: 'Guest',
+          lastName: 'Accepted',
+          smsOptIn: false,
+        });
+        expect(result.success).toBe(true);
+      } finally {
+        await authService.settle(false);
+        await dispose();
+      }
 
       const userRow = await database('user')
         .where({ id: guestId })

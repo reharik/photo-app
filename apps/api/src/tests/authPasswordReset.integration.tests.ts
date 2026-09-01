@@ -6,7 +6,7 @@
  * file repurposed in place (the `rm`/`mv` shell ops are blocked in this
  * environment, so the file could not be renamed — see REVIEW.md). It now holds
  * the real integration coverage for `AuthService.verifyCodeAndSetPassword`,
- * exercised through the same uow-scope path the controller uses.
+ * exercised through the same scope-root opener the controller uses.
  *
  * Oracle (E1–E6):
  *  E1 no verification row      → reject; nothing persisted
@@ -17,7 +17,6 @@
  *                                notify fires AFTER commit
  */
 import { ContractError, ok } from '@packages/contracts';
-import { beginUnitOfWorkScope } from '@packages/media-core';
 import type { NotificationService } from '@packages/notifications';
 import type { AwilixContainer } from 'awilix';
 import { asValue } from 'awilix';
@@ -29,6 +28,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type { SignupInput } from '@packages/contracts';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
+import type { AuthService } from '../services/authService.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
@@ -153,15 +153,27 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
     return id;
   };
 
-  /** Mirror the controller: fresh uow scope, resolve the scoped authService, run the write. */
-  const runVerify = (
+  /**
+   * Mirror the controller exactly: open the AuthService scope root through its
+   * generated opener, run the write, then settle and dispose in a finally.
+   * `authService` is scope-rooted — it has no root-cradle key, so the OPENER is what
+   * comes off the container. There is nothing to start (the uow joins lazily on the
+   * first repository call), and the service only settles ONE way — complete(true) on
+   * success, because notifyUser must run post-commit. Every failure and throw path
+   * returns with the transaction still open, so the bracket's settle(false) is what
+   * actually rolls it back — and it is inert after a commit.
+   */
+  const runVerify = async (
     creds: SignupInput,
-  ): Promise<Awaited<ReturnType<AppCradle['authService']['verifyCodeAndSetPassword']>>> =>
-    (async () => {
-      const { scope } = await beginUnitOfWorkScope(container);
-      const svc = scope.resolve('authService');
-      return svc.verifyCodeAndSetPassword(creds);
-    })();
+  ): Promise<Awaited<ReturnType<AuthService['verifyCodeAndSetPassword']>>> => {
+    const { authService, dispose } = container.resolve('openAuthServiceScope')();
+    try {
+      return await authService.verifyCodeAndSetPassword(creds);
+    } finally {
+      await authService.settle(false);
+      await dispose();
+    }
+  };
 
   const baseCreds = (email: string, overrides: Partial<SignupInput> = {}): SignupInput => ({
     email,

@@ -6,9 +6,21 @@
  * already-committed user. DB effects (counter-persists, atomic consume) live in
  * authPasswordReset.integration.tests.ts.
  *
- * Oracle: E1 no row → reject+rollback; E2 locked → reject+rollback (no bump);
- * E3 bad code → reject+rollback + attempt bump; E4 activate fails → rollback;
- * E6 success → save+consume then commit then notify (in that order).
+ * Settlement surface: the service only ever settles ONE way — `complete(true)` on
+ * the success path, because notifyUser has to run post-commit. Every failure and
+ * throw path returns without settling, and the request boundary rolls the uow back
+ * in its `finally` via `settle(false)`. `throughBoundary` below reproduces exactly
+ * that bracket (see authController.setPassword), so each oracle can still say WHICH
+ * path ends committed and which ends rolled back.
+ *
+ * The fake models the one behaviour that makes the bracket safe: `settle` is inert
+ * once the transaction is gone, so the boundary's unconditional `settle(false)`
+ * cannot undo a commit the service already made.
+ *
+ * Oracle: E1 no row → reject, boundary rolls back; E2 locked → same (no bump);
+ * E3 bad code → attempt bump BEFORE the rollback; E4 activate fails → rolls back;
+ * E6 success → save+consume then commit then notify (in that order), with the
+ * boundary's settle a no-op on top of it.
  */
 import assert from 'node:assert';
 
@@ -47,7 +59,14 @@ const VALID_ID = 'verification-1';
 
 type Harness = {
   order: string[];
-  uow: jest.Mocked<Pick<UnitOfWork, 'commit' | 'rollback'>>;
+  complete: jest.Mock<UnitOfWork['complete']>;
+  settle: jest.Mock<UnitOfWork['settle']>;
+  /** The `ok` argument of every `complete(ok)` call, in order. */
+  completions: () => boolean[];
+  /** The `ok` argument of every `settle(ok)` call the boundary made, in order. */
+  settlements: () => boolean[];
+  /** Runs the service inside the request boundary's try/finally, as the controller does. */
+  throughBoundary: <T>(run: () => Promise<T>) => Promise<T>;
   notify: jest.Mock<NotificationService['notify']>;
   save: jest.Mock<UserRepository['save']>;
   getUserByEmail: jest.Mock<UserRepository['getUserByEmail']>;
@@ -74,14 +93,44 @@ const codeHashFor = (code: string): string =>
 const makeHarness = (): Harness => {
   const order: string[] = [];
 
-  const uow = {
-    commit: jest.fn(async () => {
-      order.push('commit');
-    }),
-    rollback: jest.fn(async () => {
-      order.push('rollback');
-    }),
-  } as unknown as jest.Mocked<Pick<UnitOfWork, 'commit' | 'rollback'>>;
+  // A transaction is open from the outset: the first thing this path does is read the
+  // verification row, and every repository joins the uow before it queries. Tracking
+  // `open` is what lets the fake reproduce the property the boundary depends on —
+  // `settle` does nothing once the transaction has already been completed — so the
+  // ordering oracle keeps its original vocabulary (`commit` / `rollback`) either way.
+  let open = true;
+  const complete = jest.fn<UnitOfWork['complete']>(async (ok: boolean) => {
+    if (!open) {
+      throw new Error('Transaction not started');
+    }
+    open = false;
+    order.push(ok ? 'commit' : 'rollback');
+  });
+  const settle = jest.fn<UnitOfWork['settle']>(async (ok: boolean) => {
+    if (!open) {
+      return;
+    }
+    open = false;
+    order.push(ok ? 'commit' : 'rollback');
+  });
+  const uow: UnitOfWork = {
+    id: 'unit-test-uow',
+    beginIsolatedOnly: async () => {},
+    join: async () => {
+      open = true;
+    },
+    // The service under test never touches the transaction handle directly — it goes
+    // through the repositories, which are faked. Matching the real contract (db()
+    // throws until a transaction is open) keeps an accidental use loud rather than
+    // silently undefined.
+    db: () => {
+      throw new Error('db() is not available in this unit test');
+    },
+    complete,
+    settle,
+    collectEvents: () => {},
+    flagRollbackOnly: () => {},
+  };
 
   const notify = jest.fn<NotificationService['notify']>(async () => {
     order.push('notify');
@@ -128,7 +177,14 @@ const makeHarness = (): Harness => {
     config,
     notificationService: { notify },
     activatePendingUserWriteService: activatePendingUser,
-    userRepository: { getUserByEmail, save } as unknown as UserRepository,
+    userRepository: {
+      getUserByEmail,
+      save,
+      // Unused by this write path; present so the fake satisfies UserRepository outright.
+      getById: jest.fn<UserRepository['getById']>(),
+      getByHandle: jest.fn<UserRepository['getByHandle']>(),
+      getAllUsersByEmail: jest.fn<UserRepository['getAllUsersByEmail']>(),
+    },
     emailVerificationRepository: {
       getValidVerification,
       completeConsumption,
@@ -136,12 +192,25 @@ const makeHarness = (): Harness => {
     systemEmailVerificationRepository: {
       bumpValidationAttempts,
     },
-    uow: uow as unknown as UnitOfWork,
+    uow,
   });
 
   return {
     order,
-    uow,
+    complete,
+    settle,
+    completions: () => complete.mock.calls.map(([ok]) => ok),
+    settlements: () => settle.mock.calls.map(([ok]) => ok),
+    // Mirrors authController.setPassword: the service commits on success and returns
+    // (or throws) without settling on every other path, so the boundary's finally is
+    // what actually rolls the request back.
+    throughBoundary: async (run) => {
+      try {
+        return await run();
+      } finally {
+        await service.settle(false);
+      }
+    },
     notify,
     save,
     getUserByEmail,
@@ -183,13 +252,15 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     it('rejects with InvalidEmailVerificationCode and rolls back without saving', async () => {
       h.getValidVerification.mockResolvedValue(undefined as never);
 
-      const result = await h.service.verifyCodeAndSetPassword(creds());
+      const result = await h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds()));
 
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      // Settled exactly once, as a rollback — and by the boundary, not the service.
+      expect(h.completions()).toEqual([]);
+      expect(h.settlements()).toEqual([false]);
+      expect(h.order).toEqual(['rollback']);
       expect(h.save).not.toHaveBeenCalled();
       expect(h.bumpValidationAttempts).not.toHaveBeenCalled();
     });
@@ -199,14 +270,14 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     it('rejects with TooManyAttempts, rolls back, and does NOT bump the counter', async () => {
       h.getValidVerification.mockResolvedValue(validRow({ attemptCount: 3 }));
 
-      const result = await h.service.verifyCodeAndSetPassword(creds());
+      const result = await h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds()));
 
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
       expect(h.bumpValidationAttempts).not.toHaveBeenCalled();
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([]);
+      expect(h.settlements()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
     });
   });
@@ -215,15 +286,19 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     it('bumps the attempt counter (out-of-band) BEFORE rolling back, and rejects', async () => {
       h.getValidVerification.mockResolvedValue(validRow());
 
-      const result = await h.service.verifyCodeAndSetPassword(creds({ code: 'WRONG' }));
+      const result = await h.throughBoundary(() =>
+        h.service.verifyCodeAndSetPassword(creds({ code: 'WRONG' })),
+      );
 
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       expect(h.bumpValidationAttempts).toHaveBeenCalledWith(VALID_ID);
-      // bump is awaited before the rollback so it is durable regardless of the trx.
+      // bump is awaited before the rollback so it is durable regardless of the trx —
+      // it rides its own autocommit connection, which is the whole point of routing
+      // it through systemEmailVerificationRepository instead of uow.db().
       expect(h.order).toEqual(['bump', 'rollback']);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.settlements()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
     });
   });
@@ -238,13 +313,15 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       };
       h.getUserByEmail.mockResolvedValue(pendingUser as never);
 
-      const result = await h.service.verifyCodeAndSetPassword(creds({ phone: '123' }));
+      const result = await h.throughBoundary(() =>
+        h.service.verifyCodeAndSetPassword(creds({ phone: '123' })),
+      );
 
       expect(result.success).toBe(false);
       assert(!result.success);
       expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([]);
+      expect(h.settlements()).toEqual([false]);
       expect(h.save).not.toHaveBeenCalled();
       expect(h.completeConsumption).not.toHaveBeenCalled();
     });
@@ -254,14 +331,16 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
     it('saves + consumes, then commits, then notifies — in that order', async () => {
       h.getValidVerification.mockResolvedValue(validRow());
 
-      const result = await h.service.verifyCodeAndSetPassword(creds());
+      const result = await h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds()));
 
       expect(result.success).toBe(true);
       assert(result.success);
       expect(typeof result.value.token).toBe('string');
-      // Ordering oracle: write + consume happen inside the uow, THEN commit, THEN notify.
+      // Ordering oracle: write + consume happen inside the uow, THEN commit, THEN
+      // notify. The boundary's settle(false) lands after all of it and adds nothing —
+      // if it were not inert, this array would end in a fourth 'rollback'.
       expect(h.order).toEqual(['save', 'consume', 'commit', 'notify']);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([true]);
       expect(h.notify).toHaveBeenCalledWith(
         expect.objectContaining({ template: 'welcome', channels: ['email'] }),
       );
@@ -271,11 +350,11 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
       h.getValidVerification.mockResolvedValue(validRow());
       h.notify.mockResolvedValue(fail(ContractError.noRecipientsProvided));
 
-      const result = await h.service.verifyCodeAndSetPassword(creds());
+      const result = await h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds()));
 
       expect(result.success).toBe(true);
-      expect(h.uow.commit).toHaveBeenCalledTimes(1);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      expect(h.completions()).toEqual([true]);
+      expect(h.settlements()).toEqual([false]);
     });
 
     it('a notify REJECTION propagates but does NOT roll back the committed uow', async () => {
@@ -284,10 +363,14 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
         throw new Error('SES exploded');
       });
 
-      await expect(h.service.verifyCodeAndSetPassword(creds())).rejects.toThrow('SES exploded');
-      // committed flag guards the catch: commit ran, rollback must NOT.
-      expect(h.uow.commit).toHaveBeenCalledTimes(1);
-      expect(h.uow.rollback).not.toHaveBeenCalled();
+      await expect(
+        h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds())),
+      ).rejects.toThrow('SES exploded');
+      // The throw happens POST-commit, and the boundary's settle cannot take that
+      // commit back: the single settlement stays the commit. A `complete(false)` in
+      // the finally instead of `settle(false)` would have thrown over the real error.
+      expect(h.completions()).toEqual([true]);
+      expect(h.order).toEqual(['save', 'consume', 'commit']);
     });
   });
 
@@ -298,9 +381,13 @@ describe('AuthService.verifyCodeAndSetPassword (unit)', () => {
         throw new Error('db write failed');
       });
 
-      await expect(h.service.verifyCodeAndSetPassword(creds())).rejects.toThrow('db write failed');
-      expect(h.uow.rollback).toHaveBeenCalledTimes(1);
-      expect(h.uow.commit).not.toHaveBeenCalled();
+      await expect(
+        h.throughBoundary(() => h.service.verifyCodeAndSetPassword(creds())),
+      ).rejects.toThrow('db write failed');
+      // Nothing was committed and the boundary rolled the partial write back.
+      expect(h.completions()).toEqual([]);
+      expect(h.settlements()).toEqual([false]);
+      expect(h.order).toEqual(['rollback']);
     });
   });
 });

@@ -9,16 +9,17 @@
  * terminally — the upload hung in PENDING forever. The fix routes the enqueue
  * through uow.db() with .onConflict().ignore() as the one-active-job guard.
  *
- * Observation technique: the finalize call runs inside a UoW we hold open manually
- * (beginUnitOfWorkScope) — the GraphQL boundary can't be used because it commits
- * before responding. Assertions read through the plain `database` handle, which
- * takes a DIFFERENT pooled connection than the open trx, so READ COMMITTED shows
- * exactly what the media-worker's connection would see at that moment.
+ * Observation technique: the finalize call runs inside the same authenticated-WRITE
+ * scope root the GraphQL mutation boundary uses, opened by hand through its generated
+ * opener so the settlement stays under this test's control — the GraphQL boundary
+ * itself can't be used because it finalizes before responding. Assertions read
+ * through the plain `database` handle, which takes a DIFFERENT pooled connection than
+ * the open trx, so READ COMMITTED shows exactly what the media-worker's connection
+ * would see at that moment.
  */
 import { randomUUID } from 'node:crypto';
 
 import { MediaItemStatus } from '@packages/contracts';
-import { beginUnitOfWorkScope, type UnitOfWork } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -91,30 +92,37 @@ describe('media processing job enqueue boundary (integration)', () => {
   };
 
   /**
-   * Run finalize inside a manually-held UoW and hand control back between the write
-   * and the commit. Rolls back on any failure so an open trx never leaks into
-   * afterEach (TRUNCATE would block on it forever).
+   * Run finalize inside a manually-held write scope and hand control back between the
+   * write and the settlement. There is nothing to start: the uow joins lazily on the
+   * first repository call, and `finalize(ok)` is the scope root's one settlement call —
+   * true commits, false rolls back. Settles on any failure so an open trx never leaks
+   * into afterEach (TRUNCATE would block on it forever).
    */
   const finalizeInOpenUow = async (
     mediaItemId: string,
-  ): Promise<{ unitOfWork: UnitOfWork; finish: (act: 'commit' | 'rollback') => Promise<void> }> => {
-    const { scope, unitOfWork } = await beginUnitOfWorkScope(container);
+  ): Promise<{ finish: (act: 'commit' | 'rollback') => Promise<void> }> => {
+    const { authenticatedWriteGraphQlContext: writeScope, dispose } = container.resolve(
+      'openAuthenticatedWriteGraphQlContextScope',
+    )({
+      viewerId: TEST_VIEWER_1_ID,
+    });
     let open = true;
     const finish = async (act: 'commit' | 'rollback'): Promise<void> => {
       open = false;
-      if (act === 'commit') {
-        await unitOfWork.commit();
-      } else {
-        await unitOfWork.rollback();
+      try {
+        await writeScope.finalize(act === 'commit');
+      } finally {
+        await dispose();
       }
     };
     try {
-      const finalize = scope.resolve('finalizeMediaItemUpload');
-      const result = await finalize({ viewerId: TEST_VIEWER_1_ID, mediaItemId });
+      const result = await writeScope.writeServices.finalizeMediaItemUpload({
+        mediaItemId,
+      });
       expect(result.success).toBe(true);
-      return { unitOfWork, finish };
+      return { finish };
     } catch (e) {
-      if (open) await unitOfWork.rollback();
+      if (open) await finish('rollback');
       throw e;
     }
   };

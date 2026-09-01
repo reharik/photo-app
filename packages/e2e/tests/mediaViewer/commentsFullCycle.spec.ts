@@ -1,3 +1,4 @@
+import { expectMediaItemLoaded } from '../../fixtures/mediaSelection';
 import { expect, test } from '../../fixtures/test';
 import { reactToItem } from '../../routines/reactToItem';
 import { setup } from '../../routines/setup';
@@ -17,6 +18,9 @@ test.describe('Comments full cycle on the media detail screen', () => {
       await userA.page.getByTestId(`media-tile-${item.id}`).getByRole('link').first().click();
       await expect(userA.page).toHaveURL(new RegExp(`/media/${item.id}(\\?.*)?$`));
       await expect(userA.page.getByLabel('Media viewer')).toBeVisible();
+      // The viewer's one job: the DISPLAY derivative must actually load. Container
+      // visibility alone passes with a 404 behind it.
+      await expectMediaItemLoaded(userA.page, item.id);
       const rootBody = `Root comment ${uniqueSuffix}`;
       const replyBody = `Reply ${uniqueSuffix}`;
       const editedReplyBody = `Reply ${uniqueSuffix} amended`;

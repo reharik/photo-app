@@ -14,9 +14,9 @@ type LogMeta = Record<string, unknown>;
 
 type ErrorLogger = {
   (message: string): void;
-  (message: string, err: Error): void;
+  (message: string, err: unknown): void;
   (message: string, meta: LogMeta): void;
-  (message: string, err: Error, meta: LogMeta): void;
+  (message: string, err: unknown, meta: LogMeta): void;
 };
 
 export type Logger = {
@@ -65,6 +65,9 @@ const extractErrorMeta = (err: Error): LogMeta => {
 
   return meta;
 };
+
+const toError = (e: unknown): Error =>
+  e instanceof Error ? e : new Error(typeof e === 'string' ? e : JSON.stringify(e));
 
 const humanReadableFormat = format.printf((info) => {
   const { timestamp, level, message, err, ...rest } = info as {
@@ -172,13 +175,17 @@ export const coreLogger = ({
     appLogger.log(level, message, payload);
   };
 
-  const error: ErrorLogger = (message: string, errorOrMeta?: Error | LogMeta, meta?: LogMeta) => {
-    if (errorOrMeta instanceof Error) {
-      logMessage('error', message, meta, errorOrMeta);
+  const error: ErrorLogger = (message: string, errorOrMeta?: unknown, meta?: LogMeta) => {
+    // Two args and it's a plain object → the caller meant meta, not an error.
+    if (meta === undefined && isPlainObject(errorOrMeta)) {
+      logMessage('error', message, errorOrMeta);
       return;
     }
-
-    logMessage('error', message, errorOrMeta);
+    if (errorOrMeta === undefined) {
+      logMessage('error', message);
+      return;
+    }
+    logMessage('error', message, meta, toError(errorOrMeta));
   };
 
   const warn = (message: string, meta?: unknown) => {

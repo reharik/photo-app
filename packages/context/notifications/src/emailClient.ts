@@ -14,7 +14,7 @@ export type SendEmailInput = {
   text?: string;
 };
 
-export interface EmailService {
+export interface EmailClient {
   sendEmail: (input: SendEmailInput) => Promise<OperationResult<{ messageId: string }>>;
 }
 
@@ -73,7 +73,7 @@ const buildRawEmail = (input: SendEmailInput): Buffer => {
   return Buffer.from(`${headers.join('\r\n')}\r\n\r\n${input.html}`, 'utf-8');
 };
 
-export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailService => {
+export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailClient => {
   if (!config.awsEndpoint) {
     logger.info(
       'Using AWS default credential chain for SES (IAM roles, environment variables, or shared config).',
@@ -115,6 +115,7 @@ export const build__EmailClient = ({ logger, config }: EmailClientDeps): EmailSe
         const command = new SendRawEmailCommand({
           Source: input.fromEmail, // IMPORTANT: bare email for SES identity check
           RawMessage: { Data: rawMessage },
+          ConfigurationSetName: 'homeroll-events',
         });
 
         const result = await sesClient.send(command);

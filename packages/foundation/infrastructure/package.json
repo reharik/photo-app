@@ -27,13 +27,12 @@
     "build": "nx build infrastructure",
     "dev": "nx dev infrastructure",
     "gen:ioc": "nx gen-ioc infrastructure",
-    "ioc:discover": "ioc inspect --discovery",
-    "ioc:inspect": "ioc inspect",
+    "ioc": "ioc",
     "lint": "nx lint infrastructure",
     "test": "nx test infrastructure"
   },
   "dependencies": {
-    "ioc-manifest": "^2.4.0",
+    "ioc-manifest": "4.0.2",
     "winston": "^3.15.0"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import { loadRequiredMediaItem } from '../../../application/support/resourceLoad
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemCommand, DeleteMediaItemResult } from './writeMediaItem.types';
@@ -19,6 +20,7 @@ type DeleteMediaItemDeps = {
   albumReadRepository: AlbumReadRepository;
   albumRepository: AlbumRepository;
   mediaStorage: MediaStorage;
+  viewerId: EntityId;
 };
 
 export const build__DeleteMediaItem = ({
@@ -26,9 +28,10 @@ export const build__DeleteMediaItem = ({
   albumRepository,
   albumReadRepository,
   mediaStorage,
+  viewerId,
 }: DeleteMediaItemDeps): DeleteMediaItem => {
   return async (input: DeleteMediaItemCommand): Promise<OperationResult<DeleteMediaItemResult>> => {
-    const { viewerId, mediaItemId } = input;
+    const { mediaItemId } = input;
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
     if (!getResult.success) {
       return getResult;

@@ -24,7 +24,7 @@ import {
   MediaKind,
   SortDir,
 } from '@packages/contracts';
-import type { PublicAccessReadRepository } from '@packages/media-core';
+import type { TokenAccessReadRepository } from '@packages/media-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
@@ -87,7 +87,7 @@ describe('publicAccess query (integration)', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   let container: AwilixContainer<AppCradle>;
   let database: Knex;
-  let publicAccessReadRepository: PublicAccessReadRepository;
+  let tokenAccessReadRepository: TokenAccessReadRepository;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
   beforeAll(async () => {
@@ -95,7 +95,7 @@ describe('publicAccess query (integration)', () => {
     container = setup.container;
     executeGraphQL = setup.executeGraphQL;
     database = container.resolve('database');
-    publicAccessReadRepository = container.resolve('publicAccessReadRepository');
+    tokenAccessReadRepository = container.resolve('tokenAccessReadRepository');
     integrationTestMediaStorage = setup.integrationTestMediaStorage;
   });
 
@@ -342,14 +342,14 @@ describe('publicAccess query (integration)', () => {
       await insertAlbumWithMember(albumId, 'Token');
       const { accessGrantId, linkToken } = await insertPublicLinkGrant(albumId);
 
-      await expect(publicAccessReadRepository.getPublicAccessIdByToken(linkToken)).resolves.toEqual(
-        { publicAccessId: accessGrantId },
-      );
+      await expect(tokenAccessReadRepository.getTokenAccessIdByToken(linkToken)).resolves.toEqual({
+        tokenAccessId: accessGrantId,
+      });
 
       await database('accessGrant').where({ id: accessGrantId }).update({ revokedAt: new Date() });
 
       await expect(
-        publicAccessReadRepository.getPublicAccessIdByToken(linkToken),
+        tokenAccessReadRepository.getTokenAccessIdByToken(linkToken),
       ).resolves.toBeUndefined();
     });
   });

@@ -1,13 +1,14 @@
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 import { withAlbumItemCount } from '../queryHelpers';
 
-export type SystemAlbumRepository = {
+export interface SystemAlbumRepository extends RequestScopeLifeCycle {
   getAlbumTitlesById: (albumIds: EntityId[]) => Promise<AlbumTitle[]>;
-};
+}
 
 type SystemAlbumRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 type AlbumTitle = {
@@ -18,11 +19,13 @@ type AlbumTitle = {
 const AlbumFields = ['id', 'title'];
 
 export const build__SystemAlbumRepository = ({
-  database,
+  uow,
 }: SystemAlbumRepositoryDeps): SystemAlbumRepository => ({
   getAlbumTitlesById: async (albumIds: EntityId[]) => {
-    return database('album')
-      .modify(withAlbumItemCount(database))
+    await uow.join();
+    return uow
+      .db()('album')
+      .modify(withAlbumItemCount(uow.db()))
       .select<AlbumTitle[]>(AlbumFields)
       .whereIn('id', albumIds);
   },

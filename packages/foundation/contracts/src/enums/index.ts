@@ -3,16 +3,19 @@
  */
 
 export * from './ContractError';
+export * from './EmailStatus';
 export * from './FrontendError';
 export * from './albumMemberRole';
 export * from './asyncNotificationKind';
 export * from './authorizationKind';
 export * from './authorizationOrigin';
 export * from './batchedPayloadKind';
+export * from './emailKind';
 export * from './frontendUploadStatus';
 export * from './frontendUploadStep';
 export * from './graphqlSmartEnums';
 export * from './graphqlSmartEnumsRegistry';
+export * from './mediaItemStatus';
 export * from './notificationKind';
 export * from './operation';
 export * from './operationCatalog';

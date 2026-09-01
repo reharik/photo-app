@@ -2,12 +2,7 @@ import { toDisplayName } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { NotificationService } from '@packages/notifications';
 import { Config } from '../../config';
-import {
-  GraphQLContextFactory,
-  GraphQLInitialContext,
-  InitialAuthenticated,
-  InitialPublic,
-} from './types';
+import { GraphQLContextFactory, GraphQLInitialContext, InitialGraphQLContext } from './types';
 
 type ContextDeps = {
   notificationService: NotificationService;
@@ -15,12 +10,11 @@ type ContextDeps = {
   logger: Logger;
 };
 
-export const build__CreateGraphQLContext = ({
-  notificationService,
+export const build__GraphQLContextFactory = ({
   config,
   logger,
 }: ContextDeps): GraphQLContextFactory => {
-  return (initialContext: GraphQLInitialContext): InitialAuthenticated | InitialPublic => {
+  return (initialContext: GraphQLInitialContext): InitialGraphQLContext => {
     const accessMode = initialContext.request.headers.get('X-Access-Mode') ?? undefined;
     const user = initialContext.state?.user;
     const publicAccessId = initialContext.state?.publicAccessId;
@@ -45,7 +39,6 @@ export const build__CreateGraphQLContext = ({
       return {
         kind: 'authenticated',
         viewer,
-        notificationService,
         config,
         logger,
       };

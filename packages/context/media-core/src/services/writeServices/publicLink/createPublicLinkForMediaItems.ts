@@ -6,14 +6,14 @@ import {
 } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { Album } from '../../../domain/Album/Album';
+import { WriteServices } from '../../../generated/ioc-registry.types';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { CreatePublicLinkForAlbum, CreatePublicLinkResponse } from './createPublicLinkForAlbum';
+import { CreatePublicLinkResponse } from './createPublicLinkForAlbum';
 
 export type CreatePublicLinkForMediaItemsCommand = {
-  viewerId: EntityId;
   viewerFirstName: string;
   viewerLastName: string;
   mediaItemIds: EntityId[];
@@ -28,13 +28,15 @@ export interface CreatePublicLinkForMediaItems extends WriteServiceBase {
 type CreatePublicLinkForMediaItemsDeps = {
   mediaItemRepository: MediaItemRepository;
   albumRepository: AlbumRepository;
-  createPublicLinkForAlbum: CreatePublicLinkForAlbum;
+  writeServices: WriteServices;
+  viewerId: EntityId;
 };
 
 export const build__CreatePublicLinkForMediaItems = ({
   mediaItemRepository,
   albumRepository,
-  createPublicLinkForAlbum,
+  writeServices,
+  viewerId,
 }: CreatePublicLinkForMediaItemsDeps): CreatePublicLinkForMediaItems => {
   return async (
     input: CreatePublicLinkForMediaItemsCommand,
@@ -49,7 +51,7 @@ export const build__CreatePublicLinkForMediaItems = ({
         title: input.name ?? `Photos from ${input.viewerFirstName}`,
         isShadowAlbum: true,
       },
-      input.viewerId,
+      viewerId,
     );
 
     for (const mediaItemId of mediaItemIds) {
@@ -60,7 +62,7 @@ export const build__CreatePublicLinkForMediaItems = ({
 
       const ownershipResult = ensureMediaItemOwnedByViewer(
         loadedMediaItem.value.ownerId(),
-        input.viewerId,
+        viewerId,
       );
       if (!ownershipResult.success) {
         return ownershipResult;
@@ -69,14 +71,11 @@ export const build__CreatePublicLinkForMediaItems = ({
       if (!isReady.success) {
         return isReady;
       }
-      album.addItem(mediaItemId, input.viewerId, loadedMediaItem.value.kind());
+      album.addItem(mediaItemId, viewerId, loadedMediaItem.value.kind());
     }
 
     await albumRepository.save(album);
-    const publicLinkResult = await createPublicLinkForAlbum({
-      viewerId: input.viewerId,
-      viewerFirstName: input.viewerFirstName,
-      viewerLastName: input.viewerLastName,
+    const publicLinkResult = await writeServices.createPublicLinkForAlbum({
       albumId: album.id(),
       name: input.name,
       expiresAt: input.expiresAt,

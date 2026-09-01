@@ -7,10 +7,11 @@ import {
   SystemAuthorizationRepository,
   SystemUserRepository,
   UserAuthorizationRow,
-} from '../../../repositories';
-import { SystemAlbumItemRepository } from '../../../repositories/systemRepositories/systemAlbumItemRepository';
-import { EntityId } from '../../../types';
-import { DomainEvent } from '../../domainEvents/DomainEvent';
+} from '../repositories';
+import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
+import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
+import { EntityId } from '../types';
+import { DomainEvent } from './domainEvent';
 
 /**
  * MATERIALIZATION ONLY. Every kind here grows or re-syncs the `grant` projection for a
@@ -39,7 +40,7 @@ type AuthorizationMap = Map<string, AuthorizationEntry>;
 
 export type ResolvedAuthorizations = { authorizationMap: AuthorizationMap };
 
-export interface ResolveAuthorizations {
+export interface ResolveAuthorizations extends RequestScopeLifeCycle {
   (event: AuthorizationEvent): Promise<ResolvedAuthorizations>;
 }
 

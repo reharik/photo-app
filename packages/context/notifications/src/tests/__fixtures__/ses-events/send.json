@@ -1,0 +1,37 @@
+{
+  "eventType": "Send",
+  "mail": {
+    "timestamp": "2026-08-17T15:50:04.147Z",
+    "source": "invites@homeroll.app",
+    "sourceArn": "arn:aws:ses:us-east-1:709865789463:identity/homeroll.app",
+    "sendingAccountId": "709865789463",
+    "messageId": "010001a0106a6873-acd4bf77-6023-4da0-9791-888e103c8e4e-000000",
+    "destination": ["bounce@simulator.amazonses.com"],
+    "headersTruncated": false,
+    "headers": [
+      { "name": "From", "value": "invites@homeroll.app" },
+      { "name": "To", "value": "bounce@simulator.amazonses.com" },
+      { "name": "Subject", "value": "bounce test 3" },
+      { "name": "MIME-Version", "value": "1.0" },
+      { "name": "Content-Type", "value": "text/plain; charset=UTF-8" },
+      { "name": "Content-Transfer-Encoding", "value": "7bit" }
+    ],
+    "commonHeaders": {
+      "from": ["invites@homeroll.app"],
+      "to": ["bounce@simulator.amazonses.com"],
+      "messageId": "010001a0106a6873-acd4bf77-6023-4da0-9791-888e103c8e4e-000000",
+      "subject": "bounce test 3"
+    },
+    "tags": {
+      "ses:source-tls-version": ["TLSv1.3"],
+      "ses:operation": ["SendEmail"],
+      "ses:configuration-set": ["homeroll-events"],
+      "ses:recipient-isp": ["AmazonSES"],
+      "ses:source-ip": ["136.49.200.151"],
+      "ses:from-domain": ["homeroll.app"],
+      "ses:sender-identity": ["homeroll.app"],
+      "ses:caller-identity": ["AWSReservedSSO_AdministratorAccess_5d9c514feea949fd"]
+    }
+  },
+  "send": {}
+}

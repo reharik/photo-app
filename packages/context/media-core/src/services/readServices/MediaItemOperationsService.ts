@@ -1,9 +1,10 @@
 import { Operation, OperationCatalog } from '@packages/contracts';
 import { AuthorizationReadRepository } from '../../repositories/readRepositories/types';
 import { EntityId } from '../../types';
+import { RequestScopeLifeCycle } from './readServiceBaseType';
 import { DBMediaItemRow, DBPublicMediaItemRow } from './types';
 
-export type MediaItemOperationsService = {
+export interface MediaItemOperationsService extends RequestScopeLifeCycle {
   getOperationsByItem: (
     viewerId: EntityId,
     items: DBMediaItemRow[],
@@ -12,7 +13,7 @@ export type MediaItemOperationsService = {
     publicLinkId: EntityId,
     items: DBPublicMediaItemRow[],
   ) => Promise<Map<string, Operation[]>>;
-};
+}
 
 type MediaItemOperationsServiceDeps = {
   authorizationReadRepository: AuthorizationReadRepository;

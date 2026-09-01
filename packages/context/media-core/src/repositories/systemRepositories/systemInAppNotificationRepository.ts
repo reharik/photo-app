@@ -6,15 +6,16 @@ import {
   NotificationSubjectType,
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
-import { Knex } from 'knex';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemInAppNotificationRepository = {
+export interface SystemInAppNotificationRepository extends RequestScopeLifeCycle {
   upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;
-};
+}
 
 export type SystemInAppNotificationRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export type InAppNotification = {
@@ -31,10 +32,12 @@ export type InAppNotification = {
 
 type InAppNotificationInput = Omit<InAppNotification, 'kind'> & { kind: NotificationKind };
 export const build__SystemInAppNotificationRepository = ({
-  database,
+  uow,
 }: SystemInAppNotificationRepositoryDeps): SystemInAppNotificationRepository => ({
   upsertActivityRow: async (upsert: InAppNotificationInput) => {
-    await database('inAppNotification')
+    await uow.join();
+    await uow
+      .db()('inAppNotification')
       .insert(prepareForDatabase({ ...upsert }))
       .onConflict(['viewerId', 'containerType', 'containerId', 'subjectType', 'subjectId'])
       .ignore();

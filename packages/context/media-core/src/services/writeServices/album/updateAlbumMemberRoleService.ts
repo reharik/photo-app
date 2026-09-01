@@ -1,5 +1,6 @@
 import { AlbumMemberRole, ContractError, fail, ok, OperationResult } from '@packages/contracts';
 import { AlbumRepository } from '../../../repositories';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface UpdateAlbumMemberRoleService extends WriteServiceBase {
@@ -11,20 +12,19 @@ export interface UpdateAlbumMemberRoleService extends WriteServiceBase {
 type UpdateAlbumMemberRoleServiceInput = {
   albumId: string;
   albumMemberId: string;
-  actorId: string;
   role: AlbumMemberRole;
 };
 
-type UpdateAlbumMemberRoleServiceDeps = { albumRepository: AlbumRepository };
+type UpdateAlbumMemberRoleServiceDeps = { viewerId: EntityId; albumRepository: AlbumRepository };
 
 export const build__UpdateAlbumMemberRoleService = ({
   albumRepository,
+  viewerId,
 }: UpdateAlbumMemberRoleServiceDeps): UpdateAlbumMemberRoleService => {
   return async ({
     albumId,
     albumMemberId,
     role,
-    actorId,
   }: UpdateAlbumMemberRoleServiceInput): Promise<
     OperationResult<{ albumMemberId: string; role: AlbumMemberRole }>
   > => {
@@ -32,7 +32,7 @@ export const build__UpdateAlbumMemberRoleService = ({
     if (!album) {
       return fail(ContractError.AlbumNotFound);
     }
-    const updateResult = album.updateMember(albumMemberId, role, actorId);
+    const updateResult = album.updateMember(albumMemberId, role, viewerId);
     if (!updateResult.success) {
       return updateResult;
     }

@@ -3,6 +3,7 @@ import { ensureMediaItemOwnedByViewer } from '../../../application/support/media
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   UpdateMediaItemDetailsCommand,
@@ -15,15 +16,17 @@ export interface UpdateMediaItem extends WriteServiceBase {
 
 type UpdateMediaItemDeps = {
   mediaItemRepository: MediaItemRepository;
+  viewerId: EntityId;
 };
 
 export const build__UpdateMediaItem = ({
   mediaItemRepository,
+  viewerId,
 }: UpdateMediaItemDeps): UpdateMediaItem => {
   return async (
     input: UpdateMediaItemDetailsCommand,
   ): Promise<OperationResult<UpdateMediaItemDetailsResult>> => {
-    const { viewerId, mediaItemId, takenAt } = input;
+    const { mediaItemId, takenAt } = input;
 
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
     if (!getResult.success) {

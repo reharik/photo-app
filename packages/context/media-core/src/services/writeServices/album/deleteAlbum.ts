@@ -1,6 +1,7 @@
 import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumCommand, DeleteAlbumResult } from './writeAlbum.types';
 
@@ -10,11 +11,12 @@ export interface DeleteAlbum extends WriteServiceBase {
 
 type DeleteAlbumDeps = {
   albumRepository: AlbumRepository;
+  viewerId: EntityId;
 };
 
-export const build__DeleteAlbum = ({ albumRepository }: DeleteAlbumDeps): DeleteAlbum => {
+export const build__DeleteAlbum = ({ viewerId, albumRepository }: DeleteAlbumDeps): DeleteAlbum => {
   return async (input: DeleteAlbumCommand): Promise<OperationResult<DeleteAlbumResult>> => {
-    const { viewerId, albumId } = input;
+    const { albumId } = input;
     const getResult = await loadRequiredAlbum(albumId, albumRepository);
     if (!getResult.success) {
       return getResult;

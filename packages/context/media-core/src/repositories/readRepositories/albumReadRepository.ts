@@ -23,9 +23,7 @@ const publicAlbumFields = [
 
 const albumFields = [...publicAlbumFields, 'albumMember.role as viewerMemberRole'];
 
-export const build__AlbumReadRepository = ({
-  database,
-}: ReadRepositoryDeps): AlbumReadRepository => ({
+export const build__AlbumReadRepository = ({ uow }: ReadRepositoryDeps): AlbumReadRepository => ({
   listByViewerId: async ({
     viewerId,
     collectionInfo,
@@ -33,12 +31,14 @@ export const build__AlbumReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
   }): Promise<PagedList<AlbumWithCoverRow>> => {
+    await uow.join();
     const rows = await withEnumRevival(
-      database('album')
-        .modify(withAttachViewerMembership(database, viewerId))
+      uow
+        .db()('album')
+        .modify(withAttachViewerMembership(uow.db(), viewerId))
         .modify(withAlbumCoverItem)
-        .modify(withAlbumItemCount(database))
-        .modify(withCollectionInfo(database, collectionInfo))
+        .modify(withAlbumItemCount(uow.db()))
+        .modify(withCollectionInfo(uow.db(), collectionInfo))
         .select<(AlbumWithCoverRow & { totalCount: number })[]>(...albumFields)
         .where('albumMember.userId', viewerId)
         .andWhere('album.isShadowAlbum', false),
@@ -58,15 +58,17 @@ export const build__AlbumReadRepository = ({
     albumId: string;
     viewerId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
+    await uow.join();
     return withEnumRevival(
-      database<AlbumWithCoverRow>('album')
-        .modify(withAttachViewerMembership(database, viewerId))
+      uow
+        .db()<AlbumWithCoverRow>('album')
+        .modify(withAttachViewerMembership(uow.db(), viewerId))
         .modify(withAlbumCoverItem)
-        .modify(withAlbumItemCount(database))
-        .modify(withAlbumOwnerName(database))
+        .modify(withAlbumItemCount(uow.db()))
+        .modify(withAlbumOwnerName(uow.db()))
         .select(...albumFields)
         .where('album.id', albumId)
-        .modify(withViewableByMemberOrAlbumGrant(database, viewerId))
+        .modify(withViewableByMemberOrAlbumGrant(uow.db(), viewerId))
         .first<AlbumWithCoverRow>(),
       {
         mediaItemKind: MediaKind,
@@ -81,7 +83,9 @@ export const build__AlbumReadRepository = ({
   }: {
     mediaItemId: string;
   }): Promise<AlbumIdRow[]> => {
-    return database<AlbumIdRow>('album')
+    await uow.join();
+    return uow
+      .db()<AlbumIdRow>('album')
       .leftJoin('albumItem', 'albumItem.albumId', 'album.id')
       .where('albumItem.mediaItemId', mediaItemId)
       .orWhere('album.coverMediaId', mediaItemId)
@@ -95,13 +99,15 @@ export const build__AlbumReadRepository = ({
     albumId: string;
     publicLinkId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
+    await uow.join();
     return withEnumRevival(
-      database<AlbumWithCoverRow>('album')
+      uow
+        .db()<AlbumWithCoverRow>('album')
         .modify(withAlbumCoverItem)
-        .modify(withAlbumItemCount(database))
-        .modify(withAlbumOwnerName(database))
+        .modify(withAlbumItemCount(uow.db()))
+        .modify(withAlbumOwnerName(uow.db()))
         .where('album.id', albumId)
-        .modify(withActivePublicLink(database, albumId, publicLinkId))
+        .modify(withActivePublicLink(uow.db(), albumId, publicLinkId))
         .select<AlbumWithCoverRow>(...publicAlbumFields)
         .first(),
       {

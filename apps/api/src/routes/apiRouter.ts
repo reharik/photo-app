@@ -1,16 +1,18 @@
 import Router from '@koa/router';
+import { AuthRouter } from './authRouter';
 
-export type RootRouter = Router;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface APIRouter extends Router {}
 const mountRouter = (parent: Router, child: Router) => {
   parent.use(child.routes());
   parent.use(child.allowedMethods());
 };
 
 type ApiRoutesDeps = {
-  router: Router;
+  authRouter: AuthRouter;
 };
 
-export const build__ApiRoutes = ({ router: authRouter }: ApiRoutesDeps): RootRouter => {
+export const build__ApiRouter = ({ authRouter }: ApiRoutesDeps): APIRouter => {
   const apiRouter = new Router({ prefix: '/api' });
   mountRouter(apiRouter, authRouter);
   return apiRouter;

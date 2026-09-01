@@ -210,8 +210,17 @@ export const toggleReaction = async (
   await tile.getByRole('button', { name: reaction }).click();
 };
 
-export const expectMediaItemLoaded = async (page: Page, id: string) => {
-  const img = page.getByTestId(id);
+/**
+ * Asserts the element carrying `id` as its testid is an image that actually
+ * decoded. This is stronger than a visibility check on the same testid: both
+ * `MediaGridTile` shapes (the `<img>` and the placeholder `<div>` it falls back
+ * to on load error) carry it, so `toBeVisible()` passes on a broken image.
+ *
+ * `root` scopes the lookup — pass a modal locator when the same testid also
+ * exists on the page behind it.
+ */
+export const expectMediaItemLoaded = async (page: Page, id: string, root?: Locator) => {
+  const img = (root ?? page).getByTestId(id);
   await expect(img).toBeVisible();
 
   await expect

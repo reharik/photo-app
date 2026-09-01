@@ -14,7 +14,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     createMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createMediaUpload({
-        viewerId: ctx.viewer.id,
         kind: args.input.kind,
         mimeType: args.input.mimeType,
         originalFileName: args.input.originalFileName ?? undefined,
@@ -40,19 +39,16 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
 
     finalizeMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
       return ctx.writeServices.finalizeMediaItemUpload({
-        viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
       });
     }),
     deleteMediaItem: authenticatedWriteResolver(async (_parent, args, ctx) => {
       return ctx.writeServices.deleteMediaItem({
-        viewerId: ctx.viewer.id,
         mediaItemId: args.input.mediaItemId,
       });
     }),
     deleteMediaItems: authenticatedWriteResolver(async (_parent, args, ctx) => {
       return ctx.writeServices.deleteMediaItems({
-        viewerId: ctx.viewer.id,
         mediaItemIds: args.input.mediaItemIds,
       });
     }),
@@ -61,7 +57,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         const input = args.input;
         const command: UpdateMediaItemDetailsCommand = {
           ...input,
-          viewerId: ctx.viewer.id,
         };
 
         return ctx.writeServices.updateMediaItem(command);
@@ -70,7 +65,6 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
     updateMediaItemTags: authenticatedWriteResolver(
       async (_parent, args: MutationUpdateMediaItemTagsArgs, ctx) => {
         const command: UpdateMediaItemTagsCommand = {
-          viewerId: ctx.viewer.id,
           mediaItemId: args.input.mediaItemId,
           tags: args.input.tags,
         };

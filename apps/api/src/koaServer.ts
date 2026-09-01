@@ -11,7 +11,7 @@ import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
 import type { AuthMiddleware } from './middleware/authMiddleware.js';
 import type { ErrorHandler } from './middleware/errorHandler.js';
 import type { RequestLogger } from './middleware/requestLogger.js';
-import type { RootRouter } from './routes/apiRouter.js';
+import type { APIRouter } from './routes/apiRouter.js';
 import type { MediaPublicRouter } from './routes/mediaPublicRouter.js';
 
 setDefaultSerializationMode('value');
@@ -21,10 +21,10 @@ export type KoaServer = http.Server;
 
 type KoaServerDeps = {
   mediaPublicRouter: MediaPublicRouter;
-  rootRouter: RootRouter;
+  apiRouter: APIRouter;
   authMiddleware: AuthMiddleware;
   logger: Logger;
-  graphQLServer: GraphQLServer;
+  graphQlServer: GraphQLServer;
   errorHandler: ErrorHandler;
   requestLogger: RequestLogger;
   database: Knex;
@@ -33,11 +33,11 @@ type KoaServerDeps = {
 
 export const build__KoaServer = ({
   mediaPublicRouter,
-  rootRouter,
+  apiRouter,
   authMiddleware,
   logger,
 
-  graphQLServer,
+  graphQlServer,
   errorHandler,
   requestLogger,
   database,
@@ -81,10 +81,10 @@ export const build__KoaServer = ({
 
   // 7. Routes (the actual request handling)
 
-  app.use(rootRouter.routes()).use(rootRouter.allowedMethods());
+  app.use(apiRouter.routes()).use(apiRouter.allowedMethods());
 
   // 8. GraphQL endpoint
-  app.use(graphQLServer);
+  app.use(graphQlServer);
 
   // Health check endpoint (no /api prefix, no auth required)
   app.use(async (ctx, next) => {

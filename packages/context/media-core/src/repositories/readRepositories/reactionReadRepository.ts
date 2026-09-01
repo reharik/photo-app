@@ -4,7 +4,7 @@ import type { EntityId } from '../../types/types';
 import type { DbReactionRow, ReactionReadRepository, ReadRepositoryDeps } from './types';
 
 export const build__ReactionReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): ReactionReadRepository => ({
   countForTarget: async ({
     targetType,
@@ -13,7 +13,9 @@ export const build__ReactionReadRepository = ({
     targetType: EntityType;
     targetId: EntityId;
   }): Promise<number> => {
-    const result = await database('reaction')
+    await uow.join();
+    const result = await uow
+      .db()('reaction')
       .where({
         target_type: targetType,
         target_id: targetId,
@@ -35,9 +37,10 @@ export const build__ReactionReadRepository = ({
     if (targetIds.length === 0) {
       return [];
     }
-
+    await uow.join();
     return withEnumRevival(
-      database<DbReactionRow>('reaction')
+      uow
+        .db()<DbReactionRow>('reaction')
         .select<DbReactionRow[]>()
         .where('user_id', viewerId)
         .where('target_type', targetType.value)

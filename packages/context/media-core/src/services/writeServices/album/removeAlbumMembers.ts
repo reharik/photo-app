@@ -6,6 +6,7 @@ import {
   IndependentGroupResult,
 } from '../../../infrastructure/writeServices/groupActionStrategy';
 import { AlbumRepository } from '../../../repositories';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { RemoveAlbumMembersCommand } from './writeAlbum.types';
 
@@ -15,16 +16,20 @@ export interface RemoveAlbumMembers extends WriteServiceBase {
   ): Promise<OperationResult<IndependentGroupResult<string, string>>>;
 }
 
-type RemoveAlbumMembersDeps = { albumRepository: AlbumRepository; logger: Logger };
+type RemoveAlbumMembersDeps = {
+  viewerId: EntityId;
+  albumRepository: AlbumRepository;
+  logger: Logger;
+};
 
 export const build__RemoveAlbumMembers = ({
   albumRepository,
   logger,
+  viewerId,
 }: RemoveAlbumMembersDeps): RemoveAlbumMembers => {
   return async ({
     albumId,
     albumMemberIds,
-    actorId,
   }: RemoveAlbumMembersCommand): Promise<
     OperationResult<IndependentGroupResult<string, string>>
   > => {
@@ -33,7 +38,7 @@ export const build__RemoveAlbumMembers = ({
       return fail(ContractError.AlbumNotFound);
     }
     const result = eachIndependently(albumMemberIds, (x) => {
-      const removeMemberResult = album.removeMember(x, actorId);
+      const removeMemberResult = album.removeMember(x, viewerId);
       if (!removeMemberResult.success) {
         return removeMemberResult;
       }

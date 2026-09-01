@@ -19,16 +19,18 @@ export interface AddMediaItemsToAlbum extends WriteServiceBase {
 type AddMediaItemsToAlbumDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  viewerId: EntityId;
 };
 
 export const build__AddMediaItemsToAlbum = ({
   albumRepository,
   mediaItemReadRepository,
+  viewerId,
 }: AddMediaItemsToAlbumDeps): AddMediaItemsToAlbum => {
   return async (
     input: AddMediaItemsToAlbumCommand,
   ): Promise<OperationResult<AddMediaItemsToAlbumResult>> => {
-    const { viewerId, newAlbum } = input;
+    const { newAlbum } = input;
     const mediaItemIds = dedupeIds(input.mediaItemIds);
 
     if (mediaItemIds.length === 0) {

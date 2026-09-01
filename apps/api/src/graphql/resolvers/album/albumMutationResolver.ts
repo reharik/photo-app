@@ -18,7 +18,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     createAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createAlbum({
-        viewerId: ctx.viewer.id,
         title: args.input.title,
         description: args.input.description,
       });
@@ -29,7 +28,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     AddMediaItemsToAlbum: authenticatedWriteResolver(
       async (_parent, args: MutationAddMediaItemsToAlbumArgs, ctx) => {
         const command: AddMediaItemsToAlbumCommand = {
-          viewerId: ctx.viewer.id,
           mediaItemIds: args.input.mediaItemIds,
           albumId: args.input.albumId ?? undefined,
           newAlbum: args.input.newAlbum ?? undefined,
@@ -41,7 +39,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     AddAlbumMembers: authenticatedWriteResolver(
       async (_parent, args: MutationAddAlbumMembersArgs, ctx) => {
         const command: AddAlbumMembersCommand = {
-          actorId: ctx.viewer.id,
           role: args.input.role,
           userIds: args.input.userIds,
           albumId: args.input.albumId ?? undefined,
@@ -59,7 +56,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     RemoveAlbumMembers: authenticatedWriteResolver(
       async (_parent, args: MutationRemoveAlbumMembersArgs, ctx) => {
         const command: RemoveAlbumMembersCommand = {
-          actorId: ctx.viewer.id,
           albumMemberIds: args.input.albumMemberIds,
           albumId: args.input.albumId ?? undefined,
         };
@@ -76,7 +72,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     ReorderAlbumItems: authenticatedWriteResolver(
       async (_parent, args: MutationReorderAlbumItemsArgs, ctx) => {
         const command: ReorderAlbumItemsCommand = {
-          viewerId: ctx.viewer.id,
           albumId: args.input.albumId,
           albumItemIds: args.input.albumItemIds,
         };
@@ -86,7 +81,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     ),
     DeleteAlbumItemsFromAlbum: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.deleteAlbumItems({
-        viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
         albumItemIds: args.input.albumItemIds,
       });
@@ -96,7 +90,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
 
     SetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.setCoverMedia({
-        viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
         albumItemId: args.input.albumItemId,
       });
@@ -104,7 +97,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
     }),
     UnsetCoverMedia: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.unsetCoverMedia({
-        viewerId: ctx.viewer.id,
         albumId: args.input.albumId,
       });
       return result;
@@ -112,7 +104,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
 
     RevokeShareAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.revokeShareService({
-        actorId: ctx.viewer.id,
         albumId: args.input.albumId,
         authorizationId: args.input.authorizationId,
       });
@@ -121,7 +112,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
 
     RevokePublicLinkAuthentication: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.revokePublicLinkService({
-        actorId: ctx.viewer.id,
         albumId: args.input.albumId,
       });
       return result;
@@ -131,7 +121,6 @@ const albumResolvers: Pick<Resolvers, 'Mutation'> = {
         albumId: args.input.albumId,
         albumMemberId: args.input.albumMemberId,
         role: args.input.role,
-        actorId: ctx.viewer.id,
       });
       return result;
     }),

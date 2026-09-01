@@ -8,20 +8,21 @@ import {
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { Knex } from 'knex';
 import { DateTime } from 'luxon';
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemAsyncNotificationRepository = {
+export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;
   claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;
   claimIndividualNotifications: (window: number) => Promise<AsyncNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
   bumpRecordAttemptsByIds: (ids: string[]) => Promise<void>;
-};
+}
 
 export type SystemAsyncNotificationRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 // Template names are owned by the notifications context (its `TemplateName`).
@@ -67,19 +68,27 @@ type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince' | 'kind'> & {
 };
 
 export const build__SystemAsyncNotificationRepository = ({
-  database,
+  uow,
 }: SystemAsyncNotificationRepositoryDeps): SystemAsyncNotificationRepository => ({
   upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
-    return database('asyncNotification')
-      .insert({ ...prepareForDatabase(upsert), dirtySince: database.fn.now() })
+    await uow.join();
+    return uow
+      .db()('asyncNotification')
+      .insert({ ...prepareForDatabase(upsert), dirtySince: uow.db().fn.now() })
       .onConflict(['channel', 'kind', 'recipientId', 'containerType', 'containerId'])
-      .merge({ dirtySince: database.fn.now() });
+      .merge({ dirtySince: uow.db().fn.now() });
   },
-  claimNotificationBatch: (windowSeconds: number) => {
+  // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
+  // only while exactly one worker process runs. A second worker would select
+  // the same rows and double-send. Add SKIP LOCKED + a claim flip before
+  // scaling out.
+  claimNotificationBatch: async (windowSeconds: number) => {
+    await uow.join();
     return withEnumRevival(
-      database('asyncNotification')
+      uow
+        .db()('asyncNotification')
         .select(asyncNotificationFields)
-        .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
+        .where('dirtySince', '<', uow.db().raw('now() - make_interval(secs => ?)', [windowSeconds]))
         .whereIn(
           'kind',
           AsyncNotificationKind.items()
@@ -93,11 +102,17 @@ export const build__SystemAsyncNotificationRepository = ({
       },
     );
   },
-  claimIndividualNotifications: (windowSeconds: number) => {
+  // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
+  // only while exactly one worker process runs. A second worker would select
+  // the same rows and double-send. Add SKIP LOCKED + a claim flip before
+  // scaling out.
+  claimIndividualNotifications: async (windowSeconds: number) => {
+    await uow.join();
     return withEnumRevival(
-      database('asyncNotification')
+      uow
+        .db()('asyncNotification')
         .select(asyncNotificationFields)
-        .where('dirtySince', '<', database.raw('now() - make_interval(secs => ?)', [windowSeconds]))
+        .where('dirtySince', '<', uow.db().raw('now() - make_interval(secs => ?)', [windowSeconds]))
         .whereIn(
           'kind',
           AsyncNotificationKind.items()
@@ -115,12 +130,14 @@ export const build__SystemAsyncNotificationRepository = ({
     if (ids.length === 0) {
       return;
     }
-    await database('asyncNotification').delete().whereIn('id', ids);
+    await uow.join();
+    await uow.db()('asyncNotification').delete().whereIn('id', ids);
   },
   bumpRecordAttemptsByIds: async (ids: string[]): Promise<void> => {
     if (ids.length === 0) {
       return;
     }
-    await database('asyncNotification').whereIn('id', ids).increment('attempts', 1);
+    await uow.join();
+    await uow.db()('asyncNotification').whereIn('id', ids).increment('attempts', 1);
   },
 });

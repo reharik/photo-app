@@ -7,6 +7,7 @@ import {
 import { EntityId } from '../../../types';
 import { MediaItemOperationsService } from '../MediaItemOperationsService';
 import { ReadReactionService } from '../readReactionService';
+import { RequestScopeLifeCycle } from '../readServiceBaseType';
 import {
   DBMediaItemRow,
   DBPublicMediaItemRow,
@@ -14,13 +15,13 @@ import {
   PublicMediaItemProjection,
 } from '../types';
 
-export type EnrichMediaItems = {
+export interface EnrichMediaItems extends RequestScopeLifeCycle {
   enrich: (viewerId: EntityId, rows: DBMediaItemRow[]) => Promise<MediaItemProjection[]>;
   enrichPublic: (
     publicLinkId: EntityId,
     rows: DBPublicMediaItemRow[],
   ) => Promise<PublicMediaItemProjection[]>;
-};
+}
 
 type EnrichMediaItemsDeps = {
   mediaItemReadRepository: MediaItemReadRepository;

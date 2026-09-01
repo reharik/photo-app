@@ -67,7 +67,7 @@ services:
       DEBOUNCE_EMAIL_WINDOW_SECONDS: 5
       # Idle-poll interval; only bites for the first job after the queue
       # drains (the loop re-claims back-to-back while work exists).
-      MEDIA_WORKER_POLL_MS: 250
+      MEDIA_WORKER_POLL_MS: 2500
     volumes:
       - ./apps/media-worker:/app/apps/media-worker
       - /app/apps/media-worker/node_modules

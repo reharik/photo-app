@@ -1,15 +1,16 @@
-import { MediaItemStatus } from '@packages/contracts';
-import type { Knex } from 'knex';
+import { MediaJobStatus } from '@packages/contracts';
 
+import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
-import { createQueueClaimable } from '../queueClaimable';
+import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
 export type MediaDeletionJobRow = {
   id: EntityId;
   mediaItemId: EntityId;
   /** Base prefix for object keys in storage (snapshot when the job was enqueued). */
   storageKey: string;
-  status: MediaItemStatus;
+  status: MediaJobStatus;
   attemptCount: number;
   availableAt: Date;
   createdAt: Date;
@@ -21,34 +22,33 @@ export type MediaDeletionJobRow = {
   lastError?: string;
 };
 
-export type MediaDeletionJobRepository = {
+export interface MediaDeletionJobRepository extends RequestScopeLifeCycle {
   claimNextAvailableJob: () => Promise<MediaDeletionJobRow | undefined>;
-  markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<void>;
-  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<void>;
+  markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
+  markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
   markPendingRetry: (
     jobId: EntityId,
     actorId: EntityId,
     lastError: string,
-    availableAt: Date,
-  ) => Promise<void>;
-};
+  ) => Promise<RetryOutcome>;
+}
 
 type MediaDeletionJobRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export const build__MediaDeletionJobRepository = ({
-  database,
+  uow,
 }: MediaDeletionJobRepositoryDeps): MediaDeletionJobRepository => {
-  const queue = createQueueClaimable<MediaDeletionJobRow>(database, {
+  const jobRepo = createJobQueueRepository<MediaDeletionJobRow>(uow, {
     table: 'mediaDeletionJob',
     attemptCountColumn: 'attempt_count',
   });
 
   return {
-    claimNextAvailableJob: queue.claimNextAvailableJob,
-    markSucceeded: queue.markSucceeded,
-    markFailed: queue.markFailed,
-    markPendingRetry: queue.markPendingRetry,
+    claimNextAvailableJob: jobRepo.claimNextAvailableJob,
+    markSucceeded: jobRepo.markSucceeded,
+    markFailed: jobRepo.markFailed,
+    markPendingRetry: jobRepo.markPendingRetry,
   };
 };

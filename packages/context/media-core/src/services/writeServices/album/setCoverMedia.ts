@@ -2,6 +2,7 @@ import { ok, Operation, OperationResult } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { SetCoverMediaCommand, SetCoverMediaResult } from './writeAlbum.types';
 
@@ -11,11 +12,15 @@ export interface SetCoverMedia extends WriteServiceBase {
 
 type SetCoverMediaDeps = {
   albumRepository: AlbumRepository;
+  viewerId: EntityId;
 };
 
-export const build__SetCoverMedia = ({ albumRepository }: SetCoverMediaDeps): SetCoverMedia => {
+export const build__SetCoverMedia = ({
+  viewerId,
+  albumRepository,
+}: SetCoverMediaDeps): SetCoverMedia => {
   return async (input: SetCoverMediaCommand): Promise<OperationResult<SetCoverMediaResult>> => {
-    const { viewerId, albumId, albumItemId } = input;
+    const { albumId, albumItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {
       return r1;

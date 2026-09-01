@@ -3,6 +3,7 @@ import { copyFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loginViaApi } from './auth';
+import { expectMediaItemProcessed } from './mediaDb';
 import { E2E_ASSETS_DIR, grabTestImages, GrabTestImagesResult } from './testAssets';
 import type { TestUser } from './users';
 
@@ -105,6 +106,16 @@ export const uploadMediaViaUi = async (
     .toBe(images.length);
 
   const newIds = (await getMediaTileIds(page)).filter((id) => !idsBefore.has(id));
+
+  // The tile poll above only proves the grid listed the item, and the grid filters
+  // on status = READY — it says nothing about `media_asset` or the job row. Read the
+  // worker's actual output. Without this, a completion transaction that rolls back
+  // surfaces only as the 120s poll timeout above, simultaneously in every upload
+  // spec, naming nothing.
+  for (const mediaItemId of newIds) {
+    await expectMediaItemProcessed(mediaItemId);
+  }
+
   // Upload queue runs one file at a time; library sorts newest-first in the grid.
   return [...newIds].reverse().map((id, index) => ({
     id,

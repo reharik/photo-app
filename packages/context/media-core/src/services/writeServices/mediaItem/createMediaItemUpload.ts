@@ -7,6 +7,7 @@ import {
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
 
@@ -29,17 +30,19 @@ type CreateMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   albumRepository: AlbumRepository;
   mediaStorage: MediaStorage;
+  viewerId: EntityId;
 };
 
 export const build__CreateMediaItemUpload = ({
   mediaItemRepository,
   albumRepository,
   mediaStorage,
+  viewerId,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (
     input: CreateMediaUploadCommand,
   ): Promise<OperationResult<CreateMediaUploadResult>> => {
-    const { viewerId, kind, mimeType, originalFileName, albumId } = input;
+    const { kind, mimeType, originalFileName, albumId } = input;
     const mediaItem = MediaItem.create(
       {
         kind,

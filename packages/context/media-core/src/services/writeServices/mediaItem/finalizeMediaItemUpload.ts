@@ -11,10 +11,10 @@ import {
   buildMediaItemBaseStorageKey,
   MediaStorage,
 } from '../../../application/media/MediaStorage';
-import { UnitOfWork } from '../../../infrastructure';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   FinalizeMediaItemUploadCommand,
@@ -29,19 +29,19 @@ type FinalizeMediaItemUploadDeps = {
   mediaItemRepository: MediaItemRepository;
   mediaStorage: MediaStorage;
   mediaProcessingJobRepository: MediaProcessingJobRepository;
-  uow: UnitOfWork;
+  viewerId: EntityId;
 };
 
 export const build__FinalizeMediaItemUpload = ({
   mediaItemRepository,
   mediaStorage,
   mediaProcessingJobRepository,
-  uow,
+  viewerId,
 }: FinalizeMediaItemUploadDeps): FinalizeMediaItemUpload => {
   return async (
     input: FinalizeMediaItemUploadCommand,
   ): Promise<OperationResult<FinalizeMediaItemUploadResult>> => {
-    const { viewerId, mediaItemId } = input;
+    const { mediaItemId } = input;
     const mediaItem = await mediaItemRepository.getById(mediaItemId);
     if (!mediaItem) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotFound);
@@ -62,7 +62,7 @@ export const build__FinalizeMediaItemUpload = ({
     const result = mediaItem.updateAssetWithMetadata({
       kind: MediaAssetKind.original,
       sizeBytes: objectMetadata.size,
-      mimeType: objectMetadata.mimeType,
+      mimeType: objectMetadata.mimeType || '',
     });
     if (!result.success) {
       return result;
@@ -85,13 +85,10 @@ export const build__FinalizeMediaItemUpload = ({
     if (mediaItem.kind().equals(MediaKind.photo)) {
       // Same transaction as mediaItemRepository.save above: the job row must not be
       // visible to the worker before the item's PROCESSING status commits.
-      await mediaProcessingJobRepository.enqueueIfNoneActive(
-        {
-          mediaItemId: mediaItem.id(),
-          actorId: viewerId,
-        },
-        uow,
-      );
+      await mediaProcessingJobRepository.enqueueIfNoneActive({
+        mediaItemId: mediaItem.id(),
+        actorId: viewerId,
+      });
     }
 
     return ok({

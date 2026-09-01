@@ -11,7 +11,7 @@ import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packag
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type { Cradle } from '../container.js';
+import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
@@ -270,7 +270,7 @@ const createUploadedMediaItemViaGraphQL = async (params: {
 
 describe('DeleteAlbumItemsFromAlbum', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<Cradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -416,7 +416,7 @@ describe('DeleteAlbumItemsFromAlbum', () => {
 
 describe('deleteAlbum', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<Cradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -545,7 +545,7 @@ describe('deleteAlbum', () => {
 
 describe('deleteMediaItem', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<Cradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -629,7 +629,7 @@ describe('deleteMediaItem', () => {
 
 describe('deleteMediaItems', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<Cradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
@@ -757,7 +757,7 @@ describe('deleteMediaItems', () => {
 
 describe('updateMediaItemDetails', () => {
   let executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
-  let container: AwilixContainer<Cradle>;
+  let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 

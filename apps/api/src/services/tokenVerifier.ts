@@ -1,8 +1,8 @@
 import { type User } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import jwt from 'jsonwebtoken';
-import type { Knex } from 'knex';
 
+import { Knex } from 'knex';
 import type { Config } from '../config.js';
 
 export interface TokenVerifier {

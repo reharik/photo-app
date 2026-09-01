@@ -30,9 +30,7 @@ export default defineIocConfig({
     Knex: {
       $contract: { accessKey: 'database' },
     },
-    AuthService: {
-      authService: { lifetime: 'scoped' },
-    },
+
     AuthMiddleware: {
       // Keep strict middleware under a distinct key so `authMiddleware` (contract default slot) aliases to optional.
       authMiddleware: { name: 'strictAuthMiddleware' },

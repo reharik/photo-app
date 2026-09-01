@@ -1,5 +1,5 @@
+import { DomainEvent, DomainEventKind, EventPayload } from '../domainEvents/domainEvent';
 import type { ActorId, EntityId } from '../types/types';
-import { DomainEvent, DomainEventKind, EventPayload } from './domainEvents/DomainEvent';
 import { serializeValue } from './utilities/serializeAggregates';
 
 export type ChildRow = {

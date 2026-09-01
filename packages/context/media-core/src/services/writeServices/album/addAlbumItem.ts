@@ -9,6 +9,7 @@ import { ok, OperationResult } from '@packages/contracts';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
 
@@ -19,14 +20,16 @@ export interface AddAlbumItem extends WriteServiceBase {
 type AddAlbumItemDeps = {
   albumRepository: AlbumRepository;
   mediaItemReadRepository: MediaItemReadRepository;
+  viewerId: EntityId;
 };
 
 export const build__AddAlbumItem = ({
   albumRepository,
   mediaItemReadRepository,
+  viewerId,
 }: AddAlbumItemDeps): AddAlbumItem => {
   return async (input: AddAlbumItemCommand): Promise<OperationResult<AddAlbumItemResult>> => {
-    const { viewerId, albumId, mediaItemId } = input;
+    const { albumId, mediaItemId } = input;
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {
       return r1;

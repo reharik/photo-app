@@ -3,11 +3,11 @@ import { Logger } from '@packages/infrastructure';
 import { PendingUser } from '../../../domain';
 import { AlbumRepository, UserRepository } from '../../../repositories';
 import { ActorId } from '../../../types';
-import { WriteServiceBase } from '../writeServiceBaseType';
+import { RequestScopeLifeCycle } from '../../readServices/readServiceBaseType';
 
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };
 
-export interface ActivatePendingUserWriteService extends WriteServiceBase {
+export interface ActivatePendingUserWriteService extends RequestScopeLifeCycle {
   (input: ActivateProps, user: PendingUser, actorId: ActorId): Promise<OperationResult<void>>;
 }
 

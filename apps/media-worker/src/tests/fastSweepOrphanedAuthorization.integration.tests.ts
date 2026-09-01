@@ -19,7 +19,7 @@ import type { Knex } from 'knex';
 import { randomUUID } from 'node:crypto';
 
 import type { Config as WorkerConfig } from '../config.js';
-import { destroyWorkerContainer, initializeWorkerContainer } from '../container.js';
+import { createWorkerContainer } from '../container.js';
 import type { AppCradle } from '../generated/ioc-composed.js';
 import { build__FastSweepNotification } from '../tasks/schedule/individualNotification/fastSweepNotification.js';
 import { build__AlbumSharedWithNonUserStrategy } from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.js';
@@ -34,7 +34,7 @@ describe('fast sweep — orphaned authorization (integration)', () => {
   let database: Knex;
 
   beforeAll(async () => {
-    container = initializeWorkerContainer();
+    container = createWorkerContainer();
     database = container.resolve('database');
     await ensureTestViewerUsers(database);
   });
@@ -44,7 +44,10 @@ describe('fast sweep — orphaned authorization (integration)', () => {
   });
 
   afterAll(async () => {
-    await destroyWorkerContainer();
+    // The container is a plain factory now, with no module-global to tear down —
+    // what still has to be released is the knex pool, or jest hangs on the open
+    // handle.
+    await database.destroy();
   });
 
   const createFakeLogger = () => ({
@@ -185,6 +188,8 @@ describe('fast sweep — orphaned authorization (integration)', () => {
       notificationService: { notify },
       systemAsyncNotificationRepository: container.resolve('systemAsyncNotificationRepository'),
       systemUserRepository: container.resolve('systemUserRepository'),
+      // Same container, so the sweep and the system repositories share one scoped uow.
+      uow: container.resolve('uow'),
       config: workerConfig,
       fastSweepNotificationStrategies: [
         build__AlbumSharedWithNonUserStrategy({

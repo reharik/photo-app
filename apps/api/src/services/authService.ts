@@ -18,6 +18,7 @@ import {
 } from '@packages/media-core';
 import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
+import { ScopeRoot } from 'ioc-manifest';
 import jwt from 'jsonwebtoken';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
@@ -26,6 +27,7 @@ export interface AuthService {
   verifyCodeAndSetPassword: (
     credentials: SignupInput,
   ) => Promise<OperationResult<{ token: string }>>;
+  settle: (ok: boolean) => Promise<void>;
 }
 
 type AuthServiceDeps = {
@@ -48,7 +50,7 @@ export const build__AuthService = ({
   systemEmailVerificationRepository,
   activatePendingUserWriteService,
   uow,
-}: AuthServiceDeps): AuthService => {
+}: AuthServiceDeps): ScopeRoot<AuthService, Record<string, never>> => {
   const verifyCode = async (
     email: string,
     code: string,
@@ -71,9 +73,8 @@ export const build__AuthService = ({
 
     if (verificationRow.codeHash !== codeHash) {
       logger.warn('Reset password attempt failed: invalid code', { email });
-      // Autocommit, OUTSIDE the uow: this durably persists the attempt increment even though
-      // the caller rolls the password-reset transaction back on this failure path. Awaited here
-      // so the bump is committed before that rollback — otherwise the lockout could be bypassed.
+      // Autocommits on its own connection, outside the uow: the increment must
+      // survive the rollback on this path or the >= 3 lockout can never trigger.
       await systemEmailVerificationRepository.bumpValidationAttempts(verificationRow.id);
       return fail(ContractError.InvalidEmailVerificationCode);
     }
@@ -123,84 +124,63 @@ export const build__AuthService = ({
   };
 
   return {
+    // Failure paths return without finalizing — the controller's settle() rolls back.
+    // The success path commits explicitly, because notifyUser must run post-commit.
     verifyCodeAndSetPassword: async (credentials: SignupInput) => {
-      // This service owns uow finalization: the caller starts the uow (via
-      // beginUnitOfWorkScope) but does NOT wrap it in withUnitOfWork, because the
-      // success path must commit while the failure paths must NOT. Every exit below
-      // finalizes the transaction exactly once — commit on success, rollback otherwise.
       const { email, password, code, firstName, lastName, phone } = credentials;
-      // Tracks whether the uow has been committed, so the catch never rolls back a
-      // committed transaction (e.g. if the post-commit notify throws).
-      let committed = false;
-      try {
-        const codeVerifiedResult = await verifyCode(email, code);
-        if (!codeVerifiedResult.success) {
-          // No verification row / too many attempts / bad code. The bad-code attempt
-          // bump was already durably committed out-of-band by verifyCode; the reset
-          // transaction itself has no writes to keep, so roll it back.
-          await uow.rollback();
-          return codeVerifiedResult;
-        }
-        const verificationId = codeVerifiedResult.value.id;
-        let user = await userRepository.getUserByEmail(email);
-        // Hash password
-        const passwordHash = await bcrypt.hash(password, 12);
-        let template: 'welcome' | 'passwordChanged';
-        if (!user) {
-          user = PendingUser.create(
-            { email, firstName: firstName, lastName: lastName, phone, passwordHash },
-            randomUUID(),
-          );
-        }
-        if (user.kind === 'pending') {
-          template = 'welcome';
-          // The activating user is their own actor: this is self-service signup off an
-          // emailed code, so actorId is the pending user's id.
-          // The activatePendingUserWriteService takes the responsibility for saving the user
-          // to avoid having a double have here or a potentially unsaved case there
-          const activateResult = await activatePendingUserWriteService(
-            { firstName, lastName, phone, passwordHash },
-            user,
-            user.id(),
-          );
+      const codeVerifiedResult = await verifyCode(email, code);
 
-          if (!activateResult.success) {
-            await uow.rollback();
-            // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
-            // generic ErrorActivatingUser: the forgot-password door lands a brand-new email
-            // here with no name, and the FE reveals the name fields off that exact reason.
-            return activateResult;
-          }
-        } else if (user.kind === 'active') {
-          template = 'passwordChanged';
-          user.setPassword(passwordHash, user.id());
-          await userRepository.save(user);
-        } else {
-          return assertNever(user);
-        }
-
-        await emailVerificationRepository.completeConsumption(verificationId);
-        await uow.commit();
-        committed = true;
-
-        // Post-commit, best-effort: emailing the user must not affect the committed
-        // write, and a failure here must not roll the transaction back (already committed).
-        const token = await notifyUser(user.id(), credentials, template);
-        return ok({ token });
-      } catch (error) {
-        // Any throw after uow.start() (db error, assertNever, etc.) leaves an open trx —
-        // roll it back before rethrowing, unless we already committed.
-        if (!committed) {
-          await uow.rollback();
-        }
-        throw error;
+      if (!codeVerifiedResult.success) {
+        // The bad-code attempt bump is committed out-of-band by verifyCode and
+        // survives the rollback that follows.
+        return codeVerifiedResult;
       }
+      const verificationId = codeVerifiedResult.value.id;
+      let user = await userRepository.getUserByEmail(email);
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12);
+      let template: 'welcome' | 'passwordChanged';
+      if (!user) {
+        user = PendingUser.create(
+          { email, firstName: firstName, lastName: lastName, phone, passwordHash },
+          randomUUID(),
+        );
+      }
+      if (user.kind === 'pending') {
+        template = 'welcome';
+        // The activating user is their own actor: this is self-service signup off an
+        // emailed code, so actorId is the pending user's id.
+        // The activatePendingUserWriteService takes the responsibility for saving the user
+        // to avoid having a double have here or a potentially unsaved case there
+        const activateResult = await activatePendingUserWriteService(
+          { firstName, lastName, phone, passwordHash },
+          user,
+          user.id(),
+        );
+
+        if (!activateResult.success) {
+          // Propagate the specific failure (e.g. MISSING_FIRST_OR_LAST_NAME) instead of a
+          // generic ErrorActivatingUser: the forgot-password door lands a brand-new email
+          // here with no name, and the FE reveals the name fields off that exact reason.
+          return activateResult;
+        }
+      } else if (user.kind === 'active') {
+        template = 'passwordChanged';
+        user.setPassword(passwordHash, user.id());
+        await userRepository.save(user);
+      } else {
+        return assertNever(user);
+      }
+
+      await emailVerificationRepository.completeConsumption(verificationId);
+      await uow.complete(true);
+
+      // Post-commit, best-effort: emailing the user must not affect the committed
+      // write, and a failure here must not roll the transaction back (already committed).
+      const token = await notifyUser(user.id(), credentials, template);
+      return ok({ token });
     },
 
-    /*
-    during event driven grant creation, the event will have the authId, the auth with have the userid
-    when you get the user use the repository that calls for straight user, not pendingUser.  this will
-    not find a user for this auth and it will be ignored.
-*/
+    settle: uow.settle,
   };
 };

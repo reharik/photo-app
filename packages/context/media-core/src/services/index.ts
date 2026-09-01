@@ -3,10 +3,11 @@
  */
 
 export * from './readServices/MediaItemOperationsService';
-export * from './readServices/mediaGrantService';
+export * from './readServices/ValidateOperationService';
 export * from './readServices/readReactionService';
 export * from './readServices/readServiceBaseType';
 export * from './readServices/readServiceMappers';
+export * from './readServices/tokenAccessReadService';
 export * from './readServices/types';
 export * from './readServices/comments/commentReadService';
 export * from './readServices/publicReadServices/publicAccessReadService';
@@ -22,6 +23,7 @@ export * from './readServices/viewerReadServices/viewerSharedContactsReadService
 export * from './readServices/viewerReadServices/viewerSharedWithMeAlbumReadService';
 export * from './writeServices/markActivitySeen';
 export * from './writeServices/writeServiceBaseType';
+export * from './writeServices/EmailDelivery/createEmailDeliveryService';
 export * from './writeServices/album/addAlbumItem';
 export * from './writeServices/album/addAlbumMembers';
 export * from './writeServices/album/addMediaItemsToAlbum';

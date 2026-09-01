@@ -1,18 +1,14 @@
-import { Knex } from 'knex';
 import { UnitOfWork } from '../../infrastructure';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
-export type SystemGrantRepository = {
-  pruneGrantsForAuthorization: (
-    authId: EntityId,
-    keepIds: EntityId[],
-    uow?: UnitOfWork,
-  ) => Promise<void>;
+export interface SystemGrantRepository extends RequestScopeLifeCycle {
+  pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[]) => Promise<void>;
   upsertGrants: (input: UpsertGrantInput[]) => Promise<void>;
-};
+}
 
 export type SystemGrantRepositoryDeps = {
-  database: Knex;
+  uow: UnitOfWork;
 };
 
 export type UpsertGrantInput = {
@@ -24,17 +20,19 @@ export type UpsertGrantInput = {
 };
 
 export const build__SystemGrantRepository = ({
-  database,
+  uow,
 }: SystemGrantRepositoryDeps): SystemGrantRepository => ({
-  pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[], uow?: UnitOfWork) => {
-    const db = uow?.db() ?? database;
-    const del = db('grant').where({ accessGrantId: authId });
+  pruneGrantsForAuthorization: async (authId: EntityId, keepIds: EntityId[]) => {
+    await uow.join();
+    const del = uow.db()('grant').where({ accessGrantId: authId });
     if (keepIds.length) del.whereNotIn('mediaItemId', keepIds);
     return del.delete();
   },
   upsertGrants: async (input: UpsertGrantInput[]) => {
     if (input.length === 0) return;
-    await database('grant')
+    await uow.join();
+    await uow
+      .db()('grant')
       .insert(input)
       .onConflict(['accessGrantId', 'mediaItemId'])
       .merge(['operations']);

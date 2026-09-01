@@ -5,9 +5,6 @@ import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type CreatePublicLinkForAlbumCommand = {
-  viewerId: EntityId;
-  viewerFirstName: string;
-  viewerLastName: string;
   albumId: EntityId;
   name?: string;
   expiresAt?: Date;
@@ -22,11 +19,13 @@ export interface CreatePublicLinkForAlbum extends WriteServiceBase {
 }
 
 type CreatePublicLinkForAlbumDeps = {
+  viewerId: EntityId;
   albumRepository: AlbumRepository;
 };
 
 export const build__CreatePublicLinkForAlbum = ({
   albumRepository,
+  viewerId,
 }: CreatePublicLinkForAlbumDeps): CreatePublicLinkForAlbum => {
   return async (
     input: CreatePublicLinkForAlbumCommand,
@@ -38,7 +37,7 @@ export const build__CreatePublicLinkForAlbum = ({
     const album = loadedAlbum.value;
 
     const publicLinkResult = album.grantPublicLink({
-      actorId: input.viewerId,
+      actorId: viewerId,
     });
     if (!publicLinkResult.success) {
       return publicLinkResult;

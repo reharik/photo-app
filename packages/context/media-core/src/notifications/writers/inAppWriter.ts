@@ -5,13 +5,14 @@ import {
   SystemInAppNotificationRepository,
   SystemMediaItemRepository,
 } from '../../repositories';
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { ResolvedNotification } from '../types';
 
 export interface InAppWriter extends NotificationWriter {
   readonly __brand?: 'inApp';
 }
 
-export interface NotificationWriter {
+export interface NotificationWriter extends RequestScopeLifeCycle {
   (n: ResolvedNotification): Promise<void>;
 }
 type Deps = {

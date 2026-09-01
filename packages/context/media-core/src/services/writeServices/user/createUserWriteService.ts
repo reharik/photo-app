@@ -9,7 +9,6 @@ export type CreateUserCommand = {
   firstName: string;
   lastName: string;
   phone?: string;
-  actorId: EntityId;
 };
 
 export type CreateUserResult = { user: PendingUser };
@@ -18,16 +17,15 @@ export interface CreateUserWriteService extends WriteServiceBase {
   (input: CreateUserCommand): Promise<OperationResult<CreateUserResult>>;
 }
 
-type CreateUserWriteServiceDeps = { userRepository: UserRepository };
+type CreateUserWriteServiceDeps = { userRepository: UserRepository; viewerId: EntityId };
 
 export const build__CreateUserWriteService =
-  ({ userRepository }: CreateUserWriteServiceDeps): CreateUserWriteService =>
+  ({ viewerId, userRepository }: CreateUserWriteServiceDeps): CreateUserWriteService =>
   async ({
     email,
     firstName,
     lastName,
     phone,
-    actorId,
   }: CreateUserCommand): Promise<OperationResult<CreateUserResult>> => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const normalizedEmail = email.trim().toLowerCase();
@@ -47,7 +45,7 @@ export const build__CreateUserWriteService =
     }
     const user = PendingUser.create(
       { email: normalizedEmail, firstName, lastName, phone },
-      actorId,
+      viewerId,
     );
 
     await userRepository.save(user);

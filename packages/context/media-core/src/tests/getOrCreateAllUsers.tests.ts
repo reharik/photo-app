@@ -22,8 +22,6 @@ import { getOrCreateAllUsers } from '@packages/media-core';
 import type { UserRepository } from '../repositories/domainRepositories/userRepository';
 import type { CreateUserWriteService } from '../services/writeServices/user/createUserWriteService';
 
-const ACTOR = 'actor-1';
-
 /** Minimal User/PendingUser stand-in — getOrCreateAllUsers only ever calls .email(). */
 const fakeUser = (email: string, kind: 'active' | 'pending' = 'active'): User | PendingUser =>
   ({ kind, email: () => email }) as unknown as User | PendingUser;
@@ -61,7 +59,6 @@ describe('getOrCreateAllUsers', () => {
         ['  Bob@Example.COM '],
         h.userRepository,
         h.createUserWriteService,
-        ACTOR,
       );
 
       expect(result.success).toBe(true);
@@ -69,9 +66,14 @@ describe('getOrCreateAllUsers', () => {
       expect(h.getAllUsersByEmail).toHaveBeenCalledWith(['bob@example.com']);
       // ...and so does creation.
       expect(h.createUser).toHaveBeenCalledTimes(1);
-      expect(h.createUser).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'bob@example.com', actorId: ACTOR }),
-      );
+      // `actorId` left the command — the acting viewer is now a scoped IoC
+      // dependency of createUserWriteService, so it is not observable on the
+      // call. Assert the whole command exactly instead of a subset.
+      expect(h.createUser).toHaveBeenCalledWith({
+        email: 'bob@example.com',
+        firstName: '',
+        lastName: '',
+      });
     });
 
     it('matches an existing user whose stored email differs only by case/whitespace', async () => {
@@ -81,7 +83,6 @@ describe('getOrCreateAllUsers', () => {
         ['bob@example.com'],
         h.userRepository,
         h.createUserWriteService,
-        ACTOR,
       );
 
       expect(result.success).toBe(true);
@@ -98,7 +99,6 @@ describe('getOrCreateAllUsers', () => {
         ['a@x.com', 'A@x.com', ' a@x.com '],
         h.userRepository,
         h.createUserWriteService,
-        ACTOR,
       );
 
       expect(result.success).toBe(true);
@@ -123,7 +123,6 @@ describe('getOrCreateAllUsers', () => {
         ['good@x.com', 'bad@x.com'],
         h.userRepository,
         h.createUserWriteService,
-        ACTOR,
       );
 
       expect(result.success).toBe(false);
@@ -140,7 +139,6 @@ describe('getOrCreateAllUsers', () => {
         ['existing@x.com', 'new@x.com'],
         h.userRepository,
         h.createUserWriteService,
-        ACTOR,
       );
 
       expect(result.success).toBe(true);
@@ -152,12 +150,7 @@ describe('getOrCreateAllUsers', () => {
     });
 
     it('creates no users and returns an empty set for an empty recipient list', async () => {
-      const result = await getOrCreateAllUsers(
-        [],
-        h.userRepository,
-        h.createUserWriteService,
-        ACTOR,
-      );
+      const result = await getOrCreateAllUsers([], h.userRepository, h.createUserWriteService);
 
       expect(result.success).toBe(true);
       expect(h.createUser).not.toHaveBeenCalled();

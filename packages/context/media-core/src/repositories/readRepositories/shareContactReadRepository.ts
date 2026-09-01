@@ -1,15 +1,18 @@
+import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import type { EntityId } from '../../types/types';
 import type { ReadRepositoryDeps, ShareContactRow, ShareContactSuggestion } from './types';
 
-export type ShareContactReadRepository = {
+export interface ShareContactReadRepository extends RequestScopeLifeCycle {
   getShareSuggestions: (userId: EntityId) => Promise<ShareContactSuggestion[]>;
-};
+}
 
 export const build__ShareContactReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): ShareContactReadRepository => ({
   getShareSuggestions: async (userId: EntityId): Promise<ShareContactSuggestion[]> => {
-    const rows = await database<ShareContactRow>('shareContact')
+    await uow.join();
+    const rows = await uow
+      .db()<ShareContactRow>('shareContact')
       .where({ userId })
       .orderBy('lastSharedAt', 'desc')
       .select<{ contactUserId: EntityId; handle: string }[]>('contactUserId', 'handle');

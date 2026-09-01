@@ -138,6 +138,11 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
   });
 
   afterEach(async () => {
+    // Reads join the request transaction now, so a repository resolved straight off
+    // the container leaves one open — there is no GraphQL boundary here to settle it,
+    // and TRUNCATE below would block on the lock forever. settle(false) is a no-op
+    // when nothing is open, which is the case for the tests that go through yoga.
+    await container.resolve('uow').settle(false);
     await resetIntegrationTestDb(database, undefined, () => integrationTestMediaStorage.clear());
   });
 

@@ -1,5 +1,4 @@
 import { EntityType } from '@packages/contracts';
-import type { Knex } from 'knex';
 
 import type { ReactionReadRepository } from '../../../repositories/readRepositories/types';
 import type { EntityId } from '../../../types/types';
@@ -14,7 +13,6 @@ export interface viewerReactionReadService extends ReadServiceBase {
 }
 
 type ViewerReactionReadServiceDeps = {
-  database: Knex;
   reactionReadRepository: ReactionReadRepository;
   viewerId: string;
 };

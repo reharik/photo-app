@@ -5,7 +5,7 @@ import { toPagedResult, withCollectionInfo } from '../queryHelpers';
 import type { AlbumMemberReadRepository, AlbumMemberRow, ReadRepositoryDeps } from './types';
 
 export const build__AlbumMemberReadRepository = ({
-  database,
+  uow,
 }: ReadRepositoryDeps): AlbumMemberReadRepository => ({
   getMemberByUserId: async ({
     albumId,
@@ -14,8 +14,10 @@ export const build__AlbumMemberReadRepository = ({
     albumId: string;
     viewerId: string;
   }): Promise<AlbumMemberRow | undefined> => {
+    await uow.join();
     return withEnumRevival(
-      database<AlbumMemberRow>('albumMember')
+      uow
+        .db()<AlbumMemberRow>('albumMember')
         .where('albumId', albumId)
         .where('userId', viewerId)
         .first<AlbumMemberRow>(),
@@ -34,18 +36,21 @@ export const build__AlbumMemberReadRepository = ({
     viewerId: string;
     collectionInfo: AlbumMemberCollectionInfo;
   }): Promise<PagedList<AlbumMemberRow>> => {
+    await uow.join();
     const rows = await withEnumRevival(
-      database<AlbumMemberRow>('albumMember')
+      uow
+        .db()<AlbumMemberRow>('albumMember')
         .innerJoin('user', 'user.id', 'albumMember.userId')
         .where('albumMember.albumId', albumId)
         .whereExists(
-          database
-            .select(database.raw('1'))
+          uow
+            .db()
+            .select(uow.db().raw('1'))
             .from('albumMember as viewerMember')
-            .where('viewerMember.albumId', database.ref('albumMember.albumId'))
+            .where('viewerMember.albumId', uow.db().ref('albumMember.albumId'))
             .where('viewerMember.userId', viewerId),
         )
-        .modify(withCollectionInfo(database, collectionInfo))
+        .modify(withCollectionInfo(uow.db(), collectionInfo))
         .select<(AlbumMemberRow & { totalCount: number })[]>([
           'albumMember.id',
           'albumMember.userId',

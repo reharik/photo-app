@@ -1,6 +1,4 @@
-import { User } from '@packages/contracts';
-import { EntityId } from '@packages/media-core';
-import { asValue, AwilixContainer, createContainer } from 'awilix';
+import { AwilixContainer, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
 import {
   composedManifests,
@@ -8,24 +6,8 @@ import {
   type AppCradle,
 } from './di/generated/ioc-composed.js';
 
-export type UnitOfWork = {
-  start: () => Promise<void>;
-  commit: () => Promise<void>;
-  rollback: () => Promise<void>;
-};
-
-export type CradleExtras = {
-  container: AwilixContainer<AppCradle>;
-  viewerId: EntityId;
-  viewer: User;
-  publicLinkId: EntityId;
-  uow: UnitOfWork;
-};
-export type Cradle = AppCradle & CradleExtras;
-
-export const createAppContainer = (): AwilixContainer<Cradle> => {
-  const container = createContainer<Cradle>({ injectionMode: 'PROXY' });
+export const createAppContainer = (): AwilixContainer<AppCradle> => {
+  const container = createContainer<AppCradle>();
   registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
-  container.register({ container: asValue(container) });
   return container;
 };

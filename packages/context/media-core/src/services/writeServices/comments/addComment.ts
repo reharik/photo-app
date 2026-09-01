@@ -10,11 +10,11 @@ import {
 } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 import { Comment } from '../../../domain';
+import { WriteServices } from '../../../generated/ioc-registry.types';
 import { CommentRepository } from '../../../repositories';
 import { UserReadRepository } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
-import { ValidateOperationService } from '../../readServices/mediaGrantService';
-import { ToggleReaction } from '../reactions/toggleReaction';
+import { ValidateOperationService } from '../../readServices/ValidateOperationService';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type AddCommentCommand = {
@@ -45,19 +45,19 @@ type AddCommentDeps = {
   commentRepository: CommentRepository;
   userReadRepository: UserReadRepository;
   validateOperationService: ValidateOperationService;
-  toggleReaction: ToggleReaction;
+  writeServices: WriteServices;
 };
 
 export const build__AddComment = ({
   commentRepository,
   userReadRepository,
   validateOperationService,
-  toggleReaction,
+  writeServices,
 }: AddCommentDeps): AddComment => {
   return async (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
     const result = await validateOperationService.authorizeMediaComment({
       mediaItemId: command.targetId,
-      viewerId: command.authorId,
+      viewerId: command.viewer.id,
     });
     if (!result.success) {
       return result;
@@ -95,7 +95,7 @@ export const build__AddComment = ({
     );
 
     await commentRepository.save(comment);
-    await toggleReaction({
+    await writeServices.toggleReaction({
       targetType: EntityType.mediaItem,
       targetId: command.targetId,
       emoji: ReactionEmoji.comment,

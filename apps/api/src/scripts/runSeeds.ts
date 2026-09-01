@@ -1,9 +1,14 @@
+import { SYSTEM_ACTOR_ID } from '@packages/contracts';
 import knex from 'knex';
 import { knexConfig } from '../knexfile';
 
 const detectIfSeedsHaveBeenRun = async () => {
   const db = knex(knexConfig);
-  const result = await db('user').count('* as count').first();
+  // Exclude the system actor row. It is seeded by migration 0030, not by
+  // `db.seed.run()`, so on a fresh database it is present before seeding has
+  // ever happened — counting it would make this guard report "already seeded"
+  // and silently skip dev/e2e seeding entirely.
+  const result = await db('user').whereNot('id', SYSTEM_ACTOR_ID).count('* as count').first();
   return Number(result?.count || 0) > 0;
 };
 

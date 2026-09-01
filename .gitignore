@@ -5,7 +5,7 @@ node_modules
 .history
 .vscode
 dist
-
+.ioc-generation-state.json
 
 .nx/cache
 .nx/workspace-data
@@ -15,7 +15,7 @@ vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
 **/generated/
-
+**/di/**
 apps/api/src/di/
 
 # NOTE: contracts smart-enums (src/enums/graphqlSmartEnums.ts) is deliberately COMMITTED,

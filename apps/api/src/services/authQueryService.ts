@@ -9,7 +9,7 @@ import type { Logger } from '@packages/infrastructure';
 import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { Knex } from 'knex';
+import { Knex } from 'knex';
 import { DateTime } from 'luxon';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';

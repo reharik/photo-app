@@ -172,6 +172,31 @@ const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
   };
 };
 
+/**
+ * What the worker's image pipeline hands back for a plain (non-HEIC) photo:
+ * display + thumbnail derivatives and no capture time. `originalAsset` is
+ * omitted deliberately — it is only present when the pipeline REPLACED the
+ * original, and these items finalized with their original already READY, which
+ * `applyProcessingResults` rejects as AssetNotProcessing.
+ */
+const derivativePipelineResult = () => ({
+  capture: {},
+  displayAsset: {
+    kind: MediaAssetKind.display,
+    mimeType: 'image/png',
+    sizeBytes: 1024,
+    width: 1,
+    height: 1,
+  },
+  thumbnailAsset: {
+    kind: MediaAssetKind.thumbnail,
+    mimeType: 'image/png',
+    sizeBytes: 256,
+    width: 1,
+    height: 1,
+  },
+});
+
 describe('Media upload pipeline (application services)', () => {
   const harness = createWriteTestHarness();
   const viewerA = TEST_VIEWER_A_ID;
@@ -551,8 +576,8 @@ describe('Album integration (application services)', () => {
       if (!afterFinalize) {
         return;
       }
-      const readyMark = afterFinalize.markReadyAfterDerivatives(
-        { displayWidth: 1, displayHeight: 1 },
+      const readyMark = afterFinalize.applyProcessingResults(
+        derivativePipelineResult(),
         viewerOnlyId,
       );
       expect(readyMark.success).toBe(true);
@@ -637,10 +662,7 @@ describe('Album integration (application services)', () => {
       if (!afterFinalize) {
         return;
       }
-      const readyMark = afterFinalize.markReadyAfterDerivatives(
-        { displayWidth: 1, displayHeight: 1 },
-        viewerId,
-      );
+      const readyMark = afterFinalize.applyProcessingResults(derivativePipelineResult(), viewerId);
       expect(readyMark.success).toBe(true);
       await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
@@ -725,10 +747,7 @@ describe('Album integration (application services)', () => {
       if (!afterFinalize) {
         return;
       }
-      const readyMark = afterFinalize.markReadyAfterDerivatives(
-        { displayWidth: 1, displayHeight: 1 },
-        viewerId,
-      );
+      const readyMark = afterFinalize.applyProcessingResults(derivativePipelineResult(), viewerId);
       expect(readyMark.success).toBe(true);
       await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
@@ -886,10 +905,7 @@ describe('Album integration (application services)', () => {
         if (!afterFin) {
           return;
         }
-        const rm = afterFin.markReadyAfterDerivatives(
-          { displayWidth: 1, displayHeight: 1 },
-          viewerId,
-        );
+        const rm = afterFin.applyProcessingResults(derivativePipelineResult(), viewerId);
         expect(rm.success).toBe(true);
         await mediaItemRepository.save(afterFin, testTrx);
         const readyItem = await mediaItemRepository.getById(item.id());
@@ -977,10 +993,7 @@ describe('Album integration (application services)', () => {
       if (!afterFin) {
         return;
       }
-      const rm = afterFin.markReadyAfterDerivatives(
-        { displayWidth: 1, displayHeight: 1 },
-        viewerId,
-      );
+      const rm = afterFin.applyProcessingResults(derivativePipelineResult(), viewerId);
       expect(rm.success).toBe(true);
       await mediaItemRepository.save(afterFin, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());

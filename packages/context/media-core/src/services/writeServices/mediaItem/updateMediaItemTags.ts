@@ -16,17 +16,19 @@ export interface UpdateMediaItemTags extends WriteServiceBase {
 
 type UpdateMediaItemTagsDeps = {
   mediaItemRepository: MediaItemRepository;
+  viewerId: EntityId;
 };
 
 const normalizeLabel = (label: string): string => label.trim().toLowerCase();
 
 export const build__UpdateMediaItemTags = ({
   mediaItemRepository,
+  viewerId,
 }: UpdateMediaItemTagsDeps): UpdateMediaItemTags => {
   return async (
     input: UpdateMediaItemTagsCommand,
   ): Promise<OperationResult<UpdateMediaItemTagsResult>> => {
-    const { viewerId, mediaItemId, tags } = input;
+    const { mediaItemId, tags } = input;
 
     const getResult = await loadRequiredMediaItem(mediaItemId, mediaItemRepository);
     if (!getResult.success) {

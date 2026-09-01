@@ -2,6 +2,7 @@ import { ok, Operation, OperationResult } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
+import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { ReorderAlbumItemsCommand, ReorderAlbumItemsResult } from './writeAlbum.types';
 
@@ -11,15 +12,17 @@ export interface ReorderAlbumItems extends WriteServiceBase {
 
 type ReorderAlbumItemsDeps = {
   albumRepository: AlbumRepository;
+  viewerId: EntityId;
 };
 
 export const build__ReorderAlbumItems = ({
   albumRepository,
+  viewerId,
 }: ReorderAlbumItemsDeps): ReorderAlbumItems => {
   return async (
     input: ReorderAlbumItemsCommand,
   ): Promise<OperationResult<ReorderAlbumItemsResult>> => {
-    const { viewerId, albumId, albumItemIds } = input;
+    const { albumId, albumItemIds } = input;
 
     const r1 = await loadRequiredAlbum(albumId, albumRepository);
     if (!r1.success) {

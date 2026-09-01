@@ -1,5 +1,5 @@
 import { ContractError, fail, OperationResult } from '@packages/contracts';
-import { EmailService } from '../emailClient.js';
+import { EmailClient } from '../emailClient.js';
 import { EmailConfig } from '../types.js';
 
 export type EmailSendInput = {
@@ -19,7 +19,7 @@ export interface EmailChannel extends Channel {
 
 export type EmailChannelDeps = {
   config: EmailConfig;
-  emailClient: EmailService;
+  emailClient: EmailClient;
 };
 
 export const build__EmailChannel = ({ config, emailClient }: EmailChannelDeps): EmailChannel => ({
