@@ -77,9 +77,9 @@ export const createConfigFromEnv = (): Config => {
     postgresUser: process.env.POSTGRES_USER || 'postgres',
     postgresPassword: process.env.POSTGRES_PASSWORD || '',
     postgresDatabase: process.env.POSTGRES_DB || 'photo_app',
-    logLevel: 'error',
-    // (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
-    // (isProduction ? 'info' : 'debug'),
+    logLevel:
+      (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
+      (isProduction ? 'info' : 'debug'),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsEndpoint: process.env.AWS_ENDPOINT?.trim() || undefined,
