@@ -32,6 +32,21 @@ export const build__SesEventQueue = ({ config }: SesEventQueueDeps): SesEventQue
     sesEventQueueWaitTimeSeconds = 0,
     sesEventQueueVisibilityTimeout = 60,
   } = config;
+
+  // `config.sesEventQueueUrl` defaults to '' (SES_EVENT_QUEUE_URL unset) — that
+  // means "no queue wired up", not "a queue that rejects every call". Polling an
+  // empty QueueUrl throws QueueDoesNotExist on every pass, and because this task
+  // is the LAST queue task (order 10000), it is reached exactly when the media
+  // queues go idle — the same condition that lets the loop run its sweeps. That
+  // throw propagates out of runWorkerTasksOnce and skips the sweep segment, so an
+  // unconfigured queue starves every scheduled task. Answer idle instead.
+  if (!sesEventQueueUrl) {
+    return {
+      receiveMessages: async () => [],
+      deleteMessages: async () => {},
+    };
+  }
+
   const sqs = new SQSClient({ region: awsRegion });
 
   return {
