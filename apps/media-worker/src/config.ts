@@ -39,6 +39,10 @@ export type Config = {
   clientUrl: string;
   isProduction: boolean;
   isDevelopment: boolean;
+  sesEventQueueUrl: string;
+  sesEventQueueMaxNumberOfMessages: number;
+  sesEventQueueWaitTimeSeconds: number;
+  sesEventQueueVisibilityTimeout: number;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -73,9 +77,9 @@ export const createConfigFromEnv = (): Config => {
     postgresUser: process.env.POSTGRES_USER || 'postgres',
     postgresPassword: process.env.POSTGRES_PASSWORD || '',
     postgresDatabase: process.env.POSTGRES_DB || 'photo_app',
-    logLevel:
-      (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
-      (isProduction ? 'info' : 'debug'),
+    logLevel: 'error',
+    // (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
+    // (isProduction ? 'info' : 'debug'),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsEndpoint: process.env.AWS_ENDPOINT?.trim() || undefined,
@@ -105,6 +109,16 @@ export const createConfigFromEnv = (): Config => {
     debounceEmailWindowSeconds: process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS
       ? Number(process.env.DEBOUNCE_EMAIL_WINDOW_SECONDS)
       : 3600,
+    sesEventQueueUrl: process.env.SES_EVENT_QUEUE_URL || '',
+    sesEventQueueMaxNumberOfMessages: process.env.SES_EVENT_QUEUE_MAX_NUMBER_OF_MESSAGES
+      ? Number(process.env.SES_EVENT_QUEUE_MAX_NUMBER_OF_MESSAGES)
+      : 10,
+    sesEventQueueWaitTimeSeconds: process.env.SES_EVENT_QUEUE_WAIT_TIME_SECONDS
+      ? Number(process.env.SES_EVENT_QUEUE_WAIT_TIME_SECONDS)
+      : 0,
+    sesEventQueueVisibilityTimeout: process.env.SES_EVENT_QUEUE_VISIBILITY_TIMEOUT
+      ? Number(process.env.SES_EVENT_QUEUE_VISIBILITY_TIMEOUT)
+      : 60,
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
     isProduction,
     isDevelopment,

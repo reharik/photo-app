@@ -135,6 +135,10 @@ export const build__NotificationBatcher = ({
             sesMessageId: r.value,
             emailKind: EmailKind.activityDigest,
             recipientEmail: recipientEmail.email,
+            // No accessGrantId, and there cannot be one: this is a single digest
+            // spanning every album and kind that accumulated for this recipient, and
+            // all four batched kinds come from events that carry no authorization
+            // anyway. Attribution is only meaningful for the immediate share emails.
           },
           SYSTEM_ACTOR_ID,
         );

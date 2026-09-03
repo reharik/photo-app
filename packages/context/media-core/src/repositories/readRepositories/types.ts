@@ -3,6 +3,8 @@ import {
   AlbumSortBy,
   AuthorizationKind,
   AuthorizationOrigin,
+  EmailDeliveryState,
+  EmailStatus,
   EntityType,
   Operation,
   ReactionEmoji,
@@ -50,6 +52,16 @@ export type MediaItemOperationsRow = {
   operations: Operation[];
 };
 
+/**
+ * The three-way collapse of EmailStatus the share roster renders. The raw
+ * status never leaves the read service — see DELIVERY_STATE_BY_EMAIL_STATE.
+ */
+export type EmailShareDelivery = {
+  state: EmailDeliveryState;
+  /** SES event time once one has arrived, otherwise the send time. */
+  at: Date;
+};
+
 export type EmailShare = {
   id: EntityId;
   email: string;
@@ -57,6 +69,22 @@ export type EmailShare = {
   hasAccount: boolean;
   userId?: string;
   createdAt: Date;
+  /** undefined = no email_delivery row: a grant predating delivery tracking. */
+  delivery?: EmailShareDelivery;
+};
+
+/**
+ * What getEmailedAuthorizationsForAlbum actually selects: flat columns, one
+ * join hop short of an EmailShare. `deliveryStatus` is the RAW EmailStatus and
+ * MUST be revived (withEnumRevival) — un-revived it is a bare string whose
+ * `.state` is undefined, which collapses to a null delivery and shows nothing.
+ */
+export type EmailShareRow = Omit<EmailShare, 'delivery'> & {
+  firstName?: string;
+  lastName?: string;
+  userStatus?: UserStatus;
+  deliveryStatus?: EmailStatus;
+  deliveryAt?: Date;
 };
 
 export interface AuthorizationReadRepository extends RequestScopeLifeCycle {
@@ -82,9 +110,7 @@ export interface AuthorizationReadRepository extends RequestScopeLifeCycle {
   }: {
     albumId: EntityId;
     viewerId: EntityId;
-  }) => Promise<
-    (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
-  >;
+  }) => Promise<EmailShareRow[]>;
   getPublicAuthorizationByAlbum: (args: {
     albumId: EntityId;
     viewerId: EntityId;

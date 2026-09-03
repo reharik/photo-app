@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+    "Resource": [
+      "arn:aws:ses:us-east-1:709865789463:identity/homeroll.app",
+      "arn:aws:ses:us-east-1:709865789463:configuration-set/homeroll-events"
+    ]
+  }]
+}

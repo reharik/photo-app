@@ -488,6 +488,7 @@ export const ShareAlbumModal = ({
         hasAccount: share.hasAccount,
         userId: share.userId,
         state: 'persisted' as const,
+        delivery: share.delivery,
       }));
 
     for (const row of localRows) {
@@ -497,6 +498,10 @@ export const ShareAlbumModal = ({
       }
       rows.push({
         email: row.email,
+        // Delivery is only ever known for a row the server has seen; a just-added
+        // row shows nothing until the refetch, which is right — PENDING renders
+        // nothing anyway.
+        delivery: server?.delivery,
         displayName: row.displayName ?? (server?.hasAccount ? server.displayName : undefined),
         hasAccount:
           row.resolution === 'pending' ? server?.hasAccount : row.resolution === 'account',

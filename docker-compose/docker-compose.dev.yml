@@ -59,7 +59,7 @@ services:
       # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
-      FROM_EMAIL: test@example.com
+      FROM_EMAIL: invites@homeroll.app
       FROM_NAME: Homeroll Dev
       # for e2e testing
       SLOW_SWEEP_INTERVAL_MS: 5000

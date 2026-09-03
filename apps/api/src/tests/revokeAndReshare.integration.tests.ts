@@ -207,6 +207,21 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(stillRevoked.revokedAt).toBeInstanceOf(Date);
       // …and the replacement is a brand-new live grant, not an un-revoke.
       expect(fresh.revokedAt).toBeUndefined();
+
+      // The share email is queued by the post-commit bus, and the re-share COLLIDES with
+      // the row queued for the now-revoked grant: the dedup key is
+      // (channel, kind, recipient, container) and not one of those changed. So this pins
+      // both halves of the attribution — that the member strategy stamps
+      // albumSharedWithUser.authorizationId at all, and that the upsert MERGES it rather
+      // than leaving the dead grant's id behind for the roster to join on.
+      const queued = await database('asyncNotification').where({
+        kind: 'ALBUM_SHARED',
+        recipientId: TEST_VIEWER_A_ID,
+        containerId: albumId,
+      });
+      expect(queued).toHaveLength(1);
+      expect(queued[0].accessGrantId).toBe(fresh.id);
+      expect(queued[0].accessGrantId).not.toBe(first.id);
     });
   });
 
@@ -354,6 +369,11 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(firstQueued).toHaveLength(1);
       expect(firstQueued[0].kind).toBe('GUEST_ALBUM_SHARED');
       expect(firstQueued[0].recipientId).toBe(guestId);
+      // Pins the guest half of the grant attribution end to end: event → strategy →
+      // asyncWriter → column. Asserted on the real column, not on subjectId, so it would
+      // still fail if the strategy stopped stamping it (the send path's fallback masks
+      // that, deliberately, but only at send time).
+      expect(firstQueued[0].accessGrantId).toBe(invite.id);
       await database('asyncNotification').where({ subjectId: invite.id }).delete();
 
       // Re-share: same album, same still-pending user. Before the fix the aggregate hit

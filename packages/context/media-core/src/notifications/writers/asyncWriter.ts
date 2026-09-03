@@ -35,6 +35,7 @@ export const build__AsyncWriter =
           containerId: n.containerId, // was aggregateId
           subjectType: n.subjectType,
           subjectId: n.subjectId,
+          accessGrantId: n.accessGrantId, // undefined for the activity kinds
           attempts: 0,
         }),
       ),

@@ -9,7 +9,7 @@ export interface CreateEmailDeliveryService extends WriteServiceBase {
     sesMessageId: string,
     emailKind: EmailKind,
     recipientEmail: string,
-    authorizationId?: string,
+    accessGrantId?: string,
   ): Promise<OperationResult<void>>;
 }
 
@@ -27,14 +27,14 @@ export const build__CreateEmailDeliveryService =
     sesMessageId: string,
     emailKind: EmailKind,
     recipientEmail: string,
-    authorizationId?: string,
+    accessGrantId?: string,
   ) => {
     const newDelivery = EmailDelivery.create(
       {
         sesMessageId,
         emailKind,
         recipientEmail,
-        authorizationId,
+        accessGrantId,
       },
       viewerId,
     );

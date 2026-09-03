@@ -59,6 +59,9 @@ export const build__NotificationAlbumSharedStrategy = ({
       containerId: event.albumId,
       subjectType: EntityType.album, // degenerate: subject == container
       subjectId: event.albumId,
+      // subjectId is the album here, so the grant would otherwise be lost at the queue
+      // boundary — this is the only place it exists.
+      accessGrantId: event.authorizationId,
       kind: NotificationKind.albumShared,
     };
   },
@@ -79,6 +82,10 @@ export const build__NotificationGuestAlbumSharedStrategy = ({
       containerId: event.albumId,
       subjectType: EntityType.authorization, // degenerate: subject == container
       subjectId: event.authorizationId,
+      // Redundant with subjectId for this kind, and deliberately so: subjectId means
+      // "the generator" and only happens to be a grant here, whereas accessGrantId
+      // means "the grant" for every kind that has one. The send path reads the latter.
+      accessGrantId: event.authorizationId,
       kind: NotificationKind.guestAlbumShared,
     };
   },

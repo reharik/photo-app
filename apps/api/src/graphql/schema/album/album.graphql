@@ -29,6 +29,31 @@ type EmailShare {
   hasAccount: Boolean!
   userId: ID
   createdAt: DateTime!
+  """
+  Latest email_delivery for this grant by sent_at (a resend supersedes).
+  Null when there is no delivery row at all: a grant predating delivery
+  tracking, or one that never produced an email.
+  """
+  delivery: EmailDeliveryStatus
+}
+
+"""
+The three-way collapse of EmailStatus that the share roster renders. The raw
+status (BOUNCE_TRANSIENT and friends) never crosses the boundary.
+"""
+type EmailDeliveryStatus {
+  state: EmailDeliveryState!
+  """
+  When the state was reached: the SES event time once one has arrived,
+  otherwise the send time.
+  """
+  at: DateTime!
+}
+
+enum EmailDeliveryState {
+  PENDING
+  DELIVERED
+  FAILED
 }
 
 type PublicLink {

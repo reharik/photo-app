@@ -9,6 +9,10 @@ query AlbumSharingExtras($albumId: ID!) {
         displayName
         hasAccount
         userId
+        delivery {
+          state
+          at
+        }
       }
       publicLink {
         token

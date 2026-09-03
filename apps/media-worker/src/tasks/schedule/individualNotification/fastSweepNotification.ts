@@ -1,7 +1,9 @@
-import { notEmpty } from '@packages/contracts';
+import { notEmpty, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
 import {
   AsyncNotification,
+  EmailDelivery,
+  EmailDeliveryRepository,
   SystemAsyncNotificationRepository,
   SystemUserRepository,
   UnitOfWork,
@@ -22,6 +24,7 @@ type FastSweepNotificationDeps = {
   config: Config;
   fastSweepNotificationStrategies: FastSweepNotificationStrategies;
   uow: UnitOfWork;
+  emailDeliveryRepository: EmailDeliveryRepository;
 };
 
 export const build__FastSweepNotification = ({
@@ -32,6 +35,7 @@ export const build__FastSweepNotification = ({
   config,
   fastSweepNotificationStrategies,
   uow,
+  emailDeliveryRepository,
 }: FastSweepNotificationDeps): FastSweepNotification => {
   const hydrateUsers = async (rows: AsyncNotification[]) => {
     const ids = rows.flatMap((x) => [x.actorId, x.recipientId]).filter(notEmpty);
@@ -90,6 +94,28 @@ export const build__FastSweepNotification = ({
         continue;
       }
       const sent = await notificationService.notify(r.payload);
+      if (sent.success) {
+        const newEmailDelivery = EmailDelivery.create(
+          {
+            sesMessageId: sent.value,
+            emailKind: r.emailKind,
+            recipientEmail: r.recipientEmail,
+            accessGrantId: r.accessGrantId,
+          },
+          SYSTEM_ACTOR_ID,
+        );
+        try {
+          await uow.join();
+          await emailDeliveryRepository.save(newEmailDelivery);
+          await uow.complete(true);
+        } catch (e) {
+          await uow.settle(false);
+          logger.error(
+            '[fastSweepNotification] delivery record insert failed — telemetry gap, not resending',
+            { sesMessageId: sent.value, error: e },
+          );
+        }
+      }
       outcomes.push({ row: r.row, result: sent.success ? 'sent' : 'failed' });
     }
 

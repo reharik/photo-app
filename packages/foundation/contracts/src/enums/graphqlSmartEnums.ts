@@ -20,6 +20,7 @@ const albumSortByInput = {
   createdAt: { column: 'created_at', table: 'album', nullsLast: 'false' },
   title: { column: 'title', table: 'album', nullsLast: 'true' },
 } as const;
+const emailDeliveryStateInput = ['delivered', 'failed', 'pending'] as const;
 const entityTypeInput = [
   'album',
   'authorization',
@@ -58,6 +59,7 @@ export type ActivitySurface = Enumeration<typeof ActivitySurface>;
 export type AlbumItemSortBy = Enumeration<typeof AlbumItemSortBy>;
 export type AlbumMemberSortBy = Enumeration<typeof AlbumMemberSortBy>;
 export type AlbumSortBy = Enumeration<typeof AlbumSortBy>;
+export type EmailDeliveryState = Enumeration<typeof EmailDeliveryState>;
 export type EntityType = Enumeration<typeof EntityType>;
 export type ErrorCategory = Enumeration<typeof ErrorCategory>;
 export type InAppNotificationType = Enumeration<typeof InAppNotificationType>;
@@ -84,6 +86,10 @@ export const AlbumSortBy = enumeration<typeof albumSortByInput>('AlbumSortBy', {
   input: albumSortByInput,
   serializeAs: 'value',
 });
+export const EmailDeliveryState = enumeration<typeof emailDeliveryStateInput>(
+  'EmailDeliveryState',
+  { input: emailDeliveryStateInput, serializeAs: 'value' },
+);
 export const EntityType = enumeration<typeof entityTypeInput>('EntityType', {
   input: entityTypeInput,
   serializeAs: 'value',

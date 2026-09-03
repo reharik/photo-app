@@ -10,11 +10,10 @@ import {
 } from '@packages/media-core';
 
 import type { Config } from '../../../config.js';
+import { WorkerTaskOutcome } from '../../../types.js';
 import { WorkerJobProcessorBase } from './workerJobProcessorBaseType.js';
 
-export type ProcessNextMediaDeletionJobResult = 'processed' | 'idle';
-
-export type RunNextMediaDeletionJob = () => Promise<ProcessNextMediaDeletionJobResult>;
+export type RunNextMediaDeletionJob = () => Promise<WorkerTaskOutcome>;
 
 export interface ProcessNextMediaDeletionJob extends WorkerJobProcessorBase {
   deleteMediaItemIfPresent: (mediaItemId: string) => Promise<boolean>;
@@ -89,7 +88,7 @@ export const build__RunNextMediaDeletionJob = ({
   uow,
   processNextMediaDeletionJob,
 }: RunNextMediaDeletionJobDeps): RunNextMediaDeletionJob => {
-  return async (): Promise<ProcessNextMediaDeletionJobResult> => {
+  return async (): Promise<WorkerTaskOutcome> => {
     // claimNextAvailableJob manages it's own UOW lifecycle
     const job = await mediaDeletionJobRepository.claimNextAvailableJob();
     if (!job) {

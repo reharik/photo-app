@@ -9,6 +9,6 @@
 # Must match FROM_EMAIL in docker-compose/docker-compose.dev.yml (api + worker).
 set -e
 
-awslocal ses verify-email-identity --email-address test@example.com
+awslocal ses verify-email-identity --email-address invites@homeroll.app
 
-echo "[init] SES identity verified: test@example.com"
+echo "[init] SES identity verified: invites@homeroll.app"
