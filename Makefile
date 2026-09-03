@@ -59,6 +59,6 @@ docker/dev/migrate:
 docker/dev/seed:
 	$(compose_dev) exec -T api npm run db:seed:local --workspace=@app/api
 
-# make dc CMD="exec localstack awslocal ses verify-email-identity --email-address test@example.com"
+# make dc CMD="exec localstack awslocal ses verify-email-identity --email-address invites@homeroll.app"
 dc:
 	$(compose_dev) $(CMD)

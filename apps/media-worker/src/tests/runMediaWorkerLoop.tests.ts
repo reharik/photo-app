@@ -27,6 +27,18 @@ const createMockLogger = (): MockLogger => ({
   verbose: jest.fn(),
 });
 
+/**
+ * Pull the reported error text out of a logger.error payload. The loop's catch-all
+ * currently serializes with `{ err: String(e) }`; passing the Error itself is the
+ * shape that preserves a stack. Assert on the text so the test pins the behaviour
+ * under test — the failure surfaced and the loop kept polling — and not the
+ * payload shape.
+ */
+const reportedErrorText = (payload: unknown): string =>
+  payload instanceof Error
+    ? payload.message
+    : String((payload as { err?: unknown })?.err ?? payload);
+
 /** An always-due queue WorkerTask whose run() is the supplied mock. */
 const makeTask = (
   name: string,
@@ -249,7 +261,15 @@ describe('build__RunMediaWorkerLoop', () => {
       for (let i = 0; i < 6; i++) {
         await Promise.resolve();
       }
-      expect(logger.error).toHaveBeenCalledWith('Media worker loop error', expect.any(Error));
+      // The task's own runner logs the throw with a stack, then rethrows so the
+      // loop's catch-all reports it and schedules the retry sleep.
+      expect(logger.error).toHaveBeenCalledWith(
+        '[mediaWorker-run_once] task "image" threw',
+        expect.any(Error),
+      );
+      const loopErrors = logger.error.mock.calls.filter((c) => c[0] === 'Media worker loop error');
+      expect(loopErrors).toHaveLength(1);
+      expect(reportedErrorText(loopErrors[0][1])).toContain('boom');
 
       await jest.advanceTimersByTimeAsync(50);
       for (let i = 0; i < 6; i++) {
@@ -397,7 +417,7 @@ describe('build__RunMediaWorkerLoop', () => {
       await pump(30);
 
       expect(logger.error).toHaveBeenCalledWith(
-        '[mediaWorker] task "sweepA" threw',
+        '[mediaWorker-run_all] task "sweepA" threw',
         expect.any(Error),
       );
       expect(sweepBRun).toHaveBeenCalled();
@@ -528,7 +548,10 @@ describe('runAllTasks', () => {
       uow,
     );
 
-    expect(logger.error).toHaveBeenCalledWith('[mediaWorker] task "boom" threw', expect.any(Error));
+    expect(logger.error).toHaveBeenCalledWith(
+      '[mediaWorker-run_all] task "boom" threw',
+      expect.any(Error),
+    );
     expect(after).toHaveBeenCalledTimes(1);
     expect(didWork).toBe(true);
     // The thrower's boundary is rolled back before the next sweep starts, not

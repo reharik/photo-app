@@ -127,7 +127,7 @@ export const build__RunMediaWorkerLoop = ({
         }
         await sleep(config.mediaWorkerPollIntervalMs);
       } catch (e) {
-        logger.error('Media worker loop error', { err: String(e) });
+        logger.error('Media worker loop error', e);
         await sleep(config.mediaWorkerPollIntervalMs);
       }
     }
