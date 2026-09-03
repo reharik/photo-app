@@ -106,7 +106,18 @@ export const build__RunMediaWorkerLoop = ({
         const queueTasks = tasks.filter(isQueueTask);
         const sweepTasks = tasks.filter((t) => !isQueueTask(t));
 
-        const didWork = await runWorkerTasksOnce(queueTasks, logger, uow);
+        let didWork = false;
+        try {
+          didWork = await runWorkerTasksOnce(queueTasks, logger, uow);
+        } catch {
+          // Swallowed deliberately: runWorkerTasksOnce already logged the task name
+          // and the error before rethrowing. The rethrow's job is to abort the rest
+          // of the QUEUE segment, not the pass — sweeps run only on an idle queue,
+          // which is the same condition that reaches a low-order throwing task, so
+          // letting this reach the outer catch starves every scheduled task for as
+          // long as the throw persists. Falling through leaves the backoff intact:
+          // didWork stays false, so an all-idle pass still sleeps the poll interval.
+        }
         if (didWork) {
           idleCycles = 0;
           continue;
