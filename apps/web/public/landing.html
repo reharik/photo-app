@@ -234,10 +234,13 @@
          not a redesign, not a two-column rework. */
       /*
         16px sides, down from 20px. The floor is set by rotation, not by taste: a
-        rotated print's bounding box overhangs its column by (w*(cos0-1) + h*sin0)/2
-        per side, and the worst measured case (3:4 portrait at 3deg, 375px) is ~7.9px.
-        16px leaves ~8px of clearance; 12px would leave ~4px and 8px would bleed.
-        Re-run the swatch validation before reducing this further.
+        rotated print's bounding box overhangs the column by (w*(cos0-1) + h*sin0)/2
+        per side. That was measured against 3:4 swatches at 3deg when every print
+        shared a width; with the real photographs and per-print widths it is now
+        measured directly off the cluster, and the two outer prints are what spend
+        it: the aub print clears the left edge by 8.9px and the selfie clears the
+        right by 7.5px at 375px. 12px sides would leave ~4px and 8px would bleed.
+        Re-run the 320/360/375 bleed check before reducing this further.
       */
       .wrap {
         max-width: var(--measure);
@@ -381,60 +384,65 @@
       /*
         Brief 3.7: the image starts here and gets cut by the fold. A partially
         visible image is the best scroll cue available.
-
-        PHASE 3 owns the treatment — prints laid out on a table, 1-3deg rotation,
-        slight overlap. This is a plain stack on purpose: rotation and overlap are
-        visual-register decisions and doing them now would mean doing them twice.
-        Every img carries explicit width/height so nothing shifts when the real
-        photographs replace these in Phase 4.
-      */
-      /*
-        Prints laid out on a table (brief 6.5), not a grid.
-
-        RATIO-AGNOSTIC BY CONSTRUCTION. Every value here is relative to each image's
-        own box, so the treatment holds for portrait, square and landscape alike:
-
-          - rotation uses the default transform-origin (the element's own centre)
-          - the matte is uniform padding, not a frame of fixed proportions
-          - overlap is a fixed negative margin in PAGE units, never a % of photo
-            height (percentage margins resolve against width, which would make the
-            overlap silently ratio-dependent)
-          - height is always auto, derived from the intrinsic width/height attributes
-
-        There is deliberately no fixed height and no object-fit in this block.
-        Cropping to a uniform ratio is ruled out by 6.5 — real albums are mixed
-        orientation and the treatment has to survive that, not normalise it away.
-
-        Rotation overhang: a rotated rectangle grows by (w*(cos0-1) + h*sin0)/2 on
-        each side. See the rotation block below — overhang is the binding constraint
-        on the composition, and every rotation or offset change has to be
-        re-validated against the four swatch ratios at 320/360/375 before it ships.
       */
       /*
         A CLUSTER, not a column. Prints someone laid out on a table.
 
-        This is not a reversal of the earlier "separate them" decision. That was a
-        vertical stack overlapping in ONE axis, where an offset reads as misalignment.
-        A cluster offsets in TWO axes at different rotations, which reads as
-        arrangement. Different composition, same opinion.
+        STRUCTURAL CHANGE, and it is why this no longer looks like the flex stack it
+        replaced: THE THREE PRINTS NO LONGER SHARE A WIDTH. Each carries its own,
+        and each is placed by its CENTRE rather than stacked and nudged. A flow
+        layout can express "same width, offset from each other"; it cannot express
+        "these three specific centres" without the offsets becoming a chain, where
+        changing one print's width silently drags the other two. So: an
+        absolutely-positioned cluster in a box whose height comes from aspect-ratio.
 
-        Ratio-agnostic, by the same rules as before:
-          - horizontal offset is translateX in % of each print's OWN width
-          - vertical overlap is a negative margin in % — percentage margins resolve
-            against the container's WIDTH, so the overlap is a constant number of
-            pixels no matter what shape the photograph is
-          - no hardcoded heights, no object-fit, no aspect-ratio
+        WHY THE WIDTHS DIFFER — do not normalise them back. The selfie is a
+        close-up; the other two are group shots, so print width and APPARENT FACE
+        SCALE are different quantities and it is the second one that has to be
+        managed. Measured off the render at a 343px column, head height top-of-hair
+        to chin: selfie 60-70px, cafe 32-40px, aub ~24px. So 137px does not
+        equalise them — the selfie's faces are still roughly 2x the cafe's and 3x
+        the aub's — it only stops the close-up from swallowing the other two, which
+        is what happened at a shared width. Do not read the 137px as a computed
+        result; it is a judgement about how much dominance is acceptable.
+
+        THE MATTE STAYS 8px ON ALL THREE despite the different widths. A real photo
+        border is an absolute width; a smaller print with a proportionally thinner
+        border reads as a scaled image rather than as a smaller photograph. It is
+        also the one thing here that is not a pure ratio, so the container's
+        aspect-ratio cannot hold exactly at every column width: the matte is 16px of
+        every print's height however wide the column is, so print heights grow
+        slightly slower than the box. Measured drift at 320px vs 375px is 0.4px on
+        aub, 0.8px on cafe, 1.3px on selfie. Left alone deliberately — correcting it
+        would mean making the matte proportional, which is the thing being avoided.
+
+        Ratio-agnostic by the same rules as before: no fixed print heights, no
+        object-fit, no cropping to a common ratio. Height is still derived from each
+        image's own intrinsic width/height attributes.
       */
       .photos {
-        margin-top: calc(var(--gap) * 3);
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        position: relative;
+        /*
+          10px, not the 24px this had while the prints were a flow stack. In that
+          layout the first print carried translateY(-10px) and its rotation overhang
+          lifted the cluster ~14px above its own box, so 24px of margin bought about
+          46px of visible gap. Placing the cluster's bounding box flush to the top of
+          this container removed that lift, and the gap went to 60px. This is that
+          14px handed back, not a new spacing opinion.
+        */
+        margin-top: calc(var(--gap) + 2px);
+        /*
+          Every child is out of flow, so the height has to be declared. aspect-ratio
+          rather than a pixel height keeps it a ratio of the column, and makes the
+          children's `top` percentages resolve against a box that scales. The value
+          is the cluster's own measured bounding box at a 343px column: 337.36 tall.
+        */
+        aspect-ratio: 343 / 337.36;
       }
 
       .photo {
+        position: absolute;
         margin: 0;
-        width: 64%;
         padding: var(--gap);
         background: var(--print);
         box-shadow: var(--shadow-print);
@@ -466,47 +474,66 @@
         outline-offset: -1px;
       }
 
-      /* The overlap. Unambiguous on purpose — a small one reads as a failed grid. */
-      .photo + .photo {
-        margin-top: -19%;
-      }
-
-      /*
-        Two axes, 1-3deg alternating. transform creates a stacking context, so
-        z-index orders the pile; the strongest photograph sits on top regardless of
-        DOM order. Right now that is planting-fig-tree, the first child.
-      */
       /*
         THE 1-3deg CAP IS LIFTED — do not reassert it. It was calibrated for the
         vertical stack, where a single-axis offset plus a small tilt was all that
         separated "arrangement" from "misalignment"; a cluster carries more tilt
-        before it reads as a gimmick. These values are simply where the composition
-        currently sits while it is being iterated, not a rule.
+        before it reads as a gimmick.
 
         The real constraint is horizontal footprint. A rotated box grows to
-        w*cos0 + h*sin0; the h*sin0 term is small on a landscape print and dominant
-        on a portrait one, so the binding case is always a 3:4 portrait at 320-375px
-        against .wrap's 16px of side padding. At 7deg that case had only ~3.7px of
-        clearance and photo 2 could not go past translateX(2%) without bleeding.
-        Any change here needs the four-ratio swatch run before it ships.
+        w*cos0 + h*sin0, and the h*sin0 term is dominant on a portrait print — which
+        both of the outer two now are. Measured clearance inside .wrap's 16px sides
+        at 375px: 8.8px on the left, set by aub, and 9.6px on the right, set by
+        selfie. Those are close but not equal, and the cluster is NOT horizontally
+        centred in the column — the centres put it where it is, so a truly symmetric
+        pair of margins would need different centres, not a different container. The
+        binding number is the smaller one, and at 320px it falls to 7.4px. Any change to a width, a
+        rotation or a centre needs the 320/360/375 bleed run again before it ships.
 
-        Photo 1 is nudged with a calc() mixing % and px: the % keeps the base offset
-        proportional to the column, the px part is an absolute nudge that stays the
-        same number of pixels at every width.
+        Placement: left/top are the print's CENTRE, translate(-50%, -50%) moves the
+        box onto it, and rotate happens last about that same point. Order matters —
+        rotate before translate would rotate the offset too.
+
+        Classes, not :nth-child. The three rules are no longer interchangeable now
+        that each carries its own width, so binding them to DOM position would let a
+        reorder silently hand the selfie's 137px to a group shot.
+
+        z-index orders the pile; the strongest photograph sits on top. transform
+        creates a stacking context, so this works without position tricks.
       */
-      .photo:nth-child(1) {
-        transform: translate(calc(28% + 8px), -10px) rotate(-2deg);
-        z-index: 3;
-      }
-
-      .photo:nth-child(2) {
-        transform: translateX(6%) rotate(2.5deg);
+      /*
+        The centres below are given in the spec's frame, where the cluster's own
+        bounding box starts at y = 38.66 rather than at zero. `top` here is that
+        y minus 74.54, as a percentage of the container's 337.36px height, which
+        pins the top of the cluster to the top of the box and leaves no dead band
+        above it. x is unshifted: a percentage of the 343px column.
+      */
+      /* 198px / 4.89deg / centre (117.0, 198.4) -> top (198.4-74.54)/337.36 */
+      .photo--aub {
+        width: 57.7259%;
+        left: 34.1108%;
+        top: 36.7148%;
+        transform: translate(-50%, -50%) rotate(4.89deg);
         z-index: 1;
       }
 
-      .photo:nth-child(3) {
-        transform: translateX(50%) rotate(-1.5deg);
+      /* 202px / -8.83deg / centre (202.8, 326.8) -> (326.8-74.54)/337.36 */
+      .photo--cafe {
+        width: 58.8921%;
+        left: 59.1254%;
+        top: 74.7747%;
+        transform: translate(-50%, -50%) rotate(-8.83deg);
         z-index: 2;
+      }
+
+      /* 137px / -7.54deg / centre (252.4, 182.2) -> (182.2-74.54)/337.36
+         The small one, and the top of the pile. */
+      .photo--selfie {
+        width: 39.9417%;
+        left: 73.586%;
+        top: 31.9128%;
+        transform: translate(-50%, -50%) rotate(-7.54deg);
+        z-index: 3;
       }
 
       /* ── Below the fold ───────────────────────────────────────── */
@@ -666,66 +693,72 @@
         </div>
 
         <!--
-          PHOTOGRAPHS ARE PLACEHOLDERS. Whoever swaps them, two rules:
+          THESE ARE THE REAL PHOTOGRAPHS. Three rules for anyone who changes them:
 
-          1. NO PHOTOGRAPH WIDER THAN ABOUT 3:2 (1.48:1). The cluster's job is to be
-             cut by the fold and cue the scroll (brief 3.7). Measured across
-             same-ratio clusters at 320/360/375: 3:4 sits 29-37% visible, 1:1 41-51%,
-             4:3 57-71%, 16:9 81-100%. Past roughly 1.48:1 the cluster is short
-             enough to sit mostly above the fold and stops cueing anything at all —
-             at 16:9 and 320px it is 100%, i.e. entirely above it.
-             This threshold moves whenever the cluster or the headline changes: it
-             was ~1.56 before the prints were shrunk, ~1.44 after, and back to ~1.48
-             once headline candidate C made the text block taller and pushed the
-             cluster down. Re-measure it after any change to either.
-             The current set is 1.33 / 1.39 / 1.49 — the third sits right on the line.
-             The fix is always the photograph, never object-fit: cover on a fixed
-             slot, which is cropping and is ruled out by 6.5.
-          2. Rewrite every alt attribute. The text below describes THESE images.
+          1. THE PRINT WIDTHS ARE NOT INTERCHANGEABLE. Each figure's class carries
+             its own width, rotation and centre; see the .photo--* rules. A swap
+             that keeps the class but changes the photograph's aspect ratio moves
+             the cluster's bounding box, because print height is derived from the
+             image. Re-run the 320/360/375 bleed check after any such swap.
+
+          2. THE OLD "NOTHING WIDER THAN 3:2" RULE NO LONGER APPLIES AS WRITTEN. It
+             existed when all three prints shared a width and a landscape set made
+             the cluster too short to be cut by the fold (brief 3.7). The current
+             set is 0.88 / 1.49 / 0.66, and the two portraits carry the height: the
+             cluster is 337px tall at a 343px column and sits 67.5% above a 600px
+             fold at 375px (71.6% at 360, 84.5% at 320). What has to be re-measured
+             after a swap is that visible percentage, not the ratio in isolation.
+
+          3. Rewrite every alt attribute. The text below describes THESE images.
 
           Derivatives are generated offline from apps/web/landing-source/ at
-          400/800/1200/1600w, AVIF (libaom-av1, crf 34) + JPEG (q76) fallback.
-          AVIF meets the 20/55/110/180 KB budget at every width. The JPEG fallback
-          runs over on planting-fig-tree (87 KB at 800w) because sunlit foliage and
-          shingle siding are the hard compression case; accepted deliberately rather
-          than degrading quality, since AVIF serves the overwhelming majority and the
-          fallback is still an order of magnitude under the app bundle.
+          400/800w, AVIF (libaom-av1, crf 34) + JPEG (q76) fallback. 1200w and 1600w
+          are NOT shipped for the two new photographs and their absence is
+          deliberate: the aub scan is 870px wide and the selfie 1080px, so both
+          steps would be upscales, and neither print is ever selected above 800w
+          anyway — the widest either renders is 344px and 238px at the 596px desktop
+          column, i.e. 688 and 476 device pixels at DPR 2.
+
+          Budget note: the 20/55/110/180 KB targets were set on landscape frames, so
+          they read low against a portrait — a 400w 3:4 frame is 400x533, twice the
+          pixels of a 400x267 landscape. Both new photographs still clear them in
+          AVIF (aub 7.9/13.6 KB, selfie 17.1/40.5 KB at 400w/800w). The JPEG
+          fallbacks run over at every width, as they already did for the retired
+          fig-tree print; AVIF serves the overwhelming majority and the fallback is
+          still an order of magnitude under the app bundle.
         -->
         <div class="photos">
-          <figure class="photo">
+          <!-- Bottom of the pile. The widest print and the oldest photograph. -->
+          <figure class="photo photo--aub">
             <picture>
               <source
                 type="image/avif"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                sizes="(min-width: 720px) 328px, calc((100vw - 32px) * 0.5773 - 16px)"
                 srcset="
-                  /landing/planting-fig-tree-400.avif   400w,
-                  /landing/planting-fig-tree-800.avif   800w,
-                  /landing/planting-fig-tree-1200.avif 1200w,
-                  /landing/planting-fig-tree-1600.avif 1600w
+                  /landing/iliya-aub-1953-400.avif 400w,
+                  /landing/iliya-aub-1953-800.avif 800w
                 "
               />
               <img
-                src="/landing/planting-fig-tree-800.jpg"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                src="/landing/iliya-aub-1953-800.jpg"
+                sizes="(min-width: 720px) 328px, calc((100vw - 32px) * 0.5773 - 16px)"
                 srcset="
-                  /landing/planting-fig-tree-400.jpg   400w,
-                  /landing/planting-fig-tree-800.jpg   800w,
-                  /landing/planting-fig-tree-1200.jpg 1200w,
-                  /landing/planting-fig-tree-1600.jpg 1600w
+                  /landing/iliya-aub-1953-400.jpg 400w,
+                  /landing/iliya-aub-1953-800.jpg 800w
                 "
-                width="2048"
-                height="1536"
-                alt="Two men planting a fig tree beside a house. One digs with a shovel; the other holds a baby who is scowling at the camera."
+                width="870"
+                height="990"
+                alt="Two young men in suits walking side by side along a tree-lined campus path, books under their arms, both laughing."
                 fetchpriority="high"
               />
             </picture>
           </figure>
 
-          <figure class="photo">
+          <figure class="photo photo--cafe">
             <picture>
               <source
                 type="image/avif"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                sizes="(min-width: 720px) 335px, calc((100vw - 32px) * 0.5889 - 16px)"
                 srcset="
                   /landing/iliya-and-friends-400.avif   400w,
                   /landing/iliya-and-friends-800.avif   800w,
@@ -735,7 +768,7 @@
               />
               <img
                 src="/landing/iliya-and-friends-800.jpg"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                sizes="(min-width: 720px) 335px, calc((100vw - 32px) * 0.5889 - 16px)"
                 srcset="
                   /landing/iliya-and-friends-400.jpg   400w,
                   /landing/iliya-and-friends-800.jpg   800w,
@@ -750,30 +783,28 @@
             </picture>
           </figure>
 
-          <figure class="photo">
+          <!-- Top of the pile, and deliberately the smallest print: a close-up at
+               the other two prints' width would swamp them. See .photo--selfie. -->
+          <figure class="photo photo--selfie">
             <picture>
               <source
                 type="image/avif"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                sizes="(min-width: 720px) 222px, calc((100vw - 32px) * 0.3994 - 16px)"
                 srcset="
-                  /landing/iliya-being-misunderstood-400.avif   400w,
-                  /landing/iliya-being-misunderstood-800.avif   800w,
-                  /landing/iliya-being-misunderstood-1200.avif 1200w,
-                  /landing/iliya-being-misunderstood-1600.avif 1600w
+                  /landing/family-selfie-400.avif 400w,
+                  /landing/family-selfie-800.avif 800w
                 "
               />
               <img
-                src="/landing/iliya-being-misunderstood-800.jpg"
-                sizes="(min-width: 720px) 596px, calc(100vw - 40px)"
+                src="/landing/family-selfie-400.jpg"
+                sizes="(min-width: 720px) 222px, calc((100vw - 32px) * 0.3994 - 16px)"
                 srcset="
-                  /landing/iliya-being-misunderstood-400.jpg   400w,
-                  /landing/iliya-being-misunderstood-800.jpg   800w,
-                  /landing/iliya-being-misunderstood-1200.jpg 1200w,
-                  /landing/iliya-being-misunderstood-1600.jpg 1600w
+                  /landing/family-selfie-400.jpg 400w,
+                  /landing/family-selfie-800.jpg 800w
                 "
-                width="1633"
-                height="1179"
-                alt="People seated around a long table at a meeting, one man mid-gesture with both hands raised."
+                width="1080"
+                height="1634"
+                alt="A man in a flat cap, a woman in sunglasses and a blond toddler crowded into a selfie under a tree, all three laughing."
                 loading="lazy"
               />
             </picture>
