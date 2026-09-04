@@ -1,6 +1,8 @@
 # homeroll.app — landing page brief
 
-**Problem being solved:** the root domain is a login door. A stranger sees a form for a product they've never heard of and leaves. This has already cost one warm lead in person, on a phone.
+**Problem being solved:** the root domain isn't a landing page. `/` renders the authenticated library, which client-side-redirects a logged-out visitor to `/login` — so a stranger gets a spinner, then a URL change, then a form for a product they've never heard of. This has already cost one warm lead in person, on a phone.
+
+**The half of the problem that isn't copy:** the SPA is 561 KB gzipped in one chunk with no route splitting, and it parses the full GraphQL SDL at module scope on every load. Nothing paints until all of that lands. On party wifi the warm lead spent several seconds watching nothing before he got to the wrong content. Rewriting the words does not fix that, which is why the landing page is a static document rather than a screen in the app.
 
 **Constraint that reframes the whole page:** guest-link recipients never see this page — they land on an album URL. So the root domain has exactly two audiences: strangers who just heard about it, and returning users. Today it serves only the second.
 
@@ -56,7 +58,9 @@ Alternates, tradeoff in the label:
 
 **Recommended:**
 
-> Like a Google Photos album, except nothing in it gets scanned, indexed, or used to train anything.
+> Like a Google Photos album, except nothing in it gets scanned, profiled, or used to train anything.
+
+_("Indexed" was the original middle verb and it's ambiguous — photo rows are of course indexed in Postgres, and a technical reader will notice the gap between what the word says and what it means. "Profiled" says the actual thing, in a word a non-technical reader also understands. Cheapest correctness fix on the page.)_
 
 **Why this shape:** it names the incumbent (hey.com's move), it borrows Google's own product as the explanation of what yours does — which saves you a paragraph — and it states the difference as facts about _your_ product rather than accusations about theirs. That's the difference between positioning and preaching. You never say Google is bad; you say what doesn't happen here, and the reader draws the line themselves.
 
@@ -125,7 +129,9 @@ _(This paragraph carries three of your four product textures: contributor upload
 
 **Your family is not training data.**
 
-Homeroll isn't a social network. There's no feed, no algorithm deciding what you see, no ads, no follower count, and nothing that can go viral. Your photos aren't scanned to build a profile of you, aren't sold to anyone, and aren't used to train a model — not mine, not anybody else's. There is nothing clever happening to your pictures in the background. They're just your pictures.
+Homeroll isn't a social network. No feed, no strangers, no algorithm deciding who your kids get shown to. No ads, no follower count, nothing that can go viral. Your photos aren't scanned to build a profile of you, aren't sold to anyone, and aren't used to train a model — not mine, not anybody else's. There is nothing clever happening to your pictures in the background. They're just your pictures.
+
+_(Sentence two is lifted verbatim from the existing `LoggedOutScreen` copy. It's sharper than what I wrote — "who your kids get shown to" names the actual fear where "what you see" only gestures at it — and it's already in the welcome email, so it's load-bearing product voice rather than landing copy. Keep it consistent across both.)_
 
 _(Say the training-data line here, once, and then never again anywhere on the page. Repetition is what turns a position into a rant.)_
 
@@ -153,7 +159,12 @@ Albums are private by default. There's no public gallery, no discovery, and no w
 
 **Who made this**
 
-I'm one person. I've been building Homeroll for about a year, mostly because I wanted a way to share photos with my own family that didn't involve handing them to a company that wants something from them. There's no investor waiting on a return, no growth target, and no acquisition that ends with your albums somewhere you didn't pick. If I ever can't keep running it, I'll tell you, and I'll give you a way to take everything with you.
+I'm one person. I've been building Homeroll for [DURATION], mostly because I wanted a way to share photos with my own family that didn't involve handing them to a company that wants something from them. There's no investor waiting on a return, no growth target, and no acquisition that ends with your albums somewhere you didn't pick. [EXPORT SENTENCE — see below.]
+
+**Two unverified claims in this paragraph. Both have to resolve before ship:**
+
+- **`[DURATION]`.** Git history starts 2026-02-23, which is about six and a half months, not "about a year." Check whether there's earlier history under the betaname name; if there isn't, use the true number. Six months stated precisely is _stronger_ than a year stated loosely — specific is the entire voice of this page, and an overstated duration is the worst possible error on a page whose argument is "check what I'm telling you." The duration is also optional. "I'm one person" is the claim; the timespan is decoration, and cutting it removes something you'd have to keep accurate forever.
+- **`[EXPORT SENTENCE]`.** The draft was: _"If I ever can't keep running it, I'll tell you, and I'll give you a way to take everything with you."_ There is currently no export, download-all, or archive operation anywhere — individual originals are reachable one at a time and that's it. The brief's own rule applies: mean it or cut it. Cut it from the page now and restore it when export exists. It's worth building regardless — data portability is load-bearing for this positioning, and it's the one promise here that costs a competitor real money to match.
 
 **Why this section is worth more than any feature paragraph:** for a privacy product from an unknown domain, the reader's real question isn't "what does it do," it's "who are you and what do you want from me." Standard Notes answers this with three numbers — 100% revenue from paying users, $0 in venture capital, 10 years in service. are.na answers it with one sentence: their only business is being worth paying for, and the people who use it are their only customers. You can't claim ten years, but "one person, no investors, a year of work, and here's my exit plan if it dies" is a stronger answer than either, because it's the kind of thing a company literally cannot say.
 
@@ -191,9 +202,13 @@ That isn't a compromise on production value. The contrast _is_ the thesis, rende
 
 **2. Scale contrast.** Headline enormous — think 40–56px at 375px — and let it be the only large thing on the screen. Everything else stays small, quiet, and close together. This is free, it takes an hour, and it's the fastest available fix for institutional feel, because institutional design is _medium everything_. One loud element and a lot of quiet ones reads as a person making a choice. Uniform sizing reads as a template.
 
-**3. One committed color.** Not a palette — one. Not SaaS blue. Use it on the primary button, on link underlines, and nowhere else. **Pull it out of the hero photograph** so the color is tied to your material rather than picked off a swatch grid; that single move does more for coherence than any amount of palette theory. Background should be an off-white with some warmth in it — paper, not screen. Not pure white, not dark mode. Pick one mode and ship it; a theme toggle on this page is a tell that nobody decided anything.
+**3. One committed color — and it already exists.** Clay `#AA5C39`, the app's accent, on the primary button and link underlines and nowhere else. My original advice here was to pull the accent out of the hero photograph; that was written not knowing the product already had a warm terracotta accent one click away on `/login`. Inventing a second one would put the landing page and the login page in visible disagreement for no gain. Clay already satisfies what that advice was actually for — one color, not a palette, not SaaS blue, warm. **Invert the dependency: choose hero photographs that sit well against clay,** rather than choosing a color from the photographs.
 
-**4. Type with a face.** Headline in something with character — a warm serif, or a grotesque with a bit of oddness to it. Body in something plain and highly legible at 17–18px. Don't set the entire page in one fashionable display face; that's the art-directed trap, and it's the failure mode most likely to make this look designed-at rather than made-by.
+Background is `#FAFAF7` — already the app's paper white, already warm, no new token needed. Single light theme, no dark mode, no toggle. That part of the brief is satisfied by what's built.
+
+**4. Type with a face — using what's already loaded.** The app ships zero web fonts; every stack is system-local, which means the page currently makes no font network request at all. Don't spend that. The existing serif stack (`Iowan Old Style, Charter, Hoefler Text, Cambria, Georgia`) set at 48px is genuinely characterful — Iowan and Georgia are both warm, high-contrast, and nothing like a SaaS grotesque. Headline in the serif, body in the system sans at 17–18px, and no `@font-face` anywhere.
+
+The existing type scale tops out at 32px, so a marketing-only step above that has to be added. That's the one new token this page needs. Don't set the whole page in one display face — that's the art-directed trap, and it's the failure mode most likely to look designed-at rather than made-by.
 
 **5. Photos rotated one to three degrees, overlapping slightly.** Prints laid out on a table. Past 3° it's a gimmick and it starts performing casualness instead of being casual. Zero rotation gives you a grid, and a grid is a spreadsheet.
 
@@ -255,3 +270,4 @@ Every decision on this page resolves toward the more specific option. When two c
 - **Log in must be tappable at the top,** and repeated as plain text in the footer — "Already have an account? Log in." The grandparent who was sent a link and got lost will scroll to the bottom before they'll look in a corner.
 
 **Acceptance test, and it's the only one that matters:** pull the page up on a phone, hand it to somebody who's never heard of Homeroll, and ask what it does. If they can't tell you in one sentence, the headline is wrong. Run this specifically against the failure that started this — the guy at the party — and if you can, go find him and hand him the phone.
+7

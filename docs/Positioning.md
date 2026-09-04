@@ -112,3 +112,28 @@ diverge in behavior, that's a copy problem before it's a modeling one.
 **Storage costs money eventually.** Not currently stated anywhere. Limits
 and invite-only are the near-term answer to runaway usage; pricing is
 deferred until there are users to price for.
+
+One album. Everyone who was there.
+You make an album and invite the people it's about. They add their own photos to the same album, so the trip doesn't end up scattered across six phones, two group chats, and one AirDrop that didn't work. Everybody sees the whole thing.
+
+It doesn't matter who's on an iPhone and who isn't, and the people you share with don't need an account to look — they get a link that just works. If they decide they want an account later, everything they already have stays exactly where it is.
+
+Your family is not training data.
+Homeroll isn't a social network. No feed, no strangers, no algorithm deciding who your kids get shown to. No ads, no follower count, nothing that can go viral.
+
+Your photos aren't scanned to build a profile of you, aren't sold to anyone, and aren't used to train a model — not mine, not anybody else's. There is nothing clever happening to your pictures in the background. They're just your pictures.
+
+Who this is for
+Parents who want their kids' grandparents to see the photos but don't want their kids on Facebook. Families split across the wrong mix of phones, where half the album shows up sideways and blurry.
+
+The eight people who went on the trip, who each have a different forty photos of it. Anyone who's tired of firing two hundred pictures into a group chat where they get crushed to mush and buried by Tuesday.
+
+How this actually works
+Albums are private by default. There's no public gallery, no discovery, and no way to browse anyone else's photos — you see an album because a specific person sent it to you, and you can stop sharing it whenever you want. Nothing gets scanned to sort it, tag it, or figure out who's in it.
+
+And I'm not selling anything on the side, which means there's no version of this where your photos quietly become the product: it costs money to store them, so eventually it'll cost money to store them, and that'll be the whole business model.
+
+Who made this
+I'm one person. I've been building Homeroll for about six months, mostly because I wanted a way to share photos with my own family that didn't involve handing them to a company that wants something from them.
+
+There's no investor waiting on a return, no growth target, and no acquisition that ends with your albums somewhere you didn't pick. If I ever can't keep running it, I'll tell you, and I'll give you a way to take everything with you.
