@@ -23,6 +23,7 @@ const repoIgnores = [
   '**/generated/**',
   '**/*.ioc-manifest.generated.ts',
   '**/*.ioc-registry.types.ts',
+  '**/*.md',
 ];
 
 /**
