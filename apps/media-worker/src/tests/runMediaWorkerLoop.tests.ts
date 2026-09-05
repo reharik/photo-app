@@ -27,18 +27,6 @@ const createMockLogger = (): MockLogger => ({
   verbose: jest.fn(),
 });
 
-/**
- * Pull the reported error text out of a logger.error payload. The loop's catch-all
- * currently serializes with `{ err: String(e) }`; passing the Error itself is the
- * shape that preserves a stack. Assert on the text so the test pins the behaviour
- * under test — the failure surfaced and the loop kept polling — and not the
- * payload shape.
- */
-const reportedErrorText = (payload: unknown): string =>
-  payload instanceof Error
-    ? payload.message
-    : String((payload as { err?: unknown })?.err ?? payload);
-
 /** An always-due queue WorkerTask whose run() is the supplied mock. */
 const makeTask = (
   name: string,
@@ -261,15 +249,16 @@ describe('build__RunMediaWorkerLoop', () => {
       for (let i = 0; i < 6; i++) {
         await Promise.resolve();
       }
-      // The task's own runner logs the throw with a stack, then rethrows so the
-      // loop's catch-all reports it and schedules the retry sleep.
+      // The task's own runner logs the throw with a stack and rethrows to abort the
+      // rest of the queue segment. That rethrow must NOT reach the loop's catch-all:
+      // it would take the sweep segment down with it, and sweeps only ever run on an
+      // idle queue — the same condition that reaches a throwing low-order task.
       expect(logger.error).toHaveBeenCalledWith(
         '[mediaWorker-run_once] task "image" threw',
         expect.any(Error),
       );
       const loopErrors = logger.error.mock.calls.filter((c) => c[0] === 'Media worker loop error');
-      expect(loopErrors).toHaveLength(1);
-      expect(reportedErrorText(loopErrors[0][1])).toContain('boom');
+      expect(loopErrors).toHaveLength(0);
 
       await jest.advanceTimersByTimeAsync(50);
       for (let i = 0; i < 6; i++) {
@@ -278,6 +267,48 @@ describe('build__RunMediaWorkerLoop', () => {
 
       const totalCalls = deletionRun.mock.calls.length + imageRun.mock.calls.length;
       expect(totalCalls).toBeGreaterThanOrEqual(2);
+
+      loop.stop();
+      await jest.runOnlyPendingTimersAsync();
+      await done;
+    });
+  });
+
+  describe('When a queue task throws and sweeps are due', () => {
+    it('still runs the due sweeps instead of letting the throw abort the pass', async () => {
+      // The starvation bug: sweeps run only on an idle queue, and an idle queue is
+      // exactly what lets the loop reach a low-order throwing task. While the throw
+      // propagated to the loop's catch, no sweep could ever run.
+      const queueRun = jest
+        .fn<() => Promise<WorkerTaskOutcome>>()
+        .mockRejectedValue(new Error('queue boom'));
+      const sweepRun = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('idle');
+      const logger = createMockLogger();
+
+      const loop = build__RunMediaWorkerLoop({
+        uow: createFakeUow().uow,
+        config: { mediaWorkerPollIntervalMs: 10_000 } as Config,
+        logger,
+        intervalGate: makeGate([
+          makeTask('queue', 100, queueRun),
+          makeSweep('sweep', SweepCadence.fast, sweepRun),
+        ]),
+      });
+
+      const done = loop.start();
+      await pump(30);
+
+      expect(queueRun).toHaveBeenCalled();
+      expect(sweepRun).toHaveBeenCalled();
+      // The throw is reported once per pass by the queue runner, and never escalates
+      // to the loop-level handler that would have skipped the sweep segment.
+      expect(logger.error).toHaveBeenCalledWith(
+        '[mediaWorker-run_once] task "queue" threw',
+        expect.any(Error),
+      );
+      expect(
+        logger.error.mock.calls.filter((c) => c[0] === 'Media worker loop error'),
+      ).toHaveLength(0);
 
       loop.stop();
       await jest.runOnlyPendingTimersAsync();
