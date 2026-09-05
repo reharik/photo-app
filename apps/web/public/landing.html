@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F5F1E9" />
+
+    <title>Homeroll — Shared photos that stay private</title>
+    <meta
+      name="description"
+      content="You choose the photos, you choose who sees them, and it stays that way."
+    />
+
+    <!--
+      Phase 2 only. The app's index.html is served at / and is indexable; this file
+      would otherwise be indexed alongside it as duplicate content. Phase 5 removes
+      this line at the same time it flips the Caddy cookie matcher.
+    -->
+    <meta name="robots" content="noindex" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://homeroll.app" />
+    <meta property="og:site_name" content="Homeroll" />
+    <meta property="og:title" content="Shared photos that stay private" />
+    <meta
+      property="og:description"
+      content="You choose the photos, you choose who sees them, and it stays that way."
+    />
+    <!-- Placeholder path. The real card image is a Phase 5 deliverable. -->
+    <meta property="og:image" content="https://homeroll.app/landing/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Shared photos that stay private" />
+    <meta
+      name="twitter:description"
+      content="You choose the photos, you choose who sees them, and it stays that way."
+    />
+    <meta name="twitter:image" content="https://homeroll.app/landing/og-image.jpg" />
+
+    <style>
+      /*
+        Fraunces — variable (opsz 9-144), SIL OFL 1.1, served from this origin.
+        Headline only; body, subhead, section headers and micro-line keep their
+        system stacks. One new face, one job, one request.
+
+        METRIC-MATCHED TO THE FALLBACK so font-display: swap costs nothing visually.
+        Fraunces is 6.3% narrower than the fallback and has a taller default line
+        box, so a naive swap moved text 3.00px vertically and 20.17px horizontally.
+
+        Measured fallback (Liberation Serif here): ascent 1824/2048, descent
+        443/2048, lineGap 87/2048, upem 2048.
+
+        The overrides are divided by size-adjust — that formula was verified against
+        the un-divided one, which left a 2.00px vertical shift.
+
+        GOTCHA, and it is the whole reason this number is 87 and not 106: Fraunces
+        has an opsz axis and font-optical-sizing is on, so its proportions — and
+        therefore the width ratio against the fallback — CHANGE WITH FONT SIZE.
+        A size-adjust calibrated at one size is wrong at another, so this value is
+        swept against the real page rather than derived, and it must be RE-SWEPT
+        whenever --size-headline changes. It was 86.5% for the 32-44px clamp; the
+        move to 34-46px (headline candidate C) shifted the optimum to 86%.
+
+        Residual width at 320/360/375: +1.08 / +0.41 / +1.95px — all under 0.6% of
+        the line, with the line count and break point identical to the fallback at
+        every width, and baseline shift 0.00px at all three. Neighbouring values
+        measured worse: 85.5% gives -3.59px at 360, 86.5% gives +4.95px at 375.
+
+        Note `swap` is deliberate: `block` gives invisible text on a slow connection
+        and `optional` means slow visitors never see the face at all.
+      */
+      @font-face {
+        font-family: 'Fraunces';
+        src: url('/landing/fonts/6NUu8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7iQcIfJD58ngz1Yc7qv8.woff2')
+          format('woff2');
+        font-display: swap;
+        size-adjust: 86%;
+        ascent-override: 103.56%;
+        descent-override: 25.15%;
+        line-gap-override: 4.94%;
+      }
+
+      /*
+        Palette and font stacks are COPIED from apps/web/src/styles/colors.ts and
+        theme.ts, deliberately — this document does not import the app's theme and
+        must not grow a dependency on it. If the app's palette moves, this file does
+        not, and that is the intended behaviour.
+
+        colors.ts   gray_10 #FAFAF7  paper body
+                    gray_15 #F5F1E9  raised surface
+                    gray_30 #D4CBB7  standard border
+                    gray_80 #5C5145  secondary text
+                    gray_90 #2A2520  primary text
+                    clay      #AA5C39  theme.color.link / textAccent
+                    clay_dark #8D4A2C  theme.color.primaryButtonBg
+      */
+      :root {
+        --paper: #fafaf7;
+        --border: #d4cbb7;
+        --text: #2a2520;
+        /*
+          Body copy is the page's ARGUMENT, not supporting text, so it reads at full
+          strength. gray_85 rather than pure gray_90: at 11.50:1 it is unambiguously
+          AAA and sits only 1.26:1 off the headers, so the demotion is gone — but a
+          62ch measure of 17px sans at maximum contrast on warm cream reads dense,
+          where a 27px serif header at the same value does not. Large low-density
+          type carries pure; a wall of small type doesn't. One token to change if
+          pure is wanted.
+        */
+        --text-body: #3d352d;
+        /* Caption scale only — micro-line, masthead and footer links. NOT the
+           wordmark: the product name can't be the quietest thing on the page for a
+           reader who has never heard of it. */
+        --text-secondary: #5c5145;
+
+        /*
+          ONE color, two steps — and the two steps are a contrast requirement, not a
+          palette. Both are the same clay hue; the app makes exactly this split.
+
+            --accent        clay      #AA5C39  = theme.color.link / textAccent
+                            4.67:1 on #FAFAF7 — passes AA as link/underline color.
+            --accent-strong clay_dark #8D4A2C  = theme.color.primaryButtonBg
+                            6.38:1 with paper text on it. Clay proper as a FILL is
+                            only 4.67:1, which passes AA but leaves no margin, so
+                            the app steps down for filled surfaces and so does this
+                            page. (theme.ts's comment cites 3.8:1 for clay here;
+                            measured against every paper-range surface it is
+                            4.67-4.88:1. The conclusion stands, the number is stale.)
+
+          Used on the primary button and link underlines. Nowhere else.
+        */
+        --accent: #aa5c39;
+        --accent-strong: #8d4a2c;
+
+        /*
+          Photo-as-object. Both copied from the app rather than imported:
+            --print          colors.ts gray_05 #FFFDF9, the warm print-white matte.
+                             Pure white reads cold against this palette.
+            --shadow-print   theme.ts boxShadow.print — a photo print resting on a
+                             surface, warm-dark tint rather than black.
+        */
+        --print: #fffdf9;
+        /*
+          TWO LAYERS, because one can't do this job. --print #FFFDF9 against the
+          #FAFAF7 page is a 1.03:1 difference — the matte is, as a surface,
+          invisible — so the shadow carries the whole photo-as-object illusion.
+
+            contact  0 1px 2px  / .30   the dark line where the print meets the paper
+            ambient  0 10px 26px / .18  the soft cast that says it is resting on it
+
+          A single ambient shadow makes an object look like it is floating above a
+          surface; the tight contact layer is what puts it down on one. Measured
+          against the old single 0 4px 16px/.16, darkness 1px below the print goes
+          20.9 -> 44.6 (2.1x) and the ambient tail at +14px goes 4.0 -> 14.1.
+
+          Deliberately not solved by raising the hairline's alpha: a heavier outline
+          makes the print look drawn rather than placed.
+        */
+        --shadow-print:
+          0 1px 2px rgba(58, 42, 28, 0.3),
+          0 10px 26px rgba(58, 42, 28, 0.18);
+
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Helvetica Neue',
+          Arial, sans-serif;
+        --serif: 'Iowan Old Style', Charter, 'Hoefler Text', Cambria, Georgia, serif;
+
+        /*
+          Marketing-only type scale. Deliberately NOT in the app's theme.ts, which caps
+          at 32px — this document does not depend on the app theme and the app has no
+          use for a 56px step.
+
+          THREE TIERS, not two. The page is a four-paragraph argument, so the section
+          headers have to punctuate it — at 20px against 17px body they didn't, and
+          everything below the fold read as one undifferentiated column.
+
+            headline  32 / 36 / 37.5px   serif   @ 320 / 360 / 375
+            section   24 / 25.9 / 27px   serif
+            body               17px      system sans
+
+          The headline came DOWN from clamp(40px, 12.2vw, 56px) to make room for
+          that: less contrast between the headline and everything else, much more
+          between the section headers and body, which is the ratio that was wrong.
+          Hierarchy also runs on face (serif vs sans), colour, and vertical rhythm —
+          see .sections. Size alone was never going to carry it.
+        */
+        --size-headline: clamp(34px, 11vw, 46px); /* 35.2 @320, 41.3 @375, caps @418 */
+        --size-section: clamp(24px, 7.2vw, 28px); /* 24 @320, 27 @375, caps @389 */
+        --size-subhead: 19px; /* between headline and body, visibly neither */
+        --size-body: 17px;
+        --size-small: 16px;
+        --size-micro: 14px;
+
+        /* 8px base unit, matching theme.spacing(n) */
+        --gap: 8px;
+        --measure: 660px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--text);
+        font-family: var(--sans);
+        /* Brief 8: body copy at 17-18px with loose line height. The audience
+           includes grandparents; small grey text is disqualifying here. */
+        font-size: var(--size-body);
+        line-height: 1.7;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* One column at every width. Desktop is this layout with more margin —
+         not a redesign, not a two-column rework. */
+      /*
+        16px sides, down from 20px. The floor is set by rotation, not by taste: a
+        rotated print's bounding box overhangs the column by (w*(cos0-1) + h*sin0)/2
+        per side. That was measured against 3:4 swatches at 3deg when every print
+        shared a width; with the real photographs and per-print widths it is now
+        measured directly off the cluster, and the two outer prints are what spend
+        it: the aub print clears the left edge by 8.9px and the selfie clears the
+        right by 7.5px at 375px. 12px sides would leave ~4px and 8px would bleed.
+        Re-run the 320/360/375 bleed check before reducing this further.
+      */
+      .wrap {
+        max-width: var(--measure);
+        margin: 0 auto;
+        padding: 0 calc(var(--gap) * 2);
+      }
+
+      /* ── Masthead ─────────────────────────────────────────────── */
+
+      /*
+        60px total: 8 + a 44px row + 8. The 44px is the "Log in" tap target and is a
+        floor, not a choice — it is why this can't go to a literal half of the old
+        92px. Everything around it is now minimal.
+      */
+      .masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: calc(var(--gap) * 2);
+        padding-top: var(--gap);
+        padding-bottom: var(--gap);
+      }
+
+      .wordmark {
+        font-family: var(--serif);
+        /* Small on purpose. Brief 3.1: a wordmark, not a logo lockup — and the
+           headline has to be the only large thing on the screen. */
+        font-size: var(--size-small);
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+
+      /* Brief 3.2: a plain text link in the corner, not a button. This is the
+         whole bug being fixed. 44px min touch target without looking like a
+         control. */
+      .masthead-login {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-size: var(--size-small);
+        color: var(--text-secondary);
+        text-decoration: underline;
+        text-decoration-color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      /* ── Above the fold ───────────────────────────────────────── */
+
+      /*
+        The only large thing on the page (brief 6.2). Serif stack is the app's own
+        theme.font.serif, copied — every face in it ships with the OS, so this page
+        keeps its zero-font-request property. No @font-face, ever.
+
+        Wrapping verified by simulation at 320/375/414px across Noto Serif,
+        DejaVu Serif (widest available) and Liberation Serif (narrowest): exactly
+        3 lines in all nine combinations, widest single word 191px against 374px
+        of available column. If the headline copy changes, re-check it.
+      */
+      .headline {
+        /* Fraunces first, the system stack behind it as the swap fallback. */
+        font-family: 'Fraunces', var(--serif);
+        /* opsz tracks font-size, so the display cut is used at headline sizes and
+           the text cut would be used if this were ever set small. */
+        font-optical-sizing: auto;
+        font-size: var(--size-headline);
+        /*
+          Display leading, not body leading. At 40-56px the 1.1 used here previously
+          was body-copy spacing applied to display type, and it let the three lines
+          float apart as separate fragments instead of reading as one block. 1.0 is
+          inside the 0.98-1.02 display range and returns ~14px as a side effect.
+          Tracking stays -0.02em.
+        */
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-weight: 400;
+        margin: 0 0 calc(var(--gap) * 2);
+        /*
+          Greedy wrap, deliberately NOT text-wrap: balance. Balance evens the two
+          lines, which at this size leaves the headline ~64px short of the photo
+          cluster below it; letting line one run full gives a wider first line and
+          closes that gap to ~24px. The break lands after "that" — a relative-clause
+          break, which is a normal place to break a two-line headline. The subhead
+          keeps its balance.
+        */
+        text-wrap-style: auto;
+      }
+
+      /* <em> carries the accent, not emphasis — the italic is cancelled. clay on
+         paper is 4.67:1, which clears AA for normal text and clears it four times
+         over at display size. */
+      .headline em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .subhead {
+        font-size: var(--size-subhead);
+        line-height: 1.6;
+        color: var(--text-body);
+        margin: 0 0 calc(var(--gap) * 3);
+        text-wrap: balance;
+      }
+
+      /* Brief 8: full-width or close to it, 48px minimum height, in the
+         lower-thumb zone. */
+      .cta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 48px;
+        padding: calc(var(--gap) * 1.5) calc(var(--gap) * 3);
+        background: var(--accent-strong);
+        color: var(--paper);
+        font-size: var(--size-body);
+        text-decoration: none;
+        border-radius: 8px;
+      }
+
+      /*
+        Brief 6 calls for "small, low contrast" here; brief 8 calls small grey text
+        on a light background "disqualifying" for this page specifically. Where those
+        two collide the legibility rule wins, so this is quiet by SIZE, not by wash.
+        gray_70 #8B7E72 measures 3.77:1 on #FAFAF7 — below AA for 14px text — so it
+        uses secondary #5C5145 at 7.39:1 instead.
+      */
+      .microline {
+        margin: calc(var(--gap) * 1.5) 0 0;
+        font-size: var(--size-micro);
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      /*
+        There is deliberately no secondary "See how it works" link here. A photograph
+        cut by the fold and a text link pointing down are the same signal, and two
+        stacked actions under the headline dilute the primary button. The photo is
+        the scroll cue.
+      */
+
+      /*
+        Brief 3.7: the image starts here and gets cut by the fold. A partially
+        visible image is the best scroll cue available.
+      */
+      /*
+        A CLUSTER, not a column. Prints someone laid out on a table.
+
+        STRUCTURAL CHANGE, and it is why this no longer looks like the flex stack it
+        replaced: THE THREE PRINTS NO LONGER SHARE A WIDTH. Each carries its own,
+        and each is placed by its CENTRE rather than stacked and nudged. A flow
+        layout can express "same width, offset from each other"; it cannot express
+        "these three specific centres" without the offsets becoming a chain, where
+        changing one print's width silently drags the other two. So: an
+        absolutely-positioned cluster in a box whose height comes from aspect-ratio.
+
+        WHY THE WIDTHS DIFFER — do not normalise them back. The selfie is a
+        close-up; the other two are group shots, so print width and APPARENT FACE
+        SCALE are different quantities and it is the second one that has to be
+        managed. Measured off the render at a 343px column, head height top-of-hair
+        to chin: selfie 60-70px, cafe 32-40px, aub ~24px. So 137px does not
+        equalise them — the selfie's faces are still roughly 2x the cafe's and 3x
+        the aub's — it only stops the close-up from swallowing the other two, which
+        is what happened at a shared width. Do not read the 137px as a computed
+        result; it is a judgement about how much dominance is acceptable.
+
+        THE MATTE STAYS 8px ON ALL THREE despite the different widths. A real photo
+        border is an absolute width; a smaller print with a proportionally thinner
+        border reads as a scaled image rather than as a smaller photograph. It is
+        also the one thing here that is not a pure ratio, so the container's
+        aspect-ratio cannot hold exactly at every column width: the matte is 16px of
+        every print's height however wide the column is, so print heights grow
+        slightly slower than the box. Measured drift at 320px vs 375px is 0.4px on
+        aub, 0.8px on cafe, 1.3px on selfie. Left alone deliberately — correcting it
+        would mean making the matte proportional, which is the thing being avoided.
+
+        Ratio-agnostic by the same rules as before: no fixed print heights, no
+        object-fit, no cropping to a common ratio. Height is still derived from each
+        image's own intrinsic width/height attributes.
+      */
+      .photos {
+        position: relative;
+        /*
+          10px, not the 24px this had while the prints were a flow stack. In that
+          layout the first print carried translateY(-10px) and its rotation overhang
+          lifted the cluster ~14px above its own box, so 24px of margin bought about
+          46px of visible gap. Placing the cluster's bounding box flush to the top of
+          this container removed that lift, and the gap went to 60px. This is that
+          14px handed back, not a new spacing opinion.
+        */
+        margin-top: calc(var(--gap) + 2px);
+        /*
+          Every child is out of flow, so the height has to be declared. aspect-ratio
+          rather than a pixel height keeps it a ratio of the column, and makes the
+          children's `top` percentages resolve against a box that scales. The value
+          is the cluster's own measured bounding box at a 343px column: 337.36 tall.
+        */
+        aspect-ratio: 343 / 337.36;
+      }
+
+      .photo {
+        position: absolute;
+        margin: 0;
+        padding: var(--gap);
+        background: var(--print);
+        box-shadow: var(--shadow-print);
+      }
+
+      /*
+        Hairline at the photo/matte boundary. This is the TONE-domain counterpart of
+        the ratio rule above: without it the print edge reads only when the
+        photograph happens to have dark or busy edges, which is a dependency on the
+        material. A photo with pale edges — cream siding, an overexposed sky, snow —
+        dissolves into the #FFFDF9 matte and the print stops reading as an object.
+
+        It is an outline, not `box-shadow: inset`. Per spec an inner shadow paints
+        below the element's content, and on a replaced element like <img> the image
+        therefore covers it completely. Measured: on a swatch filled with the matte
+        colour exactly, the inset version leaves every boundary pixel at
+        rgb(254,253,249) — invisible — while this outline renders rgb(230,227,221)
+        against rgb(254,253,249). `outline-offset: -1px` pulls it inside the box so
+        it costs no layout and cannot bleed past the rotated corners.
+
+        Same warm-dark tint as --shadow-print, at low alpha: it should register as
+        the edge of a print, never as a border drawn around a picture.
+      */
+      .photo img {
+        display: block;
+        width: 100%;
+        height: auto;
+        outline: 1px solid rgba(58, 42, 28, 0.12);
+        outline-offset: -1px;
+      }
+
+      /*
+        THE 1-3deg CAP IS LIFTED — do not reassert it. It was calibrated for the
+        vertical stack, where a single-axis offset plus a small tilt was all that
+        separated "arrangement" from "misalignment"; a cluster carries more tilt
+        before it reads as a gimmick.
+
+        The real constraint is horizontal footprint. A rotated box grows to
+        w*cos0 + h*sin0, and the h*sin0 term is dominant on a portrait print — which
+        both of the outer two now are. Measured clearance inside .wrap's 16px sides
+        at 375px: 8.8px on the left, set by aub, and 9.6px on the right, set by
+        selfie. Those are close but not equal, and the cluster is NOT horizontally
+        centred in the column — the centres put it where it is, so a truly symmetric
+        pair of margins would need different centres, not a different container. The
+        binding number is the smaller one, and at 320px it falls to 7.4px. Any change to a width, a
+        rotation or a centre needs the 320/360/375 bleed run again before it ships.
+
+        Placement: left/top are the print's CENTRE, translate(-50%, -50%) moves the
+        box onto it, and rotate happens last about that same point. Order matters —
+        rotate before translate would rotate the offset too.
+
+        Classes, not :nth-child. The three rules are no longer interchangeable now
+        that each carries its own width, so binding them to DOM position would let a
+        reorder silently hand the selfie's 137px to a group shot.
+
+        z-index orders the pile; the strongest photograph sits on top. transform
+        creates a stacking context, so this works without position tricks.
+      */
+      /*
+        The centres below are given in the spec's frame, where the cluster's own
+        bounding box starts at y = 38.66 rather than at zero. `top` here is that
+        y minus 74.54, as a percentage of the container's 337.36px height, which
+        pins the top of the cluster to the top of the box and leaves no dead band
+        above it. x is unshifted: a percentage of the 343px column.
+      */
+      /* 198px / 4.89deg / centre (117.0, 198.4) -> top (198.4-74.54)/337.36 */
+      .photo--aub {
+        width: 57.7259%;
+        left: 34.1108%;
+        top: 36.7148%;
+        transform: translate(-50%, -50%) rotate(4.89deg);
+        z-index: 1;
+      }
+
+      /* 202px / -8.83deg / centre (202.8, 326.8) -> (326.8-74.54)/337.36 */
+      .photo--cafe {
+        width: 58.8921%;
+        left: 59.1254%;
+        top: 74.7747%;
+        transform: translate(-50%, -50%) rotate(-8.83deg);
+        z-index: 2;
+      }
+
+      /* 137px / -7.54deg / centre (252.4, 182.2) -> (182.2-74.54)/337.36
+         The small one, and the top of the pile. */
+      .photo--selfie {
+        width: 39.9417%;
+        left: 73.586%;
+        top: 31.9128%;
+        transform: translate(-50%, -50%) rotate(-7.54deg);
+        z-index: 3;
+      }
+
+      /* ── Below the fold ───────────────────────────────────────── */
+
+      /* Brief 4: each section is a header and one paragraph. No icons, no
+         columns, no cards — a single column of text with air between. */
+      .sections {
+        padding-top: calc(var(--gap) * 9);
+        padding-bottom: calc(var(--gap) * 8);
+      }
+
+      /*
+        VERTICAL RHYTHM does as much work here as the size steps. 72px between
+        sections against 12px from a header to its own paragraph — a 6:1 ratio — is
+        what makes each section read as a separate thing rather than as more of the
+        same column. Gap alone, with no rules and no cards.
+      */
+      .sections section + section {
+        margin-top: calc(var(--gap) * 9);
+      }
+
+      /* Tier 2. Serif, full-strength text colour, and close to the paragraph it
+         owns — proximity is what binds a header to its body. */
+      .sections h2 {
+        font-family: var(--serif);
+        font-size: var(--size-section);
+        line-height: 1.25;
+        letter-spacing: -0.01em;
+        font-weight: 400;
+        color: var(--text);
+        margin: 0 0 calc(var(--gap) * 1.5);
+        text-wrap: balance;
+      }
+
+      /*
+        Tier 3 at full reading strength (11.50:1). Hierarchy here runs on SIZE and
+        FACE — 27px serif against 17px sans — not on washing the prose out. 62ch caps
+        the measure so desktop lines don't run past comfortable reading length in the
+        596px column.
+      */
+      .sections p {
+        margin: 0;
+        max-width: 62ch;
+        color: var(--text-body);
+      }
+
+      /*
+        Paragraph spacing inside a section. Deliberately between the two rhythms
+        either side of it: 72px between sections > 20px between paragraphs > 12px
+        from a header to its first paragraph. The header stays bound to what it
+        introduces, paragraphs breathe, and the section boundaries still read as the
+        loudest break on the page.
+      */
+      .sections p + p {
+        margin-top: calc(var(--gap) * 2.5);
+      }
+
+      /* ── Footer ───────────────────────────────────────────────── */
+
+      /*
+        Brief 8: log in is repeated as plain text in the footer. The grandparent
+        who was sent a link and got lost will scroll to the bottom before she
+        looks in a corner.
+      */
+      .footer {
+        border-top: 1px solid var(--border);
+        padding-top: calc(var(--gap) * 4);
+        padding-bottom: calc(var(--gap) * 8);
+        font-size: var(--size-small);
+        color: var(--text-secondary);
+      }
+
+      .footer a {
+        text-decoration: underline;
+        text-decoration-color: var(--accent);
+        text-underline-offset: 3px;
+      }
+
+      /* Desktop is the same layout with more margin. The headline needs no override —
+         its clamp() already caps at 56px around a 460px viewport. */
+      @media (min-width: 720px) {
+        .wrap {
+          padding: 0 calc(var(--gap) * 4);
+        }
+
+        .cta {
+          width: auto;
+          align-self: flex-start;
+          min-width: 280px;
+        }
+
+        .cta-block {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .microline {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="wrap masthead">
+      <span class="wordmark">homeroll</span>
+      <a class="masthead-login" href="/login">Log in</a>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <!-- The accent lands on the thesis word rather than on ornament. -->
+        <h1 class="headline">Shared photos that stay <em>private.</em></h1>
+
+        <p class="subhead">
+          You choose the photos, you choose who sees them, and it stays that way.
+        </p>
+
+        <div class="cta-block">
+          <a class="cta" href="/signup">Create your first album</a>
+          <p class="microline">No ads. No tracking.</p>
+        </div>
+
+        <!--
+          THESE ARE THE REAL PHOTOGRAPHS. Three rules for anyone who changes them:
+
+          1. THE PRINT WIDTHS ARE NOT INTERCHANGEABLE. Each figure's class carries
+             its own width, rotation and centre; see the .photo--* rules. A swap
+             that keeps the class but changes the photograph's aspect ratio moves
+             the cluster's bounding box, because print height is derived from the
+             image. Re-run the 320/360/375 bleed check after any such swap.
+
+          2. THE OLD "NOTHING WIDER THAN 3:2" RULE NO LONGER APPLIES AS WRITTEN. It
+             existed when all three prints shared a width and a landscape set made
+             the cluster too short to be cut by the fold (brief 3.7). The current
+             set is 0.88 / 1.49 / 0.66, and the two portraits carry the height: the
+             cluster is 337px tall at a 343px column and sits 67.5% above a 600px
+             fold at 375px (71.6% at 360, 84.5% at 320). What has to be re-measured
+             after a swap is that visible percentage, not the ratio in isolation.
+
+          3. Rewrite every alt attribute. The text below describes THESE images.
+
+          Derivatives are generated offline from apps/web/landing-source/ at
+          400/800w, AVIF (libaom-av1, crf 34) + JPEG (q76) fallback. 1200w and 1600w
+          are NOT shipped for the two new photographs and their absence is
+          deliberate: the aub scan is 870px wide and the selfie 1080px, so both
+          steps would be upscales, and neither print is ever selected above 800w
+          anyway — the widest either renders is 344px and 238px at the 596px desktop
+          column, i.e. 688 and 476 device pixels at DPR 2.
+
+          Budget note: the 20/55/110/180 KB targets were set on landscape frames, so
+          they read low against a portrait — a 400w 3:4 frame is 400x533, twice the
+          pixels of a 400x267 landscape. Both new photographs still clear them in
+          AVIF (aub 7.9/13.6 KB, selfie 17.1/40.5 KB at 400w/800w). The JPEG
+          fallbacks run over at every width, as they already did for the retired
+          fig-tree print; AVIF serves the overwhelming majority and the fallback is
+          still an order of magnitude under the app bundle.
+        -->
+        <div class="photos">
+          <!-- Bottom of the pile. The widest print and the oldest photograph. -->
+          <figure class="photo photo--aub">
+            <picture>
+              <source
+                type="image/avif"
+                sizes="(min-width: 720px) 328px, calc((100vw - 32px) * 0.5773 - 16px)"
+                srcset="
+                  /landing/iliya-aub-1953-400.avif 400w,
+                  /landing/iliya-aub-1953-800.avif 800w
+                "
+              />
+              <img
+                src="/landing/iliya-aub-1953-800.jpg"
+                sizes="(min-width: 720px) 328px, calc((100vw - 32px) * 0.5773 - 16px)"
+                srcset="
+                  /landing/iliya-aub-1953-400.jpg 400w,
+                  /landing/iliya-aub-1953-800.jpg 800w
+                "
+                width="870"
+                height="990"
+                alt="Two young men in suits walking side by side along a tree-lined campus path, books under their arms, both laughing."
+                fetchpriority="high"
+              />
+            </picture>
+          </figure>
+
+          <figure class="photo photo--cafe">
+            <picture>
+              <source
+                type="image/avif"
+                sizes="(min-width: 720px) 335px, calc((100vw - 32px) * 0.5889 - 16px)"
+                srcset="
+                  /landing/iliya-and-friends-400.avif   400w,
+                  /landing/iliya-and-friends-800.avif   800w,
+                  /landing/iliya-and-friends-1200.avif 1200w,
+                  /landing/iliya-and-friends-1600.avif 1600w
+                "
+              />
+              <img
+                src="/landing/iliya-and-friends-800.jpg"
+                sizes="(min-width: 720px) 335px, calc((100vw - 32px) * 0.5889 - 16px)"
+                srcset="
+                  /landing/iliya-and-friends-400.jpg   400w,
+                  /landing/iliya-and-friends-800.jpg   800w,
+                  /landing/iliya-and-friends-1200.jpg 1200w,
+                  /landing/iliya-and-friends-1600.jpg 1600w
+                "
+                width="3517"
+                height="2361"
+                alt="Three older men sitting together at an outdoor table, glasses and a phone in front of them."
+                loading="lazy"
+              />
+            </picture>
+          </figure>
+
+          <!-- Top of the pile, and deliberately the smallest print: a close-up at
+               the other two prints' width would swamp them. See .photo--selfie. -->
+          <figure class="photo photo--selfie">
+            <picture>
+              <source
+                type="image/avif"
+                sizes="(min-width: 720px) 222px, calc((100vw - 32px) * 0.3994 - 16px)"
+                srcset="
+                  /landing/family-selfie-400.avif 400w,
+                  /landing/family-selfie-800.avif 800w
+                "
+              />
+              <img
+                src="/landing/family-selfie-400.jpg"
+                sizes="(min-width: 720px) 222px, calc((100vw - 32px) * 0.3994 - 16px)"
+                srcset="
+                  /landing/family-selfie-400.jpg 400w,
+                  /landing/family-selfie-800.jpg 800w
+                "
+                width="1080"
+                height="1634"
+                alt="A man in a flat cap, a woman in sunglasses and a blond toddler crowded into a selfie under a tree, all three laughing."
+                loading="lazy"
+              />
+            </picture>
+          </figure>
+        </div>
+      </div>
+
+      <div class="wrap sections">
+        <section>
+          <h2>Who this is for</h2>
+          <p>
+            Parents who want the grandparents to see the kids, not everyone they've ever met.
+            Eight people back from a trip with eight different sets of photos.
+          </p>
+          <p>
+            Anyone who's dropped photos into a group chat and watched them scroll away under
+            three lines of "so cute."
+          </p>
+        </section>
+
+        <section id="what-it-is">
+          <h2>An album, not a post.</h2>
+          <p>
+            An album goes to people you name, whatever phone they've got and whether or not
+            they have an account.
+          </p>
+          <p>
+            You're sharing your photos, not giving them away — and you can take them back.
+            Nothing ends up in someone else's library.
+          </p>
+          <p>
+            One shared album can hold photos from everyone who was there. One trip, one album,
+            instead of eight camera rolls and a group chat.
+          </p>
+          <p>
+            And you can find it again. Which sounds obvious until you go looking for photos
+            from a trip two years ago.
+          </p>
+        </section>
+
+        <section>
+          <h2>Your family is not AI training data.</h2>
+          <p>
+            Your photos aren't sold, aren't handed to anybody else, and don't train a model —
+            not mine, not anyone's.
+          </p>
+          <p>
+            You can delete a photo. You can't remove it from an AI model that already learned
+            it.
+          </p>
+          <p>
+            Nothing here is public. No follower counts, no algorithms deciding who your kids
+            get shown to — just your photos, shared with your people.
+          </p>
+        </section>
+
+        <section>
+          <h2>Who made this</h2>
+          <p>
+            I'm one person. I built Homeroll to share photos with my own family without
+            handing them to some huge company to use however they want.
+          </p>
+          <p>
+            No investors, no growth target, no acquisition where all these promises evaporate.
+            Storing photos costs money, so eventually this will too — that's the whole business
+            model.
+          </p>
+          <p>
+            Things do end. Google shut down Picasa and everyone's photos went somewhere they
+            didn't choose. If Homeroll ever ends, you'll hear it from me first, and you'll get
+            everything out at full quality.
+          </p>
+        </section>
+      </div>
+    </main>
+
+    <footer class="wrap footer">Already have an account? <a href="/login">Log in</a>.</footer>
+  </body>
+</html>
