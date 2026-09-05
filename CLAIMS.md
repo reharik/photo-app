@@ -12,6 +12,30 @@ softening — those are marked **make-true**.
 
 Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 
+> **Stale as of the Phase 4 copy rewrite (2026-09-05).** The page now has four sections
+> (`01` Who this is for, `02` An album, not a post., `03` Your family is not AI training
+> data., `04` Who made this); the `Section N — …` headings below still name the five
+> pre-rewrite ones, and the Summary counts still describe the old copy. New claims are
+> being filed under their nearest ancestor heading until this file is re-synced. **The
+> re-sync is owed and is not done.** Claims retired by the rewrite ("No feed", "It
+> doesn't matter who's on an iPhone and who isn't", "I've been building Homeroll for
+> about six months") are still listed below and no longer appear on the page.
+>
+> **The subhead was replaced (2026-09-05) and the whole `## Subhead` section below is
+> retired.** It is now *"You choose the photos, you choose who sees them, and it stays
+> that way."* Three claims went with the old line — **"scanned"**, **"profiled"** and
+> **"used to train anything"** — including the one open policy commitment among them;
+> the training claim itself survives on the page, but as part of section `03`, not the
+> subhead. **The Google Photos comparison is also gone: the new subhead makes no claim
+> about any competitor**, so nothing on the page now depends on a characterisation of
+> another product's behaviour. That removes a whole class of exposure — a comparative
+> claim can be falsified by the other party changing, or disputed by them — and it
+> should not be reintroduced without a deliberate decision.
+>
+> The new subhead's own claims ("you choose who sees them", "it stays that way") are
+> **not yet filed**; they land closest to the existing access-control and revocation
+> entries under Section 4. File them in the re-sync.
+
 ---
 
 ## Subhead
@@ -70,6 +94,30 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       just works"** — the `/shared/:token` route is fully unauthenticated
       (`AppRouter.tsx:19-33` → `PublicAccessScreen` → `POST /api/auth/publicAccess`).
       No `RequireViewer`, no login.
+- [x] **"And you can find it again."** — **The claim is persistence and a named album.
+      It is not search, and there is no search.** Read it that way and the evidence
+      supports it: albums are durable rows with a required `title`
+      (`schema.graphql:101`), and both `Viewer.albums` and `Viewer.sharedWithMeAlbums`
+      (`schema.graphql:1092,1102`) return sorted, paginated collections — `AlbumSortBy`
+      offers `CREATED_AT` and `TITLE`. The contrast the sentence is drawing is against a
+      group chat, where photos are ordered only by when they were sent and cannot be
+      addressed as a group at all. A named album that is still there in two years, and
+      can be sorted to, clears that bar.
+
+      **Record the distinction, because the next reader will not re-derive it.** `Query`
+      exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
+      and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
+      **nothing**. There is no text search, no date filter, no people filter, no
+      free-text lookup of any kind. "Go looking for photos from a trip two years ago"
+      invites a reader to picture a search box; today the honest answer is page N of a
+      paginated list sorted by title or creation date.
+
+      This is a **wording risk, not a false claim** — the sentence as written promises
+      only findability, and that is true. Two things could break it: adding a search box
+      to the page's implied contract by rewording the line, or letting album counts grow
+      to where pagination stops being findability in practice. If search ever ships, this
+      entry becomes moot. Until then, do not strengthen this sentence.
+
 - [ ] **"If they decide they want an account later, everything they already have stays
       exactly where it is."** — **This is the riskiest unverified claim on the page, and
       it is not a policy question — it is a durability bug.** Guest-to-account grant

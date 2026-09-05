@@ -8,7 +8,7 @@
     <title>Homeroll — Shared photos that stay private</title>
     <meta
       name="description"
-      content="Like a Google Photos album, except nothing in it gets scanned, profiled, or used to train anything."
+      content="You choose the photos, you choose who sees them, and it stays that way."
     />
 
     <!--
@@ -24,7 +24,7 @@
     <meta property="og:title" content="Shared photos that stay private" />
     <meta
       property="og:description"
-      content="Like a Google Photos album, except nothing in it gets scanned, profiled, or used to train anything."
+      content="You choose the photos, you choose who sees them, and it stays that way."
     />
     <!-- Placeholder path. The real card image is a Phase 5 deliverable. -->
     <meta property="og:image" content="https://homeroll.app/landing/og-image.jpg" />
@@ -35,7 +35,7 @@
     <meta name="twitter:title" content="Shared photos that stay private" />
     <meta
       name="twitter:description"
-      content="Like a Google Photos album, except nothing in it gets scanned, profiled, or used to train anything."
+      content="You choose the photos, you choose who sees them, and it stays that way."
     />
     <meta name="twitter:image" content="https://homeroll.app/landing/og-image.jpg" />
 
@@ -555,39 +555,6 @@
         margin-top: calc(var(--gap) * 9);
       }
 
-      /*
-        A quiet serif spine numbering the five sections. Structural, not ornament:
-        it tells the reader the argument has a shape and how far through it they
-        are, which is the one thing a single column of prose cannot say by itself.
-
-        Deliberately understated — 14px, system serif rather than the display face
-        (Fraunces stays a one-job font), secondary tone, and set on the section
-        rather than inside the h2 so the heading text stays clean. Numerals are
-        tabular so 01-05 sit on the same left edge and read as a column down the
-        page rather than five unrelated marks.
-
-        Generated from a CSS counter, so adding or reordering a section renumbers
-        it and nothing in the markup has to be kept in sync by hand.
-      */
-      .sections {
-        counter-reset: section;
-      }
-
-      .sections section {
-        counter-increment: section;
-      }
-
-      .sections section::before {
-        content: counter(section, decimal-leading-zero);
-        display: block;
-        margin-bottom: var(--gap);
-        font-family: var(--serif);
-        font-size: var(--size-micro);
-        font-variant-numeric: tabular-nums lining-nums;
-        letter-spacing: 0.08em;
-        color: var(--text-secondary);
-      }
-
       /* Tier 2. Serif, full-strength text colour, and close to the paragraph it
          owns — proximity is what binds a header to its body. */
       .sections h2 {
@@ -683,13 +650,12 @@
         <h1 class="headline">Shared photos that stay <em>private.</em></h1>
 
         <p class="subhead">
-          Like a Google Photos album, except nothing in it gets scanned, profiled, or used to
-          train anything.
+          You choose the photos, you choose who sees them, and it stays that way.
         </p>
 
         <div class="cta-block">
           <a class="cta" href="/signup">Create your first album</a>
-          <p class="microline">No ads. No tracking. No feed.</p>
+          <p class="microline">No ads. No tracking.</p>
         </div>
 
         <!--
@@ -813,83 +779,69 @@
       </div>
 
       <div class="wrap sections">
-        <section id="what-it-is">
-          <h2>One album. Everyone who was there.</h2>
-          <!-- Split at the seam between gathering the album and sharing it. Wording
-               is unchanged from the brief. -->
-          <p>
-            You make an album and invite the people it's about. They add their own photos to
-            the same album, so the trip doesn't end up scattered across six phones, two group
-            chats, and one AirDrop that didn't work. Everybody sees the whole thing.
-          </p>
-          <p>
-            It doesn't matter who's on an iPhone and who isn't, and the people you share with
-            don't need an account to look — they get a link that just works. If they decide
-            they want an account later, everything they already have stays exactly where it is.
-          </p>
-        </section>
-
-        <section>
-          <h2>Your family is not training data.</h2>
-          <!-- Split at the seam between what the product isn't and what doesn't
-               happen to your photos. Wording is unchanged from the brief. -->
-          <p>
-            Homeroll isn't a social network. No feed, no strangers, no algorithm deciding who
-            your kids get shown to. No ads, no follower count, nothing that can go viral.
-          </p>
-          <p>
-            Your photos aren't scanned to build a profile of you, aren't sold to anyone, and
-            aren't used to train a model — not mine, not anybody else's. There is nothing
-            clever happening to your pictures in the background. They're just your pictures.
-          </p>
-        </section>
-
         <section>
           <h2>Who this is for</h2>
-          <!-- Splits the four cases 2 + 2. Wording is unchanged from the brief. -->
           <p>
-            Parents who want their kids' grandparents to see the photos but don't want their
-            kids on Facebook. Families split across the wrong mix of phones, where half the
-            album shows up sideways and blurry.
+            Parents who want the grandparents to see the kids, not everyone they've ever met.
+            Eight people back from a trip with eight different sets of photos.
           </p>
           <p>
-            The eight people who went on the trip, who each have a different forty photos of
-            it. Anyone who's tired of firing two hundred pictures into a group chat where they
-            get crushed to mush and buried by Tuesday.
+            Anyone who's dropped photos into a group chat and watched them scroll away under
+            three lines of "so cute."
+          </p>
+        </section>
+
+        <section id="what-it-is">
+          <h2>An album, not a post.</h2>
+          <p>
+            An album goes to people you name, whatever phone they've got and whether or not
+            they have an account.
+          </p>
+          <p>
+            You're sharing your photos, not giving them away — and you can take them back.
+            Nothing ends up in someone else's library.
+          </p>
+          <p>
+            One shared album can hold photos from everyone who was there. One trip, one album,
+            instead of eight camera rolls and a group chat.
+          </p>
+          <p>
+            And you can find it again. Which sounds obvious until you go looking for photos
+            from a trip two years ago.
           </p>
         </section>
 
         <section>
-          <h2>How this actually works</h2>
-          <!-- Split at the seam between how sharing works and the business model —
-               a genuine change of subject, and the paragraph's weakest join.
-               Wording is unchanged from the brief. -->
+          <h2>Your family is not AI training data.</h2>
           <p>
-            Albums are private by default. There's no public gallery, no discovery, and no way
-            to browse anyone else's photos — you see an album because a specific person sent it
-            to you, and you can stop sharing it whenever you want. Nothing gets scanned to sort
-            it, tag it, or figure out who's in it.
+            Your photos aren't sold, aren't handed to anybody else, and don't train a model —
+            not mine, not anyone's.
           </p>
           <p>
-            And I'm not selling anything on the side, which means there's no version of this
-            where your photos quietly become the product: it costs money to store them, so
-            eventually it'll cost money to store them, and that'll be the whole business model.
+            You can delete a photo. You can't remove it from an AI model that already learned
+            it.
+          </p>
+          <p>
+            Nothing here is public. No follower counts, no algorithms deciding who your kids
+            get shown to — just your photos, shared with your people.
           </p>
         </section>
 
         <section>
           <h2>Who made this</h2>
-          <!-- Split at the seam between who I am and what I promise. Wording is
-               unchanged from the brief. -->
           <p>
-            I'm one person. I've been building Homeroll for about six months, mostly because I
-            wanted a way to share photos with my own family that didn't involve handing them to
-            a company that wants something from them.
+            I'm one person. I built Homeroll to share photos with my own family without
+            handing them to some huge company to use however they want.
           </p>
           <p>
-            There's no investor waiting on a return, no growth target, and no acquisition that
-            ends with your albums somewhere you didn't pick. If I ever can't keep running it,
-            I'll tell you, and I'll give you a way to take everything with you.
+            No investors, no growth target, no acquisition where all these promises evaporate.
+            Storing photos costs money, so eventually this will too — that's the whole business
+            model.
+          </p>
+          <p>
+            Things do end. Google shut down Picasa and everyone's photos went somewhere they
+            didn't choose. If Homeroll ever ends, you'll hear it from me first, and you'll get
+            everything out at full quality.
           </p>
         </section>
       </div>
