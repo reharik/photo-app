@@ -1,4 +1,4 @@
-import { AsyncNotificationKind } from '@packages/contracts';
+import { AsyncNotificationKind, EmailKind } from '@packages/contracts';
 import { indexBy, Logger } from '@packages/infrastructure';
 import {
   AsyncNotification,
@@ -57,6 +57,21 @@ export const build__AlbumSharedWithNonUserStrategy = ({
         results.push({ row, kind: 'skipped', reason: 'authorization has no link_token' });
         continue;
       }
+      // Pre-migration rows have no accessGrantId; for this kind subjectId IS the grant,
+      // so they stay attributable without a backfill. Logged because the fallback would
+      // otherwise mask an upstream stamping bug forever — the queue turns over in
+      // minutes, so this should stop firing once the pre-migration backlog drains. If
+      // it is still firing, something on the enqueue side is not populating the column.
+      if (!row.accessGrantId) {
+        logger.debug(
+          '[albumSharedWithNonUser] row has no accessGrantId — deriving from subjectId',
+          {
+            notificationId: row.id,
+            subjectId: row.subjectId,
+            derivedAccessGrantId: pendingUserAuthorization.id,
+          },
+        );
+      }
       const actor = userMap.get(row.actorId);
       const album = albumMap.get(row.containerId);
       // An empty share is an upstream bug, not an email — don't send, just record it.
@@ -72,6 +87,9 @@ export const build__AlbumSharedWithNonUserStrategy = ({
       results.push({
         row,
         kind: 'ready',
+        emailKind: EmailKind.guestAlbumShared,
+        recipientEmail,
+        accessGrantId: row.accessGrantId ?? pendingUserAuthorization.id, // see the debug log above
         payload: {
           to: recipientEmail,
           template: 'guestAlbumShared',

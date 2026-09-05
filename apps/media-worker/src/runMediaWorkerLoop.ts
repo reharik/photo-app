@@ -36,8 +36,7 @@ export const runWorkerTasksOnce = async (
       await uow.settle(false);
     } catch (e) {
       await uow.settle(false);
-      const err = e instanceof Error ? e : new Error(String(e));
-      logger.error(`[mediaWorker] task "${task.name}" threw`, err);
+      logger.error(`[mediaWorker-run_once] task "${task.name}" threw`, e);
       throw e;
     }
     if (outcome === 'processed') {
@@ -60,8 +59,7 @@ export const runAllTasks = async (
       if (outcome === 'processed') didWork = true;
     } catch (e) {
       await uow.settle(false);
-      const err = e instanceof Error ? e : new Error(String(e));
-      logger.error(`[mediaWorker] task "${task.name}" threw`, err);
+      logger.error(`[mediaWorker-run_all] task "${task.name}" threw`, e);
     }
   }
   return didWork;
@@ -108,7 +106,18 @@ export const build__RunMediaWorkerLoop = ({
         const queueTasks = tasks.filter(isQueueTask);
         const sweepTasks = tasks.filter((t) => !isQueueTask(t));
 
-        const didWork = await runWorkerTasksOnce(queueTasks, logger, uow);
+        let didWork = false;
+        try {
+          didWork = await runWorkerTasksOnce(queueTasks, logger, uow);
+        } catch {
+          // Swallowed deliberately: runWorkerTasksOnce already logged the task name
+          // and the error before rethrowing. The rethrow's job is to abort the rest
+          // of the QUEUE segment, not the pass — sweeps run only on an idle queue,
+          // which is the same condition that reaches a low-order throwing task, so
+          // letting this reach the outer catch starves every scheduled task for as
+          // long as the throw persists. Falling through leaves the backoff intact:
+          // didWork stays false, so an all-idle pass still sleeps the poll interval.
+        }
         if (didWork) {
           idleCycles = 0;
           continue;
@@ -129,11 +138,7 @@ export const build__RunMediaWorkerLoop = ({
         }
         await sleep(config.mediaWorkerPollIntervalMs);
       } catch (e) {
-        if (e instanceof Error) {
-          logger.error('Media worker loop error', e);
-        } else {
-          logger.error('Media worker loop error', { err: String(e) });
-        }
+        logger.error('Media worker loop error', e);
         await sleep(config.mediaWorkerPollIntervalMs);
       }
     }

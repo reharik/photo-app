@@ -5,11 +5,11 @@
  * -----------------------------------------------------------------------------
  */
 
-import { ActivitySurface, AlbumItemSortBy, AlbumMemberSortBy, AlbumSortBy, EntityType, ErrorCategory, InAppNotificationType, MediaAssetKind, MediaAssetStatus, MediaItemSortBy, MediaKind, SharedWithMeAlbumSortBy, SortDir } from './graphqlSmartEnums';
+import { ActivitySurface, AlbumItemSortBy, AlbumMemberSortBy, AlbumSortBy, EmailDeliveryState, EntityType, ErrorCategory, InAppNotificationType, MediaAssetKind, MediaAssetStatus, MediaItemSortBy, MediaKind, SharedWithMeAlbumSortBy, SortDir } from './graphqlSmartEnums';
 
 import { AlbumMemberRole } from './albumMemberRole';
 import { MediaItemStatus } from './mediaItemStatus';
 import { Operation } from './operation';
 import { ReactionEmoji } from './reactionEmojis';
 
-export const enumRegistry = { ActivitySurface, AlbumItemSortBy, AlbumMemberRole, AlbumMemberSortBy, AlbumSortBy, EntityType, ErrorCategory, InAppNotificationType, MediaAssetKind, MediaAssetStatus, MediaItemSortBy, MediaItemStatus, MediaKind, Operation, ReactionEmoji, SharedWithMeAlbumSortBy, SortDir } as const;
+export const enumRegistry = { ActivitySurface, AlbumItemSortBy, AlbumMemberRole, AlbumMemberSortBy, AlbumSortBy, EmailDeliveryState, EntityType, ErrorCategory, InAppNotificationType, MediaAssetKind, MediaAssetStatus, MediaItemSortBy, MediaItemStatus, MediaKind, Operation, ReactionEmoji, SharedWithMeAlbumSortBy, SortDir } as const;

@@ -88,7 +88,11 @@ const humanReadableFormat = format.printf((info) => {
 });
 
 const createConsoleFormat = () =>
-  format.combine(format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSS ZZ' }), humanReadableFormat);
+  format.combine(
+    format.errors({ stack: true }),
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSS ZZ' }),
+    humanReadableFormat,
+  );
 
 const jsonErrorFormatter = format((info) => {
   const typed = info as typeof info & { err?: unknown; stack?: unknown };
@@ -107,6 +111,7 @@ const jsonErrorFormatter = format((info) => {
 const createJsonFormat = () =>
   format.combine(
     format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSS ZZ' }),
+    format.errors({ stack: true }),
     jsonErrorFormatter(),
     format.json(),
   );
@@ -176,7 +181,6 @@ export const coreLogger = ({
   };
 
   const error: ErrorLogger = (message: string, errorOrMeta?: unknown, meta?: LogMeta) => {
-    // Two args and it's a plain object → the caller meant meta, not an error.
     if (meta === undefined && isPlainObject(errorOrMeta)) {
       logMessage('error', message, errorOrMeta);
       return;

@@ -1,10 +1,11 @@
-import { AlbumMemberRole, Operation } from '@packages/contracts';
-import { X } from 'lucide-react';
+import { AlbumMemberRole, EmailDeliveryState, Operation } from '@packages/contracts';
+import { Check, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { AppError } from '../../../domain/errors/errorTypes';
 import type { AlbumMembersQuery, ShareContactType } from '../../../graphql/generated/types';
 import { AppErrorPanel } from '../../../ui/AppErrorPanel';
+import { formatActivityTime } from '../../../ui/dateDisplay';
 import { MultiCombobox } from '../../../ui/MultiCombobox';
 import { Button } from '../../../ui/Primitives';
 import { RoleMenu, type RoleMenuItem } from './RoleMenu';
@@ -36,6 +37,35 @@ type ShareSurfaceProps = {
   onRetry: (email: string) => void;
   onDismissFailed: (email: string) => void;
   onDeleteContact: (handle: string) => void;
+};
+
+/**
+ * Did the invite email actually arrive? Three states, three treatments:
+ *
+ *  delivered — quiet. A check and the word Delivered, timestamp on hover.
+ *              NEVER "Read" or "Seen": SES reports only that the receiving
+ *              server accepted the message. It may be sitting in spam.
+ *  failed    — loud. This is the whole reason the indicator exists: the share
+ *              that silently went nowhere. The row's × (Remove access) is the
+ *              offered next step; there is no resend.
+ *  pending   — nothing at all. It resolves in seconds, and a spinner that
+ *              lingers because SES never sent an event reads as broken.
+ */
+const DeliveryNote = ({ delivery }: { delivery: SharedWithRowVM['delivery'] }) => {
+  if (!delivery) {
+    return null;
+  }
+  if (delivery.state.equals(EmailDeliveryState.failed)) {
+    return <PersonError role="alert">Couldn&apos;t deliver — check the address.</PersonError>;
+  }
+  if (delivery.state.equals(EmailDeliveryState.delivered)) {
+    return (
+      <DeliveredNote title={`Delivered ${formatActivityTime(delivery.at)}`}>
+        <Check size={12} strokeWidth={2.5} aria-hidden /> Delivered
+      </DeliveredNote>
+    );
+  }
+  return null;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -277,8 +307,15 @@ export const ShareSurface = ({
                   const inFlight = row.state === 'resolving' || row.state === 'sharing';
                   const settled = row.state === 'shared' || row.state === 'persisted';
                   const busy = busyKey === row.email;
+                  // A bounced invite borrows the S2 error edge — same visual weight,
+                  // different cause. It does NOT become row.state 'failed': the grant
+                  // exists, so the row keeps its access controls and its place in the
+                  // header count.
+                  const deliveryFailed =
+                    row.state !== 'failed' &&
+                    row.delivery?.state.equals(EmailDeliveryState.failed) === true;
                   const tone =
-                    row.state === 'failed'
+                    row.state === 'failed' || deliveryFailed
                       ? 'failed'
                       : inFlight
                         ? 'pending'
@@ -306,6 +343,9 @@ export const ShareSurface = ({
                         ) : row.displayName ? (
                           <PersonSub>{row.email}</PersonSub>
                         ) : null}
+                        {/* Send-failed rows already carry their own error; don't
+                            stack a delivery note under it. */}
+                        {row.state === 'failed' ? null : <DeliveryNote delivery={row.delivery} />}
                       </PersonText>
                       <PersonAction>
                         {row.state === 'failed' ? (
@@ -506,6 +546,15 @@ const PersonSub = styled.span`
 const PersonError = styled.span`
   font-size: ${({ theme }) => theme.fontSize._12};
   color: ${({ theme }) => theme.color.formError};
+`;
+
+/** Quiet confirmation — muted, never competing with the person's name. */
+const DeliveredNote = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing(0.5)};
+  font-size: ${({ theme }) => theme.fontSize._12};
+  color: ${({ theme }) => theme.color.bodyTextMuted};
 `;
 
 const PersonAction = styled.div`

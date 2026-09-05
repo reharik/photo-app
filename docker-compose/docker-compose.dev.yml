@@ -30,7 +30,11 @@ services:
       API_PORT: '3001'
       # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
       AWS_REGION: us-east-1
-      FROM_EMAIL: test@example.com
+      # Must match the identity verified in
+      # infra/config/localstack/init/ready.d/verify-ses.sh — LocalStack SES
+      # rejects any unverified Source, and the api sends verification codes
+      # inline, so a mismatch here silently breaks the signup/reset doors.
+      FROM_EMAIL: invites@homeroll.app
       FROM_NAME: Homeroll Dev
     volumes:
       - ./apps/api:/app/apps/api
@@ -59,7 +63,7 @@ services:
       # Worker uses real S3 via ~/.aws; clear LocalStack endpoint from infra dev.yml
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
-      FROM_EMAIL: test@example.com
+      FROM_EMAIL: invites@homeroll.app
       FROM_NAME: Homeroll Dev
       # for e2e testing
       SLOW_SWEEP_INTERVAL_MS: 5000

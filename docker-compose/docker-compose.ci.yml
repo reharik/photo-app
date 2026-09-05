@@ -43,7 +43,7 @@ services:
       API_PORT: '3001'
       # LocalStack dummy creds — AWS_ENDPOINT comes from infra dev.yml
       AWS_REGION: us-east-1
-      FROM_EMAIL: test@example.com
+      FROM_EMAIL: invites@homeroll.app
       FROM_NAME: homeroll Dev
 
   media-worker:
@@ -61,7 +61,7 @@ services:
       # Worker uses real S3 via OIDC creds (infra ci.yml); SES -> LocalStack.
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
-      FROM_EMAIL: test@example.com
+      FROM_EMAIL: invites@homeroll.app
       FROM_NAME: homeroll Dev
       # for e2e testing
       SLOW_SWEEP_INTERVAL_MS: 5000

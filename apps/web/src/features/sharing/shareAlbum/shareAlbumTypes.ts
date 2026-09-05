@@ -1,4 +1,19 @@
 import type { AppError } from '../../../domain/errors/errorTypes';
+import type { AlbumSharingExtrasQuery } from '../../../graphql/generated/types';
+
+type ServerEmailShare = NonNullable<
+  NonNullable<AlbumSharingExtrasQuery['viewer']>['album']
+>['emailShares'][number];
+
+/**
+ * Whether the invite email actually reached the person, as reported by SES and
+ * collapsed server-side to three states. Shaped off the query type so the enum
+ * and the timestamp can't drift from the schema.
+ *
+ * DELIVERED means the receiving server accepted the message — not that anyone
+ * read it. Never render it as "Read" or "Seen"; it may be sitting in spam.
+ */
+export type ShareRowDelivery = NonNullable<ServerEmailShare['delivery']>;
 
 /**
  * account/noAccount drives the shared-with row asymmetry: resolved accounts get
@@ -43,6 +58,14 @@ export type SharedWithRowVM = {
   /** 'persisted' = loaded from the server; the rest are this session's adds. */
   state: 'resolving' | 'sharing' | 'shared' | 'persisted' | 'failed';
   error?: AppError;
+  /**
+   * Deliberately SEPARATE from `state`, which means "did the share mutation
+   * succeed this session". A bounced invite is still real access — it must keep
+   * counting toward the roster header, and its row keeps the revoke action.
+   * Server-sourced only, so a row added this session carries none until its
+   * refetched twin supplies one (the rule userId already follows).
+   */
+  delivery?: ShareRowDelivery;
 };
 
 /**

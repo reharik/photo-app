@@ -24,6 +24,7 @@ export type ResolvedNotification = {
   subjectType: NotificationSubjectType; // most-specific entity; == container when none finer; authorization for token cases
   subjectId: EntityId;
   kind: NotificationKind; // resolved here — the reply/root fork is already applied
+  accessGrantId?: EntityId; // the grant this was minted for; absent for the activity kinds
 };
 
 // One per event kind. `branches` declares routing — the grid holes live here,

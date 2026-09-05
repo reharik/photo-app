@@ -2,6 +2,7 @@ import {
   AlbumMemberRole,
   AuthorizationKind,
   AuthorizationOrigin,
+  EmailStatus,
   Operation,
   UserStatus,
 } from '@packages/contracts';
@@ -12,7 +13,7 @@ import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   AuthorizationReadRepository,
   AuthorizationRow,
-  EmailShare,
+  EmailShareRow,
   MediaItemOperations,
 } from './types';
 
@@ -97,14 +98,38 @@ export const build__AuthorizationReadRepository = ({
   }: {
     albumId: EntityId;
     viewerId: EntityId;
-  }): Promise<
-    (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
-  > => {
+  }): Promise<EmailShareRow[]> => {
     await uow.join();
+    /**
+     * Latest delivery per grant, one row each — a resend supersedes. DISTINCT ON
+     * needs its keys first in the ORDER BY, hence the raw; raw bypasses knex's
+     * identifier wrapping, so everything inside is PHYSICAL snake_case. The
+     * whereIn scopes the collapse to this album's grants: unscoped, Postgres
+     * sorts all of email_delivery before the join instead of walking the
+     * access_grant_id index.
+     */
+    const latestDeliveryPerGrant = uow
+      .db()
+      .from('emailDelivery')
+      .whereIn(
+        'emailDelivery.accessGrantId',
+        uow.db().select('id').from('accessGrant').where('accessGrant.albumId', albumId),
+      )
+      .orderByRaw('access_grant_id, sent_at desc')
+      .select(
+        uow
+          .db()
+          .raw(
+            'distinct on (access_grant_id) access_grant_id, status, coalesce(status_updated_at, sent_at) as delivery_at',
+          ),
+      )
+      .as('latestDelivery');
+
     return withEnumRevival(
       uow
         .db()('accessGrant')
         .innerJoin('user', 'accessGrant.grantedToUser', 'user.id')
+        .leftJoin(latestDeliveryPerGrant, 'latestDelivery.accessGrantId', 'accessGrant.id')
         .where('accessGrant.albumId', albumId)
         .whereIn('accessGrant.kind', [
           AuthorizationKind.pending.value,
@@ -132,9 +157,7 @@ export const build__AuthorizationReadRepository = ({
           UserStatus.active.value,
         ])
         .orderBy('accessGrant.createdAt', 'asc')
-        .select<
-          (EmailShare & { firstName?: string; lastName?: string; userStatus?: UserStatus })[]
-        >([
+        .select<EmailShareRow[]>([
           'access_grant.id',
           'user.email',
           'user.firstName',
@@ -142,8 +165,16 @@ export const build__AuthorizationReadRepository = ({
           'user.id as userId',
           'user.userStatus',
           'access_grant.createdAt',
+          'latestDelivery.status as deliveryStatus',
+          'latestDelivery.deliveryAt as deliveryAt',
         ]),
-      { userStatus: UserStatus },
+      // deliveryStatus MUST be listed here: un-revived it is a bare string, and
+      // `.state` on a string is undefined, so every row silently reports no
+      // delivery — indistinguishable from an empty roster. Pinned by
+      // apps/api/src/tests/shareRosterDeliveryStatus.integration.tests.ts,
+      // which asserts on rows that HAVE a status (9 of its 10 cases fail if
+      // this entry is dropped).
+      { userStatus: UserStatus, deliveryStatus: EmailStatus },
     );
   },
 

@@ -1,7 +1,9 @@
-import { UserStatus } from '@packages/contracts';
+import { EmailDeliveryState, EmailStatus, UserStatus } from '@packages/contracts';
 import {
   AuthorizationReadRepository,
   EmailShare,
+  EmailShareDelivery,
+  EmailShareRow,
 } from '../../../repositories/readRepositories/types';
 import { EntityId } from '../../../types/types';
 import { ReadServiceBase } from '../readServiceBaseType';
@@ -16,6 +18,36 @@ export interface viewerAuthorizationsReadService extends ReadServiceBase {
     albumId: EntityId;
   }) => Promise<{ token: string } | undefined>;
 }
+
+/**
+ * The ONLY link between the hand-authored EmailStatus states and the
+ * schema-generated EmailDeliveryState. Nothing else couples them: EmailStatus
+ * lives in contracts/src/enums, EmailDeliveryState is emitted into
+ * graphqlSmartEnums.ts from the GraphQL SDL, and renaming a member on either
+ * side is invisible to the other — the same silent coupling migration 0031
+ * documents. Typing the map on EmailStatus['state'] at least makes a new or
+ * renamed state fail the build here rather than at runtime.
+ */
+const DELIVERY_STATE_BY_EMAIL_STATE: Record<EmailStatus['state'], EmailDeliveryState> = {
+  pending: EmailDeliveryState.pending,
+  delivered: EmailDeliveryState.delivered,
+  failed: EmailDeliveryState.failed,
+};
+
+/**
+ * Collapse the raw status to what the client is allowed to know. BOUNCE_TRANSIENT
+ * and COMPLAINT both read as delivered — SES accepted them downstream — and the
+ * client never learns either exists.
+ */
+const toDelivery = (row: EmailShareRow): EmailShareDelivery | undefined => {
+  if (!row.deliveryStatus || !row.deliveryAt) {
+    return undefined;
+  }
+  return {
+    state: DELIVERY_STATE_BY_EMAIL_STATE[row.deliveryStatus.state],
+    at: row.deliveryAt,
+  };
+};
 
 type viewerAuthorizationsReadServiceDeps = {
   authorizationReadRepository: AuthorizationReadRepository;
@@ -61,6 +93,7 @@ export const build__viewerAuthorizationsReadService = ({
         hasAccount: x.userStatus ? x.userStatus.equals(UserStatus.active) : false,
         userId: x.userId,
         createdAt: x.createdAt,
+        delivery: toDelivery(x),
       }));
     },
     getPublicLinkTokenForAlbum: async ({

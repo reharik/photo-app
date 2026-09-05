@@ -31,7 +31,7 @@ describe('LocalStack email integration', () => {
       }
 
       const emailConfig = {
-        fromEmail: 'test@example.com',
+        fromEmail: 'invites@homeroll.app',
         fromName: 'Homeroll Dev',
         awsRegion: 'us-east-1',
         awsEndpoint: process.env.AWS_ENDPOINT?.trim() || 'http://localhost:4566',

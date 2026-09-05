@@ -1,5 +1,6 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 
+import { clearGrantDeliveryRecords } from './cleanup';
 import { getDb } from './db';
 import {
   extractVerificationCode,
@@ -63,6 +64,9 @@ export const cleanupAuthIdentities = async (emailPrefix: string): Promise<void> 
     .select('id');
   const ids = users.map((u) => u.id);
   if (ids.length > 0) {
+    // `email_delivery` / `async_notification` reference `access_grant` with no
+    // cascade, so they must be cleared before the grant deletes below.
+    await clearGrantDeliveryRecords(ids);
     await db('access_grant').whereIn('granted_to_user', ids).delete();
     await db('access_grant').whereIn('granted_by', ids).delete();
     await db('share_contact').whereIn('contact_user_id', ids).delete();
