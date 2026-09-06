@@ -1,19 +1,8 @@
-import {
-  EntityType,
-  MediaAssetKind,
-  MediaAssetStatus,
-  MediaItemStatus,
-  MediaKind,
-  ReactionEmoji,
-} from '@packages/contracts';
+import { MediaAssetKind, MediaAssetStatus, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
+import { RequestScopeLifeCycle, UnitOfWork } from '../..';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
-import {
-  MediaItem,
-  MediaItemTagRecord,
-  type MediaItemRecord,
-} from '../../domain/MediaItem/MediaItem';
+import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
 import type { EntityId } from '../../types/types';
 import { Persist } from './AggregateRepo';
 
@@ -51,14 +40,6 @@ export const build__MediaItemRepository = ({
       return;
     }
 
-    const reactionRows = await withEnumRevival(
-      uow
-        .db()<ReactionRecord>('reaction')
-        .where({ targetId: id, targetType: EntityType.mediaItem })
-        .orderBy('createdAt', 'asc'),
-      { emoji: ReactionEmoji, targetType: EntityType },
-    );
-
     // TODO this is a smell. These should be created by a service but not in the repository.
     // stored on the AR because they are actually never used again.
     const assetRows = await withEnumRevival(
@@ -69,26 +50,8 @@ export const build__MediaItemRepository = ({
       { kind: MediaAssetKind, status: MediaAssetStatus },
     );
 
-    const tagRows = await uow
-      .db()('mediaItemTag')
-      .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
-      .where('mediaItemTag.mediaItemId', id)
-      .select<MediaItemTagRecord[]>([
-        'mediaItemTag.id',
-        'mediaItemTag.mediaItemId',
-        'userTag.id as userTagId',
-        'mediaItemTag.createdBy',
-        'mediaItemTag.createdAt',
-        'mediaItemTag.updatedBy',
-        'mediaItemTag.updatedAt',
-        'userTag.label',
-      ])
-      .orderBy('userTag.label', 'asc');
-
     const childRecords = {
       assets: assetRows,
-      tags: tagRows,
-      reactions: reactionRows,
     };
 
     return MediaItem.rehydrate(mediaItemRow, childRecords);

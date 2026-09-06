@@ -35,37 +35,4 @@ export default defineIocConfig({
   lifetimeMarkers: {
     RequestScopeLifeCycle: 'scoped',
   },
-  scopeProvided: ['viewerId', 'publicLinkId'],
-  groups: {
-    domainEventHandlers: {
-      kind: 'collection',
-      baseType: 'DomainEventHandler',
-      baseTypeArg: 'DomainEventKind',
-    },
-    publicReadServices: {
-      kind: 'object',
-      baseType: 'PublicReadServiceBase',
-    },
-    readServices: {
-      kind: 'object',
-      baseType: 'ReadServiceBase',
-    },
-    writeServices: {
-      kind: 'object',
-      baseType: 'WriteServiceBase',
-    },
-    agnosticReadServices: {
-      kind: 'object',
-      baseType: 'AgnosticReadServiceBase',
-    },
-    notificationWriters: {
-      kind: 'object',
-      baseType: 'NotificationWriter',
-    },
-    notificationStrategies: {
-      kind: 'collection',
-      baseType: 'NotificationStrategy',
-      baseTypeArg: 'DomainEventKind',
-    },
-  },
 });

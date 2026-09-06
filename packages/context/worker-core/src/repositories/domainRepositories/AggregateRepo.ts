@@ -74,6 +74,5 @@ export const build__Persist = ({ uow }: PersistDeps): Persist => {
   return async (aggregate) => {
     await uow.join();
     await persistRecursion(aggregate);
-    uow.collectEvents(aggregate.flushEvents());
   };
 };

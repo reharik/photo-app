@@ -1,10 +1,23 @@
-import { CommentRecord } from '../../domain';
+import { EntityType } from '@packages/contracts';
+import { EnumSubset } from '@reharik/smart-enum';
+import { AuditRecord } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { EntityId } from '../../types';
 
+export type CommentRecord = {
+  id: EntityId;
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
+  targetId: EntityId;
+  parentCommentId?: EntityId;
+  authorId: EntityId;
+  body: string;
+  displayName: string;
+  displayAvatarUrl?: string;
+  deletedAt?: Date;
+} & AuditRecord;
+
 export interface SystemCommentRepository extends RequestScopeLifeCycle {
-  getCommentById: (commentId: EntityId) => Promise<CommentRecord>;
   getCommentsByIds: (commentIds: EntityId[]) => Promise<CommentRecord[]>;
 }
 
@@ -15,10 +28,6 @@ type systemCommentRepositoryDeps = {
 export const build__systemCommentRepository = ({
   uow,
 }: systemCommentRepositoryDeps): SystemCommentRepository => ({
-  getCommentById: async (commentId: EntityId) => {
-    await uow.join();
-    return uow.db()('comment').where({ id: commentId }).first<CommentRecord>();
-  },
   getCommentsByIds: async (commentIds: EntityId[]) => {
     await uow.join();
     return uow.db()('comment').whereIn('id', commentIds).select<CommentRecord[]>();

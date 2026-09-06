@@ -6,7 +6,6 @@
 import {
   AppErrorCollection,
   ContractError,
-  EntityType,
   fail,
   MediaAssetKind,
   MediaAssetStatus,
@@ -15,15 +14,10 @@ import {
   ok,
   OperationResult,
 } from '@packages/contracts';
-import { groupByMapping } from '@packages/infrastructure';
-import { DBReactionCounts } from '../../services/readServices/types';
-import {
-  MediaItemTag,
-  Reaction,
-} from '../../services/writeServices/mediaItem/writeMediaItem.types';
+
 import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
+import type { AuditRecord, ChildEntities } from '../Entity';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 
 interface AssetMetadata {
@@ -33,14 +27,6 @@ interface AssetMetadata {
   width?: number;
   height?: number;
 }
-
-export type MediaItemTagRecord = Omit<MediaItemTag, 'id'> & {
-  id: string;
-};
-
-export type MediaItemReactionRecord = Omit<Reaction, 'id'> & {
-  id: string;
-};
 
 export type MediaItemProps = Omit<
   CreateMediaItemInput,
@@ -52,7 +38,6 @@ export type MediaItemProps = Omit<
   description?: string | null;
   takenAt?: Date | null;
   takenAtUtcOffsetMinutes?: number | null;
-  reactionCounts?: DBReactionCounts;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -61,8 +46,6 @@ export type MediaItemRecord = MediaItemProps & {
 
 export type MediaItemChildRecords = {
   assets: MediaAssetRecord[];
-  tags: MediaItemTagRecord[];
-  reactions: MediaItemReactionRecord[];
 };
 
 export type CreateMediaItemInput = {
@@ -83,30 +66,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
   #assets: MediaAsset[] = [];
   #removedAssets: MediaAsset[] = [];
-  #tags: MediaItemTag[] = [];
-  #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
-  #addedTags: Omit<MediaItemTag, 'label'>[] = [];
-  #reactions: Reaction[] = [];
-  #addedReactions: Reaction[] = [];
-  #removedReactions: { targetId: EntityId; targetType: string; userId: EntityId; emoji: string }[] =
-    [];
-
-  #computedReactionCounts(): void {
-    const byEmoji = groupByMapping(
-      this.#reactions,
-      (r) => r.emoji,
-      (r) => ({ userId: r.userId, firstName: r.firstName, lastName: r.lastName }),
-    );
-
-    this.props.reactionCounts = {
-      total: this.#reactions.length,
-      byEmoji: Array.from(byEmoji, ([emoji, reactors]) => ({
-        emoji: emoji.value,
-        count: reactors.length,
-        reactors,
-      })),
-    };
-  }
 
   private constructor(actorId: ActorId, props: MediaItemProps, id?: EntityId) {
     super(id, actorId, 'media_item');
@@ -114,7 +73,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       ...props,
     };
     this.props.ownerId = actorId;
-    this.#computedReactionCounts();
   }
 
   static create(input: CreateMediaItemInput, actorId: ActorId): MediaItem {
@@ -131,9 +89,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
     mediaItem.rehydrateAudit(record);
     mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
-    mediaItem.#tags = [...(childRecords.tags ?? [])];
-    mediaItem.#reactions = [...(childRecords.reactions ?? [])];
-    mediaItem.#computedReactionCounts();
+
     return mediaItem;
   }
 
@@ -165,30 +121,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     }
     asset.applyUploadedObjectMetadata({ sizeBytes, mimeType, width, height }, this.props.ownerId);
     return ok(undefined);
-  }
-
-  addTags(tags: MediaItemTag[]): OperationResult {
-    const newTags = tags.map((tag) => ({
-      ...tag,
-      id: crypto.randomUUID(),
-    }));
-
-    this.#tags = [...this.#tags, ...newTags];
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    this.#addedTags = [...this.#addedTags, ...newTags.map(({ label, ...rest }) => rest)];
-    return ok(undefined);
-  }
-
-  removeTags(tagIds: { mediaItemId: EntityId; userTagId: EntityId }[]): OperationResult {
-    this.#tags = this.#tags.filter(
-      (t) => !tagIds.some((removeTag) => removeTag.userTagId === t.userTagId),
-    );
-    this.#removedTags = [...this.#removedTags, ...tagIds];
-    return ok(undefined);
-  }
-
-  tags(): readonly MediaItemTag[] {
-    return this.#tags;
   }
 
   updateItemDetails(
@@ -388,64 +320,9 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return ok(undefined);
   }
 
-  toggleReaction(item: Reaction, actorId: ActorId): OperationResult {
-    const reaction = this.#reactions.find(
-      (r) => r.emoji.equals(item.emoji) && r.userId === item.userId,
-    );
-    if (reaction) {
-      this.#removedReactions.push({
-        targetId: this.id(),
-        targetType: EntityType.mediaItem.value,
-        userId: item.userId,
-        emoji: item.emoji.value,
-      });
-      this.#reactions = this.#reactions.filter((r) => r.id !== reaction.id);
-    } else {
-      const newReaction = {
-        ...item,
-        id: crypto.randomUUID(),
-        targetId: this.id(),
-        targetType: EntityType.mediaItem,
-        updatedBy: actorId,
-        updatedAt: new Date(),
-      };
-      this.#addedReactions.push(newReaction);
-      this.#reactions.push(newReaction);
-      this.recordEvent(
-        'reactionAdded',
-        {
-          containerId: this.id(),
-          containerType: EntityType.mediaItem,
-          reactionKind: item.emoji,
-        },
-        actorId,
-      );
-    }
-    this.#computedReactionCounts();
-    this.touch(actorId);
-    return ok(undefined);
-  }
-
   childEntities(): ChildEntities {
     return {
       assets: { upsert: this.#assets, removed: this.#removedAssets },
-    };
-  }
-
-  VOs(): Record<string, VOCollection> {
-    return {
-      tags: {
-        upsert: this.#addedTags,
-        removed: this.#removedTags,
-        conflictKeys: ['mediaItemId', 'userTagId'],
-        tableName: 'media_item_tag',
-      },
-      reactions: {
-        upsert: this.#addedReactions,
-        removed: this.#removedReactions,
-        conflictKeys: ['targetId', 'targetType', 'userId', 'emoji'],
-        tableName: 'reaction',
-      },
     };
   }
 }

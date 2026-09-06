@@ -3,10 +3,8 @@ import {
   Batching,
   EntityType,
   NotificationContainerType,
-  NotificationKind,
   NotificationSubjectType,
 } from '@packages/contracts';
-import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
@@ -14,7 +12,6 @@ import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBa
 import { EntityId } from '../../types';
 
 export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
-  upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;
   claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;
   claimIndividualNotifications: (window: number) => Promise<AsyncNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
@@ -72,35 +69,9 @@ const asyncNotificationFields = [
   'accessGrantId',
 ];
 
-type AsyncNotificationInput = Omit<AsyncNotification, 'dirtySince' | 'kind'> & {
-  kind: NotificationKind;
-};
-
 export const build__SystemAsyncNotificationRepository = ({
   uow,
 }: SystemAsyncNotificationRepositoryDeps): SystemAsyncNotificationRepository => ({
-  upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
-    await uow.join();
-    // accessGrantId is MERGED, not just inserted: a re-share after a revoke mints a NEW
-    // authorization while colliding with the queued row for the old one (the dedup key
-    // spans channel/kind/recipient/container, none of which change). Left out of the
-    // merge, the row keeps the dead grant's id and the delivery is attributed to it.
-    // Coalesced to null because knex rejects an undefined binding.
-    //
-    // LOAD-BEARING: `?? null` is safe ONLY because `kind` is part of the dedup key.
-    // Attribution is per-kind — the two immediate share kinds always carry a grant, the
-    // four batched activity kinds never do — so an attributed row can only ever collide
-    // with another attributed row, and the null branch is unreachable for them. Drop
-    // `kind` from the unique constraint and that stops being true: an itemAdded row
-    // would collide with the albumShared row for the same recipient+album and blank its
-    // grant id, silently detaching the delivery record from the roster. Any change to
-    // that constraint has to revisit this line.
-    return uow
-      .db()('asyncNotification')
-      .insert({ ...prepareForDatabase(upsert), dirtySince: uow.db().fn.now() })
-      .onConflict(['channel', 'kind', 'recipientId', 'containerType', 'containerId'])
-      .merge({ dirtySince: uow.db().fn.now(), accessGrantId: upsert.accessGrantId ?? null });
-  },
   // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
   // only while exactly one worker process runs. A second worker would select
   // the same rows and double-send. Add SKIP LOCKED + a claim flip before

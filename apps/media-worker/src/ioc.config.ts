@@ -22,17 +22,10 @@ export default defineIocConfig({
     '@packages/infrastructure',
     '@packages/notifications',
   ],
-  lifetimeMarkers: {
-    // RequestScopeLifeCycle: 'scoped',
-    // WorkerJobProcessorBase: 'scoped',
-  },
 
   registrations: {
     Knex: {
       $contract: { accessKey: 'database' },
-    },
-    EventPublisher: {
-      noopEventPublisher: { name: 'noopEventPublisher', default: true },
     },
   },
   groups: {

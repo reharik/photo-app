@@ -3,3 +3,4 @@
  */
 
 export * from './media/MediaStorage';
+export * from './media/s3MediaStorage';

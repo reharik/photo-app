@@ -29,7 +29,6 @@ export type MediaProcessingJobRow = {
 };
 
 export interface MediaProcessingJobRepository extends RequestScopeLifeCycle {
-  enqueueIfNoneActive: (input: { mediaItemId: EntityId; actorId: EntityId }) => Promise<void>;
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
@@ -59,30 +58,6 @@ export const build__MediaProcessingJobRepository = ({
     table: 'mediaProcessingJob',
     attemptCountColumn: 'attempt_count',
   });
-
-  // The enqueue must ride the caller's request transaction so the job row and the
-  // item's status change commit (or roll back) together — a job visible before the
-  // item's PROCESSING status commits gets claimed against a still-PENDING item and
-  // rejected terminally.
-  const enqueueIfNoneActive = async (input: {
-    mediaItemId: EntityId;
-    actorId: EntityId;
-  }): Promise<void> => {
-    await uow.join();
-    await uow
-      .db()('mediaProcessingJob')
-      .insert({
-        id: crypto.randomUUID(),
-        mediaItemId: input.mediaItemId,
-        status: MediaJobStatus.pending.value,
-        attemptCount: 0,
-        availableAt: uow.db().fn.now(),
-        createdBy: input.actorId,
-        updatedBy: input.actorId,
-      })
-      .onConflict()
-      .ignore();
-  };
 
   /**
    * Reclaim jobs stranded in PROCESSING by a worker that died mid-job. Same stall
@@ -147,7 +122,6 @@ export const build__MediaProcessingJobRepository = ({
   };
 
   return {
-    enqueueIfNoneActive,
     claimNextAvailableJob: jobRepo.claimNextAvailableJob,
     markSucceeded: jobRepo.markSucceeded,
     markFailed: jobRepo.markFailed,

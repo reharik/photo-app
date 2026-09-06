@@ -1,4 +1,4 @@
-import { assertNever, AuthorizationKind, Operation } from '@packages/contracts';
+import { AuthorizationKind, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
@@ -6,8 +6,6 @@ import { EntityId } from '../../types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
 export interface SystemAuthorizationRepository extends RequestScopeLifeCycle {
-  getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
-  getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
   getPendingUserAuthorizationById: (
     id: EntityId,
   ) => Promise<PendingUserAuthorizationRow | undefined>;
@@ -110,65 +108,9 @@ export type UpsertInput = {
   updatedBy: EntityId;
 };
 
-/**
- * Split a mixed result set into the three kind-specific buckets.
- *
- * `const _n: never = row` in the final else is the exhaustiveness alarm: because
- * `isAuthorizationKind` narrows via `Extract`, adding a fourth kind to
- * `AnyAuthorizationRow` leaves a row type unaccounted for here and this line stops
- * compiling. That is the whole point of the guard — the old `kind.match()` version
- * cast its way past the type system and would have partitioned a fourth kind into
- * nothing at all, silently.
- */
-const partitionByKind = (rows: AnyAuthorizationRow[]): Authorizations => {
-  const userAuthorizations: UserAuthorizationRow[] = [];
-  const publicLinkAuthorizations: PublicLinkAuthorizationRow[] = [];
-  const pendingUserAuthorizations: PendingUserAuthorizationRow[] = [];
-
-  for (const row of rows) {
-    if (isAuthorizationKind(row, 'USER')) {
-      userAuthorizations.push(row);
-    } else if (isAuthorizationKind(row, 'PENDING')) {
-      pendingUserAuthorizations.push(row);
-    } else if (isAuthorizationKind(row, 'PUBLIC')) {
-      publicLinkAuthorizations.push(row);
-    } else {
-      const _n: never = row;
-      return assertNever(_n);
-    }
-  }
-  return { userAuthorizations, pendingUserAuthorizations, publicLinkAuthorizations };
-};
-
 export const build__SystemAuthorizationRepository = ({
   uow,
 }: SystemAuthorizationRepositoryDeps): SystemAuthorizationRepository => ({
-  getAuthorizationsByAlbumId: async (albumIds: EntityId[]): Promise<Authorizations> => {
-    await uow.join();
-    const rows = await withEnumRevival(
-      uow
-        .db()('access_grant')
-        .whereIn('albumId', albumIds)
-        .modify(withLiveAuthorizationFilter(uow.db()))
-        .select<AnyAuthorizationRow[]>(authorizationFields),
-      { operations: Operation, kind: AuthorizationKind },
-    );
-    return partitionByKind(rows);
-  },
-
-  getAuthorizationsByIds: async (ids: EntityId[]): Promise<Authorizations> => {
-    await uow.join();
-    const rows = await withEnumRevival(
-      uow
-        .db()('access_grant')
-        .whereIn('id', ids)
-        .modify(withLiveAuthorizationFilter(uow.db()))
-        .select<AnyAuthorizationRow[]>(authorizationFields),
-      { operations: Operation, kind: AuthorizationKind },
-    );
-    return partitionByKind(rows);
-  },
-
   getPendingUserAuthorizationById: async (
     id: EntityId,
   ): Promise<PendingUserAuthorizationRow | undefined> => {

@@ -5,7 +5,6 @@ import { EntityId } from '../../types';
 
 export interface SystemCommentRepository extends RequestScopeLifeCycle {
   getCommentById: (commentId: EntityId) => Promise<CommentRecord>;
-  getCommentsByIds: (commentIds: EntityId[]) => Promise<CommentRecord[]>;
 }
 
 type systemCommentRepositoryDeps = {
@@ -18,9 +17,5 @@ export const build__systemCommentRepository = ({
   getCommentById: async (commentId: EntityId) => {
     await uow.join();
     return uow.db()('comment').where({ id: commentId }).first<CommentRecord>();
-  },
-  getCommentsByIds: async (commentIds: EntityId[]) => {
-    await uow.join();
-    return uow.db()('comment').whereIn('id', commentIds).select<CommentRecord[]>();
   },
 });

@@ -8,9 +8,6 @@ import { withLiveAuthorizationFilter } from '../queryHelpers';
 export interface SystemAuthorizationRepository extends RequestScopeLifeCycle {
   getAuthorizationsByAlbumId: (albumIds: EntityId[]) => Promise<Authorizations>;
   getAuthorizationsByIds: (ids: EntityId[]) => Promise<Authorizations>;
-  getPendingUserAuthorizationById: (
-    id: EntityId,
-  ) => Promise<PendingUserAuthorizationRow | undefined>;
 }
 
 export type Authorizations = {
@@ -167,29 +164,5 @@ export const build__SystemAuthorizationRepository = ({
       { operations: Operation, kind: AuthorizationKind },
     );
     return partitionByKind(rows);
-  },
-
-  getPendingUserAuthorizationById: async (
-    id: EntityId,
-  ): Promise<PendingUserAuthorizationRow | undefined> => {
-    await uow.join();
-    const row = await withEnumRevival(
-      uow
-        .db()('access_grant')
-        .where({ id })
-        .modify(withLiveAuthorizationFilter(uow.db()))
-        .first<AnyAuthorizationRow>(authorizationFields),
-      { operations: Operation, kind: AuthorizationKind },
-    );
-    if (!row) {
-      return undefined;
-    }
-    // Selecting by id alone can return any of the three kinds, so the row is typed as the
-    // union and the guard both enforces and narrows. `.first<PublicLinkAuthorizationRow>()`
-    // asserted the answer instead of proving it.
-    if (!isAuthorizationKind(row, 'PENDING')) {
-      throw new Error(`Authorization ${row.id} is ${row.kind.value}, expected PENDING`);
-    }
-    return row;
   },
 });

@@ -7,7 +7,6 @@ import { EntityId } from '../../types';
 import { Persist } from './AggregateRepo';
 
 export interface EmailDeliveryRepository extends RequestScopeLifeCycle {
-  getById: (id: EntityId) => Promise<EmailDelivery | undefined>;
   getByMessageIds: (messageIds: EntityId[]) => Promise<EmailDelivery[]>;
   save: (emailDelivery: EmailDelivery) => Promise<void>;
 }
@@ -18,18 +17,6 @@ export const build__EmailDeliveryRepository = ({
   persist,
   uow,
 }: EmailDeliveryRepositoryDeps): EmailDeliveryRepository => ({
-  getById: async (id: EntityId): Promise<EmailDelivery | undefined> => {
-    await uow.join();
-    const emailDelivery = await withEnumRevival(
-      uow.db()<EmailDeliveryRecord>('emailDelivery').where({ id }).first(),
-      { emailKind: EmailKind, status: EmailStatus },
-    );
-    if (!emailDelivery) {
-      return undefined;
-    }
-    return EmailDelivery.rehydrate(emailDelivery);
-  },
-
   getByMessageIds: async (messageIds: EntityId[]): Promise<EmailDelivery[]> => {
     await uow.join();
     const emailDeliveries = await withEnumRevival(
