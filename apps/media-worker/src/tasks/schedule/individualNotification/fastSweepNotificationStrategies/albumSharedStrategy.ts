@@ -1,6 +1,6 @@
 import { AsyncNotificationKind, EmailKind } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
-import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/media-core';
+import { AsyncNotification, SystemAlbumRepository, UserContact } from '@packages/worker-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 

@@ -1,5 +1,5 @@
 import { Logger } from '@packages/infrastructure';
-import { MediaProcessingJobRepository, UnitOfWork } from '@packages/media-core';
+import { MediaProcessingJobRepository, UnitOfWork } from '@packages/worker-core';
 
 export type StalledMediaJobSweep = () => Promise<'idle' | 'processed'>;
 

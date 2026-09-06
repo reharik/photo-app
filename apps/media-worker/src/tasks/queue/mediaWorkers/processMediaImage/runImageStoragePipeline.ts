@@ -5,7 +5,7 @@ import {
   EntityId,
   MediaProcessingJobRow,
   MediaStorage,
-} from '@packages/media-core';
+} from '@packages/worker-core';
 import { extractCaptureTime } from '../../../../infrastructure/exif/extractCaptureTime';
 import { generateImageDerivatives } from '../imageDerivativeGenerator';
 import { readStreamToBuffer } from '../readStreamToBuffer';

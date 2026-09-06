@@ -1,5 +1,5 @@
 import type { Logger } from '@packages/infrastructure';
-import { UnitOfWork } from '@packages/media-core';
+import { UnitOfWork } from '@packages/worker-core';
 import type { Config } from './config.js';
 import { IntervalGate } from './intervalGate.js';
 import { isQueueTask, type WorkerTask, type WorkerTaskOutcome } from './types.js';

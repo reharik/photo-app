@@ -1,6 +1,6 @@
 import { MediaAssetKind } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
-import { EntityId, MediaProcessingJobRow } from '@packages/media-core';
+import { EntityId, MediaProcessingJobRow } from '@packages/worker-core';
 import { WorkerTaskOutcome } from '../../../../types';
 import { ClaimJobRow } from './claimJobRow';
 import { CompleteJobRow } from './completeJobRow';

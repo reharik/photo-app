@@ -1,0 +1,106 @@
+import {
+  AppErrorCollection,
+  EntityType,
+  fail,
+  ok,
+  OperationResult,
+  ReactionEmoji,
+  toDisplayName,
+  User,
+} from '@packages/contracts';
+import { EnumSubset } from '@reharik/smart-enum';
+import { Comment } from '../../../domain';
+import { WriteServices } from '../../../generated/ioc-registry.types';
+import { CommentRepository } from '../../../repositories';
+import { UserReadRepository } from '../../../repositories/readRepositories/types';
+import { EntityId } from '../../../types/types';
+import { ValidateOperationService } from '../../readServices/ValidateOperationService';
+import { WriteServiceBase } from '../writeServiceBaseType';
+
+export type AddCommentCommand = {
+  /**
+   * Nullable mirrors the DB column: v1 rejects null authors in the service body,
+   * but keeping it nullable here allows the anon-via-share-token path to land
+   * on the same command type in a future iteration without a type change.
+   */
+  authorId: EntityId;
+  /**
+   * Ignored when parentCommentId is set; the service copies target from the parent.
+   */
+  targetType: EnumSubset<EntityType, 'mediaItem'>;
+  /**
+   * Ignored when parentCommentId is set; the service copies target from the parent.
+   */
+  targetId: EntityId;
+  parentCommentId?: EntityId;
+  body: string;
+  viewer: User;
+};
+
+export interface AddComment extends WriteServiceBase {
+  (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>>;
+}
+
+type AddCommentDeps = {
+  commentRepository: CommentRepository;
+  userReadRepository: UserReadRepository;
+  validateOperationService: ValidateOperationService;
+  writeServices: WriteServices;
+};
+
+export const build__AddComment = ({
+  commentRepository,
+  userReadRepository,
+  validateOperationService,
+  writeServices,
+}: AddCommentDeps): AddComment => {
+  return async (command: AddCommentCommand): Promise<OperationResult<{ entityId: EntityId }>> => {
+    const result = await validateOperationService.authorizeMediaComment({
+      mediaItemId: command.targetId,
+      viewerId: command.viewer.id,
+    });
+    if (!result.success) {
+      return result;
+    }
+    const user = await userReadRepository.getById(command.authorId);
+    if (!user) {
+      return fail(AppErrorCollection.user.UserNotFound);
+    }
+    if (command.parentCommentId) {
+      const parentComment = await commentRepository.getById(command.parentCommentId);
+      if (!parentComment) {
+        return fail(AppErrorCollection.comment.CommentNotFound);
+      }
+      command.targetType = parentComment.targetType();
+      command.targetId = parentComment.targetId();
+
+      if (parentComment.isReply()) {
+        return fail(AppErrorCollection.comment.ReplyDepthExceeded);
+      }
+    }
+
+    // TODO: Look up viewer's display_name and avatar_url from the user table and
+    //   snapshot them into the row (denormalized — do not join through user on reads).
+    const comment = Comment.create(
+      {
+        targetType: command.targetType,
+        targetId: command.targetId,
+        parentCommentId: command.parentCommentId,
+        authorId: command.authorId,
+        body: command.body,
+        displayName: toDisplayName(user),
+        displayAvatarUrl: undefined,
+      },
+      command.authorId,
+    );
+
+    await commentRepository.save(comment);
+    await writeServices.toggleReaction({
+      targetType: EntityType.mediaItem,
+      targetId: command.targetId,
+      emoji: ReactionEmoji.comment,
+      viewer: command.viewer,
+    });
+    return ok({ entityId: comment.id() });
+  };
+};

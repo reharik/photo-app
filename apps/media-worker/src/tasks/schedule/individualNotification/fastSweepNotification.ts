@@ -1,5 +1,6 @@
 import { notEmpty, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
+import { NotificationService } from '@packages/notifications';
 import {
   AsyncNotification,
   EmailDelivery,
@@ -7,8 +8,7 @@ import {
   SystemAsyncNotificationRepository,
   SystemUserRepository,
   UnitOfWork,
-} from '@packages/media-core';
-import { NotificationService } from '@packages/notifications';
+} from '@packages/worker-core';
 import { Config } from '../../../config';
 import { FastSweepNotificationStrategies } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';

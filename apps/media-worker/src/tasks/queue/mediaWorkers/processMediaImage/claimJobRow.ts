@@ -4,7 +4,7 @@ import {
   MediaProcessingJobRepository,
   SystemMediaItemRepository,
   UnitOfWork,
-} from '@packages/media-core';
+} from '@packages/worker-core';
 import { MediaJobWorkflow } from './processNextMediaImageJob';
 
 export interface ClaimJobRow {

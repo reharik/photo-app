@@ -1,6 +1,6 @@
 import { EmailStatus, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { indexBy, Logger } from '@packages/infrastructure';
-import { EmailDeliveryRepository, UnitOfWork } from '@packages/media-core';
+import { EmailDeliveryRepository, UnitOfWork } from '@packages/worker-core';
 import { camelCase } from 'case-anything';
 import { WorkerTaskOutcome } from '../../../types';
 import { IncomingSESMessage, SesEventQueue } from './sesEventQueue';

@@ -1,0 +1,285 @@
+import { describe, expect, it } from '@jest/globals';
+import {
+  AppErrorCollection,
+  MediaAssetKind,
+  MediaItemStatus,
+  MediaKind,
+} from '@packages/contracts';
+import {
+  ALBUM_ITEM_ORDER_GAP,
+  ALBUM_ITEM_ORDER_INITIAL,
+  Album,
+  MediaItem,
+} from '@packages/media-core';
+import { TEST_OWNER_1_ID, TEST_USER_A_ID } from './testViewerIds';
+
+/**
+ * The derivative pipeline hands the aggregate one `PipelineResult` now, rather
+ * than two loose display dimensions: display + thumbnail asset metadata and the
+ * EXIF capture time all arrive together. `originalAsset` is left out here — it
+ * is only present when the pipeline replaced the original (HEIC), and supplying
+ * it would require the item to already carry an original asset in PROCESSING.
+ */
+const pipelineResult = ({
+  display = { width: 1, height: 1 },
+}: { display?: { width: number; height: number } } = {}) => ({
+  capture: {},
+  displayAsset: {
+    kind: MediaAssetKind.display,
+    mimeType: 'image/jpeg',
+    sizeBytes: 2048,
+    width: display.width,
+    height: display.height,
+  },
+  thumbnailAsset: {
+    kind: MediaAssetKind.thumbnail,
+    mimeType: 'image/jpeg',
+    sizeBytes: 512,
+    width: 200,
+    height: 200,
+  },
+});
+
+describe('MediaItem (domain)', () => {
+  describe('When created', () => {
+    it('should start in pending status', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+      expect(item.status()).toBe(MediaItemStatus.pending);
+    });
+  });
+
+  describe('When completeUploadedWithMetadata is called from pending for a photo', () => {
+    it('should transition to processing without dimensions', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+      const result = item.completeUploadedWithMetadata(
+        { sizeBytes: 100, mimeType: 'image/png' },
+        MediaKind.photo,
+        ownerId,
+      );
+      expect(result.success).toBe(true);
+      expect(item.status()).toBe(MediaItemStatus.processing);
+      expect(item.sizeBytes()).toBe(100);
+      expect(item.mimeType()).toBe('image/png');
+      expect(item.width()).toBeUndefined();
+      expect(item.height()).toBeUndefined();
+    });
+  });
+
+  describe('When completeUploadedWithMetadata is called from pending for a video', () => {
+    it('should transition to ready without dimensions', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.video, mimeType: 'video/mp4' }, ownerId);
+      const result = item.completeUploadedWithMetadata(
+        { sizeBytes: 200, mimeType: 'video/mp4' },
+        MediaKind.video,
+        ownerId,
+      );
+      expect(result.success).toBe(true);
+      expect(item.status()).toBe(MediaItemStatus.ready);
+    });
+  });
+
+  describe('When applyProcessingResults is called from processing with display dimensions', () => {
+    it('should transition to ready and set width and height from the display derivative', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 5000, mimeType: 'image/jpeg' },
+        MediaKind.photo,
+        ownerId,
+      );
+      const result = item.applyProcessingResults(
+        pipelineResult({ display: { width: 1200, height: 800 } }),
+        ownerId,
+      );
+      expect(result.success).toBe(true);
+      expect(item.status()).toBe(MediaItemStatus.ready);
+      expect(item.width()).toBe(1200);
+      expect(item.height()).toBe(800);
+    });
+  });
+
+  describe('When applyProcessingResults is called but the item is not awaiting derivatives', () => {
+    it('should fail with media item not processing', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+      const result = item.applyProcessingResults(pipelineResult(), ownerId);
+      expect(result).toEqual({
+        success: false,
+        error: expect.objectContaining({
+          code: AppErrorCollection.mediaItem.MediaItemNotProcessing.code,
+        }),
+      });
+    });
+  });
+
+  describe('When applyProcessingResults is called again after the item is already ready', () => {
+    it('should fail with media item not processing', () => {
+      const ownerId = TEST_USER_A_ID;
+      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
+      item.completeUploadedWithMetadata(
+        { sizeBytes: 1, mimeType: 'image/jpeg' },
+        MediaKind.photo,
+        ownerId,
+      );
+      const first = item.applyProcessingResults(
+        pipelineResult({ display: { width: 10, height: 10 } }),
+        ownerId,
+      );
+      expect(first.success).toBe(true);
+      const second = item.applyProcessingResults(
+        pipelineResult({ display: { width: 20, height: 20 } }),
+        ownerId,
+      );
+      // The status guard runs first, so a second apply is rejected for the
+      // status — not for the display/thumbnail assets the first one added.
+      expect(second).toEqual({
+        success: false,
+        error: expect.objectContaining({
+          code: AppErrorCollection.mediaItem.MediaItemNotProcessing.code,
+        }),
+      });
+    });
+  });
+});
+
+describe('Album (domain)', () => {
+  const ownerId = TEST_OWNER_1_ID;
+
+  describe('When addItem is called with duplicate media', () => {
+    it('should reject the second add with media already in album', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const mediaId = 'media-1';
+      const first = album.addItem(mediaId, ownerId, MediaKind.photo);
+      expect(first.success).toBe(true);
+      if (!first.success) {
+        throw new Error('expected first addItem to succeed');
+      }
+      expect(first.value.orderIndex()).toBe(ALBUM_ITEM_ORDER_INITIAL);
+      const second = album.addItem(mediaId, ownerId, MediaKind.photo);
+      expect(second).toEqual({
+        success: false,
+        error: expect.objectContaining({
+          code: AppErrorCollection.album.MediaAlreadyInAlbum.code,
+        }),
+      });
+    });
+  });
+
+  describe('When addItem is called twice for different media', () => {
+    it('should assign increasing sparse order indices', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const a = album.addItem('media-a', ownerId, MediaKind.photo);
+      const b = album.addItem('media-b', ownerId, MediaKind.photo);
+      expect(a.success).toBe(true);
+      expect(b.success).toBe(true);
+      if (!a.success || !b.success) {
+        throw new Error('expected both addItem calls to succeed');
+      }
+      expect(a.value.orderIndex()).toBe(ALBUM_ITEM_ORDER_INITIAL);
+      expect(b.value.orderIndex()).toBe(ALBUM_ITEM_ORDER_INITIAL + ALBUM_ITEM_ORDER_GAP);
+    });
+  });
+
+  describe('When setCoverMedia targets media that is not an album item', () => {
+    it('should fail without an independent readiness check in the aggregate API', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const r = album.setCoverMedia('not-in-album', ownerId);
+      expect(r).toEqual({
+        success: false,
+        error: expect.objectContaining({
+          code: AppErrorCollection.album.CoverMediaNotPartOfAlbum.code,
+        }),
+      });
+    });
+  });
+
+  describe('When setCoverMedia targets media that is already represented as an album item', () => {
+    it('should succeed based on membership only', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const mediaId = 'media-cover';
+      const add = album.addItem(mediaId, ownerId, MediaKind.photo);
+      expect(add.success).toBe(true);
+      if (!add.success) {
+        throw new Error('expected addItem to succeed');
+      }
+      const r = album.setCoverMedia(add.value.id(), ownerId);
+      expect(r.success).toBe(true);
+    });
+  });
+
+  describe('When reorderItems is called with a full permutation', () => {
+    it('should assign new sparse indices in list order', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const a = album.addItem('m1', ownerId, MediaKind.photo);
+      const b = album.addItem('m2', ownerId, MediaKind.photo);
+      const c = album.addItem('m3', ownerId, MediaKind.photo);
+      expect(a.success && b.success && c.success).toBe(true);
+      if (!a.success || !b.success || !c.success) {
+        throw new Error('expected all addItem calls to succeed');
+      }
+      const id1 = a.value.id();
+      const id2 = b.value.id();
+      const id3 = c.value.id();
+      const r = album.reorderItems([id3, id1, id2], ownerId);
+      expect(r.success).toBe(true);
+      const items = album.childEntities().items.upsert;
+      const byId = new Map(items.map((it) => [it.id(), String(it.orderIndex())]));
+      expect(byId.get(id3)! < byId.get(id1)!).toBe(true);
+      expect(byId.get(id1)! < byId.get(id2)!).toBe(true);
+    });
+  });
+
+  describe('When removeMediaItemFromAlbum targets media that is the cover', () => {
+    it('should remove the album item and clear the cover', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const mediaId = 'media-a';
+      const add = album.addItem(mediaId, ownerId, MediaKind.photo);
+      expect(add.success).toBe(true);
+      if (!add.success) {
+        throw new Error('expected addItem to succeed');
+      }
+      const cover = album.setCoverMedia(add.value.id(), ownerId);
+      expect(cover.success).toBe(true);
+
+      const removed = album.removeMediaItemFromAlbum(mediaId, ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.childEntities().items.upsert).toHaveLength(0);
+      expect(album.coverMediaId()).toBeUndefined();
+    });
+  });
+
+  describe('When removeMediaItemFromAlbum targets media that is not the cover', () => {
+    it('should remove only that album item and leave the cover unchanged', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const a = album.addItem('keep-cover', ownerId, MediaKind.photo);
+      const b = album.addItem('remove-me', ownerId, MediaKind.photo);
+      expect(a.success && b.success).toBe(true);
+      if (!a.success || !b.success) {
+        throw new Error('expected both addItem calls to succeed');
+      }
+      const cover = album.setCoverMedia(a.value.id(), ownerId);
+      expect(cover.success).toBe(true);
+
+      const removed = album.removeMediaItemFromAlbum('remove-me', ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.childEntities().items.upsert).toHaveLength(1);
+      expect(album.coverMediaId()).toBe('keep-cover');
+    });
+  });
+
+  describe('When removeMediaItemFromAlbum targets media that is not in the album', () => {
+    it('should leave items unchanged', () => {
+      const album = Album.create({ title: 'Trip' }, ownerId);
+      const add = album.addItem('only-one', ownerId, MediaKind.photo);
+      expect(add.success).toBe(true);
+
+      const beforeItems = album.childEntities().items.upsert.length;
+      const removed = album.removeMediaItemFromAlbum('not-present', ownerId);
+      expect(removed.success).toBe(true);
+      expect(album.childEntities().items.upsert).toHaveLength(beforeItems);
+    });
+  });
+});

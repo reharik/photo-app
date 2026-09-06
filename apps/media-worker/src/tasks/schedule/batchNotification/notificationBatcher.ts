@@ -1,13 +1,13 @@
 import { BatchedPayloadKind, EmailKind, notEmpty, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
+import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
 import {
   EmailDelivery,
   EmailDeliveryRepository,
   SystemAsyncNotificationRepository,
   SystemUserRepository,
   UnitOfWork,
-} from '@packages/media-core';
-import { ActivitySection, NotificationPayload, NotificationService } from '@packages/notifications';
+} from '@packages/worker-core';
 import { Config } from '../../../config';
 import { BatchedEmailActivity } from '../../../generated/ioc-registry.types';
 import { WorkerTaskOutcome } from '../../../types';

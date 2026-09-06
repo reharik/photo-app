@@ -1,0 +1,39 @@
+import {
+  NotificationContainerType,
+  NotificationKind,
+  NotificationSubjectType,
+} from '@packages/contracts';
+import { DomainEvent } from '../domainEvents';
+import { UserContact } from '../repositories';
+import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
+import { EntityId } from '../types';
+
+export type NotificationBranch = 'inAppWriter' | 'asyncWriter';
+
+// Minimal recipient: id + status is all the dispatcher guards need.
+// Email/name hydration for the actual send happens later in the async batcher.
+export type Recipient = Pick<UserContact, 'id' | 'userStatus'>;
+
+// The canonical intermediate. Resolved ONCE per event, branch-agnostic.
+// Both writers map from this — all variability lives upstream in the strategy.
+export type ResolvedNotification = {
+  recipients: Recipient[];
+  actorId: EntityId;
+  containerType: NotificationContainerType; // container / context
+  containerId: EntityId;
+  subjectType: NotificationSubjectType; // most-specific entity; == container when none finer; authorization for token cases
+  subjectId: EntityId;
+  kind: NotificationKind; // resolved here — the reply/root fork is already applied
+  accessGrantId?: EntityId; // the grant this was minted for; absent for the activity kinds
+};
+
+// One per event kind. `branches` declares routing — the grid holes live here,
+// as data, not as missing files.
+export interface NotificationStrategy<
+  K extends DomainEvent['kind'] = DomainEvent['kind'],
+> extends RequestScopeLifeCycle {
+  name: string; // log identity — which strategy won the dispatcher's kind lookup
+  handles: K[];
+  branches: NotificationBranch[];
+  resolve: (event: Extract<DomainEvent, { kind: K }>) => Promise<ResolvedNotification>;
+}

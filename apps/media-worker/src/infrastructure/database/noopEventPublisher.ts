@@ -1,5 +1,5 @@
 import { Logger } from '@packages/infrastructure';
-import { DomainEvent, RequestScopeLifeCycle } from '@packages/media-core';
+import { DomainEvent, RequestScopeLifeCycle } from '@packages/worker-core';
 
 export interface EventPublisher extends RequestScopeLifeCycle {
   publish: (events: DomainEvent[]) => Promise<void>;

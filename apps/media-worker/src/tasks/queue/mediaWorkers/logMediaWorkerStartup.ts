@@ -1,7 +1,7 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Logger } from '@packages/infrastructure';
 
-import { UnitOfWork } from '@packages/media-core';
+import { UnitOfWork } from '@packages/worker-core';
 import type { Config } from '../../../config';
 
 export interface LogMediaWorkerStartup {

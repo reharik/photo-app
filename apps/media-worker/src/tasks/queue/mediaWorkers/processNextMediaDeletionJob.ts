@@ -7,7 +7,7 @@ import {
   type MediaDeletionJobRow,
   type MediaItemRepository,
   type MediaStorage,
-} from '@packages/media-core';
+} from '@packages/worker-core';
 
 import type { Config } from '../../../config.js';
 import { WorkerTaskOutcome } from '../../../types.js';
