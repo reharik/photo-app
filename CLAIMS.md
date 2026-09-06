@@ -22,8 +22,8 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 > about six months") are still listed below and no longer appear on the page.
 >
 > **The subhead was replaced (2026-09-05) and the whole `## Subhead` section below is
-> retired.** It is now *"You choose the photos, you choose who sees them, and it stays
-> that way."* Three claims went with the old line — **"scanned"**, **"profiled"** and
+> retired.** It is now _"You choose the photos, you choose who sees them, and it stays
+> that way."_ Three claims went with the old line — **"scanned"**, **"profiled"** and
 > **"used to train anything"** — including the one open policy commitment among them;
 > the training claim itself survives on the page, but as part of section `03`, not the
 > subhead. **The Google Photos comparison is also gone: the new subhead makes no claim
@@ -49,9 +49,9 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       which classifies a file by MIME type into image/video. It never looks at pixels.
       The media pipeline does HEIC conversion and thumbnail/display derivatives
       (`packages/context/heic-converter`, `apps/media-worker`) — transformation, not analysis.
-- [x] **"profiled"** — *(Phase 3: was "indexed", which was ambiguous — photo rows are
+- [x] **"profiled"** — _(Phase 3: was "indexed", which was ambiguous — photo rows are
       of course indexed in Postgres, and a technical reader who checked would find
-      exactly that. "Profiled" says what was actually meant and can't be read two ways.)*
+      exactly that. "Profiled" says what was actually meant and can't be read two ways.)_
       No behavioural or advertising profile is built from photo content. No content
       analysis exists (see "scanned" above) and no third-party analytics exist (see
       "No tracking" below). See the note under Section 2 about internal
@@ -105,18 +105,18 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       can be sorted to, clears that bar.
 
       **Record the distinction, because the next reader will not re-derive it.** `Query`
-      exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
-      and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
-      **nothing**. There is no text search, no date filter, no people filter, no
-      free-text lookup of any kind. "Go looking for photos from a trip two years ago"
-      invites a reader to picture a search box; today the honest answer is page N of a
-      paginated list sorted by title or creation date.
+          exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
+          and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
+          **nothing**. There is no text search, no date filter, no people filter, no
+          free-text lookup of any kind. "Go looking for photos from a trip two years ago"
+          invites a reader to picture a search box; today the honest answer is page N of a
+          paginated list sorted by title or creation date.
 
-      This is a **wording risk, not a false claim** — the sentence as written promises
-      only findability, and that is true. Two things could break it: adding a search box
-      to the page's implied contract by rewording the line, or letting album counts grow
-      to where pagination stops being findability in practice. If search ever ships, this
-      entry becomes moot. Until then, do not strengthen this sentence.
+          This is a **wording risk, not a false claim** — the sentence as written promises
+          only findability, and that is true. Two things could break it: adding a search box
+          to the page's implied contract by rewording the line, or letting album counts grow
+          to where pagination stops being findability in practice. If search ever ships, this
+          entry becomes moot. Until then, do not strengthen this sentence.
 
 - [ ] **"If they decide they want an account later, everything they already have stays
       exactly where it is."** — **This is the riskiest unverified claim on the page, and
@@ -187,9 +187,9 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 - [ ] **"it costs money to store them, so eventually it'll cost money to store them, and
       that'll be the whole business model"** — **forward-looking commitment with no
       current implementation.** There is no billing code, no plan model, no paid tier,
-      no free-tier quota anywhere in the schema. The brief's own note applies: *adjust
-      to whatever's actually true about free tier vs. paid; don't promise free forever.*
-      The sentence as written doesn't promise free forever — it promises the *opposite*,
+      no free-tier quota anywhere in the schema. The brief's own note applies: _adjust
+      to whatever's actually true about free tier vs. paid; don't promise free forever._
+      The sentence as written doesn't promise free forever — it promises the _opposite_,
       which is safer — but it does commit you publicly to never monetising another way.
       Ship it only if you mean it as a constraint on yourself.
 
@@ -198,16 +198,16 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 - [x] **"I'm one person"** — `git log` shows a single author across all 498 commits:
       `Raif Harik <harik.raif@gmail.com>`.
       **Note the conflict:** `apps/web/src/screens/LoggedOutScreen.tsx:356-359` currently
-      ships *"We're a small team who think your family's photos are nobody else's
-      business."* That page is one click from the landing. The landing says "I'm one
+      ships _"We're a small team who think your family's photos are nobody else's
+      business."_ That page is one click from the landing. The landing says "I'm one
       person"; the login page says "we're a small team." **One of them has to change**,
       and per brief §5 it should be the login page. Out of scope for Phase 2 — flagged
       here so it can't be forgotten.
 - [x] **"I've been building Homeroll for about six months"** — matches the repo.
-      First commit `2026-02-23`, most recent `2026-09-03`. *(Phase 3: was "about a
+      First commit `2026-02-23`, most recent `2026-09-03`. _(Phase 3: was "about a
       year", which the history contradicted. On a page whose entire argument is "check
       what I'm telling you," an easily-checked overstatement was the worst kind of
-      error available; the verifiable number is also the more specific one.)*
+      error available; the verifiable number is also the more specific one.)_
 - [ ] **"There's no investor waiting on a return, no growth target"** — personal fact,
       outside the repo. Only you can check it.
 - [ ] **"no acquisition that ends with your albums somewhere you didn't pick"** —
@@ -220,16 +220,16 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       an album — let alone everything — out of the system.
 
       **DECIDED (Phase 3): keep the sentence and build the feature.** This is now a
-      committed deliverable, not an open question. The brief's gate — *only ship the
-      last sentence if you mean it* — is answered "I mean it."
+          committed deliverable, not an open question. The brief's gate — *only ship the
+          last sentence if you mean it* — is answered "I mean it."
 
-      **This box stays unchecked, and this claim blocks ship, until export exists.**
-      Sketch of what that means: a bulk album (and whole-account) export. It fetches
-      originals from S3, so it belongs in `apps/media-worker` as a task rather than in a
-      request — see the nested `apps/media-worker/CLAUDE.md` for the task-runner and
-      `QueueClaimable` patterns. Delivery is probably a signed URL to a generated
-      archive, mailed via the existing notification path.
-      **make-true**
+          **This box stays unchecked, and this claim blocks ship, until export exists.**
+          Sketch of what that means: a bulk album (and whole-account) export. It fetches
+          originals from S3, so it belongs in `apps/media-worker` as a task rather than in a
+          request — see the nested `apps/media-worker/CLAUDE.md` for the task-runner and
+          `QueueClaimable` patterns. Delivery is probably a signed URL to a generated
+          archive, mailed via the existing notification path.
+          **make-true**
 
 ---
 
@@ -240,8 +240,8 @@ belongs on the same checklist because it fails the same way — quietly, and onl
 after publication.
 
 - [ ] **Every identifiable person in the final photograph set has said yes.**
-      Brief §6.1 makes this a hard gate: *"it must be real photos of real people who
-      said yes. Not stock."* The page argues that your family is not a data source;
+      Brief §6.1 makes this a hard gate: _"it must be real photos of real people who
+      said yes. Not stock."_ The page argues that your family is not a data source;
       illustrating it with someone's face that nobody cleared would refute the
       argument in the most literal way available, and it would do so permanently —
       the photographs are the first thing a reader sees.
@@ -250,17 +250,17 @@ after publication.
       Consent is owed for whatever set actually ships, not for these.
       **This box is per-photograph and resets on every swap.**
       If permission can't be obtained, brief §6.1's fallback is type only, no
-      images — explicitly *not* stock.
+      images — explicitly _not_ stock.
 
 ## Summary
 
-| | Count |
-|---|---|
-| Verified | 13 |
-| Unverified / policy-only | 8 |
-| Contradicted by the repo | 0 |
+|                                                      | Count                                                                  |
+| ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| Verified                                             | 13                                                                     |
+| Unverified / policy-only                             | 8                                                                      |
+| Contradicted by the repo                             | 0                                                                      |
 | **make-true** (committed to building, not softening) | **3** — export path, guest-conversion durability, access-control audit |
-| **Non-copy ship gates** | **1** — photograph consent (resets on every photo swap) |
+| **Non-copy ship gates**                              | **1** — photograph consent (resets on every photo swap)                |
 
 **Resolved in Phase 3:**
 
