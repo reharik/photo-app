@@ -1,8 +1,7 @@
-import { ok, Operation, OperationResult } from '@packages/contracts';
+import { EntityId, ok, Operation, OperationResult } from '@packages/contracts';
 import { ensureMemberCanEditAlbum } from '../../../application/support/albumguard';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { SetCoverMediaCommand, SetCoverMediaResult } from './writeAlbum.types';
 

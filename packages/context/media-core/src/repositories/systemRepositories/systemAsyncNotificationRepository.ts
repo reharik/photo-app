@@ -1,5 +1,6 @@
 import {
   AsyncNotificationKind,
+  EntityId,
   NotificationContainerType,
   NotificationKind,
   NotificationSubjectType,
@@ -8,7 +9,6 @@ import { prepareForDatabase } from '@reharik/smart-enum';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 
 export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;

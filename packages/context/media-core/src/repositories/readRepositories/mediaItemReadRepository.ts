@@ -1,11 +1,10 @@
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import {
   DBMediaItemRow,
   MediaItemCollectionInfo,
   PagedList,
 } from '../../services/readServices/types';
-import { EntityId } from '../../types/types';
 import { toPagedResult } from '../queryHelpers';
 import type { MediaItemReadRepository, MediaItemTagRow, ReadRepositoryDeps } from './types';
 

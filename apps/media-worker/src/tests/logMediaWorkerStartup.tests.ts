@@ -16,7 +16,7 @@
  * has nothing to do with the probe.
  */
 import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { UnitOfWork } from '@packages/media-core';
+import type { UnitOfWork } from '@packages/worker-core';
 
 import type { Config } from '../config';
 

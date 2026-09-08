@@ -1,8 +1,8 @@
+import type { EntityId } from '@packages/contracts';
 import type { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import type { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import type { AlbumReadRepository } from '../../../repositories/readRepositories/types';
-import type { EntityId } from '../../../types/types';
 
 export type DeleteMediaLibraryInTransactionDeps = {
   albumReadRepository: AlbumReadRepository;

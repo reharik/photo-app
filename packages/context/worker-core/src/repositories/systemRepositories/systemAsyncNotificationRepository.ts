@@ -1,6 +1,7 @@
 import {
   AsyncNotificationKind,
   Batching,
+  EntityId,
   EntityType,
   NotificationContainerType,
   NotificationSubjectType,
@@ -9,7 +10,6 @@ import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 
 export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;

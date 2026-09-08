@@ -1,8 +1,8 @@
 // repository-helpers.ts
 
+import type { Entity, VOCollection } from '@packages/contracts';
+import { serializeValue } from '@packages/contracts';
 import { AggregateRoot } from '../../domain';
-import type { Entity, VOCollection } from '../../domain/Entity';
-import { serializeValue } from '../../domain/utilities/serializeAggregates';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 

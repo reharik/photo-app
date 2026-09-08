@@ -1,6 +1,5 @@
-import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
+import { AppErrorCollection, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
-import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type DeleteCommentCommand = {

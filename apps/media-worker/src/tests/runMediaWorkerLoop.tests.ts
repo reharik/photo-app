@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { SweepCadence } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
-import type { UnitOfWork } from '@packages/media-core';
+import type { UnitOfWork } from '@packages/worker-core';
 
 import type { Config } from '../config.js';
 import type { WorkerTasks } from '../generated/ioc-registry.types.js';

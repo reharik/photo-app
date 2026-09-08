@@ -1,6 +1,6 @@
-import { AlbumMemberRole } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type AuditRecord } from '../Entity';
+import type { ActorId, EntityId } from '@packages/contracts';
+import { AlbumMemberRole, type AuditRecord } from '@packages/contracts';
+import { DomainEntity } from '../DomainEntity';
 
 export type AlbumMemberProps = {
   userId: EntityId;
@@ -15,7 +15,7 @@ export type AlbumMemberRecord = {
   albumId: EntityId;
 } & AuditRecord;
 
-export class AlbumMember extends Entity<AlbumMemberRecord> {
+export class AlbumMember extends DomainEntity<AlbumMemberRecord> {
   protected props: AlbumMemberProps;
 
   private constructor(actorId: ActorId, props: AlbumMemberProps, id?: EntityId) {

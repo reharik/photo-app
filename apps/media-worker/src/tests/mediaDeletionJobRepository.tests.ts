@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaJobStatus } from '@packages/contracts';
-import { build__MediaDeletionJobRepository, type UnitOfWork } from '@packages/media-core';
+import { build__MediaDeletionJobRepository, type UnitOfWork } from '@packages/worker-core';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 

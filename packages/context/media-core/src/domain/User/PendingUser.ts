@@ -1,5 +1,5 @@
+import type { ActorId, EntityId } from '@packages/contracts';
 import { ContractError, fail, ok, OperationResult, UserStatus } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { CreateUserInput, UserRecord } from './types';
 

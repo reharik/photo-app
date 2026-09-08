@@ -3,7 +3,7 @@
  */
 
 export * from './AggregateRoot';
-export * from './Entity';
+export * from './DomainEntity';
 export * from './Album/Album';
 export * from './Album/AlbumItem';
 export * from './Album/AlbumMember';
@@ -14,13 +14,9 @@ export * from './Authorization/PublicLinkAuthorization';
 export * from './Authorization/UserAuthorization';
 export * from './Authorization/grantAuthorizationValidation';
 export * from './Comment/Comment';
-export * from './MediaItem/MediaAsset';
 export * from './MediaItem/MediaItem';
 export * from './Notification/Notification';
 export * from './User/PendingUser';
 export * from './User/User';
 export * from './User/types';
-export * from './utilities/entityGuard';
 export * from './utilities/reorderAlbumItems';
-export * from './utilities/serializeAggregates';
-export * from './utilities/stampAudit';

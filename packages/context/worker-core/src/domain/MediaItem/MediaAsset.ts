@@ -2,9 +2,8 @@
  * MediaAsset: a stored file (source or derivative) for a MediaItem.
  */
 
-import { MediaAssetKind, MediaAssetStatus } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type AuditRecord } from '../Entity';
+import type { ActorId, EntityId } from '@packages/contracts';
+import { Entity, MediaAssetKind, MediaAssetStatus, type AuditRecord } from '@packages/contracts';
 
 export type MediaAssetProps = {
   mediaItemId: EntityId;

@@ -1,6 +1,6 @@
+import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 import { withAlbumItemCount } from '../queryHelpers';
 
 export interface SystemAlbumRepository extends RequestScopeLifeCycle {

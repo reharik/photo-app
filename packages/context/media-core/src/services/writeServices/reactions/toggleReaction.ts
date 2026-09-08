@@ -1,3 +1,4 @@
+import type { EntityId } from '@packages/contracts';
 import {
   AppErrorCollection,
   EntityType,
@@ -9,7 +10,6 @@ import {
 } from '@packages/contracts';
 import type { CommentRepository } from '../../../repositories/domainRepositories/commentRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import type { EntityId } from '../../../types/types';
 import { Reaction } from '../mediaItem/writeMediaItem.types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 

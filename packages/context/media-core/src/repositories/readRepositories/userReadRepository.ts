@@ -1,7 +1,7 @@
+import type { EntityId } from '@packages/contracts';
 import { UserStatus } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UserRow } from '../../services';
-import type { EntityId } from '../../types/types';
 import type { ReadRepositoryDeps, UserReadRepository } from './types';
 
 export const build__UserReadRepository = ({ uow }: ReadRepositoryDeps): UserReadRepository => ({

@@ -1,8 +1,8 @@
 import { MediaJobStatus } from '@packages/contracts';
 
+import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import type { EntityId } from '../../types/types';
 import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
 export type MediaDeletionJobRow = {

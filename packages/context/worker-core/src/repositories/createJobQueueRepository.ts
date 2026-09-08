@@ -1,8 +1,8 @@
 import { MediaJobStatus } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 
+import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../infrastructure';
-import type { EntityId } from '../types/types';
 
 /**
  * Shared claim/mark mechanics for FOR-UPDATE-SKIP-LOCKED queue tables

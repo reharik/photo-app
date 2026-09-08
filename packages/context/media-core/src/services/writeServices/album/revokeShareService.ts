@@ -1,6 +1,5 @@
-import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
+import { ContractError, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { AlbumRepository, SystemGrantRepository } from '../../../repositories';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface RevokeShareService extends WriteServiceBase {

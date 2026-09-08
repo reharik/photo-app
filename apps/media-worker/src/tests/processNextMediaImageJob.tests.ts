@@ -5,11 +5,12 @@ import type {
   MediaItemOwner,
   MediaItemRepository,
   MediaProcessingJobRepository,
+  MediaAssetRecord,
   MediaProcessingJobRow,
   SystemMediaItemRepository,
   UnitOfWork,
-} from '@packages/media-core';
-import { MediaItem } from '@packages/media-core';
+} from '@packages/worker-core';
+import { MediaItem } from '@packages/worker-core';
 
 import type { ClaimJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/claimJobRow.js';
 import { build__ClaimJobRow } from '../tasks/queue/mediaWorkers/processMediaImage/claimJobRow.js';
@@ -57,7 +58,6 @@ const jobRow = (attemptCount = 1): MediaProcessingJobRow =>
   }) as unknown as MediaProcessingJobRow;
 
 const createJobRepo = () => ({
-  enqueueIfNoneActive: jest.fn<MediaProcessingJobRepository['enqueueIfNoneActive']>(),
   claimNextAvailableJob: jest
     .fn<MediaProcessingJobRepository['claimNextAvailableJob']>()
     .mockResolvedValue(jobRow()),
@@ -96,17 +96,32 @@ const createSystemItemRepo = (item: MediaItemOwner | undefined) =>
     getMediaItemById: jest.Mock<SystemMediaItemRepository['getMediaItemById']>;
   };
 
-/** A photo aggregate sitting in PROCESSING, i.e. ready for the pipeline result. */
-const processingPhoto = (): MediaItem => {
-  const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
-  item.addAsset(MediaAssetKind.original, 'image/jpeg');
-  item.completeUploadedWithMetadata(
-    { sizeBytes: 10, mimeType: 'image/jpeg' },
-    MediaKind.photo,
-    ACTOR_ID,
+/**
+ * A photo aggregate as the worker actually finds it: PROCESSING, and carrying
+ * NO asset rows. The API stopped creating the original's row when asset
+ * ownership moved to the worker, so `applyProcessingResults` is now the sole
+ * writer of all three — and it refuses an item that already has any
+ * (`AssetKindAlreadyExists`). Rehydrating is the only way to reach PROCESSING
+ * here: `completeUploadedWithMetadata` is the API's transition and is not on
+ * worker-core's `MediaItem`.
+ */
+const processingPhoto = (assets: MediaAssetRecord[] = []): MediaItem =>
+  MediaItem.rehydrate(
+    {
+      id: MEDIA_ITEM_ID,
+      ownerId: ACTOR_ID,
+      kind: MediaKind.photo,
+      status: MediaItemStatus.processing,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: ACTOR_ID,
+      updatedBy: ACTOR_ID,
+    },
+    { assets },
   );
-  return item;
-};
+
+/** The item's persisted shape — the repo-facing record, i.e. what reaches the DB. */
+const persistedItem = (item: MediaItem) => item.toPersistence();
 
 const pipelineResult = (): PipelineResult => ({
   capture: {},
@@ -124,6 +139,13 @@ const pipelineResult = (): PipelineResult => ({
     width: 200,
     height: 200,
   },
+  originalAsset: {
+    kind: MediaAssetKind.original,
+    mimeType: 'image/png',
+    sizeBytes: 8192,
+    width: 2400,
+    height: 1600,
+  },
 });
 
 /**
@@ -133,23 +155,30 @@ const pipelineResult = (): PipelineResult => ({
  * captured rather than discarded. `db()` throws: every collaborator is faked, so
  * a unit reaching for the handle directly is a mistake, not a silent undefined.
  */
-const createFakeUow = () => {
+const createFakeUow = (trace: string[] = []) => {
   const commits: boolean[] = [];
   const uow = {
     id: 'fake-uow',
-    beginIsolatedOnly: async () => {},
-    join: async () => {},
+    beginIsolatedOnly: async () => {
+      trace.push('beginIsolatedOnly');
+    },
+    join: async () => {
+      trace.push('join');
+    },
     db: () => {
       throw new Error('db() is not available in this unit test');
     },
     complete: async (ok: boolean) => {
       commits.push(ok);
+      trace.push(`complete(${String(ok)})`);
     },
-    settle: async () => {},
+    settle: async (ok: boolean) => {
+      trace.push(`settle(${String(ok)})`);
+    },
     collectEvents: () => {},
     flagRollbackOnly: () => {},
   } as unknown as UnitOfWork;
-  return { uow, commits };
+  return { uow, commits, trace };
 };
 
 describe('build__ClaimJobRow', () => {
@@ -311,16 +340,28 @@ describe('build__ClaimJobRow', () => {
 
 describe('build__CompleteJobRow', () => {
   const build = (item: MediaItem | undefined, claimed = true) => {
+    const trace: string[] = [];
     const mediaProcessingJobRepository = createJobRepo();
-    mediaProcessingJobRepository.markSucceeded.mockResolvedValue(claimed);
+    mediaProcessingJobRepository.markSucceeded.mockImplementation(() => {
+      trace.push('markSucceeded');
+      return Promise.resolve(claimed);
+    });
     const mediaItemRepository = createItemRepo(item);
-    const { uow, commits } = createFakeUow();
+    mediaItemRepository.getById.mockImplementation(() => {
+      trace.push('getById');
+      return Promise.resolve(item);
+    });
+    mediaItemRepository.save.mockImplementation(() => {
+      trace.push('save');
+      return Promise.resolve(undefined);
+    });
+    const { uow, commits } = createFakeUow(trace);
     const completeJobRow = build__CompleteJobRow({
       mediaProcessingJobRepository,
       mediaItemRepository,
       uow,
     });
-    return { completeJobRow, mediaItemRepository, mediaProcessingJobRepository, commits };
+    return { completeJobRow, mediaItemRepository, mediaProcessingJobRepository, commits, trace };
   };
 
   describe('When the job is still owned and the item applies cleanly', () => {
@@ -331,11 +372,63 @@ describe('build__CompleteJobRow', () => {
       const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
 
       expect(result).toEqual({ outcome: 'completed' });
-      expect(item.status()).toBe(MediaItemStatus.ready);
-      expect(item.width()).toBe(1200);
-      expect(item.height()).toBe(800);
+      const persisted = persistedItem(item);
+      expect(persisted.status).toBe(MediaItemStatus.ready.value);
+      expect(persisted.width).toBe(1200);
+      expect(persisted.height).toBe(800);
       expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
       expect(commits).toEqual([true]);
+    });
+
+    it('should write all three asset rows — original, display and thumbnail', async () => {
+      const item = processingPhoto();
+      const { completeJobRow, mediaItemRepository } = build(item);
+
+      await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      // The worker is the only writer of these rows now. A missing one leaves an
+      // item marked READY whose derivative S3 holds but the DB does not record.
+      const saved = mediaItemRepository.save.mock.calls[0][0] as MediaItem;
+      const kinds = saved
+        .childEntities()
+        .assets.upsert.map((a) => (a.toPersistence() as { kind: string }).kind);
+      expect(kinds.sort()).toEqual(
+        [
+          MediaAssetKind.original.value,
+          MediaAssetKind.display.value,
+          MediaAssetKind.thumbnail.value,
+        ].sort(),
+      );
+    });
+
+    it('should write the asset rows in the SAME transaction as the status transition', async () => {
+      const item = processingPhoto();
+      const { completeJobRow, trace } = build(item);
+
+      await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      // One boundary around the whole thing: the job's status flip, the item's
+      // re-read, and the save that carries the three asset rows. Any `complete`
+      // between `markSucceeded` and `save` would let a crash strand an item
+      // marked ready with no assets.
+      expect(trace).toEqual(['join', 'markSucceeded', 'getById', 'save', 'complete(true)']);
+    });
+  });
+
+  describe('When the job fails to apply', () => {
+    it('should leave no partial asset state — nothing saved, and the boundary rolled back', async () => {
+      // PENDING, so applyProcessingResults refuses it.
+      const item = MediaItem.create({ kind: MediaKind.photo }, ACTOR_ID);
+      const { completeJobRow, mediaItemRepository, trace } = build(item);
+
+      const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
+
+      expect(result.outcome).toBe('applyFailed');
+      // No save at all, and the transaction that held markSucceeded is rolled
+      // back — so the job row's success flip is undone along with everything else.
+      expect(mediaItemRepository.save).not.toHaveBeenCalled();
+      expect(trace).toEqual(['join', 'markSucceeded', 'getById', 'complete(false)']);
+      expect(item.childEntities().assets.upsert).toEqual([]);
     });
   });
 
@@ -370,7 +463,7 @@ describe('build__CompleteJobRow', () => {
   describe('When the aggregate rejects the results', () => {
     it('should report applyFailed and roll back so the job can be requeued', async () => {
       // Still PENDING — never finalized — so applyProcessingResults refuses it.
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ACTOR_ID);
+      const item = MediaItem.create({ kind: MediaKind.photo }, ACTOR_ID);
       const { completeJobRow, mediaItemRepository, commits } = build(item);
 
       const result = await completeJobRow(jobRow(), pipelineResult(), ACTOR_ID);
@@ -406,7 +499,7 @@ describe('build__RecordJobFailure', () => {
       expect(mediaProcessingJobRepository.markPendingRetry).toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       // The job is coming back, so the item must NOT be dragged to FAILED.
-      expect(item.status()).toBe(MediaItemStatus.processing);
+      expect(persistedItem(item).status).toBe(MediaItemStatus.processing.value);
       expect(mediaItemRepository.save).not.toHaveBeenCalled();
     });
   });
@@ -419,7 +512,7 @@ describe('build__RecordJobFailure', () => {
 
       await recordJobFailure(jobRow(), ACTOR_ID, 'S3 timeout', true);
 
-      expect(item.status()).toBe(MediaItemStatus.failed);
+      expect(persistedItem(item).status).toBe(MediaItemStatus.failed.value);
       expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
     });
   });
@@ -433,7 +526,7 @@ describe('build__RecordJobFailure', () => {
 
       expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
-      expect(item.status()).toBe(MediaItemStatus.failed);
+      expect(persistedItem(item).status).toBe(MediaItemStatus.failed.value);
       expect(mediaItemRepository.save).toHaveBeenCalledWith(item);
     });
   });
@@ -446,7 +539,7 @@ describe('build__RecordJobFailure', () => {
 
       await recordJobFailure(jobRow(), ACTOR_ID, 'boom', false);
 
-      expect(item.status()).toBe(MediaItemStatus.processing);
+      expect(persistedItem(item).status).toBe(MediaItemStatus.processing.value);
       expect(mediaItemRepository.getById).not.toHaveBeenCalled();
       expect(mediaItemRepository.save).not.toHaveBeenCalled();
     });

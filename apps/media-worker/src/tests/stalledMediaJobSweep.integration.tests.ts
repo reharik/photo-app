@@ -27,7 +27,7 @@ import { randomUUID } from 'node:crypto';
 
 import { jest } from '@jest/globals';
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
-import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS } from '@packages/media-core';
+import { MAX_MEDIA_PROCESSING_JOB_ATTEMPTS } from '@packages/worker-core';
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 

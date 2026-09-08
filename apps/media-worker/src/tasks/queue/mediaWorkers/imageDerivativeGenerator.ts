@@ -17,7 +17,8 @@ export type GeneratedDerivative = {
 export type ImageDerivatives = {
   display: GeneratedDerivative;
   thumbnail: GeneratedDerivative;
-  replacementOriginal?: GeneratedDerivative;
+  original: GeneratedDerivative;
+  originalWasReplaced: boolean;
 };
 
 type HeicConverterModule = {
@@ -77,6 +78,25 @@ const resizeToDerivative = async (
   };
 };
 
+const readOriginalAsDerivative = async (buffer: Buffer): Promise<GeneratedDerivative> => {
+  const md = await sharp(buffer).metadata();
+  if (md.width == null || md.height == null) {
+    throw new Error('Original dimensions missing');
+  }
+  // metadata() reports stored dimensions, before EXIF rotation. resizeToDerivative
+  // calls .rotate(), so derivatives are already oriented. Orientations 5-8 transpose
+  // the axes; without this swap a portrait phone photo gets a landscape original
+  // alongside portrait derivatives.
+  const swap = md.orientation != null && md.orientation >= 5;
+  return {
+    buffer,
+    mimeType: md.format ? `image/${md.format}` : 'application/octet-stream',
+    width: swap ? md.height : md.width,
+    height: swap ? md.width : md.height,
+    fileSizeBytes: buffer.length,
+  };
+};
+
 // Each derivative step can throw (HEIC decode, sharp resize, OOM on a huge image). Without a
 // stage label the job runner's top-level catch just says "processing failed" with no clue which
 // step broke. Wrap each step so a failure is logged and rethrown with the stage in its message.
@@ -99,10 +119,12 @@ export const generateImageDerivatives = async (
   logger?: Logger,
 ): Promise<ImageDerivatives> => {
   let workingBuffer = originalBuffer;
-  let replacementOriginal: GeneratedDerivative | undefined;
+  let original: GeneratedDerivative;
+  let originalWasReplaced = false;
 
   const heicConverter = await runStage('load_heic_module', () => loadHeicConverterModule(), logger);
   const isHeic = await runStage('detect_heic', () => heicConverter.isHeic(originalBuffer), logger);
+
   if (isHeic) {
     const result = await runStage(
       'heic_convert',
@@ -110,13 +132,20 @@ export const generateImageDerivatives = async (
       logger,
     );
     workingBuffer = result.outputBuffer;
-    replacementOriginal = {
+    originalWasReplaced = true;
+    original = {
       buffer: result.outputBuffer,
       mimeType: DERIVATIVE_MIME,
       width: result.width,
       height: result.height,
       fileSizeBytes: result.convertedSize,
     };
+  } else {
+    original = await runStage(
+      'read_original_metadata',
+      () => readOriginalAsDerivative(originalBuffer),
+      logger,
+    );
   }
 
   const display = await runStage(
@@ -129,5 +158,5 @@ export const generateImageDerivatives = async (
     () => resizeToDerivative(workingBuffer, THUMBNAIL_MAX_EDGE),
     logger,
   );
-  return { display, thumbnail, replacementOriginal };
+  return { display, thumbnail, original, originalWasReplaced };
 };

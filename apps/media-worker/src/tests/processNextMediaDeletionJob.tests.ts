@@ -1,23 +1,33 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaKind } from '@packages/contracts';
-import type { MediaItemRepository } from '@packages/media-core';
-import { MediaItem } from '@packages/media-core';
+import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import type { MediaItemRepository } from '@packages/worker-core';
+import { MediaItem } from '@packages/worker-core';
 
 import { build__ProcessNextMediaDeletionJob } from '../tasks/queue/mediaWorkers/processNextMediaDeletionJob.js';
 
 const ACTOR_ID = '11111111-1111-4111-8111-111111111111';
 const MEDIA_ITEM_ID = '33333333-3333-4333-8333-333333333333';
 
-const createUploadedPhoto = (): MediaItem => {
-  const ownerId = ACTOR_ID;
-  const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-  item.completeUploadedWithMetadata(
-    { sizeBytes: 10, mimeType: 'image/jpeg' },
-    MediaKind.photo,
-    ownerId,
+/**
+ * An item as the deletion worker finds it in the DB. Rehydrated rather than
+ * built through a transition: `completeUploadedWithMetadata` is the API's
+ * pending → PROCESSING move and lives on media-core's `MediaItem`, not
+ * worker-core's.
+ */
+const createUploadedPhoto = (): MediaItem =>
+  MediaItem.rehydrate(
+    {
+      id: MEDIA_ITEM_ID,
+      ownerId: ACTOR_ID,
+      kind: MediaKind.photo,
+      status: MediaItemStatus.ready,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: ACTOR_ID,
+      updatedBy: ACTOR_ID,
+    },
+    { assets: [] },
   );
-  return item;
-};
 
 describe('build__ProcessNextMediaDeletionJob', () => {
   describe('When deleteMediaItemIfPresent is called', () => {

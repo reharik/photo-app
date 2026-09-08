@@ -1,9 +1,7 @@
-import { EntityType } from '@packages/contracts';
+import { AuditRecord, EntityId, EntityType } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
-import { AuditRecord } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 
 export type CommentRecord = {
   id: EntityId;

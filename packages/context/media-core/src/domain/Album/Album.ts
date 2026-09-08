@@ -1,3 +1,4 @@
+import type { ActorId, AuditRecord, EntityId } from '@packages/contracts';
 import {
   AlbumMemberRole,
   AppErrorCollection,
@@ -10,7 +11,6 @@ import {
   OperationResult,
 } from '@packages/contracts';
 import { eachIndependently } from '../../infrastructure';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { grantAuthorizationValidation } from '../Authorization/grantAuthorizationValidation';
 import {
@@ -22,7 +22,7 @@ import {
   PublicLinkAuthorizationRecord,
 } from '../Authorization/PublicLinkAuthorization';
 import { UserAuthorization, UserAuthorizationRecord } from '../Authorization/UserAuthorization';
-import type { AuditRecord, ChildEntities } from '../Entity';
+import { ChildDomainEntities } from '../DomainEntity';
 import { reorderAlbumItems } from '../utilities/reorderAlbumItems';
 import { AlbumItem, AlbumItemRecord } from './AlbumItem';
 import { ALBUM_ITEM_ORDER_GAP, ALBUM_ITEM_ORDER_INITIAL } from './albumItemOrder';
@@ -548,7 +548,7 @@ export class Album extends AggregateRoot<AlbumRecord> {
     );
     return ok(undefined);
   }
-  childEntities(): ChildEntities {
+  childEntities(): ChildDomainEntities {
     return {
       items: { upsert: this.#items, removed: this.#removedItems },
       members: { upsert: this.#members, removed: this.#removedMembers },

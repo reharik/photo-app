@@ -1,6 +1,7 @@
 import {
   assertNever,
   ContractError,
+  EntityId,
   fail,
   ok,
   OperationResult,
@@ -10,7 +11,6 @@ import type { Logger } from '@packages/infrastructure';
 import {
   ActivatePendingUserWriteService,
   EmailVerificationRepository,
-  EntityId,
   PendingUser,
   SystemEmailVerificationRepository,
   UnitOfWork,

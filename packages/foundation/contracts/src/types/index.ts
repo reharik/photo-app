@@ -3,5 +3,6 @@
  */
 
 export * from './auth';
+export * from './domain';
 export * from './result';
 export * from './systemActor';

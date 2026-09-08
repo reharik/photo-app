@@ -1,5 +1,4 @@
-import { AlbumMemberRole } from '@packages/contracts';
-import { EntityId } from '../../../types';
+import { AlbumMemberRole, EntityId } from '@packages/contracts';
 
 export type CreateAlbumCommand = {
   title: string;

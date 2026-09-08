@@ -1,5 +1,6 @@
 // ── factories/requestContext.ts ── the scope roots ──────────
-import { EntityId, UnitOfWork } from '@packages/media-core';
+import { EntityId } from '@packages/contracts';
+import { UnitOfWork } from '@packages/media-core';
 import {
   AgnosticReadServices,
   PublicReadServices,

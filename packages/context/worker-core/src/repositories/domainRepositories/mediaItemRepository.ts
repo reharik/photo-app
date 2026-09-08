@@ -1,9 +1,9 @@
+import type { EntityId } from '@packages/contracts';
 import { MediaAssetKind, MediaAssetStatus, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { RequestScopeLifeCycle, UnitOfWork } from '../..';
 import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import { MediaItem, type MediaItemRecord } from '../../domain/MediaItem/MediaItem';
-import type { EntityId } from '../../types/types';
 import { Persist } from './AggregateRepo';
 
 export interface MediaItemRepository extends RequestScopeLifeCycle {

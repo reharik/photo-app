@@ -1,4 +1,11 @@
-import { AppErrorCollection, fail, MediaAssetKind, ok, OperationResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  EntityId,
+  fail,
+  MediaAssetKind,
+  ok,
+  OperationResult,
+} from '@packages/contracts';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -7,7 +14,6 @@ import {
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
 
@@ -51,10 +57,6 @@ export const build__CreateMediaItemUpload = ({
       },
       viewerId,
     );
-    const result = mediaItem.addAsset(MediaAssetKind.original, mimeType);
-    if (!result.success) {
-      return result;
-    }
 
     const uploadTarget = await mediaStorage.getUploadTarget({
       storageKey: buildMediaAssetStorageKey(

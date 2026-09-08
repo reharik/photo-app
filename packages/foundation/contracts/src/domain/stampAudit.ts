@@ -1,4 +1,4 @@
-import { AuditRecord } from '../Entity';
+import { AuditRecord } from './Entity';
 
 export const stampAudit = <T extends AuditRecord & { id?: string }>(
   row: T,

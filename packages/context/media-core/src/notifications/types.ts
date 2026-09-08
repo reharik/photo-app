@@ -1,4 +1,5 @@
 import {
+  EntityId,
   NotificationContainerType,
   NotificationKind,
   NotificationSubjectType,
@@ -6,7 +7,6 @@ import {
 import { DomainEvent } from '../domainEvents';
 import { UserContact } from '../repositories';
 import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
-import { EntityId } from '../types';
 
 export type NotificationBranch = 'inAppWriter' | 'asyncWriter';
 

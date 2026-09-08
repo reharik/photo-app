@@ -1,6 +1,6 @@
-import { AsyncNotificationKind, EmailKind } from '@packages/contracts';
+import { AsyncNotificationKind, EmailKind, EntityId } from '@packages/contracts';
 import { NotificationPayload, TemplateName } from '@packages/notifications';
-import { AsyncNotification, EntityId, UserContact } from '@packages/worker-core';
+import { AsyncNotification, UserContact } from '@packages/worker-core';
 
 export type PayloadResult<T extends TemplateName> =
   | {

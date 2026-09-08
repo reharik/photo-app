@@ -76,21 +76,28 @@ export const build__UnitOfWork = ({
       reset();
     }
   };
-
   const completeTransaction = async (ok: boolean) => {
-    if (!trx) {
-      return;
-    }
-    if (!ok || shouldRollback) {
-      await trx.rollback();
-      logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+    if (!trx) return;
+    const t = trx;
+    try {
+      if (!ok || shouldRollback) {
+        await t.rollback();
+        logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+        return;
+      }
+      await t.commit();
+      logger.debug(`[uow:${id}] committed`);
+
+      try {
+        await publishPostCommit();
+      } catch (e) {
+        logger.error(`[uow:${id}] post-commit publish failed`, e);
+      }
+    } finally {
       reset();
-      return;
     }
-    await trx.commit();
-    logger.debug(`[uow:${id}] committed`);
-    await publishPostCommit();
   };
+
   let openedAt: string | undefined;
   return {
     id,

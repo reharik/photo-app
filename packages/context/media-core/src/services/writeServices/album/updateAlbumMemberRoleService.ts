@@ -1,6 +1,12 @@
-import { AlbumMemberRole, ContractError, fail, ok, OperationResult } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  ContractError,
+  EntityId,
+  fail,
+  ok,
+  OperationResult,
+} from '@packages/contracts';
 import { AlbumRepository } from '../../../repositories';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface UpdateAlbumMemberRoleService extends WriteServiceBase {

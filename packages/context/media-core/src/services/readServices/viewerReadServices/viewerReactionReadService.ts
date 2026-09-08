@@ -1,7 +1,7 @@
 import { EntityType } from '@packages/contracts';
 
+import type { EntityId } from '@packages/contracts';
 import type { ReactionReadRepository } from '../../../repositories/readRepositories/types';
-import type { EntityId } from '../../../types/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { ViewerReaction } from '../types';
 

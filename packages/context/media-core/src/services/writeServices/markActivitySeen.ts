@@ -1,6 +1,11 @@
-import { EntityType, InAppNotificationType, ok, OperationResult } from '@packages/contracts';
+import {
+  EntityId,
+  EntityType,
+  InAppNotificationType,
+  ok,
+  OperationResult,
+} from '@packages/contracts';
 import { InAppNotificationRepository } from '../../repositories/readRepositories/inAppNotificationRepository';
-import { EntityId } from '../../types';
 import { WriteServiceBase } from './writeServiceBaseType';
 
 export type ClearBySurfaceCommand = {

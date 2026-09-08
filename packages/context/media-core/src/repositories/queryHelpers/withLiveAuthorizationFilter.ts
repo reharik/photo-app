@@ -1,5 +1,5 @@
+import { EntityId } from '@packages/contracts';
 import { Knex } from 'knex';
-import { EntityId } from '../../types';
 
 export const withLiveAuthorizationFilter =
   (db: Knex, table = 'accessGrant') =>

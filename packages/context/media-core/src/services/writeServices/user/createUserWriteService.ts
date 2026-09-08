@@ -1,7 +1,6 @@
-import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
+import { ContractError, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { PendingUser } from '../../../domain';
 import { UserRepository } from '../../../repositories';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export type CreateUserCommand = {

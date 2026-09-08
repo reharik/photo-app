@@ -9,7 +9,7 @@ import { ok, OperationResult } from '@packages/contracts';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
 
-import { EntityId } from '../../../types';
+import { EntityId } from '@packages/contracts';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumItemCommand, AddAlbumItemResult } from './writeAlbum.types';
 

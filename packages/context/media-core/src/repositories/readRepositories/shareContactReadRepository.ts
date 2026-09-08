@@ -1,5 +1,5 @@
+import type { EntityId } from '@packages/contracts';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import type { EntityId } from '../../types/types';
 import type { ReadRepositoryDeps, ShareContactRow, ShareContactSuggestion } from './types';
 
 export interface ShareContactReadRepository extends RequestScopeLifeCycle {

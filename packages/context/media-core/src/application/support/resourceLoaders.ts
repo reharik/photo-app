@@ -1,9 +1,8 @@
-import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
+import { AppErrorCollection, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import {
   Album,
   AlbumRepository,
   DBMediaItemRow,
-  EntityId,
   MediaItem,
   MediaItemReadRepository,
   MediaItemRepository,

@@ -1,20 +1,12 @@
-import {
-  EntityType,
-  MediaAssetKind,
-  MediaAssetStatus,
-  MediaItemStatus,
-  MediaKind,
-  ReactionEmoji,
-} from '@packages/contracts';
+import type { EntityId } from '@packages/contracts';
+import { EntityType, MediaItemStatus, MediaKind, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
-import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import {
   MediaItem,
   MediaItemTagRecord,
   type MediaItemRecord,
 } from '../../domain/MediaItem/MediaItem';
-import type { EntityId } from '../../types/types';
 import { Persist } from './AggregateRepo';
 
 export interface MediaItemRepository extends RequestScopeLifeCycle {
@@ -59,16 +51,6 @@ export const build__MediaItemRepository = ({
       { emoji: ReactionEmoji, targetType: EntityType },
     );
 
-    // TODO this is a smell. These should be created by a service but not in the repository.
-    // stored on the AR because they are actually never used again.
-    const assetRows = await withEnumRevival(
-      uow
-        .db()<MediaAssetRecord>('mediaAsset')
-        .where({ mediaItemId: id })
-        .orderBy('createdAt', 'asc'),
-      { kind: MediaAssetKind, status: MediaAssetStatus },
-    );
-
     const tagRows = await uow
       .db()('mediaItemTag')
       .join('userTag', 'mediaItemTag.userTagId', 'userTag.id')
@@ -86,7 +68,6 @@ export const build__MediaItemRepository = ({
       .orderBy('userTag.label', 'asc');
 
     const childRecords = {
-      assets: assetRows,
       tags: tagRows,
       reactions: reactionRows,
     };

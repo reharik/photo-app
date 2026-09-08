@@ -1,6 +1,6 @@
+import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 
 export interface SystemGrantRepository extends RequestScopeLifeCycle {
   pruneGrantsForAuthorization: (authId: EntityId, keepIds: EntityId[]) => Promise<void>;

@@ -1,5 +1,5 @@
+import { EntityId } from '@packages/contracts';
 import {
-  EntityId,
   MediaItemRepository,
   MediaProcessingJobRepository,
   MediaProcessingJobRow,

@@ -1,5 +1,6 @@
 import {
   ActivitySurface,
+  EntityId,
   InAppNotificationType,
   NotificationContainerType,
   NotificationKind,
@@ -8,7 +9,6 @@ import {
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 
 export interface SystemInAppNotificationRepository extends RequestScopeLifeCycle {
   upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;

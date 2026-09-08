@@ -1,9 +1,8 @@
-import { EmailKind, EmailStatus } from '@packages/contracts';
+import { EmailKind, EmailStatus, EntityId } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { EmailDelivery, EmailDeliveryRecord } from '../../domain/EmailDelivery';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services';
-import { EntityId } from '../../types';
 import { Persist } from './AggregateRepo';
 
 export interface EmailDeliveryRepository extends RequestScopeLifeCycle {

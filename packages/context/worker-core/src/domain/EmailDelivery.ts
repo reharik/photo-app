@@ -1,7 +1,5 @@
-import { EmailKind, EmailStatus } from '@packages/contracts';
-import { ActorId, EntityId } from '../types';
+import { ActorId, AuditRecord, EmailKind, EmailStatus, EntityId } from '@packages/contracts';
 import { AggregateRoot } from './AggregateRoot';
-import { AuditRecord } from './Entity';
 
 export type EmailDeliveryRecord = EmailDeliveryProps & {
   id: EntityId;

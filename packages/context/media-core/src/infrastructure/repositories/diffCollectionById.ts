@@ -1,4 +1,4 @@
-import { EntityId } from '../../types/types';
+import { EntityId } from '@packages/contracts';
 
 type Identifiable = {
   id: EntityId;

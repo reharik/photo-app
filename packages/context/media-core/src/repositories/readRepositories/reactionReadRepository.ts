@@ -1,6 +1,6 @@
+import type { EntityId } from '@packages/contracts';
 import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { EntityId } from '../../types/types';
 import type { DbReactionRow, ReactionReadRepository, ReadRepositoryDeps } from './types';
 
 export const build__ReactionReadRepository = ({

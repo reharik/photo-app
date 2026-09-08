@@ -1,7 +1,7 @@
 import { AlbumMemberRole, AlbumSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { AlbumWithCoverRow, PagedList } from '../../services/readServices/types';
-import { CollectionInfo } from '../../types/types';
+import { CollectionInfo } from '../../types';
 import {
   toPagedResult,
   withAlbumCoverItem,

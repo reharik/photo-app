@@ -4,9 +4,5 @@
 
 export * from './AggregateRoot';
 export * from './EmailDelivery';
-export * from './Entity';
 export * from './MediaItem/MediaAsset';
 export * from './MediaItem/MediaItem';
-export * from './utilities/entityGuard';
-export * from './utilities/serializeAggregates';
-export * from './utilities/stampAudit';

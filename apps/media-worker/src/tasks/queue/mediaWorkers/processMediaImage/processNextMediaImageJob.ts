@@ -1,6 +1,6 @@
-import { MediaAssetKind } from '@packages/contracts';
+import { EntityId, MediaAssetKind } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
-import { EntityId, MediaProcessingJobRow } from '@packages/worker-core';
+import { MediaProcessingJobRow } from '@packages/worker-core';
 import { WorkerTaskOutcome } from '../../../../types';
 import { ClaimJobRow } from './claimJobRow';
 import { CompleteJobRow } from './completeJobRow';
@@ -23,7 +23,7 @@ export type Capture = {
 export type PipelineResult = {
   displayAsset: PipelineAsset;
   thumbnailAsset: PipelineAsset;
-  originalAsset?: PipelineAsset;
+  originalAsset: PipelineAsset;
   capture: Capture;
 };
 export type MediaJobWorkflow =

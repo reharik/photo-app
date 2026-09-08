@@ -35,17 +35,19 @@ export const build__UnitOfWork = ({ database, logger }: UnitOfWorkDeps): UnitOfW
   };
 
   const completeTransaction = async (ok: boolean) => {
-    if (!trx) {
-      return;
-    }
-    if (!ok || shouldRollback) {
-      await trx.rollback();
-      logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+    if (!trx) return;
+    const t = trx;
+    try {
+      if (!ok || shouldRollback) {
+        await t.rollback();
+        logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+        return;
+      }
+      await t.commit();
+      logger.debug(`[uow:${id}] committed`);
+    } finally {
       reset();
-      return;
     }
-    await trx.commit();
-    logger.debug(`[uow:${id}] committed`);
   };
   let openedAt: string | undefined;
   return {

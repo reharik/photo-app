@@ -1,7 +1,7 @@
+import type { EntityId } from '@packages/contracts';
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DBPublicMediaItemRow } from '../../services/readServices/types';
-import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type { PublicMediaItemReadRepository, ReadRepositoryDeps } from './types';
 

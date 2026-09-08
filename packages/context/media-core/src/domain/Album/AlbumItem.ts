@@ -3,8 +3,9 @@
  * createdBy is the user who added the media item; createdAt is when it was added.
  */
 
-import type { ActorId, EntityId } from '../../types/types';
-import { Entity, type AuditRecord } from '../Entity';
+import type { ActorId, EntityId } from '@packages/contracts';
+import { type AuditRecord } from '@packages/contracts';
+import { DomainEntity } from '../DomainEntity';
 
 export type AlbumItemProps = {
   mediaItemId: EntityId;
@@ -20,7 +21,7 @@ export type AlbumItemRecord = {
   albumId: EntityId;
 } & AuditRecord;
 
-export class AlbumItem extends Entity<AlbumItemRecord> {
+export class AlbumItem extends DomainEntity<AlbumItemRecord> {
   protected props: AlbumItemProps;
   private constructor(actorId: ActorId, props: AlbumItemProps, id?: EntityId) {
     super(id, actorId, 'album_item');

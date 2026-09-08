@@ -1,15 +1,16 @@
 import {
+  ActorId,
   AppErrorCollection,
   AuthorizationKind,
   AuthorizationOrigin,
+  EntityId,
   fail,
   ok,
   Operation,
   OperationResult,
 } from '@packages/contracts';
 import crypto from 'crypto';
-import { ActorId, EntityId } from '../../types/types';
-import { Entity } from '../Entity';
+import { DomainEntity } from '../DomainEntity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
 export type PublicLinkAuthorizationProps = AuthorizationProps & {
@@ -37,7 +38,7 @@ export type CreatePublicLinkAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser?: undefined;
 };
 
-export class PublicLinkAuthorization extends Entity<PublicLinkAuthorizationRecord> {
+export class PublicLinkAuthorization extends DomainEntity<PublicLinkAuthorizationRecord> {
   protected props: PublicLinkAuthorizationProps;
 
   private constructor(actorId: ActorId, props: PublicLinkAuthorizationProps, id?: EntityId) {

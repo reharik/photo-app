@@ -1,7 +1,6 @@
-import { ok, OperationResult } from '@packages/contracts';
+import { EntityId, ok, OperationResult } from '@packages/contracts';
 import { Album } from '../../../domain/Album/Album';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateAlbumCommand, CreateAlbumResult } from './writeAlbum.types';
 

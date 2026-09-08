@@ -17,10 +17,12 @@
  *      Before the Album.ts fix the event only fired on new-authorization creation, so a
  *      re-invite wrote nothing and no email was ever queued. Observable outcome: a fresh
  *      async_notification row keyed to the SAME authorization.
- *  C.  a revoked pending grant is invisible to getPendingUserAuthorizationById (returns
- *      undefined; the row itself survives — it's the revoked_at filter, not a delete).
- *      This is the dead-invite-link fix: the send strategy puts linkToken in the email
- *      body, so a revoked grant leaking through here would mail a dead link.
+ *  (C — a revoked pending grant being invisible to getPendingUserAuthorizationById — is
+ *  worker behavior and lives in apps/media-worker/src/tests/
+ *  pendingAuthorizationLookup.integration.tests.ts. That lookup exists only on
+ *  worker-core's SystemAuthorizationRepository, whose sole consumer is the worker's
+ *  guest-invite send strategy; resolving it off this app's container — which composes
+ *  media-core — is what used to break `nx run api:typecheck`.)
  *  (D — the guest-invite send sweep surviving a row whose authorization is gone — is
  *  worker behavior and lives in apps/media-worker/src/tests/
  *  fastSweepOrphanedAuthorization.integration.tests.ts. Scenario B here still pins that
@@ -393,36 +395,4 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     });
   });
 
-  describe('C — revoked pending grant is not returned by getPendingUserAuthorizationById', () => {
-    it('returns undefined after revocation while the row itself survives', async () => {
-      const guestEmail = `guest-${randomUUID()}@example.test`;
-      const albumId = await createAlbum('revoked-invite-invisible');
-
-      await shareAlbum(albumId, [guestEmail]);
-      const guestId = await userIdByEmail(guestEmail);
-      const [invite] = await grantRowsFor(albumId, guestId);
-      expect(invite.kind).toBe('PENDING');
-
-      const systemAuthorizationRepository = container.resolve('systemAuthorizationRepository');
-
-      // Live invite: the lookup the send strategy uses resolves it, token and all.
-      const beforeRevoke = await systemAuthorizationRepository.getPendingUserAuthorizationById(
-        invite.id,
-      );
-      expect(beforeRevoke?.linkToken).toBe(invite.linkToken);
-
-      await revokeShare(albumId, invite.id);
-
-      // Revoked: invisible to the lookup, so the sweep can never put this dead token in
-      // an email…
-      expect(
-        await systemAuthorizationRepository.getPendingUserAuthorizationById(invite.id),
-      ).toBeUndefined();
-
-      // …even though the soft-deleted row is still in the table.
-      const row = await database('accessGrant').where({ id: invite.id }).first<GrantRow>();
-      expect(row).toBeDefined();
-      expect(row.revokedAt).toBeInstanceOf(Date);
-    });
-  });
 });

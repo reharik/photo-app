@@ -1,3 +1,4 @@
+import type { EntityId } from '@packages/contracts';
 import {
   AlbumMemberRole,
   AuthorizationKind,
@@ -8,7 +9,6 @@ import {
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   AuthorizationReadRepository,

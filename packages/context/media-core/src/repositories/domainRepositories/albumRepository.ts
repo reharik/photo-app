@@ -1,4 +1,10 @@
-import { AlbumMemberRole, assertNever, AuthorizationKind, Operation } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  assertNever,
+  AuthorizationKind,
+  EntityId,
+  Operation,
+} from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
 import type { AlbumItemRecord } from '../../domain/Album/AlbumItem';
@@ -12,7 +18,6 @@ import { PublicLinkAuthorizationRecord } from '../../domain/Authorization/Public
 import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { Persist } from './AggregateRepo';
 

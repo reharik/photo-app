@@ -1,5 +1,6 @@
 import {
   ActivitySurface,
+  EntityId,
   EntityType,
   InAppNotificationType,
   NotificationContainerType,
@@ -9,7 +10,6 @@ import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
 export type InAppNotificationSummary = {

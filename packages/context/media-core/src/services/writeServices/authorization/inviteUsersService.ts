@@ -1,4 +1,4 @@
-import { fail, ok, OperationResult } from '@packages/contracts';
+import { EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { indexBy } from '@packages/infrastructure';
 import {
   Album,
@@ -14,7 +14,6 @@ import {
 } from '../../../infrastructure/writeServices/groupActionStrategy';
 import { ShareContactRepository } from '../../../repositories';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { EntityId } from '../../../types';
 import { CreateUserWriteService } from '../user/createUserWriteService';
 import { GrantUserAuthorizationCommand } from './grantTypes';
 

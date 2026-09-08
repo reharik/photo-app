@@ -1,8 +1,7 @@
-import { ok, OperationResult } from '@packages/contracts';
+import { EntityId, ok, OperationResult } from '@packages/contracts';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   MediaItemTag,
