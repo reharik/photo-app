@@ -17,7 +17,6 @@ export const build__CommentRepository = ({
   persist,
 }: CommentRepositoryDeps): CommentRepository => {
   const getById = async (id: EntityId): Promise<Comment | undefined> => {
-    await uow.join();
     const comment = await withEnumRevival(
       uow.db()<CommentRecord>('comment').where({ id }).first(),
       { targetType: EntityType },

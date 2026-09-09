@@ -10,7 +10,6 @@ export const build__ShareContactReadRepository = ({
   uow,
 }: ReadRepositoryDeps): ShareContactReadRepository => ({
   getShareSuggestions: async (userId: EntityId): Promise<ShareContactSuggestion[]> => {
-    await uow.join();
     const rows = await uow
       .db()<ShareContactRow>('shareContact')
       .where({ userId })

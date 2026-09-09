@@ -9,9 +9,8 @@ import {
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
-export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
+export interface SystemAsyncNotificationRepository {
   claimNotificationBatch: (window: number) => Promise<AsyncNotification[]>;
   claimIndividualNotifications: (window: number) => Promise<AsyncNotification[]>;
   deleteCompletedRecords: (ids: string[]) => Promise<void>;
@@ -77,7 +76,6 @@ export const build__SystemAsyncNotificationRepository = ({
   // the same rows and double-send. Add SKIP LOCKED + a claim flip before
   // scaling out.
   claimNotificationBatch: async (windowSeconds: number) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('asyncNotification')
@@ -101,7 +99,6 @@ export const build__SystemAsyncNotificationRepository = ({
   // the same rows and double-send. Add SKIP LOCKED + a claim flip before
   // scaling out.
   claimIndividualNotifications: async (windowSeconds: number) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('asyncNotification')
@@ -124,14 +121,14 @@ export const build__SystemAsyncNotificationRepository = ({
     if (ids.length === 0) {
       return;
     }
-    await uow.join();
+
     await uow.db()('asyncNotification').delete().whereIn('id', ids);
   },
   bumpRecordAttemptsByIds: async (ids: string[]): Promise<void> => {
     if (ids.length === 0) {
       return;
     }
-    await uow.join();
+
     await uow.db()('asyncNotification').whereIn('id', ids).increment('attempts', 1);
   },
 });

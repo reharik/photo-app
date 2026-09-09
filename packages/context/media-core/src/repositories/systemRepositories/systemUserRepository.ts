@@ -26,13 +26,11 @@ export const build__SystemUserRepository = ({
   uow,
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
   getUserContacts: async (userIds: EntityId[]) => {
-    await uow.join();
     return withEnumRevival(uow.db()('User').select(UserFields).whereIn('id', userIds), {
       userStatus: UserStatus,
     });
   },
   getActiveUsers: async (userIds: EntityId[]) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('User')

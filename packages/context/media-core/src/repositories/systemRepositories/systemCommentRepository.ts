@@ -15,7 +15,6 @@ export const build__systemCommentRepository = ({
   uow,
 }: systemCommentRepositoryDeps): SystemCommentRepository => ({
   getCommentById: async (commentId: EntityId) => {
-    await uow.join();
     return uow.db()('comment').where({ id: commentId }).first<CommentRecord>();
   },
 });

@@ -22,34 +22,22 @@ type RecordJobFailureDeps = {
 };
 
 export const build__RecordJobFailure =
-  ({
-    mediaProcessingJobRepository,
-    mediaItemRepository,
-    uow,
-  }: RecordJobFailureDeps): RecordJobFailure =>
+  ({ mediaProcessingJobRepository, mediaItemRepository }: RecordJobFailureDeps): RecordJobFailure =>
   async (job, actorId, message, retryable): Promise<void> => {
-    await uow.join();
+    // Retryable: the queue decides whether attempts remain. Non-retryable
+    // goes terminal immediately, no cap consulted.
+    const failItem = retryable
+      ? (await mediaProcessingJobRepository.markPendingRetry(job.id, actorId, message)) ===
+        'exhausted'
+      : await mediaProcessingJobRepository.markFailed(job.id, actorId, message);
 
-    try {
-      // Retryable: the queue decides whether attempts remain. Non-retryable
-      // goes terminal immediately, no cap consulted.
-      const failItem = retryable
-        ? (await mediaProcessingJobRepository.markPendingRetry(job.id, actorId, message)) ===
-          'exhausted'
-        : await mediaProcessingJobRepository.markFailed(job.id, actorId, message);
-
-      // Only fail the item if we actually owned the job — a false from either
-      // write means the sweep reclaimed it and someone else is responsible.
-      if (failItem) {
-        const item = await mediaItemRepository.getById(job.mediaItemId);
-        if (item) {
-          item.markProcessingFailed(actorId);
-          await mediaItemRepository.save(item);
-        }
+    // Only fail the item if we actually owned the job — a false from either
+    // write means the sweep reclaimed it and someone else is responsible.
+    if (failItem) {
+      const item = await mediaItemRepository.getById(job.mediaItemId);
+      if (item) {
+        item.markProcessingFailed(actorId);
+        await mediaItemRepository.save(item);
       }
-      await uow.complete(true);
-    } catch (e) {
-      await uow.settle(false);
-      throw e;
     }
   };

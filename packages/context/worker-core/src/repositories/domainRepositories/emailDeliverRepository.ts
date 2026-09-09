@@ -2,10 +2,9 @@ import { EmailKind, EmailStatus, EntityId } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { EmailDelivery, EmailDeliveryRecord } from '../../domain/EmailDelivery';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services';
 import { Persist } from './AggregateRepo';
 
-export interface EmailDeliveryRepository extends RequestScopeLifeCycle {
+export interface EmailDeliveryRepository {
   getByMessageIds: (messageIds: EntityId[]) => Promise<EmailDelivery[]>;
   save: (emailDelivery: EmailDelivery) => Promise<void>;
 }
@@ -17,7 +16,6 @@ export const build__EmailDeliveryRepository = ({
   uow,
 }: EmailDeliveryRepositoryDeps): EmailDeliveryRepository => ({
   getByMessageIds: async (messageIds: EntityId[]): Promise<EmailDelivery[]> => {
-    await uow.join();
     const emailDeliveries = await withEnumRevival(
       uow.db()<EmailDeliveryRecord>('emailDelivery').whereIn('sesMessageId', messageIds),
       { emailKind: EmailKind, status: EmailStatus },

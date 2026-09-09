@@ -1,14 +1,12 @@
 import { Logger } from '@packages/infrastructure';
 import { Knex } from 'knex';
-import { RequestScopeLifeCycle } from '../../services';
 
-export interface UnitOfWork extends RequestScopeLifeCycle {
+export interface UnitOfWork {
   id: string;
-  beginIsolatedOnly: () => Promise<void>;
-  join: () => Promise<void>;
+  start: () => Promise<void>;
   db: () => Knex.Transaction;
   complete: (ok: boolean) => Promise<void>;
-  settle: (ok: boolean) => Promise<void>;
+  isOpen: () => boolean;
   /**
    * Set by the GraphQL write boundary when a mutation field returns a failed
    * OperationResult (fail-as-data). The failure never reaches the GraphQL `errors`
@@ -17,6 +15,33 @@ export interface UnitOfWork extends RequestScopeLifeCycle {
    * request — the uow is per-request, so partial commit is impossible anyway.
    */
   flagRollbackOnly: () => void;
+  /**
+   * Runs `fn` inside a transaction, committing if it returns and rolling back if it throws.
+   *
+   * This is the verb to reach for. `start` and `complete` are the primitives underneath it,
+   * and are only needed at boundaries that can't be expressed as a function — the GraphQL
+   * envelop plugin, for instance, where `onExecute` and `onExecuteDone` are separate hooks
+   * with the request execution in between.
+   *
+   * A throw from `fn` rolls back and propagates unchanged; the rollback never replaces the
+   * original error. `flagRollbackOnly()` is honoured, so a fail-as-data path that flags
+   * mid-flight still rolls back even though `fn` returned normally.
+   *
+   * Nesting throws — `start` refuses to open a transaction while one is already open. If you
+   * need a second boundary inside a job, close the first one before opening the next. That's
+   * the shape a job with external I/O in the middle wants anyway: commit, do the S3 or SES
+   * work outside any transaction, then open a fresh one to record the result.
+   *
+   * @example
+   * const rows = await uow.inTransaction(() => claimPendingRows(50));
+   *
+   * @example Failure is survivable — pair with `bestEffort`:
+   * await bestEffort(
+   *   () => uow.inTransaction(() => recordDelivery(messageId)),
+   *   (e) => logger.error('[sweep] delivery record failed — telemetry gap', e),
+   * );
+   */
+  inTransaction: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
 type UnitOfWorkDeps = {
@@ -49,23 +74,19 @@ export const build__UnitOfWork = ({ database, logger }: UnitOfWorkDeps): UnitOfW
       reset();
     }
   };
-  let openedAt: string | undefined;
+  const start = async () => {
+    if (trx) {
+      throw new Error(`[uow:${id}] Transaction already open when start called`);
+    }
+
+    logger.debug(`[uow:${id}] New transaction created`);
+    trx = await database.transaction();
+  };
+
   return {
     id,
-    beginIsolatedOnly: async () => {
-      if (trx) {
-        throw new Error(`[uow:${id}] Transaction already active when beginIsolatedOnly called`);
-      }
-      trx = await database.transaction();
-      logger.debug(`[uow:${id}] Transaction begun in isolation`);
-    },
-    join: async () => {
-      if (!trx) {
-        openedAt = new Error().stack;
-        logger.debug(`[uow:${id}] New transaction created`);
-        trx = await database.transaction();
-      }
-    },
+    start,
+    isOpen: () => !!trx,
     db: () => {
       if (!trx) throw new Error(`[uow:${id}] Transaction not started`);
       return trx;
@@ -77,18 +98,15 @@ export const build__UnitOfWork = ({ database, logger }: UnitOfWorkDeps): UnitOfW
       }
       await completeTransaction(ok);
     },
-    settle: async (ok: boolean) => {
-      if (!trx) {
-        reset();
-        return;
-      }
-      logger.warn(`[uow:${id}] settle resolving an open transaction`, { openedAt });
-
+    inTransaction: async <T>(fn: () => Promise<T>): Promise<T> => {
+      await start();
       try {
-        await completeTransaction(ok);
+        const result = await fn();
+        await completeTransaction(true);
+        return result;
       } catch (e) {
-        logger.error(`[uow:${id}] settle failed to resolve the transaction`, e);
-        reset();
+        await completeTransaction(false);
+        throw e;
       }
     },
     flagRollbackOnly: () => {

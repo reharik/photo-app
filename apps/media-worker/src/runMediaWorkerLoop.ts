@@ -2,7 +2,7 @@ import type { Logger } from '@packages/infrastructure';
 import { UnitOfWork } from '@packages/worker-core';
 import type { Config } from './config.js';
 import { IntervalGate } from './intervalGate.js';
-import { isQueueTask, type WorkerTask, type WorkerTaskOutcome } from './types.js';
+import { isQueueTask, WorkerTaskOutcome, type WorkerTask } from './types.js';
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -26,18 +26,15 @@ export const runWorkerTasksOnce = async (
   logger: Logger,
   uow: UnitOfWork,
 ): Promise<boolean> => {
-  if (tasks.length === 0) {
-    return false;
-  }
   for (const task of tasks) {
     let outcome: WorkerTaskOutcome;
     try {
       outcome = await task.run();
-      await uow.settle(false);
-    } catch (e) {
-      await uow.settle(false);
-      logger.error(`[mediaWorker-run_once] task "${task.name}" threw`, e);
-      throw e;
+    } finally {
+      if (uow.isOpen()) {
+        logger.error(`[mediaWorker-run_once] task "${task.name}" left a transaction open`);
+        await uow.complete(false);
+      }
     }
     if (outcome === 'processed') {
       return true;
@@ -55,11 +52,14 @@ export const runAllTasks = async (
   for (const task of tasks) {
     try {
       const outcome = await task.run();
-      await uow.settle(false);
       if (outcome === 'processed') didWork = true;
     } catch (e) {
-      await uow.settle(false);
       logger.error(`[mediaWorker-run_all] task "${task.name}" threw`, e);
+    } finally {
+      if (uow.isOpen()) {
+        logger.error(`[mediaWorker-run_all] task "${task.name}" left a transaction open`);
+        await uow.complete(false);
+      }
     }
   }
   return didWork;

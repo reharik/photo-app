@@ -30,7 +30,6 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     collectionInfo: SharedWithMeAlbumCollectionInfo;
   }): Promise<PagedList<SharedAlbumRow>> => {
-    await uow.join();
     const query = uow
       .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
@@ -56,7 +55,6 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     albumId: string;
   }): Promise<SharedAlbumRow | undefined> => {
-    await uow.join();
     const query = uow
       .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')

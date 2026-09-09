@@ -1,10 +1,9 @@
 import { AuthorizationKind, EntityId, Operation } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
-export interface SystemAuthorizationRepository extends RequestScopeLifeCycle {
+export interface SystemAuthorizationRepository {
   getPendingUserAuthorizationById: (
     id: EntityId,
   ) => Promise<PendingUserAuthorizationRow | undefined>;
@@ -113,7 +112,6 @@ export const build__SystemAuthorizationRepository = ({
   getPendingUserAuthorizationById: async (
     id: EntityId,
   ): Promise<PendingUserAuthorizationRow | undefined> => {
-    await uow.join();
     const row = await withEnumRevival(
       uow
         .db()('access_grant')

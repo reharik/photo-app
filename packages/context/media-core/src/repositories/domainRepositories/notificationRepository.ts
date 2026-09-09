@@ -19,7 +19,6 @@ export const build__NotificationRepository = ({
   persist,
 }: NotificationRepositoryDeps): NotificationRepository => {
   const getById = async (id: EntityId): Promise<Notification | undefined> => {
-    await uow.join();
     const notificationRow = await withEnumRevival(
       uow.db()<NotificationRecord>('notification').where({ id }).first(),
       { kind: NotificationKind },

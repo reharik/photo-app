@@ -34,7 +34,6 @@ export const build__MediaItemRepository = ({
   persist,
 }: MediaItemRepositoryDeps): MediaItemRepository => {
   const getById = async (id: EntityId): Promise<MediaItem | undefined> => {
-    await uow.join();
     const mediaItemRow = await withEnumRevival(
       uow.db()<MediaItemRecord>('mediaItem').where({ id }).first(),
       { kind: MediaKind, status: MediaItemStatus },
@@ -76,7 +75,6 @@ export const build__MediaItemRepository = ({
   };
 
   const ensureUserTagId = async (userTag: UserTagRow): Promise<EntityId> => {
-    await uow.join();
     const [row] = await uow
       .db()('user_tag')
       .insert(userTag)
@@ -91,7 +89,6 @@ export const build__MediaItemRepository = ({
   };
 
   const deleteMediaItem = async (mediaItem: MediaItem): Promise<void> => {
-    await uow.join();
     return await uow.db()<MediaItemRecord>('mediaItem').where({ id: mediaItem.id() }).delete();
   };
 

@@ -4,5 +4,6 @@
 
 export * from './auth';
 export * from './domain';
+export * from './outcome';
 export * from './result';
 export * from './systemActor';

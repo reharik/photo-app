@@ -1,141 +1,64 @@
-import { notEmpty, SYSTEM_ACTOR_ID } from '@packages/contracts';
-import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
-import { NotificationService } from '@packages/notifications';
-import {
-  AsyncNotification,
-  EmailDelivery,
-  EmailDeliveryRepository,
-  SystemAsyncNotificationRepository,
-  SystemUserRepository,
-  UnitOfWork,
-} from '@packages/worker-core';
-import { Config } from '../../../config';
-import { FastSweepNotificationStrategies } from '../../../generated/ioc-registry.types';
+import { Logger } from '@packages/infrastructure';
+import { SystemAsyncNotificationRepository, UnitOfWork } from '@packages/worker-core';
 import { WorkerTaskOutcome } from '../../../types';
-import { cleanUp, RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
+import { HandleNotificationOutcomes } from '../handleNotificationOutcomes';
+import { RowOutcome, summarizeOutcomes } from '../outcomeCleanup';
+import { BuildFastSweepPayloads } from './buildFastSweepPayloads';
+import { PersistNotificationDelivery } from './persistNotificationDelivery';
+import { SendNotificationForPayload } from './sendNotificationForPayload';
 
 export type FastSweepNotification = () => Promise<'idle' | 'processed'>;
 
 type FastSweepNotificationDeps = {
   logger: Logger;
-  notificationService: NotificationService;
+  buildFastSweepPayloads: BuildFastSweepPayloads;
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
-  systemUserRepository: SystemUserRepository;
-  config: Config;
-  fastSweepNotificationStrategies: FastSweepNotificationStrategies;
   uow: UnitOfWork;
-  emailDeliveryRepository: EmailDeliveryRepository;
+  sendNotificationForPayload: SendNotificationForPayload;
+  persistNotificationDelivery: PersistNotificationDelivery;
+  handleNotificationOutcomes: HandleNotificationOutcomes;
 };
 
-export const build__FastSweepNotification = ({
-  logger,
-  notificationService,
-  systemAsyncNotificationRepository,
-  systemUserRepository,
-  config,
-  fastSweepNotificationStrategies,
-  uow,
-  emailDeliveryRepository,
-}: FastSweepNotificationDeps): FastSweepNotification => {
-  const hydrateUsers = async (rows: AsyncNotification[]) => {
-    const ids = rows.flatMap((x) => [x.actorId, x.recipientId]).filter(notEmpty);
-    const uniqueIds = new Set(ids);
-    const users = await systemUserRepository.getUserContacts([...uniqueIds]);
-    return indexBy(users);
-  };
+export const build__FastSweepNotification =
+  ({
+    logger,
+    buildFastSweepPayloads,
+    persistNotificationDelivery,
+    handleNotificationOutcomes,
+    uow,
+    sendNotificationForPayload,
+  }: FastSweepNotificationDeps): FastSweepNotification =>
+  async (): Promise<WorkerTaskOutcome> => {
+    const results = await uow.inTransaction(buildFastSweepPayloads);
 
-  return async (): Promise<WorkerTaskOutcome> => {
-    await uow.join();
-    // NOT a claim despite the name: plain SELECT, no lock, no status flip. Safe
-    // only while exactly one worker process runs. A second worker would select
-    // the same rows and double-send. Add SKIP LOCKED + a claim flip before
-    // scaling out.
-    const rows = await systemAsyncNotificationRepository.claimIndividualNotifications(
-      config.debounceEmailWindowSeconds,
-    );
-    if (!rows.length) {
-      await uow.complete(true);
-      return 'idle';
-    }
-    logger.info(`[notification-send] claimed ${rows.length} row(s)`);
     const outcomes: RowOutcome[] = [];
-
-    const userMap = await hydrateUsers(rows);
-    const byKind = groupByMapping(rows, (x) => x.kind.value);
-    const results = [];
-    for (const [kind, kindRows] of byKind) {
-      const strategy = fastSweepNotificationStrategies.find((s) => s.kind.value === kind);
-      if (!strategy) {
-        kindRows.forEach((row) => outcomes.push({ row, result: 'skipped' }));
-        logger.warn(
-          '[notification-send] no send strategy for kind — rows left in queue unprocessed',
-          {
-            kind,
-            rowIds: kindRows.map((x) => x.id),
-          },
-        );
-        continue;
-      }
-      results.push(await strategy.execute(kindRows, userMap));
-    }
-    await uow.complete(true);
-    // execute per-kind batch
-    for (const r of results.flat()) {
-      if (r.kind === 'skipped') {
-        logger.warn('[notification-send] row skipped, will be deleted without sending', {
-          reason: r.reason,
-          rowId: r.row.id,
-          kind: r.row.kind.value,
-          recipientId: r.row.recipientId,
-          containerId: r.row.containerId,
-          subjectId: r.row.subjectId,
-        });
-        outcomes.push({ row: r.row, result: 'skipped', reason: r.reason });
-        continue;
-      }
-      const sent = await notificationService.notify(r.payload);
-      if (sent.success) {
-        const newEmailDelivery = EmailDelivery.create(
-          {
-            sesMessageId: sent.value,
-            emailKind: r.emailKind,
-            recipientEmail: r.recipientEmail,
-            accessGrantId: r.accessGrantId,
-          },
-          SYSTEM_ACTOR_ID,
-        );
+    // Trx per email: one failed save loses one row's telemetry rather than
+    // rolling back the batch and resending everything. Revisit if trx count hurts.
+    for (const r of results) {
+      const sendResult = await sendNotificationForPayload(r);
+      if (sendResult.success) {
         try {
-          await uow.join();
-          await emailDeliveryRepository.save(newEmailDelivery);
-          await uow.complete(true);
+          await uow.inTransaction(() => persistNotificationDelivery(r, sendResult.messageId));
         } catch (e) {
-          await uow.settle(false);
           logger.error(
             '[fastSweepNotification] delivery record insert failed — telemetry gap, not resending',
-            { sesMessageId: sent.value, error: e },
+            { sesMessageId: sendResult.messageId, error: e },
           );
         }
       }
-      outcomes.push({ row: r.row, result: sent.success ? 'sent' : 'failed' });
+      outcomes.push(sendResult.outcome);
     }
 
     logger.info('[notification-send] send loop complete', summarizeOutcomes(outcomes));
 
-    const { deleteIds, bumpRowIds, logs } = cleanUp(outcomes);
     try {
-      await uow.join();
-      await systemAsyncNotificationRepository.deleteCompletedRecords(deleteIds);
-      await systemAsyncNotificationRepository.bumpRecordAttemptsByIds(bumpRowIds);
-      await uow.complete(true);
-      logs.forEach((x) => logger.info(x.message, x.meta));
+      const result = await uow.inTransaction(() => handleNotificationOutcomes(outcomes));
+      return result.deleteIds + result.bumpRowIds > 0 ? 'processed' : 'idle';
     } catch (e) {
-      await uow.settle(false);
       logger.error(
         '[fastSweepNotification] outcome cleanup failed — rows not settled, next pass will re-send',
         e,
-        { deleteCount: deleteIds.length, bumpCount: bumpRowIds.length },
       );
+      return 'idle';
     }
-    return deleteIds.length + bumpRowIds.length > 0 ? 'processed' : 'idle';
   };
-};

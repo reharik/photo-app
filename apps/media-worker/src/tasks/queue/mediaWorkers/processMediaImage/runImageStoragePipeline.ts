@@ -11,7 +11,7 @@ import { readStreamToBuffer } from '../readStreamToBuffer';
 
 import { Logger } from '@packages/infrastructure';
 import { Config } from '../../../../config';
-import { PipelineJobWorkflow } from './processNextMediaImageJob';
+import { PipelineJobWorkflow } from './types';
 
 export interface RunImageStoragePipeline {
   (job: MediaProcessingJobRow, ownerId: EntityId): Promise<PipelineJobWorkflow>;

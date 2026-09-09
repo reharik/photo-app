@@ -4,9 +4,8 @@ import type { Entity, VOCollection } from '@packages/contracts';
 import { serializeValue } from '@packages/contracts';
 import { AggregateRoot } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
-export interface Persist extends RequestScopeLifeCycle {
+export interface Persist {
   <T extends AggregateRoot<Record<string, unknown>>>(aggregate: T): Promise<void>;
 }
 
@@ -72,7 +71,6 @@ export const build__Persist = ({ uow }: PersistDeps): Persist => {
   };
 
   return async (aggregate) => {
-    await uow.join();
     await persistRecursion(aggregate);
   };
 };

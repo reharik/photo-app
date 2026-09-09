@@ -55,7 +55,6 @@ export const build__InAppNotificationRepository = ({
   uow,
 }: InAppNotificationRepositoryDeps): InAppNotificationRepository => ({
   getInAppNotification: async (viewerId: EntityId): Promise<InAppNotification[]> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('inAppNotification')
@@ -75,7 +74,6 @@ export const build__InAppNotificationRepository = ({
     containerId,
     kind,
   }: DeleteWhereInput): Promise<void> => {
-    await uow.join();
     await uow.db()('inAppNotification').delete().where(
       prepareForDatabase({
         viewerId,
@@ -92,7 +90,6 @@ export const build__InAppNotificationRepository = ({
     viewerId: EntityId;
     ids: EntityId[];
   }): Promise<void> => {
-    await uow.join();
     await uow.db()('inAppNotification').delete().where({ viewerId }).and.whereIn('id', ids);
   },
 
@@ -100,7 +97,6 @@ export const build__InAppNotificationRepository = ({
   // viewer. Keyed on container_type + container_id only — opening an album must not
   // leave per-mediaItem (comment) dots behind, and vice versa.
   markSeen: async (containerType: EntityType, viewerId: EntityId, containerId?: string) => {
-    await uow.join();
     const filterOnContainerId = containerId ? { containerId } : {};
     await uow
       .db()('inAppNotification')

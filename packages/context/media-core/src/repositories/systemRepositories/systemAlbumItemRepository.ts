@@ -28,7 +28,6 @@ export const build__SystemAlbumItemRepository = ({
   uow,
 }: SystemAlbumItemRepositoryDeps): SystemAlbumItemRepository => ({
   getItemsByAlbumIds: async (albumIds: EntityId[]) => {
-    await uow.join();
     return uow
       .db()('albumItem')
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
@@ -44,7 +43,6 @@ export const build__SystemAlbumItemRepository = ({
     albumId: EntityId;
     albumItemIds: EntityId[];
   }) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('albumItem')

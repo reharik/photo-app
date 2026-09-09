@@ -23,3 +23,5 @@ export interface FastSweepNotificationStrategy<T extends TemplateName> {
     userMap: Map<string, UserContact>,
   ) => Promise<PayloadResult<T>[]>;
 }
+
+export type ConcretePayloadResult<T extends TemplateName = TemplateName> = PayloadResult<T>;

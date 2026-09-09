@@ -23,7 +23,6 @@ export const build__SystemMediaItemRepository = ({
   uow,
 }: SystemMediaItemRepositoryDeps): SystemMediaItemRepository => ({
   getMediaItemById: async (mediaItemId: EntityId) => {
-    await uow.join();
     return await withEnumRevival(
       uow.db()('mediaItem').where({ id: mediaItemId }).first<MediaItemOwner>(mediaItemFields),
       { kind: MediaKind, status: MediaItemStatus },

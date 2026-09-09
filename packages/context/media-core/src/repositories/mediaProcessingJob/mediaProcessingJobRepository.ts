@@ -53,7 +53,6 @@ export const build__MediaProcessingJobRepository = ({
     mediaItemId: EntityId;
     actorId: EntityId;
   }): Promise<void> => {
-    await uow.join();
     await uow
       .db()('mediaProcessingJob')
       .insert({

@@ -140,7 +140,6 @@ export const build__SystemAuthorizationRepository = ({
   uow,
 }: SystemAuthorizationRepositoryDeps): SystemAuthorizationRepository => ({
   getAuthorizationsByAlbumId: async (albumIds: EntityId[]): Promise<Authorizations> => {
-    await uow.join();
     const rows = await withEnumRevival(
       uow
         .db()('access_grant')
@@ -153,7 +152,6 @@ export const build__SystemAuthorizationRepository = ({
   },
 
   getAuthorizationsByIds: async (ids: EntityId[]): Promise<Authorizations> => {
-    await uow.join();
     const rows = await withEnumRevival(
       uow
         .db()('access_grant')

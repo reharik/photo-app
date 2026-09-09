@@ -6,11 +6,9 @@ import { RequestScopeLifeCycle } from '../../services';
 
 export interface UnitOfWork extends RequestScopeLifeCycle {
   id: string;
-  beginIsolatedOnly: () => Promise<void>;
-  join: () => Promise<void>;
+  start: () => Promise<void>;
   db: () => Knex.Transaction;
   complete: (ok: boolean) => Promise<void>;
-  settle: (ok: boolean) => Promise<void>;
   collectEvents: (events: DomainEvent[]) => void;
   /**
    * Set by the GraphQL write boundary when a mutation field returns a failed
@@ -20,6 +18,33 @@ export interface UnitOfWork extends RequestScopeLifeCycle {
    * request — the uow is per-request, so partial commit is impossible anyway.
    */
   flagRollbackOnly: () => void;
+  /**
+   * Runs `fn` inside a transaction, committing if it returns and rolling back if it throws.
+   *
+   * This is the verb to reach for. `start` and `complete` are the primitives underneath it,
+   * and are only needed at boundaries that can't be expressed as a function — the GraphQL
+   * envelop plugin, for instance, where `onExecute` and `onExecuteDone` are separate hooks
+   * with the request execution in between.
+   *
+   * A throw from `fn` rolls back and propagates unchanged; the rollback never replaces the
+   * original error. `flagRollbackOnly()` is honoured, so a fail-as-data path that flags
+   * mid-flight still rolls back even though `fn` returned normally.
+   *
+   * Nesting throws — `start` refuses to open a transaction while one is already open. If you
+   * need a second boundary inside a job, close the first one before opening the next. That's
+   * the shape a job with external I/O in the middle wants anyway: commit, do the S3 or SES
+   * work outside any transaction, then open a fresh one to record the result.
+   *
+   * @example
+   * const rows = await uow.inTransaction(() => claimPendingRows(50));
+   *
+   * @example Failure is survivable — pair with `bestEffort`:
+   * await bestEffort(
+   *   () => uow.inTransaction(() => recordDelivery(messageId)),
+   *   (e) => logger.error('[sweep] delivery record failed — telemetry gap', e),
+   * );
+   */
+  inTransaction: <T>(fn: () => Promise<T>) => Promise<T>;
 }
 
 type UnitOfWorkDeps = {
@@ -61,16 +86,13 @@ export const build__UnitOfWork = ({
     if (!published.length) {
       return;
     }
+    trx = await database.transaction(); // explicit second boundary
     try {
       await eventPublisher.publish(published);
-      if (trx) {
-        await trx.commit();
-        logger.debug(`[uow:${id}] post-commit handler transaction committed`);
-      }
+      await trx.commit();
+      logger.debug(`[uow:${id}] post-commit handler transaction committed`);
     } catch (e) {
-      if (trx) {
-        await trx.rollback();
-      }
+      await trx.rollback();
       logger.error(`[uow:${id}] post-commit handler transaction failed`, e);
     } finally {
       reset();
@@ -88,33 +110,22 @@ export const build__UnitOfWork = ({
       await t.commit();
       logger.debug(`[uow:${id}] committed`);
 
-      try {
-        await publishPostCommit();
-      } catch (e) {
-        logger.error(`[uow:${id}] post-commit publish failed`, e);
-      }
+      await publishPostCommit();
     } finally {
       reset();
     }
   };
+  const start = async () => {
+    if (trx) {
+      throw new Error(`[uow:${id}] Transaction already open when start called`);
+    }
 
-  let openedAt: string | undefined;
+    logger.debug(`[uow:${id}] New transaction created`);
+    trx = await database.transaction();
+  };
   return {
     id,
-    beginIsolatedOnly: async () => {
-      if (trx) {
-        throw new Error(`[uow:${id}] Transaction already active when beginIsolatedOnly called`);
-      }
-      trx = await database.transaction();
-      logger.debug(`[uow:${id}] Transaction begun in isolation`);
-    },
-    join: async () => {
-      if (!trx) {
-        openedAt = new Error().stack;
-        logger.debug(`[uow:${id}] New transaction created`);
-        trx = await database.transaction();
-      }
-    },
+    start,
     db: () => {
       if (!trx) throw new Error(`[uow:${id}] Transaction not started`);
       return trx;
@@ -126,20 +137,6 @@ export const build__UnitOfWork = ({
       }
       await completeTransaction(ok);
     },
-    settle: async (ok: boolean) => {
-      if (!trx) {
-        reset();
-        return;
-      }
-      logger.warn(`[uow:${id}] settle resolving an open transaction`, { openedAt });
-
-      try {
-        await completeTransaction(ok);
-      } catch (e) {
-        logger.error(`[uow:${id}] settle failed to resolve the transaction`, e);
-        reset();
-      }
-    },
     collectEvents: (newEvents: DomainEvent[]) => {
       if (newEvents.length) {
         logger.debug(`[uow:${id}] events collected: ${newEvents.map((x) => x.kind).join(', ')}`);
@@ -149,6 +146,17 @@ export const build__UnitOfWork = ({
     flagRollbackOnly: () => {
       logger.warn(`[uow:${id}] flagRollbackOnly called`);
       shouldRollback = true;
+    },
+    inTransaction: async <T>(fn: () => Promise<T>): Promise<T> => {
+      await start();
+      try {
+        const result = await fn();
+        await completeTransaction(true);
+        return result;
+      } catch (e) {
+        await completeTransaction(false);
+        throw e;
+      }
     },
   };
 };

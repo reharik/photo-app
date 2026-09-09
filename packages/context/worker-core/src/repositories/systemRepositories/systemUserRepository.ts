@@ -1,9 +1,8 @@
 import { EntityId, UserStatus } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
-export interface SystemUserRepository extends RequestScopeLifeCycle {
+export interface SystemUserRepository {
   getUserContacts: (userIds: EntityId[]) => Promise<UserContact[]>;
   getActiveUsers: (userIds: EntityId[]) => Promise<UserContact[]>;
 }
@@ -26,13 +25,11 @@ export const build__SystemUserRepository = ({
   uow,
 }: SystemUserRepositoryDeps): SystemUserRepository => ({
   getUserContacts: async (userIds: EntityId[]) => {
-    await uow.join();
     return withEnumRevival(uow.db()('User').select(UserFields).whereIn('id', userIds), {
       userStatus: UserStatus,
     });
   },
   getActiveUsers: async (userIds: EntityId[]) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('User')

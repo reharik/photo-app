@@ -20,7 +20,6 @@ export const build__ShareContactRepository = ({
     userId: EntityId,
     contactUserId?: EntityId,
   ): Promise<void> => {
-    await uow.join();
     await uow
       .db()<ShareContactRow>('shareContact')
       .insert({
@@ -33,7 +32,6 @@ export const build__ShareContactRepository = ({
       .merge(['handle', 'lastSharedAt']);
   },
   deleteContact: async (handle: string, viewerId: EntityId) => {
-    await uow.join();
     await uow.db()('shareContact').delete().where({ userId: viewerId, handle: handle });
   },
 });

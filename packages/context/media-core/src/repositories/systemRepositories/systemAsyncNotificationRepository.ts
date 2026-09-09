@@ -58,7 +58,6 @@ export const build__SystemAsyncNotificationRepository = ({
   uow,
 }: SystemAsyncNotificationRepositoryDeps): SystemAsyncNotificationRepository => ({
   upsertRecipientRow: async (upsert: AsyncNotificationInput) => {
-    await uow.join();
     // accessGrantId is MERGED, not just inserted: a re-share after a revoke mints a NEW
     // authorization while colliding with the queued row for the old one (the dedup key
     // spans channel/kind/recipient/container, none of which change). Left out of the

@@ -23,7 +23,6 @@ type UserRepositoryDeps = { uow: UnitOfWork; persist: Persist };
 
 export const build__UserRepository = ({ uow, persist }: UserRepositoryDeps): UserRepository => {
   const getById = async (id: EntityId): Promise<User | undefined> => {
-    await uow.join();
     const userRow = await uow.db()<UserRecord>('user').where({ id }).first();
 
     if (!userRow) {
@@ -35,7 +34,7 @@ export const build__UserRepository = ({ uow, persist }: UserRepositoryDeps): Use
 
   const getByHandle = async (handle: string): Promise<User | undefined> => {
     // using email for handle for now.
-    await uow.join();
+
     const userRow = await uow.db()<UserRecord>('user').where({ email: handle }).first();
 
     if (!userRow) {
@@ -46,7 +45,6 @@ export const build__UserRepository = ({ uow, persist }: UserRepositoryDeps): Use
   };
 
   const getAllUsersByEmail = async (handles: string[]): Promise<(User | PendingUser)[]> => {
-    await uow.join();
     const users = await withEnumRevival(
       uow
         .db()<UserRecord>('user')
@@ -88,7 +86,6 @@ export const build__UserRepository = ({ uow, persist }: UserRepositoryDeps): Use
   // This is used at login but if the user is pending then we get the authorizations
   // in order to convert
   const getUserByEmail = async (email: string): Promise<User | PendingUser | undefined> => {
-    await uow.join();
     const userRow = await withEnumRevival(
       uow.db()('user').where({ email: email.trim().toLowerCase() }).first<UserRecord>(),
       { userStatus: UserStatus },

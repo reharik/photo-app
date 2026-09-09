@@ -57,53 +57,40 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
   { table, attemptCountColumn }: QueueClaimableConfig,
 ): QueueClaimable<TRow> => {
   const claimNextAvailableJob = async (): Promise<TRow | undefined> => {
-    // The claim owns its own boundary: FOR UPDATE SKIP LOCKED must commit
-    // independently so the PROCESSING flip is visible to other workers before
-    // the caller does any downstream work. begin() throws if a boundary is
-    // already open — that's deliberate, this must never be a savepoint.
-    await uow.beginIsolatedOnly();
-    try {
-      const selected = await uow
-        .db()(table)
-        .where({ status: MediaJobStatus.pending.value })
-        .andWhere('availableAt', '<=', uow.db().fn.now())
-        .orderBy('availableAt', 'asc')
-        .orderBy('id', 'asc')
-        .forUpdate()
-        .skipLocked()
-        .limit(1)
-        .select<Pick<ClaimableRow, 'id'>[]>('id');
+    const selected = await uow
+      .db()(table)
+      .where({ status: MediaJobStatus.pending.value })
+      .andWhere('availableAt', '<=', uow.db().fn.now())
+      .orderBy('availableAt', 'asc')
+      .orderBy('id', 'asc')
+      .forUpdate()
+      .skipLocked()
+      .limit(1)
+      .select<Pick<ClaimableRow, 'id'>[]>('id');
 
-      const next = selected[0];
-      if (!next) {
-        await uow.complete(true);
-        return undefined;
-      }
-
-      const updated = await withEnumRevival(
-        uow
-          .db()(table)
-          .where({ id: next.id, status: MediaJobStatus.pending.value })
-          .update({
-            status: MediaJobStatus.processing.value,
-            startedAt: uow.db().fn.now(),
-            attemptCount: uow.db().raw('?? + 1', [attemptCountColumn]),
-            updatedAt: uow.db().fn.now(),
-          })
-          .returning('*'),
-        { status: MediaJobStatus },
-      );
-
-      await uow.complete(true);
-      return updated[0] as TRow;
-    } catch (e) {
-      await uow.settle(false);
-      throw e;
+    const next = selected[0];
+    if (!next) {
+      return undefined;
     }
+
+    const updated = await withEnumRevival(
+      uow
+        .db()(table)
+        .where({ id: next.id, status: MediaJobStatus.pending.value })
+        .update({
+          status: MediaJobStatus.processing.value,
+          startedAt: uow.db().fn.now(),
+          attemptCount: uow.db().raw('?? + 1', [attemptCountColumn]),
+          updatedAt: uow.db().fn.now(),
+        })
+        .returning('*'),
+      { status: MediaJobStatus },
+    );
+
+    return updated[0] as TRow;
   };
 
   const markSucceeded = async (jobId: EntityId, actorId: EntityId): Promise<boolean> => {
-    await uow.join();
     const count = await uow
       .db()(table)
       .where({ id: jobId, status: MediaJobStatus.processing.value })
@@ -122,7 +109,6 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
     actorId: EntityId,
     lastError: string,
   ): Promise<boolean> => {
-    await uow.join();
     const count = await uow
       .db()(table)
       .where({ id: jobId, status: MediaJobStatus.processing.value })
@@ -146,7 +132,6 @@ export const createJobQueueRepository = <TRow extends ClaimableRow>(
     actorId: EntityId,
     reason: string,
   ): Promise<RetryOutcome> => {
-    await uow.join();
     // first here is ok vs exists because a) it is awaited and b) the value
     // is needed for the max attempts call
     const row = await uow

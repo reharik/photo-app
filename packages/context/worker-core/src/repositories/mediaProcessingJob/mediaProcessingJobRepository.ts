@@ -2,7 +2,6 @@ import { MediaJobStatus } from '@packages/contracts';
 
 import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
 /**
@@ -28,7 +27,7 @@ export type MediaProcessingJobRow = {
   lastError?: string;
 };
 
-export interface MediaProcessingJobRepository extends RequestScopeLifeCycle {
+export interface MediaProcessingJobRepository {
   claimNextAvailableJob: () => Promise<MediaProcessingJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;
@@ -74,7 +73,6 @@ export const build__MediaProcessingJobRepository = ({
    * updatedBy from the row's own createdBy (the actor that enqueued the work).
    */
   const releaseStalledJobs = async (stalledBefore: Date): Promise<ReleaseStalledJobsResult> => {
-    await uow.join();
     const released = await uow
       .db()('mediaProcessingJob')
       .where({ status: MediaJobStatus.processing.value })

@@ -2,7 +2,6 @@ import { MediaJobStatus } from '@packages/contracts';
 
 import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { createJobQueueRepository, RetryOutcome } from '../createJobQueueRepository';
 
 export type MediaDeletionJobRow = {
@@ -22,7 +21,7 @@ export type MediaDeletionJobRow = {
   lastError?: string;
 };
 
-export interface MediaDeletionJobRepository extends RequestScopeLifeCycle {
+export interface MediaDeletionJobRepository {
   claimNextAvailableJob: () => Promise<MediaDeletionJobRow | undefined>;
   markSucceeded: (jobId: EntityId, actorId: EntityId) => Promise<boolean>;
   markFailed: (jobId: EntityId, actorId: EntityId, lastError: string) => Promise<boolean>;

@@ -30,7 +30,6 @@ export const build__CommentReadRepository = ({
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }): Promise<DBCommentRow[]> => {
-    await uow.join();
     const { pageInfo } = collectionInfo;
     return withEnumRevival(
       uow
@@ -51,7 +50,6 @@ export const build__CommentReadRepository = ({
   }: {
     commentId: EntityId;
   }): Promise<DBCommentRow | undefined> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('comment')

@@ -29,7 +29,6 @@ export const build__PublicMediaItemReadRepository = ({
     mediaItemId: EntityId;
     publicLinkId: EntityId;
   }): Promise<DBPublicMediaItemRow | undefined> => {
-    await uow.join();
     const mediaItem = await withEnumRevival(
       uow
         .db()('mediaItem')

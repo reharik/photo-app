@@ -34,7 +34,6 @@ type AlbumRepositoryDeps = {
 
 export const build__AlbumRepository = ({ uow, persist }: AlbumRepositoryDeps): AlbumRepository => {
   const getById = async (id: EntityId): Promise<Album | undefined> => {
-    await uow.join();
     const albumRow = await uow.db()<AlbumRecord>('album').where({ id }).first();
     if (!albumRow) return undefined;
 
@@ -96,7 +95,6 @@ export const build__AlbumRepository = ({ uow, persist }: AlbumRepositoryDeps): A
   };
 
   const deleteAlbum = async (album: Album): Promise<void> => {
-    await uow.join();
     await uow.db()<AlbumRecord>('album').where({ id: album.id() }).delete();
   };
 

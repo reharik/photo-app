@@ -1,7 +1,6 @@
 import { AuditRecord, EntityId, EntityType } from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
 export type CommentRecord = {
   id: EntityId;
@@ -15,7 +14,7 @@ export type CommentRecord = {
   deletedAt?: Date;
 } & AuditRecord;
 
-export interface SystemCommentRepository extends RequestScopeLifeCycle {
+export interface SystemCommentRepository {
   getCommentsByIds: (commentIds: EntityId[]) => Promise<CommentRecord[]>;
 }
 
@@ -27,7 +26,6 @@ export const build__systemCommentRepository = ({
   uow,
 }: systemCommentRepositoryDeps): SystemCommentRepository => ({
   getCommentsByIds: async (commentIds: EntityId[]) => {
-    await uow.join();
     return uow.db()('comment').whereIn('id', commentIds).select<CommentRecord[]>();
   },
 });

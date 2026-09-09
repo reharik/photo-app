@@ -1,9 +1,8 @@
 import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { withAlbumItemCount } from '../queryHelpers';
 
-export interface SystemAlbumRepository extends RequestScopeLifeCycle {
+export interface SystemAlbumRepository {
   getAlbumTitlesById: (albumIds: EntityId[]) => Promise<AlbumTitle[]>;
 }
 
@@ -22,7 +21,6 @@ export const build__SystemAlbumRepository = ({
   uow,
 }: SystemAlbumRepositoryDeps): SystemAlbumRepository => ({
   getAlbumTitlesById: async (albumIds: EntityId[]) => {
-    await uow.join();
     return uow
       .db()('album')
       .modify(withAlbumItemCount(uow.db()))

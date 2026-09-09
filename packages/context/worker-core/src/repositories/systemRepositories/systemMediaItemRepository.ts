@@ -1,9 +1,8 @@
 import { EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
-export interface SystemMediaItemRepository extends RequestScopeLifeCycle {
+export interface SystemMediaItemRepository {
   getMediaItemById: (mediaItemId: EntityId) => Promise<MediaItemOwner>;
 }
 
@@ -23,7 +22,6 @@ export const build__SystemMediaItemRepository = ({
   uow,
 }: SystemMediaItemRepositoryDeps): SystemMediaItemRepository => ({
   getMediaItemById: async (mediaItemId: EntityId) => {
-    await uow.join();
     return await withEnumRevival(
       uow.db()('mediaItem').where({ id: mediaItemId }).first<MediaItemOwner>(mediaItemFields),
       { kind: MediaKind, status: MediaItemStatus },

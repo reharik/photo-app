@@ -35,7 +35,6 @@ export const build__SystemInAppNotificationRepository = ({
   uow,
 }: SystemInAppNotificationRepositoryDeps): SystemInAppNotificationRepository => ({
   upsertActivityRow: async (upsert: InAppNotificationInput) => {
-    await uow.join();
     await uow
       .db()('inAppNotification')
       .insert(prepareForDatabase({ ...upsert }))
