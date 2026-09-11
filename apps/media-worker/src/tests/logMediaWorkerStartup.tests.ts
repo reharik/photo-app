@@ -1,9 +1,9 @@
 /**
- * The startup probe is an IoC factory now, and it reads through the unit of work
- * rather than a raw Knex handle — which means it has to open and settle its own
- * transaction, since nothing has begun one at boot. The fake below records that
- * boundary so the probe can't silently regress into querying a uow with no
- * transaction started.
+ * The startup probe queries the raw Knex handle directly — no transaction, no
+ * unit of work. That is the right shape for it: it runs at boot, before any task
+ * has a boundary of its own, and `uow.db()` throws outside one. A `select 1`
+ * needs no transaction to be meaningful, so there is nothing here to open or
+ * close and nothing about transaction lifecycle left to assert.
  *
  * The probe is fail-fast by design: it logs a failed check AND rethrows, so a
  * worker that cannot reach Postgres or its bucket dies at boot instead of
@@ -16,36 +16,22 @@
  * has nothing to do with the probe.
  */
 import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
-import type { UnitOfWork } from '@packages/media-core';
+import type { Knex } from 'knex';
 
 import type { Config } from '../config';
 
 const s3Send = jest.fn<() => Promise<unknown>>();
 
-const createFakeUow = (raw: () => Promise<unknown>) => {
-  const boundary: { joined: number; completed: boolean[]; settled: boolean[] } = {
-    joined: 0,
-    completed: [],
-    settled: [],
-  };
-  return {
-    boundary,
-    uow: {
-      join: async () => {
-        boundary.joined += 1;
-      },
-      beginIsolatedOnly: async () => {},
-      db: () => ({ raw }),
-      complete: async (ok: boolean) => {
-        boundary.completed.push(ok);
-      },
-      settle: async (ok: boolean) => {
-        boundary.settled.push(ok);
-      },
-      collectEvents: () => {},
-      flagRollbackOnly: () => {},
-    } as unknown as UnitOfWork,
-  };
+/** Stands in for the injected Knex handle; only `raw` is ever reached. */
+const createFakeDatabase = (raw: () => Promise<unknown>) => {
+  const rawCalls: string[] = [];
+  const database = {
+    raw: (sql: string) => {
+      rawCalls.push(sql);
+      return raw();
+    },
+  } as unknown as Knex;
+  return { database, rawCalls };
 };
 
 const createLogger = () => ({
@@ -92,9 +78,9 @@ describe('logMediaWorkerStartup', () => {
   describe('When probes succeed', () => {
     it('should log configuration and connectivity checks', async () => {
       const logger = createLogger();
-      const { uow } = createFakeUow(async () => ({ rows: [{ ok: 1 }] }));
+      const { database } = createFakeDatabase(async () => ({ rows: [{ ok: 1 }] }));
 
-      await build__LogMediaWorkerStartup({ config, logger, uow })();
+      await build__LogMediaWorkerStartup({ config, logger, database })();
 
       expect(logger.info).toHaveBeenCalledWith(
         'Media worker configuration',
@@ -110,24 +96,25 @@ describe('logMediaWorkerStartup', () => {
       );
     });
 
-    it('should run the Postgres probe inside a transaction it opens and commits', async () => {
+    it('should probe Postgres with a plain select on the injected handle', async () => {
       const logger = createLogger();
-      const { uow, boundary } = createFakeUow(async () => ({ rows: [{ ok: 1 }] }));
+      const { database, rawCalls } = createFakeDatabase(async () => ({ rows: [{ ok: 1 }] }));
 
-      await build__LogMediaWorkerStartup({ config, logger, uow })();
+      await build__LogMediaWorkerStartup({ config, logger, database })();
 
-      expect(boundary.joined).toBe(1);
-      expect(boundary.completed).toEqual([true]);
-      expect(boundary.settled).toEqual([]);
+      // Exactly one probe query, and it goes straight to the pool. A probe that
+      // reached for `uow.db()` instead would throw at boot, where nothing has
+      // opened a boundary yet.
+      expect(rawCalls).toEqual(['select 1 as ok']);
     });
   });
 
   describe('When the Postgres probe fails', () => {
-    it('should report the failure, roll the probe transaction back, and abort the boot', async () => {
+    it('should report the failure and abort the boot', async () => {
       const logger = createLogger();
-      const { uow, boundary } = createFakeUow(() => Promise.reject(new Error('ECONNREFUSED')));
+      const { database } = createFakeDatabase(() => Promise.reject(new Error('ECONNREFUSED')));
 
-      const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, uow });
+      const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, database });
 
       await expect(logMediaWorkerStartup()).rejects.toThrow('ECONNREFUSED');
       expect(logger.info).not.toHaveBeenCalledWith(
@@ -139,10 +126,6 @@ describe('logMediaWorkerStartup', () => {
         expect.any(Error),
         expect.objectContaining({ host: 'db.example', database: 'photo_app' }),
       );
-      // settle, not complete: the probe's own query is what threw, so the boundary
-      // may or may not still be open and complete() would throw over the real error.
-      expect(boundary.settled).toEqual([false]);
-      expect(boundary.completed).toEqual([]);
       // Dead before it ever reaches the bucket check.
       expect(s3Send).not.toHaveBeenCalled();
     });
@@ -151,10 +134,10 @@ describe('logMediaWorkerStartup', () => {
   describe('When the S3 probe fails', () => {
     it('should report the failure and abort the boot after the Postgres check passed', async () => {
       const logger = createLogger();
-      const { uow, boundary } = createFakeUow(async () => ({ rows: [{ ok: 1 }] }));
+      const { database, rawCalls } = createFakeDatabase(async () => ({ rows: [{ ok: 1 }] }));
       s3Send.mockRejectedValue(new Error('NoSuchBucket'));
 
-      const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, uow });
+      const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, database });
 
       await expect(logMediaWorkerStartup()).rejects.toThrow('NoSuchBucket');
       expect(logger.error).toHaveBeenCalledWith(
@@ -162,9 +145,8 @@ describe('logMediaWorkerStartup', () => {
         expect.any(Error),
         expect.objectContaining({ bucket: 'my-bucket', region: 'us-east-1' }),
       );
-      // The Postgres boundary committed before S3 was touched — a bucket failure
-      // must not leave a transaction dangling.
-      expect(boundary.completed).toEqual([true]);
+      // Ordering: Postgres is probed first and passed, so the bucket is what failed.
+      expect(rawCalls).toEqual(['select 1 as ok']);
     });
   });
 });

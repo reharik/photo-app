@@ -30,6 +30,7 @@ export interface AuthenticatedReadScopeServices {
   readServices: ReadServices;
   agnosticReadServices: AgnosticReadServices;
   finalize: (transportOk: boolean) => Promise<void>;
+  start: () => Promise<void>;
 }
 export interface AuthenticatedWriteScopeServices {
   readServices: ReadServices;
@@ -38,12 +39,14 @@ export interface AuthenticatedWriteScopeServices {
 
   flagFailure: () => void;
   finalize: (transportOk: boolean) => Promise<void>;
+  start: () => Promise<void>;
 }
 
 export interface PublicReadScopeServices {
   publicReadServices: PublicReadServices;
   agnosticReadServices: AgnosticReadServices;
   finalize: (transportOk: boolean) => Promise<void>;
+  start: () => Promise<void>;
 }
 
 // ── stage 2: post-scope, what resolvers see ─────────────────

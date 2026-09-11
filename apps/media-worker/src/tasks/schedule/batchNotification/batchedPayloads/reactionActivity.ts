@@ -7,12 +7,12 @@ import {
   toDisplayName,
 } from '@packages/contracts';
 import { groupByMapping, indexBy, Logger } from '@packages/infrastructure';
+import { ReactionItem, ReactionSection } from '@packages/notifications';
 import {
   AsyncNotification,
   SystemCommentRepository,
   SystemUserRepository,
-} from '@packages/media-core';
-import { ReactionItem, ReactionSection } from '@packages/notifications';
+} from '@packages/worker-core';
 import { EnumSubset, pickEnum } from '@reharik/smart-enum';
 import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload } from './types';

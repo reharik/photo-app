@@ -1,7 +1,13 @@
-import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  EntityId,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import { loadRequiredAlbum } from '../../../application/support/resourceLoaders';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { DeleteAlbumCommand, DeleteAlbumResult } from './writeAlbum.types';
 

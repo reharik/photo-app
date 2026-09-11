@@ -4,14 +4,13 @@
  *
  */
 
+import type { ActorId, AuditRecord, EntityId, VOCollection } from '@packages/contracts';
 import { EntityType, ok, OperationResult } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import { EnumSubset } from '@reharik/smart-enum';
 import { DBReactionCounts } from '../../services/readServices/types';
 import { Reaction } from '../../services/writeServices/mediaItem/writeMediaItem.types';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { AuditRecord, VOCollection } from '../Entity';
 
 export type CommentReactionRecord = Omit<Reaction, 'id'> & {
   id: string;

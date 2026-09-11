@@ -1,14 +1,15 @@
 import {
+  ActorId,
   AppErrorCollection,
   AuthorizationKind,
   AuthorizationOrigin,
+  EntityId,
   fail,
   ok,
   Operation,
   OperationResult,
 } from '@packages/contracts';
-import { ActorId, EntityId } from '../../types/types';
-import { Entity } from '../Entity';
+import { DomainEntity } from '../DomainEntity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 
 export type UserAuthorizationProps = AuthorizationProps & {
@@ -29,7 +30,7 @@ export type CreateUserAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser: EntityId;
 };
 
-export class UserAuthorization extends Entity<UserAuthorizationRecord> {
+export class UserAuthorization extends DomainEntity<UserAuthorizationRecord> {
   protected props: UserAuthorizationProps;
 
   private constructor(actorId: ActorId, props: UserAuthorizationProps, id?: EntityId) {

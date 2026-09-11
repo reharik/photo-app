@@ -18,21 +18,14 @@ export default defineIocConfig({
     factoryPrefix: 'build__',
   },
   composedManifests: [
-    '@packages/media-core',
+    '@packages/worker-core',
     '@packages/infrastructure',
     '@packages/notifications',
   ],
-  lifetimeMarkers: {
-    // RequestScopeLifeCycle: 'scoped',
-    // WorkerJobProcessorBase: 'scoped',
-  },
 
   registrations: {
     Knex: {
       $contract: { accessKey: 'database' },
-    },
-    EventPublisher: {
-      noopEventPublisher: { name: 'noopEventPublisher', default: true },
     },
   },
   groups: {

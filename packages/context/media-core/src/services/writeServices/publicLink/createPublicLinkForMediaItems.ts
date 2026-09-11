@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
+import { AppErrorCollection, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import {
   ensureMediaItemInReadyState,
@@ -9,7 +9,6 @@ import { Album } from '../../../domain/Album/Album';
 import { WriteServices } from '../../../generated/ioc-registry.types';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreatePublicLinkResponse } from './createPublicLinkForAlbum';
 

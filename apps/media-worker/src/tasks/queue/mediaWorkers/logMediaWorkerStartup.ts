@@ -1,17 +1,17 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Logger } from '@packages/infrastructure';
 
-import { UnitOfWork } from '@packages/media-core';
+import { Knex } from 'knex';
 import type { Config } from '../../../config';
 
 export interface LogMediaWorkerStartup {
   (): Promise<void>;
 }
 
-type LogMediaWorkerStartupDeps = { config: Config; logger: Logger; uow: UnitOfWork };
+type LogMediaWorkerStartupDeps = { config: Config; logger: Logger; database: Knex };
 
 export const build__LogMediaWorkerStartup =
-  ({ config, logger, uow }: LogMediaWorkerStartupDeps): LogMediaWorkerStartup =>
+  ({ config, logger, database }: LogMediaWorkerStartupDeps): LogMediaWorkerStartup =>
   async () => {
     const explicitCredentialsConfigured = Boolean(
       config.awsAccessKeyId && config.awsSecretAccessKey,
@@ -30,16 +30,13 @@ export const build__LogMediaWorkerStartup =
     });
 
     try {
-      await uow.join();
-      await uow.db().raw('select 1 as ok');
-      await uow.complete(true);
+      await database.raw('select 1 as ok');
       logger.info('Postgres connectivity check succeeded', {
         host: config.postgresHost,
         port: config.postgresPort,
         database: config.postgresDatabase,
       });
     } catch (e) {
-      await uow.settle(false);
       logger.error('Postgres connectivity check failed', e, {
         host: config.postgresHost,
         port: config.postgresPort,

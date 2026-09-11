@@ -5,8 +5,8 @@ import {
   filterByMember,
 } from '@packages/contracts';
 import { dedupeIds, groupByMapping, indexBy } from '@packages/infrastructure';
-import { AsyncNotification, SystemAlbumRepository } from '@packages/media-core';
 import { AlbumSection } from '@packages/notifications';
+import { AsyncNotification, SystemAlbumRepository } from '@packages/worker-core';
 import { pickEnum } from '@reharik/smart-enum';
 import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload, LivingRow } from './types';

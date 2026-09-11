@@ -1,7 +1,7 @@
 import { AlbumMemberRole, AlbumSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { AlbumWithCoverRow, PagedList } from '../../services/readServices/types';
-import { CollectionInfo } from '../../types/types';
+import { CollectionInfo } from '../../types';
 import {
   toPagedResult,
   withAlbumCoverItem,
@@ -31,7 +31,6 @@ export const build__AlbumReadRepository = ({ uow }: ReadRepositoryDeps): AlbumRe
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumSortBy>;
   }): Promise<PagedList<AlbumWithCoverRow>> => {
-    await uow.join();
     const rows = await withEnumRevival(
       uow
         .db()('album')
@@ -58,7 +57,6 @@ export const build__AlbumReadRepository = ({ uow }: ReadRepositoryDeps): AlbumRe
     albumId: string;
     viewerId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()<AlbumWithCoverRow>('album')
@@ -83,7 +81,6 @@ export const build__AlbumReadRepository = ({ uow }: ReadRepositoryDeps): AlbumRe
   }: {
     mediaItemId: string;
   }): Promise<AlbumIdRow[]> => {
-    await uow.join();
     return uow
       .db()<AlbumIdRow>('album')
       .leftJoin('albumItem', 'albumItem.albumId', 'album.id')
@@ -99,7 +96,6 @@ export const build__AlbumReadRepository = ({ uow }: ReadRepositoryDeps): AlbumRe
     albumId: string;
     publicLinkId: string;
   }): Promise<AlbumWithCoverRow | undefined> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()<AlbumWithCoverRow>('album')

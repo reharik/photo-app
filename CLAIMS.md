@@ -113,12 +113,12 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       invites a reader to picture a search box; today the honest answer is page N of a
       paginated list sorted by title or creation date.
 ||||||| Stash base
-                  exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
-                  and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
-                  **nothing**. There is no text search, no date filter, no people filter, no
-                  free-text lookup of any kind. "Go looking for photos from a trip two years ago"
-                  invites a reader to picture a search box; today the honest answer is page N of a
-                  paginated list sorted by title or creation date.
+      exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
+      and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
+      **nothing**. There is no text search, no date filter, no people filter, no
+      free-text lookup of any kind. "Go looking for photos from a trip two years ago"
+      invites a reader to picture a search box; today the honest answer is page N of a
+      paginated list sorted by title or creation date.
 =======
                               exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
                               and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
@@ -257,8 +257,8 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
                   committed deliverable, not an open question. The brief's gate — *only ship the
                   last sentence if you mean it* — is answered "I mean it."
 =======
-                              committed deliverable, not an open question. The brief's gate — *only ship the
-                              last sentence if you mean it* — is answered "I mean it."
+      committed deliverable, not an open question. The brief's gate — *only ship the
+      last sentence if you mean it* — is answered "I mean it."
 >>>>>>> Stashed changes
 
 <<<<<<< Updated upstream

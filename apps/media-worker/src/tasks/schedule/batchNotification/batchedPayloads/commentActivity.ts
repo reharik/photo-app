@@ -5,12 +5,12 @@ import {
   notEmpty,
 } from '@packages/contracts';
 import { groupByMapping, indexBy } from '@packages/infrastructure';
+import { CommentSection } from '@packages/notifications';
 import {
   AsyncNotification,
   SystemCommentRepository,
   SystemUserRepository,
-} from '@packages/media-core';
-import { CommentSection } from '@packages/notifications';
+} from '@packages/worker-core';
 import { pickEnum } from '@reharik/smart-enum';
 import { RowOutcome } from '../../outcomeCleanup';
 import { ActivityResult, BatchedEmailPayload } from './types';

@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
+import { AppErrorCollection, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
@@ -9,7 +9,6 @@ import {
   AlbumReadRepository,
   MediaItemReadRepository,
 } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemsCommand, DeleteMediaItemsResult } from './writeMediaItem.types';

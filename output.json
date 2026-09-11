@@ -512,6 +512,114 @@
           "implicitDependencies": []
         }
       },
+      "worker-core": {
+        "name": "worker-core",
+        "type": "lib",
+        "data": {
+          "root": "packages/context/worker-core",
+          "name": "worker-core",
+          "tags": ["npm:private", "layer:context", "scope:media"],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": ["dev"]
+            },
+            "js": {
+              "packageName": "@packages/worker-core",
+              "packageExports": {
+                ".": {
+                  "types": "./dist/src/index.d.ts",
+                  "default": "./dist/src/index.js"
+                }
+              },
+              "packageMain": "./dist/src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "dev": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "dev"
+              },
+              "metadata": {
+                "scriptContent": "tsc -w -p tsconfig.json",
+                "runCommand": "npm run dev"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "barrels": {
+              "executor": "nx:run-commands",
+              "cache": false,
+              "options": {
+                "cwd": "packages/context/worker-core",
+                "command": "npx barrelsby --config barrelsby.json"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "build": {
+              "executor": "@nx/js:tsc",
+              "dependsOn": ["barrels", "contracts:build"],
+              "outputs": ["{projectRoot}/dist"],
+              "options": {
+                "outputPath": "packages/context/worker-core/dist",
+                "tsConfig": "packages/context/worker-core/tsconfig.json",
+                "main": "packages/context/worker-core/src/index.ts"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": ["prod", "^prod"]
+            },
+            "lint": {
+              "executor": "nx:run-commands",
+              "options": {
+                "commands": [
+                  "npx eslint --config packages/context/worker-core/eslint.config.js \"packages/context/worker-core/**/*.{ts,tsx,js,jsx}\"",
+                  "npx eslint --config packages/context/worker-core/eslint.test.config.js --quiet --no-error-on-unmatched-pattern \"packages/context/worker-core/**/*.tests.ts\" \"packages/context/worker-core/**/*.tests.tsx\" \"packages/context/worker-core/**/*.test.ts\" \"packages/context/worker-core/**/*.test.tsx\" \"packages/context/worker-core/**/*.spec.ts\" \"packages/context/worker-core/**/*.spec.tsx\" \"packages/context/worker-core/src/tests/**/*.ts\" \"packages/context/worker-core/src/tests/**/*.tsx\""
+                ],
+                "parallel": false
+              },
+              "configurations": {
+                "fix": {
+                  "commands": [
+                    "npx eslint --config packages/context/worker-core/eslint.config.js --fix \"packages/context/worker-core/**/*.{ts,tsx,js,jsx}\"",
+                    "npx eslint --config packages/context/worker-core/eslint.test.config.js --quiet --fix --no-error-on-unmatched-pattern \"packages/context/worker-core/**/*.tests.ts\" \"packages/context/worker-core/**/*.tests.tsx\" \"packages/context/worker-core/**/*.test.ts\" \"packages/context/worker-core/**/*.test.tsx\" \"packages/context/worker-core/**/*.spec.ts\" \"packages/context/worker-core/**/*.spec.tsx\" \"packages/context/worker-core/src/tests/**/*.ts\" \"packages/context/worker-core/src/tests/**/*.tsx\""
+                  ],
+                  "parallel": false
+                }
+              },
+              "parallelism": true,
+              "cache": false,
+              "inputs": ["default", "^default"]
+            },
+            "test": {
+              "executor": "@nx/jest:jest",
+              "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+              "options": {
+                "jestConfig": "packages/context/worker-core/jest.config.js",
+                "passWithNoTests": false
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true,
+              "inputs": ["default", "^default"]
+            },
+            "format": {
+              "executor": "nx:run-commands",
+              "options": {
+                "command": "prettier --write packages/context/worker-core/src/**/*.{ts,tsx,js,jsx,json}"
+              },
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "projectType": "library",
+          "sourceRoot": "{projectRoot}/src",
+          "implicitDependencies": []
+        }
+      },
       "media-worker": {
         "name": "media-worker",
         "type": "app",

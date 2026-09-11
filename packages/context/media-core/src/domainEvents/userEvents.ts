@@ -1,4 +1,4 @@
-import { EntityId } from '../types';
+import { EntityId } from '@packages/contracts';
 import { DomainEventBase } from './domainEvent';
 
 export interface PendingUserActivated extends DomainEventBase {

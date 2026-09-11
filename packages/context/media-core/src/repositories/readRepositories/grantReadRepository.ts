@@ -9,7 +9,6 @@ import type {
 
 export const build__GrantReadRepository = ({ uow }: ReadRepositoryDeps): GrantReadRepository => ({
   hasActiveGrantPermission: async (input: HasActiveGrantPermissionInput): Promise<boolean> => {
-    await uow.join();
     return exists(
       uow
         .db()('grant')
@@ -23,7 +22,6 @@ export const build__GrantReadRepository = ({ uow }: ReadRepositoryDeps): GrantRe
   hasActiveAccessGrantPermission: async (
     input: HasActiveAccessGrantPermissionInput,
   ): Promise<boolean> => {
-    await uow.join();
     return exists(
       uow
         .db()('accessGrant as ag')

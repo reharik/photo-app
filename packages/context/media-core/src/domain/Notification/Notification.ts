@@ -3,10 +3,9 @@
  * Aggregate Root with its own lifecycle; references recipient (and optional resource) by ID only.
  */
 
+import type { ActorId, AuditRecord, EntityId } from '@packages/contracts';
 import { NotificationKind } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { AuditRecord } from '../Entity';
 
 export type NotificationProps = {
   recipientId: EntityId;

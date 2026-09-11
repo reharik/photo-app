@@ -14,7 +14,7 @@ import {
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaProcessingJobRepository } from '../../../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
-import { EntityId } from '../../../types';
+import { EntityId } from '@packages/contracts';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   FinalizeMediaItemUploadCommand,
@@ -59,15 +59,6 @@ export const build__FinalizeMediaItemUpload = ({
       return fail(AppErrorCollection.mediaItem.MediaBytesNotFound);
     }
 
-    const result = mediaItem.updateAssetWithMetadata({
-      kind: MediaAssetKind.original,
-      sizeBytes: objectMetadata.size,
-      mimeType: objectMetadata.mimeType || '',
-    });
-    if (!result.success) {
-      return result;
-    }
-
     const finalized = mediaItem.completeUploadedWithMetadata(
       {
         sizeBytes: objectMetadata.size,
@@ -83,6 +74,8 @@ export const build__FinalizeMediaItemUpload = ({
     await mediaItemRepository.save(mediaItem);
 
     if (mediaItem.kind().equals(MediaKind.photo)) {
+      // this should be moved to a domainevent once we have persisted events
+
       // Same transaction as mediaItemRepository.save above: the job row must not be
       // visible to the worker before the item's PROCESSING status commits.
       await mediaProcessingJobRepository.enqueueIfNoneActive({

@@ -1,6 +1,5 @@
-import { ReactionEmoji } from '@packages/contracts';
+import { EntityId, ReactionEmoji } from '@packages/contracts';
 import { DBReactionCounts, ReactionCounts } from '../..';
-import { EntityId } from '../../types';
 
 export type WithAnemicReactions = {
   id: EntityId;

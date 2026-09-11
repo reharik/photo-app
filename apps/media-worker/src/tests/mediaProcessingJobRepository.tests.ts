@@ -1,119 +1,41 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { MediaJobStatus } from '@packages/contracts';
-import { build__MediaProcessingJobRepository, type UnitOfWork } from '@packages/media-core';
+import { build__MediaProcessingJobRepository, type UnitOfWork } from '@packages/worker-core';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 /**
- * The queue mechanics moved onto the unit of work: the repository is built from
- * an injected `uow` rather than a raw Knex handle. Two boundary verbs, and the
- * difference between them is the point:
- *
- * - `join()` attaches to whatever transaction the scope already has open (or opens
- *   one lazily) and does NOT settle it — the enqueue rides the caller's request.
- * - `beginIsolatedOnly()` demands a fresh boundary and throws if one is already
- *   open — the claim must commit independently, never as a savepoint.
+ * The repository is built from an injected `uow` rather than a raw Knex handle,
+ * but it no longer drives the boundary: every method just calls `uow.db()`, which
+ * throws outside a transaction. Opening and closing is the caller's job — the
+ * task's `run()` wraps each phase in `uow.inTransaction(...)` — so there is
+ * nothing about transaction lifecycle left for these cases to assert.
  *
  * `tableFn` stands in for `uow.db()` — knex's callable table accessor — so a
  * test supplies one function and gets the whole builder chain from it.
  */
 const createFakeUow = (tableFn: (table?: string) => unknown) => {
-  const boundary: { joined: number; begun: number; completed: boolean[] } = {
-    joined: 0,
-    begun: 0,
-    completed: [],
-  };
   const db = Object.assign(jest.fn(tableFn), {
     fn: { now: () => 'NOW()' },
     raw: jest.fn((sql: string, bindings?: unknown) => ({ sql, bindings })),
   });
   const uow = {
-    join: async () => {
-      boundary.joined += 1;
-    },
-    beginIsolatedOnly: async () => {
-      boundary.begun += 1;
-    },
+    start: async () => {},
     db: () => db,
-    complete: async (ok: boolean) => {
-      boundary.completed.push(ok);
-    },
-    settle: async (ok: boolean) => {
-      boundary.completed.push(ok);
-    },
+    complete: async () => {},
+    isOpen: () => true,
+    inTransaction: async <T>(fn: () => Promise<T>) => fn(),
   } as unknown as UnitOfWork;
-  return { uow, db, boundary };
+  return { uow, db };
 };
 
+/**
+ * Claim-and-mark only. `enqueueIfNoneActive` is NOT on worker-core's copy of
+ * this repository — enqueueing is the API's half of the queue and lives in
+ * `@packages/media-core`, so its two cases moved to that package's suite
+ * (`packages/context/media-core/src/tests/mediaProcessingJobRepository.tests.ts`).
+ */
 describe('build__MediaProcessingJobRepository', () => {
-  describe('enqueueIfNoneActive', () => {
-    describe('When called', () => {
-      it('should insert a pending job row on the request transaction with ON CONFLICT DO NOTHING', async () => {
-        const inserts: unknown[] = [];
-        const chains: string[] = [];
-        const { uow, boundary } = createFakeUow(() => ({
-          insert: (row: unknown) => {
-            inserts.push(row);
-            return {
-              onConflict: (...args: unknown[]) => {
-                chains.push(args.length === 0 ? 'onConflict()' : 'onConflict(target)');
-                return {
-                  ignore: () => {
-                    chains.push('ignore()');
-                    return Promise.resolve();
-                  },
-                };
-              },
-            };
-          },
-        }));
-
-        const repo = build__MediaProcessingJobRepository({ uow });
-        await repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID });
-
-        expect(inserts).toHaveLength(1);
-        expect(inserts[0]).toEqual(
-          expect.objectContaining({
-            mediaItemId: 'mid-1',
-            status: MediaJobStatus.pending.value,
-            attemptCount: 0,
-            createdBy: ACTOR_ID,
-            updatedBy: ACTOR_ID,
-          }),
-        );
-        expect(typeof (inserts[0] as { id: string }).id).toBe('string');
-        // Targetless ON CONFLICT DO NOTHING (any arbiter, incl. the partial unique
-        // index) — NOT try/catch on 23505, which would abort the caller's trx.
-        expect(chains).toEqual(['onConflict()', 'ignore()']);
-        // The enqueue-before-commit guard, restated for the scoped uow: the insert
-        // JOINS the transaction the finalize is already writing on, and settles
-        // nothing. Its own boundary — or a complete() here — would publish the job
-        // row before the item's PROCESSING status commits, and a hot worker would
-        // claim it against a still-PENDING item.
-        expect(boundary.joined).toBe(1);
-        expect(boundary.begun).toBe(0);
-        expect(boundary.completed).toEqual([]);
-      });
-    });
-
-    describe('When the insert fails for a non-conflict reason', () => {
-      it('should propagate the error', async () => {
-        const { uow } = createFakeUow(() => ({
-          insert: () => ({
-            onConflict: () => ({
-              ignore: () => Promise.reject(new Error('connection refused')),
-            }),
-          }),
-        }));
-
-        const repo = build__MediaProcessingJobRepository({ uow });
-        await expect(
-          repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
-        ).rejects.toThrow('connection refused');
-      });
-    });
-  });
-
   describe('markSucceeded', () => {
     describe('When called', () => {
       it('should update the job to succeeded', async () => {
@@ -170,7 +92,7 @@ describe('build__MediaProcessingJobRepository', () => {
 
   describe('claimNextAvailableJob', () => {
     describe('When no row is available', () => {
-      it('should return undefined and settle its own transaction boundary', async () => {
+      it('should return undefined without issuing the claiming update', async () => {
         const selectChain = {
           where: () => selectChain,
           andWhere: () => selectChain,
@@ -182,7 +104,7 @@ describe('build__MediaProcessingJobRepository', () => {
         };
 
         let dbCalls = 0;
-        const { uow, boundary } = createFakeUow(() => {
+        const { uow } = createFakeUow(() => {
           dbCalls += 1;
           if (dbCalls === 1) {
             return selectChain;
@@ -194,18 +116,15 @@ describe('build__MediaProcessingJobRepository', () => {
         const result = await repo.claimNextAvailableJob();
 
         expect(result).toBeUndefined();
-        // The claim must commit independently, never leave the boundary open —
-        // FOR UPDATE SKIP LOCKED is worthless if the lock outlives the claim. It
-        // begins in isolation rather than joining, so a caller's open transaction
-        // is a hard error here, not a silently nested savepoint.
-        expect(boundary.begun).toBe(1);
-        expect(boundary.joined).toBe(0);
-        expect(boundary.completed).toEqual([true]);
+        // An empty FOR UPDATE SKIP LOCKED select stops there: no row was locked,
+        // so there is nothing to flip to PROCESSING. The `dbCalls` guard above is
+        // what makes a second query a failure rather than a silent extra write.
+        expect(dbCalls).toBe(1);
       });
     });
 
     describe('When a pending row is claimed', () => {
-      it('should return the updated job row and commit the claim', async () => {
+      it('should flip the locked row to PROCESSING and return it', async () => {
         const jobId = 'job-claim-1';
         const mediaItemId = 'media-claim-1';
 
@@ -232,7 +151,7 @@ describe('build__MediaProcessingJobRepository', () => {
         };
 
         let dbCalls = 0;
-        const { uow, boundary } = createFakeUow(() => {
+        const { uow } = createFakeUow(() => {
           dbCalls += 1;
           if (dbCalls === 1) {
             return selectChain;
@@ -254,8 +173,9 @@ describe('build__MediaProcessingJobRepository', () => {
         const result = await repo.claimNextAvailableJob();
 
         expect(result).toEqual(updatedRow);
-        expect(boundary.begun).toBe(1);
-        expect(boundary.completed).toEqual([true]);
+        // Select-then-update, both on the caller's transaction: the lock taken by
+        // the select has to still be held when the update lands.
+        expect(dbCalls).toBe(2);
       });
     });
   });

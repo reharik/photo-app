@@ -1,5 +1,5 @@
+import type { EntityId } from '@packages/contracts';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import type { EntityId } from '../../types/types';
 import type { ReadRepositoryDeps, ShareContactRow, ShareContactSuggestion } from './types';
 
 export interface ShareContactReadRepository extends RequestScopeLifeCycle {
@@ -10,7 +10,6 @@ export const build__ShareContactReadRepository = ({
   uow,
 }: ReadRepositoryDeps): ShareContactReadRepository => ({
   getShareSuggestions: async (userId: EntityId): Promise<ShareContactSuggestion[]> => {
-    await uow.join();
     const rows = await uow
       .db()<ShareContactRow>('shareContact')
       .where({ userId })

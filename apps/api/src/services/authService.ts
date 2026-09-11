@@ -1,6 +1,7 @@
 import {
   assertNever,
   ContractError,
+  EntityId,
   fail,
   ok,
   OperationResult,
@@ -10,47 +11,35 @@ import type { Logger } from '@packages/infrastructure';
 import {
   ActivatePendingUserWriteService,
   EmailVerificationRepository,
-  EntityId,
   PendingUser,
+  RequestScopeLifeCycle,
   SystemEmailVerificationRepository,
-  UnitOfWork,
   UserRepository,
 } from '@packages/media-core';
-import { NotificationService } from '@packages/notifications';
 import bcrypt from 'bcryptjs';
-import { ScopeRoot } from 'ioc-manifest';
-import jwt from 'jsonwebtoken';
 import { createHash, randomUUID } from 'node:crypto';
-import type { Config } from '../config.js';
 
-export interface AuthService {
+export interface AuthService extends RequestScopeLifeCycle {
   verifyCodeAndSetPassword: (
     credentials: SignupInput,
-  ) => Promise<OperationResult<{ token: string }>>;
-  settle: (ok: boolean) => Promise<void>;
+  ) => Promise<OperationResult<{ userId: EntityId; template: 'welcome' | 'passwordChanged' }>>;
 }
 
 type AuthServiceDeps = {
   logger: Logger;
-  config: Config;
-  notificationService: NotificationService;
   userRepository: UserRepository;
   emailVerificationRepository: EmailVerificationRepository;
   systemEmailVerificationRepository: SystemEmailVerificationRepository;
   activatePendingUserWriteService: ActivatePendingUserWriteService;
-  uow: UnitOfWork;
 };
 
 export const build__AuthService = ({
   logger,
-  config,
-  notificationService,
   userRepository,
   emailVerificationRepository,
   systemEmailVerificationRepository,
   activatePendingUserWriteService,
-  uow,
-}: AuthServiceDeps): ScopeRoot<AuthService, Record<string, never>> => {
+}: AuthServiceDeps): AuthService => {
   const verifyCode = async (
     email: string,
     code: string,
@@ -81,53 +70,8 @@ export const build__AuthService = ({
     return ok({ id: verificationRow.id });
   };
 
-  const notifyUser = async (
-    id: EntityId,
-    creds: SignupInput,
-    template: 'welcome' | 'passwordChanged',
-  ): Promise<string> => {
-    const { email, firstName, lastName } = creds;
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: id,
-        email: email,
-      },
-      config.jwtSecret,
-      { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
-    );
-    const result = await notificationService.notify({
-      to: { email },
-      channels: ['email'],
-      template,
-      data: {
-        firstName,
-        lastName,
-        // /login, not the bare root: the root now serves the marketing page to
-        // anyone without a token cookie, so a new account opening this on a second
-        // device would land on a pitch instead of their app.
-        appUrl: `${config.clientUrl}/login`,
-        changedAt: new Date().toISOString(),
-      },
-    });
-
-    if (result.success) {
-      logger.info('User signed up successfully', {
-        userId: id,
-        email: email,
-      });
-    } else {
-      logger.error('Failed to send welcome email', {
-        userId: id,
-        email: email,
-        error: result.error.display,
-      });
-    }
-    return token;
-  };
-
   return {
-    // Failure paths return without finalizing — the controller's settle() rolls back.
+    // Failure paths return without finalizing — the controller's complete() rolls back.
     // The success path commits explicitly, because notifyUser must run post-commit.
     verifyCodeAndSetPassword: async (credentials: SignupInput) => {
       const { email, password, code, firstName, lastName, phone } = credentials;
@@ -176,14 +120,8 @@ export const build__AuthService = ({
       }
 
       await emailVerificationRepository.completeConsumption(verificationId);
-      await uow.complete(true);
 
-      // Post-commit, best-effort: emailing the user must not affect the committed
-      // write, and a failure here must not roll the transaction back (already committed).
-      const token = await notifyUser(user.id(), credentials, template);
-      return ok({ token });
+      return ok({ template, userId: user.id() });
     },
-
-    settle: uow.settle,
   };
 };

@@ -1,8 +1,7 @@
-import { Operation, OperationResult } from '@packages/contracts';
+import { EntityId, Operation, OperationResult } from '@packages/contracts';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
 import type { DBMediaItemRow } from '../../services/readServices/types';
-import { EntityId } from '../../types/types';
 import { ensureMemberCanEditAlbum } from './albumguard';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from './mediaItemGuard';
 

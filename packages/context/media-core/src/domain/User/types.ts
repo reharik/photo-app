@@ -1,6 +1,4 @@
-import { UserStatus } from '@packages/contracts';
-import { EntityId } from '../../types';
-import { AuditRecord } from '../Entity';
+import { AuditRecord, EntityId, UserStatus } from '@packages/contracts';
 
 export type UserProps = {
   email: string;

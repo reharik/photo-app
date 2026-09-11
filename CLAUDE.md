@@ -50,14 +50,14 @@ starts with `build__`. Discovery is an AST + type-checker pass
 (`discovery.factoryPrefix: 'build__'` in every `ioc.config.ts`):
 
 ```ts
-// apps/media-worker/src/repositories/domainRepositories/mediaDeletionJobRepository.ts
-export const build__MediaDeletionJobRepository = (
-  { database }: MediaDeletionJobRepositoryDeps,
-): MediaDeletionJobRepository => { ... }
+// packages/context/worker-core/src/repositories/mediaProcessingJob/mediaProcessingJobRepository.ts
+export const build__MediaProcessingJobRepository = (
+  { uow }: MediaProcessingJobRepositoryDeps,
+): MediaProcessingJobRepository => { ... }
 ```
 
-- **Impl name** = the suffix with first char lowercased: `build__MediaDeletionJobRepository`
-  → registration key `mediaDeletionJobRepository`.
+- **Impl name** = the suffix with first char lowercased: `build__MediaProcessingJobRepository`
+  → registration key `mediaProcessingJobRepository`.
 - **The explicit return-type annotation IS the contract.** It must be a named type
   that is imported/declared in that file, or discovery silently drops the factory
   (skip reasons: `CONTRACT_NOT_IMPORTED`, `CONTRACT_NOT_RESOLVED`, etc.). Don't

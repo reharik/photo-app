@@ -1,5 +1,5 @@
+import type { ActorId, EntityId } from '@packages/contracts';
 import { ContractError, fail, ok, OperationResult, UserStatus } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { CreateUserInput, UserRecord } from './types';
 
@@ -63,6 +63,15 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
+
+  firstName(): string {
+    return this.props.firstName;
+  }
+
+  lastName(): string {
+    return this.props.lastName;
+  }
+
   email(): string {
     return this.props.email;
   }

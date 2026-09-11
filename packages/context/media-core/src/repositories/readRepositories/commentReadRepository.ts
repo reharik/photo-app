@@ -1,6 +1,6 @@
-import { EntityType } from '@packages/contracts';
+import { EntityId, EntityType } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { EntityId, PageInfo } from '../../types/types';
+import type { PageInfo } from '../../types/types';
 import type { CommentReadRepository, DBCommentRow, ReadRepositoryDeps } from './types';
 
 const commentSelectColumns = [
@@ -30,7 +30,6 @@ export const build__CommentReadRepository = ({
     targetId: EntityId;
     collectionInfo: { pageInfo: PageInfo };
   }): Promise<DBCommentRow[]> => {
-    await uow.join();
     const { pageInfo } = collectionInfo;
     return withEnumRevival(
       uow
@@ -51,7 +50,6 @@ export const build__CommentReadRepository = ({
   }: {
     commentId: EntityId;
   }): Promise<DBCommentRow | undefined> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('comment')

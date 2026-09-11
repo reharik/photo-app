@@ -1,16 +1,18 @@
 import {
   AlbumMemberRole,
   AlbumSortBy,
+  AuditRecord,
   AuthorizationKind,
   AuthorizationOrigin,
   EmailDeliveryState,
   EmailStatus,
+  EntityId,
   EntityType,
   Operation,
   ReactionEmoji,
   UserStatus,
 } from '@packages/contracts';
-import { AuditRecord, UnitOfWork } from '../..';
+import { UnitOfWork } from '../..';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import {
   AlbumMemberCollectionInfo,
@@ -24,7 +26,7 @@ import {
   SharedWithMeAlbumCollectionInfo,
   UserRow,
 } from '../../services/readServices/types';
-import type { CollectionInfo, EntityId, PageInfo } from '../../types/types';
+import type { CollectionInfo, PageInfo } from '../../types/types';
 
 export type ReadRepositoryDeps = { uow: UnitOfWork };
 

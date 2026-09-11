@@ -38,3 +38,4 @@ packages/foundation/contracts/src/enums/graphqlSmartEnumsRegistry.ts
 /stdout.json
 **/test-results/**
 **/playwright-report/**
+CLAIMS.md

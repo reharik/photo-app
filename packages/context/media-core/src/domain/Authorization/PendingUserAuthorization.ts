@@ -1,15 +1,16 @@
 import {
+  ActorId,
   AppErrorCollection,
   AuthorizationKind,
   AuthorizationOrigin,
+  EntityId,
   fail,
   ok,
   Operation,
   OperationResult,
 } from '@packages/contracts';
 import crypto from 'crypto';
-import { ActorId, EntityId } from '../../types/types';
-import { Entity } from '../Entity';
+import { DomainEntity } from '../DomainEntity';
 import { AuthorizationProps, AuthorizationRecord, CreateAuthorizationInput } from './Authorization';
 import { PublicLinkAuthorization } from './PublicLinkAuthorization';
 import { UserAuthorization } from './UserAuthorization';
@@ -32,7 +33,7 @@ export type CreatePendingUserAuthorizationInput = CreateAuthorizationInput & {
   grantedToUser: EntityId;
 };
 
-export class PendingUserAuthorization extends Entity<PendingUserAuthorizationRecord> {
+export class PendingUserAuthorization extends DomainEntity<PendingUserAuthorizationRecord> {
   protected props: PendingUserAuthorizationProps;
 
   private constructor(actorId: ActorId, props: PendingUserAuthorizationProps, id?: EntityId) {

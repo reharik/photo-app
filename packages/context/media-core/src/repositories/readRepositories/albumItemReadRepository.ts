@@ -82,7 +82,6 @@ export const build__AlbumItemReadRepository = ({
     viewerId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<PagedList<AlbumItemWithMediaRow>> => {
-    await uow.join();
     const rows = (await withEnumRevival(
       uow
         .db()('albumItem')
@@ -111,7 +110,6 @@ export const build__AlbumItemReadRepository = ({
     publicLinkId: string;
     collectionInfo: CollectionInfo<AlbumItemSortBy>;
   }): Promise<PagedList<AlbumItemWithMediaRow>> => {
-    await uow.join();
     const query = uow
       .db()('albumItem')
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
@@ -137,7 +135,6 @@ export const build__AlbumItemReadRepository = ({
     albumId: string;
     albumItemIds: string[];
   }): Promise<AlbumItemWithMediaRow[]> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('albumItem')

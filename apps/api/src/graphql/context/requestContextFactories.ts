@@ -1,5 +1,6 @@
 // ── factories/requestContext.ts ── the scope roots ──────────
-import { EntityId, UnitOfWork } from '@packages/media-core';
+import { EntityId } from '@packages/contracts';
+import { UnitOfWork } from '@packages/media-core';
 import {
   AgnosticReadServices,
   PublicReadServices,
@@ -27,7 +28,8 @@ export const build__AuthenticatedReadGraphQLContext = ({
 }: AuthedDeps): ScopeRoot<AuthenticatedReadScopeServices, { viewerId: EntityId }> => ({
   readServices: readServices,
   agnosticReadServices: agnosticReadServices,
-  finalize: uow.settle,
+  finalize: uow.complete,
+  start: uow.start,
 });
 
 export const build__AuthenticatedWriteGraphQLContext = ({
@@ -42,7 +44,8 @@ export const build__AuthenticatedWriteGraphQLContext = ({
   flagFailure: () => {
     uow.flagRollbackOnly();
   },
-  finalize: uow.settle,
+  finalize: uow.complete,
+  start: uow.start,
 });
 
 type PublicDeps = {
@@ -58,5 +61,6 @@ export const build__PublicRequestContext = ({
 }: PublicDeps): ScopeRoot<PublicReadScopeServices, { publicLinkId: string }> => ({
   publicReadServices: publicReadServices,
   agnosticReadServices: agnosticReadServices,
-  finalize: uow.settle,
+  finalize: uow.complete,
+  start: uow.start,
 });

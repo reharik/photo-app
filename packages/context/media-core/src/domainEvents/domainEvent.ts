@@ -1,4 +1,4 @@
-import { EntityId } from '../types';
+import { EntityId } from '@packages/contracts';
 import {
   AlbumSharedWithPendingUser,
   AlbumSharedWithPublicLink,

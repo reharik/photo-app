@@ -6,19 +6,18 @@ import {
   type User,
 } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
-import { NotificationService } from '@packages/notifications';
+import { RequestScopeLifeCycle, UnitOfWork } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Knex } from 'knex';
 import { DateTime } from 'luxon';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import type { Config } from '../config.js';
 
 export type SanitizedUser = Omit<User, 'passwordHash'>;
 
-export interface AuthQueryService {
+export interface AuthQueryService extends RequestScopeLifeCycle {
   login: (credentials: LoginInput) => Promise<AuthResponse | undefined>;
-  verifyEmail: (email: string) => Promise<OperationResult<void>>;
+  verifyEmail: (email: string) => Promise<OperationResult<string>>;
   hashPassword: (password: string) => Promise<string>;
 }
 
@@ -35,23 +34,21 @@ const sanitizeUser = (user: UserRow): SanitizedUser => {
 };
 
 type AuthQueryServiceDeps = {
-  database: Knex;
+  uow: UnitOfWork;
   config: Config;
   logger: Logger;
-  notificationService: NotificationService;
 };
 
 export const build__AuthQueryService = ({
-  database,
+  uow,
   config,
   logger,
-  notificationService,
 }: AuthQueryServiceDeps): AuthQueryService => ({
   login: async (credentials: LoginInput) => {
     const { email, password } = credentials;
 
     // Find user by email
-    const user = await database<UserRow>('user').where({ email }).first();
+    const user = await uow.db()<UserRow>('user').where({ email }).first();
     if (!user || !user.passwordHash) {
       logger.warn('Login attempt failed: user not found or no password hash', {
         email,
@@ -72,7 +69,7 @@ export const build__AuthQueryService = ({
     }
 
     // Update last login
-    await database('user').where({ id: user.id }).update({ lastLoginAt: new Date().toISOString() });
+    await uow.db()('user').where({ id: user.id }).update({ lastLoginAt: new Date().toISOString() });
 
     // Generate JWT token
     const token = jwt.sign(
@@ -95,9 +92,10 @@ export const build__AuthQueryService = ({
   verifyEmail: async (email: string) => {
     // invalidate existing records
     const currentTime = DateTime.now();
-    await database('emailVerification')
+    await uow
+      .db()('emailVerification')
       .where({ email })
-      .andWhere('expiresAt', '>', database.fn.now())
+      .andWhere('expiresAt', '>', uow.db().fn.now())
       .update({ expiresAt: currentTime.minus({ minutes: 1 }).toISO() });
 
     // generate new code
@@ -105,23 +103,16 @@ export const build__AuthQueryService = ({
     const codeHash = createHash('sha256').update(code).digest('hex');
 
     //store new record
-    await database('emailVerification').insert({
-      id: randomUUID(),
-      email: email,
-      codeHash: codeHash,
-      expiresAt: currentTime.plus({ minutes: 10 }).toISO(),
-    });
+    await uow
+      .db()('emailVerification')
+      .insert({
+        id: randomUUID(),
+        email: email,
+        codeHash: codeHash,
+        expiresAt: currentTime.plus({ minutes: 10 }).toISO(),
+      });
 
-    void notificationService.notify({
-      to: { email },
-      channels: ['email'],
-      template: 'verificationCode',
-      data: {
-        code,
-      },
-    });
-
-    return ok(undefined);
+    return ok(code);
   },
 
   hashPassword: async (password: string) => {

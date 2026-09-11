@@ -1,6 +1,6 @@
+import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure/repositories/unitOfWork';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types/types';
 import { ShareContactRow } from '../readRepositories/types';
 
 export type ShareContactRepositoryDeps = {
@@ -20,7 +20,6 @@ export const build__ShareContactRepository = ({
     userId: EntityId,
     contactUserId?: EntityId,
   ): Promise<void> => {
-    await uow.join();
     await uow
       .db()<ShareContactRow>('shareContact')
       .insert({
@@ -33,7 +32,6 @@ export const build__ShareContactRepository = ({
       .merge(['handle', 'lastSharedAt']);
   },
   deleteContact: async (handle: string, viewerId: EntityId) => {
-    await uow.join();
     await uow.db()('shareContact').delete().where({ userId: viewerId, handle: handle });
   },
 });

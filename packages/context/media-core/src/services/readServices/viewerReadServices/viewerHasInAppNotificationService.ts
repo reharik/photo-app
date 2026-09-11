@@ -1,6 +1,6 @@
+import { EntityId } from '@packages/contracts';
 import { InAppNotification } from '../../../repositories';
 import { InAppNotificationRepository } from '../../../repositories/readRepositories/inAppNotificationRepository';
-import { EntityId } from '../../../types';
 import { ReadServiceBase } from '../readServiceBaseType';
 
 export interface ViewerHasInAppNotificationService extends ReadServiceBase {

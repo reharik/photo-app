@@ -1,4 +1,4 @@
-import { ok, OperationResult } from '@packages/contracts';
+import { EntityId, ok, OperationResult } from '@packages/contracts';
 import { deleteStoredAssetsForMediaItems } from '../../../application/media/deleteStoredAssetsForMediaItems';
 import type { MediaStorage } from '../../../application/media/MediaStorage';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
@@ -6,7 +6,6 @@ import { loadRequiredMediaItem } from '../../../application/support/resourceLoad
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { AlbumReadRepository } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { deleteViewerOwnedMediaItemsFromLibraryInTransaction } from './deleteMediaLibraryInTransaction';
 import { DeleteMediaItemCommand, DeleteMediaItemResult } from './writeMediaItem.types';

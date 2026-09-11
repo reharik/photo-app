@@ -1,5 +1,5 @@
+import { EntityId } from '@packages/contracts';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { MediaItemCollectionInfo, MediaItemProjection, PagedList } from '../types';
 import { EnrichMediaItems } from './enrichMediaItems';

@@ -1,18 +1,17 @@
-import { MediaAssetKind } from '@packages/contracts';
+import { EntityId, MediaAssetKind } from '@packages/contracts';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
-  EntityId,
   MediaProcessingJobRow,
   MediaStorage,
-} from '@packages/media-core';
+} from '@packages/worker-core';
 import { extractCaptureTime } from '../../../../infrastructure/exif/extractCaptureTime';
 import { generateImageDerivatives } from '../imageDerivativeGenerator';
 import { readStreamToBuffer } from '../readStreamToBuffer';
 
 import { Logger } from '@packages/infrastructure';
 import { Config } from '../../../../config';
-import { PipelineAsset, PipelineJobWorkflow } from './processNextMediaImageJob';
+import { PipelineJobWorkflow } from './types';
 
 export interface RunImageStoragePipeline {
   (job: MediaProcessingJobRow, ownerId: EntityId): Promise<PipelineJobWorkflow>;
@@ -59,7 +58,7 @@ export const build__RunImageStoragePipeline =
       mediaItemId: job.mediaItemId,
       displayBytes: derivatives.display.buffer.length,
       thumbnailBytes: derivatives.thumbnail.buffer.length,
-      hasReplacementOriginal: Boolean(derivatives.replacementOriginal),
+      hasReplacementOriginal: derivatives.originalWasReplaced,
     });
 
     const displayKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.display);
@@ -74,29 +73,20 @@ export const build__RunImageStoragePipeline =
         contentLength: body.length,
       });
     };
-    let originalAsset: PipelineAsset | undefined;
-    if (derivatives.replacementOriginal) {
+    if (derivatives.originalWasReplaced) {
       logger.info('S3 PutObject (original replacement)', {
         bucket: config.s3Bucket,
         key: originalKey,
         bodyType: 'Buffer',
-        contentType: derivatives.replacementOriginal.mimeType,
-        contentLength: derivatives.replacementOriginal.fileSizeBytes,
+        contentType: derivatives.original.mimeType,
+        contentLength: derivatives.original.fileSizeBytes,
       });
 
       await mediaStorage.writeObject({
         storageKey: originalKey,
-        body: derivatives.replacementOriginal.buffer,
-        mimeType: derivatives.replacementOriginal.mimeType,
+        body: derivatives.original.buffer,
+        mimeType: derivatives.original.mimeType,
       });
-
-      originalAsset = {
-        sizeBytes: derivatives.replacementOriginal.fileSizeBytes,
-        mimeType: derivatives.replacementOriginal.mimeType,
-        width: derivatives.replacementOriginal.width,
-        height: derivatives.replacementOriginal.height,
-        kind: MediaAssetKind.original,
-      };
     }
 
     logDerivativeUpload(displayKey, derivatives.display.buffer, derivatives.display.mimeType);
@@ -126,6 +116,14 @@ export const build__RunImageStoragePipeline =
       width: derivatives.thumbnail.width,
       height: derivatives.thumbnail.height,
       kind: MediaAssetKind.thumbnail,
+    };
+
+    const originalAsset = {
+      sizeBytes: derivatives.original.fileSizeBytes,
+      mimeType: derivatives.original.mimeType,
+      width: derivatives.original.width,
+      height: derivatives.original.height,
+      kind: MediaAssetKind.original,
     };
 
     return {

@@ -1,20 +1,12 @@
-import {
-  EntityType,
-  MediaAssetKind,
-  MediaAssetStatus,
-  MediaItemStatus,
-  MediaKind,
-  ReactionEmoji,
-} from '@packages/contracts';
+import type { EntityId } from '@packages/contracts';
+import { EntityType, MediaItemStatus, MediaKind, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
-import { MediaAssetRecord } from '../../domain/MediaItem/MediaAsset';
 import {
   MediaItem,
   MediaItemTagRecord,
   type MediaItemRecord,
 } from '../../domain/MediaItem/MediaItem';
-import type { EntityId } from '../../types/types';
 import { Persist } from './AggregateRepo';
 
 export interface MediaItemRepository extends RequestScopeLifeCycle {
@@ -42,7 +34,6 @@ export const build__MediaItemRepository = ({
   persist,
 }: MediaItemRepositoryDeps): MediaItemRepository => {
   const getById = async (id: EntityId): Promise<MediaItem | undefined> => {
-    await uow.join();
     const mediaItemRow = await withEnumRevival(
       uow.db()<MediaItemRecord>('mediaItem').where({ id }).first(),
       { kind: MediaKind, status: MediaItemStatus },
@@ -57,16 +48,6 @@ export const build__MediaItemRepository = ({
         .where({ targetId: id, targetType: EntityType.mediaItem })
         .orderBy('createdAt', 'asc'),
       { emoji: ReactionEmoji, targetType: EntityType },
-    );
-
-    // TODO this is a smell. These should be created by a service but not in the repository.
-    // stored on the AR because they are actually never used again.
-    const assetRows = await withEnumRevival(
-      uow
-        .db()<MediaAssetRecord>('mediaAsset')
-        .where({ mediaItemId: id })
-        .orderBy('createdAt', 'asc'),
-      { kind: MediaAssetKind, status: MediaAssetStatus },
     );
 
     const tagRows = await uow
@@ -86,7 +67,6 @@ export const build__MediaItemRepository = ({
       .orderBy('userTag.label', 'asc');
 
     const childRecords = {
-      assets: assetRows,
       tags: tagRows,
       reactions: reactionRows,
     };
@@ -95,7 +75,6 @@ export const build__MediaItemRepository = ({
   };
 
   const ensureUserTagId = async (userTag: UserTagRow): Promise<EntityId> => {
-    await uow.join();
     const [row] = await uow
       .db()('user_tag')
       .insert(userTag)
@@ -110,7 +89,6 @@ export const build__MediaItemRepository = ({
   };
 
   const deleteMediaItem = async (mediaItem: MediaItem): Promise<void> => {
-    await uow.join();
     return await uow.db()<MediaItemRecord>('mediaItem').where({ id: mediaItem.id() }).delete();
   };
 

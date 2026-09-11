@@ -1,3 +1,4 @@
+import type { EntityId } from '@packages/contracts';
 import {
   AlbumMemberRole,
   AuthorizationKind,
@@ -8,7 +9,6 @@ import {
 } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type {
   AuthorizationReadRepository,
@@ -56,7 +56,6 @@ export const build__AuthorizationReadRepository = ({
     mediaItemId: EntityId;
     ownerId: EntityId;
   }): Promise<AuthorizationRow[]> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('accessGrant')
@@ -77,7 +76,6 @@ export const build__AuthorizationReadRepository = ({
     albumId: EntityId;
     ownerId: EntityId;
   }): Promise<AuthorizationRow[]> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('accessGrant')
@@ -99,7 +97,6 @@ export const build__AuthorizationReadRepository = ({
     albumId: EntityId;
     viewerId: EntityId;
   }): Promise<EmailShareRow[]> => {
-    await uow.join();
     /**
      * Latest delivery per grant, one row each — a resend supersedes. DISTINCT ON
      * needs its keys first in the ORDER BY, hence the raw; raw bypasses knex's
@@ -185,7 +182,7 @@ export const build__AuthorizationReadRepository = ({
     if (mediaItemIds.length === 0) {
       return [];
     }
-    await uow.join();
+
     return withEnumRevival(
       uow
         .db()('grant as g')
@@ -207,7 +204,7 @@ export const build__AuthorizationReadRepository = ({
     if (mediaItemIds.length === 0) {
       return [];
     }
-    await uow.join();
+
     return withEnumRevival(
       uow
         .db()('grant as g')
@@ -229,7 +226,6 @@ export const build__AuthorizationReadRepository = ({
     albumId: EntityId;
     viewerId: EntityId;
   }): Promise<AuthorizationRow> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('accessGrant')

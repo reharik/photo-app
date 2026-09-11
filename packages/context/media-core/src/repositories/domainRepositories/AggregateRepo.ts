@@ -1,8 +1,8 @@
 // repository-helpers.ts
 
-import { AggregateRoot } from '../../domain';
-import type { Entity, VOCollection } from '../../domain/Entity';
-import { serializeValue } from '../../domain/utilities/serializeAggregates';
+import type { VOCollection } from '@packages/contracts';
+import { serializeValue } from '@packages/contracts';
+import { AggregateRoot, DomainEntity } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
@@ -13,7 +13,7 @@ export interface Persist extends RequestScopeLifeCycle {
 type PersistDeps = { uow: UnitOfWork };
 
 export const build__Persist = ({ uow }: PersistDeps): Persist => {
-  const persistRoot = async <T extends Entity<Record<string, unknown>>>(
+  const persistRoot = async <T extends DomainEntity<Record<string, unknown>>>(
     tableName: string,
     entity: T,
   ): Promise<void> => {
@@ -25,7 +25,7 @@ export const build__Persist = ({ uow }: PersistDeps): Persist => {
     }
   };
 
-  const removeRecursive = async <T extends Entity<Record<string, unknown>>>(
+  const removeRecursive = async <T extends DomainEntity<Record<string, unknown>>>(
     entity: T,
   ): Promise<void> => {
     const children = entity.childEntities();
@@ -51,7 +51,7 @@ export const build__Persist = ({ uow }: PersistDeps): Persist => {
     }
   };
 
-  const persistRecursion = async <T extends Entity<Record<string, unknown>>>(
+  const persistRecursion = async <T extends DomainEntity<Record<string, unknown>>>(
     entity: T,
   ): Promise<void> => {
     await persistRoot(entity.tableName(), entity);
@@ -72,7 +72,6 @@ export const build__Persist = ({ uow }: PersistDeps): Persist => {
   };
 
   return async (aggregate) => {
-    await uow.join();
     await persistRecursion(aggregate);
     uow.collectEvents(aggregate.flushEvents());
   };

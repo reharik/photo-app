@@ -1,4 +1,4 @@
-import { AppErrorCollection, fail, ok, OperationResult } from '@packages/contracts';
+import { AppErrorCollection, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { dedupeIds } from '@packages/infrastructure';
 import { tryAppendOneMediaToAlbum } from '../../../application/support/appendOneMediaToAlbum';
 import {
@@ -8,7 +8,6 @@ import {
 import { Album } from '../../../domain/Album/Album';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemReadRepository } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddMediaItemsToAlbumCommand, AddMediaItemsToAlbumResult } from './writeAlbum.types';
 

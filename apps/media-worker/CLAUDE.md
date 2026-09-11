@@ -45,9 +45,15 @@ implementations, forcing an arbitrary `default`). A distinct interface per task 
 one contract, one implementation, **no `default` registration needed** — which is
 why, unlike the old setup, `ioc.config.ts` marks no default on any task.
 
-Current tasks: `MediaDeletionTask` (queue, 100), `MediaImageTask` (queue, 200),
-`StalledMediaJobSweepTask` (schedule, slow), `NotificationBatchTask` (schedule,
-slow), `FastSweepNotificationTask` (schedule, fast).
+Current tasks: `MediaImageTask` (queue, 200), `StalledMediaJobSweepTask`
+(schedule, slow), `NotificationBatchTask` (schedule, slow),
+`FastSweepNotificationTask` (schedule, fast).
+
+There was also a `MediaDeletionTask` (queue, 100). It and its whole queue —
+processor, `MediaDeletionJobRepository`, tests — were removed; nothing enqueues or
+claims deletion jobs any more. The `media_deletion_job` table is still in the
+schema from migration `0001`. Image is therefore the only queue task left, so the
+`order` numbering is latent rather than load-bearing.
 
 > `WorkerJobProcessorBase` still exists as a nominal brand on the per-job
 > processors, but the worker's `lifetimeMarkers` block is commented out — so it is
@@ -135,11 +141,12 @@ loses that race must come back, not go terminal.
 
 ## Queue claim / retry policy (`createJobQueueRepository`)
 
-The job repos and their queue mechanics live in **`@packages/media-core`**
-(`repositories/mediaProcessingJob/`, `repositories/mediaDeletionJob/`, and the shared
-`repositories/createJobQueueRepository.ts` — renamed from `queueClaimable.ts`). The
-worker composes the media-core manifest; the API reuses the same
-`build__MediaProcessingJobRepository` for enqueue. No worker-local or API-local copy.
+The job repo and its queue mechanics live in **`@packages/worker-core`**
+(`repositories/mediaProcessingJob/` and the shared
+`repositories/createJobQueueRepository.ts` — renamed from `queueClaimable.ts`).
+`mediaProcessingJob` is the only queue table left; the deletion queue was removed.
+The API has its own `build__MediaProcessingJobRepository` in media-core for
+enqueue. No worker-local copy.
 
 - **Job status is its own enum.** `MediaJobStatus` — separate from `MediaItemStatus`,
   which is the _item's_ lifecycle. Revived on the claim read via `withEnumRevival`.

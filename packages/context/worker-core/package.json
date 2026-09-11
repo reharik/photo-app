@@ -1,0 +1,53 @@
+{
+  "name": "@packages/worker-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./iocManifest": {
+      "development": "./src/generated/ioc-manifest.ts",
+      "types": "./dist/src/generated/ioc-manifest.d.ts",
+      "default": "./dist/src/generated/ioc-manifest.js"
+    },
+    "./iocTypes": {
+      "development": "./src/generated/ioc-registry.types.ts",
+      "types": "./dist/src/generated/ioc-registry.types.d.ts",
+      "default": "./dist/src/generated/ioc-registry.types.js"
+    }
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "scripts": {
+    "barrels": "nx barrels worker-core",
+    "build": "nx build worker-core",
+    "dev": "nx dev worker-core",
+    "gen:ioc": "nx gen-ioc worker-core",
+    "ioc": "ioc",
+    "lint": "nx lint worker-core",
+    "test": "nx test worker-core"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1028.0",
+    "@aws-sdk/s3-request-presigner": "^3.1028.0",
+    "@packages/contracts": "*",
+    "@packages/infrastructure": "*",
+    "@reharik/smart-enum": "^0.9.0",
+    "@reharik/smart-enum-knex": "^0.1.0",
+    "knex": "^3.1.0"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.4.1",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.2.1",
+    "ioc-manifest": "4.1.0",
+    "jest": "30.4.1",
+    "ts-jest": "^29.4.1",
+    "typescript": "^5.9.2"
+  }
+}

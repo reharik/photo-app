@@ -5,7 +5,7 @@ import {
   SystemAlbumRepository,
   SystemAuthorizationRepository,
   UserContact,
-} from '@packages/media-core';
+} from '@packages/worker-core';
 import { Config } from '../../../../config';
 import { FastSweepNotificationStrategy, PayloadResult } from './types';
 

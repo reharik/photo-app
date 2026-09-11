@@ -6,7 +6,6 @@ export const build__PublicAccessReadRepository = ({
   uow,
 }: ReadRepositoryDeps): PublicAccessReadRepository => ({
   getPublicAccessById: async (publicAccessId: string) => {
-    await uow.join();
     const publicAccess = await uow
       .db()('accessGrant')
       .where('accessGrant.id', publicAccessId)

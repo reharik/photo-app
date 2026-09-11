@@ -1,7 +1,7 @@
+import type { EntityId } from '@packages/contracts';
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { DBPublicMediaItemRow } from '../../services/readServices/types';
-import type { EntityId } from '../../types/types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import type { PublicMediaItemReadRepository, ReadRepositoryDeps } from './types';
 
@@ -29,7 +29,6 @@ export const build__PublicMediaItemReadRepository = ({
     mediaItemId: EntityId;
     publicLinkId: EntityId;
   }): Promise<DBPublicMediaItemRow | undefined> => {
-    await uow.join();
     const mediaItem = await withEnumRevival(
       uow
         .db()('mediaItem')

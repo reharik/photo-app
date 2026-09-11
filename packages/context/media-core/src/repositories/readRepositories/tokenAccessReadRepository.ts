@@ -1,6 +1,5 @@
-import { AuthorizationKind } from '@packages/contracts';
+import { AuthorizationKind, EntityId } from '@packages/contracts';
 import { Knex } from 'knex';
-import { EntityId } from '../../types';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
 export type TokenAccessIdRow = {

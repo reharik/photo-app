@@ -1,11 +1,10 @@
-import { EmailDeliveryState, EmailStatus, UserStatus } from '@packages/contracts';
+import { EmailDeliveryState, EmailStatus, EntityId, UserStatus } from '@packages/contracts';
 import {
   AuthorizationReadRepository,
   EmailShare,
   EmailShareDelivery,
   EmailShareRow,
 } from '../../../repositories/readRepositories/types';
-import { EntityId } from '../../../types/types';
 import { ReadServiceBase } from '../readServiceBaseType';
 import { AuthorizationProjection } from '../types';
 

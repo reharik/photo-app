@@ -1,10 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import {
-  AppErrorCollection,
-  MediaAssetKind,
-  MediaItemStatus,
-  MediaKind,
-} from '@packages/contracts';
+import { AppErrorCollection, MediaItemStatus, MediaKind } from '@packages/contracts';
 import {
   ALBUM_ITEM_ORDER_GAP,
   ALBUM_ITEM_ORDER_INITIAL,
@@ -12,33 +7,6 @@ import {
   MediaItem,
 } from '@packages/media-core';
 import { TEST_OWNER_1_ID, TEST_USER_A_ID } from './testViewerIds';
-
-/**
- * The derivative pipeline hands the aggregate one `PipelineResult` now, rather
- * than two loose display dimensions: display + thumbnail asset metadata and the
- * EXIF capture time all arrive together. `originalAsset` is left out here — it
- * is only present when the pipeline replaced the original (HEIC), and supplying
- * it would require the item to already carry an original asset in PROCESSING.
- */
-const pipelineResult = ({
-  display = { width: 1, height: 1 },
-}: { display?: { width: number; height: number } } = {}) => ({
-  capture: {},
-  displayAsset: {
-    kind: MediaAssetKind.display,
-    mimeType: 'image/jpeg',
-    sizeBytes: 2048,
-    width: display.width,
-    height: display.height,
-  },
-  thumbnailAsset: {
-    kind: MediaAssetKind.thumbnail,
-    mimeType: 'image/jpeg',
-    sizeBytes: 512,
-    width: 200,
-    height: 200,
-  },
-});
 
 describe('MediaItem (domain)', () => {
   describe('When created', () => {
@@ -81,68 +49,11 @@ describe('MediaItem (domain)', () => {
     });
   });
 
-  describe('When applyProcessingResults is called from processing with display dimensions', () => {
-    it('should transition to ready and set width and height from the display derivative', () => {
-      const ownerId = TEST_USER_A_ID;
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      item.completeUploadedWithMetadata(
-        { sizeBytes: 5000, mimeType: 'image/jpeg' },
-        MediaKind.photo,
-        ownerId,
-      );
-      const result = item.applyProcessingResults(
-        pipelineResult({ display: { width: 1200, height: 800 } }),
-        ownerId,
-      );
-      expect(result.success).toBe(true);
-      expect(item.status()).toBe(MediaItemStatus.ready);
-      expect(item.width()).toBe(1200);
-      expect(item.height()).toBe(800);
-    });
-  });
-
-  describe('When applyProcessingResults is called but the item is not awaiting derivatives', () => {
-    it('should fail with media item not processing', () => {
-      const ownerId = TEST_USER_A_ID;
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      const result = item.applyProcessingResults(pipelineResult(), ownerId);
-      expect(result).toEqual({
-        success: false,
-        error: expect.objectContaining({
-          code: AppErrorCollection.mediaItem.MediaItemNotProcessing.code,
-        }),
-      });
-    });
-  });
-
-  describe('When applyProcessingResults is called again after the item is already ready', () => {
-    it('should fail with media item not processing', () => {
-      const ownerId = TEST_USER_A_ID;
-      const item = MediaItem.create({ kind: MediaKind.photo, mimeType: 'image/jpeg' }, ownerId);
-      item.completeUploadedWithMetadata(
-        { sizeBytes: 1, mimeType: 'image/jpeg' },
-        MediaKind.photo,
-        ownerId,
-      );
-      const first = item.applyProcessingResults(
-        pipelineResult({ display: { width: 10, height: 10 } }),
-        ownerId,
-      );
-      expect(first.success).toBe(true);
-      const second = item.applyProcessingResults(
-        pipelineResult({ display: { width: 20, height: 20 } }),
-        ownerId,
-      );
-      // The status guard runs first, so a second apply is rejected for the
-      // status — not for the display/thumbnail assets the first one added.
-      expect(second).toEqual({
-        success: false,
-        error: expect.objectContaining({
-          code: AppErrorCollection.mediaItem.MediaItemNotProcessing.code,
-        }),
-      });
-    });
-  });
+  // `applyProcessingResults` is no longer media-core's — it moved to
+  // `@packages/worker-core` along with media asset ownership. Its three cases
+  // (ready transition, not-processing rejection, replay rejection) now live in
+  // `packages/context/worker-core/src/tests/mediaItem.domain.tests.ts`, run
+  // against the aggregate that actually implements them.
 });
 
 describe('Album (domain)', () => {

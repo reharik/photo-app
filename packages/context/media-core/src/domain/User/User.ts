@@ -4,8 +4,8 @@
  * References other aggregates by ID only; does not own collections of albums, media, comments, or notifications.
  */
 
+import type { ActorId, EntityId } from '@packages/contracts';
 import { UserStatus } from '@packages/contracts';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
 import { UserProps, UserRecord } from './types';
 
