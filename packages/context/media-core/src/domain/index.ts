@@ -14,6 +14,7 @@ export * from './Authorization/PublicLinkAuthorization';
 export * from './Authorization/UserAuthorization';
 export * from './Authorization/grantAuthorizationValidation';
 export * from './Comment/Comment';
+export * from './MediaItem/MediaAsset';
 export * from './MediaItem/MediaItem';
 export * from './Notification/Notification';
 export * from './User/PendingUser';

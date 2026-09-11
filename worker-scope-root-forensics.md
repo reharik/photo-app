@@ -99,12 +99,12 @@ four are on `main`'s first-parent lineage (reachable from `main`, `landing_page`
 `email_delivery_tracking`, `ses_and_sqs_consumer`, `ubiquitous_uow`, and the current
 `worker_core_split_out`).
 
-| Scope root | Introduced | Last good | Removed | Deliberate? |
-|---|---|---|---|---|
-| `mediaJobContext` (`MediaJobContext`) | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
+| Scope root                                            | Introduced           | Last good            | Removed              | Deliberate?        |
+| ----------------------------------------------------- | -------------------- | -------------------- | -------------------- | ------------------ |
+| `mediaJobContext` (`MediaJobContext`)                 | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
 | `mediaDeletionJobContext` (`MediaDeletionJobContext`) | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
-| `emailDeliveryContext` (`EmailDeliveryContext`) | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
-| `inJobScope` helper | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
+| `emailDeliveryContext` (`EmailDeliveryContext`)       | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
+| `inJobScope` helper                                   | `6a9c25e` 2026-08-21 | `d3ade10` 2026-08-28 | `282b92b` 2026-08-31 | **Yes — explicit** |
 
 ### The commit messages, verbatim
 
@@ -128,7 +128,7 @@ Removal — `282b92b`, 2026-08-31 15:05:45 -0500 (parent `d3ade10`):
 
 > `work apply boundaries to worker process and then e2e`
 
-All four messages are **one-line, with empty bodies**. So the *subject lines alone* are
+All four messages are **one-line, with empty bodies**. So the _subject lines alone_ are
 thin — "work apply boundaries to worker process" gestures at it but does not name the scope
 roots. **The deliberateness evidence is not the commit message; it is the 271-line
 `apps/media-worker/CLAUDE.md` rewrite in the same commit**, which is prose written by the
@@ -157,7 +157,7 @@ Nothing was orphaned. This is not an incidental wholesale delete.
 ### Nothing hiding elsewhere
 
 - `git branch -a` — 20 local, 30 remote. The four commits above are contained in the
-  branches listed at the top of this section; no branch contains a *later* version of the
+  branches listed at the top of this section; no branch contains a _later_ version of the
   scope roots. No `scope`-named or `worker-boundary`-named branch exists.
 - `git reflog` (60 entries, back to 2026-08-18) — two commits were `reset --hard`-ed away
   on 2026-08-21 (`1e64587` "scope-roots: carry per-unit dependencyKeys in the manifest…"
@@ -550,39 +550,39 @@ export const build__EmailDeliveryContext = ({
 **Consumer at `d3ade10` — `notificationBatcher.ts`. The bracket and its use, verbatim:**
 
 ```ts
-  /**
-   * One transactional phase: open the delivery scope, start its uow, run the
-   * work, and settle the transaction exactly once — commit on return, roll back
-   * on throw — before disposing the scope. Deliberately local to this batcher
-   * (not a shared util): the two queue runners keep their own copies.
-   */
-  const inDeliveryScope = async <T>(fn: (op: EmailDeliveryContext) => Promise<T>): Promise<T> => {
-    const { emailDeliveryContext, dispose } = openEmailDeliveryContextScope();
-    await emailDeliveryContext.start();
-    try {
-      const result = await fn(emailDeliveryContext);
-      await emailDeliveryContext.finalize(true);
-      return result;
-    } catch (e) {
-      await emailDeliveryContext.finalize(false);
-      throw e;
-    } finally {
-      await dispose();
-    }
-  };
+/**
+ * One transactional phase: open the delivery scope, start its uow, run the
+ * work, and settle the transaction exactly once — commit on return, roll back
+ * on throw — before disposing the scope. Deliberately local to this batcher
+ * (not a shared util): the two queue runners keep their own copies.
+ */
+const inDeliveryScope = async <T>(fn: (op: EmailDeliveryContext) => Promise<T>): Promise<T> => {
+  const { emailDeliveryContext, dispose } = openEmailDeliveryContextScope();
+  await emailDeliveryContext.start();
+  try {
+    const result = await fn(emailDeliveryContext);
+    await emailDeliveryContext.finalize(true);
+    return result;
+  } catch (e) {
+    await emailDeliveryContext.finalize(false);
+    throw e;
+  } finally {
+    await dispose();
+  }
+};
 ```
 
 and its single call site:
 
 ```ts
-        try {
-          await inDeliveryScope((op) => op.emailDeliveryRepository.save(newEmailDelivery));
-        } catch (e) {
-          logger.error(
-            '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',
-            { sesMessageId: r.value, error: e },
-          );
-        }
+try {
+  await inDeliveryScope((op) => op.emailDeliveryRepository.save(newEmailDelivery));
+} catch (e) {
+  logger.error(
+    '[notificationBatcher] delivery record insert failed — telemetry gap, not resending',
+    { sesMessageId: r.value, error: e },
+  );
+}
 ```
 
 Its deps type — note the opener sitting where the commented-out ghost sits today:
@@ -630,19 +630,19 @@ At the previous commit `6a9c25e` the same file has **no `uow` reference at all**
 
 So the timeline is:
 
-| | commit | date | what |
-|---|---|---|---|
-| 1 | `6a9c25e` | 2026-08-21 | scope roots **introduced** |
-| 2 | `082e042` | 2026-08-26 | "fucked up mediaProcessing mess" (touches the same identifiers) |
-| 3 | `d3ade10` | 2026-08-28 | `settle`/`beginIsolatedOnly` verbs added to `UnitOfWork`; loop gains `settle(false)` per task. **Scope roots still present.** They coexist for exactly this one commit. |
-| 4 | `282b92b` | 2026-08-31 | scope roots **removed**; every consumer rewritten to `uow.join()`/`uow.complete()`; `withUnitOfWork.ts` deleted |
+|     | commit    | date       | what                                                                                                                                                                    |
+| --- | --------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `6a9c25e` | 2026-08-21 | scope roots **introduced**                                                                                                                                              |
+| 2   | `082e042` | 2026-08-26 | "fucked up mediaProcessing mess" (touches the same identifiers)                                                                                                         |
+| 3   | `d3ade10` | 2026-08-28 | `settle`/`beginIsolatedOnly` verbs added to `UnitOfWork`; loop gains `settle(false)` per task. **Scope roots still present.** They coexist for exactly this one commit. |
+| 4   | `282b92b` | 2026-08-31 | scope roots **removed**; every consumer rewritten to `uow.join()`/`uow.complete()`; `withUnitOfWork.ts` deleted                                                         |
 
 **Designed replacement, not drift.** The new lifecycle verbs were built first, then the
 scope roots were cut over to them in one sweep. `282b92b` also refines the same
 `unitOfWork.ts` it inherited from `d3ade10` (adds `reset()`, `publishPostCommit()`,
 `openedAt` stack capture on `join()`, and turns the "settle resolving an open transaction"
 log from `debug` to `warn` with the capture site attached — i.e. it deliberately made the
-safety net *noisy* so a leaked boundary would be visible).
+safety net _noisy_ so a leaked boundary would be visible).
 
 ### The prose evidence, from `282b92b`'s `apps/media-worker/CLAUDE.md`
 
@@ -706,35 +706,35 @@ recorded at the time.**
 
 ### Verb totals
 
-| verb | count |
-|---|---|
-| `uow.join(` | 98 |
-| `uow.complete(` | 27 |
-| `uow.settle(` | 14 |
-| `uow.beginIsolatedOnly(` | 1 |
+| verb                     | count |
+| ------------------------ | ----- |
+| `uow.join(`              | 98    |
+| `uow.complete(`          | 27    |
+| `uow.settle(`            | 14    |
+| `uow.beginIsolatedOnly(` | 1     |
 
 ### By category
 
-| category | count | notes |
-|---|---|---|
-| **Repository (leaf)** | **90** | `packages/context/{media-core,worker-core}/src/repositories/**` — 67 media-core, 23 worker-core |
-| **Service / job processor** | **45** | `apps/media-worker/src/tasks/**` |
-| **Scope root / context** | **0** in the worker | 3 in `apps/api` (`finalize: uow.settle`, see below) |
-| **Loop / infrastructure** | **4** | `runMediaWorkerLoop.ts` — the four `uow.settle(false)` |
-| **API service** | **1** | `apps/api/src/services/authService.ts:176 uow.complete(true)` |
+| category                    | count               | notes                                                                                           |
+| --------------------------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| **Repository (leaf)**       | **90**              | `packages/context/{media-core,worker-core}/src/repositories/**` — 67 media-core, 23 worker-core |
+| **Service / job processor** | **45**              | `apps/media-worker/src/tasks/**`                                                                |
+| **Scope root / context**    | **0** in the worker | 3 in `apps/api` (`finalize: uow.settle`, see below)                                             |
+| **Loop / infrastructure**   | **4**               | `runMediaWorkerLoop.ts` — the four `uow.settle(false)`                                          |
+| **API service**             | **1**               | `apps/api/src/services/authService.ts:176 uow.complete(true)`                                   |
 
-### Verb breakdown *within* the repository layer — this is the answer to the question
+### Verb breakdown _within_ the repository layer — this is the answer to the question
 
-| verb | count in repositories |
-|---|---|
-| `uow.join(` | **86** |
-| `uow.complete(` | 2 |
-| `uow.settle(` | 1 |
-| `uow.beginIsolatedOnly(` | 1 |
+| verb                     | count in repositories |
+| ------------------------ | --------------------- |
+| `uow.join(`              | **86**                |
+| `uow.complete(`          | 2                     |
+| `uow.settle(`            | 1                     |
+| `uow.beginIsolatedOnly(` | 1                     |
 
 **Yes — repositories call `uow.join()` themselves, 86 times, at the leaf.** The transaction
 opens lazily wherever the first repository method happens to run. `join()` is
-open-or-attach, so the *first* leaf to touch the DB creates the transaction and no unit
+open-or-attach, so the _first_ leaf to touch the DB creates the transaction and no unit
 above it knows it did.
 
 The four non-`join` repository calls are all in one file — `createJobQueueRepository.ts` —
@@ -742,7 +742,7 @@ and are the deliberate exception: the queue claim owns and ends its own isolated
 
 **The ending is owned separately, in the task/service layer** (24 `complete`, 9 `settle`,
 12 `join` across `apps/media-worker/src/tasks/**`). So it is not "no single unit owns the
-ending" — it is a **split**: the *opening* is uncontrolled (any leaf), the *closing* is
+ending" — it is a **split**: the _opening_ is uncontrolled (any leaf), the _closing_ is
 explicit in the task, and the loop's `settle(false)` is the backstop for whatever the task
 forgot. A task that reads through a repository but never calls `complete`/`settle` leaves
 an open transaction that the loop then rolls back one task later.
@@ -752,10 +752,10 @@ an open transaction that the loop then rolls back one task later.
 **Repository — leaf opens the transaction. `packages/context/worker-core/src/repositories/domainRepositories/AggregateRepo.ts:74-77`:**
 
 ```ts
-  return async (aggregate) => {
-    await uow.join();
-    await persistRecursion(aggregate);
-  };
+return async (aggregate) => {
+  await uow.join();
+  await persistRecursion(aggregate);
+};
 ```
 
 No `complete`, no `settle`, no ownership of the ending. This is the shape of 86 of the 90
@@ -1001,7 +1001,7 @@ The prompt says "The repo owner does not remember removing them." History says o
 emphatically: same commit deleted the files, rewrote all consumers, deleted
 `withUnitOfWork.ts`, and replaced the CLAUDE.md "Scope roots" section with a "Transactions —
 the loop is the safety net" section explaining the new model and its constraints. The commit
-*message* is silent (one line, no body) — so the memory gap is understandable — but the
+_message_ is silent (one line, no body) — so the memory gap is understandable — but the
 change is not.
 
 ### 8.3 The `ScopeRoot` type argument in the prompt does not match what the worker used
@@ -1037,7 +1037,7 @@ Each carried a comment saying the duplication was intentional ("Deliberately loc
 runner (not a shared util): the image runner keeps its own copy over its own root"). So
 "the `inJobScope` pattern" was never one thing.
 
-### 8.5 The `settle(false)` net is *not* what replaced the scope roots — it predates them being removed
+### 8.5 The `settle(false)` net is _not_ what replaced the scope roots — it predates them being removed
 
 The prompt asks whether the replacement lands "before, in, or after" removal, implying it
 might be independent drift. It lands **before**, by one commit, in `d3ade10` — while the

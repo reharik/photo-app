@@ -23,7 +23,7 @@ apps/media-worker/src/container.ts:13:    strict: false,
 packages/context/worker-core/src/ioc.config.ts:24:  // hand-registered onto each child scope (beginUnitOfWorkScope's asValue), which is
 ```
 
-The only two hits are (a) the strict-mode flag and (b) a *comment* in worker-core's
+The only two hits are (a) the strict-mode flag and (b) a _comment_ in worker-core's
 `ioc.config.ts` referring to a `beginUnitOfWorkScope` that does not exist in this package.
 Nothing is marked `isLeakSafe`.
 
@@ -108,7 +108,7 @@ export const build__RunMediaWorkerLoop = ({
 **Answers to the three sub-questions:**
 
 - **Scope per iteration?** No. `start()` closes over the four deps captured at construction
-  and loops forever. `intervalGate.getTasksDue()` returns the *same task instances* every
+  and loops forever. `intervalGate.getTasksDue()` returns the _same task instances_ every
   pass — `intervalGate` itself (`apps/media-worker/src/intervalGate.ts:34`) does
   `const allTasks: readonly WorkerTask[] = workerTasks;` once at construction and only
   re-filters/re-sorts that fixed array. There is no cradle access anywhere in the loop.
@@ -131,7 +131,9 @@ export const build__RunMediaWorkerLoop = ({
       logger.error(`[mediaWorker-run_once] task "${task.name}" threw`, e);
       throw e;
     }
-    if (outcome === 'processed') { return true; }
+    if (outcome === 'processed') {
+      return true;
+    }
   }
   ```
 
@@ -161,7 +163,7 @@ export const build__RunMediaWorkerLoop = ({
 
 ### Why it runs today: `strict: false`
 
-The 34 codegen errors are the *build-time mirror* of a runtime check that
+The 34 codegen errors are the _build-time mirror_ of a runtime check that
 `container.ts:13` explicitly turns off. From `node_modules/awilix/lib/awilix.module.mjs:1629-1673`:
 
 ```js
@@ -182,7 +184,7 @@ case Lifetime.SCOPED:
 ```
 
 With `strict: false`, `throwIfLifetimeLeakage` short-circuits, and `SCOPED` resolves
-against `container` — which here *is* the root — and caches on the root's cache. So every
+against `container` — which here _is_ the root — and caches on the root's cache. So every
 `scoped` worker-core unit (`uow` and all nine repos) is, at runtime today, a **process-wide
 singleton cached on the root container**. Flipping `strict: true` would make all 34 edges
 throw at first resolution.
@@ -203,27 +205,27 @@ $ grep -o "lifetimeSource: '[a-zA-Z]*'" apps/media-worker/src/generated/ioc-mani
      31 lifetimeSource: 'default'
 ```
 
-**Grouping by *how* they got their lifetime — there are only two buckets, and both reduce
+**Grouping by _how_ they got their lifetime — there are only two buckets, and both reduce
 to the same cause:**
 
-| # | Consumer | Declared lifetime | Where declared | Inherited from a base? | Is `singleton` correct for it? |
-|---|---|---|---|---|---|
-| 1 | `runMediaWorkerLoop` | singleton | nowhere — codegen default | no (plain `type RunMediaWorkerLoop`) | **Yes.** One loop per process is the point. |
-| 2 | `logMediaWorkerStartup` | singleton | nowhere — codegen default | no (plain `interface LogMediaWorkerStartup`) | **Yes.** Runs exactly once, before the loop. |
-| 3 | `applyEmailDeliveryEvents` | singleton | nowhere — codegen default | **yes — `extends WorkerJobProcessorBase`**, but the marker is unmapped, so it falls through to default | Debatable — see note below |
-| 4 | `claimJobRow` | singleton | nowhere — codegen default | no | Debatable |
-| 5 | `completeJobRow` | singleton | nowhere — codegen default | no | Debatable |
-| 6 | `recordJobFailure` | singleton | nowhere — codegen default | no | Debatable |
-| 7 | `processNextMediaDeletionJob` | singleton | nowhere — codegen default | **yes — `extends WorkerJobProcessorBase`**, unmapped → default | Debatable |
-| 8 | `runNextMediaDeletionJob` | singleton | nowhere — codegen default | no (plain `type` alias) | Debatable |
-| 9 | `stalledMediaJobSweep` | singleton | nowhere — codegen default | no (plain `type` alias) | Debatable |
-| 10 | `notificationBatcher` | singleton | nowhere — codegen default | no (plain `type` alias) | Debatable |
-| 11 | `fastSweepNotification` | singleton | nowhere — codegen default | no (plain `type` alias) | Debatable |
-| 12 | `albumActivity` | singleton | nowhere — codegen default | yes — `extends BatchedEmailPayload`, but that is a **group** base with no lifetime mapping | Debatable |
-| 13 | `commentActivity` | singleton | nowhere — codegen default | same (group base only) | Debatable |
-| 14 | `reactionActivity` | singleton | nowhere — codegen default | same (group base only) | Debatable |
-| 15 | `albumSharedStrategy` | singleton | nowhere — codegen default | returns `FastSweepNotificationStrategy<'memberAlbumShared'>` — group base, no lifetime mapping | Debatable |
-| 16 | `albumSharedWithNonUserStrategy` | singleton | nowhere — codegen default | returns `FastSweepNotificationStrategy<'guestAlbumShared'>` — same | Debatable |
+| #   | Consumer                         | Declared lifetime | Where declared            | Inherited from a base?                                                                                 | Is `singleton` correct for it?               |
+| --- | -------------------------------- | ----------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| 1   | `runMediaWorkerLoop`             | singleton         | nowhere — codegen default | no (plain `type RunMediaWorkerLoop`)                                                                   | **Yes.** One loop per process is the point.  |
+| 2   | `logMediaWorkerStartup`          | singleton         | nowhere — codegen default | no (plain `interface LogMediaWorkerStartup`)                                                           | **Yes.** Runs exactly once, before the loop. |
+| 3   | `applyEmailDeliveryEvents`       | singleton         | nowhere — codegen default | **yes — `extends WorkerJobProcessorBase`**, but the marker is unmapped, so it falls through to default | Debatable — see note below                   |
+| 4   | `claimJobRow`                    | singleton         | nowhere — codegen default | no                                                                                                     | Debatable                                    |
+| 5   | `completeJobRow`                 | singleton         | nowhere — codegen default | no                                                                                                     | Debatable                                    |
+| 6   | `recordJobFailure`               | singleton         | nowhere — codegen default | no                                                                                                     | Debatable                                    |
+| 7   | `processNextMediaDeletionJob`    | singleton         | nowhere — codegen default | **yes — `extends WorkerJobProcessorBase`**, unmapped → default                                         | Debatable                                    |
+| 8   | `runNextMediaDeletionJob`        | singleton         | nowhere — codegen default | no (plain `type` alias)                                                                                | Debatable                                    |
+| 9   | `stalledMediaJobSweep`           | singleton         | nowhere — codegen default | no (plain `type` alias)                                                                                | Debatable                                    |
+| 10  | `notificationBatcher`            | singleton         | nowhere — codegen default | no (plain `type` alias)                                                                                | Debatable                                    |
+| 11  | `fastSweepNotification`          | singleton         | nowhere — codegen default | no (plain `type` alias)                                                                                | Debatable                                    |
+| 12  | `albumActivity`                  | singleton         | nowhere — codegen default | yes — `extends BatchedEmailPayload`, but that is a **group** base with no lifetime mapping             | Debatable                                    |
+| 13  | `commentActivity`                | singleton         | nowhere — codegen default | same (group base only)                                                                                 | Debatable                                    |
+| 14  | `reactionActivity`               | singleton         | nowhere — codegen default | same (group base only)                                                                                 | Debatable                                    |
+| 15  | `albumSharedStrategy`            | singleton         | nowhere — codegen default | returns `FastSweepNotificationStrategy<'memberAlbumShared'>` — group base, no lifetime mapping         | Debatable                                    |
+| 16  | `albumSharedWithNonUserStrategy` | singleton         | nowhere — codegen default | returns `FastSweepNotificationStrategy<'guestAlbumShared'>` — same                                     | Debatable                                    |
 
 ### The important negative result for Q2
 
@@ -245,17 +247,17 @@ export default defineIocConfig({
 ```
 
 There is no `lifetimeMarkers` key. Two of the sixteen (`applyEmailDeliveryEvents`,
-`processNextMediaDeletionJob`) *do* extend `WorkerJobProcessorBase`, the marker the root
+`processNextMediaDeletionJob`) _do_ extend `WorkerJobProcessorBase`, the marker the root
 `CLAUDE.md` documents as `→ scoped` — but the mapping that would give it meaning was
 commented out and then deleted (see Q7). A marker with no mapping is inert.
 
 So there is no single base to fix. **The 16 are singletons because the worker app declares
-no scoped anything.** Correspondingly, the *entire* asymmetry lives on the other side of
+no scoped anything.** Correspondingly, the _entire_ asymmetry lives on the other side of
 the boundary: worker-core declares nine repos + `uow` scoped, and the app that consumes
 them declares nothing scoped and never opens a scope.
 
 **Note on "is `singleton` correct":** for #1 and #2 it plainly is. For #3–#16 the honest
-answer is *the question is malformed under the current design* — these units hold no
+answer is _the question is malformed under the current design_ — these units hold no
 per-job state, and the shared `uow` between them is exactly what makes tasks like
 `runNextMediaDeletionJob` → `processNextMediaDeletionJob` (below) work. Making them scoped
 without introducing a scope-opener would change nothing at runtime and would only move the
@@ -267,21 +269,21 @@ inversion up one level to whoever resolves them.
 
 Source: `packages/context/worker-core/src/generated/ioc-manifest.ts`.
 
-| Unit | Lifetime | `lifetimeSource` | Declared where | Deliberate, or carried over? |
-|---|---|---|---|---|
-| `uow` (contract `UnitOfWork`) | scoped | `lifetime-marker` | `interface UnitOfWork extends RequestScopeLifeCycle` in `infrastructure/repositories/unitOfWork.ts:5` + `RequestScopeLifeCycle: 'scoped'` in worker-core `ioc.config.ts:36` | **Carried over** (heritage byte-identical to pre-split media-core) |
-| `emailDeliveryRepository` | scoped | `lifetime-marker` | `interface EmailDeliveryRepository extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `mediaProcessingJobRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `mediaItemRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `mediaDeletionJobRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemMediaItemRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemUserRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemCommentRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemAlbumRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemAsyncNotificationRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `systemAuthorizationRepository` | scoped | `lifetime-marker` | `extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `persist` (contract `Persist`) | scoped | `lifetime-marker` | `interface Persist extends RequestScopeLifeCycle` | Carried over, unmodified |
-| `mediaStorage` | **singleton** | `default` | nowhere | n/a — the one non-scoped unit in worker-core |
+| Unit                                | Lifetime      | `lifetimeSource`  | Declared where                                                                                                                                                              | Deliberate, or carried over?                                       |
+| ----------------------------------- | ------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `uow` (contract `UnitOfWork`)       | scoped        | `lifetime-marker` | `interface UnitOfWork extends RequestScopeLifeCycle` in `infrastructure/repositories/unitOfWork.ts:5` + `RequestScopeLifeCycle: 'scoped'` in worker-core `ioc.config.ts:36` | **Carried over** (heritage byte-identical to pre-split media-core) |
+| `emailDeliveryRepository`           | scoped        | `lifetime-marker` | `interface EmailDeliveryRepository extends RequestScopeLifeCycle`                                                                                                           | Carried over, unmodified                                           |
+| `mediaProcessingJobRepository`      | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `mediaItemRepository`               | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `mediaDeletionJobRepository`        | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemMediaItemRepository`         | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemUserRepository`              | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemCommentRepository`           | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemAlbumRepository`             | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemAsyncNotificationRepository` | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `systemAuthorizationRepository`     | scoped        | `lifetime-marker` | `extends RequestScopeLifeCycle`                                                                                                                                             | Carried over, unmodified                                           |
+| `persist` (contract `Persist`)      | scoped        | `lifetime-marker` | `interface Persist extends RequestScopeLifeCycle`                                                                                                                           | Carried over, unmodified                                           |
+| `mediaStorage`                      | **singleton** | `default`         | nowhere                                                                                                                                                                     | n/a — the one non-scoped unit in worker-core                       |
 
 The `uow` key name (not its lifetime) is the only thing worker-core's `ioc.config.ts`
 touches:
@@ -303,7 +305,7 @@ lifetimeMarkers: {
 
 The generated `ioc-manifest.ts` files are **not tracked in git** (`git ls-tree -r --name-only
 e311e2a | grep generated/ioc` → empty; so does `git ls-files`), so the manifests cannot be
-diffed historically. Instead I diffed the *source* of the lifetime declaration — the
+diffed historically. Instead I diffed the _source_ of the lifetime declaration — the
 `extends` clause — between the pre-split media-core files at `e311e2a` and the worker-core
 copies at `HEAD`:
 
@@ -346,7 +348,7 @@ uow                                  scoped   lifetime-marker
 ```
 
 **Aside worth flagging:** the root `CLAUDE.md` repository-taxonomy table says System repos
-are *"singleton, raw `database`, no UoW"*. That is not what the code does — in both
+are _"singleton, raw `database`, no UoW"_. That is not what the code does — in both
 media-core and worker-core every `System*Repository` is **scoped and takes `uow`**, e.g.
 `packages/context/worker-core/src/repositories/systemRepositories/systemAlbumRepository.ts`:
 
@@ -366,7 +368,7 @@ will reach the wrong conclusion.
 
 ## 4. UnitOfWork findings (Q4)
 
-The intended design — `db()`, `join()`, `settle()`, **no event queue** — is *partly* what
+The intended design — `db()`, `join()`, `settle()`, **no event queue** — is _partly_ what
 exists. The event queue is genuinely gone. Everything else is a verbatim copy of
 media-core's, including a method whose only documented caller is the GraphQL write boundary
 that does not exist in the worker.
@@ -430,7 +432,7 @@ export interface UnitOfWork extends RequestScopeLifeCycle {
   production code in `apps/media-worker` or `packages/context/worker-core` calls it — the only
   hits are test stubs and worker-core's own `unitOfWork.tests.ts`. It, and its
   `shouldRollback` branch, are dead in the worker context. The docstring is also now
-  actively misleading: in the worker the uow is emphatically *not* per-request; it is
+  actively misleading: in the worker the uow is emphatically _not_ per-request; it is
   per-process.
 
 ---
@@ -456,7 +458,7 @@ So it is **two** groups, not one:
   `fastSweepNotificationStrategies/types.ts:19`) → `albumSharedStrategy`,
   `albumSharedWithNonUserStrategy`
 
-### Both consumers hold member *instances*, injected once at construction
+### Both consumers hold member _instances_, injected once at construction
 
 **`notificationBatcher`** (`apps/media-worker/src/tasks/schedule/batchNotification/notificationBatcher.ts:19-72`):
 
@@ -522,7 +524,7 @@ export const build__AlbumActivity = ({ systemAlbumRepository }: AlbumActivityDep
     const titleMap = indexBy(await systemAlbumRepository.getAlbumTitlesById(albumIds));
 ```
 
-and `getAlbumTitlesById` opens or joins a transaction *on the uow*:
+and `getAlbumTitlesById` opens or joins a transaction _on the uow_:
 
 ```ts
 getAlbumTitlesById: async (albumIds: EntityId[]) => {
@@ -577,7 +579,7 @@ It is a fail-fast startup gate: `app.ts` awaits `logMediaWorkerStartup()` before
 loop spin against a dead database. There is a matching S3 `HeadBucketCommand` check right
 after it.
 
-**It could not simply be dropped.** It could reasonably be *narrowed* — a raw
+**It could not simply be dropped.** It could reasonably be _narrowed_ — a raw
 `database.raw('select 1')` on the singleton Knex needs no transaction and no `uow` at all,
 which would remove one of the 34 edges with zero behavioural change. But as written the
 dependency is used, not decorative.
@@ -616,7 +618,7 @@ that file:
 -    // RequestScopeLifeCycle: 'scoped',
 -    // WorkerJobProcessorBase: 'scoped',
 -  },
- 
+
    registrations: {
      Knex: {
        $contract: { accessKey: 'database' },
@@ -651,30 +653,30 @@ scoped `@packages/worker-core` repos now. **The 4.1.0 upgrade is what made them 
 exactly as the prompt's framing suspected — the split just changed which package name
 appears in the error text.
 
-*Caveat I cannot close:* I could not directly verify the 4.1.0 `externalKeys` /
+_Caveat I cannot close:_ I could not directly verify the 4.1.0 `externalKeys` /
 composed-group-member gap, because the generated manifests are untracked and I did not run
 `ioc inspect` (read-only, but out of scope here) or install a 4.0.x to compare. The
 `node_modules/ioc-manifest/README.md` has no mention of "inversion", "externalKeys", or
 "composed group". **What would settle it:** `npm view ioc-manifest@4.1.0` release notes, or
 running `npx ioc validate` under a temporarily pinned 4.0.x in a scratch checkout. The
-source-level evidence above is nonetheless conclusive that the *edges* pre-date the split,
+source-level evidence above is nonetheless conclusive that the _edges_ pre-date the split,
 independent of which release started reporting them.
 
 ---
 
 ## 8. Things that contradict the framing above
 
-> *"The premise of this investigation is that the worker resolves at root and needs a scope
-> per job."*
+> _"The premise of this investigation is that the worker resolves at root and needs a scope
+> per job."_
 
 The first half is confirmed. **The second half is where I would push back.**
 
 **(1) The worker has an explicit, coherent alternative to a per-job scope, and it is
 already wired.** One process-lifetime `uow`, forcibly drained by
-`await uow.settle(false)` after *every* task in both `runWorkerTasksOnce` and `runAllTasks`,
+`await uow.settle(false)` after _every_ task in both `runWorkerTasksOnce` and `runAllTasks`,
 with `beginIsolatedOnly()` throwing if anything left a boundary open. That is a
 substitute for scope disposal, and the `settle` call sites read as deliberate design, not
-accident. `runMediaWorkerLoop`'s `uow` dep — one of the 34 edges — exists *solely* to
+accident. `runMediaWorkerLoop`'s `uow` dep — one of the 34 edges — exists _solely_ to
 implement that cleanup. A per-job scope would make that dependency disappear, and would
 also make the `settle` calls redundant. This is a genuine architectural fork, not a bug
 fix, and "add a scope per job" silently deletes the current mechanism.
@@ -682,15 +684,15 @@ fix, and "add a scope per job" silently deletes the current mechanism.
 **(2) The 34 edges are not the freeze bug the root `CLAUDE.md` describes.** That doc warns
 that "a singleton that depends on a scoped dep freezes it — captures the first-resolved
 instance and reuses it across all scopes forever." Here **there are no other scopes**. The
-frozen instance is the *only* instance, by construction, and the loop resets it between
-tasks. The dangerous version of the freeze bug — instance leaking *across* scopes — cannot
+frozen instance is the _only_ instance, by construction, and the loop resets it between
+tasks. The dangerous version of the freeze bug — instance leaking _across_ scopes — cannot
 occur in a process that never creates a second scope. What codegen is reporting is a
 well-formedness violation, not (yet) a live defect.
 
 **(3) The fix cannot be made at one base class.** Q2's hypothesis (an accidental
 lifecycle marker on a shared base, à la `AgnosticReadServiceBase`) does not hold: **all 16
 consumers are `lifetimeSource: 'default'`, inheriting nothing.** Conversely, all twelve
-scoped worker-core units *do* share one marker (`RequestScopeLifeCycle`), so if there is a
+scoped worker-core units _do_ share one marker (`RequestScopeLifeCycle`), so if there is a
 single-point fix, it is on the **worker-core** side, not the app side — and it points the
 opposite direction from the prompt's framing: rather than making the worker scoped, one
 could make worker-core's repos singleton (they hold no per-request state; the worker has no
@@ -698,7 +700,7 @@ viewer, no request, no per-scope injected values — `IOC_SCOPE_PROVIDED_KEYS` i
 worker-core's manifest is literally `[]`, versus media-core's `['publicLinkId', 'viewerId']`).
 
 **(4) There is a hidden coupling that either fix must handle.** Five group members plus
-`processNextMediaDeletionJob` depend on repos but *not* on `uow`, and rely on their caller's
+`processNextMediaDeletionJob` depend on repos but _not_ on `uow`, and rely on their caller's
 `uow.join()` having opened a transaction on the shared instance (Section 5). Any change
 that gives them a different `uow` than their caller — which is precisely what a naive
 per-job scope with these units still resolved at root would do — splits them onto a separate
@@ -712,6 +714,7 @@ codegen pass?".
 
 **(6) Two documentation/dead-code corrections found along the way**, neither of which
 changes the fix but both of which will mislead the next reader:
+
 - root `CLAUDE.md`'s repository-taxonomy table says System repos are singletons on raw
   `database` with no UoW. In both contexts they are scoped and take `uow`.
 - `worker-core`'s `ioc.config.ts:24` comment refers to `beginUnitOfWorkScope`'s `asValue`
@@ -724,14 +727,14 @@ changes the fix but both of which will mislead the next reader:
 
 ## Appendix — verified paths
 
-| Thing | Actual path |
-|---|---|
-| Worker loop | `apps/media-worker/src/runMediaWorkerLoop.ts` |
-| Composition root | `apps/media-worker/src/main.ts` + `apps/media-worker/src/container.ts` (there is **no** `bootstrap.ts`; `src/index.ts` is empty) |
-| Worker IoC policy | `apps/media-worker/src/ioc.config.ts` |
-| Worker manifest (untracked, generated) | `apps/media-worker/src/generated/ioc-manifest.ts`, `ioc-composed.ts` |
-| `logMediaWorkerStartup` | `apps/media-worker/src/tasks/queue/mediaWorkers/logMediaWorkerStartup.ts` |
-| `runNextMediaDeletionJob` + `processNextMediaDeletionJob` | both in `apps/media-worker/src/tasks/queue/mediaWorkers/processNextMediaDeletionJob.ts` |
-| worker-core UoW | `packages/context/worker-core/src/infrastructure/repositories/unitOfWork.ts` |
-| worker-core IoC policy | `packages/context/worker-core/src/ioc.config.ts` |
-| Queue claim mechanics | `packages/context/worker-core/src/repositories/createJobQueueRepository.ts` (the root `CLAUDE.md` calls this `queueClaimable.ts`; that filename does not exist — the `QueueClaimable` *type* is exported from this file) |
+| Thing                                                     | Actual path                                                                                                                                                                                                              |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Worker loop                                               | `apps/media-worker/src/runMediaWorkerLoop.ts`                                                                                                                                                                            |
+| Composition root                                          | `apps/media-worker/src/main.ts` + `apps/media-worker/src/container.ts` (there is **no** `bootstrap.ts`; `src/index.ts` is empty)                                                                                         |
+| Worker IoC policy                                         | `apps/media-worker/src/ioc.config.ts`                                                                                                                                                                                    |
+| Worker manifest (untracked, generated)                    | `apps/media-worker/src/generated/ioc-manifest.ts`, `ioc-composed.ts`                                                                                                                                                     |
+| `logMediaWorkerStartup`                                   | `apps/media-worker/src/tasks/queue/mediaWorkers/logMediaWorkerStartup.ts`                                                                                                                                                |
+| `runNextMediaDeletionJob` + `processNextMediaDeletionJob` | both in `apps/media-worker/src/tasks/queue/mediaWorkers/processNextMediaDeletionJob.ts`                                                                                                                                  |
+| worker-core UoW                                           | `packages/context/worker-core/src/infrastructure/repositories/unitOfWork.ts`                                                                                                                                             |
+| worker-core IoC policy                                    | `packages/context/worker-core/src/ioc.config.ts`                                                                                                                                                                         |
+| Queue claim mechanics                                     | `packages/context/worker-core/src/repositories/createJobQueueRepository.ts` (the root `CLAUDE.md` calls this `queueClaimable.ts`; that filename does not exist — the `QueueClaimable` _type_ is exported from this file) |

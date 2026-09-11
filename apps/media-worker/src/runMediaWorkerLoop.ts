@@ -18,8 +18,9 @@ export type RunMediaWorkerLoop = {
  * Run one pass over the priority-ordered task list: run the first DUE task,
  * stopping at the first 'processed' (restart-from-top semantics). Returns true
  * iff a task did work. Tasks that are not due, or that ran but returned 'idle',
- * both fall through without counting as work. A thrown run() propagates to the
- * caller's try/catch and skips the remaining tasks this pass.
+ * both fall through without counting as work. A thrown run() is logged here and
+ * then propagates to the caller's try/catch, skipping the remaining tasks this
+ * pass.
  */
 export const runWorkerTasksOnce = async (
   tasks: ReadonlyArray<WorkerTask>,
@@ -30,6 +31,27 @@ export const runWorkerTasksOnce = async (
     let outcome: WorkerTaskOutcome;
     try {
       outcome = await task.run();
+    } catch (e) {
+      logger.error(`[mediaWorker-run_once] task "${task.name}" threw`, e);
+      // Log HERE, rethrow, and let the caller swallow it — the one place that
+      // reports this is the one place that still holds the task name and the
+      // error together.
+      //
+      // Why this rethrows and runAllTasks below does not: the two segments have
+      // opposite iteration contracts. Queue tasks are priority-ordered with
+      // restart-from-top preemption, so the walk is meant to stop early — this
+      // rethrow is just the abort arm of the same `return`-on-'processed' rule,
+      // and it hands the caller a "queue segment is over" signal that leaves
+      // didWork false so the sweeps still run. Sweeps are peers on independent
+      // interval gates with no ordering between them, so runAllTasks logs and
+      // keeps walking: one failing sweep must not skip the others, and there is
+      // no early exit for a throw to be the abort arm OF.
+      //
+      // Rethrowing is also what keeps the caller's catch honest. Swallow it here
+      // instead and that catch becomes dead code, while its comment goes on
+      // claiming a rethrow that never happens — which is exactly how this
+      // function came to log nothing at all for a while.
+      throw e;
     } finally {
       if (uow.isOpen()) {
         logger.error(`[mediaWorker-run_once] task "${task.name}" left a transaction open`);

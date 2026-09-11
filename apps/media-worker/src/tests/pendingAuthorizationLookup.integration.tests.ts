@@ -53,19 +53,18 @@ describe('getPendingUserAuthorizationById (integration)', () => {
   });
 
   /**
-   * The repository `join()`s the scoped uow and never settles it — every unit
-   * here drives its own boundary. A test that resolves it straight off the
-   * container has to settle, or the open transaction blocks resetDb's TRUNCATE
-   * forever.
+   * The repository reads through `uow.db()`, which throws outside a boundary, so
+   * a test that resolves it straight off the container has to supply one — the
+   * same way the task that owns this lookup in production does. `inTransaction`
+   * closes it on both paths, which matters here beyond tidiness: an open
+   * transaction would block resetDb's TRUNCATE in `afterEach` forever.
    */
   const lookup = async (id: string) => {
     const systemAuthorizationRepository = container.resolve('systemAuthorizationRepository');
     const uow = container.resolve('uow');
-    try {
-      return await systemAuthorizationRepository.getPendingUserAuthorizationById(id);
-    } finally {
-      await uow.settle(false);
-    }
+    return uow.inTransaction(() =>
+      systemAuthorizationRepository.getPendingUserAuthorizationById(id),
+    );
   };
 
   /** A guest the sharer invited: a PENDING user row, as the share flow mints it. */

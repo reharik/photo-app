@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import type { ActorId, EntityId } from '@packages/contracts';
 import {
   AppErrorCollection,
   ContractError,
@@ -7,9 +8,8 @@ import {
   MediaItemStatus,
   MediaKind,
 } from '@packages/contracts';
-import type { ActorId, EntityId } from '@packages/contracts';
-import { MediaItem } from '../domain/MediaItem/MediaItem';
 import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
+import { MediaItem } from '../domain/MediaItem/MediaItem';
 
 const OWNER_ID: ActorId = '11111111-1111-4111-8111-111111111111';
 const MEDIA_ITEM_ID: EntityId = '33333333-3333-4333-8333-333333333333';
@@ -204,7 +204,11 @@ describe('MediaItem.applyProcessingResults (worker-core)', () => {
       item.applyProcessingResults(pipelineResult(), OWNER_ID);
 
       const assets = persistedAssetsByKind(item);
-      for (const kind of [MediaAssetKind.original, MediaAssetKind.display, MediaAssetKind.thumbnail]) {
+      for (const kind of [
+        MediaAssetKind.original,
+        MediaAssetKind.display,
+        MediaAssetKind.thumbnail,
+      ]) {
         expect(assets[kind.value].status).toBe(MediaAssetStatus.ready.value);
       }
     });

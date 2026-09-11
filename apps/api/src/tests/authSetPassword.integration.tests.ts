@@ -1,34 +1,44 @@
 /**
- * RAI-76: This file previously tested the DELETED password-reset API
- * (authService.forgotPassword / resetPassword against a `password_reset` table).
- * That flow no longer exists — it was replaced by the unified
- * `verifyCodeAndSetPassword` write path. The dead tests were removed and this
- * file repurposed in place (the `rm`/`mv` shell ops are blocked in this
- * environment, so the file could not be renamed — see REVIEW.md). It now holds
- * the real integration coverage for `AuthService.verifyCodeAndSetPassword`,
- * exercised through the same scope-root opener the controller uses.
+ * Integration coverage for the set-password write path, against the real Postgres.
  *
- * Oracle (E1–E6):
- *  E1 no verification row      → reject; nothing persisted
- *  E2 attemptCount >= 3        → lockout reject; nothing persisted; counter NOT bumped
- *  E3 bad code                 → reject; attemptCount increment PERSISTS across rollback
- *  E4 pending activate() fails → reject; uow rolled back (not consumed, still pending)
- *  E6 success                  → user saved AND verification consumed ATOMICALLY;
- *                                notify fires AFTER commit
+ * History: this file once tested the DELETED password-reset API
+ * (authService.forgotPassword / resetPassword against a `password_reset` table),
+ * then the `verifyCodeAndSetPassword` service in isolation via the
+ * `openAuthServiceScope` opener. Both are gone. The transaction boundary and the
+ * post-commit notify moved UP into `AuthController`, and the AuthService scope
+ * root was replaced by the single `ApiRequestContext` scope that every REST
+ * request opens. So the subject here is now the controller handler, resolved out
+ * of that scope exactly the way `apiRequestContextMiddleware` + `invoke()` do it
+ * in production. (Renamed from authPasswordReset.integration.tests.ts.)
+ *
+ * Driving the controller rather than the service is deliberate: the two
+ * properties this suite exists to pin — that a failure rolls the whole write
+ * back, and that the email goes out only AFTER the commit — are no longer
+ * properties of the service at all. The service reports failure as data; the
+ * controller is what turns that into `flagRollbackOnly`, and it is what calls
+ * notify once `inTransaction` has returned. Testing the service alone could no
+ * longer observe either one.
+ *
+ * Oracle (E1–E6), unchanged in substance:
+ *  E1 no verification row      → 400; nothing persisted
+ *  E2 attemptCount >= 3        → 400 lockout; nothing persisted; counter NOT bumped
+ *  E3 bad code                 → 400; attemptCount increment PERSISTS across rollback
+ *  E4 pending activate() fails → 400; write rolled back (not consumed, still pending)
+ *  E6 success                  → 200; user saved AND verification consumed ATOMICALLY;
+ *                                notify fires AFTER commit; session cookie is minted
  */
-import { ContractError, ok } from '@packages/contracts';
+import { ContractError, ok, type SignupInput } from '@packages/contracts';
 import type { NotificationService } from '@packages/notifications';
 import type { AwilixContainer } from 'awilix';
 import { asValue } from 'awilix';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
+import type { Context } from 'koa';
 import { DateTime } from 'luxon';
-import assert from 'node:assert';
 import { createHash, randomUUID } from 'node:crypto';
 
-import type { SignupInput } from '@packages/contracts';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
-import type { AuthService } from '../services/authService.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
@@ -54,7 +64,14 @@ type NotifyObservation = {
   committedVerificationConsumed: boolean;
 };
 
-describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
+/** What the handler wrote back onto the Koa context. */
+type HandlerOutcome = {
+  status: number;
+  body: { error?: unknown; message?: string; email?: string };
+  cookies: [string, string][];
+};
+
+describe('setPassword write path (integration)', () => {
   let container: AwilixContainer<AppCradle>;
   let database: Knex;
   let observations: NotifyObservation[];
@@ -75,8 +92,10 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
     database = container.resolve('database');
 
     // Spy notification service: records the COMMITTED db state at the moment notify
-    // is invoked. Because verifyCodeAndSetPassword only calls notify AFTER commit, a
-    // committed user row / consumed verification visible here proves ordering.
+    // is invoked. Because the controller only calls notify AFTER `inTransaction`
+    // returns, a committed user row / consumed verification visible here proves
+    // ordering. It reads through the raw pooled `database`, NOT the request's
+    // transaction, so it genuinely cannot see uncommitted work.
     const spy: NotificationService = {
       notify: async (payload) => {
         const email = typeof payload.to === 'string' ? payload.to : (payload.to.email ?? '');
@@ -154,25 +173,42 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   };
 
   /**
-   * Mirror the controller exactly: open the AuthService scope root through its
-   * generated opener, run the write, then settle and dispose in a finally.
-   * `authService` is scope-rooted — it has no root-cradle key, so the OPENER is what
-   * comes off the container. There is nothing to start (the uow joins lazily on the
-   * first repository call), and the service only settles ONE way — complete(true) on
-   * success, because notifyUser must run post-commit. Every failure and throw path
-   * returns with the transaction still open, so the bracket's settle(false) is what
-   * actually rolls it back — and it is inert after a commit.
+   * Mirror production exactly: open the API request scope through its generated
+   * opener, pull the controller off the scope root, run the handler, dispose in a
+   * finally. This is what `apiRequestContextMiddleware` does around every REST
+   * request and what `invoke('authController', 'setPassword')` does inside it.
+   *
+   * Nothing here starts or completes a transaction — the handler owns its own
+   * boundary via `uow.inTransaction`, and reaching in to open one would break the
+   * very thing under test (the real uow refuses to nest).
    */
-  const runVerify = async (
-    creds: SignupInput,
-  ): Promise<Awaited<ReturnType<AuthService['verifyCodeAndSetPassword']>>> => {
-    const { authService, dispose } = container.resolve('openAuthServiceScope')();
+  const runSetPassword = async (creds: SignupInput): Promise<HandlerOutcome> => {
+    const cookies: [string, string][] = [];
+    const ctx = {
+      request: { body: creds },
+      status: 0,
+      body: undefined,
+      ip: '127.0.0.1',
+      app: { env: 'test' },
+      state: {},
+      cookies: {
+        set: (name: string, value: string) => {
+          cookies.push([name, value]);
+        },
+      },
+    } as unknown as Context;
+
+    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
     try {
-      return await authService.verifyCodeAndSetPassword(creds);
+      await apiRequestContext.authController.setPassword(ctx);
     } finally {
-      await authService.settle(false);
       await dispose();
     }
+    return {
+      status: ctx.status,
+      body: ctx.body as HandlerOutcome['body'],
+      cookies,
+    };
   };
 
   const baseCreds = (email: string, overrides: Partial<SignupInput> = {}): SignupInput => ({
@@ -197,17 +233,21 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   const statusValue = (raw: unknown): string =>
     typeof raw === 'string' ? raw : (raw as { value: string }).value;
 
+  /** The handler reports domain failures as `ctx.body.error`, a ContractError member. */
+  const errorOf = (outcome: HandlerOutcome) => outcome.body.error as ContractError;
+
   describe('E1 — no verification row', () => {
     it('rejects with InvalidEmailVerificationCode and persists nothing', async () => {
       const email = 'rai76-missing@example.test';
 
-      const result = await runVerify(baseCreds(email));
+      const outcome = await runSetPassword(baseCreds(email));
 
-      expect(result.success).toBe(false);
-      assert(!result.success);
-      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
+      expect(outcome.status).toBe(400);
+      expect(errorOf(outcome).equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
       expect(await getUser(email)).toBeUndefined();
       expect(observations).toHaveLength(0);
+      // No session is handed out on a failure.
+      expect(outcome.cookies).toHaveLength(0);
     });
   });
 
@@ -216,11 +256,10 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       const email = 'rai76-locked@example.test';
       await seedVerification(email, { attemptCount: 3 });
 
-      const result = await runVerify(baseCreds(email));
+      const outcome = await runSetPassword(baseCreds(email));
 
-      expect(result.success).toBe(false);
-      assert(!result.success);
-      expect(result.error.equals(ContractError.TooManyAttempts)).toBe(true);
+      expect(outcome.status).toBe(400);
+      expect(errorOf(outcome).equals(ContractError.TooManyAttempts)).toBe(true);
       const verification = await getVerification(email);
       // Lockout returns BEFORE the bad-code bump, so the counter is untouched...
       expect(verification?.attemptCount).toBe(3);
@@ -232,16 +271,16 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   });
 
   describe('E3 — bad code', () => {
-    it('rejects and the attemptCount increment PERSISTS across the uow rollback', async () => {
+    it('rejects and the attemptCount increment PERSISTS across the rollback', async () => {
       const email = 'rai76-badcode@example.test';
       await seedVerification(email, { code: VALID_CODE, attemptCount: 0 });
 
-      const result = await runVerify(baseCreds(email, { code: '000000' }));
+      const outcome = await runSetPassword(baseCreds(email, { code: '000000' }));
 
-      expect(result.success).toBe(false);
-      assert(!result.success);
-      expect(result.error.equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
-      // The bump is an autocommit gateway OUTSIDE the uow — it must survive the rollback.
+      expect(outcome.status).toBe(400);
+      expect(errorOf(outcome).equals(ContractError.InvalidEmailVerificationCode)).toBe(true);
+      // The bump is an autocommit gateway OUTSIDE the transaction — it must survive
+      // the rollback the controller flags, or the >= 3 lockout can never trigger.
       const verification = await getVerification(email);
       expect(verification?.attemptCount).toBe(1);
       expect(verification?.consumedAt).toBeUndefined();
@@ -256,12 +295,14 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       await seedUser(email, { status: 'PENDING', passwordHash: null });
       await seedVerification(email);
 
-      // Invalid phone (too short) makes PendingUser.activate() return ErrorActivatingUser.
-      const result = await runVerify(baseCreds(email, { phone: '123' }));
+      // Invalid phone (too short) makes PendingUser.activate() return InvalidPhoneNumber.
+      const outcome = await runSetPassword(baseCreds(email, { phone: '123' }));
 
-      expect(result.success).toBe(false);
-      assert(!result.success);
-      expect(result.error.equals(ContractError.InvalidPhoneNumber)).toBe(true);
+      expect(outcome.status).toBe(400);
+      expect(errorOf(outcome).equals(ContractError.InvalidPhoneNumber)).toBe(true);
+      // This is the fail-as-data rollback: the service RETURNED (it did not throw),
+      // so only the controller's flagRollbackOnly stands between this failure and a
+      // committed half-activated user.
       const verification = await getVerification(email);
       expect(verification?.consumedAt).toBeUndefined();
       const user = await getUser(email);
@@ -273,24 +314,21 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   });
 
   describe('E6 — success (new user)', () => {
-    // RAI-76: the earlier new-user-not-persisted bug is fixed. The new-user branch
-    // (authService.ts) now creates a PendingUser via PendingUser.create (no id → isNew
+    // The new-user branch creates a PendingUser via PendingUser.create (no id → isNew
     // true, so the row persists) AND calls activate(), flipping userStatus → ACTIVE and
     // setting the password. These tests assert that end state: the new user is saved
-    // ACTIVE + password-usable, the verification is consumed atomically, and notify fires
-    // AFTER commit.
+    // ACTIVE + password-usable, the verification is consumed atomically, and notify
+    // fires AFTER commit.
     it('atomically creates the active user and consumes the verification, notifying AFTER commit', async () => {
       const email = 'rai76-new@example.test';
       await seedVerification(email);
 
-      const result = await runVerify(baseCreds(email));
+      const outcome = await runSetPassword(baseCreds(email));
 
-      expect(result.success).toBe(true);
-      assert(result.success);
-      expect(typeof result.value.token).toBe('string');
-      expect(result.value.token.length).toBeGreaterThan(0);
+      expect(outcome.status).toBe(200);
+      expect(outcome.body).toEqual({ message: 'Operation completed successfully', email });
 
-      // Atomic: user persisted AND verification consumed in the same committed uow.
+      // Atomic: user persisted AND verification consumed in the same committed transaction.
       const user = await getUser(email);
       expect(user).toBeDefined();
       expect(statusValue(user?.userStatus)).toBe('ACTIVE');
@@ -304,6 +342,16 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       expect(observations[0].template).toBe('welcome');
       expect(observations[0].committedUserVisible).toBe(true);
       expect(observations[0].committedVerificationConsumed).toBe(true);
+
+      // The session cookie the FE logs in with. Minted by the controller post-commit,
+      // so it is only ever issued over a user that really exists.
+      expect(outcome.cookies).toHaveLength(1);
+      const [[cookieName, token]] = outcome.cookies;
+      expect(cookieName).toBe('token');
+      expect(jwt.verify(token, container.resolve('config').jwtSecret)).toMatchObject({
+        userId: (user as unknown as { id: string }).id,
+        email,
+      });
     });
 
     it('a notify REJECTION does not roll back the committed user (throws post-commit)', async () => {
@@ -313,7 +361,7 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
         throw new Error('SES down');
       };
 
-      await expect(runVerify(baseCreds(email))).rejects.toThrow('SES down');
+      await expect(runSetPassword(baseCreds(email))).rejects.toThrow('SES down');
 
       // The user + consumption committed before notify, so they survive the post-commit throw.
       const user = await getUser(email);
@@ -325,15 +373,15 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
   });
 
   describe('E6 — success (existing active user → password reset)', () => {
-    it('updates the password and consumes the verification, notifying with passwordReset', async () => {
+    it('updates the password and consumes the verification, notifying with passwordChanged', async () => {
       const email = 'rai76-active@example.test';
       const oldHash = await bcrypt.hash('oldPassword1', 12);
       await seedUser(email, { status: 'ACTIVE', passwordHash: oldHash });
       await seedVerification(email);
 
-      const result = await runVerify(baseCreds(email));
+      const outcome = await runSetPassword(baseCreds(email));
 
-      expect(result.success).toBe(true);
+      expect(outcome.status).toBe(200);
       const user = await getUser(email);
       expect(await bcrypt.compare('newPassword9', user.passwordHash!)).toBe(true);
       expect(await bcrypt.compare('oldPassword1', user.passwordHash!)).toBe(false);
@@ -342,8 +390,8 @@ describe('AuthService.verifyCodeAndSetPassword (integration)', () => {
       expect(observations).toHaveLength(1);
       expect(observations[0].template).toBe('passwordChanged');
       expect(observations[0].committedUserVisible).toBe(true);
-      // The verification is consumed INSIDE the uow; its being visibly-consumed at
-      // notify time proves notify ran AFTER commit (not before).
+      // The verification is consumed INSIDE the transaction; its being visibly-consumed
+      // at notify time proves notify ran AFTER commit (not before).
       expect(observations[0].committedVerificationConsumed).toBe(true);
     });
   });

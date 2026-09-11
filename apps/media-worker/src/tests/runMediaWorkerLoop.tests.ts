@@ -43,26 +43,50 @@ const makeSweep = (
 
 /**
  * The loop is the safety net for task transactions: a task that returns (or throws)
- * with a boundary still open must not carry it into the next task, so the loop
- * settles the uow after every run. `settle(false)` is a no-op when nothing is open,
- * which is the normal case — tasks that own a boundary complete it themselves.
+ * with a boundary still open must not carry it into the next task. The net is
+ * `if (uow.isOpen()) await uow.complete(false)` after every run — `complete` now
+ * THROWS with nothing open, so the `isOpen` guard is load-bearing rather than
+ * decorative, and the normal case (a task that closed its own boundary) must not
+ * call `complete` at all.
+ *
+ * The fake therefore tracks the open flag for real: `open()` stands in for a task
+ * that abandoned a transaction, and `completions` records only what the net
+ * actually did.
  */
 const createFakeUow = () => {
-  const settlements: boolean[] = [];
+  const completions: boolean[] = [];
+  let isOpen = false;
   const uow = {
-    join: async () => {},
-    beginIsolatedOnly: async () => {},
+    start: async () => {
+      isOpen = true;
+    },
     db: () => {
       throw new Error('db() is not available in this unit test');
     },
-    complete: async () => {},
-    settle: async (ok: boolean) => {
-      settlements.push(ok);
+    complete: async (ok: boolean) => {
+      if (!isOpen) {
+        throw new Error('Transaction not started');
+      }
+      isOpen = false;
+      completions.push(ok);
+    },
+    isOpen: () => isOpen,
+    inTransaction: async <T>(fn: () => Promise<T>) => {
+      isOpen = true;
+      try {
+        return await fn();
+      } finally {
+        isOpen = false;
+      }
     },
     collectEvents: () => {},
     flagRollbackOnly: () => {},
   } as unknown as UnitOfWork;
-  return { uow, settlements };
+  /** Leave a boundary open, as a task that forgot to close one would. */
+  const abandonBoundary = () => {
+    isOpen = true;
+  };
+  return { uow, completions, abandonBoundary };
 };
 
 /** Yield N microtask turns so the (timer-parked) loop coroutine can advance. */
@@ -484,7 +508,7 @@ describe('runWorkerTasksOnce', () => {
       return 'processed';
     });
 
-    const { uow, settlements } = createFakeUow();
+    const { uow, completions } = createFakeUow();
     const didWork = await runWorkerTasksOnce(
       [task('first', first), task('second', second)],
       createMockLogger(),
@@ -493,9 +517,34 @@ describe('runWorkerTasksOnce', () => {
 
     expect(didWork).toBe(true);
     expect(calls).toEqual(['first', 'second']);
-    // One settle per task run: a task must never inherit the previous task's
-    // open boundary.
-    expect(settlements).toEqual([false, false]);
+    // Neither task left a boundary open, so the net stays out of the way. It has
+    // to: `complete` throws with nothing open, and a throw here would come out of
+    // a `finally` and mask the task's own outcome.
+    expect(completions).toEqual([]);
+  });
+
+  it('rolls back a boundary a task abandoned, before the next task runs', async () => {
+    const { uow, completions, abandonBoundary } = createFakeUow();
+    const openStateSeenBySecond: boolean[] = [];
+    const first = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      abandonBoundary();
+      return 'idle';
+    });
+    const second = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      openStateSeenBySecond.push(uow.isOpen());
+      return 'idle';
+    });
+    const logger = createMockLogger();
+
+    await runWorkerTasksOnce([task('first', first), task('second', second)], logger, uow);
+
+    expect(completions).toEqual([false]);
+    // The point of the net: the next task starts on a clean slate, so its own
+    // `inTransaction` can open a boundary instead of tripping the nesting guard.
+    expect(openStateSeenBySecond).toEqual([false]);
+    expect(logger.error).toHaveBeenCalledWith(
+      '[mediaWorker-run_once] task "first" left a transaction open',
+    );
   });
 
   it('breaks back to the top on processed without running lower-priority tasks', async () => {
@@ -572,7 +621,7 @@ describe('runAllTasks', () => {
     const after = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
     const logger = createMockLogger();
 
-    const { uow, settlements } = createFakeUow();
+    const { uow, completions } = createFakeUow();
     const didWork = await runAllTasks(
       [makeSweep('boom', SweepCadence.slow, boom), makeSweep('after', SweepCadence.fast, after)],
       logger,
@@ -585,9 +634,33 @@ describe('runAllTasks', () => {
     );
     expect(after).toHaveBeenCalledTimes(1);
     expect(didWork).toBe(true);
-    // The thrower's boundary is rolled back before the next sweep starts, not
-    // left for it to trip over.
-    expect(settlements).toEqual([false, false]);
+    // `inTransaction` already rolled the thrower's own boundary back on the way
+    // out, so the net finds nothing open and stays quiet.
+    expect(completions).toEqual([]);
+  });
+
+  it('rolls back a boundary a throwing sweep abandoned, before the next sweep runs', async () => {
+    // A sweep that throws OUTSIDE its inTransaction callback — after opening a
+    // boundary by hand, say — is the case the net exists for.
+    const { uow, completions, abandonBoundary } = createFakeUow();
+    const boom = jest.fn<() => Promise<WorkerTaskOutcome>>().mockImplementation(async () => {
+      abandonBoundary();
+      throw new Error('boom');
+    });
+    const after = jest.fn<() => Promise<WorkerTaskOutcome>>().mockResolvedValue('processed');
+    const logger = createMockLogger();
+
+    await runAllTasks(
+      [makeSweep('boom', SweepCadence.slow, boom), makeSweep('after', SweepCadence.fast, after)],
+      logger,
+      uow,
+    );
+
+    expect(completions).toEqual([false]);
+    expect(logger.error).toHaveBeenCalledWith(
+      '[mediaWorker-run_all] task "boom" left a transaction open',
+    );
+    expect(after).toHaveBeenCalledTimes(1);
   });
 
   it('returns false for an empty list', async () => {

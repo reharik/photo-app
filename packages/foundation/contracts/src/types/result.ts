@@ -81,3 +81,16 @@ export const WriteToBatch = <TIn, TOut, E = ContractError>(
     batch.status = batch.succeeded.length > 0 ? 'partial' : 'failed';
   }
 };
+
+/**
+ * Runs `fn` on a successful result's value; passes a failure straight through.
+ *
+ * For sequences where every step propagates the same way: `chain` removes the
+ * check-and-return between them. If the steps need *different* handling on failure —
+ * a different log, a different status, compensation — keep the explicit `if`s. The
+ * variation is the logic, and hiding it behind a chain buys nothing.
+ */
+export const chain = async <T, U, E>(
+  result: OperationResult<T, E>,
+  fn: (value: T) => Promise<OperationResult<U, E>>,
+): Promise<OperationResult<U, E>> => (result.success ? fn(result.value) : result);

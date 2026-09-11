@@ -30,11 +30,13 @@
  *
  * Harness: the shared GraphQL integration setup (real Postgres, real container, real
  * post-commit event bus — async_notification rows are written by the dispatcher and are
- * assertable because the worker sweep does not run here). Accept in A2 mirrors the
- * controller's AuthService scope-root opener, same as authPasswordReset.integration.tests.ts.
+ * assertable because the worker sweep does not run here). Accept in A2 goes through the
+ * real REST path — the ApiRequestContext scope root and AuthController.setPassword —
+ * same as authSetPassword.integration.tests.ts.
  */
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
+import type { Context } from 'koa';
 import { DateTime } from 'luxon';
 import assert from 'node:assert';
 import { createHash, randomUUID } from 'node:crypto';
@@ -120,11 +122,11 @@ describe('revoked authorizations and re-sharing (integration)', () => {
   });
 
   afterEach(async () => {
-    // Reads join the request transaction now, so a repository resolved straight off
-    // the container leaves one open — there is no GraphQL boundary here to settle it,
-    // and TRUNCATE below would block on the lock forever. settle(false) is a no-op
-    // when nothing is open, which is the case for the tests that go through yoga.
-    await container.resolve('uow').settle(false);
+    // No boundary mop-up. Every case here drives the API through yoga, so the
+    // GraphQL envelop plugin owns the request transaction and closes it in
+    // onExecuteDone; nothing in this suite resolves a repository off the container.
+    // The old `settle(false)` was a no-op on that path anyway, and `complete` — its
+    // replacement — throws when nothing is open, so keeping it would fail every test.
     await resetIntegrationTestDb(database);
   });
 
@@ -252,7 +254,11 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(invite2.linkToken).toBeTruthy();
       expect(invite2.linkToken).not.toBe(invite1.linkToken);
 
-      // Accept: the same AuthService scope-root opener the auth controller drives.
+      // Accept: the real REST path. Seed the emailed code, then drive
+      // AuthController.setPassword out of the ApiRequestContext scope exactly as
+      // apiRequestContextMiddleware + invoke() do in production. The controller owns
+      // the transaction boundary (uow.inTransaction) and disposal is the middleware's
+      // job, so there is nothing for this test to open or complete by hand.
       await database('emailVerification').insert({
         id: randomUUID(),
         email: guestEmail,
@@ -261,24 +267,31 @@ describe('revoked authorizations and re-sharing (integration)', () => {
         consumedAt: null,
         attemptCount: 0,
       });
-      // The service commits itself on success and returns without settling on every
-      // failure path, so the bracket settles like the controller does — a rollback that
-      // is inert once the commit has happened.
-      const { authService, dispose } = container.resolve('openAuthServiceScope')();
+      const acceptCtx = {
+        request: {
+          body: {
+            email: guestEmail,
+            password: 'newPassword9',
+            code: VALID_CODE,
+            firstName: 'Guest',
+            lastName: 'Accepted',
+            smsOptIn: false,
+          },
+        },
+        status: 0,
+        body: undefined,
+        ip: '127.0.0.1',
+        app: { env: 'test' },
+        state: {},
+        cookies: { set: () => undefined },
+      } as unknown as Context;
+      const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
       try {
-        const result = await authService.verifyCodeAndSetPassword({
-          email: guestEmail,
-          password: 'newPassword9',
-          code: VALID_CODE,
-          firstName: 'Guest',
-          lastName: 'Accepted',
-          smsOptIn: false,
-        });
-        expect(result.success).toBe(true);
+        await apiRequestContext.authController.setPassword(acceptCtx);
       } finally {
-        await authService.settle(false);
         await dispose();
       }
+      expect(acceptCtx.status).toBe(200);
 
       const userRow = await database('user')
         .where({ id: guestId })
@@ -394,5 +407,4 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(grants[0].id).toBe(invite.id);
     });
   });
-
 });

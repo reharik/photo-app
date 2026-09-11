@@ -1,9 +1,10 @@
 import { QueueWorkerTask } from '../../../types';
 import { ProcessNextMediaImageJob } from './processMediaImage/processNextMediaImageJob';
 
-// Priority-ordered tasks: deletion before image. Queue tasks are always due —
-// the claim inside each runner is itself the work-probe (returns 'idle' when
-// the queue is empty).
+// Priority-ordered queue tasks, low `order` first. Image is the only one left
+// since the deletion queue was removed, so the ordering is latent rather than
+// load-bearing today. Queue tasks are always due — the claim inside each runner
+// is itself the work-probe (returns 'idle' when the queue is empty).
 //
 // Each task gets its own named contract interface extending the union arm it
 // returns, with `name` narrowed to the task's literal: IoC discovery cannot use

@@ -23,15 +23,15 @@ dependency — yet eight test files imported from it.
 They resolved through the workspace symlink to media-core's built `dist/`, so
 they were silently testing a different package's code from the one the app runs.
 
-| File | Was | Now |
-| --- | --- | --- |
-| `processNextMediaImageJob.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `mediaDeletionJobRepository.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `mediaProcessingJobRepository.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `buildMediaStorage.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `processNextMediaDeletionJob.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `runMediaWorkerLoop.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
-| `logMediaWorkerStartup.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
+| File                                        | Was                    | Now                     |
+| ------------------------------------------- | ---------------------- | ----------------------- |
+| `processNextMediaImageJob.tests.ts`         | `@packages/media-core` | `@packages/worker-core` |
+| `mediaDeletionJobRepository.tests.ts`       | `@packages/media-core` | `@packages/worker-core` |
+| `mediaProcessingJobRepository.tests.ts`     | `@packages/media-core` | `@packages/worker-core` |
+| `buildMediaStorage.tests.ts`                | `@packages/media-core` | `@packages/worker-core` |
+| `processNextMediaDeletionJob.tests.ts`      | `@packages/media-core` | `@packages/worker-core` |
+| `runMediaWorkerLoop.tests.ts`               | `@packages/media-core` | `@packages/worker-core` |
+| `logMediaWorkerStartup.tests.ts`            | `@packages/media-core` | `@packages/worker-core` |
 | `stalledMediaJobSweep.integration.tests.ts` | `@packages/media-core` | `@packages/worker-core` |
 
 Five of those eight were passing at HEAD purely because the two packages were
@@ -63,19 +63,19 @@ because worker-core's `MediaItem` is a much smaller class:
 
 **A — `mediaUploadAndAlbum.application.tests.ts` (8 failures)**
 
-- *Old*: `findAssetRecord(item, MediaAssetKind.original)?.status` was
+- _Old_: `findAssetRecord(item, MediaAssetKind.original)?.status` was
   `MediaAssetStatus.pending` after `createMediaUpload`, and
   `MediaAssetStatus.ready` after finalize. That asserted the API creates and
   then readies the original's asset row.
-- *New*: both assert `childAssetRows(item)` is `[]` — the API creates **no**
+- _New_: both assert `childAssetRows(item)` is `[]` — the API creates **no**
   asset rows at any point.
-- *Why correct*: asset creation moved to the worker, and worker-core's
+- _Why correct_: asset creation moved to the worker, and worker-core's
   `applyProcessingResults` now rejects any item that arrives with
   `#assets.length > 0`. An API-created row would terminal-fail every upload, so
   "no rows" is the behavior that must hold. The new assertion is also the one
   that would catch a regression putting the API back in the asset business.
 - Also removed: the dead `import type { MediaAssetRecord } from
-  '../domain/MediaItem/MediaAsset'` (that file is deleted — elided at runtime,
+'../domain/MediaItem/MediaAsset'` (that file is deleted — elided at runtime,
   a hard error the day tests get type-checked), five vestigial
   `findAssetRecord` guards that only gated a storage key derived from the
   storage layout, and the doc comment claiming `applyProcessingResults` rejects
@@ -104,11 +104,11 @@ still be true, so nothing was flagged for you here.
 All three were the **same wrong-package error** as 1.1, and all three were
 test-side and small.
 
-| Suite | Diagnosis | Fix |
-| --- | --- | --- |
-| `mediaDeletionJobRepository.tests.ts` | `build__MediaDeletionJobRepository` exists **only** in worker-core; media-core has no such export, so the suite failed to load and its 5 tests never ran | repointed the import |
-| `mediaProcessingJobRepository.tests.ts` | media-core's repository has only `enqueueIfNoneActive`; `markSucceeded` etc. are worker-core's | repointed the import |
-| `ioc.config.tests.ts` | asserted `composedManifests: ['@packages/media-core', …]`; the worker's actual config says `'@packages/worker-core'` | corrected the expectation to match the config |
+| Suite                                   | Diagnosis                                                                                                                                                | Fix                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `mediaDeletionJobRepository.tests.ts`   | `build__MediaDeletionJobRepository` exists **only** in worker-core; media-core has no such export, so the suite failed to load and its 5 tests never ran | repointed the import                          |
+| `mediaProcessingJobRepository.tests.ts` | media-core's repository has only `enqueueIfNoneActive`; `markSucceeded` etc. are worker-core's                                                           | repointed the import                          |
+| `ioc.config.tests.ts`                   | asserted `composedManifests: ['@packages/media-core', …]`; the worker's actual config says `'@packages/worker-core'`                                     | corrected the expectation to match the config |
 
 One judgment call inside the second: the two `enqueueIfNoneActive` cases could
 not stay in `apps/media-worker`, because the worker never enqueues — the API
@@ -127,23 +127,23 @@ committed. The HEIC converter is mocked at the module boundary. Every
 orientation case asserts the **aspect-ratio relationship** between the original
 and the display derivative, not just literal numbers.
 
-| Test | Invariant |
-| --- | --- |
-| no EXIF orientation | dimensions unswapped, and the original's aspect agrees with the display derivative's |
-| orientation 1 | same, with an explicit EXIF tag present rather than absent |
-| orientation 6 | axes swapped — the common phone-portrait case; original and display agree |
-| orientation 8 | axes swapped; original agrees with **both** display and thumbnail |
-| orientation 5 | axes swapped — a transposing mirror, not just the quarter-turns |
-| non-HEIC `originalWasReplaced` | false, and `original.buffer` is *identically* the input buffer (not a copy) |
-| non-HEIC mimeType | derived from `metadata().format` — a PNG reports `image/png`, never the derivative's `image/jpeg` |
-| HEIC `originalWasReplaced` | true, and `original.buffer` is the converted bytes |
-| HEIC mimeType | `image/jpeg`, since that is what lands in S3 |
-| HEIC dimensions | taken from the converter **verbatim** — the orientation swap must not be applied twice |
-| HEIC derivatives | built from the converted bytes, not the undecodable HEIC input |
-| stage failure | the failing stage is named in the error, so the job log says which step broke |
+| Test                           | Invariant                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| no EXIF orientation            | dimensions unswapped, and the original's aspect agrees with the display derivative's              |
+| orientation 1                  | same, with an explicit EXIF tag present rather than absent                                        |
+| orientation 6                  | axes swapped — the common phone-portrait case; original and display agree                         |
+| orientation 8                  | axes swapped; original agrees with **both** display and thumbnail                                 |
+| orientation 5                  | axes swapped — a transposing mirror, not just the quarter-turns                                   |
+| non-HEIC `originalWasReplaced` | false, and `original.buffer` is _identically_ the input buffer (not a copy)                       |
+| non-HEIC mimeType              | derived from `metadata().format` — a PNG reports `image/png`, never the derivative's `image/jpeg` |
+| HEIC `originalWasReplaced`     | true, and `original.buffer` is the converted bytes                                                |
+| HEIC mimeType                  | `image/jpeg`, since that is what lands in S3                                                      |
+| HEIC dimensions                | taken from the converter **verbatim** — the orientation swap must not be applied twice            |
+| HEIC derivatives               | built from the converted bytes, not the undecodable HEIC input                                    |
+| stage failure                  | the failing stage is named in the error, so the job log says which step broke                     |
 
 The HEIC fixture is deliberately adversarial: the converted JPEG carries a
-*transposing* EXIF orientation while the converter reports post-decode
+_transposing_ EXIF orientation while the converter reports post-decode
 dimensions. A regression that applied the non-HEIC swap on that path produces
 900×600 instead of 600×900 and is caught.
 
@@ -151,14 +151,14 @@ dimensions. A regression that applied the non-HEIC swap on that path produces
 
 `apps/media-worker/src/tests/runImageStoragePipeline.tests.ts`.
 
-| Test | Invariant |
-| --- | --- |
-| not replaced | `writeObject` is called for display + thumbnail **only** — never the original key — yet `originalAsset` is still returned from the original's metadata |
-| replaced (HEIC) | the converted bytes are written **to the original key** with the JPEG mime, and the returned `originalAsset` agrees with those exact bytes |
-| original missing from S3 | stops before generating anything; no derivative written |
+| Test                     | Invariant                                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| not replaced             | `writeObject` is called for display + thumbnail **only** — never the original key — yet `originalAsset` is still returned from the original's metadata |
+| replaced (HEIC)          | the converted bytes are written **to the original key** with the JPEG mime, and the returned `originalAsset` agrees with those exact bytes             |
+| original missing from S3 | stops before generating anything; no derivative written                                                                                                |
 
-The replaced case asserts the write happened *with the converted bytes under the
-original's key*, not merely that some write happened — because the failure that
+The replaced case asserts the write happened _with the converted bytes under the
+original's key_, not merely that some write happened — because the failure that
 matters is a HEIC conversion that never reaches S3 while the database records
 that it did.
 
@@ -169,18 +169,18 @@ that it did.
 so each `database.transaction()` hands back a distinct object — "did it open a
 new one?" is answered by identity, not by counting side effects.
 
-| Test (both packages) | Invariant |
-| --- | --- |
-| after `complete(true)` | the next `join()` opens a **new** transaction; the first really was committed |
-| after `complete(false)` | the next `join()` opens a new transaction |
-| **commit throws** | `trx` is still cleared — this is why the fix uses `finally`; without it the error path reinstates the same dead-handle bug |
-| `db()` after settling | throws rather than handing back a stale handle |
-| stale `flagRollbackOnly` | does not leak into the next transaction and silently discard its writes |
-| `settle` on an abandoned transaction | clears it, so the loop's `settle(false)` really does protect the next task |
+| Test (both packages)                 | Invariant                                                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| after `complete(true)`               | the next `join()` opens a **new** transaction; the first really was committed                                              |
+| after `complete(false)`              | the next `join()` opens a new transaction                                                                                  |
+| **commit throws**                    | `trx` is still cleared — this is why the fix uses `finally`; without it the error path reinstates the same dead-handle bug |
+| `db()` after settling                | throws rather than handing back a stale handle                                                                             |
+| stale `flagRollbackOnly`             | does not leak into the next transaction and silently discard its writes                                                    |
+| `settle` on an abandoned transaction | clears it, so the loop's `settle(false)` really does protect the next task                                                 |
 
 worker-core additionally has the one that reproduces the **actual outage**:
 
-> *two sequential jobs through the same process-wide uow* — four phases
+> _two sequential jobs through the same process-wide uow_ — four phases
 > (claim/complete × 2 jobs), four distinct transactions, no handle reused. This
 > is the level the failure occurred at: `uow` resolves once on the worker's root
 > container, and `claimJobRow` commits before `completeJobRow` joins.
@@ -194,24 +194,24 @@ replay the first request's events on every later commit in the process.
 `packages/context/worker-core/src/tests/mediaItem.domain.tests.ts` (12, includes
 the 3 relocated from media-core):
 
-| Test | Invariant |
-| --- | --- |
-| all three rows created | original + display + thumbnail, in one apply |
-| original row provenance | built from the pipeline's **original**, not the display derivative — its own mime, dimensions and byte count |
-| every asset READY | a PENDING row would mean bytes that never landed |
-| pre-existing asset | refuses with `AssetKindAlreadyExists`, stays PROCESSING, adds no duplicate row (the unique index on `(media_item_id, kind)`) |
-| bad display dimensions | rejects, and leaves the item untouched — still PROCESSING, still no assets for a retry to write |
-| capture time | adopted when the item had none |
-| ready transition / not-processing / replay | the three relocated cases |
-| `markProcessingFailed` × 3 | moves to FAILED, is idempotent, and refuses to drag a READY item back |
+| Test                                       | Invariant                                                                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| all three rows created                     | original + display + thumbnail, in one apply                                                                                 |
+| original row provenance                    | built from the pipeline's **original**, not the display derivative — its own mime, dimensions and byte count                 |
+| every asset READY                          | a PENDING row would mean bytes that never landed                                                                             |
+| pre-existing asset                         | refuses with `AssetKindAlreadyExists`, stays PROCESSING, adds no duplicate row (the unique index on `(media_item_id, kind)`) |
+| bad display dimensions                     | rejects, and leaves the item untouched — still PROCESSING, still no assets for a retry to write                              |
+| capture time                               | adopted when the item had none                                                                                               |
+| ready transition / not-processing / replay | the three relocated cases                                                                                                    |
+| `markProcessingFailed` × 3                 | moves to FAILED, is idempotent, and refuses to drag a READY item back                                                        |
 
 `processNextMediaImageJob.tests.ts` (+3), where the transaction actually is:
 
-| Test | Invariant |
-| --- | --- |
-| all three rows written | the aggregate handed to `save` carries all three kinds |
-| **same transaction** | the ordered boundary trace is exactly `join → markSucceeded → getById → save → complete(true)`. Any `complete` between the status flip and the save would let a crash strand an item marked ready with missing assets |
-| failed job | trace is `join → markSucceeded → getById → complete(false)`; nothing saved, no partial asset state |
+| Test                   | Invariant                                                                                                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| all three rows written | the aggregate handed to `save` carries all three kinds                                                                                                                                                                |
+| **same transaction**   | the ordered boundary trace is exactly `join → markSucceeded → getById → save → complete(true)`. Any `complete` between the status flip and the save would let a crash strand an item marked ready with missing assets |
+| failed job             | trace is `join → markSucceeded → getById → complete(false)`; nothing saved, no partial asset state                                                                                                                    |
 
 ---
 
@@ -260,7 +260,7 @@ been hard-deleted). I added two cases while in the method, both previously
 uncovered — drop them if you disagree:
 
 - an **expired** invite also returns undefined (the live filter is
-  `revoked_at IS NULL` *and* not-expired; only the revoked half was covered)
+  `revoked_at IS NULL` _and_ not-expired; only the revoked half was covered)
 - an id belonging to a **USER**-kind grant throws rather than returning a row
   the caller would mail as an invite — a USER grant has no `linkToken`, so
   quietly returning it would put `undefined` in the invite URL
@@ -277,7 +277,7 @@ Two things worth a decision, neither a failure:
 
 - **BUG-2 from the review is now pinned by a test, not fixed.** The
   "pre-existing asset" case in the worker-core suite documents that an item
-  which arrives carrying an asset row is *rejected* — correct for new items,
+  which arrives carrying an asset row is _rejected_ — correct for new items,
   and a terminal failure for anything uploaded through the old API and still in
   flight at deploy time. The test asserts current behavior. If you decide that
   path should instead replace pre-existing rows, that test is the one to change.
@@ -313,14 +313,14 @@ Two things I deliberately did **not** do, per your constraints:
 
 All commands run with `--skip-nx-cache`.
 
-| Package | At HEAD (per review) | Now |
-| --- | --- | --- |
-| `media-core` | 6 suites / 49 tests, **2 suites / 11 tests FAILING** | **8 suites / 57 tests — all pass** |
-| `worker-core` | 0 suites, exit 1 ("no tests found") | **2 suites / 20 tests — all pass** |
-| `media-worker` | 14 suites / 74 tests, **4 suites / 12 tests FAILING** | **15 suites / 94 tests — all pass** |
-| `api:typecheck` | **FAIL (2 errors)** | **pass** — see 1.4 |
-| `media-worker:typecheck` | pass | pass |
-| lint (api + all three packages) | — | pass (4 warnings, all pre-existing production files) |
+| Package                         | At HEAD (per review)                                  | Now                                                  |
+| ------------------------------- | ----------------------------------------------------- | ---------------------------------------------------- |
+| `media-core`                    | 6 suites / 49 tests, **2 suites / 11 tests FAILING**  | **8 suites / 57 tests — all pass**                   |
+| `worker-core`                   | 0 suites, exit 1 ("no tests found")                   | **2 suites / 20 tests — all pass**                   |
+| `media-worker`                  | 14 suites / 74 tests, **4 suites / 12 tests FAILING** | **15 suites / 94 tests — all pass**                  |
+| `api:typecheck`                 | **FAIL (2 errors)**                                   | **pass** — see 1.4                                   |
+| `media-worker:typecheck`        | pass                                                  | pass                                                 |
+| lint (api + all three packages) | —                                                     | pass (4 warnings, all pre-existing production files) |
 
 Net: 6 failing suites → 0. Test count 123 → 171 (+48), of which +35 are new
 coverage and +5 are tests that existed but never ran because their suite failed
@@ -368,15 +368,15 @@ New tests were checked against deliberate mutations of the production code, each
 reverted immediately afterwards. `grep -rn "MUTATION" apps packages` is clean and
 every mutated line was confirmed restored to its exact original text.
 
-| Mutation | Result |
-| --- | --- |
-| `swap = false` (never swap) | 3 tests fail — orientations 5, 6, 8 |
-| `swap = true` (always swap) | 2 tests fail — no-orientation and orientation 1 |
-| HEIC path swaps converter dimensions | 1 test fails — exactly the "verbatim" test |
-| `if (derivatives.originalWasReplaced)` → `if (false)` | 1 test fails — the HEIC-never-reaches-S3 case |
-| `completeTransaction` restored to pre-fix shape (reset on rollback only) | 4 worker-core tests fail, including the two-sequential-jobs one |
-| `completeJobRow` splits its boundary after `markSucceeded` | 5 tests fail, including the same-transaction trace |
-| moved test calls `getPendingUserAuthorizationByIdXX` | `TS2551` — the typecheck resolves the real worker-core interface |
+| Mutation                                                                 | Result                                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `swap = false` (never swap)                                              | 3 tests fail — orientations 5, 6, 8                              |
+| `swap = true` (always swap)                                              | 2 tests fail — no-orientation and orientation 1                  |
+| HEIC path swaps converter dimensions                                     | 1 test fails — exactly the "verbatim" test                       |
+| `if (derivatives.originalWasReplaced)` → `if (false)`                    | 1 test fails — the HEIC-never-reaches-S3 case                    |
+| `completeTransaction` restored to pre-fix shape (reset on rollback only) | 4 worker-core tests fail, including the two-sequential-jobs one  |
+| `completeJobRow` splits its boundary after `markSucceeded`               | 5 tests fail, including the same-transaction trace               |
+| moved test calls `getPendingUserAuthorizationByIdXX`                     | `TS2551` — the typecheck resolves the real worker-core interface |
 
 Each mutation failed the tests intended to catch it and no others, which is the
 check that the new assertions are load-bearing rather than incidentally true.
@@ -390,8 +390,8 @@ got exit 0, and took that as proof the moved test type-checks. It was not.
 so the program contained only the three EXIF `*.test.ts` files and none of
 `src/tests/`. The real check was a direct `tsc` invocation naming the file.
 
-That incidentally answers the review's open question 6 — *"was
-`apps/media-worker`'s tsconfig meant to type-check `src/tests/**`?"*. It does
+That incidentally answers the review's open question 6 — _"was
+`apps/media-worker`'s tsconfig meant to type-check `src/tests/**`?"_. It does
 not, and cannot as configured. That is precisely why eight wrong-package imports
 sat invisible in media-worker while the identical mistake in `apps/api` — whose
 tsconfig does include tests — was loud enough to break the build. Fixing that

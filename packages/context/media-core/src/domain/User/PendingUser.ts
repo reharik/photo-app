@@ -63,6 +63,15 @@ export class PendingUser extends AggregateRoot<UserRecord> {
     this.touch(actorId);
     return ok(undefined);
   }
+
+  firstName(): string {
+    return this.props.firstName;
+  }
+
+  lastName(): string {
+    return this.props.lastName;
+  }
+
   email(): string {
     return this.props.email;
   }
