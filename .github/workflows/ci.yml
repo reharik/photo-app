@@ -443,8 +443,13 @@ jobs:
       # --- Pre-build the PROD images (buildx + GHA layer cache) ---
       # Same target/args as deploy.yml's build job. The runner is arm64, so
       # these are native arm64 builds — no `platforms:` and no qemu needed.
-      # Cache scopes are arch-suffixed so they can never collide with an amd64
-      # layer cache if one is ever added.
+      # Cache scopes are the BARE strings `api` and `media-worker` — NOT
+      # arch-suffixed. Every writer is arm64 today (this job, deploy.yml's build
+      # job, cache-warm.yml), so there is nothing to collide with; but an amd64
+      # build added later MUST take a new scope rather than reuse these, or the
+      # two arches would overwrite each other's layers. These exact strings are
+      # also what cache-warm.yml writes on main — the cache a fresh PR bootstraps
+      # from — so all three writers have to stay in lockstep.
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 

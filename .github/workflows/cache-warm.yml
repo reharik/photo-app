@@ -1,0 +1,124 @@
+name: Cache Warm
+
+# Populates the MAIN-SCOPE buildx layer cache that every PR bootstraps from.
+#
+# WHY THIS EXISTS. PR image builds read `cache-from: type=gha,scope=api` /
+# `scope=media-worker`. GitHub scopes Actions cache entries by ref: a PR run can
+# read its own `refs/pull/N/merge` scope plus the DEFAULT BRANCH's, and nothing
+# else. So the main-scope entries are the only cache a fresh PR can start from —
+# and nothing was writing them:
+#
+#   - ci.yml's e2e job is `if: github.event_name != 'push'` (ci.yml:346) and
+#     ci.yml's push trigger is restricted to main, so e2e never runs on main and
+#     never writes a main-scope cache.
+#   - deploy.yml's build job is the only other writer, and it is SKIPPED
+#     whenever Phase C image reuse succeeds — 4 of the last 6 deploys.
+#
+# Measured consequence: the main-scope entries were written 2026-09-05 and never
+# refreshed. Every PR cut from main missed the `npm ci` layer and rebuilt
+# everything after it — ~150s per image, paid TWICE, because the `builder` and
+# `deps-prod` stages each run their own workspace install.
+#
+# This job builds both images purely for their layers and throws the images
+# away. It does not deploy, test, publish or gate anything; nothing depends on
+# it, and it must never become a required check. If it fails, the next PR builds
+# cold — exactly today's behavior — which is why it is continue-on-error.
+#
+# WHY ITS OWN FILE rather than a sixth job in ci.yml:
+#   - ci.yml's concurrency group is `CI-${{ head_ref || ref_name }}` with
+#     cancel-in-progress: true. On main that is ONE group, so two merges landing
+#     close together would cancel an in-flight warm. A cancelled warm is worse
+#     than no warm: it looks like it ran. Here it gets its own group and does
+#     not cancel, so warms serialize and finish.
+#   - ci.yml is documented as "every pre-merge check", its five job names are
+#     required check contexts, and its header states no job declares `needs:`.
+#     This is post-merge and is not a check.
+#
+# MUST STAY IN LOCKSTEP with the build config in ci.yml (~L451-477) and
+# deploy.yml (~L267-280): same Dockerfile, same target, same build-args, and —
+# critically — the same BARE cache scopes. A divergent build writes a cache the
+# PR builds cannot read, which silently defeats this entire workflow.
+
+on:
+  push:
+    branches: [main]
+  # Lets you prime the cache on demand instead of waiting for the next merge,
+  # which is what you want right after a lockfile change (or any time the
+  # main-scope entries have gone stale).
+  workflow_dispatch: {}
+
+# Serialize rather than cancel. A half-finished warm exports nothing useful, and
+# there is no reason to race merges against each other for a cache write.
+concurrency:
+  group: cache-warm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  warm:
+    name: Warm buildx cache
+    # A failed warm is a non-event: the next PR just builds cold. Never red main.
+    continue-on-error: true
+    # arm64 to match ci.yml's e2e job and deploy.yml's build job. Layer caches
+    # are per-architecture; an amd64 cache would be dead weight nothing reads.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Deliberately NO `npm ci` and NO codegen. `**/generated/` is gitignored
+      # (.gitignore:17-19), so a fresh checkout carries no generated sources and
+      # the in-container `nx build` regenerates them itself (api's `build:vite`
+      # dependsOn `gen-ioc`; `typecheck` dependsOn `gen-gql` + `gen-ioc`).
+      # deploy.yml's build job already builds this way from a bare checkout and
+      # succeeds — that is the proof. It also costs us nothing here: both
+      # `npm ci` layers key only on the package.json/package-lock.json set that
+      # the `manifests` stage extracts, and codegen touches no package.json.
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Both builds in ONE job, sequentially, mirroring ci.yml's e2e job. The
+      # second build reuses the first's layers from the local BuildKit instance
+      # (everything up to and including `npm ci` is SERVICE_NAME-independent),
+      # so media-worker costs ~80s rather than a second full build. A matrix
+      # would split them across runners and pay that twice.
+      #
+      # `target: runtime-node` does NOT narrow what gets cached: runtime-node
+      # COPY --from=builder and COPY --from=deps-prod (Dockerfile:96-97), so
+      # both stages are required ancestors, are built, and are exported under
+      # mode=max. Those two stages are the whole point — they carry the two
+      # workspace installs.
+      - name: Warm api layer cache
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: runtime-node
+          build-args: |
+            SERVICE_NAME=api
+          # We want the layers, not the image. `type=cacheonly` builds every
+          # stage and exports the cache without materializing an image, so there
+          # is no tag to name and nothing to load or push.
+          outputs: type=cacheonly
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+          provenance: false
+
+      - name: Warm media-worker layer cache
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile
+          target: runtime-node
+          build-args: |
+            SERVICE_NAME=media-worker
+          outputs: type=cacheonly
+          push: false
+          cache-from: type=gha,scope=media-worker
+          cache-to: type=gha,scope=media-worker,mode=max
+          provenance: false
