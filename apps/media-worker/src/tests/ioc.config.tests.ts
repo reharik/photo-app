@@ -13,7 +13,7 @@ describe('ioc.config', () => {
             factoryPrefix: 'build__',
           }),
           composedManifests: [
-            '@packages/media-core',
+            '@packages/worker-core',
             '@packages/infrastructure',
             '@packages/notifications',
           ],

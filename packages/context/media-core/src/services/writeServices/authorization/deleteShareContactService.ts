@@ -1,6 +1,5 @@
-import { ok, OperationResult } from '@packages/contracts';
+import { EntityId, ok, OperationResult } from '@packages/contracts';
 import { ShareContactRepository } from '../../../repositories';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 
 export interface DeleteShareContactService extends WriteServiceBase {

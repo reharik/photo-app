@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { build__MediaStorage, type MediaStorageDeps } from '@packages/media-core';
+import { build__MediaStorage, type MediaStorageDeps } from '@packages/worker-core';
 
 describe('build__MediaStorage', () => {
   describe('When built with bucket and region', () => {

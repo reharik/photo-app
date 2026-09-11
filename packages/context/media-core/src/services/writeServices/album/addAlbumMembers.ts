@@ -1,4 +1,11 @@
-import { ContractError, fail, ok, OperationResult, UserStatus } from '@packages/contracts';
+import {
+  ContractError,
+  EntityId,
+  fail,
+  ok,
+  OperationResult,
+  UserStatus,
+} from '@packages/contracts';
 import { indexBy, Logger } from '@packages/infrastructure';
 import {
   eachIndependently,
@@ -6,7 +13,6 @@ import {
   IndependentGroupResult,
 } from '../../../infrastructure/writeServices/groupActionStrategy';
 import { AlbumRepository, UserReadRepository } from '../../../repositories';
-import { EntityId } from '../../../types';
 import { UserRow } from '../../readServices/types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { AddAlbumMembersCommand } from './writeAlbum.types';

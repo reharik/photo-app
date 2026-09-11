@@ -1,6 +1,11 @@
-import { EntityType, MediaItemStatus, MediaKind, ReactionEmoji } from '@packages/contracts';
+import {
+  EntityId,
+  EntityType,
+  MediaItemStatus,
+  MediaKind,
+  ReactionEmoji,
+} from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
-import { EntityId } from '../../../types/types';
 
 export type FinalizeMediaItemUploadCommand = {
   mediaItemId: EntityId;

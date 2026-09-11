@@ -2,7 +2,6 @@ import {
   AlbumMemberRole,
   AppErrorCollection,
   MediaAssetKind,
-  MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
 } from '@packages/contracts';
@@ -14,7 +13,6 @@ import {
   buildMediaItemBaseStorageKey,
 } from '../application/media/MediaStorage';
 import { Album } from '../domain/Album/Album';
-import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset';
 import { MediaItem } from '../domain/MediaItem/MediaItem';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
@@ -44,17 +42,17 @@ const MINIMAL_PNG_1X1 = Buffer.from([
 
 type ObjectState = { size: number; mimeType?: string; body?: Buffer };
 
-const findAssetRecord = (item: MediaItem, kind: MediaAssetKind): MediaAssetRecord | undefined => {
-  const asset = item.childEntities().assets.upsert.find((a) => a.kind().value === kind.value);
-  return asset?.toPersistence();
-};
+/**
+ * Asset rows are the worker's to write now, so the API-side aggregate carries
+ * none — `MediaItem` no longer overrides `childEntities()` at all. This reads
+ * whatever child rows the aggregate would persist, so a regression that put the
+ * API back in the asset-writing business shows up as a non-empty result rather
+ * than as a silent extra row.
+ */
+const childAssetRows = (item: MediaItem): unknown[] => item.childEntities().assets?.upsert ?? [];
 
 const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository => ({
   enqueueIfNoneActive: async () => {},
-  claimNextAvailableJob: async () => undefined,
-  markSucceeded: async () => {},
-  markFailed: async () => {},
-  markPendingRetry: async () => {},
 });
 
 const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobRepository & {
@@ -66,10 +64,6 @@ const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobReposit
     enqueueIfNoneActive: async (input) => {
       enqueued.push(input);
     },
-    claimNextAvailableJob: async () => undefined,
-    markSucceeded: async () => {},
-    markFailed: async () => {},
-    markPendingRetry: async () => {},
   };
 };
 
@@ -173,28 +167,18 @@ const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
 };
 
 /**
- * What the worker's image pipeline hands back for a plain (non-HEIC) photo:
- * display + thumbnail derivatives and no capture time. `originalAsset` is
- * omitted deliberately — it is only present when the pipeline REPLACED the
- * original, and these items finalized with their original already READY, which
- * `applyProcessingResults` rejects as AssetNotProcessing.
+ * Stands in for the worker having finished the item. media-core cannot make an
+ * item READY any more: `applyProcessingResults` is worker-core's, and the
+ * album-add guard reads the item's status off the READ projection
+ * (`ensureMediaItemInReadyState`), not off the aggregate. So the tests below
+ * that need ready media publish a ready projection rather than pretending the
+ * API can perform that transition.
  */
-const derivativePipelineResult = () => ({
-  capture: {},
-  displayAsset: {
-    kind: MediaAssetKind.display,
-    mimeType: 'image/png',
-    sizeBytes: 1024,
-    width: 1,
-    height: 1,
-  },
-  thumbnailAsset: {
-    kind: MediaAssetKind.thumbnail,
-    mimeType: 'image/png',
-    sizeBytes: 256,
-    width: 1,
-    height: 1,
-  },
+const readyProjection = (item: MediaItem): DBMediaItemRow => ({
+  ...projectionFromAggregate(item),
+  status: MediaItemStatus.ready,
+  width: 1,
+  height: 1,
 });
 
 describe('Media upload pipeline (application services)', () => {
@@ -230,9 +214,11 @@ describe('Media upload pipeline (application services)', () => {
       const persisted = stored?.toPersistence();
       expect(persisted?.originalFileName).toBe('vacation.jpg');
       expect(persisted?.title).toBeUndefined();
-      expect(findAssetRecord(stored!, MediaAssetKind.original)?.status).toBe(
-        MediaAssetStatus.pending.value,
-      );
+      // Asset ownership moved to the worker: createMediaUpload used to insert a
+      // PENDING `original` row here. It must now create none — the worker's
+      // applyProcessingResults refuses an item that already carries any asset,
+      // so an API-created row would terminal-fail every upload.
+      expect(childAssetRows(stored!)).toEqual([]);
     });
   });
 
@@ -262,11 +248,8 @@ describe('Media upload pipeline (application services)', () => {
       if (!item) {
         return;
       }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      expect(originalAsset).toBeDefined();
-      if (!originalAsset) {
-        return;
-      }
+      // The original's storage key is derived from the storage layout, not read
+      // off an asset row — which is why finalize still works with no assets.
       mediaStorage.objects.set(
         buildMediaAssetStorageKey(
           buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -295,9 +278,9 @@ describe('Media upload pipeline (application services)', () => {
       expect(after?.status()).toBe(MediaItemStatus.processing);
       expect(after?.width()).toBeUndefined();
       expect(after?.height()).toBeUndefined();
-      expect(findAssetRecord(after!, MediaAssetKind.original)?.status).toBe(
-        MediaAssetStatus.ready.value,
-      );
+      // Finalize used to flip the original asset row PENDING → READY. It writes
+      // no asset row at all now; the item hands off to the worker with none.
+      expect(childAssetRows(after!)).toEqual([]);
     });
 
     it('should enqueue a background processing job for photo media', async () => {
@@ -405,10 +388,6 @@ describe('Media upload pipeline (application services)', () => {
       }
       const item = await mediaItemRepository.getById(created.value.mediaItemId);
       if (!item) {
-        return;
-      }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      if (!originalAsset) {
         return;
       }
       mediaStorage.objects.set(
@@ -552,10 +531,6 @@ describe('Album integration (application services)', () => {
       if (!item) {
         return;
       }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      if (!originalAsset) {
-        return;
-      }
       mediaStorage.objects.set(
         buildMediaAssetStorageKey(
           buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -572,21 +547,13 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
-      const afterFinalize = await mediaItemRepository.getById(item.id());
-      if (!afterFinalize) {
-        return;
-      }
-      const readyMark = afterFinalize.applyProcessingResults(
-        derivativePipelineResult(),
-        viewerOnlyId,
-      );
-      expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
-      projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+      // The worker readies the item out of band; the album-add path only ever
+      // sees it through the read projection.
+      projectionFromReadRepo.set(readyItem.id(), readyProjection(readyItem));
 
       const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
         // eslint-disable-next-line @typescript-eslint/require-await
@@ -638,10 +605,6 @@ describe('Album integration (application services)', () => {
       if (!item) {
         return;
       }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      if (!originalAsset) {
-        return;
-      }
       mediaStorage.objects.set(
         buildMediaAssetStorageKey(
           buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -658,18 +621,13 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
-      const afterFinalize = await mediaItemRepository.getById(item.id());
-      if (!afterFinalize) {
-        return;
-      }
-      const readyMark = afterFinalize.applyProcessingResults(derivativePipelineResult(), viewerId);
-      expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
-      projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+      // The worker readies the item out of band; the album-add path only ever
+      // sees it through the read projection.
+      projectionFromReadRepo.set(readyItem.id(), readyProjection(readyItem));
 
       const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
         // eslint-disable-next-line @typescript-eslint/require-await
@@ -727,10 +685,6 @@ describe('Album integration (application services)', () => {
       if (!item) {
         return;
       }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      if (!originalAsset) {
-        return;
-      }
       mediaStorage.objects.set(
         buildMediaAssetStorageKey(
           buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -743,18 +697,13 @@ describe('Album integration (application services)', () => {
         },
       );
       await finalize({ viewerId, mediaItemId: item.id() });
-      const afterFinalize = await mediaItemRepository.getById(item.id());
-      if (!afterFinalize) {
-        return;
-      }
-      const readyMark = afterFinalize.applyProcessingResults(derivativePipelineResult(), viewerId);
-      expect(readyMark.success).toBe(true);
-      await mediaItemRepository.save(afterFinalize, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
-      projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+      // The worker readies the item out of band; the album-add path only ever
+      // sees it through the read projection.
+      projectionFromReadRepo.set(readyItem.id(), readyProjection(readyItem));
 
       const addAlbumItem = createAddAlbumItemService(harness, albumRepository, {
         // eslint-disable-next-line @typescript-eslint/require-await
@@ -881,10 +830,6 @@ describe('Album integration (application services)', () => {
         if (!item) {
           return;
         }
-        const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-        if (!originalAsset) {
-          return;
-        }
         mediaStorage.objects.set(
           buildMediaAssetStorageKey(
             buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -901,18 +846,13 @@ describe('Album integration (application services)', () => {
         if (!fin.success) {
           return;
         }
-        const afterFin = await mediaItemRepository.getById(item.id());
-        if (!afterFin) {
-          return;
-        }
-        const rm = afterFin.applyProcessingResults(derivativePipelineResult(), viewerId);
-        expect(rm.success).toBe(true);
-        await mediaItemRepository.save(afterFin, testTrx);
         const readyItem = await mediaItemRepository.getById(item.id());
         if (!readyItem) {
           return;
         }
-        projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+        // The worker readies the item out of band; the album-add path only ever
+        // sees it through the read projection.
+        projectionFromReadRepo.set(readyItem.id(), readyProjection(readyItem));
         ids.push(readyItem.id());
       }
 
@@ -969,10 +909,6 @@ describe('Album integration (application services)', () => {
       if (!item) {
         return;
       }
-      const originalAsset = findAssetRecord(item, MediaAssetKind.original);
-      if (!originalAsset) {
-        return;
-      }
       mediaStorage.objects.set(
         buildMediaAssetStorageKey(
           buildMediaItemBaseStorageKey(item.ownerId(), item.id()),
@@ -989,18 +925,13 @@ describe('Album integration (application services)', () => {
       if (!fin.success) {
         return;
       }
-      const afterFin = await mediaItemRepository.getById(item.id());
-      if (!afterFin) {
-        return;
-      }
-      const rm = afterFin.applyProcessingResults(derivativePipelineResult(), viewerId);
-      expect(rm.success).toBe(true);
-      await mediaItemRepository.save(afterFin, testTrx);
       const readyItem = await mediaItemRepository.getById(item.id());
       if (!readyItem) {
         return;
       }
-      projectionFromReadRepo.set(readyItem.id(), projectionFromAggregate(readyItem));
+      // The worker readies the item out of band; the album-add path only ever
+      // sees it through the read projection.
+      projectionFromReadRepo.set(readyItem.id(), readyProjection(readyItem));
 
       const addMany = createAddMediaItemsToAlbumService(harness, albumRepository, {
         // eslint-disable-next-line @typescript-eslint/require-await

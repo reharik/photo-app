@@ -14,7 +14,6 @@ export const build__AlbumMemberReadRepository = ({
     albumId: string;
     viewerId: string;
   }): Promise<AlbumMemberRow | undefined> => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()<AlbumMemberRow>('albumMember')
@@ -36,7 +35,6 @@ export const build__AlbumMemberReadRepository = ({
     viewerId: string;
     collectionInfo: AlbumMemberCollectionInfo;
   }): Promise<PagedList<AlbumMemberRow>> => {
-    await uow.join();
     const rows = await withEnumRevival(
       uow
         .db()<AlbumMemberRow>('albumMember')

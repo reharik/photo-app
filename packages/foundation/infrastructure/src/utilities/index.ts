@@ -3,3 +3,4 @@
  */
 
 export * from './mapHelpers';
+export * from './resultHelpers';

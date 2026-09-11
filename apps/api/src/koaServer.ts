@@ -8,6 +8,7 @@ import { koaBody } from 'koa-body';
 
 import type { Config } from './config.js';
 import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
+import { ApiRequestContextMiddleware } from './middleware/apiRequestContextMiddleware.js';
 import type { AuthMiddleware } from './middleware/authMiddleware.js';
 import type { ErrorHandler } from './middleware/errorHandler.js';
 import type { RequestLogger } from './middleware/requestLogger.js';
@@ -29,6 +30,7 @@ type KoaServerDeps = {
   requestLogger: RequestLogger;
   database: Knex;
   config: Config;
+  apiRequestContextMiddleware: ApiRequestContextMiddleware;
 };
 
 export const build__KoaServer = ({
@@ -36,7 +38,7 @@ export const build__KoaServer = ({
   apiRouter,
   authMiddleware,
   logger,
-
+  apiRequestContextMiddleware,
   graphQlServer,
   errorHandler,
   requestLogger,
@@ -72,6 +74,7 @@ export const build__KoaServer = ({
   // 4. Body parsing (must be before request processing)
   app.use(koaBody());
 
+  app.use(apiRequestContextMiddleware);
   // 5. Public media fetch route (optional auth + resource authz; no global login requirement)
   // Fires before auth middleware because this has a custom authz logic
   app.use(mediaPublicRouter.routes()).use(mediaPublicRouter.allowedMethods());

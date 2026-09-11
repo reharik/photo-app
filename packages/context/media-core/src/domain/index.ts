@@ -3,8 +3,7 @@
  */
 
 export * from './AggregateRoot';
-export * from './EmailDelivery';
-export * from './Entity';
+export * from './DomainEntity';
 export * from './Album/Album';
 export * from './Album/AlbumItem';
 export * from './Album/AlbumMember';
@@ -21,7 +20,4 @@ export * from './Notification/Notification';
 export * from './User/PendingUser';
 export * from './User/User';
 export * from './User/types';
-export * from './utilities/entityGuard';
 export * from './utilities/reorderAlbumItems';
-export * from './utilities/serializeAggregates';
-export * from './utilities/stampAudit';

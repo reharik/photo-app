@@ -1,15 +1,8 @@
-/**
- * MediaItem: uploaded media asset (photo or video) owned by a user (by ID).
- * Encapsulates metadata; can appear in multiple albums via AlbumItem.
- */
-
+import type { ActorId, AuditRecord, EntityId, VOCollection } from '@packages/contracts';
 import {
   AppErrorCollection,
-  ContractError,
   EntityType,
   fail,
-  MediaAssetKind,
-  MediaAssetStatus,
   MediaItemStatus,
   MediaKind,
   ok,
@@ -21,18 +14,7 @@ import {
   MediaItemTag,
   Reaction,
 } from '../../services/writeServices/mediaItem/writeMediaItem.types';
-import type { ActorId, EntityId } from '../../types/types';
 import { AggregateRoot } from '../AggregateRoot';
-import type { AuditRecord, ChildEntities, VOCollection } from '../Entity';
-import { MediaAsset, MediaAssetRecord } from './MediaAsset';
-
-interface AssetMetadata {
-  kind: MediaAssetKind;
-  mimeType: string;
-  sizeBytes: number;
-  width?: number;
-  height?: number;
-}
 
 export type MediaItemTagRecord = Omit<MediaItemTag, 'id'> & {
   id: string;
@@ -60,7 +42,6 @@ export type MediaItemRecord = MediaItemProps & {
 } & AuditRecord;
 
 export type MediaItemChildRecords = {
-  assets: MediaAssetRecord[];
   tags: MediaItemTagRecord[];
   reactions: MediaItemReactionRecord[];
 };
@@ -81,8 +62,6 @@ export type CreateMediaItemInput = {
 
 export class MediaItem extends AggregateRoot<MediaItemRecord> {
   protected props: MediaItemProps;
-  #assets: MediaAsset[] = [];
-  #removedAssets: MediaAsset[] = [];
   #tags: MediaItemTag[] = [];
   #removedTags: { mediaItemId: EntityId; userTagId: EntityId }[] = [];
   #addedTags: Omit<MediaItemTag, 'label'>[] = [];
@@ -130,41 +109,10 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     const mediaItem = new MediaItem(record.createdBy, record, record.id);
 
     mediaItem.rehydrateAudit(record);
-    mediaItem.#assets = childRecords.assets.map((r) => MediaAsset.rehydrate(r));
     mediaItem.#tags = [...(childRecords.tags ?? [])];
     mediaItem.#reactions = [...(childRecords.reactions ?? [])];
     mediaItem.#computedReactionCounts();
     return mediaItem;
-  }
-
-  addAsset(kind: MediaAssetKind, mimeType: string) {
-    if (this.#assets.find((a) => a.kind().equals(kind))) {
-      return fail(AppErrorCollection.mediaItem.AssetKindAlreadyExists);
-    }
-
-    this.#assets.push(
-      MediaAsset.create(
-        {
-          kind,
-          mimeType,
-          mediaItemId: this.id(),
-        },
-        this.props.ownerId,
-      ),
-    );
-    return ok(undefined);
-  }
-
-  updateAssetWithMetadata({ kind, sizeBytes, mimeType, width, height }: AssetMetadata) {
-    const asset = this.#assets.find((a) => a.kind().equals(kind));
-    if (!asset) {
-      return fail(AppErrorCollection.mediaItem.AssetNotFound);
-    }
-    if (!asset.status().equals(MediaAssetStatus.pending)) {
-      return fail(AppErrorCollection.mediaItem.AssetNotPending);
-    }
-    asset.applyUploadedObjectMetadata({ sizeBytes, mimeType, width, height }, this.props.ownerId);
-    return ok(undefined);
   }
 
   addTags(tags: MediaItemTag[]): OperationResult {
@@ -244,80 +192,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
   height(): number | undefined {
     return this.props.height;
-  }
-
-  applyProcessingResults(
-    result: {
-      capture: { takenAtUtc?: Date; takenAtUtcOffsetMinutes?: number };
-      displayAsset: AssetMetadata;
-      thumbnailAsset: AssetMetadata;
-      originalAsset?: AssetMetadata;
-    },
-    actorId: EntityId,
-  ) {
-    const { capture, displayAsset, thumbnailAsset, originalAsset } = result;
-    if (!this.props.status.equals(MediaItemStatus.processing)) {
-      return fail(AppErrorCollection.mediaItem.MediaItemNotProcessing);
-    }
-    const w = Math.round(displayAsset.width || 0);
-    const h = Math.round(displayAsset.height || 0);
-    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
-      return fail(ContractError.InvalidMediaDimensions);
-    }
-
-    if (
-      this.#assets.find(
-        (a) => a.kind().equals(MediaAssetKind.thumbnail) || a.kind().equals(MediaAssetKind.display),
-      )
-    ) {
-      return fail(AppErrorCollection.mediaItem.AssetKindAlreadyExists);
-    }
-
-    if (originalAsset) {
-      const original = this.#assets.find((a) => a.kind().equals(MediaAssetKind.original));
-      if (!original) {
-        return fail(AppErrorCollection.mediaItem.AssetNotFound);
-      }
-      if (!original.status().equals(MediaAssetStatus.processing)) {
-        return fail(AppErrorCollection.mediaItem.AssetNotProcessing);
-      }
-      // Mutating inside the Guard, not great but ok since this is the last
-      // guard. If you feel like moving things around you'll have to pull this
-      // back out.
-      original.applyUploadedObjectMetadata(originalAsset, actorId);
-    }
-
-    const thumb = MediaAsset.create(
-      {
-        kind: MediaAssetKind.thumbnail,
-        mimeType: thumbnailAsset.mimeType,
-        mediaItemId: this.id(),
-      },
-      actorId,
-    );
-
-    const display = MediaAsset.create(
-      {
-        kind: MediaAssetKind.display,
-        mimeType: displayAsset.mimeType,
-        mediaItemId: this.id(),
-      },
-      actorId,
-    );
-    thumb.applyUploadedObjectMetadata(thumbnailAsset, actorId);
-    display.applyUploadedObjectMetadata(displayAsset, actorId);
-    this.#assets.push(thumb, display);
-
-    if (capture.takenAtUtc != null && this.props.takenAt == null) {
-      this.props.takenAt = capture.takenAtUtc;
-      this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes;
-    }
-
-    this.props.width = w;
-    this.props.height = h;
-    this.props.status = MediaItemStatus.ready;
-    this.touch(actorId);
-    return ok(undefined);
   }
 
   /**
@@ -424,12 +298,6 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     this.#computedReactionCounts();
     this.touch(actorId);
     return ok(undefined);
-  }
-
-  childEntities(): ChildEntities {
-    return {
-      assets: { upsert: this.#assets, removed: this.#removedAssets },
-    };
   }
 
   VOs(): Record<string, VOCollection> {

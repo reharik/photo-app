@@ -3,6 +3,7 @@ import {
   AlbumMemberRole,
   AlbumMemberSortBy,
   AlbumSortBy,
+  EntityId,
   EntityType,
   MediaItemSortBy,
   MediaItemStatus,
@@ -13,7 +14,7 @@ import {
   SortDir,
   UserStatus,
 } from '@packages/contracts';
-import { CollectionInfo, EntityId, PageInfo } from '../../types';
+import { CollectionInfo, PageInfo } from '../../types';
 
 export type PagedList<T> = {
   nodes: T[];

@@ -1,6 +1,5 @@
-import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
-import { EntityId } from '../..';
-import type { ActorId } from '../../types/types';
+import type { ActorId } from '@packages/contracts';
+import { ContractError, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { AlbumItem } from '../Album/AlbumItem';
 import { albumItemOrderIndexForOrdinal } from '../Album/albumItemOrder';
 

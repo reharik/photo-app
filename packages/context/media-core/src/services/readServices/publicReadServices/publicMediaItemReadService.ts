@@ -1,5 +1,5 @@
+import { EntityId } from '@packages/contracts';
 import { PublicMediaItemReadRepository } from '../../../repositories/readRepositories/publicMediaItemReadRepository';
-import { EntityId } from '../../../types/types';
 import { PublicReadServiceBase } from '../readServiceBaseType';
 import { PublicMediaItemProjection } from '../types';
 import { EnrichMediaItems } from '../viewerReadServices/enrichMediaItems';

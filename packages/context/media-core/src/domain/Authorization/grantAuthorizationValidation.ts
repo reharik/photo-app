@@ -1,12 +1,12 @@
 import {
   AlbumMemberRole,
   AppErrorCollection,
+  EntityId,
   fail,
   ok,
   Operation,
   OperationResult,
 } from '@packages/contracts';
-import { EntityId } from '../../types/types';
 import { Album } from '../Album/Album';
 
 /**

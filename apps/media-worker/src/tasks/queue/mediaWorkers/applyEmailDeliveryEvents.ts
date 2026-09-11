@@ -1,6 +1,6 @@
 import { EmailStatus, SYSTEM_ACTOR_ID } from '@packages/contracts';
 import { indexBy, Logger } from '@packages/infrastructure';
-import { EmailDeliveryRepository, UnitOfWork } from '@packages/media-core';
+import { EmailDeliveryRepository, UnitOfWork } from '@packages/worker-core';
 import { camelCase } from 'case-anything';
 import { WorkerTaskOutcome } from '../../../types';
 import { IncomingSESMessage, SesEventQueue } from './sesEventQueue';
@@ -89,8 +89,7 @@ export const build__ApplyEmailDeliveryEvents = ({
       (x): x is ProcessingSESEventMessage & { body: SESEventBody } => !!x.body,
     );
     const messageMap = indexBy(liveMessages, (x) => x.body.sesMessageId);
-    try {
-      await uow.join();
+    await uow.inTransaction(async () => {
       const emailDeliveries = await emailDeliveryRepository.getByMessageIds(
         liveMessages.map((x) => x.body.sesMessageId),
       );
@@ -104,11 +103,7 @@ export const build__ApplyEmailDeliveryEvents = ({
         ed.setLastEvent(SYSTEM_ACTOR_ID, message.parsed);
         await emailDeliveryRepository.save(ed);
       }
-      await uow.complete(true);
-    } catch (e) {
-      await uow.settle(false);
-      throw e;
-    }
+    });
 
     const deleteHandles = allMessages.map((x) => ({
       Id: x.sqsMessageId,

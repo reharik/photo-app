@@ -1,9 +1,8 @@
-import { ContractError, fail, ok, OperationResult } from '@packages/contracts';
+import { ContractError, EntityId, fail, ok, OperationResult } from '@packages/contracts';
 import { ensureMediaItemOwnedByViewer } from '../../../application/support/mediaItemGuard';
 import { loadRequiredMediaItem } from '../../../application/support/resourceLoaders';
 import { MediaItem } from '../../../domain';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import {
   UpdateMediaItemDetailsCommand,

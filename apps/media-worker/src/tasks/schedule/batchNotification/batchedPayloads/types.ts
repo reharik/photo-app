@@ -1,6 +1,6 @@
 import { BatchedPayloadKind, NotificationKind } from '@packages/contracts';
-import { AsyncNotification } from '@packages/media-core';
 import { ActivitySection } from '@packages/notifications';
+import { AsyncNotification } from '@packages/worker-core';
 import { RowOutcome } from '../../outcomeCleanup';
 
 export interface BatchedEmailPayload {

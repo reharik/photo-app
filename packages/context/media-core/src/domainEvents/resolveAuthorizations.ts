@@ -1,4 +1,4 @@
-import { assertNever } from '@packages/contracts';
+import { assertNever, EntityId } from '@packages/contracts';
 import { groupByMapping, indexByUnique } from '@packages/infrastructure';
 import {
   isAuthorizationKind,
@@ -10,7 +10,6 @@ import {
 } from '../repositories';
 import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
 import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
-import { EntityId } from '../types';
 import { DomainEvent } from './domainEvent';
 
 /**

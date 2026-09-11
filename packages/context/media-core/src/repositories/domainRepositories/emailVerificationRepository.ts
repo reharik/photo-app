@@ -1,6 +1,6 @@
+import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '../../services';
-import { EntityId } from '../../types';
 
 export type emailVerificationRow = {
   id: string;
@@ -22,7 +22,6 @@ export const build__EmailVerificationRepository = ({
   uow,
 }: EmailVerificationRepositoryDeps): EmailVerificationRepository => ({
   getValidVerification: async (email: string) => {
-    await uow.join();
     return uow
       .db()('emailVerification')
       .where({ email, consumedAt: null })
@@ -30,7 +29,6 @@ export const build__EmailVerificationRepository = ({
       .first<emailVerificationRow>();
   },
   completeConsumption: async (id: EntityId) => {
-    await uow.join();
     return uow.db()('emailVerification').where({ id }).update({ consumedAt: uow.db().fn.now() });
   },
 });

@@ -1,6 +1,10 @@
-import { EntityType, NotificationContainerType, ReactionEmoji } from '@packages/contracts';
+import {
+  EntityId,
+  EntityType,
+  NotificationContainerType,
+  ReactionEmoji,
+} from '@packages/contracts';
 import { EnumSubset } from '@reharik/smart-enum';
-import { EntityId } from '../types/types';
 import { DomainEventBase } from './domainEvent';
 
 export type CommentTargetType = EnumSubset<EntityType, 'mediaItem' | 'album'>;

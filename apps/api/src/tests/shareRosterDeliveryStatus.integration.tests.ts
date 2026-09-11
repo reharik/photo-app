@@ -112,9 +112,9 @@ describe('share roster email delivery status (integration)', () => {
   });
 
   afterEach(async () => {
-    // A repository resolved off the root container leaves a transaction open and
-    // TRUNCATE would block on it forever; settle(false) is a no-op when none is open.
-    await container.resolve('uow').settle(false);
+    // No boundary mop-up: every case drives the API through yoga, so the GraphQL
+    // envelop plugin owns and closes the request transaction. `complete` throws when
+    // nothing is open, so an unconditional teardown call would fail these tests.
     // email_delivery is not in resetDb's TRUNCATE list but is reached by CASCADE
     // through its access_grant_id FK.
     await resetIntegrationTestDb(database);

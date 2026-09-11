@@ -1,4 +1,11 @@
-import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
+import {
+  AppErrorCollection,
+  EntityId,
+  fail,
+  ok,
+  Operation,
+  OperationResult,
+} from '@packages/contracts';
 import { dedupeIds, Logger } from '@packages/infrastructure';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from '../../../application';
 import {
@@ -15,7 +22,6 @@ import { MediaItemRepository } from '../../../repositories';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { ShareContactRepository } from '../../../repositories/domainRepositories/shareContactRepository';
 import { UserRepository } from '../../../repositories/domainRepositories/userRepository';
-import { EntityId } from '../../../types';
 import { WriteServiceBase } from '../writeServiceBaseType';
 import { GrantUserAuthorizationCommand } from './grantTypes';
 import {

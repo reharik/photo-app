@@ -1,11 +1,10 @@
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import {
   DBMediaItemRow,
   MediaItemCollectionInfo,
   PagedList,
 } from '../../services/readServices/types';
-import { EntityId } from '../../types/types';
 import { toPagedResult } from '../queryHelpers';
 import type { MediaItemReadRepository, MediaItemTagRow, ReadRepositoryDeps } from './types';
 
@@ -39,7 +38,6 @@ export const build__MediaItemReadRepository = ({
   }: {
     mediaItemId: EntityId;
   }): Promise<DBMediaItemRow | undefined> => {
-    await uow.join();
     const row = await uow
       .db()<DBMediaItemRow>('mediaItem')
       .where({ id: mediaItemId })
@@ -54,7 +52,6 @@ export const build__MediaItemReadRepository = ({
     mediaItemId: EntityId;
     viewerId: EntityId;
   }): Promise<DBMediaItemRow | undefined> => {
-    await uow.join();
     const mediaItem = await withEnumRevival(
       uow
         .db()<DBMediaItemRow>('mediaItem')
@@ -84,7 +81,6 @@ export const build__MediaItemReadRepository = ({
     mediaItemIds: EntityId[];
     viewerId: EntityId;
   }): Promise<DBMediaItemRow[]> => {
-    await uow.join();
     const rows = await withEnumRevival(
       uow
         .db()<DBMediaItemRow>('mediaItem')
@@ -106,7 +102,6 @@ export const build__MediaItemReadRepository = ({
     viewerId: EntityId;
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<PagedList<DBMediaItemRow>> => {
-    await uow.join();
     const rows = (await withEnumRevival(
       uow
         .db()('mediaItem')
@@ -144,7 +139,6 @@ export const build__MediaItemReadRepository = ({
       return [];
     }
 
-    await uow.join();
     return uow
       .db()('media_item_tag')
       .join('mediaItem', 'mediaItemTag.mediaItemId', 'mediaItem.id')

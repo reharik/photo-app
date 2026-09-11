@@ -1,6 +1,4 @@
-import { Operation } from '@packages/contracts';
-import { EntityId } from '../../types/types';
-import { AuditRecord } from '../Entity';
+import { AuditRecord, EntityId, Operation } from '@packages/contracts';
 import type { PendingUserAuthorizationRecord } from './PendingUserAuthorization';
 import type { PublicLinkAuthorizationRecord } from './PublicLinkAuthorization';
 import type { UserAuthorizationRecord } from './UserAuthorization';

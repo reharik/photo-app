@@ -1,4 +1,4 @@
-import { AsyncNotification } from '@packages/media-core';
+import { AsyncNotification } from '@packages/worker-core';
 
 export type RowOutcome = {
   row: AsyncNotification;

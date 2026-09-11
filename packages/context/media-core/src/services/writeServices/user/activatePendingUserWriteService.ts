@@ -1,8 +1,7 @@
-import { ok, OperationResult } from '@packages/contracts';
+import { ActorId, ok, OperationResult } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { PendingUser } from '../../../domain';
 import { AlbumRepository, UserRepository } from '../../../repositories';
-import { ActorId } from '../../../types';
 import { RequestScopeLifeCycle } from '../../readServices/readServiceBaseType';
 
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };

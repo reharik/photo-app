@@ -1,11 +1,11 @@
-import { EntityType } from '@packages/contracts';
+import { EntityId, EntityType } from '@packages/contracts';
 import { groupByMapping } from '@packages/infrastructure';
 import {
   CommentReadRepository,
   DBCommentRow,
   ReactionReadRepository,
 } from '../../../repositories/readRepositories/types';
-import { EntityId, PageInfo } from '../../../types/types';
+import { PageInfo } from '../../../types/types';
 import { ReadReactionService } from '../readReactionService';
 import { AgnosticReadServiceBase } from '../readServiceBaseType';
 import { CommentGraph, CommentRow } from '../types';

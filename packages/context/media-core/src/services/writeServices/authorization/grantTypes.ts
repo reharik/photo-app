@@ -1,6 +1,5 @@
-import { ContractError } from '@packages/contracts';
+import { ContractError, EntityId } from '@packages/contracts';
 import { PendingUser, User } from '../../../domain';
-import { EntityId } from '../../../types/types';
 
 export type GrantUserAuthorizationResult = {
   invitedUsers: (User | PendingUser)[];

@@ -1,6 +1,6 @@
+import type { EntityId } from '@packages/contracts';
 import { EntityType, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import type { EntityId } from '../../types/types';
 import type { DbReactionRow, ReactionReadRepository, ReadRepositoryDeps } from './types';
 
 export const build__ReactionReadRepository = ({
@@ -13,7 +13,6 @@ export const build__ReactionReadRepository = ({
     targetType: EntityType;
     targetId: EntityId;
   }): Promise<number> => {
-    await uow.join();
     const result = await uow
       .db()('reaction')
       .where({
@@ -37,7 +36,7 @@ export const build__ReactionReadRepository = ({
     if (targetIds.length === 0) {
       return [];
     }
-    await uow.join();
+
     return withEnumRevival(
       uow
         .db()<DbReactionRow>('reaction')

@@ -1,9 +1,8 @@
-import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow } from '../../services';
 import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
-import { EntityId } from '../../types';
 import { albumItemWithMediaSelectColumns } from '../readRepositories/albumItemReadRepository';
 
 export interface SystemAlbumItemRepository extends RequestScopeLifeCycle {
@@ -29,7 +28,6 @@ export const build__SystemAlbumItemRepository = ({
   uow,
 }: SystemAlbumItemRepositoryDeps): SystemAlbumItemRepository => ({
   getItemsByAlbumIds: async (albumIds: EntityId[]) => {
-    await uow.join();
     return uow
       .db()('albumItem')
       .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
@@ -45,7 +43,6 @@ export const build__SystemAlbumItemRepository = ({
     albumId: EntityId;
     albumItemIds: EntityId[];
   }) => {
-    await uow.join();
     return withEnumRevival(
       uow
         .db()('albumItem')

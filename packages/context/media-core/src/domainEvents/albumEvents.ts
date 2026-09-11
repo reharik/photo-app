@@ -1,4 +1,4 @@
-import { EntityId } from '../types/types';
+import { EntityId } from '@packages/contracts';
 import { DomainEventBase } from './domainEvent';
 
 export interface MediaItemAddedToAlbum extends DomainEventBase {

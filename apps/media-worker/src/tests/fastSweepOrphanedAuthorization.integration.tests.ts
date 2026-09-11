@@ -21,8 +21,12 @@ import { randomUUID } from 'node:crypto';
 import type { Config as WorkerConfig } from '../config.js';
 import { createWorkerContainer } from '../container.js';
 import type { AppCradle } from '../generated/ioc-composed.js';
+import { build__HandleNotificationOutcomes } from '../tasks/schedule/handleNotificationOutcomes.js';
+import { build__BuildFastSweepPayloads } from '../tasks/schedule/individualNotification/buildFastSweepPayloads.js';
 import { build__FastSweepNotification } from '../tasks/schedule/individualNotification/fastSweepNotification.js';
 import { build__AlbumSharedWithNonUserStrategy } from '../tasks/schedule/individualNotification/fastSweepNotificationStrategies/albumSharedWithNonUserStrategy.js';
+import { build__PersistNotificationDelivery } from '../tasks/schedule/individualNotification/persistNotificationDelivery.js';
+import { build__SendNotificationForPayload } from '../tasks/schedule/individualNotification/sendNotificationForPayload.js';
 import { ensureTestViewerUsers } from './ensureTestViewerUsers';
 import { resetIntegrationTestDb } from './resetDb';
 import { TEST_VIEWER_1_ID } from './testViewerIds';
@@ -183,22 +187,47 @@ describe('fast sweep — orphaned authorization (integration)', () => {
       clientUrl: 'http://sweep.test',
       debounceEmailWindowSeconds: 0,
     } as WorkerConfig;
+    // The sweep is an orchestrator over four injected units now. Only
+    // `sendNotificationForPayload` needs hand-building — it is what owns the
+    // NotificationService, and a fake `notify` is the whole point of this suite;
+    // the rest take real repositories off the same container, so they share the
+    // one uow whose boundaries the sweep opens.
+    const uow = container.resolve('uow');
+    const systemAsyncNotificationRepository = container.resolve(
+      'systemAsyncNotificationRepository',
+    );
+    const emailDeliveryRepository = container.resolve('emailDeliveryRepository');
     const sweep = build__FastSweepNotification({
       logger,
-      notificationService: { notify },
-      systemAsyncNotificationRepository: container.resolve('systemAsyncNotificationRepository'),
-      systemUserRepository: container.resolve('systemUserRepository'),
-      // Same container, so the sweep and the system repositories share one scoped uow.
-      uow: container.resolve('uow'),
-      config: workerConfig,
-      fastSweepNotificationStrategies: [
-        build__AlbumSharedWithNonUserStrategy({
-          config: workerConfig,
-          systemAlbumRepository: container.resolve('systemAlbumRepository'),
-          systemAuthorizationRepository: container.resolve('systemAuthorizationRepository'),
-          logger,
-        }),
-      ],
+      uow,
+      systemAsyncNotificationRepository,
+      buildFastSweepPayloads: build__BuildFastSweepPayloads({
+        logger,
+        systemAsyncNotificationRepository,
+        systemUserRepository: container.resolve('systemUserRepository'),
+        config: workerConfig,
+        fastSweepNotificationStrategies: [
+          build__AlbumSharedWithNonUserStrategy({
+            config: workerConfig,
+            systemAlbumRepository: container.resolve('systemAlbumRepository'),
+            systemAuthorizationRepository: container.resolve('systemAuthorizationRepository'),
+            logger,
+          }),
+        ],
+      }),
+      sendNotificationForPayload: build__SendNotificationForPayload({
+        logger,
+        notificationService: { notify },
+        uow,
+        emailDeliveryRepository,
+      }),
+      persistNotificationDelivery: build__PersistNotificationDelivery({
+        emailDeliveryRepository,
+      }),
+      handleNotificationOutcomes: build__HandleNotificationOutcomes({
+        logger,
+        systemAsyncNotificationRepository,
+      }),
     });
 
     // Before the strategy fix this pass threw (TypeError on the missing row) and

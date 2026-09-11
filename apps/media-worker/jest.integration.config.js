@@ -11,16 +11,16 @@ export default {
   displayName: 'media-worker-integration',
   moduleNameMapper: {
     ...workerJestConfig.moduleNameMapper,
-    // The base config maps `@packages/media-core` (the main entry) to source, but the
+    // The base config maps `@packages/worker-core` (the main entry) to source, but the
     // worker's generated ioc-composed.ts imports factories via the `/iocManifest` +
     // `/iocTypes` subpaths, whose package `exports` resolve to the built `dist` under
     // jest. Because `test-integration` has no `dependsOn: build`, that would leave the
-    // container running a possibly-stale media-core build. Map the subpaths to source
+    // container running a possibly-stale worker-core build. Map the subpaths to source
     // too, same as apps/api/jest.integration.config.js.
-    '^@packages/media-core/iocManifest$':
-      '<rootDir>/../../packages/context/media-core/src/generated/ioc-manifest.ts',
-    '^@packages/media-core/iocTypes$':
-      '<rootDir>/../../packages/context/media-core/src/generated/ioc-registry.types.ts',
+    '^@packages/worker-core/iocManifest$':
+      '<rootDir>/../../packages/context/worker-core/src/generated/ioc-manifest.ts',
+    '^@packages/worker-core/iocTypes$':
+      '<rootDir>/../../packages/context/worker-core/src/generated/ioc-registry.types.ts',
   },
   /**
    * One worker only (already in the base config, restated for clarity): integration

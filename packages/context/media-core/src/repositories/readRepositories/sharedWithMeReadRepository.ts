@@ -1,6 +1,6 @@
-import { AlbumMemberRole, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { AlbumMemberRole, EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { EntityId, PagedList, toPagedResult } from '../..';
+import { PagedList, toPagedResult } from '../..';
 import { SharedWithMeAlbumCollectionInfo } from '../../services/readServices/types';
 import {
   withActiveGrants,
@@ -30,7 +30,6 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     collectionInfo: SharedWithMeAlbumCollectionInfo;
   }): Promise<PagedList<SharedAlbumRow>> => {
-    await uow.join();
     const query = uow
       .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')
@@ -56,7 +55,6 @@ export const build__SharedWithMeReadRepository = ({
     viewerId: EntityId;
     albumId: string;
   }): Promise<SharedAlbumRow | undefined> => {
-    await uow.join();
     const query = uow
       .db()('accessGrant')
       .innerJoin('album', 'album.id', 'accessGrant.albumId')

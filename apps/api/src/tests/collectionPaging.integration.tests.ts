@@ -138,13 +138,22 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
   });
 
   afterEach(async () => {
-    // Reads join the request transaction now, so a repository resolved straight off
-    // the container leaves one open — there is no GraphQL boundary here to settle it,
-    // and TRUNCATE below would block on the lock forever. settle(false) is a no-op
-    // when nothing is open, which is the case for the tests that go through yoga.
-    await container.resolve('uow').settle(false);
+    // No boundary mop-up here any more. `settle(false)` used to cover repositories
+    // resolved straight off the container, which lazily opened a transaction and
+    // never closed it — TRUNCATE below would then block on the lock forever. Reads
+    // now go through `uow.inTransaction(...)` at each call site (see `read` below),
+    // which closes on both paths, so there is nothing left open to forgive. That
+    // matters because `complete` throws when nothing is open: an unconditional
+    // teardown call would fail every test that went through yoga.
     await resetIntegrationTestDb(database, undefined, () => integrationTestMediaStorage.clear());
   });
+
+  /**
+   * Supplies the boundary these repositories now require. `uow.db()` throws outside
+   * a transaction, and in production the GraphQL envelop plugin opens one per
+   * request; a test that resolves a repository directly has to stand in for it.
+   */
+  const read = <T>(fn: () => Promise<T>): Promise<T> => container.resolve('uow').inTransaction(fn);
 
   describe('When listByViewerId runs with title sort', () => {
     it('should apply limit+1 and stable title order from Knex', async () => {
@@ -165,14 +174,16 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await albumReadRepository.listByViewerId({
-        viewerId,
-        collectionInfo: buildCollectionInfo({
-          pageInfo: { limit: 2, offset: 0 },
-          sortBy: AlbumSortBy.title,
-          sortDir: SortDir.asc,
+      const page = await read(() =>
+        albumReadRepository.listByViewerId({
+          viewerId,
+          collectionInfo: buildCollectionInfo({
+            pageInfo: { limit: 2, offset: 0 },
+            sortBy: AlbumSortBy.title,
+            sortDir: SortDir.asc,
+          }),
         }),
-      });
+      );
 
       expect(page.nodes.map((r) => r.title)).toEqual(['paging-a', 'paging-b']);
     });
@@ -197,14 +208,16 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await albumReadRepository.listByViewerId({
-        viewerId,
-        collectionInfo: buildCollectionInfo({
-          pageInfo: { limit: 2, offset: 2 },
-          sortBy: AlbumSortBy.title,
-          sortDir: SortDir.asc,
+      const page = await read(() =>
+        albumReadRepository.listByViewerId({
+          viewerId,
+          collectionInfo: buildCollectionInfo({
+            pageInfo: { limit: 2, offset: 2 },
+            sortBy: AlbumSortBy.title,
+            sortDir: SortDir.asc,
+          }),
         }),
-      });
+      );
 
       expect(page.nodes.map((r) => r.title)).toEqual(['paging-c', 'paging-m']);
     });
@@ -227,14 +240,16 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await albumReadRepository.listByViewerId({
-        viewerId,
-        collectionInfo: buildCollectionInfo({
-          pageInfo: { limit: 5, offset: 0 },
-          sortBy: AlbumSortBy.createdAt,
-          sortDir: SortDir.desc,
+      const page = await read(() =>
+        albumReadRepository.listByViewerId({
+          viewerId,
+          collectionInfo: buildCollectionInfo({
+            pageInfo: { limit: 5, offset: 0 },
+            sortBy: AlbumSortBy.createdAt,
+            sortDir: SortDir.desc,
+          }),
         }),
-      });
+      );
 
       expect(page.nodes.map((r) => r.title)).toEqual(['t-new', 't-mid', 't-old']);
     });
@@ -288,27 +303,31 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         updatedAt: tLate,
       });
 
-      const firstWindow = await albumItemReadRepository.getViewableAlbumItemsForViewer({
-        albumId,
-        viewerId,
-        collectionInfo: buildAlbumItemCollectionInfo({
-          pageInfo: { limit: 2, offset: 0 },
-          sortBy: AlbumItemSortBy.createdAt,
-          sortDir: SortDir.asc,
+      const firstWindow = await read(() =>
+        albumItemReadRepository.getViewableAlbumItemsForViewer({
+          albumId,
+          viewerId,
+          collectionInfo: buildAlbumItemCollectionInfo({
+            pageInfo: { limit: 2, offset: 0 },
+            sortBy: AlbumItemSortBy.createdAt,
+            sortDir: SortDir.asc,
+          }),
         }),
-      });
+      );
 
       expect(firstWindow.nodes.map((r) => r.id)).toEqual([item1, item2]);
 
-      const secondWindow = await albumItemReadRepository.getViewableAlbumItemsForViewer({
-        albumId,
-        viewerId,
-        collectionInfo: buildAlbumItemCollectionInfo({
-          pageInfo: { limit: 2, offset: 1 },
-          sortBy: AlbumItemSortBy.createdAt,
-          sortDir: SortDir.asc,
+      const secondWindow = await read(() =>
+        albumItemReadRepository.getViewableAlbumItemsForViewer({
+          albumId,
+          viewerId,
+          collectionInfo: buildAlbumItemCollectionInfo({
+            pageInfo: { limit: 2, offset: 1 },
+            sortBy: AlbumItemSortBy.createdAt,
+            sortDir: SortDir.asc,
+          }),
         }),
-      });
+      );
 
       expect(secondWindow.nodes.map((r) => r.id)).toEqual([item2, item3]);
     });

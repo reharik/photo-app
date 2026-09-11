@@ -1,6 +1,6 @@
-import { AsyncNotificationKind, EmailKind } from '@packages/contracts';
-import { AsyncNotification, EntityId, UserContact } from '@packages/media-core';
+import { AsyncNotificationKind, EmailKind, EntityId } from '@packages/contracts';
 import { NotificationPayload, TemplateName } from '@packages/notifications';
+import { AsyncNotification, UserContact } from '@packages/worker-core';
 
 export type PayloadResult<T extends TemplateName> =
   | {
@@ -23,3 +23,5 @@ export interface FastSweepNotificationStrategy<T extends TemplateName> {
     userMap: Map<string, UserContact>,
   ) => Promise<PayloadResult<T>[]>;
 }
+
+export type ConcretePayloadResult<T extends TemplateName = TemplateName> = PayloadResult<T>;

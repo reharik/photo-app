@@ -11,7 +11,7 @@
  *
  * Observation technique: the finalize call runs inside the same authenticated-WRITE
  * scope root the GraphQL mutation boundary uses, opened by hand through its generated
- * opener so the settlement stays under this test's control — the GraphQL boundary
+ * opener so the completion stays under this test's control — the GraphQL boundary
  * itself can't be used because it finalizes before responding. Assertions read
  * through the plain `database` handle, which takes a DIFFERENT pooled connection than
  * the open trx, so READ COMMITTED shows exactly what the media-worker's connection
@@ -93,10 +93,15 @@ describe('media processing job enqueue boundary (integration)', () => {
 
   /**
    * Run finalize inside a manually-held write scope and hand control back between the
-   * write and the settlement. There is nothing to start: the uow joins lazily on the
-   * first repository call, and `finalize(ok)` is the scope root's one settlement call —
-   * true commits, false rolls back. Settles on any failure so an open trx never leaks
-   * into afterEach (TRUNCATE would block on it forever).
+   * write and the completion. This is the split-hook shape `start` / `finalize` exist
+   * for — the open and the close are separated by the assertions in between, so it
+   * cannot be expressed as an `inTransaction(fn)`.
+   *
+   * `start()` is now mandatory rather than optional: repositories call `uow.db()`,
+   * which throws outside a boundary, so nothing opens lazily any more. `finalize(ok)`
+   * is the scope root's one completion call — true commits, false rolls back — and it
+   * runs on any failure too, so an open trx never leaks into afterEach (TRUNCATE would
+   * block on it forever).
    */
   const finalizeInOpenUow = async (
     mediaItemId: string,
@@ -115,6 +120,7 @@ describe('media processing job enqueue boundary (integration)', () => {
         await dispose();
       }
     };
+    await writeScope.start();
     try {
       const result = await writeScope.writeServices.finalizeMediaItemUpload({
         mediaItemId,
