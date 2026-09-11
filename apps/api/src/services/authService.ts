@@ -103,7 +103,10 @@ export const build__AuthService = ({
       data: {
         firstName,
         lastName,
-        appUrl: config.clientUrl,
+        // /login, not the bare root: the root now serves the marketing page to
+        // anyone without a token cookie, so a new account opening this on a second
+        // device would land on a pitch instead of their app.
+        appUrl: `${config.clientUrl}/login`,
         changedAt: new Date().toISOString(),
       },
     });
