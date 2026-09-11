@@ -6,7 +6,6 @@ export * from './createJobQueueRepository';
 export * from './domainRepositories/AggregateRepo';
 export * from './domainRepositories/emailDeliverRepository';
 export * from './domainRepositories/mediaItemRepository';
-export * from './mediaDeletionJob/mediaDeletionJobRepository';
 export * from './mediaProcessingJob/mediaProcessingJobRepository';
 export * from './queryHelpers/withAlbumItemCount';
 export * from './queryHelpers/withLiveAuthorizationFilter';

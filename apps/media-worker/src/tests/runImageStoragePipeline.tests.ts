@@ -61,8 +61,11 @@ const derivative = (over: Partial<GeneratedDerivative> = {}): GeneratedDerivativ
 });
 
 const jobRow = (): MediaProcessingJobRow =>
-  ({ id: JOB_ID, mediaItemId: MEDIA_ITEM_ID, createdBy: OWNER_ID }) as unknown as
-    MediaProcessingJobRow;
+  ({
+    id: JOB_ID,
+    mediaItemId: MEDIA_ITEM_ID,
+    createdBy: OWNER_ID,
+  }) as unknown as MediaProcessingJobRow;
 
 type Write = { storageKey: string; body: Buffer; mimeType?: string };
 
@@ -100,9 +103,8 @@ describe('build__RunImageStoragePipeline', () => {
     jest.unstable_mockModule('../infrastructure/exif/extractCaptureTime.js', () => ({
       extractCaptureTime,
     }));
-    ({ build__RunImageStoragePipeline } = await import(
-      '../tasks/queue/mediaWorkers/processMediaImage/runImageStoragePipeline.js'
-    ));
+    ({ build__RunImageStoragePipeline } =
+      await import('../tasks/queue/mediaWorkers/processMediaImage/runImageStoragePipeline.js'));
   });
 
   beforeEach(() => {

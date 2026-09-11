@@ -81,7 +81,7 @@ export const build__NotificationBatcher = ({
       return result.deleteIds + result.bumpRowIds > 0 ? 'processed' : 'idle';
     } catch (e) {
       logger.error(
-        '[NotificationBatcher] outcome cleanup failed — rows not settled, next pass will re-send',
+        '[NotificationBatcher] outcome cleanup failed — rows not completed, next pass will re-send',
         e,
       );
       return 'idle';

@@ -49,8 +49,7 @@ type ObjectState = { size: number; mimeType?: string; body?: Buffer };
  * API back in the asset-writing business shows up as a non-empty result rather
  * than as a silent extra row.
  */
-const childAssetRows = (item: MediaItem): unknown[] =>
-  item.childEntities().assets?.upsert ?? [];
+const childAssetRows = (item: MediaItem): unknown[] => item.childEntities().assets?.upsert ?? [];
 
 const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository => ({
   enqueueIfNoneActive: async () => {},

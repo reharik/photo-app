@@ -71,10 +71,10 @@ worker-core additionally deleted its own `Entity.ts`, `entityGuard.ts`,
 
 ### §1 — Orientation handling — **correct on all three counts**
 
-| Check | Verdict |
-| --- | --- |
-| Non-HEIC swaps for orientation ≥ 5 | **CORRECT.** [imageDerivativeGenerator.ts:90-95](apps/media-worker/src/tasks/queue/mediaWorkers/imageDerivativeGenerator.ts#L90-L95). `md.orientation != null && md.orientation >= 5` guards the null case; sharp reports orientation 1–8 or undefined. |
-| HEIC path does not double-swap | **CORRECT.** [:136-142](apps/media-worker/src/tasks/queue/mediaWorkers/imageDerivativeGenerator.ts#L136-L142) takes `result.width`/`result.height` straight from the converter with no correction. |
+| Check                                       | Verdict                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Non-HEIC swaps for orientation ≥ 5          | **CORRECT.** [imageDerivativeGenerator.ts:90-95](apps/media-worker/src/tasks/queue/mediaWorkers/imageDerivativeGenerator.ts#L90-L95). `md.orientation != null && md.orientation >= 5` guards the null case; sharp reports orientation 1–8 or undefined.                                                                                           |
+| HEIC path does not double-swap              | **CORRECT.** [:136-142](apps/media-worker/src/tasks/queue/mediaWorkers/imageDerivativeGenerator.ts#L136-L142) takes `result.width`/`result.height` straight from the converter with no correction.                                                                                                                                                |
 | Nothing else reads dimensions and disagrees | **CORRECT.** `resizeToDerivative` reads `info.width/height` from the post-`.rotate()` output buffer — already oriented, no correction needed and none applied. The only other pipeline read is `extractCaptureTime`, which reads timestamps, not dimensions. `applyProcessingResults` derives `media_item.width/height` from `displayAsset` only. |
 
 Confidence: high. One nit, cosmetic: the two `runStage` labels disagree with reality —
@@ -117,6 +117,7 @@ Confidence: high — the branch is three lines and there is only one call site.
 
 **Does `apps/api` still reference `MediaAsset`?**
 Production code: **no.** The remaining hits are:
+
 - `apps/api/src/graphql/schema/media/mediaAsset.graphql` + its generated echoes — the `MediaAsset` GraphQL type still exists but **no field anywhere in the schema returns it.** It is an orphan type kept alive only by `implements Node`. The `MediaAssetKind` / `MediaAssetStatus` enums are still genuinely used (storage-key building, `mediaAuthMiddleware`).
 - `apps/api/src/tests/*` — three test files, plus `resetDb.ts` truncating `media_asset`.
 - `buildMediaAssetStorageKey` — a pure string helper, unrelated to the table.
@@ -129,7 +130,8 @@ Exhaustive grep for `mediaAsset` / `media_asset` across `apps/api/src`,
 production code returns **exactly one** table access: worker-core's `mediaItemRepository.getById`.
 
 Every URL is derived from storage layout:
-- Presigned/derived URLs: [createDerivedMediaItemUrl.ts](packages/context/media-core/src/application/media/createDerivedMediaItemUrl.ts) — its own doc comment says *"derived from storage layout only — no media_asset table reads."*
+
+- Presigned/derived URLs: [createDerivedMediaItemUrl.ts](packages/context/media-core/src/application/media/createDerivedMediaItemUrl.ts) — its own doc comment says _"derived from storage layout only — no media_asset table reads."_
 - Byte-serving: [mediaAuthMiddleware.ts:55](apps/api/src/middleware/mediaAuthMiddleware.ts#L55) — `buildMediaAssetStorageKey(decision.value, MediaAssetKind.fromKey(variant))`. Authorization comes from `mediaGrantService`, the key from string concatenation. No asset row consulted.
 - Album view / item detail: `enrichMediaItems`, `viewerMediaItemReadService`, `albumReadRepository` — none join `media_asset`.
 
@@ -139,13 +141,14 @@ Confidence: high (exhaustive grep, plus `nx typecheck` passes for `api`, `media-
 `media-core`, `worker-core` — the only failure is the pre-existing api test error).
 
 Two dead functions fall out of this, both **pre-existing**, neither touched by your diff:
+
 - `resolveMediaAssetUrl` / `resolvePreferredAssetKind` — **zero production callers.** The only referrer is `packages/context/media-core/src/tests/resolveMediaAssetUrl.application.tests.ts`, a test of dead code that passes. It takes an `assets: AssetStatusSource[]` argument that nothing can supply any more.
 - `createDerivedMediaItemUrl` — **zero callers**, exported from the barrel only.
 
 **Does the worker create the original's row, or only the two derivatives?**
 **All three.** [worker-core MediaItem.ts:105-134](packages/context/worker-core/src/domain/MediaItem/MediaItem.ts#L105-L134) creates `original`, `thumb`, `display`, applies metadata to each, and pushes all three. The "permanently-failed item ends up with zero asset rows" scenario you asked about is real but **has no consequence**, precisely because nothing reads asset rows — the item's own `status = FAILED` is what the UI polls, and `deleteStoredAssetsForMediaItems` iterates `MediaAssetKind.items()` statically rather than reading rows, so cleanup still covers every key.
 
-**Is `updateAssetWithMetadata` still called anywhere?** No — it is *deleted*, from both
+**Is `updateAssetWithMetadata` still called anywhere?** No — it is _deleted_, from both
 packages, not merely orphaned. `addAsset` likewise. One stale caller survives in a test
 (§7). Three `ContractError` members are now unreachable from production code:
 `AssetNotFound`, `AssetNotPending`, `AssetNotProcessing`.
@@ -171,11 +174,11 @@ or update exists anywhere in production code.
 
 ### §6 — Known outstanding bugs: status check
 
-| Bug | Status | Notes |
-| --- | --- | --- |
-| worker-core `UnitOfWork` lost post-commit `reset()` | **STILL PRESENT — and materially worse than described.** | See BUG-1. |
-| `getPendingUserAuthorizationById` missing → `nx build api` fails | **STILL PRESENT.** | Verified: `nx run api:typecheck` fails with 2× TS2339 at `src/tests/revokeAndReshare.integration.tests.ts:409,419`. It exists in [worker-core's](packages/context/worker-core/src/repositories/systemRepositories/systemAuthorizationRepository.ts#L8) `SystemAuthorizationRepository` (used by the worker's `albumSharedWithNonUserStrategy`) but was never added to [media-core's](packages/context/media-core/src/repositories/systemRepositories/systemAuthorizationRepository.ts#L7-L10), which is the one `apps/api` resolves. |
-| Test files type-checked nowhere | **PARTLY WRONG — correct for the packages, false for `apps/api`.** | `media-core` and `worker-core` `tsconfig.json` both `"exclude": [... "src/tests/**"]`, and their `tsconfig.spec.json` cannot even be compiled standalone (`TS6059: rootDir` violation), so ts-jest is effectively transpile-only there — verified empirically: `mediaUploadAndAlbum.application.tests.ts` imports `MediaAssetRecord` from the **deleted** `../domain/MediaItem/MediaAsset` and jest runs it anyway (type-only import, elided). But `apps/api`'s tsconfig **does** include `src/tests/**` — that is the only reason bug #2 is visible at all. Same for `apps/media-worker` (its typecheck passes). |
+| Bug                                                              | Status                                                             | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| worker-core `UnitOfWork` lost post-commit `reset()`              | **STILL PRESENT — and materially worse than described.**           | See BUG-1.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `getPendingUserAuthorizationById` missing → `nx build api` fails | **STILL PRESENT.**                                                 | Verified: `nx run api:typecheck` fails with 2× TS2339 at `src/tests/revokeAndReshare.integration.tests.ts:409,419`. It exists in [worker-core's](packages/context/worker-core/src/repositories/systemRepositories/systemAuthorizationRepository.ts#L8) `SystemAuthorizationRepository` (used by the worker's `albumSharedWithNonUserStrategy`) but was never added to [media-core's](packages/context/media-core/src/repositories/systemRepositories/systemAuthorizationRepository.ts#L7-L10), which is the one `apps/api` resolves.                                                                              |
+| Test files type-checked nowhere                                  | **PARTLY WRONG — correct for the packages, false for `apps/api`.** | `media-core` and `worker-core` `tsconfig.json` both `"exclude": [... "src/tests/**"]`, and their `tsconfig.spec.json` cannot even be compiled standalone (`TS6059: rootDir` violation), so ts-jest is effectively transpile-only there — verified empirically: `mediaUploadAndAlbum.application.tests.ts` imports `MediaAssetRecord` from the **deleted** `../domain/MediaItem/MediaAsset` and jest runs it anyway (type-only import, elided). But `apps/api`'s tsconfig **does** include `src/tests/**` — that is the only reason bug #2 is visible at all. Same for `apps/media-worker` (its typecheck passes). |
 
 Confirmation of BUG-1's mechanism, since it is load-bearing: [worker-core unitOfWork.ts:37-49](packages/context/worker-core/src/infrastructure/repositories/unitOfWork.ts#L37-L49) — the rollback branch calls `reset()`, the commit branch does not. media-core's equivalent calls `reset()` at line 60 inside `publishPostCommit()`, invoked at line 92 right after `trx.commit()`. The worker pruned the event bus and the `reset()` went with it. `uow` is `lifetime: 'scoped'` in the generated manifest, and grep finds **no `createScope` / `beginUnitOfWorkScope` / `withUnitOfWork` anywhere in `apps/media-worker` or `worker-core` production code** — so Awilix resolves it once on the root container and every task shares one instance for the life of the process.
 
@@ -183,12 +186,12 @@ Confirmation of BUG-1's mechanism, since it is load-bearing: [worker-core unitOf
 
 Your "everything compiles except two test files" is understated. Actual counts:
 
-| Project | At HEAD (per `SPLIT-AUDIT.md` §3) | Now (measured) |
-| --- | --- | --- |
-| `media-core` | 6 suites / 49 tests — **PASS** | **2 suites / 11 tests FAIL** |
-| `worker-core` | 0 suites (exit 1) | 0 suites (exit 1) |
-| `media-worker` (unit) | 3 suites / 5 tests FAIL | **4 suites / 12 tests FAIL** |
-| `api` typecheck | FAIL (2 errors) | FAIL (same 2 errors) |
+| Project               | At HEAD (per `SPLIT-AUDIT.md` §3) | Now (measured)               |
+| --------------------- | --------------------------------- | ---------------------------- |
+| `media-core`          | 6 suites / 49 tests — **PASS**    | **2 suites / 11 tests FAIL** |
+| `worker-core`         | 0 suites (exit 1)                 | 0 suites (exit 1)            |
+| `media-worker` (unit) | 3 suites / 5 tests FAIL           | **4 suites / 12 tests FAIL** |
+| `api` typecheck       | FAIL (2 errors)                   | FAIL (same 2 errors)         |
 
 **Newly broken by this working tree: 3 suites, 18 tests.**
 
@@ -199,7 +202,7 @@ Your "everything compiles except two test files" is understated. Actual counts:
 assertion built on it are asserting API-creates-the-original, which is exactly what you
 removed. Fix: delete `findAssetRecord` and the asset assertions; assert instead that
 finalize leaves **no** asset rows and only flips status to PROCESSING. Also delete the
-now-lying doc comment at line 172 (*"`applyProcessingResults` rejects as AssetNotProcessing"*)
+now-lying doc comment at line 172 (_"`applyProcessingResults` rejects as AssetNotProcessing"_)
 and the dead `import type { MediaAssetRecord } from '../domain/MediaItem/MediaAsset'` at line 17,
 which points at a deleted file.
 
@@ -224,25 +227,28 @@ so the helper needs rewriting, not patching.
 
 **D, E, F — pre-existing, NOT caused by this change** (all three were in `SPLIT-AUDIT.md`'s
 "3 suites failing" baseline; I verified each against `git show HEAD`):
+
 - `media-worker/src/tests/mediaDeletionJobRepository.tests.ts` — suite fails to load: `does not provide an export named 'build__MediaDeletionJobRepository'`. Imports from `@packages/media-core`; the repo lives in `worker-core`.
 - `media-worker/src/tests/mediaProcessingJobRepository.tests.ts` — `repo.markSucceeded is not a function`. Same wrong package: `git show HEAD:packages/context/media-core/.../mediaProcessingJobRepository.ts` already had only `enqueueIfNoneActive`.
 - `media-worker/src/tests/ioc.config.tests.ts` — expects `composedManifests: ['@packages/media-core', …]`, actual is `['@packages/worker-core', …]`. `apps/media-worker/src/ioc.config.ts` is not in this diff.
 
 **Other test files that reference changed types and would fail if type-checked:**
+
 - `media-core/src/tests/mediaUploadAndAlbum.application.tests.ts:17` — imports `MediaAssetRecord` from a **deleted file**. Elided at runtime; a hard error the moment tests are type-checked.
-- `apps/api/src/tests/revokeAndReshare.integration.tests.ts:409,419` — already the api build failure, since api *does* type-check tests.
+- `apps/api/src/tests/revokeAndReshare.integration.tests.ts:409,419` — already the api build failure, since api _does_ type-check tests.
 - `apps/media-worker/src/tests/processNextMediaImageJob.tests.ts` — types imported from the wrong package throughout; typechecks today only because media-core's `MediaItemRepository`/`UnitOfWork` are still structurally compatible. `apps/media-worker:typecheck` currently **passes**, which means its tsconfig is not covering this file the way api's does — worth confirming.
 - `apps/media-worker/src/tests/imageDerivativeGenerator.tests.ts` — **passes, and that is the problem.** It asserts only on `display` and `thumbnail`. It has **zero** assertions on `original`, `originalWasReplaced`, or the orientation swap. The three behaviours this review's §1–§3 are about are entirely untested.
 
 ### §8 — Base class extraction — **clean on all three constraints**
 
-| Check | Verdict |
-| --- | --- |
-| Does `contracts` pull in `DomainEventKind` / `EventPayload` / the `DomainEvent` union? | **NO — correctly avoided.** `contracts/src/domain/Entity.ts` has no event surface whatsoever. The union stayed in media-core, behind the new `DomainEntity` intermediate class. |
-| Is the event type a generic parameter? | **N/A — a better answer was chosen.** Rather than parameterising `Entity<TRecord, TEvent>`, events were pushed *up* into a media-core-local subclass. `Entity` stays event-free and worker-core's `AggregateRoot` extends it directly with no phantom event machinery. This is the cleaner factoring. |
-| New runtime dependency in `contracts`? | **NO.** `contracts/package.json` `dependencies` unchanged: `@reharik/smart-enum`, `typia`. `serializeAggregates.ts` imports `isSmartEnumItem` from `@reharik/smart-enum` — already a dependency. No Knex, no sharp, no AWS SDK. `Entity` uses only the `crypto` global. |
+| Check                                                                                  | Verdict                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Does `contracts` pull in `DomainEventKind` / `EventPayload` / the `DomainEvent` union? | **NO — correctly avoided.** `contracts/src/domain/Entity.ts` has no event surface whatsoever. The union stayed in media-core, behind the new `DomainEntity` intermediate class.                                                                                                                       |
+| Is the event type a generic parameter?                                                 | **N/A — a better answer was chosen.** Rather than parameterising `Entity<TRecord, TEvent>`, events were pushed _up_ into a media-core-local subclass. `Entity` stays event-free and worker-core's `AggregateRoot` extends it directly with no phantom event machinery. This is the cleaner factoring. |
+| New runtime dependency in `contracts`?                                                 | **NO.** `contracts/package.json` `dependencies` unchanged: `@reharik/smart-enum`, `typia`. `serializeAggregates.ts` imports `isSmartEnumItem` from `@reharik/smart-enum` — already a dependency. No Knex, no sharp, no AWS SDK. `Entity` uses only the `crypto` global.                               |
 
 Two minor notes:
+
 - `contracts` now has two things called "domain": `src/domain/` (the Entity module) and `src/types/domain.ts` (`EntityId`/`ActorId`), both flat-exported from the same barrel. No symbol collision today, but the naming will confuse.
 - media-core's `DomainEntity.childEntities()` returns `ChildDomainEntities` while the base returns `ChildEntities`. TS accepts it (covariant return), and `AggregateRepo` was correctly widened to `DomainEntity` — but the base's `childEntities()` returning `{}` is what silently produced failure A rather than a compile error.
 
@@ -255,9 +261,9 @@ Two minor notes:
 Files: [worker-core unitOfWork.ts:37-49](packages/context/worker-core/src/infrastructure/repositories/unitOfWork.ts#L37-L49), [claimJobRow.ts:105](apps/media-worker/src/tasks/queue/mediaWorkers/processMediaImage/claimJobRow.ts#L105), [completeJobRow.ts:40](apps/media-worker/src/tasks/queue/mediaWorkers/processMediaImage/completeJobRow.ts#L40)
 
 **Your §6 description of this bug understates it.** You described the symptom as
-"an ERROR logged after every *successful* commit", self-healed by the loop's
-`settle(false)`. That accounts for the boundary *between* tasks. It misses the
-boundary *inside* one task:
+"an ERROR logged after every _successful_ commit", self-healed by the loop's
+`settle(false)`. That accounts for the boundary _between_ tasks. It misses the
+boundary _inside_ one task:
 
 1. `claimJobRow` line 105: `await uow.complete(true)` — commits. `trx` is **not** cleared.
 2. `runImageStoragePipeline` runs (S3 + sharp, no DB) — nothing resets anything.
@@ -323,11 +329,11 @@ porting the worker-core implementation ([systemAuthorizationRepository.ts:113](p
 
 ## 4. Gaps — described as done, actually not (or half)
 
-1. **"Everything compiles except two test files."** Three things are wrong here: `nx build api` does not compile (BUG-3, and it predates this work); it is *three* newly-failing suites (18 tests), not two files; and three *further* suites were already failing at HEAD. Six failing suites total across the two apps.
+1. **"Everything compiles except two test files."** Three things are wrong here: `nx build api` does not compile (BUG-3, and it predates this work); it is _three_ newly-failing suites (18 tests), not two files; and three _further_ suites were already failing at HEAD. Six failing suites total across the two apps.
 
 2. **"Assets have no presence in the API at all."** True for TypeScript production code. Not yet true for the **GraphQL schema** — the `MediaAsset` type is still declared, still generated into `types.generated.ts` and `apps/web`'s types, and still carries a `url: String!` field that no resolver backs. Finishing the stated goal means deleting `apps/api/src/graphql/schema/media/mediaAsset.graphql`'s type (keeping the two enums) and re-running the codegen chain.
 
-3. **worker-core has zero test coverage of its own code.** `applyProcessingResults` — now the *sole* writer of every asset row in the system, and the aggregate whose guard BUG-2 turns on — has no test anywhere. The three cases that used to cover it (§7 B) currently fail in the wrong package. `nx test worker-core` exits 1 with "no tests found".
+3. **worker-core has zero test coverage of its own code.** `applyProcessingResults` — now the _sole_ writer of every asset row in the system, and the aggregate whose guard BUG-2 turns on — has no test anywhere. The three cases that used to cover it (§7 B) currently fail in the wrong package. `nx test worker-core` exits 1 with "no tests found".
 
 4. **The new derivative behaviour is untested.** `imageDerivativeGenerator.tests.ts` passes without a single assertion on `original`, `originalWasReplaced`, or the orientation swap. The orientation logic is correct as written, but nothing will tell you if it regresses. A fixture with EXIF orientation 6 plus one HEIC fixture would pin §1–§3 completely.
 

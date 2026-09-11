@@ -3,22 +3,24 @@
  *
  * `completeTransaction` used to call `reset()` on the rollback branch only. A
  * successful commit therefore left `trx` truthy and pointing at a COMMITTED
- * transaction — and `join()` short-circuits when `trx` is set. The next unit of
- * work in the same process then issued every query against a dead handle.
+ * transaction, and every later query went to a dead handle. Under the current
+ * interface the same defect shows up one step earlier: `start` throws when a
+ * transaction is already open, so a `trx` left set after a commit makes the NEXT
+ * `start` fail outright rather than quietly reusing the corpse.
  *
  * That is not a theoretical ordering problem in this package. `uow` resolves
  * once on the worker's root container (there is no child scope anywhere in
  * `apps/media-worker`), so ONE transaction slot serves the whole process — and
- * inside a single image job, `claimJobRow` commits before `completeJobRow`
- * joins. See `sequential jobs` below, which is that failure at the level it
- * actually occurred.
+ * inside a single image job the claim commits before the completion phase opens
+ * its own boundary. See `sequential jobs` below, which is that failure at the
+ * level it actually occurred.
  *
  * Knex is faked here because the assertion is about the uow's own bookkeeping —
  * how many transactions it opened, and whether it reused one it had finished.
  */
 import { describe, expect, it, jest } from '@jest/globals';
-import type { Knex } from 'knex';
 import type { Logger } from '@packages/infrastructure';
+import type { Knex } from 'knex';
 import { build__UnitOfWork } from '../infrastructure/repositories/unitOfWork';
 
 type FakeTrx = { id: number; commit: jest.Mock; rollback: jest.Mock; committed: boolean };
@@ -68,14 +70,14 @@ const buildUow = (options: { commitThrows?: boolean } = {}) => {
 
 describe('build__UnitOfWork (worker-core)', () => {
   describe('When a transaction is committed and work resumes', () => {
-    it('should open a NEW transaction on the next join, not reuse the committed one', async () => {
+    it('should open a NEW transaction on the next start, not reuse the committed one', async () => {
       const { uow, opened } = buildUow();
 
-      await uow.join();
+      await uow.start();
       const first = uow.db();
       await uow.complete(true);
 
-      await uow.join();
+      await uow.start();
       const second = uow.db();
 
       expect(opened).toHaveLength(2);
@@ -86,14 +88,14 @@ describe('build__UnitOfWork (worker-core)', () => {
   });
 
   describe('When a transaction is rolled back and work resumes', () => {
-    it('should open a NEW transaction on the next join', async () => {
+    it('should open a NEW transaction on the next start', async () => {
       const { uow, opened } = buildUow();
 
-      await uow.join();
+      await uow.start();
       const first = uow.db();
       await uow.complete(false);
 
-      await uow.join();
+      await uow.start();
 
       expect(opened).toHaveLength(2);
       expect(uow.db()).not.toBe(first);
@@ -109,11 +111,11 @@ describe('build__UnitOfWork (worker-core)', () => {
       // already going wrong.
       const { uow, opened } = buildUow({ commitThrows: true });
 
-      await uow.join();
+      await uow.start();
       const first = uow.db();
       await expect(uow.complete(true)).rejects.toThrow('commit failed');
 
-      await uow.join();
+      await uow.start();
 
       expect(opened).toHaveLength(2);
       expect(uow.db()).not.toBe(first);
@@ -124,7 +126,7 @@ describe('build__UnitOfWork (worker-core)', () => {
     it('should refuse db() rather than hand back a stale handle', async () => {
       const { uow } = buildUow();
 
-      await uow.join();
+      await uow.start();
       await uow.complete(true);
 
       expect(() => uow.db()).toThrow(/Transaction not started/);
@@ -135,13 +137,13 @@ describe('build__UnitOfWork (worker-core)', () => {
     it('should not carry the flag into the next one', async () => {
       const { uow, opened } = buildUow();
 
-      await uow.join();
+      await uow.start();
       uow.flagRollbackOnly();
       await uow.complete(true);
       expect(opened[0].rollback).toHaveBeenCalledTimes(1);
 
       // A stale rollback flag would silently discard the NEXT job's writes.
-      await uow.join();
+      await uow.start();
       await uow.complete(true);
 
       expect(opened[1].commit).toHaveBeenCalledTimes(1);
@@ -153,21 +155,17 @@ describe('build__UnitOfWork (worker-core)', () => {
     it('should give each job its own transaction', async () => {
       // The real failure. `uow` is resolved once on the worker's root container,
       // so job 2 inherits whatever job 1 left behind. Before the fix, job 2's
-      // join() reused job 1's committed handle and every query threw.
+      // first phase reused job 1's committed handle and every query threw.
       const { uow, opened } = buildUow();
 
       const runJob = async () => {
         // claim: commits on its own so the PROCESSING flip is visible to peers
-        await uow.join();
-        const claimTrx = uow.db();
-        await uow.complete(true);
+        const claimTrx = await uow.inTransaction(async () => uow.db());
 
         // ...S3 + sharp happen here, outside any transaction...
 
-        // completion: must open a fresh transaction, not rejoin the committed claim
-        await uow.join();
-        const completeTrx = uow.db();
-        await uow.complete(true);
+        // completion: must open a fresh transaction, not reuse the committed claim
+        const completeTrx = await uow.inTransaction(async () => uow.db());
 
         return { claimTrx, completeTrx };
       };
@@ -185,29 +183,91 @@ describe('build__UnitOfWork (worker-core)', () => {
     });
   });
 
-  describe('When a task leaves a transaction open and the loop settles it', () => {
+  describe('When a task leaves a transaction open and the loop cleans up after it', () => {
     it('should clear it so the next task starts clean', async () => {
-      // The run loop calls settle(false) after every task; that is what stops an
-      // abandoned transaction from being handed to the next task.
+      // The run loop's safety net: `if (uow.isOpen()) await uow.complete(false)`
+      // after every task. That is what stops an abandoned transaction from being
+      // handed to the next task.
       const { uow, opened } = buildUow();
 
-      await uow.join();
+      await uow.start();
       const abandoned = uow.db();
-      await uow.settle(false);
+      expect(uow.isOpen()).toBe(true);
+      await uow.complete(false);
 
-      await uow.join();
+      await uow.start();
 
       expect(opened).toHaveLength(2);
       expect(uow.db()).not.toBe(abandoned);
       expect(opened[0].rollback).toHaveBeenCalledTimes(1);
     });
 
-    it('should be a no-op when nothing is open', async () => {
+    it('should report not-open when nothing is open, so the net never fires', async () => {
+      // `complete` throws with no transaction open, so `isOpen` is what makes the
+      // loop's unconditional-looking cleanup safe on the normal path.
       const { uow, opened } = buildUow();
 
-      await uow.settle(false);
+      expect(uow.isOpen()).toBe(false);
+      await expect(uow.complete(false)).rejects.toThrow(/Transaction not started/);
 
       expect(opened).toHaveLength(0);
+    });
+  });
+
+  describe('inTransaction', () => {
+    it('should commit when the callback returns, and hand back its value', async () => {
+      const { uow, opened } = buildUow();
+
+      const result = await uow.inTransaction(async () => 'done');
+
+      expect(result).toBe('done');
+      expect(opened).toHaveLength(1);
+      expect(opened[0].commit).toHaveBeenCalledTimes(1);
+      expect(uow.isOpen()).toBe(false);
+    });
+
+    it('should roll back and rethrow the original error when the callback throws', async () => {
+      const { uow, opened } = buildUow();
+
+      await expect(
+        uow.inTransaction(async () => {
+          throw new Error('pipeline blew up');
+        }),
+      ).rejects.toThrow('pipeline blew up');
+
+      expect(opened[0].rollback).toHaveBeenCalledTimes(1);
+      expect(opened[0].commit).not.toHaveBeenCalled();
+      // Cleared either way, so the next phase can open its own boundary.
+      expect(uow.isOpen()).toBe(false);
+    });
+
+    it('should honour flagRollbackOnly even though the callback returned normally', async () => {
+      // Fail-as-data: the unit reports a failure through its return value rather
+      // than a throw, and still needs the writes discarded.
+      const { uow, opened } = buildUow();
+
+      const result = await uow.inTransaction(async () => {
+        uow.flagRollbackOnly();
+        return { outcome: 'notOwned' };
+      });
+
+      expect(result).toEqual({ outcome: 'notOwned' });
+      expect(opened[0].rollback).toHaveBeenCalledTimes(1);
+      expect(opened[0].commit).not.toHaveBeenCalled();
+    });
+
+    it('should refuse to nest — a second boundary inside the first throws', async () => {
+      const { uow, opened } = buildUow();
+
+      await expect(
+        uow.inTransaction(async () => {
+          await uow.inTransaction(async () => 'inner');
+        }),
+      ).rejects.toThrow(/Transaction already open/);
+
+      // The outer boundary is still rolled back rather than left dangling.
+      expect(opened).toHaveLength(1);
+      expect(opened[0].rollback).toHaveBeenCalledTimes(1);
     });
   });
 });

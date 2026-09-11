@@ -5,10 +5,14 @@ import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../infrastructure';
 
 /**
- * Shared claim/mark mechanics for FOR-UPDATE-SKIP-LOCKED queue tables
- * (media_processing_job, media_deletion_job). Plain factory — intentionally
- * NOT a `build__*` export, so it is never registered as an IoC contract; it is
- * composed inside the two existing repository factories instead.
+ * Shared claim/mark mechanics for FOR-UPDATE-SKIP-LOCKED queue tables. Plain
+ * factory — intentionally NOT a `build__*` export, so it is never registered as
+ * an IoC contract; it is composed inside a repository factory instead.
+ *
+ * `media_processing_job` is currently the only such queue: the deletion queue was
+ * removed, so this is generic for one caller. Kept generic anyway — the mechanics
+ * (claim under SKIP LOCKED, mark succeeded/failed, bounded retry) are the
+ * non-obvious part and are what a second queue would need to reproduce exactly.
  */
 
 /** Minimal shape every claimable queue row must satisfy. */

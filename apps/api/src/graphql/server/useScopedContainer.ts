@@ -43,6 +43,7 @@ export const build__UseScopedContainer = ({
           openAuthenticatedWriteGraphQlContextScope({
             viewerId: ctx.viewer.id,
           });
+        await authenticatedWriteGraphQlContext.start();
         extendContext({
           ...ctx,
           ...authenticatedWriteGraphQlContext,
@@ -66,6 +67,7 @@ export const build__UseScopedContainer = ({
           viewerId: ctx.viewer.id,
         },
       );
+      await authenticatedReadGraphQlContext.start();
 
       extendContext({
         ...ctx,
@@ -89,6 +91,7 @@ export const build__UseScopedContainer = ({
     const { publicRequestContext, dispose } = openPublicRequestContextScope({
       publicLinkId: ctx.publicLinkId,
     });
+    await publicRequestContext.start();
 
     extendContext({
       ...ctx,

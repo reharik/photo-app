@@ -84,8 +84,9 @@ describe('stalled media job sweep (integration)', () => {
 
   const createSweep = () => {
     const logger = createFakeLogger();
-    // Same container, so the sweep and the repository share one scoped uow — the
-    // sweep completes the very transaction the repository's writes joined.
+    // Same container, so the sweep and the repository share one uow — the sweep
+    // opens the boundary (`uow.inTransaction`) that the repository's `db()` calls
+    // then run inside.
     const sweep = build__StalledMediaJobSweep({
       logger,
       mediaProcessingJobRepository: container.resolve('mediaProcessingJobRepository'),
@@ -277,15 +278,17 @@ describe('stalled media job sweep (integration)', () => {
       });
 
       const repository = container.resolve('mediaProcessingJobRepository');
-      const result = await repository.releaseStalledJobs(minutesAgo(10));
+      // releaseStalledJobs reads and writes through `uow.db()`, which throws outside
+      // a boundary — the sweep supplies one in production. `inTransaction` is that
+      // boundary here, and it commits on return, which matters twice over: the rows
+      // below are read on `database`'s own pooled connection and would not see
+      // uncommitted work, and an unclosed transaction would block afterEach's
+      // TRUNCATE forever.
+      const result = await container
+        .resolve('uow')
+        .inTransaction(() => repository.releaseStalledJobs(minutesAgo(10)));
 
       expect(result).toEqual({ released: 2, failed: 1 });
-
-      // releaseStalledJobs JOINS the scope's transaction and deliberately leaves it
-      // open — settling belongs to the caller that owns the boundary (the sweep, in
-      // production). Without this commit the rows below are invisible to `database`'s
-      // own connection, and afterEach's TRUNCATE blocks on the lock forever.
-      await container.resolve('uow').complete(true);
 
       const released = await database('mediaProcessingJob').where({
         status: MediaItemStatus.pending.value,

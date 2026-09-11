@@ -51,9 +51,8 @@ describe('generateImageDerivatives', () => {
 
   beforeAll(async () => {
     jest.unstable_mockModule('@packages/heic-converter', () => ({ isHeic, convertHeicToJpeg }));
-    ({ generateImageDerivatives } = await import(
-      '../tasks/queue/mediaWorkers/imageDerivativeGenerator.js'
-    ));
+    ({ generateImageDerivatives } =
+      await import('../tasks/queue/mediaWorkers/imageDerivativeGenerator.js'));
 
     plainPng = await sharp({
       create: { width: 400, height: 200, channels: 3, background: { r: 1, g: 2, b: 3 } },
@@ -80,9 +79,7 @@ describe('generateImageDerivatives', () => {
 
   describe('When the image has EXIF orientation 1', () => {
     it('should report the original unswapped, agreeing with the display derivative', async () => {
-      const { original, display } = await generateImageDerivatives(
-        await jpegWithOrientation(1),
-      );
+      const { original, display } = await generateImageDerivatives(await jpegWithOrientation(1));
 
       expect(original.width).toBe(400);
       expect(original.height).toBe(200);
@@ -94,9 +91,7 @@ describe('generateImageDerivatives', () => {
 
   describe('When the image has EXIF orientation 6 — the common phone-portrait case', () => {
     it('should swap the original dimensions so they agree with the rotated display derivative', async () => {
-      const { original, display } = await generateImageDerivatives(
-        await jpegWithOrientation(6),
-      );
+      const { original, display } = await generateImageDerivatives(await jpegWithOrientation(6));
 
       // Stored 400×200, but orientation 6 transposes: the original is portrait.
       expect(original.width).toBe(200);
@@ -123,9 +118,7 @@ describe('generateImageDerivatives', () => {
 
   describe('When the image has EXIF orientation 5 — a transposing mirror', () => {
     it('should swap the original dimensions, since 5 transposes the axes too', async () => {
-      const { original, display } = await generateImageDerivatives(
-        await jpegWithOrientation(5),
-      );
+      const { original, display } = await generateImageDerivatives(await jpegWithOrientation(5));
 
       expect(original.width).toBe(200);
       expect(original.height).toBe(400);
