@@ -471,11 +471,21 @@ export class Album extends AggregateRoot<AlbumRecord> {
       return fail(Operation.grantAlbumAuthorization.deniedError);
     }
 
+    // Only an OWNER-origin link is reusable. `#publicLinks` carries every live
+    // kind='PUBLIC' row on the album — including CONVERTED ones, which are ex-PENDING
+    // invitations whose grantee signed up (see PendingUserAuthorization.convertAndCreate).
+    // A converted row keeps a working token, so reusing it here returns the caller a
+    // token that resolves at /shared/<token> but is invisible to
+    // AuthorizationReadRepository.getPublicAuthorizationByAlbum, which filters on
+    // origin = OWNER by design (migration 0026: handing the owner someone else's
+    // forwarded token to paste publicly is the thing that column exists to prevent).
+    // The album then reads as having no public link forever, because this branch never
+    // mints the OWNER row that would fix it.
+
     let publicLink = this.#publicLinks.find((x) => {
       const exp = x.expiresAt();
       return (
-        !x.revokedAt() &&
-        (!exp || (exp > new Date() && x.origin().equals(AuthorizationOrigin.owner)))
+        !x.revokedAt() && x.origin().equals(AuthorizationOrigin.owner) && (!exp || exp > new Date())
       );
     });
 

@@ -1,11 +1,21 @@
 import { describe, expect, it } from '@jest/globals';
-import { AppErrorCollection, MediaItemStatus, MediaKind } from '@packages/contracts';
+import {
+  AlbumMemberRole,
+  AppErrorCollection,
+  AuthorizationKind,
+  AuthorizationOrigin,
+  MediaItemStatus,
+  MediaKind,
+  Operation,
+} from '@packages/contracts';
 import {
   ALBUM_ITEM_ORDER_GAP,
   ALBUM_ITEM_ORDER_INITIAL,
   Album,
   MediaItem,
+  type PublicLinkAuthorizationRecord,
 } from '@packages/media-core';
+import assert from 'node:assert';
 import { TEST_OWNER_1_ID, TEST_USER_A_ID } from './testViewerIds';
 
 describe('MediaItem (domain)', () => {
@@ -191,6 +201,162 @@ describe('Album (domain)', () => {
       const removed = album.removeMediaItemFromAlbum('not-present', ownerId);
       expect(removed.success).toBe(true);
       expect(album.childEntities().items.upsert).toHaveLength(beforeItems);
+    });
+  });
+
+  /**
+   * grantPublicLink reuses the album's existing canonical link instead of minting a
+   * second one. What counts as "reusable" is the whole story here.
+   *
+   * `#publicLinks` is every LIVE kind='PUBLIC' row on the album (albumRepository
+   * partitions by kind alone, after withLiveAuthorizationFilter). That pool contains
+   * two provenances — see migration 0026:
+   *
+   *   OWNER     the canonical link, minted by this method.
+   *   CONVERTED an ex-PENDING email invitation whose grantee signed up. It sheds
+   *             granted_to_user and keeps its token deliberately, so a forward that
+   *             already went out keeps working.
+   *
+   * Only an OWNER row is reusable. AuthorizationReadRepository.getPublicAuthorizationByAlbum
+   * filters `origin = 'OWNER'` on purpose (handing the owner someone else's forwarded
+   * token to paste publicly is what 0026 exists to prevent), so reusing a CONVERTED row
+   * returns a token that works at /shared/<token> yet leaves Album.publicLink reading
+   * null forever — this method is the only thing that ever mints the OWNER row.
+   */
+  describe('grantPublicLink', () => {
+    const albumId = 'album-public-link';
+
+    const publicLinkRecord = (
+      overrides: Partial<PublicLinkAuthorizationRecord> & { id: string; linkToken: string },
+    ): PublicLinkAuthorizationRecord => ({
+      albumId,
+      grantedBy: ownerId,
+      operations: [Operation.download, Operation.comment],
+      grantedToUser: null,
+      kind: AuthorizationKind.public,
+      origin: AuthorizationOrigin.owner,
+      createdAt: new Date('2024-01-01T00:00:00Z'),
+      updatedAt: new Date('2024-01-01T00:00:00Z'),
+      createdBy: ownerId,
+      updatedBy: ownerId,
+      ...overrides,
+    });
+
+    /**
+     * Rehydrate rather than create: these cases are about links the album already
+     * carries, and create() starts an album with none. The owner member is required —
+     * grantPublicLink authorizes against album membership before it does anything else.
+     */
+    const albumWithPublicLinks = (publicLinks: PublicLinkAuthorizationRecord[]): Album =>
+      Album.rehydrate(
+        {
+          id: albumId,
+          title: 'Trip',
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+          updatedAt: new Date('2024-01-01T00:00:00Z'),
+          createdBy: ownerId,
+          updatedBy: ownerId,
+        },
+        {
+          items: [],
+          members: [
+            {
+              id: 'member-owner',
+              userId: ownerId,
+              role: AlbumMemberRole.owner,
+              albumId,
+              createdAt: new Date('2024-01-01T00:00:00Z'),
+              updatedAt: new Date('2024-01-01T00:00:00Z'),
+              createdBy: ownerId,
+              updatedBy: ownerId,
+            },
+          ],
+          authorizations: [],
+          pendingUserAuthorizations: [],
+          publicLinks,
+        },
+      );
+
+    describe('When a live OWNER link already exists', () => {
+      it('should reuse it rather than mint a second one', () => {
+        const album = albumWithPublicLinks([
+          publicLinkRecord({ id: 'owner-link', linkToken: 'owner-token' }),
+        ]);
+
+        const result = album.grantPublicLink({ actorId: ownerId });
+
+        expect(result.success).toBe(true);
+        assert(result.success);
+        expect(result.value.linkToken()).toBe('owner-token');
+        expect(album.getPublicLinks()).toHaveLength(1);
+      });
+    });
+
+    describe('When the only live link is CONVERTED', () => {
+      it('should mint a fresh OWNER link instead of handing back the converted token', () => {
+        const album = albumWithPublicLinks([
+          publicLinkRecord({
+            id: 'converted-link',
+            linkToken: 'converted-token',
+            origin: AuthorizationOrigin.converted,
+          }),
+        ]);
+
+        const result = album.grantPublicLink({ actorId: ownerId });
+
+        expect(result.success).toBe(true);
+        assert(result.success);
+        // The bug this pins: the origin test used to sit inside the expiry branch, so a
+        // link with no expiry — which is every link create() mints — short-circuited past
+        // it and this returned 'converted-token'. Album.publicLink then stayed null for
+        // the life of the album, because the OWNER row it queries was never written.
+        expect(result.value.linkToken()).not.toBe('converted-token');
+        expect(result.value.origin().equals(AuthorizationOrigin.owner)).toBe(true);
+
+        // The converted row is untouched — its token stays live for anyone downstream
+        // who received a forward, which is the reason conversion does not revoke it.
+        const links = album.getPublicLinks();
+        expect(links).toHaveLength(2);
+        const converted = links.find((x) => x.id() === 'converted-link');
+        assert(converted);
+        expect(converted.revokedAt()).toBeUndefined();
+        expect(converted.linkToken()).toBe('converted-token');
+      });
+    });
+
+    describe('When the only OWNER link has expired', () => {
+      it('should mint a fresh link rather than revive the dead one', () => {
+        const album = albumWithPublicLinks([
+          publicLinkRecord({
+            id: 'expired-owner-link',
+            linkToken: 'expired-token',
+            expiresAt: new Date('2020-01-01T00:00:00Z'),
+          }),
+        ]);
+
+        const result = album.grantPublicLink({ actorId: ownerId });
+
+        expect(result.success).toBe(true);
+        assert(result.success);
+        expect(result.value.linkToken()).not.toBe('expired-token');
+        expect(result.value.expiresAt()).toBeUndefined();
+
+        // Expired stays expired. Nothing clears expiresAt or re-stamps the old row.
+        const expired = album.getPublicLinks().find((x) => x.id() === 'expired-owner-link');
+        assert(expired);
+        expect(expired.expiresAt()).toEqual(new Date('2020-01-01T00:00:00Z'));
+      });
+    });
+
+    describe('When the actor is not a member who can grant', () => {
+      it('should fail without minting anything', () => {
+        const album = albumWithPublicLinks([]);
+
+        const result = album.grantPublicLink({ actorId: TEST_USER_A_ID });
+
+        expect(result.success).toBe(false);
+        expect(album.getPublicLinks()).toHaveLength(0);
+      });
     });
   });
 });
