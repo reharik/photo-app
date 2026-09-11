@@ -123,7 +123,13 @@ one member is chosen arbitrarily (e.g. the worker's `WorkerTask`, see nested CLA
 ### Gen commands — run after adding/renaming/moving/deleting a `build__` factory or editing `ioc.config.ts`
 
 Generated files (`ioc-manifest.ts`, `ioc-registry.types.ts`, `ioc-composed.ts`) are
-committed and marked DO NOT EDIT. Regenerate and commit them.
+**not** committed — `.gitignore` excludes `**/generated/`, `**/di/**` and
+`apps/api/src/di/`. They are rebuilt from source everywhere they are needed: by
+the gen commands below locally, by the `Generate IoC manifests` step in every CI
+job, and inside the Docker image build (api's `build:vite` dependsOn `gen-ioc`,
+which is why the image builds correctly from a bare checkout). They carry a DO
+NOT EDIT banner — change the `build__` factory or `ioc.config.ts` and
+regenerate; never hand-edit the output.
 
 - `npm run gen:ioc:api` / `:worker` / `:media-core` / `:infrastructure` / `:notifications`
   → `nx gen-ioc <proj>` → `ioc generate`.
@@ -134,7 +140,7 @@ Diagnostics (read-only, never write):
 
 - `ioc:discovery:*` (`ioc inspect --discovery`) — re-runs discovery from **source**;
   use to debug why a factory isn't picked up (prints skip reasons).
-- `ioc:inspect:*` (`ioc inspect`) — prints the **committed manifest** (lifetimes, groups).
+- `ioc:inspect:*` (`ioc inspect`) — prints the **generated manifest** on disk (lifetimes, groups).
 
 **Gotcha: most projects emit to `src/generated/`, but the API is a deliberate
 exception** — it uses `apps/api/src/di/generated/` (its `ioc.config.ts` sets
