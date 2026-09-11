@@ -2,6 +2,7 @@ import {
   AlbumMemberRole,
   assertNever,
   AuthorizationKind,
+  AuthorizationOrigin,
   EntityId,
   Operation,
 } from '@packages/contracts';
@@ -58,7 +59,12 @@ export const build__AlbumRepository = ({ uow, persist }: AlbumRepositoryDeps): A
           withLiveAuthorizationFilter(uow.db()),
         )
         .orderBy('createdAt', 'asc'),
-      { operations: Operation, kind: AuthorizationKind },
+      // `origin` belongs here as much as `kind` does: Album.grantPublicLink calls
+      // PublicLinkAuthorization.origin().equals(...) to decide whether the album's
+      // existing link is the reusable canonical one. Un-revived it is a bare 'OWNER'
+      // string and `.equals` is not a function. It went unnoticed because the old
+      // predicate short-circuited before ever reaching origin() — see the note there.
+      { operations: Operation, kind: AuthorizationKind, origin: AuthorizationOrigin },
     );
 
     const userAuthorizationRows: UserAuthorizationRecord[] = [];

@@ -13,6 +13,11 @@
  *      media-item-scoped grants (loose items are wrapped in shadow albums), so the
  *      index is exercised by direct inserts: revoked + live may coexist, two live rows
  *      may not.
+ *  E.  a CONVERTED guest grant must not stand in for the album's public link. Conversion
+ *      leaves a live kind='PUBLIC' row with origin='CONVERTED' and a working token;
+ *      Album.grantPublicLink used to reuse it and mint no OWNER row, so
+ *      getPublicAuthorizationByAlbum (which filters origin='OWNER' by 0026's design) found
+ *      nothing and Album.publicLink read null forever while /shared/<token> worked fine.
  *  B.  re-sharing an album with an already-pending user re-emits albumSharedWithPendingUser.
  *      Before the Album.ts fix the event only fired on new-authorization creation, so a
  *      re-invite wrote nothing and no email was ever queued. Observable outcome: a fresh
@@ -72,6 +77,26 @@ const grantForAlbumMutation = `
   }
 `;
 
+const createPublicLinkMutation = `
+  mutation CreatePublicLink($input: CreatePublicLinkForAlbumInput!) {
+    createPublicLinkForAlbum(input: $input) {
+      data { token }
+      errors { code }
+    }
+  }
+`;
+
+const albumPublicLinkQuery = `
+  query AlbumPublicLink($albumId: ID!) {
+    viewer {
+      album(id: $albumId) {
+        id
+        publicLink { token }
+      }
+    }
+  }
+`;
+
 const revokeShareMutation = `
   mutation Revoke($input: RevokeShareAuthenticationInput!) {
     RevokeShareAuthentication(input: $input) {
@@ -95,6 +120,12 @@ type GrantResponse = {
 };
 type RevokeResponse = {
   RevokeShareAuthentication: { data?: { albumId: string }; errors?: { code: string }[] | null };
+};
+type CreatePublicLinkResponse = {
+  createPublicLinkForAlbum: { data?: { token: string }; errors?: { code: string }[] | null };
+};
+type AlbumPublicLinkResponse = {
+  viewer: { album?: { id: string; publicLink?: { token: string } | null } | null };
 };
 
 type GrantRow = {
@@ -183,6 +214,51 @@ describe('revoked authorizations and re-sharing (integration)', () => {
     return row.id;
   };
 
+  /**
+   * A guest accepting their invite, through the real REST path. Seeds the emailed code,
+   * then drives AuthController.setPassword out of the ApiRequestContext scope exactly as
+   * apiRequestContextMiddleware + invoke() do in production. The controller owns the
+   * transaction boundary (uow.inTransaction) and disposal is the middleware's job, so
+   * there is nothing to open or complete by hand here.
+   *
+   * This is what triggers PENDING -> USER + PUBLIC conversion, which both A2 and E turn on.
+   */
+  const acceptInvite = async (guestEmail: string): Promise<void> => {
+    await database('emailVerification').insert({
+      id: randomUUID(),
+      email: guestEmail,
+      codeHash: sha256(VALID_CODE),
+      expiresAt: DateTime.now().plus({ minutes: 10 }).toISO(),
+      consumedAt: null,
+      attemptCount: 0,
+    });
+    const acceptCtx = {
+      request: {
+        body: {
+          email: guestEmail,
+          password: 'newPassword9',
+          code: VALID_CODE,
+          firstName: 'Guest',
+          lastName: 'Accepted',
+          smsOptIn: false,
+        },
+      },
+      status: 0,
+      body: undefined,
+      ip: '127.0.0.1',
+      app: { env: 'test' },
+      state: {},
+      cookies: { set: () => undefined },
+    } as unknown as Context;
+    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
+    try {
+      await apiRequestContext.authController.setPassword(acceptCtx);
+    } finally {
+      await dispose();
+    }
+    expect(acceptCtx.status).toBe(200);
+  };
+
   describe('A1 — revoke → re-share to an active user (the 0028 regression)', () => {
     it('inserts a fresh live USER grant next to the revoked one', async () => {
       const albumId = await createAlbum('revoke-reshare-active');
@@ -254,44 +330,7 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       expect(invite2.linkToken).toBeTruthy();
       expect(invite2.linkToken).not.toBe(invite1.linkToken);
 
-      // Accept: the real REST path. Seed the emailed code, then drive
-      // AuthController.setPassword out of the ApiRequestContext scope exactly as
-      // apiRequestContextMiddleware + invoke() do in production. The controller owns
-      // the transaction boundary (uow.inTransaction) and disposal is the middleware's
-      // job, so there is nothing for this test to open or complete by hand.
-      await database('emailVerification').insert({
-        id: randomUUID(),
-        email: guestEmail,
-        codeHash: sha256(VALID_CODE),
-        expiresAt: DateTime.now().plus({ minutes: 10 }).toISO(),
-        consumedAt: null,
-        attemptCount: 0,
-      });
-      const acceptCtx = {
-        request: {
-          body: {
-            email: guestEmail,
-            password: 'newPassword9',
-            code: VALID_CODE,
-            firstName: 'Guest',
-            lastName: 'Accepted',
-            smsOptIn: false,
-          },
-        },
-        status: 0,
-        body: undefined,
-        ip: '127.0.0.1',
-        app: { env: 'test' },
-        state: {},
-        cookies: { set: () => undefined },
-      } as unknown as Context;
-      const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
-      try {
-        await apiRequestContext.authController.setPassword(acceptCtx);
-      } finally {
-        await dispose();
-      }
-      expect(acceptCtx.status).toBe(200);
+      await acceptInvite(guestEmail);
 
       const userRow = await database('user')
         .where({ id: guestId })
@@ -405,6 +444,97 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       const grants = await grantRowsFor(albumId, guestId);
       expect(grants).toHaveLength(1);
       expect(grants[0].id).toBe(invite.id);
+    });
+  });
+
+  describe('E — a converted guest grant must not stand in for the album public link', () => {
+    it('mints an OWNER link so Album.publicLink resolves, and leaves the converted token alone', async () => {
+      const guestEmail = `guest-${randomUUID()}@example.test`;
+      const albumId = await createAlbum('converted-blocks-public-link');
+
+      // Invite → accept. Conversion REUSES the pending row: same id, same token, now
+      // kind='PUBLIC' with origin='CONVERTED' and deliberately not revoked, so a forward
+      // that already went out keeps working.
+      await shareAlbum(albumId, [guestEmail]);
+      const guestId = await userIdByEmail(guestEmail);
+      const [invite] = await grantRowsFor(albumId, guestId);
+      expect(invite.kind).toBe('PENDING');
+      const convertedToken = invite.linkToken;
+      expect(convertedToken).toBeTruthy();
+
+      await acceptInvite(guestEmail);
+
+      const converted = await database('accessGrant')
+        .where({ id: invite.id })
+        .first<{ kind: string; origin: string; linkToken?: string; revokedAt?: Date }>([
+          'kind',
+          'origin',
+          'linkToken',
+          'revokedAt',
+        ]);
+      expect(converted.kind).toBe('PUBLIC');
+      expect(converted.origin).toBe('CONVERTED');
+      expect(converted.revokedAt).toBeUndefined();
+      expect(converted.linkToken).toBe(convertedToken);
+
+      // Now the owner asks for the album's public link. Before the Album.ts fix,
+      // grantPublicLink found the converted row (no expiry short-circuited past the
+      // origin test), returned its token, and minted nothing.
+      const created = await executeGraphQL<CreatePublicLinkResponse>({
+        query: createPublicLinkMutation,
+        variables: { input: { albumId } },
+        context: loggedIn,
+      });
+      expect(created.json.errors).toBeUndefined();
+      expect(created.json.data?.createPublicLinkForAlbum.errors ?? []).toEqual([]);
+      const mintedToken = created.json.data?.createPublicLinkForAlbum.data?.token;
+      expect(mintedToken).toBeTruthy();
+      expect(mintedToken).not.toBe(convertedToken);
+
+      // The payoff: the owner's own query resolves the link. This is the field that read
+      // null in production — getPublicAuthorizationByAlbum filters origin = 'OWNER', and
+      // that row only exists if grantPublicLink actually minted one.
+      const queried = await executeGraphQL<AlbumPublicLinkResponse>({
+        query: albumPublicLinkQuery,
+        variables: { albumId },
+        context: loggedIn,
+      });
+      expect(queried.json.errors).toBeUndefined();
+      const publicLink = queried.json.data?.viewer.album?.publicLink;
+      expect(publicLink).toBeTruthy();
+      expect(publicLink?.token).toBe(mintedToken);
+      expect(publicLink?.token).not.toBe(convertedToken);
+
+      // Both rows live side by side: the guest's forwarded token still works (the token
+      // path accepts any origin) and the album now has its canonical OWNER link. The
+      // 0026 partial unique index allows this — it keys on origin = 'OWNER' only.
+      const publicRows = await database('accessGrant')
+        .where({ albumId, kind: 'PUBLIC' })
+        .whereNull('revokedAt')
+        .select<{ id: string; origin: string; linkToken?: string }[]>([
+          'id',
+          'origin',
+          'linkToken',
+        ]);
+      expect(publicRows).toHaveLength(2);
+      const ownerRow = publicRows.find((r) => r.origin === 'OWNER');
+      const convertedRow = publicRows.find((r) => r.origin === 'CONVERTED');
+      assert(ownerRow && convertedRow);
+      expect(ownerRow.linkToken).toBe(mintedToken);
+      expect(convertedRow.id).toBe(invite.id);
+      expect(convertedRow.linkToken).toBe(convertedToken);
+
+      // Idempotent: asking again reuses the OWNER link rather than minting a third row.
+      const again = await executeGraphQL<CreatePublicLinkResponse>({
+        query: createPublicLinkMutation,
+        variables: { input: { albumId } },
+        context: loggedIn,
+      });
+      expect(again.json.data?.createPublicLinkForAlbum.data?.token).toBe(mintedToken);
+      const afterSecondAsk = await database('accessGrant')
+        .where({ albumId, kind: 'PUBLIC' })
+        .whereNull('revokedAt');
+      expect(afterSecondAsk).toHaveLength(2);
     });
   });
 });
