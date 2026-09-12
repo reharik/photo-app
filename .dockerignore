@@ -25,8 +25,11 @@ packages/e2e/playwright-report/
 output.json
 output-worker-graph.json
 
-# Compose/Makefile are not part of the build context payload
-docker-compose/
+# Compose/Makefile are not part of the build context payload. The compose files
+# live at the repo root now (docker-compose-dev.yml / -ci.yml / -prod.yml), so
+# they sit directly in the build context — without this glob every compose edit
+# would invalidate the context and force a full arm64 rebuild.
+docker-compose-*.yml
 Makefile
 
 # Deploy/runtime plumbing the IMAGE BUILD never reads. These sit under infra/,
@@ -41,5 +44,4 @@ Makefile
 # tsconfig.base.json extends infra/config/tsconfig/tsconfig.base.json, so
 # excluding those breaks the build outright.
 infra/scripts/
-infra/config/docker-compose/
 infra/config/localstack/

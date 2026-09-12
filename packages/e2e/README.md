@@ -19,7 +19,7 @@ Override URLs and DB settings with `E2E_WEB_BASE_URL`, `E2E_API_BASE_URL`, and t
 
 ### Local stack (typical)
 
-From the repo root, in separate terminals (or use your existing docker compose dev setup under `docker-compose/` / `infra/config/docker-compose/`):
+From the repo root, in separate terminals (or use your existing docker compose dev setup — `docker-compose-dev.yml`, driven by the `Makefile`):
 
 ```bash
 npm run db:migrate:local --workspace=@app/api

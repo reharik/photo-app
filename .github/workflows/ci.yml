@@ -45,7 +45,7 @@ name: CI
 # passes here it is the artifact that goes to prod, not a stand-in for it.
 #
 # The stack is therefore driven exactly like prod is:
-#   - migrations run in the one-shot `migrate` service (base.yml), never at boot
+#   - migrations run in the one-shot `migrate` service, never at boot
 #   - the api/worker containers only serve; they never migrate and never seed
 #   - seeding is a CI-only concern and runs from the RUNNER over the exposed
 #     Postgres port (5433), because the prod image has no seed path at all
@@ -350,7 +350,8 @@ jobs:
     permissions:
       id-token: write # AWS OIDC; scoped to this job, not the whole workflow
       contents: read
-    # arm64 ON PURPOSE: prod is Graviton (see prod.yml `platform: linux/arm64`
+    # arm64 ON PURPOSE: prod is Graviton (see docker-compose-prod.yml's
+    # `platform: linux/arm64`
     # and deploy.yml's ubuntu-24.04-arm build). Running e2e here means the image
     # e2e exercises is bit-for-bit the arch that ships, and a native build needs
     # no qemu.
@@ -499,7 +500,7 @@ jobs:
       - name: Compose up (db, localstack)
         run: docker compose --project-directory . up -d --no-build --wait db localstack
 
-      # The same one-shot `migrate` service prod uses (base.yml), running the
+      # The same one-shot `migrate` service prod uses, running the
       # compiled entrypoint out of the image's own dist. `compose run` returns
       # the container's exit code, so a failed migration fails the job here
       # rather than surfacing as a mystery 500 in a test.

@@ -150,7 +150,7 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
 
       # Reused PR image: the tarball was built on the PR and is tagged with the
       # PR HEAD sha, but everything downstream addresses images by the MERGE sha
-      # -- workers.generated.yml hardcodes ${APP_NAME}-<svc>:${SHA}, and the
+      # -- docker-compose.yml pins the worker to ${APP_NAME}-<svc>:${SHA}, and the
       # API_IMAGE pin below looks up ${APP_NAME}-api:${SHA}. Without this retag
       # the worker fails loudly (compose cannot pull a tag we never publish) but
       # the API fails SILENTLY: the pin misses, the fallback picks the currently

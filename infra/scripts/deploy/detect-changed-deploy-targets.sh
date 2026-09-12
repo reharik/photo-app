@@ -49,7 +49,14 @@ classify_path() {
     packages/context/heic-converter/*)
       mark_service media-worker
       ;;
-    package.json | package-lock.json | infra/docker/* | infra/config/docker-compose/* | infra.app.config.json)
+    # docker-compose-prod.yml ONLY. It is the file that ships to the host, and
+    # marking every backend service is how a compose-only change gets a deploy
+    # at all (no marked service => no deploy job => the new file never reaches
+    # the box). The dev and CI compose files are deliberately NOT listed: they
+    # never leave the repo, so a change to either must not trigger a prod
+    # rebuild. The old `infra/config/docker-compose/*` glob could not draw that
+    # distinction and rebuilt everything for a dev-only edit.
+    package.json | package-lock.json | infra/docker/* | docker-compose-prod.yml | infra.app.config.json)
       while IFS= read -r svc; do
         [[ -n "$svc" ]] && mark_service "$svc"
       done < <(all_backend_service_names)

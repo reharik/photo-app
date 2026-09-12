@@ -40,9 +40,11 @@ apps/api/src/di/
 *.tar.gz
 backups/
 
-# Per-clone dev-stack overrides (secondary working copy only; see Makefile)
+# Per-clone dev-stack override (secondary working copy only; see Makefile).
+# Sets ENV_NAME and exports DEV_DB_PORT / DEV_API_PORT / DEV_LOCALSTACK_PORT.
+# The port-remap compose overlay it used to point at is gone — the dev stack is
+# one flat file and nothing is layered over it.
 Makefile.local
-docker-compose/docker-compose.local.yml
 
 # Docker volumes (if running locally)
 pgdata/

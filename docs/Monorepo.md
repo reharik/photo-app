@@ -119,10 +119,32 @@ Infrastructure files live under `infra/`:
 infra/
   docker/                  # Dockerfile(s), .dockerignore
   config/                  # shared nx and tsconfig base configs
-  ...                      # deploy scripts, compose files, etc.
+  ...                      # deploy scripts, etc.
 ```
 
-The root contains only: `package.json`, `package-lock.json`, `nx.json`, `tsconfig.base.json`, `.gitignore`, `README.md`, `docs/`, `apps/`, `packages/`, `infra/`. No Dockerfiles, no deploy scripts, no `docker-compose.yml` at the root.
+The root contains: `package.json`, `package-lock.json`, `nx.json`, `tsconfig.base.json`,
+`.gitignore`, `README.md`, `Makefile`, the three compose files, `docs/`, `apps/`,
+`packages/`, `infra/`. No Dockerfiles and no deploy scripts at the root — those stay
+under `infra/`.
+
+**Compose is the deliberate exception.** There is one flat, fully self-contained file
+per environment, all at the repo root:
+
+| File | Used by |
+| ------------------------- | ------------------------------------------------ |
+| `docker-compose-dev.yml`  | local dev, via the `Makefile` |
+| `docker-compose-ci.yml`   | the e2e job in `.github/workflows/ci.yml` |
+| `docker-compose-prod.yml` | shipped to EC2 by `.github/workflows/deploy.yml` |
+
+They do not share a base and nothing is layered over them — no `base.yml` + override
+chain, no `!override` tags, no generated fragments. Whatever a file says is what that
+environment runs. Root placement is what makes relative `env_file` paths
+(`./apps/api/.env`) resolve without a `--project-directory` flag.
+
+Note there is deliberately **no bare `docker-compose.yml`** in the repo: every filename
+carries its environment, so a `docker compose` invocation with no `-f` picks up nothing
+rather than silently selecting prod. The prod file is renamed to `docker-compose.yml`
+only on the EC2 host, where it is the sole file in `/opt/homeroll/compose/`.
 
 ---
 

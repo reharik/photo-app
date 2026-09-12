@@ -9,14 +9,27 @@ Everything generated goes to `/tmp/homeroll-scratch-deploy` (override with
 `SCRATCH_DIR`), so nothing generated lands in the repo. The variable is
 deliberately not called `WORK_DIR` — `remote-deploy.sh` has its own.
 
-## Why this isn't just `prod.yml`
+## Why this isn't just `docker-compose-prod.yml`
 
-`prod.yml` pins `platform: linux/arm64`; dev boxes are amd64. `prep.sh`
-generates `scratch.yml` — prod.yml with the arm64 pin dropped and `env_file`
-repointed. **`base.yml` is copied verbatim**, and base.yml is where everything
-under test lives: the `migrate` one-shot, `restart: "no"`, and the
-`service_completed_successfully` gates. The overlay contributes nothing the
-tests depend on.
+`docker-compose-prod.yml` pins `platform: linux/arm64`; dev boxes are amd64.
+So `prep.sh` **derives** the scratch compose file from it with exactly three
+mechanical transforms:
+
+1. drop the `platform: linux/arm64` pins
+2. repoint `env_file` from `/opt/homeroll/env/prod.env` to the scratch env
+3. stub the `media-worker` image (`alpine:3.20` + `sleep infinity`) — the tests
+   exercise `remote-deploy.sh`'s control flow, not the worker binary, and the
+   real image would add a multi-minute build for no change in outcome
+
+Everything else is the **real shipping definition**: the `migrate` one-shot,
+`restart: "no"`, the `service_completed_successfully` gates, the db healthcheck,
+and api's loopback bind and healthcheck. Each transform is asserted after the
+fact, so formatting drift in the prod file fails loudly in `prep.sh` rather than
+producing a scratch stack that is quietly wrong.
+
+The harness stages one file, `${APP_ROOT}/compose/docker-compose.yml`, because
+that is exactly what `remote-deploy.sh` reads on the real host — no base/override
+chain and no resolution ladder.
 
 Three stubs:
 

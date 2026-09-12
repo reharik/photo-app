@@ -6,7 +6,7 @@
 # verified sender is wiped on every teardown. Without a verified Source, SES
 # SendEmail fails. Re-verify here on each boot so it's never a manual step.
 #
-# Must match FROM_EMAIL in docker-compose/docker-compose.dev.yml (api + worker).
+# Must match FROM_EMAIL in docker-compose-dev.yml (api + worker).
 set -e
 
 awslocal ses verify-email-identity --email-address invites@homeroll.app
