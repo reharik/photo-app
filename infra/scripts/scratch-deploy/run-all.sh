@@ -53,9 +53,9 @@ cleanup_fixtures() {
 }
 trap cleanup_fixtures EXIT INT TERM
 
+# One flat file, staged by prep.sh — same single `-f` remote-deploy.sh uses.
 compose() { docker compose -p "${PROJECT}" \
-  -f "${APP_ROOT}/compose/base.yml" \
-  -f "${APP_ROOT}/compose/scratch.yml" \
+  -f "${APP_ROOT}/compose/docker-compose.yml" \
   --env-file "${APP_ROOT}/env/scratch.env" "$@"; }
 
 deploy() { # deploy <tag> <changed-services> <logfile> -> echoes exit code

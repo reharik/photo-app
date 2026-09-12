@@ -20,8 +20,9 @@ S3_PREFIX="${S3_PREFIX:-deployments/${APP_NAME}/${SHA}}"
 S3_URI="s3://${S3_BUCKET}/${S3_PREFIX}"
 
 FRONTEND_TAR="${FRONTEND_TAR:-frontend.tar.gz}"
-REMOTE_COMPOSE_NAME="${REMOTE_COMPOSE_NAME:-docker-compose.yml}"
 REMOTE_ENV_NAME="${REMOTE_ENV_NAME:-env.env}"
+# Only used to name the file the old layered layout left behind, so the cleanup
+# below can remove it. Nothing generates it any more.
 WORKERS_GENERATED_NAME="${WORKERS_GENERATED_NAME:-workers.generated.yml}"
 
 WORK_DIR="${WORK_DIR:-${APP_ROOT}/tmp/${SHA}}"
@@ -91,45 +92,44 @@ if download_prefix_if_exists "compose" "${WORK_DIR}/compose"; then
   fi
 fi
 
-COMPOSE_FILES=()
+# ONE flat compose file, uploaded by deploy.yml as compose/docker-compose.yml
+# and installed above. No base/override chain, no generated worker overlay, no
+# resolution ladder: what is in this file is what runs.
+#
+# Explicit `-f`, never a bare `docker compose` from this directory. Bare
+# invocation auto-merges a sibling docker-compose.override.yml, which would
+# quietly reintroduce exactly the layering this file replaced.
+COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.yml"
 
-if [[ -f "${COMPOSE_DIR}/base.yml" && -f "${COMPOSE_DIR}/${ENV}.yml" ]]; then
-  COMPOSE_FILES=( -f "${COMPOSE_DIR}/base.yml" -f "${COMPOSE_DIR}/${ENV}.yml" )
-  echo "Using compose dir files: ${COMPOSE_DIR}/base.yml + ${COMPOSE_DIR}/${ENV}.yml"
-  if [[ -f "${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}" ]]; then
-    COMPOSE_FILES+=( -f "${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}" )
-    echo "Also: ${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}"
-  fi
-elif [[ -f "${COMPOSE_DIR}/base.yml" && -f "${COMPOSE_DIR}/prod.yml" ]]; then
-  COMPOSE_FILES=( -f "${COMPOSE_DIR}/base.yml" -f "${COMPOSE_DIR}/prod.yml" )
-  echo "Using compose dir files: ${COMPOSE_DIR}/base.yml + ${COMPOSE_DIR}/prod.yml"
-  if [[ -f "${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}" ]]; then
-    COMPOSE_FILES+=( -f "${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}" )
-    echo "Also: ${COMPOSE_DIR}/${WORKERS_GENERATED_NAME}"
-  fi
-else
-  COMPOSE_FILE_DEFAULT_1="${APP_ROOT}/docker-compose.${ENV}.yml"
-  COMPOSE_FILE_DEFAULT_2="${APP_ROOT}/docker-compose.prod.yml"
-  COMPOSE_FILE_DEFAULT_3="${APP_ROOT}/docker-compose.yml"
-  COMPOSE_FILE="${COMPOSE_FILE:-${COMPOSE_FILE_DEFAULT_1}}"
-
-  if download_if_exists "${REMOTE_COMPOSE_NAME}" "${WORK_DIR}/${REMOTE_COMPOSE_NAME}"; then
-    echo "Installing compose file to ${APP_ROOT}/docker-compose.yml"
-    sudo install -m 0644 "${WORK_DIR}/${REMOTE_COMPOSE_NAME}" "${APP_ROOT}/docker-compose.yml"
-    COMPOSE_FILE="${APP_ROOT}/docker-compose.yml"
-  else
-    if [[ -f "${COMPOSE_FILE_DEFAULT_1}" ]]; then
-      COMPOSE_FILE="${COMPOSE_FILE_DEFAULT_1}"
-    elif [[ -f "${COMPOSE_FILE_DEFAULT_2}" ]]; then
-      COMPOSE_FILE="${COMPOSE_FILE_DEFAULT_2}"
-    elif [[ -f "${COMPOSE_FILE_DEFAULT_3}" ]]; then
-      COMPOSE_FILE="${COMPOSE_FILE_DEFAULT_3}"
-    fi
-  fi
-
-  COMPOSE_FILES=( -f "${COMPOSE_FILE}" )
-  echo "Using legacy compose file: ${COMPOSE_FILE}"
+# ORDER IS LOAD-BEARING: verify the new file BEFORE removing the old ones.
+# A payload that failed to upload or download must leave the host exactly as it
+# was, with the previous stack's files intact and runnable by hand. Deleting
+# first and discovering the problem second would strand the box with no compose
+# file at all.
+if [[ ! -f "${COMPOSE_FILE}" ]]; then
+  echo "ERROR: ${COMPOSE_FILE} not found." >&2
+  echo "  The deploy payload should have installed it from" >&2
+  echo "  ${S3_URI}/compose/docker-compose.yml" >&2
+  echo "  Nothing has been changed on this host; the previous stack is untouched." >&2
+  exit 1
 fi
+
+# Remove the files the old layered layout left behind. `cp -f` above never
+# deletes, and the ladder this replaced PREFERRED base.yml + prod.yml — so a
+# leftover pair would silently keep deploying stale config next to the new
+# file. Targeted, not a directory wipe: the new file is already in place and
+# the names do not collide. Idempotent, so this is a no-op after the first
+# deploy that runs it.
+STALE_COMPOSE=( base.yml prod.yml "${WORKERS_GENERATED_NAME}" )
+for stale in "${STALE_COMPOSE[@]}"; do
+  if [[ -f "${COMPOSE_DIR}/${stale}" ]]; then
+    echo "Removing stale layered compose file: ${COMPOSE_DIR}/${stale}"
+    sudo rm -f "${COMPOSE_DIR}/${stale}"
+  fi
+done
+
+COMPOSE_FILES=( -f "${COMPOSE_FILE}" )
+echo "Using compose file: ${COMPOSE_FILE}"
 
 if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   for service in ${CHANGED_SERVICE_NAMES}; do
