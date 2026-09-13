@@ -130,10 +130,10 @@ under `infra/`.
 **Compose is the deliberate exception.** There is one flat, fully self-contained file
 per environment, all at the repo root:
 
-| File | Used by |
+| File                      | Used by                                          |
 | ------------------------- | ------------------------------------------------ |
-| `docker-compose-dev.yml`  | local dev, via the `Makefile` |
-| `docker-compose-ci.yml`   | the e2e job in `.github/workflows/ci.yml` |
+| `docker-compose-dev.yml`  | local dev, via the `Makefile`                    |
+| `docker-compose-ci.yml`   | the e2e job in `.github/workflows/ci.yml`        |
 | `docker-compose-prod.yml` | shipped to EC2 by `.github/workflows/deploy.yml` |
 
 They do not share a base and nothing is layered over them — no `base.yml` + override

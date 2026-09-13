@@ -14,8 +14,8 @@ services:
   localstack:
     image: localstack/localstack:4.13
     ports:
-      - "${DEV_LOCALSTACK_PORT:-4566}:4566"
-      - "4510-4559:4510-4559"
+      - '${DEV_LOCALSTACK_PORT:-4566}:4566'
+      - '4510-4559:4510-4559'
     environment:
       - SERVICES=ses,sns,s3
       - DEFAULT_REGION=${AWS_REGION:-us-east-1}
@@ -28,7 +28,7 @@ services:
       # ephemeral and `make docker/dev/down` wipes the data volume).
       - ./infra/config/localstack/init/ready.d:/etc/localstack/init/ready.d
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,17 +37,13 @@ services:
     image: postgres:16-alpine
     # Off 5432 so this stack doesn't collide with another local Postgres.
     ports:
-      - "${DEV_DB_PORT:-5433}:5432"
+      - '${DEV_DB_PORT:-5433}:5432'
     env_file:
       - ./apps/api/.env
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
-        ]
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -60,14 +56,14 @@ services:
   # source + tsx with no dist/ to run.
   migrate:
     image: ${API_IMAGE:-homeroll-api:dev}
-    restart: "no"
+    restart: 'no'
     working_dir: /app/apps/api
-    command: ["npx", "tsx", "src/scripts/runMigrations.ts"]
+    command: ['npx', 'tsx', 'src/scripts/runMigrations.ts']
     env_file:
       - ./apps/api/.env
     environment:
       POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
+      POSTGRES_PORT: '5432'
     depends_on:
       db:
         condition: service_healthy
@@ -81,19 +77,19 @@ services:
       args:
         APP_NAME: api
     ports:
-      - "${DEV_API_PORT:-3001}:3001"
+      - '${DEV_API_PORT:-3001}:3001'
     env_file:
       - ./apps/api/.env
     environment:
       NODE_ENV: development
       PORT: ${PORT:-3000}
       POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
-      API_PORT: "3001"
+      POSTGRES_PORT: '5432'
+      API_PORT: '3001'
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
-      CHOKIDAR_USEPOLLING: "1"
-      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: '1'
+      WATCHPACK_POLLING: 'true'
       # Must match the identity verified in
       # infra/config/localstack/init/ready.d/verify-ses.sh — LocalStack SES
       # rejects any unverified Source, and the api sends verification codes
@@ -104,7 +100,7 @@ services:
       - ./apps/api:/app/apps/api
       - /app/apps/api/node_modules
       - ./packages:/app/packages
-    command: ["sh", "-c", "sh apps/api/src/scripts/serverStartUpDev.sh"]
+    command: ['sh', '-c', 'sh apps/api/src/scripts/serverStartUpDev.sh']
     depends_on:
       localstack:
         condition: service_healthy
@@ -124,7 +120,7 @@ services:
       - ./apps/media-worker/.env
     environment:
       POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
+      POSTGRES_PORT: '5432'
       # SES -> LocalStack; S3 -> real AWS via the ~/.aws mount below.
       AWS_ENDPOINT: http://localstack:4566
       AWS_REGION: us-east-1
@@ -142,8 +138,7 @@ services:
       - /app/apps/media-worker/node_modules
       - ./packages:/app/packages
       - ~/.aws:/root/.aws:ro
-    command:
-      ["sh", "-c", "sh apps/media-worker/src/scripts/serverStartUpDev.sh"]
+    command: ['sh', '-c', 'sh apps/media-worker/src/scripts/serverStartUpDev.sh']
     depends_on:
       db:
         condition: service_healthy
@@ -154,11 +149,11 @@ services:
     build: https://github.com/veertech/localstack-aws-ses-email-viewer.git#main
     environment:
       LOCALSTACK_HOST: http://localstack:4566
-      SMTP_FORWARD_ENABLED: "true"
+      SMTP_FORWARD_ENABLED: 'true'
       SMTP_FORWARD_HOST: mailpit
-      SMTP_FORWARD_PORT: "1025"
+      SMTP_FORWARD_PORT: '1025'
     ports:
-      - "3005:3005"
+      - '3005:3005'
     depends_on:
       - localstack
       - mailpit
@@ -167,10 +162,10 @@ services:
     image: axllent/mailpit:latest
     environment:
       MP_DATABASE: /data/mailpit.db
-      MP_MAX_MESSAGES: "500"
+      MP_MAX_MESSAGES: '500'
     ports:
-      - "8025:8025" # UI
-      - "1025:1025" # SMTP
+      - '8025:8025' # UI
+      - '1025:1025' # SMTP
 
 volumes:
   pgdata:

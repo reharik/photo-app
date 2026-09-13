@@ -27,11 +27,7 @@ services:
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
-        ]
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -53,15 +49,15 @@ services:
   migrate:
     image: ${API_IMAGE:-homeroll-api:latest}
     platform: linux/arm64
-    restart: "no"
+    restart: 'no'
     working_dir: /app/apps/api/dist
-    command: ["node", "scripts/runMigrations.js"]
+    command: ['node', 'scripts/runMigrations.js']
     env_file:
       - /opt/homeroll/env/prod.env
     environment:
       NODE_ENV: production
       POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
+      POSTGRES_PORT: '5432'
     depends_on:
       db:
         condition: service_healthy
@@ -76,13 +72,13 @@ services:
       NODE_ENV: production
       PORT: ${PORT:-3000}
       POSTGRES_HOST: db
-      POSTGRES_PORT: "5432"
+      POSTGRES_PORT: '5432'
     # Loopback ONLY. Caddy terminates TLS on the host and reverse-proxies in;
     # dropping the 127.0.0.1 prefix would publish the api on every interface.
     ports:
-      - "127.0.0.1:${API_HOST_PORT:-3000}:${API_PORT:-3000}"
+      - '127.0.0.1:${API_HOST_PORT:-3000}:${API_PORT:-3000}'
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:3000/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -111,7 +107,7 @@ services:
       - /opt/homeroll/env/prod.env
     environment:
       NODE_ENV: production
-      POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
+      POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
     depends_on:
       db:
         condition: service_healthy
