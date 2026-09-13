@@ -1,6 +1,6 @@
 import { Logger } from '@packages/infrastructure';
 import { Knex } from 'knex';
-import { AttachGlobalHandlers } from './attachGlobalHandlers';
+import { AttachGlobalHandlers, TAG } from './attachGlobalHandlers';
 import { RunMediaWorkerLoop } from './runMediaWorkerLoop';
 import { LogMediaWorkerStartup } from './tasks/queue/mediaWorkers/logMediaWorkerStartup';
 
@@ -32,19 +32,29 @@ export const build__App =
 
     let shuttingDown = false;
     const shutdown = async (): Promise<void> => {
-      if (shuttingDown) return;
+      if (shuttingDown) {
+        logger.info(`${TAG} shutdown already in progress`);
+        return;
+      }
       shuttingDown = true;
+      const startedAt = Date.now();
+      const elapsed = () => Date.now() - startedAt;
+
+      logger.info(`${TAG} BEGIN, waiting for the in-flight job to finish`);
       runMediaWorkerLoop.stop();
       try {
         await workerPromise;
+        logger.info(`${TAG} worker loop drained (${elapsed()}ms)`);
       } catch (e) {
         if (e instanceof Error) {
-          logger.error('Media worker shutdown wait failed', e);
+          logger.error(`${TAG} worker loop drain failed`, e);
         } else {
-          logger.error('Media worker shutdown wait failed', { err: String(e) });
+          logger.error(`${TAG} worker loop drain failed`, { err: String(e) });
         }
       } finally {
+        logger.info(`${TAG} closing pg pool`);
         await database.destroy();
+        logger.info(`${TAG} drain finished in ${elapsed()}ms`);
       }
     };
 

@@ -58,6 +58,15 @@ export const build__FinalizeMediaItemUpload = ({
     if (!objectMetadata) {
       return fail(AppErrorCollection.mediaItem.MediaBytesNotFound);
     }
+    // A zero-byte object means the client's PUT reached S3 with an empty body.
+    // S3 answers 200 for that, so the upload "succeeds" client-side; without this
+    // guard the item finalizes, enqueues a processing job, and only fails deep in
+    // the worker on an undecodable file. Fail here instead, where the error is
+    // still attributable to the upload. (See the WebKit service-worker bug that
+    // made every iOS upload land as zero bytes.)
+    if (objectMetadata.size === 0) {
+      return fail(AppErrorCollection.mediaItem.MediaBytesEmpty);
+    }
 
     const finalized = mediaItem.completeUploadedWithMetadata(
       {
