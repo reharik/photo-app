@@ -93,7 +93,7 @@ services:
         awslogs-stream: api
         mode: non-blocking
         max-buffer-size: 4m
-   healthcheck:
+    healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:3000/health || exit 1']
       interval: 30s
       timeout: 10s
