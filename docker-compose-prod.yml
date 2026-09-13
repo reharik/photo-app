@@ -24,6 +24,14 @@ services:
     restart: unless-stopped
     env_file:
       - /opt/homeroll/env/prod.env
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: /homeroll/prod
+        awslogs-stream: db
+        mode: non-blocking
+        max-buffer-size: 4m
     volumes:
       - pgdata_prod:/var/lib/postgresql/data
     healthcheck:
@@ -77,7 +85,15 @@ services:
     # dropping the 127.0.0.1 prefix would publish the api on every interface.
     ports:
       - '127.0.0.1:${API_HOST_PORT:-3000}:${API_PORT:-3000}'
-    healthcheck:
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: /homeroll/prod
+        awslogs-stream: api
+        mode: non-blocking
+        max-buffer-size: 4m
+   healthcheck:
       test: ['CMD-SHELL', 'curl -fsS http://localhost:3000/health || exit 1']
       interval: 30s
       timeout: 10s
@@ -108,6 +124,14 @@ services:
     environment:
       NODE_ENV: production
       POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-east-1
+        awslogs-group: /homeroll/prod
+        awslogs-stream: media-worker
+        mode: non-blocking
+        max-buffer-size: 4m
     depends_on:
       db:
         condition: service_healthy
