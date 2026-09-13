@@ -1,5 +1,4 @@
 import cors from '@koa/cors';
-import type { Logger } from '@packages/infrastructure';
 import { setDefaultSerializationMode } from '@reharik/smart-enum';
 import http from 'http';
 import type { Knex } from 'knex';
@@ -11,6 +10,7 @@ import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
 import { ApiRequestContextMiddleware } from './middleware/apiRequestContextMiddleware.js';
 import type { AuthMiddleware } from './middleware/authMiddleware.js';
 import type { ErrorHandler } from './middleware/errorHandler.js';
+import { RequestIdMiddleware } from './middleware/requestIdMiddleware.js';
 import type { RequestLogger } from './middleware/requestLogger.js';
 import type { APIRouter } from './routes/apiRouter.js';
 import type { MediaPublicRouter } from './routes/mediaPublicRouter.js';
@@ -31,6 +31,7 @@ type KoaServerDeps = {
   database: Knex;
   config: Config;
   apiRequestContextMiddleware: ApiRequestContextMiddleware;
+  requestIdMiddleware: RequestIdMiddleware;
 };
 
 export const build__KoaServer = ({
@@ -44,17 +45,21 @@ export const build__KoaServer = ({
   requestLogger,
   database,
   config,
+  requestIdMiddleware,
 }: KoaServerDeps): KoaServer => {
   const app = new Koa();
   app.proxy = config.trustProxy;
   app.context.db = database;
-  // 1. Error handling (should be first)
+  // 1. RequestId generation ( should be first, so request Id can be on error )
+  app.use(requestIdMiddleware);
+
+  // 2. Error handling (should be immediately after requestId )
   app.use(errorHandler);
 
-  // 2. Request logging (early in pipeline)
+  // 3. Request logging (early in pipeline)
   app.use(requestLogger);
 
-  // 3. CORS (before body parsing)
+  // 4. CORS (before body parsing)
   app.use(
     cors({
       origin: (ctx): string => {
@@ -71,22 +76,24 @@ export const build__KoaServer = ({
     }),
   );
 
-  // 4. Body parsing (must be before request processing)
+  // 5. Body parsing (must be before request processing)
   app.use(koaBody());
 
+  // 6. Add IOC request context container
   app.use(apiRequestContextMiddleware);
-  // 5. Public media fetch route (optional auth + resource authz; no global login requirement)
+
+  // 7. Public media fetch route (optional auth + resource authz; no global login requirement)
   // Fires before auth middleware because this has a custom authz logic
   app.use(mediaPublicRouter.routes()).use(mediaPublicRouter.allowedMethods());
 
-  // 6. Auth middleware (required for API routes below)
+  // 8. Auth middleware (required for API routes below)
   app.use(authMiddleware);
 
-  // 7. Routes (the actual request handling)
+  // 9. Routes (the actual request handling)
 
   app.use(apiRouter.routes()).use(apiRouter.allowedMethods());
 
-  // 8. GraphQL endpoint
+  // 10. GraphQL endpoint
   app.use(graphQlServer);
 
   // Health check endpoint (no /api prefix, no auth required)

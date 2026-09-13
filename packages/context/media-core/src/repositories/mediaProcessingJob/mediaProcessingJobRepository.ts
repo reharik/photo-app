@@ -2,7 +2,7 @@ import { MediaJobStatus } from '@packages/contracts';
 
 import type { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 /**
  * Attempt budget for one media processing job, shared by the two places that

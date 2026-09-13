@@ -2,7 +2,7 @@ import { EntityId, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow } from '../../services';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { albumItemWithMediaSelectColumns } from '../readRepositories/albumItemReadRepository';
 
 export interface SystemAlbumItemRepository extends RequestScopeLifeCycle {

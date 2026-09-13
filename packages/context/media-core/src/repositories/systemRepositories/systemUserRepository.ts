@@ -1,7 +1,7 @@
 import { EntityId, UserStatus } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export interface SystemUserRepository extends RequestScopeLifeCycle {
   getUserContacts: (userIds: EntityId[]) => Promise<UserContact[]>;

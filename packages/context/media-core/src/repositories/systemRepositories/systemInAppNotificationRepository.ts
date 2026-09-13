@@ -8,7 +8,7 @@ import {
 } from '@packages/contracts';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export interface SystemInAppNotificationRepository extends RequestScopeLifeCycle {
   upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;

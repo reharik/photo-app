@@ -1,6 +1,6 @@
 import { EntityId } from '@packages/contracts';
 import { UnitOfWork } from '../../infrastructure/repositories/unitOfWork';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { ShareContactRow } from '../readRepositories/types';
 
 export type ShareContactRepositoryDeps = {

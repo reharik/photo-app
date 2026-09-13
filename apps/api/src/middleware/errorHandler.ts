@@ -1,4 +1,3 @@
-import type { Logger } from '@packages/infrastructure';
 import { Context, HttpError, Next } from 'koa';
 
 export type ErrorHandler = (ctx: Context, next: Next) => Promise<void>;

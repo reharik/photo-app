@@ -1,13 +1,12 @@
 import type { EntityId } from '@packages/contracts';
 import { AuthorizationKind, notEmpty, Operation, UserStatus } from '@packages/contracts';
-import { groupByMapping } from '@packages/infrastructure';
+import { groupByMapping, RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UserAuthorizationRecord } from '../../domain';
 import { PendingUser } from '../../domain/User/PendingUser';
 import { UserRecord } from '../../domain/User/types';
 import { User } from '../../domain/User/User';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { Persist } from './AggregateRepo';
 

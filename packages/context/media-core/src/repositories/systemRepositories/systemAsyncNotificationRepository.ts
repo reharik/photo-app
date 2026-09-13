@@ -8,7 +8,7 @@ import {
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;

@@ -13,7 +13,7 @@ import {
   UserStatus,
 } from '@packages/contracts';
 import { UnitOfWork } from '../..';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import {
   AlbumMemberCollectionInfo,
   AlbumWithCoverRow,

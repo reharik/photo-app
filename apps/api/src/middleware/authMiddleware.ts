@@ -1,4 +1,3 @@
-import type { Logger } from '@packages/infrastructure';
 import type { Context, Next } from 'koa';
 
 import { TokenAccessReadService } from '@packages/media-core';

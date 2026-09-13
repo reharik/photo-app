@@ -4,7 +4,7 @@ import {
   GrantReadRepository,
   MediaItemReadRepository,
 } from '../../repositories/readRepositories/types';
-import { RequestScopeLifeCycle } from './readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export type AuthorizeMediaCommentInput = {
   mediaItemId: string;

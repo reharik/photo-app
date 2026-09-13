@@ -7,12 +7,11 @@ import {
   OperationResult,
   type SignupInput,
 } from '@packages/contracts';
-import type { Logger } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, type Logger } from '@packages/infrastructure';
 import {
   ActivatePendingUserWriteService,
   EmailVerificationRepository,
   PendingUser,
-  RequestScopeLifeCycle,
   SystemEmailVerificationRepository,
   UserRepository,
 } from '@packages/media-core';

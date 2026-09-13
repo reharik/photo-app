@@ -18,7 +18,7 @@ import { PendingUserAuthorizationRecord } from '../../domain/Authorization/Pendi
 import { PublicLinkAuthorizationRecord } from '../../domain/Authorization/PublicLinkAuthorization';
 import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { Persist } from './AggregateRepo';
 

@@ -1,6 +1,5 @@
-import { Logger } from '@packages/infrastructure';
+import { Logger, RequestScopeLifeCycle } from '@packages/infrastructure';
 import { DomainEventHandlers } from '../generated/ioc-registry.types';
-import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { DomainEvent } from './domainEvent';
 
 export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['kind']> = (

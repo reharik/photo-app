@@ -1,7 +1,7 @@
 import { EntityId } from '@packages/contracts';
 import { CommentRecord } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export interface SystemCommentRepository extends RequestScopeLifeCycle {
   getCommentById: (commentId: EntityId) => Promise<CommentRecord>;

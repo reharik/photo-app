@@ -1,4 +1,5 @@
 import { createLogger, format, transports, type Logger as WinstonLogger } from 'winston';
+import { RequestScopeLifeCycle } from '../requestScopeLifeCycle';
 
 type Level = 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug';
 
@@ -12,14 +13,14 @@ interface ErrorWithResponse extends Error {
 
 type LogMeta = Record<string, unknown>;
 
-type ErrorLogger = {
+export type ErrorLogger = {
   (message: string): void;
   (message: string, err: unknown): void;
   (message: string, meta: LogMeta): void;
   (message: string, err: unknown, meta: LogMeta): void;
 };
 
-export type Logger = {
+export type LoggerShape = {
   error: ErrorLogger;
   warn: (message: string, meta?: unknown) => void;
   info: (message: string, meta?: unknown) => void;
@@ -27,6 +28,12 @@ export type Logger = {
   verbose: (message: string, meta?: unknown) => void;
   debug: (message: string, meta?: unknown) => void;
 };
+export interface Logger extends LoggerShape {
+  child: (meta: Record<string, unknown>) => Logger;
+}
+export interface ScopedLogger extends LoggerShape, RequestScopeLifeCycle {
+  child: (meta: Record<string, unknown>) => ScopedLogger;
+}
 
 export type LoggerConfig = {
   logLevel: Level;
@@ -116,54 +123,7 @@ const createJsonFormat = () =>
     format.json(),
   );
 
-let appLogger: WinstonLogger;
-
-export const build__Logger = ({ config }: LoggerDeps): Logger =>
-  coreLogger({
-    logJsonFilePath: config.logJsonFilePath,
-    logLevel: config.logLevel,
-  });
-
-export const coreLogger = ({
-  logJsonFilePath,
-  logLevel,
-}: {
-  logJsonFilePath?: string;
-  logLevel: string;
-}): Logger => {
-  const loggerTransports: WinstonLogger['transports'] = [
-    new transports.Console({
-      stderrLevels: ['error'],
-      handleExceptions: true,
-      format: createConsoleFormat(),
-    }),
-  ];
-
-  if (logJsonFilePath) {
-    loggerTransports.push(
-      new transports.File({
-        filename: logJsonFilePath,
-        level: logLevel,
-        handleExceptions: true,
-        format: createJsonFormat(),
-      }),
-    );
-  }
-
-  appLogger = createLogger({
-    level: logLevel,
-    levels: {
-      error: 0,
-      warn: 1,
-      info: 2,
-      http: 3,
-      verbose: 4,
-      debug: 5,
-    },
-    transports: loggerTransports,
-    exitOnError: false,
-  });
-
+const wrap = (w: WinstonLogger): Logger => {
   const logMessage = (level: Level, message: string, meta?: unknown, err?: Error) => {
     const payload: Record<string, unknown> = {};
 
@@ -177,7 +137,7 @@ export const coreLogger = ({
       payload.err = err;
     }
 
-    appLogger.log(level, message, payload);
+    w.log(level, message, payload);
   };
 
   const error: ErrorLogger = (message: string, errorOrMeta?: unknown, meta?: LogMeta) => {
@@ -212,5 +172,54 @@ export const coreLogger = ({
     logMessage('debug', message, meta);
   };
 
-  return { error, warn, info, http, verbose, debug };
+  return { error, warn, info, http, verbose, debug, child: (meta) => wrap(w.child(meta)) };
+};
+
+export const build__Logger = ({ config }: LoggerDeps): Logger =>
+  coreLogger({
+    logJsonFilePath: config.logJsonFilePath,
+    logLevel: config.logLevel,
+  });
+
+export const coreLogger = ({
+  logJsonFilePath,
+  logLevel,
+}: {
+  logJsonFilePath?: string;
+  logLevel: string;
+}): Logger => {
+  const loggerTransports: WinstonLogger['transports'] = [
+    new transports.Console({
+      stderrLevels: ['error'],
+      handleExceptions: true,
+      format: createConsoleFormat(),
+    }),
+  ];
+
+  if (logJsonFilePath) {
+    loggerTransports.push(
+      new transports.File({
+        filename: logJsonFilePath,
+        level: logLevel,
+        handleExceptions: true,
+        format: createJsonFormat(),
+      }),
+    );
+  }
+
+  const appLogger = createLogger({
+    level: logLevel,
+    levels: {
+      error: 0,
+      warn: 1,
+      info: 2,
+      http: 3,
+      verbose: 4,
+      debug: 5,
+    },
+    transports: loggerTransports,
+    exitOnError: false,
+  });
+
+  return wrap(appLogger);
 };

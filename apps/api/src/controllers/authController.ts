@@ -1,9 +1,9 @@
 import { EntityId, type User } from '@packages/contracts';
-import { type Logger, type RateLimiter } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, type Logger, type RateLimiter } from '@packages/infrastructure';
 import jwt from 'jsonwebtoken';
 import type { Context } from 'koa';
 
-import { RequestScopeLifeCycle, UnitOfWork } from '@packages/media-core';
+import { UnitOfWork } from '@packages/media-core';
 import { NotificationService } from '@packages/notifications';
 import { Config } from '../config';
 import type { AuthQueryService } from '../services/authQueryService';

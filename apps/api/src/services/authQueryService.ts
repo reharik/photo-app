@@ -5,8 +5,8 @@ import {
   type LoginInput,
   type User,
 } from '@packages/contracts';
-import type { Logger } from '@packages/infrastructure';
-import { RequestScopeLifeCycle, UnitOfWork } from '@packages/media-core';
+import { RequestScopeLifeCycle, type Logger } from '@packages/infrastructure';
+import { UnitOfWork } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { DateTime } from 'luxon';

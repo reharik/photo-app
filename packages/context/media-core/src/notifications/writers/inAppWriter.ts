@@ -5,7 +5,7 @@ import {
   SystemInAppNotificationRepository,
   SystemMediaItemRepository,
 } from '../../repositories';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { ResolvedNotification } from '../types';
 
 export interface InAppWriter extends NotificationWriter {

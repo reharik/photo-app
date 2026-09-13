@@ -1,7 +1,8 @@
 import type { EntityId } from '@packages/contracts';
 import { EntityType, MediaItemStatus, MediaKind, ReactionEmoji } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
-import { ReactionRecord, RequestScopeLifeCycle, UnitOfWork } from '../..';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
+import { ReactionRecord, UnitOfWork } from '../..';
 import {
   MediaItem,
   MediaItemTagRecord,
