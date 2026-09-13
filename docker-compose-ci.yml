@@ -1,0 +1,154 @@
+# CI e2e stack. Flat — replaces the former base.yml + infra dev.yml +
+# docker-compose.ci.yml + infra ci.yml chain.
+#
+# e2e runs the SHIPPING `runtime-node` images — the same target, on the same
+# arch, that deploy.yml ships. Consequences, all deliberate:
+#
+#   - no `build:`   — the workflow pre-builds both images (buildx + type=gha)
+#                     and exports API_IMAGE / WORKER_IMAGE; `--no-build` keeps
+#                     a stray rebuild from sneaking in
+#   - no `volumes:` — a source mount would shadow the baked dist/ and we would
+#                     be testing tsx-over-source, i.e. not the artifact that
+#                     ships
+#   - no `command:` — the image's own prod CMD (serverStartUpProd.sh) is the
+#                     thing under test
+#   - no api healthcheck — the image stays pure (no curl probe baked in for
+#                     CI's benefit); the workflow polls /health from the runner
+#
+# api and media-worker are SEPARATE images: `runtime-node` copies only
+# apps/${SERVICE_NAME}/dist. The `migrate` one-shot reuses API_IMAGE, because
+# migrations are compiled into the api's dist/db.
+#
+# S3 -> REAL AWS while SES stays on LocalStack. The app already splits these
+# (only the SES client reads AWS_ENDPOINT; the S3 client never does), so the
+# OIDC credentials below reach S3 only. SES ignores them — it pins its own
+# dummy test/test whenever AWS_ENDPOINT is set.
+services:
+  localstack:
+    image: localstack/localstack:4.13
+    ports:
+      - '4566:4566'
+      - '4510-4559:4510-4559'
+    environment:
+      - SERVICES=ses,sns,s3
+      - DEFAULT_REGION=${AWS_REGION:-us-east-1}
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Re-verifies the SES sender identity on every boot (state is ephemeral).
+      - ./infra/config/localstack/init/ready.d:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    # 5433 is also what the runner-side seed step and Playwright's global-setup
+    # connect through — the prod image carries no seed path, so seeding has to
+    # reach the db from outside the stack.
+    ports:
+      - '5433:5432'
+    env_file:
+      - ./apps/api/.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Same one-shot prod uses, on the same footing: prod image, compiled
+  # entrypoint. `restart` MUST stay "no". Migrations are compiled into dist/db
+  # by the api's `build:db` target; seeds deliberately are NOT (see
+  # tsconfig.db.json), which is why CI seeds from the runner instead.
+  #
+  # The workflow runs this as an explicit, exit-code-checked step before
+  # bringing api/media-worker up with --no-deps.
+  migrate:
+    image: ${API_IMAGE}
+    restart: 'no'
+    working_dir: /app/apps/api/dist
+    command: ['node', 'scripts/runMigrations.js']
+    env_file:
+      - ./apps/api/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    image: ${API_IMAGE}
+    ports:
+      - '3001:3001'
+    env_file:
+      - ./apps/api/.env
+    environment:
+      # NOTE: development, not production — the prod IMAGE under a dev
+      # NODE_ENV. Inherited from the old dev.yml layer and preserved verbatim;
+      # apps/api/.env.ci sets the same. Changing it moves the seed guard and
+      # config behaviour, so treat it as load-bearing until proven otherwise.
+      NODE_ENV: development
+      PORT: ${PORT:-3000}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+      API_PORT: '3001'
+      # SES -> LocalStack. The S3 client ignores this and hits real AWS.
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${CI_E2E_BUCKET}
+      CHOKIDAR_USEPOLLING: '1'
+      WATCHPACK_POLLING: 'true'
+      FROM_EMAIL: invites@homeroll.app
+      # Lowercase 'homeroll' is what the old chain actually sent: this
+      # `environment` value beats apps/api/.env.ci's FROM_NAME=Homeroll CI.
+      # Preserved verbatim; normalise it in a separate change if you want to.
+      FROM_NAME: homeroll Dev
+    depends_on:
+      localstack:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  media-worker:
+    image: ${WORKER_IMAGE}
+    env_file:
+      - ./apps/media-worker/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: '5432'
+      AWS_ENDPOINT: http://localstack:4566
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      S3_BUCKET: ${CI_E2E_BUCKET}
+      FROM_EMAIL: invites@homeroll.app
+      FROM_NAME: homeroll Dev
+      # for e2e testing
+      SLOW_SWEEP_INTERVAL_MS: 5000
+      FAST_SWEEP_INTERVAL_MS: 5000
+      DEBOUNCE_EMAIL_WINDOW_SECONDS: 5
+      # Idle-poll interval; only bites for the first job after the queue
+      # drains (the loop re-claims back-to-back while work exists).
+      MEDIA_WORKER_POLL_MS: 250
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  localstack_data:

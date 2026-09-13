@@ -110,15 +110,13 @@ if [[ ! -d "${COMPOSE_DIR}" ]]; then
   exit 1
 fi
 
-COMPOSE_FILES=()
-for f in base prod workers.generated; do
-  if [[ -f "${COMPOSE_DIR}/${f}.yml" ]]; then
-    COMPOSE_FILES+=( -f "${COMPOSE_DIR}/${f}.yml" )
-  fi
-done
-
-if [[ ${#COMPOSE_FILES[@]} -eq 0 ]]; then
-  echo "No compose files found in ${COMPOSE_DIR}; cannot restart." >&2
+# One flat file, installed by remote-deploy.sh. Explicit `-f`, never a bare
+# invocation from this directory: bare would silently merge any
+# docker-compose.override.yml sitting next to it.
+COMPOSE_FILE="${COMPOSE_DIR}/docker-compose.yml"
+if [[ ! -f "${COMPOSE_FILE}" ]]; then
+  echo "Compose file not found: ${COMPOSE_FILE}" >&2
+  echo "Cannot restart automatically. Trigger a deploy via CI or run compose manually." >&2
   exit 1
 fi
 
@@ -129,9 +127,30 @@ if [[ -z "${IMG}" ]]; then
   echo "No ${APP_NAME}-api image found locally; trigger a deploy via CI to bring it back up." >&2
   exit 1
 fi
-log "Bringing stack back up using image ${IMG}"
 
-APP_NAME="${APP_NAME}" API_IMAGE="${IMG}" API_HOST_PORT="${API_HOST_PORT}" \
-  docker compose -p "${PROJECT_NAME}" "${COMPOSE_FILES[@]}" up -d
+# The flat compose file pins the worker to `${APP_NAME}-media-worker:${SHA}`;
+# the generated overlay it replaced baked a literal tag, so this script never
+# had to supply SHA. It does now — leave it unset and the image resolves to
+# `${APP_NAME}-media-worker:` with an empty tag. Compose renders that happily,
+# so `config` looks clean and the break only surfaces when `up` tries to create
+# the container. Hence the explicit check below rather than trusting a
+# validation step to catch it.
+#
+# Resolved from the newest local WORKER image, not by reusing the api's tag: a
+# deploy only rebuilds the services that changed, so the two legitimately sit
+# at different SHAs and borrowing api's would name an image that was never
+# built.
+SHA="$(docker images "${APP_NAME}-media-worker" --format '{{.Tag}}' \
+  | grep -v '<none>' \
+  | head -1 || true)"
+if [[ -z "${SHA}" ]]; then
+  echo "No ${APP_NAME}-media-worker image found locally; trigger a deploy via CI to bring it back up." >&2
+  exit 1
+fi
+
+log "Bringing stack back up using api image ${IMG}, worker tag ${SHA}"
+
+APP_NAME="${APP_NAME}" API_IMAGE="${IMG}" SHA="${SHA}" API_HOST_PORT="${API_HOST_PORT}" \
+  docker compose -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" up -d
 
 log "Done."

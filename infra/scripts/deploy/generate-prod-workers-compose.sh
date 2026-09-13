@@ -17,7 +17,7 @@ jq -c '.docker.workers[]?' "$CONFIG_PATH" | while IFS= read -r worker; do
   ${NAME}:
     platform: linux/arm64
     restart: unless-stopped
-    image: ${APP_NAME}-${NAME}:${SHA}
+    image: ${APP_NAME}-${NAME}:${SHA}t
     env_file:
       - /opt/${APP_NAME}/env/prod.env
     environment:

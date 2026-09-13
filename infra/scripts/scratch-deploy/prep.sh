@@ -6,11 +6,14 @@
 # /tmp/homeroll-scratch-deploy) so nothing generated lands in the repo.
 #
 # Deviations from prod, and why each is unavoidable:
-#   1. ENV=scratch, not prod. prod.yml pins `platform: linux/arm64`; dev boxes
-#      are amd64. scratch.yml below is prod.yml with that pin removed and the
-#      env_file repointed. Everything under test (base.yml's migrate service,
-#      the depends_on gates, restart:"no") is INHERITED FROM THE REAL base.yml,
-#      which is copied verbatim.
+#   1. The compose file is DERIVED, not hand-written: the real
+#      docker-compose-prod.yml with the arm64 pins stripped (dev boxes are
+#      amd64), the env_file repointed, and the worker image stubbed. Everything
+#      else — the migrate one-shot, restart:"no", the depends_on gates, the db
+#      healthcheck, api's loopback bind and healthcheck — is the REAL shipping
+#      definition rather than a copy that can drift. Each transform is asserted
+#      after the fact, so formatting drift in the prod file fails loudly here
+#      instead of producing a quietly-wrong scratch stack.
 #   2. /usr/local/bin/betaname-backup.sh is stubbed — remote-deploy.sh hardcodes
 #      that absolute path, so it cannot be redirected via PATH.
 #   3. `aws` is shimmed to exit 1 so download_if_exists() short-circuits and
@@ -53,66 +56,57 @@ exec "$@"
 EOF
 chmod +x "${SCRATCH_DIR}/bin/sudo"
 
-# --- real base.yml, verbatim -------------------------------------------------
-cp "${REPO}/infra/config/docker-compose/base.yml" "${APP_ROOT}/compose/base.yml"
+# --- compose/docker-compose.yml: DERIVED from the real prod file -------------
+# remote-deploy.sh reads exactly one file, ${APP_ROOT}/compose/docker-compose.yml,
+# so that is what the harness stages. Old multi-file layouts are cleared first:
+# they are inert now, but leaving them would misrepresent what the real host has.
+rm -f "${APP_ROOT}/compose"/{base.yml,prod.yml,scratch.yml,workers.generated.yml}
 
-# --- scratch.yml: prod.yml minus the arm64 pin, env_file repointed -----------
-cat > "${APP_ROOT}/compose/scratch.yml" <<EOF
-services:
-  db:
-    restart: unless-stopped
-    env_file:
-      - ${APP_ROOT}/env/scratch.env
-    volumes:
-      - pgdata_scratch:/var/lib/postgresql/data
+PROD_COMPOSE="${REPO}/docker-compose-prod.yml"
+SCRATCH_COMPOSE="${APP_ROOT}/compose/docker-compose.yml"
+[[ -f "${PROD_COMPOSE}" ]] || {
+  echo "Missing ${PROD_COMPOSE}" >&2
+  exit 1
+}
 
-  migrate:
-    env_file:
-      - ${APP_ROOT}/env/scratch.env
-    environment:
-      NODE_ENV: production
-      POSTGRES_PORT: "5432"
+# Exactly three transforms, each asserted below:
+#   1. drop `platform: linux/arm64`  — dev boxes are amd64
+#   2. repoint env_file              — /opt/homeroll/env/prod.env is not here
+#   3. stub the media-worker image   — a stub is deliberate: what is under test
+#      is remote-deploy.sh's control flow (that migrate runs, that API_IMAGE
+#      falls back to the running api image when this deploy built none), not the
+#      worker binary. The real image would add a multi-minute build and change
+#      nothing. depends_on/restart/env_file all survive from the prod file, so
+#      case 3b still gets a non-api backend service the recreate loop can target.
+#
+# API_HOST_PORT/API_PORT need NO transform: prod's ports line is already
+# `127.0.0.1:${API_HOST_PORT:-3000}:${API_PORT:-3000}`, and remote-deploy.sh
+# passes --env-file scratch.env, which feeds compose interpolation.
+sed \
+  -e '/^[[:space:]]*platform: linux\/arm64$/d' \
+  -e "s|/opt/homeroll/env/prod\.env|${APP_ROOT}/env/scratch.env|" \
+  -e 's|^\( *\)image: homeroll-media-worker:.*$|\1image: alpine:3.20\n\1command: ["sleep", "infinity"]|' \
+  "${PROD_COMPOSE}" > "${SCRATCH_COMPOSE}"
 
-  # Stand-in for the generated prod worker overlay
-  # (infra/scripts/deploy/generate-prod-workers-compose.sh). Case 3b needs a
-  # non-api backend service that the recreate loop can target; without one,
-  # \`up -d --no-deps media-worker\` fails with "no such service" and masks the
-  # API_IMAGE fallback we are actually testing.
-  #
-  # A stub image is deliberate. What is under test is remote-deploy.sh's control
-  # flow — that migrate runs, that API_IMAGE falls back to the running api image
-  # when this deploy built none — not the worker binary. Using the real worker
-  # image would add a multi-minute build and change nothing about the result.
-  # depends_on mirrors the generated overlay exactly.
-  media-worker:
-    image: alpine:3.20
-    restart: unless-stopped
-    command: ["sleep", "infinity"]
-    depends_on:
-      db:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-
-  api:
-    restart: unless-stopped
-    env_file:
-      - ${APP_ROOT}/env/scratch.env
-    environment:
-      NODE_ENV: production
-      POSTGRES_PORT: "5432"
-    ports:
-      - "127.0.0.1:\${API_HOST_PORT:-3999}:\${API_PORT:-3000}"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-
-volumes:
-  pgdata_scratch:
-EOF
+# A silently no-op'd sed would produce a scratch stack that looks fine and
+# tests the wrong thing. Verify each transform actually landed.
+transform_check() { # transform_check <label> <literal> <expected-count>
+  local n
+  n="$(grep -cF -- "$2" "${SCRATCH_COMPOSE}" || true)"
+  if [[ "$n" != "$3" ]]; then
+    echo "prep.sh: transform '$1' matched ${n}x, expected $3x." >&2
+    echo "  ${PROD_COMPOSE} formatting has drifted; update the sed above." >&2
+    exit 1
+  fi
+}
+transform_check "arm64 pins stripped"     "platform: linux/arm64"          0
+transform_check "prod env_file removed"   "/opt/homeroll/env/prod.env"     0
+transform_check "scratch env_file wired"  "${APP_ROOT}/env/scratch.env"    4
+transform_check "worker image stubbed"    "image: alpine:3.20"             1
+transform_check "worker sleeps"           'command: ["sleep", "infinity"]' 1
+# Guards that the REAL definitions survived the transform.
+transform_check "migrate one-shot intact" 'restart: "no"'                  1
+transform_check "api loopback bind intact" "127.0.0.1:"                    1
 
 # --- container env. NODE_ENV=production is deliberate: it also proves the ----
 # --- seed guard would fire if anything on this path tried to seed. -----------
@@ -143,7 +137,7 @@ echo "Scratch tree ready:"
 echo "  REPO=${REPO}"
 echo "  SCRATCH_DIR=${SCRATCH_DIR}"
 echo "  APP_ROOT=${APP_ROOT}"
-echo "  compose: base.yml (real, verbatim) + scratch.yml"
+echo "  compose: docker-compose.yml (derived from docker-compose-prod.yml)"
 echo "  shims:   ${SCRATCH_DIR}/bin/{aws,sudo}"
 echo
 echo "Still required (needs sudo, run once):"

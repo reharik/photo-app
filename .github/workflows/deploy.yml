@@ -100,18 +100,6 @@ jobs:
           echo "should_deploy_backend=${SHOULD_DEPLOY_BACKEND}" >> "$GITHUB_OUTPUT"
           echo "frontend_changed=${FRONTEND_CHANGED}" >> "$GITHUB_OUTPUT"
 
-      - name: Generate worker compose overlay
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x infra/scripts/deploy/generate-prod-workers-compose.sh
-          infra/scripts/deploy/generate-prod-workers-compose.sh "infra.app.config.json" "${SHORT_SHA}" > workers.generated.yml
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: generated-worker-compose
-          path: workers.generated.yml
-
   # Decide whether this merge can reuse the arm64 images the PR already built
   # and e2e-tested, instead of rebuilding them (~12min -> ~2min).
   #
@@ -363,11 +351,6 @@ jobs:
         run: |
           echo "SHORT_SHA=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
 
-      - uses: actions/download-artifact@v5
-        with:
-          name: generated-worker-compose
-          path: artifacts/generated-worker-compose
-
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -384,9 +367,11 @@ jobs:
           set -euo pipefail
 
           mkdir -p deploy-payload/compose
-          cp infra/config/docker-compose/base.yml deploy-payload/compose/base.yml
-          cp infra/config/docker-compose/prod.yml deploy-payload/compose/prod.yml
-          cp artifacts/generated-worker-compose/workers.generated.yml deploy-payload/compose/workers.generated.yml
+          # ONE file. Renamed on the way in: the repo keeps the environment in
+          # the filename (docker-compose-prod.yml) so no bare `docker compose`
+          # can pick prod up by accident, while the host gets the conventional
+          # docker-compose.yml that remote-deploy.sh installs and runs.
+          cp docker-compose-prod.yml deploy-payload/compose/docker-compose.yml
 
       - name: Upload deploy payload to S3
         shell: bash
@@ -415,8 +400,9 @@ jobs:
           export COMPOSE_PROJECT_NAME="betaname-${ENV}"
           export SHA="${SHORT_SHA}"
           # On a reuse, the loaded image carries the PR head SHA as its tag
-          # while every consumer (workers.generated.yml, the API_IMAGE pin)
-          # expects the merge SHA. remote-deploy.sh retags using this. Empty on
+          # while every consumer expects the merge SHA — the worker image pin
+          # in docker-compose-prod.yml (`homeroll-media-worker:${SHA}`) and the
+          # API_IMAGE pin in remote-deploy.sh. It retags using this. Empty on
           # a normal build, where the tags already match.
           #
           # Keyed on the reuse OUTCOME (`reuse.result == 'success'`), NEVER on
