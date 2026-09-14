@@ -6,6 +6,7 @@ import {
   EntityId,
   Operation,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { Album, type AlbumRecord } from '../../domain/Album/Album';
 import type { AlbumItemRecord } from '../../domain/Album/AlbumItem';
@@ -18,7 +19,6 @@ import { PendingUserAuthorizationRecord } from '../../domain/Authorization/Pendi
 import { PublicLinkAuthorizationRecord } from '../../domain/Authorization/PublicLinkAuthorization';
 import { UserAuthorizationRecord } from '../../domain/Authorization/UserAuthorization';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 import { Persist } from './AggregateRepo';
 

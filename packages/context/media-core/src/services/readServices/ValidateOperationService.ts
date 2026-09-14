@@ -1,10 +1,10 @@
 import { AppErrorCollection, fail, ok, Operation, OperationResult } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import {
   AlbumMemberReadRepository,
   GrantReadRepository,
   MediaItemReadRepository,
 } from '../../repositories/readRepositories/types';
-import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export type AuthorizeMediaCommentInput = {
   mediaItemId: string;

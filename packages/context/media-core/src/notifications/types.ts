@@ -4,9 +4,9 @@ import {
   NotificationKind,
   NotificationSubjectType,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { DomainEvent } from '../domainEvents';
 import { UserContact } from '../repositories';
-import { RequestScopeLifeCycle } from '@packages/infrastructure';
 
 export type NotificationBranch = 'inAppWriter' | 'asyncWriter';
 

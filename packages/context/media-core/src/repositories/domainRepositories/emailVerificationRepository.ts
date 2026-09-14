@@ -1,6 +1,6 @@
 import { EntityId } from '@packages/contracts';
-import { UnitOfWork } from '../../infrastructure';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
+import { UnitOfWork } from '../../infrastructure';
 
 export type emailVerificationRow = {
   id: string;

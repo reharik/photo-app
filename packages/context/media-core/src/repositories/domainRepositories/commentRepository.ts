@@ -1,7 +1,7 @@
 import type { EntityId } from '@packages/contracts';
 import { EntityType, ReactionEmoji } from '@packages/contracts';
-import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
+import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { CommentRecord, Persist, UnitOfWork } from '../..';
 import { Comment } from '../../domain/Comment/Comment';
 import { ReactionRecord } from '../readRepositories/types';

@@ -1,6 +1,6 @@
 import { EntityId, Operation, OperationCatalog } from '@packages/contracts';
-import { AuthorizationReadRepository } from '../../repositories/readRepositories/types';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
+import { AuthorizationReadRepository } from '../../repositories/readRepositories/types';
 import { DBMediaItemRow, DBPublicMediaItemRow } from './types';
 
 export interface MediaItemOperationsService extends RequestScopeLifeCycle {

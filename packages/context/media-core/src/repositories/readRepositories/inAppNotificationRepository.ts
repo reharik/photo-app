@@ -6,10 +6,10 @@ import {
   NotificationContainerType,
   NotificationSubjectType,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { InAppNotification } from '../systemRepositories/systemInAppNotificationRepository';
 
 export type InAppNotificationSummary = {
