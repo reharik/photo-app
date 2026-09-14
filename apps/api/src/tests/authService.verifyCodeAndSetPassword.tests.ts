@@ -127,7 +127,7 @@ const makeHarness = (): Harness => {
   );
 
   const service = build__AuthService({
-    logger,
+    scopedLogger: logger,
     activatePendingUserWriteService: activatePendingUser,
     userRepository: {
       getUserByEmail,

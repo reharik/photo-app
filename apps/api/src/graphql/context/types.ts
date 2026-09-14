@@ -14,12 +14,14 @@ import type { Config } from '../../config';
 export interface InitialAuthenticated {
   kind: 'authenticated'; // literal — no read/write yet, correctly
   viewer: User;
+  requestId: string;
   config: Config;
   logger: Logger;
 }
 export interface InitialPublic {
   kind: 'public';
   publicLinkId: string;
+  requestId: string;
   config: Config;
   logger: Logger;
 }

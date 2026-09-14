@@ -1,5 +1,6 @@
 import type { Context, Next } from 'koa';
 
+import { Logger } from '@packages/infrastructure';
 import { TokenAccessReadService } from '@packages/media-core';
 import type { TokenVerifier } from '../services/tokenVerifier.js';
 

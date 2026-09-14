@@ -37,6 +37,7 @@ export interface ScopedLogger extends LoggerShape, RequestScopeLifeCycle {
 
 export type LoggerConfig = {
   logLevel: Level;
+  logFormat: 'json' | 'human';
   logJsonFilePath?: string;
 };
 export type LoggerDeps = {
@@ -116,12 +117,7 @@ const jsonErrorFormatter = format((info) => {
 });
 
 const createJsonFormat = () =>
-  format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSSS ZZ' }),
-    format.errors({ stack: true }),
-    jsonErrorFormatter(),
-    format.json(),
-  );
+  format.combine(format.errors({ stack: true }), jsonErrorFormatter(), format.json());
 
 const wrap = (w: WinstonLogger): Logger => {
   const logMessage = (level: Level, message: string, meta?: unknown, err?: Error) => {
@@ -136,7 +132,6 @@ const wrap = (w: WinstonLogger): Logger => {
     if (err) {
       payload.err = err;
     }
-
     w.log(level, message, payload);
   };
 
@@ -179,20 +174,23 @@ export const build__Logger = ({ config }: LoggerDeps): Logger =>
   coreLogger({
     logJsonFilePath: config.logJsonFilePath,
     logLevel: config.logLevel,
+    logFormat: config.logFormat,
   });
 
 export const coreLogger = ({
   logJsonFilePath,
   logLevel,
+  logFormat,
 }: {
   logJsonFilePath?: string;
   logLevel: string;
+  logFormat: string;
 }): Logger => {
   const loggerTransports: WinstonLogger['transports'] = [
     new transports.Console({
       stderrLevels: ['error'],
       handleExceptions: true,
-      format: createConsoleFormat(),
+      format: logFormat === 'json' ? createJsonFormat() : createConsoleFormat(),
     }),
   ];
 

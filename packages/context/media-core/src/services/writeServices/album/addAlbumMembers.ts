@@ -6,7 +6,7 @@ import {
   OperationResult,
   UserStatus,
 } from '@packages/contracts';
-import { indexBy, Logger } from '@packages/infrastructure';
+import { indexBy, ScopedLogger } from '@packages/infrastructure';
 import {
   eachIndependently,
   formatFailures,
@@ -26,14 +26,14 @@ export interface AddAlbumMembers extends WriteServiceBase {
 type AddAlbumMembersDeps = {
   albumRepository: AlbumRepository;
   userReadRepository: UserReadRepository;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   viewerId: EntityId;
 };
 
 export const build__AddAlbumMembers = ({
   albumRepository,
   userReadRepository,
-  logger,
+  scopedLogger,
   viewerId,
 }: AddAlbumMembersDeps): AddAlbumMembers => {
   return async ({
@@ -66,7 +66,7 @@ export const build__AddAlbumMembers = ({
     // errors array, a partial failure is a silent lie, so fail the
     // whole op (rolls back uow). Pending failures stay non-fatal (logged above). See RAI-XX.
     if (result.failed.length > 0) {
-      logger.warn(
+      scopedLogger.warn(
         formatFailures(result.failed, 'partial addition of new album members', (x) => x.id),
       );
       return fail(ContractError.PartialAlbumMemberCreation);

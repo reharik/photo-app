@@ -3,3 +3,4 @@
  */
 
 export * from './coreLogger';
+export * from './scopedLogger';

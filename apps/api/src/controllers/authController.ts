@@ -1,5 +1,9 @@
 import { EntityId, type User } from '@packages/contracts';
-import { RequestScopeLifeCycle, type Logger, type RateLimiter } from '@packages/infrastructure';
+import {
+  RequestScopeLifeCycle,
+  type RateLimiter,
+  type ScopedLogger,
+} from '@packages/infrastructure';
 import jwt from 'jsonwebtoken';
 import type { Context } from 'koa';
 
@@ -20,7 +24,7 @@ export interface AuthController extends RequestScopeLifeCycle {
 
 type AuthControllerDeps = {
   authQueryService: AuthQueryService;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   rateLimiter: RateLimiter;
   authService: AuthService;
   uow: UnitOfWork;
@@ -30,7 +34,7 @@ type AuthControllerDeps = {
 
 export const build__AuthController = ({
   authQueryService,
-  logger,
+  scopedLogger,
   rateLimiter,
   authService,
   uow,
@@ -66,12 +70,12 @@ export const build__AuthController = ({
     });
 
     if (result.success) {
-      logger.info('User signed up successfully', {
+      scopedLogger.info('User signed up successfully', {
         userId: id,
         email: email,
       });
     } else {
-      logger.error('Failed to send welcome email', {
+      scopedLogger.error('Failed to send welcome email', {
         userId: id,
         email: email,
         error: result.error.display,
@@ -99,7 +103,7 @@ export const build__AuthController = ({
         windowMs: 15 * 60_000,
       });
       if (!loginCheck.allowed) {
-        logger.warn('Login rate limiter triggered!', {
+        scopedLogger.warn('Login rate limiter triggered!', {
           normalizedEmail,
           ip: ctx.ip,
         });
@@ -112,7 +116,7 @@ export const build__AuthController = ({
         authQueryService.login({ email: normalizedEmail, password }),
       );
       if (!result) {
-        logger.warn('Login attempt failed from controller', {
+        scopedLogger.warn('Login attempt failed from controller', {
           normalizedEmail,
           ip: ctx.ip,
         });
@@ -121,7 +125,7 @@ export const build__AuthController = ({
         return ctx;
       }
 
-      logger.info('Login successful from controller', {
+      scopedLogger.info('Login successful from controller', {
         userId: result.user.id,
         email: result.user.email,
         ip: ctx.ip,
@@ -163,7 +167,7 @@ export const build__AuthController = ({
       const validEmail = EMAIL_RE.test(normalizedEmail);
 
       if (!normalizedEmail || !validEmail) {
-        logger.warn('Email verification attempt failed from controller', {
+        scopedLogger.warn('Email verification attempt failed from controller', {
           normalizedEmail,
           ip: ctx.ip,
         });
@@ -181,7 +185,7 @@ export const build__AuthController = ({
         windowMs: 15 * 60_000,
       });
       if (!byIp.allowed || !byEmail.allowed) {
-        logger.warn('Email verification rate limiter triggered!', {
+        scopedLogger.warn('Email verification rate limiter triggered!', {
           normalizedEmail,
           ip: ctx.ip,
         });
@@ -199,7 +203,7 @@ export const build__AuthController = ({
           data: { code: verified.value },
         });
         if (!sent.success) {
-          logger.error('Verification code email failed', {
+          scopedLogger.error('Verification code email failed', {
             email: normalizedEmail,
             error: sent.error.display,
           });
@@ -258,7 +262,7 @@ export const build__AuthController = ({
       });
 
       if (!result.success) {
-        logger.warn('Set password attempt failed from controller', {
+        scopedLogger.warn('Set password attempt failed from controller', {
           email,
           ip: ctx.ip,
         });
@@ -320,7 +324,7 @@ export const build__AuthController = ({
         return ctx;
       }
 
-      logger.info('Public access successful from controller', {
+      scopedLogger.info('Public access successful from controller', {
         ip: ctx.ip,
       });
 

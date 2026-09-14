@@ -1,5 +1,5 @@
 import { ContractError, EntityId, fail, ok, OperationResult } from '@packages/contracts';
-import { Logger } from '@packages/infrastructure';
+import { ScopedLogger } from '@packages/infrastructure';
 import {
   eachIndependently,
   formatFailures,
@@ -18,12 +18,12 @@ export interface RemoveAlbumMembers extends WriteServiceBase {
 type RemoveAlbumMembersDeps = {
   viewerId: EntityId;
   albumRepository: AlbumRepository;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
 };
 
 export const build__RemoveAlbumMembers = ({
   albumRepository,
-  logger,
+  scopedLogger,
   viewerId,
 }: RemoveAlbumMembersDeps): RemoveAlbumMembers => {
   return async ({
@@ -48,7 +48,9 @@ export const build__RemoveAlbumMembers = ({
     // errors array, a partial failure is a silent lie, so fail the
     // whole op (rolls back uow). Pending failures stay non-fatal (logged above). See RAI-XX.
     if (result.failed.length > 0) {
-      logger.warn(formatFailures(result.failed, 'partial removal of album members', (x) => x));
+      scopedLogger.warn(
+        formatFailures(result.failed, 'partial removal of album members', (x) => x),
+      );
       return fail(ContractError.PartialAlbumMemberRemoval);
     }
     await albumRepository.save(album);

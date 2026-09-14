@@ -18,6 +18,7 @@ export const build__GraphQLContextFactory = ({
     const accessMode = initialContext.request.headers.get('X-Access-Mode') ?? undefined;
     const user = initialContext.state?.user;
     const publicAccessId = initialContext.state?.publicAccessId;
+    const requestId = initialContext.state?.requestId;
 
     if (accessMode === 'public') {
       if (!publicAccessId) {
@@ -30,6 +31,7 @@ export const build__GraphQLContextFactory = ({
       return {
         kind: 'public',
         publicLinkId: publicAccessId,
+        requestId,
         config,
         logger,
       };
@@ -39,6 +41,7 @@ export const build__GraphQLContextFactory = ({
       return {
         kind: 'authenticated',
         viewer,
+        requestId,
         config,
         logger,
       };

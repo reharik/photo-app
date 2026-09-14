@@ -149,7 +149,7 @@ describe('build__AuthController', () => {
       notificationService,
       uow: fakeUow.uow,
       config,
-      logger,
+      scopedLogger: logger,
       rateLimiter,
     });
   });

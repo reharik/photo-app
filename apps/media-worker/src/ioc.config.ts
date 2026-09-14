@@ -27,7 +27,6 @@ export default defineIocConfig({
     Knex: {
       $contract: { accessKey: 'database' },
     },
-    Logger: { $contract: { accessKey: 'logger' } },
   },
   groups: {
     workerTasks: {

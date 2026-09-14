@@ -1,3 +1,4 @@
+import { Logger } from '@packages/infrastructure';
 import { Context, Next } from 'koa';
 
 export type RequestLogger = (ctx: Context, next: Next) => Promise<void>;

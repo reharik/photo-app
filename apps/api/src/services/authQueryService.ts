@@ -5,7 +5,7 @@ import {
   type LoginInput,
   type User,
 } from '@packages/contracts';
-import { RequestScopeLifeCycle, type Logger } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, type ScopedLogger } from '@packages/infrastructure';
 import { UnitOfWork } from '@packages/media-core';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -36,13 +36,13 @@ const sanitizeUser = (user: UserRow): SanitizedUser => {
 type AuthQueryServiceDeps = {
   uow: UnitOfWork;
   config: Config;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
 };
 
 export const build__AuthQueryService = ({
   uow,
   config,
-  logger,
+  scopedLogger,
 }: AuthQueryServiceDeps): AuthQueryService => ({
   login: async (credentials: LoginInput) => {
     const { email, password } = credentials;
@@ -50,7 +50,7 @@ export const build__AuthQueryService = ({
     // Find user by email
     const user = await uow.db()<UserRow>('user').where({ email }).first();
     if (!user || !user.passwordHash) {
-      logger.warn('Login attempt failed: user not found or no password hash', {
+      scopedLogger.warn('Login attempt failed: user not found or no password hash', {
         email,
         hasUser: !!user,
         hasPasswordHash: !!user?.passwordHash,
@@ -61,7 +61,7 @@ export const build__AuthQueryService = ({
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     if (!isValidPassword) {
-      logger.warn('Login attempt failed: invalid password', {
+      scopedLogger.warn('Login attempt failed: invalid password', {
         email,
         userId: user.id,
       });
@@ -81,7 +81,7 @@ export const build__AuthQueryService = ({
       { expiresIn: config.jwtExpiresIn } as jwt.SignOptions,
     );
 
-    logger.info('User logged in successfully', {
+    scopedLogger.info('User logged in successfully', {
       userId: user.id,
       email: user.email,
     });

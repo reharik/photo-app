@@ -1,6 +1,7 @@
 import { Context, Next } from 'koa';
 import { Config } from '../config';
 import { OpenApiRequestContextScope } from '../di/generated/ioc-registry.types';
+import { LogContext } from '../types/logContext';
 
 export interface ApiRequestContextMiddleware {
   (ctx: Context, next: Next): Promise<void>;
@@ -21,7 +22,8 @@ export const build__ApiRequestContextMiddleware =
       await next();
       return;
     }
-    const { apiRequestContext, dispose } = openApiRequestContextScope();
+    const logContext: LogContext = { requestId: ctx.state.requestId, service: 'api' };
+    const { apiRequestContext, dispose } = openApiRequestContextScope({ logContext });
     ctx.state.scope = apiRequestContext;
     try {
       await next();

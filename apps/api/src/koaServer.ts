@@ -5,6 +5,7 @@ import type { Knex } from 'knex';
 import Koa, { Context } from 'koa';
 import { koaBody } from 'koa-body';
 
+import { Logger } from '@packages/infrastructure';
 import type { Config } from './config.js';
 import type { GraphQLServer } from './graphql/server/createGraphQLServer.js';
 import { ApiRequestContextMiddleware } from './middleware/apiRequestContextMiddleware.js';

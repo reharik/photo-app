@@ -21,6 +21,7 @@ export type Config = {
   postgresPassword: string;
   postgresDatabase: string;
   logLevel: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug';
+  logFormat: 'json' | 'human';
   logJsonFilePath?: string;
   awsRegion: string;
   awsEndpoint?: string;
@@ -80,6 +81,8 @@ export const createConfigFromEnv = (): Config => {
     logLevel:
       (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
       (isProduction ? 'info' : 'debug'),
+    logFormat:
+      (process.env.LOG_FORMAT as 'json' | 'human' | undefined) || (isProduction ? 'json' : 'human'),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsEndpoint: process.env.AWS_ENDPOINT?.trim() || undefined,

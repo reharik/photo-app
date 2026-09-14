@@ -1,4 +1,4 @@
-import { Logger, RequestScopeLifeCycle } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, ScopedLogger } from '@packages/infrastructure';
 import { Knex } from 'knex';
 import { DomainEvent } from '../../domainEvents/domainEvent';
 import { EventPublisher } from '../../domainEvents/eventPublisher';
@@ -49,13 +49,13 @@ export interface UnitOfWork extends RequestScopeLifeCycle {
 type UnitOfWorkDeps = {
   database: Knex;
   eventPublisher: EventPublisher;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
 };
 
 export const build__UnitOfWork = ({
   database,
   eventPublisher,
-  logger,
+  scopedLogger,
 }: UnitOfWorkDeps): UnitOfWork => {
   const id = crypto.randomUUID();
   let trx: Knex.Transaction | undefined;
@@ -89,10 +89,10 @@ export const build__UnitOfWork = ({
     try {
       await eventPublisher.publish(published);
       await trx.commit();
-      logger.debug(`[uow:${id}] post-commit handler transaction committed`);
+      scopedLogger.debug(`[uow:${id}] post-commit handler transaction committed`);
     } catch (e) {
       await trx.rollback();
-      logger.error(`[uow:${id}] post-commit handler transaction failed`, e);
+      scopedLogger.error(`[uow:${id}] post-commit handler transaction failed`, e);
     } finally {
       reset();
     }
@@ -103,11 +103,11 @@ export const build__UnitOfWork = ({
     try {
       if (!ok || shouldRollback) {
         await t.rollback();
-        logger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
+        scopedLogger.debug(`[uow:${id}] rolled back (${shouldRollback ? 'flagged' : 'failed'})`);
         return;
       }
       await t.commit();
-      logger.debug(`[uow:${id}] committed`);
+      scopedLogger.debug(`[uow:${id}] committed`);
 
       await publishPostCommit();
     } finally {
@@ -119,7 +119,7 @@ export const build__UnitOfWork = ({
       throw new Error(`[uow:${id}] Transaction already open when start called`);
     }
 
-    logger.debug(`[uow:${id}] New transaction created`);
+    scopedLogger.debug(`[uow:${id}] New transaction created`);
     trx = await database.transaction();
   };
   return {
@@ -131,19 +131,21 @@ export const build__UnitOfWork = ({
     },
     complete: async (ok: boolean) => {
       if (!trx) {
-        logger.info(`[uow:${id}] No transaction available when Complete called`);
+        scopedLogger.info(`[uow:${id}] No transaction available when Complete called`);
         throw new Error('Transaction not started');
       }
       await completeTransaction(ok);
     },
     collectEvents: (newEvents: DomainEvent[]) => {
       if (newEvents.length) {
-        logger.debug(`[uow:${id}] events collected: ${newEvents.map((x) => x.kind).join(', ')}`);
+        scopedLogger.debug(
+          `[uow:${id}] events collected: ${newEvents.map((x) => x.kind).join(', ')}`,
+        );
       }
       events.push(...newEvents);
     },
     flagRollbackOnly: () => {
-      logger.warn(`[uow:${id}] flagRollbackOnly called`);
+      scopedLogger.warn(`[uow:${id}] flagRollbackOnly called`);
       shouldRollback = true;
     },
     inTransaction: async <T>(fn: () => Promise<T>): Promise<T> => {
