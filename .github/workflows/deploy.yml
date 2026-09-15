@@ -57,8 +57,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/load-infra-app-config.sh
-          infra/scripts/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
+          chmod +x ops/deploy/load-infra-app-config.sh
+          ops/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
           cat /tmp/infra.env
           set -a
           source /tmp/infra.env
@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          chmod +x infra/scripts/deploy/detect-changed-deploy-targets.sh
+          chmod +x ops/deploy/detect-changed-deploy-targets.sh
           BASE_SHA="${{ github.event.before }}"
           HEAD_SHA="${GITHUB_SHA}"
           FORCE_FULL_BACKEND="${{ github.event_name == 'workflow_dispatch' && inputs.force_full_backend }}"
@@ -88,7 +88,7 @@ jobs:
           export BASE_SHA HEAD_SHA FORCE_FULL_BACKEND DEPLOY_BACKEND DEPLOY_FRONTEND
           export DOCKER_APP_WORKSPACE_PATH DOCKER_WORKERS_JSON
 
-          eval "$(infra/scripts/deploy/detect-changed-deploy-targets.sh "infra.app.config.json")"
+          eval "$(ops/deploy/detect-changed-deploy-targets.sh "infra.app.config.json")"
 
           echo "app_name=${APP_NAME}" >> "$GITHUB_OUTPUT"
           echo "aws_region=${AWS_REGION}" >> "$GITHUB_OUTPUT"
@@ -229,8 +229,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/load-infra-app-config.sh
-          infra/scripts/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
+          chmod +x ops/deploy/load-infra-app-config.sh
+          ops/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
           set -a
           source /tmp/infra.env
           set +a
@@ -256,7 +256,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infra/docker/Dockerfile
+          file: docker/Dockerfile
           target: runtime-node
           build-args: |
             SERVICE_NAME=${{ matrix.service.name }}
@@ -387,7 +387,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/ssm-run.sh
+          chmod +x ops/deploy/ssm-run.sh
 
           export AWS_REGION="${{ needs.discover.outputs.aws_region }}"
           export S3_BUCKET="${{ needs.discover.outputs.s3_bucket }}"
@@ -423,8 +423,8 @@ jobs:
           export GITHUB_RUN_ID="${{ github.run_id }}"
           export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
 
-          source infra/scripts/deploy/ssm-run.sh
-          ssm_run "Deploy backend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"
+          source ops/deploy/ssm-run.sh
+          ssm_run "Deploy backend ${APP_NAME} ${SHA}" "ops/remote/remote-deploy.sh"
 
   deploy_frontend:
     needs: [discover, build, deploy]
@@ -447,8 +447,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/load-infra-app-config.sh
-          infra/scripts/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
+          chmod +x ops/deploy/load-infra-app-config.sh
+          ops/deploy/load-infra-app-config.sh "infra.app.config.json" > /tmp/infra.env
           set -a
           source /tmp/infra.env
           set +a
@@ -511,8 +511,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f infra/config/caddy/Caddyfile.shared ]; then
-            aws s3 cp infra/config/caddy/Caddyfile.shared \
+          if [ -f ops/caddy/Caddyfile.shared ]; then
+            aws s3 cp ops/caddy/Caddyfile.shared \
               "s3://${S3_BUCKET}/deployments/shared/Caddyfile" \
               --region "${AWS_REGION}"
           fi
@@ -527,7 +527,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/ssm-run.sh
+          chmod +x ops/deploy/ssm-run.sh
 
           export AWS_REGION="${AWS_REGION}"
           export S3_BUCKET="${S3_BUCKET}"
@@ -540,14 +540,14 @@ jobs:
           export GITHUB_RUN_ID="${{ github.run_id }}"
           export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
 
-          source infra/scripts/deploy/ssm-run.sh
-          ssm_run "Deploy shared Caddyfile" "infra/scripts/remote/deploy-shared-caddyfile.sh"
+          source ops/deploy/ssm-run.sh
+          ssm_run "Deploy shared Caddyfile" "ops/remote/deploy-shared-caddyfile.sh"
 
       - name: Run remote frontend deploy via SSM
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x infra/scripts/deploy/ssm-run.sh
+          chmod +x ops/deploy/ssm-run.sh
 
           export AWS_REGION="${AWS_REGION}"
           export S3_BUCKET="${S3_BUCKET}"
@@ -560,5 +560,5 @@ jobs:
           export GITHUB_RUN_ID="${{ github.run_id }}"
           export GITHUB_RUN_ATTEMPT="${{ github.run_attempt }}"
 
-          source infra/scripts/deploy/ssm-run.sh
-          ssm_run "Deploy frontend ${APP_NAME} ${SHA}" "infra/scripts/remote/remote-deploy.sh"
+          source ops/deploy/ssm-run.sh
+          ssm_run "Deploy frontend ${APP_NAME} ${SHA}" "ops/remote/remote-deploy.sh"

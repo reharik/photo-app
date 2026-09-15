@@ -38,7 +38,7 @@ services:
       - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
       # Re-verifies the SES sender identity on every boot (state is ephemeral).
-      - ./infra/config/localstack/init/ready.d:/etc/localstack/init/ready.d
+      - ./ops/localstack/init/ready.d:/etc/localstack/init/ready.d
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
       interval: 10s

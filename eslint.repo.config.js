@@ -1,5 +1,5 @@
 import nxEslintPlugin from '@nx/eslint-plugin';
-import { createBaseTypeScriptConfig } from './infra/config/eslint/eslint-shared.js';
+import { createBaseTypeScriptConfig } from './tooling/eslint/eslint-shared.js';
 
 const nxDepConstraints = [
   {

@@ -1,7 +1,0 @@
-{
-  "extends": "./tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["typia"],
-    "plugins": [{ "transform": "typia/lib/transform" }]
-  }
-}

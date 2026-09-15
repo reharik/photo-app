@@ -25,23 +25,14 @@ packages/e2e/playwright-report/
 output.json
 output-worker-graph.json
 
+# Deploy/runtime plumbing. The image build reads nothing from ops/ — only the
+# `manifests` stage's wholesale `COPY . .` would otherwise pull it in, and ops/
+# holds no package.json, so excluding it changes nothing the build consumes.
+ops/
+
 # Compose/Makefile are not part of the build context payload. The compose files
 # live at the repo root now (docker-compose-dev.yml / -ci.yml / -prod.yml), so
 # they sit directly in the build context — without this glob every compose edit
 # would invalidate the context and force a full arm64 rebuild.
 docker-compose-*.yml
 Makefile
-
-# Deploy/runtime plumbing the IMAGE BUILD never reads. These sit under infra/,
-# which the Dockerfile copies wholesale (`COPY infra infra`) BEFORE `COPY apps`
-# and `RUN npx nx build`. Without these exclusions, editing a deploy script
-# invalidates that layer and every layer after it, forcing a full application
-# rebuild for a change the build cannot even see — measured at ~4min of wasted
-# arm64 build time on an infra-only PR.
-#
-# Keep excluding ONLY things the build does not read. infra/config/{nx,tsconfig,jest}
-# MUST stay in the context: nx.json extends infra/config/nx/nx.json and
-# tsconfig.base.json extends infra/config/tsconfig/tsconfig.base.json, so
-# excluding those breaks the build outright.
-infra/scripts/
-infra/config/localstack/

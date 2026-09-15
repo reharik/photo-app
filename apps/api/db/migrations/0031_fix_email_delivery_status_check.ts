@@ -68,7 +68,7 @@ import type { Knex } from 'knex';
  * migrations under db/ are compiled by plain `tsc` (tsconfig.db.json, the `build:db`
  * target), NOT bundled by vite the way src/ is, so their imports survive into
  * dist/db/migrations/*.js as live runtime specifiers. The prod image copies only
- * apps/<svc>/dist plus a prod node_modules (infra/docker/Dockerfile) — `packages/`
+ * apps/<svc>/dist plus a prod node_modules (docker/Dockerfile) — `packages/`
  * is never copied, so the node_modules/@packages/contracts workspace symlink dangles
  * there. An `import { EmailStatus } from '@packages/contracts'` would typecheck, pass
  * locally under tsx, and then crash the prod migrate one-shot with ERR_MODULE_NOT_FOUND.
