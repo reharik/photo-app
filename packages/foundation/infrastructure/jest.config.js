@@ -1,6 +1,6 @@
 export default {
   displayName: 'infrastructure',
-  preset: '../../../infra/config/jest/jest.preset.cjs',
+  preset: '../../../tooling/jest/jest.preset.cjs',
   testEnvironment: 'node',
   transform: {
     '^.+\\.(ts|js|mjs)$': 'ts-jest',

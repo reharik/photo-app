@@ -113,19 +113,21 @@ apps/
 
 Apps are scoped `@app/<name>`.
 
-Infrastructure files live under `infra/`:
+Infrastructure files are split by purpose across three top-level directories:
 
 ```
-infra/
-  docker/                  # Dockerfile(s), .dockerignore
-  config/                  # shared nx and tsconfig base configs
-  ...                      # deploy scripts, etc.
+tooling/                   # shared build config consumed by the workspace
+  eslint/ jest/ nx/ prettier/ tsconfig/
+docker/                    # the single parameterized Dockerfile + nginx conf
+ops/                       # deploy and runtime plumbing (not read by the build)
+  deploy/ remote/ caddy/ localstack/ scratch-deploy/ aws/
 ```
 
 The root contains: `package.json`, `package-lock.json`, `nx.json`, `tsconfig.base.json`,
 `.gitignore`, `README.md`, `Makefile`, the three compose files, `docs/`, `apps/`,
-`packages/`, `infra/`. No Dockerfiles and no deploy scripts at the root — those stay
-under `infra/`.
+`packages/`, `tooling/`, `docker/`, `ops/`. No Dockerfile at the root (enforced by
+`check:policy` rule 15) and no deploy scripts at the root — those live under `docker/`
+and `ops/` respectively.
 
 **Compose is the deliberate exception.** There is one flat, fully self-contained file
 per environment, all at the repo root:
@@ -269,7 +271,7 @@ Not `"0.1.0"` (silent drift across workspace). Not `"workspace:*"` (pnpm/yarn sy
 }
 ```
 
-- All packages extend a single root `tsconfig.base.json` (which itself extends `infra/config/tsconfig/tsconfig.base.json`).
+- All packages extend a single root `tsconfig.base.json` (which itself extends `tooling/tsconfig/tsconfig.base.json`).
 - **`baseUrl: "."` is required.** The `@nx/js:tsc` executor auto-injects `paths` for workspace dependencies during builds, and TypeScript requires `baseUrl` to be set when `paths` are present. Without it, builds fail with `TS5090: Non-relative paths are not allowed when 'baseUrl' is not set.` Include `baseUrl` even in packages with no current internal deps — it preempts breakage if a dep is added later.
 - `outDir: "./dist"` aligns with the `package.json` `main` field.
 - `composite: true` enables TypeScript project references and incremental builds.
@@ -538,9 +540,9 @@ This entire chain is encoded in `project.json` `dependsOn` declarations. No `pre
 
 ---
 
-## 9. Dockerfile: one file in `infra/`, parameterized by app
+## 9. Dockerfile: one file in `docker/`, parameterized by app
 
-A single Dockerfile at `infra/docker/Dockerfile`, parameterized by the app to build, serves all deployable apps. Adding a new app requires zero changes to the Dockerfile.
+A single Dockerfile at `docker/Dockerfile`, parameterized by the app to build, serves all deployable apps. Adding a new app requires zero changes to the Dockerfile.
 
 Key shape:
 
@@ -589,7 +591,7 @@ CMD ["sh", "-c", "exec node apps/${SERVICE_NAME}/dist/index.js"]
 
 Properties:
 
-- **One file**, in `infra/docker/Dockerfile`, parameterized: `docker build -f infra/docker/Dockerfile --build-arg SERVICE_NAME=api .` (build context is the repo root).
+- **One file**, in `docker/Dockerfile`, parameterized: `docker build -f docker/Dockerfile --build-arg SERVICE_NAME=api .` (build context is the repo root).
 - **`SERVICE_NAME` build arg, not `APP_NAME`.** `APP_NAME` is reserved for the deployment-identifier concept used in the CI workflow (S3 paths, image tag prefixes). `SERVICE_NAME` names the workspace folder (`api`, `web`, `media-worker`). Conflating the two caused production breakage; they are separated by name.
 - **Only apps containerize.** Shared packages aren't built into their own images. Each app's image contains the app's bundled output (which includes its dependent packages' code via Vite bundling).
 - **Invariant to new packages**: the `COPY packages packages` line catches all current and future packages.
@@ -599,7 +601,7 @@ Properties:
 - **Codegen automatic**: runs in build stage as part of `nx build` (because `dependsOn` chains pull it in).
 - **No `prepare` step**, no manual orchestration in the Dockerfile. `nx build ${SERVICE_NAME}` is sufficient because the graph is correct (§8.4).
 - **No `--conditions=development`** anywhere in the Dockerfile. Production resolves through the `default` condition in `exports`, hitting `dist/`. The dev source-resolution path (§0.5) is invisible to the production build.
-- **Browser apps use a separate runtime target.** The example above is the Node runtime (`runtime-node`). Static frontends (`web`) use `runtime-web` (nginx serving `apps/web/dist`). See `infra/docker/Dockerfile` for both targets; build with `--target runtime-web --build-arg SERVICE_NAME=web`.
+- **Browser apps use a separate runtime target.** The example above is the Node runtime (`runtime-node`). Static frontends (`web`) use `runtime-web` (nginx serving `apps/web/dist`). See `docker/Dockerfile` for both targets; build with `--target runtime-web --build-arg SERVICE_NAME=web`.
 
 ---
 
@@ -761,10 +763,6 @@ The full set of root scripts. This is the canonical list. The user types these a
     "db:migrate": "nx run api:db:migrate",
     "db:seed": "nx run api:db:seed",
     "db:make": "nx run api:db:make",
-
-    "docker:build:api": "docker build -f infra/docker/Dockerfile --target runtime-node --build-arg SERVICE_NAME=api -t photoapp-api .",
-    "docker:build:worker": "docker build -f infra/docker/Dockerfile --target runtime-node --build-arg SERVICE_NAME=media-worker -t photoapp-worker .",
-    "docker:build:web": "docker build -f infra/docker/Dockerfile --target runtime-web --build-arg SERVICE_NAME=web -t photoapp-web .",
   },
 }
 ```
@@ -777,6 +775,12 @@ Notes:
 - Variant targets with `:` in the name require `nx run <project>:<target>`, not `nx <target> <project>` (§5.4).
 - Old shell mega-scripts (`dance`, `nuke`, `nuke:lite`) and old workspace-delegating scripts (`gen:all`, `gen:gql`, `gen:enums`, `gen:ioc` using `;` and `&&` and `--workspace=`) are removed and replaced by the targets above.
 - Docker build args use `SERVICE_NAME`, not `APP_NAME` (§9).
+- **This list previously included `docker:build:api` / `:worker` / `:web` scripts. They
+  are not in `package.json` and appear never to have been added** — images are built by
+  `.github/workflows/{ci,deploy,cache-warm}.yml` and, for local work, by
+  `docker-compose-dev.yml` and `ops/scratch-deploy/build-image.sh`. The entries were
+  removed from the block above rather than repointed at the Dockerfile's new location,
+  since documenting a script that does not exist is the actual defect.
 - **`db:rollback` and `db:reset` are intentionally NOT in the canonical scripts.** Rollbacks aren't part of the regular workflow; if a developer needs to roll back during dev work, they invoke knex directly. The canonical scripts cover forward operations (`db:migrate`, `db:seed`, `db:make`).
 
 The list is long because there are a lot of legitimate operations. Length isn't the cost; _inconsistency_ is the cost. Every script follows the same naming and the same one-line structure, so it's scannable and predictable.
@@ -854,6 +858,6 @@ If you forget everything else, remember these:
 4. **Dev resolves to source via `--conditions=development`; prod resolves to dist.** Conditional `exports` in every library package. No per-package dev watchers. Edit anywhere, the app restarts, change is live.
 5. **Apps bundle `@packages/*`** into their output. Self-contained artifacts.
 6. **Codegen outputs are gitignored; barrels are committed.** The dep graph + freshness checks enforce order; no stale-fallback committed files. Barrels depend on codegen when the generated file is in a barrelled directory.
-7. **One Dockerfile** in `infra/docker/Dockerfile`, parameterized by `SERVICE_NAME` (not `APP_NAME`). Invariant to new packages and apps. Production never sees the `development` condition.
+7. **One Dockerfile** in `docker/Dockerfile`, parameterized by `SERVICE_NAME` (not `APP_NAME`). Invariant to new packages and apps. Production never sees the `development` condition.
 
 Everything else is detail.

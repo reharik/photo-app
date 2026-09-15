@@ -26,7 +26,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Init hook: re-verifies the SES sender identity on every boot (state is
       # ephemeral and `make docker/dev/down` wipes the data volume).
-      - ./infra/config/localstack/init/ready.d:/etc/localstack/init/ready.d
+      - ./ops/localstack/init/ready.d:/etc/localstack/init/ready.d
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
       interval: 10s
@@ -72,7 +72,7 @@ services:
     image: ${API_IMAGE:-homeroll-api:dev}
     build:
       context: .
-      dockerfile: infra/docker/Dockerfile
+      dockerfile: docker/Dockerfile
       target: dev
       args:
         APP_NAME: api
@@ -91,7 +91,7 @@ services:
       CHOKIDAR_USEPOLLING: '1'
       WATCHPACK_POLLING: 'true'
       # Must match the identity verified in
-      # infra/config/localstack/init/ready.d/verify-ses.sh — LocalStack SES
+      # ops/localstack/init/ready.d/verify-ses.sh — LocalStack SES
       # rejects any unverified Source, and the api sends verification codes
       # inline, so a mismatch here silently breaks the signup/reset doors.
       FROM_EMAIL: invites@homeroll.app
@@ -112,7 +112,7 @@ services:
   media-worker:
     build:
       context: .
-      dockerfile: infra/docker/Dockerfile
+      dockerfile: docker/Dockerfile
       target: dev
       args:
         APP_NAME: media-worker

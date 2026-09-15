@@ -7,9 +7,11 @@ production setup. Written for future-me at 11pm when something's broken.
 
 - **Repo:** `photo-app` (this one). Contains the apps and the deploy
   workflows.
-- **Shared infra:** `cannibal-infra`. Git subtree pulled into `infra/`.
-  Has drifted from upstream — local changes have not been pushed back.
-  Treat `infra/` as part of photo-app for now, not as a synced subtree.
+- **Shared infra:** `cannibal-infra`, originally a git subtree at `infra/`.
+  That subtree no longer exists. It had drifted from upstream and was never
+  pushed back, so its contents were split by purpose: `tooling/` (shared build
+  config — eslint, jest, nx, prettier, tsconfig), `docker/` (the image build),
+  and `ops/` (deploy and runtime plumbing). Nothing syncs with cannibal-infra.
 - **Apps in the monorepo:**
   - `apps/api` — GraphQL API server
   - `apps/web` — Vite-built SPA frontend
@@ -26,25 +28,23 @@ production setup. Written for future-me at 11pm when something's broken.
   dispatch. Deploys backend images and frontend assets to EC2.
 
 Both workflows are **self-contained** as of the May 2026 cleanup.
-The old `uses: reharik/cannibal-infra/...` references were inlined.
-There are still copies of these workflows at `infra/.github/workflows/`
-because they came in via the subtree, but GitHub Actions ignores anything
-outside the root `.github/workflows/`, so those files are inert. Delete
-or leave; doesn't matter.
+The old `uses: reharik/cannibal-infra/...` references were inlined. The
+inert subtree copies that used to sit alongside them have since been
+deleted; the root `.github/workflows/` files are the only ones that exist.
 
 ### Deploy flow
 
 1. **Discover** job reads `infra.app.config.json`, runs
-   `infra/scripts/deploy/detect-changed-deploy-targets.sh` to figure out
+   `ops/deploy/detect-changed-deploy-targets.sh` to figure out
    which services need rebuilding based on the file paths changed since
    the last deploy.
 2. **Build** job (matrix per changed service) builds a Docker image using
-   `infra/docker/Dockerfile`, saves it as a `.tar.gz`, uploads to S3.
+   `docker/Dockerfile`, saves it as a `.tar.gz`, uploads to S3.
 3. **Deploy backend** job uploads docker-compose files to S3, then uses
-   AWS SSM to run `infra/scripts/remote/remote-deploy.sh` on the EC2
+   AWS SSM to run `ops/remote/remote-deploy.sh` on the EC2
    instance, which pulls the new images and restarts containers.
 4. **Deploy frontend** job builds the Vite SPA, uploads to S3, runs
-   `infra/scripts/remote/remote-deploy.sh` via SSM to swap the static
+   `ops/remote/remote-deploy.sh` via SSM to swap the static
    files behind Caddy.
 
 ### Config
@@ -52,7 +52,7 @@ or leave; doesn't matter.
 - `infra.app.config.json` — top-level config for the deploy: `APP_NAME`
   (deployment identifier, e.g. `photo-app`), AWS region, S3 bucket, env name,
   worker definitions, Node version. Loaded by
-  `infra/scripts/deploy/load-infra-app-config.sh`.
+  `ops/deploy/load-infra-app-config.sh`.
 - AWS auth uses OIDC. The GHA workflow assumes the role in
   `secrets.AWS_ROLE_ARN`.
 
@@ -104,7 +104,7 @@ directory, make sure `barrels` depends on the new codegen.
 
 ## Dockerfile
 
-`infra/docker/Dockerfile` is multi-stage:
+`docker/Dockerfile` is multi-stage:
 
 - `manifests` — extracts all `package.json` files + the lockfile via
   `find`. Cheap. Exists so the install layer below isn't invalidated by
@@ -139,7 +139,7 @@ SSH to the EC2 instance for any of this.
   with `-f`. The underlying files are at
   `/var/lib/docker/containers/<container-id>/<container-id>-json.log`.
 - **Caddy access logs:** wherever Caddyfile says (check
-  `infra/config/caddy/Caddyfile.shared`).
+  `ops/caddy/Caddyfile.shared`).
 - **Docker cleanup cron:** `/var/log/docker-cleanup.log`. Rotates weekly.
 - **System logs:** `journalctl -u docker`, `journalctl -u containerd`,
   `journalctl -u caddy` (or whatever the service unit is named).
@@ -259,9 +259,6 @@ resolve to the file at that ref _on github.com_, not your local copy.
 - `packages/foundation/contracts/src/enums/graphqlSmartEnums.ts` is
   generated but checked into git. This is deliberate — see "Codegen
   and the build graph."
-- `infra/.github/workflows/` contains workflow files that are never
-  executed. They came in via the subtree and GitHub only loads
-  workflows from the root `.github/workflows/`. Harmless.
 - The `media-core` project has `gen:container dependsOn ["barrels"]`,
   which sounds like it should be the other direction. It's fine
   because gen:container's output isn't barrel-indexed.

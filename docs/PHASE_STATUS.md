@@ -16,7 +16,7 @@
 
 - `npm run check:deps` — `syncpack lint`; zero external version drift across workspace `package.json` files.
 - `npm run check:policy` — monorepo policy per `docs/Monorepo.md` §14 (19 rules; rule 13 warns until smart-enum ESLint rule exists).
-- CI (`infra/.github/workflows/ci.yml` lint job): `check:deps` and `check:policy` after `npm ci` (barrels staleness included in policy check).
+- CI (`.github/workflows/ci.yml` lint job): `check:deps` and `check:policy` after `npm ci` (barrels staleness included in policy check).
 
 ## Remaining work (post-standardization)
 
@@ -37,7 +37,6 @@ Not part of the standardization sequence. Pick up as separate streams or opportu
 - **`contracts:build` pulls `api:schema-gen`** — non-GraphQL apps inherit schema-gen via `^build`; acceptable but worth knowing.
 - **CI workflow stale script references** — `gen:container`, plain `lint`/`build`/`test` in workflow and docs; not updated in Phase 9.
 - **Frontend deploy Node 22 vs Docker backend Node 20** — reconcile when it bites.
-- **`infra/docs/deploy.md` stale** — pre-Phase-6 Dockerfile args.
-- **`infra/package.json` outside npm workspaces** — not scanned by syncpack; Prettier version may diverge.
+- ~~**`infra/docs/deploy.md` stale**~~ and ~~**`infra/package.json` outside npm workspaces**~~ — both moot: these files were deleted along with the rest of the `infra/` subtree. No replacement exists for either; `deploy.md` was cannibal-infra's generic deploy doc (this repo's equivalent is `EC2_OPS.md`), and `infra/package.json` was the subtree's own manifest, never an npm workspace member.
 - **No workspace-wide semver range style policy** — syncpack `semverGroups` available if drift becomes painful.
 - **Stale doc references** — `README.md`, `packages/e2e/README.md`, heic-converter README, etc.
