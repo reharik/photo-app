@@ -3,8 +3,39 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
+import fs from 'node:fs';
+import path from 'node:path';
 import tseslint from 'typescript-eslint';
 import { photoappPlugin } from './plugin-photoapp/index.js';
+
+/**
+ * Repo root, found by walking up from this file to the nearest directory holding
+ * `nx.json` (the workspace root marker).
+ *
+ * Depth-independent ON PURPOSE. This used to be a bare `import.meta.dirname`,
+ * which was the repo root only by accident of where the file happened to live;
+ * the move from `infra/config/eslint/` to `tooling/eslint/` left it pointing a
+ * level off. Every current call site passes `tsconfigRootDir` explicitly, so the
+ * stale default was dead code rather than a live bug — this exists so call site
+ * 21 does not inherit the trap.
+ */
+const findRepoRoot = (startDir) => {
+  let dir = startDir;
+  for (;;) {
+    if (fs.existsSync(path.join(dir, 'nx.json'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      // Hit the filesystem root without finding a marker; the caller's own
+      // directory is a saner fallback than "/".
+      return startDir;
+    }
+    dir = parent;
+  }
+};
+
+const REPO_ROOT = findRepoRoot(import.meta.dirname);
 
 // Common TypeScript rules that all projects share
 export const commonTypeScriptRules = {
@@ -38,7 +69,7 @@ export const createBaseTypeScriptConfig = async (options = {}) => {
   const {
     globals: customGlobals = globals.node,
     ecmaVersion = 'latest',
-    tsconfigRootDir = import.meta.dirname,
+    tsconfigRootDir = REPO_ROOT,
     ignores: extraIgnores = [],
     files = ['**/*.{ts,tsx}'],
     additionalRules = {},
