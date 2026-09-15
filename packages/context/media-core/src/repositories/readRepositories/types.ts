@@ -12,8 +12,8 @@ import {
   ReactionEmoji,
   UserStatus,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { UnitOfWork } from '../..';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import {
   AlbumMemberCollectionInfo,
   AlbumWithCoverRow,

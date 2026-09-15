@@ -1,5 +1,5 @@
 import { assertNever, EntityId } from '@packages/contracts';
-import { groupByMapping, indexByUnique } from '@packages/infrastructure';
+import { groupByMapping, indexByUnique, RequestScopeLifeCycle } from '@packages/infrastructure';
 import {
   isAuthorizationKind,
   PendingUserAuthorizationRow,
@@ -9,7 +9,6 @@ import {
   UserAuthorizationRow,
 } from '../repositories';
 import { SystemAlbumItemRepository } from '../repositories/systemRepositories/systemAlbumItemRepository';
-import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { DomainEvent } from './domainEvent';
 
 /**

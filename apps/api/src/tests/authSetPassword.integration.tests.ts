@@ -40,6 +40,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
+import { createTestLogContext } from './testScope';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
 
@@ -198,7 +199,9 @@ describe('setPassword write path (integration)', () => {
       },
     } as unknown as Context;
 
-    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
+    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')({
+      logContext: createTestLogContext(),
+    });
     try {
       await apiRequestContext.authController.setPassword(ctx);
     } finally {

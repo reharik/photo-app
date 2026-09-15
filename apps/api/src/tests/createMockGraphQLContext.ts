@@ -20,6 +20,10 @@ export const createMockGraphQLContext = (overrides: Record<string, unknown> = {}
 
   return {
     state: {
+      // `requestId` is set by requestIdMiddleware before anything else in the real
+      // pipeline, and useScopedContainer reads it to build the scope's logContext.
+      // Default one here so the scoped logger is correlated in tests too.
+      requestId: crypto.randomUUID(),
       ...overrides,
       isLoggedIn,
       user: isLoggedIn ? { ...defaultTestViewerUser, ...userFromOverrides } : undefined,

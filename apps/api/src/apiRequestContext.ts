@@ -1,6 +1,7 @@
 // src/di/apiRequestContext.ts
 import { ScopeRoot } from 'ioc-manifest';
 import { AuthController } from './controllers/authController';
+import { LogContext } from './types/logContext';
 
 /**
  * The entry points a REST request may reach.
@@ -23,6 +24,6 @@ type ApiRequestContextDeps = {
 
 export const build__ApiRequestContext = ({
   authController,
-}: ApiRequestContextDeps): ScopeRoot<ApiRequestContext> => ({
+}: ApiRequestContextDeps): ScopeRoot<ApiRequestContext, { logContext: LogContext }> => ({
   authController,
 });

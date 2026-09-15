@@ -1,12 +1,11 @@
 import { EntityId, EntityType } from '@packages/contracts';
-import { groupByMapping } from '@packages/infrastructure';
+import { groupByMapping, RequestScopeLifeCycle } from '@packages/infrastructure';
 import {
   MediaItemReadRepository,
   ReactionReadRepository,
 } from '../../../repositories/readRepositories/types';
 import { MediaItemOperationsService } from '../MediaItemOperationsService';
 import { ReadReactionService } from '../readReactionService';
-import { RequestScopeLifeCycle } from '../readServiceBaseType';
 import {
   DBMediaItemRow,
   DBPublicMediaItemRow,

@@ -23,6 +23,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
+import { createTestScope } from './testScope';
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex');
 
@@ -59,7 +60,7 @@ describe('AuthQueryService (integration)', () => {
   const inScope = async <T>(
     fn: (service: AppCradle['authQueryService']) => Promise<T>,
   ): Promise<T> => {
-    const scope = container.createScope();
+    const scope = createTestScope(container);
     try {
       const uow = scope.resolve('uow');
       const service = scope.resolve('authQueryService');

@@ -1,10 +1,10 @@
 import type { EntityId } from '@packages/contracts';
 import { NotificationKind } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import type { NotificationRecord } from '../../domain/Notification/Notification';
 import { Notification } from '../../domain/Notification/Notification';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { Persist } from './AggregateRepo';
 
 export interface NotificationRepository extends RequestScopeLifeCycle {

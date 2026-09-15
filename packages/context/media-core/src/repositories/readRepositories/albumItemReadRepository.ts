@@ -1,7 +1,7 @@
 import { AlbumItemSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { AlbumItemWithMediaRow, PagedList } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
 import {

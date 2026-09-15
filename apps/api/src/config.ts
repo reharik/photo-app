@@ -28,6 +28,7 @@ export type Config = {
   serverUrl: string;
   serverPort: number;
   logLevel: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug';
+  logFormat: 'json' | 'human';
   warnings?: string[];
   logJsonFilePath?: string;
   awsRegion: string;
@@ -112,8 +113,10 @@ export const createConfigFromEnv = (): Config => {
     logLevel:
       (process.env.LOG_LEVEL as Config['logLevel'] | undefined) ||
       (isProduction ? 'info' : 'debug'),
-    ...(warnings.length > 0 ? { warnings } : {}),
+    logFormat:
+      (process.env.LOG_FORMAT as 'json' | 'human' | undefined) || (isProduction ? 'json' : 'human'),
     logJsonFilePath: process.env.LOG_JSON_FILE_PATH || undefined,
+    ...(warnings.length > 0 ? { warnings } : {}),
     awsRegion: process.env.AWS_REGION || 'us-east-1',
     awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || undefined,
     awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || undefined,

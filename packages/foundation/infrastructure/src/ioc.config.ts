@@ -17,4 +17,7 @@ export default defineIocConfig({
     ],
     factoryPrefix: 'build__',
   },
+  lifetimeMarkers: {
+    RequestScopeLifeCycle: 'scoped',
+  },
 });

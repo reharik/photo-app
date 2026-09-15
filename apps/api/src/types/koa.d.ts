@@ -10,6 +10,7 @@ declare module 'koa' {
     isLoggedIn?: boolean;
     publicAccessId?: string;
     authorizedMediaPath?: string;
+    requestId: string;
   }
 
   interface DefaultContext {

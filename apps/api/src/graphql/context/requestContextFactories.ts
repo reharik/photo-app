@@ -8,6 +8,7 @@ import {
   WriteServices,
 } from '@packages/media-core/iocTypes';
 import { ScopeRoot } from 'ioc-manifest';
+import { LogContext } from '../../types/logContext';
 import {
   AuthenticatedReadScopeServices,
   AuthenticatedWriteScopeServices,
@@ -25,7 +26,10 @@ export const build__AuthenticatedReadGraphQLContext = ({
   readServices,
   agnosticReadServices,
   uow,
-}: AuthedDeps): ScopeRoot<AuthenticatedReadScopeServices, { viewerId: EntityId }> => ({
+}: AuthedDeps): ScopeRoot<
+  AuthenticatedReadScopeServices,
+  { viewerId: EntityId; logContext: LogContext }
+> => ({
   readServices: readServices,
   agnosticReadServices: agnosticReadServices,
   finalize: uow.complete,
@@ -37,7 +41,10 @@ export const build__AuthenticatedWriteGraphQLContext = ({
   agnosticReadServices,
   writeServices,
   uow,
-}: AuthedDeps): ScopeRoot<AuthenticatedWriteScopeServices, { viewerId: EntityId }> => ({
+}: AuthedDeps): ScopeRoot<
+  AuthenticatedWriteScopeServices,
+  { viewerId: EntityId; logContext: LogContext }
+> => ({
   readServices: readServices,
   agnosticReadServices: agnosticReadServices,
   writeServices: writeServices,
@@ -58,7 +65,10 @@ export const build__PublicRequestContext = ({
   publicReadServices,
   agnosticReadServices,
   uow,
-}: PublicDeps): ScopeRoot<PublicReadScopeServices, { publicLinkId: string }> => ({
+}: PublicDeps): ScopeRoot<
+  PublicReadScopeServices,
+  { publicLinkId: string; logContext: LogContext }
+> => ({
   publicReadServices: publicReadServices,
   agnosticReadServices: agnosticReadServices,
   finalize: uow.complete,

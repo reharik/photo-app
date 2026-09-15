@@ -61,7 +61,7 @@ const buildUow = (options: { commitThrows?: boolean } = {}) => {
       return Promise.resolve();
     }),
   } as unknown as EventPublisher;
-  const uow = build__UnitOfWork({ database, eventPublisher, logger: createLogger() });
+  const uow = build__UnitOfWork({ database, eventPublisher, scopedLogger: createLogger() });
   return { uow, opened, published, eventPublisher };
 };
 

@@ -7,12 +7,11 @@ import {
   OperationResult,
   type SignupInput,
 } from '@packages/contracts';
-import type { Logger } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, type ScopedLogger } from '@packages/infrastructure';
 import {
   ActivatePendingUserWriteService,
   EmailVerificationRepository,
   PendingUser,
-  RequestScopeLifeCycle,
   SystemEmailVerificationRepository,
   UserRepository,
 } from '@packages/media-core';
@@ -26,7 +25,7 @@ export interface AuthService extends RequestScopeLifeCycle {
 }
 
 type AuthServiceDeps = {
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   userRepository: UserRepository;
   emailVerificationRepository: EmailVerificationRepository;
   systemEmailVerificationRepository: SystemEmailVerificationRepository;
@@ -34,7 +33,7 @@ type AuthServiceDeps = {
 };
 
 export const build__AuthService = ({
-  logger,
+  scopedLogger,
   userRepository,
   emailVerificationRepository,
   systemEmailVerificationRepository,
@@ -51,17 +50,17 @@ export const build__AuthService = ({
     const codeHash = createHash('sha256').update(code).digest('hex');
 
     if (!verificationRow) {
-      logger.warn('Reset password attempt failed: reset not found', { email });
+      scopedLogger.warn('Reset password attempt failed: reset not found', { email });
       return fail(ContractError.InvalidEmailVerificationCode);
     }
 
     if (verificationRow.attemptCount >= 3) {
-      logger.warn('Reset password attempt failed: too many attempts', { email });
+      scopedLogger.warn('Reset password attempt failed: too many attempts', { email });
       return fail(ContractError.TooManyAttempts);
     }
 
     if (verificationRow.codeHash !== codeHash) {
-      logger.warn('Reset password attempt failed: invalid code', { email });
+      scopedLogger.warn('Reset password attempt failed: invalid code', { email });
       // Autocommits on its own connection, outside the uow: the increment must
       // survive the rollback on this path or the >= 3 lockout can never trigger.
       await systemEmailVerificationRepository.bumpValidationAttempts(verificationRow.id);

@@ -5,10 +5,10 @@ import {
   NotificationKind,
   NotificationSubjectType,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { DateTime } from 'luxon';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
 export interface SystemAsyncNotificationRepository extends RequestScopeLifeCycle {
   upsertRecipientRow: (upsert: AsyncNotificationInput) => Promise<number[]>;
