@@ -2,7 +2,7 @@
   "references": [
     { "path": "apps/api" },
     { "path": "apps/web" },
-    { "path": "packages/context/contracts" }
+    { "path": "packages/foundation/contracts" }
   ],
 
   "compilerOptions": {
