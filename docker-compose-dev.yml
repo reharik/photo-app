@@ -72,7 +72,7 @@ services:
     image: ${API_IMAGE:-homeroll-api:dev}
     build:
       context: .
-      dockerfile: infra/docker/Dockerfile
+      dockerfile: docker/Dockerfile
       target: dev
       args:
         APP_NAME: api
@@ -112,7 +112,7 @@ services:
   media-worker:
     build:
       context: .
-      dockerfile: infra/docker/Dockerfile
+      dockerfile: docker/Dockerfile
       target: dev
       args:
         APP_NAME: media-worker

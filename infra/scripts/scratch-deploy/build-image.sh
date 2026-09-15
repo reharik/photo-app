@@ -14,7 +14,7 @@ SHA="${1:?usage: build-image.sh <sha-tag>}"
 
 echo "Building ${APP_NAME}-api:${SHA} (target runtime-node)"
 docker build \
-  -f "${REPO}/infra/docker/Dockerfile" \
+  -f "${REPO}/docker/Dockerfile" \
   --target runtime-node \
   --build-arg SERVICE_NAME=api \
   -t "${APP_NAME}-api:${SHA}" \

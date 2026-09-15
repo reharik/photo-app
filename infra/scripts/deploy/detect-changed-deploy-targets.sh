@@ -56,7 +56,7 @@ classify_path() {
     # never leave the repo, so a change to either must not trigger a prod
     # rebuild. The old `infra/config/docker-compose/*` glob could not draw that
     # distinction and rebuilt everything for a dev-only edit.
-    package.json | package-lock.json | infra/docker/* | docker-compose-prod.yml | infra.app.config.json)
+    package.json | package-lock.json | docker/* | docker-compose-prod.yml | infra.app.config.json)
       while IFS= read -r svc; do
         [[ -n "$svc" ]] && mark_service "$svc"
       done < <(all_backend_service_names)

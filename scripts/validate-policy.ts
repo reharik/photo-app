@@ -664,7 +664,7 @@ const grepRepoForSmartEnumEslintRule = (): { found: boolean; matches: string[] }
   const searchRoots = [
     path.join(REPO_ROOT, 'eslint.config.js'),
     path.join(REPO_ROOT, 'eslint.repo.config.js'),
-    path.join(REPO_ROOT, 'infra/config/eslint'),
+    path.join(REPO_ROOT, 'tooling/eslint'),
   ];
 
   const scanFile = (filePath: string): void => {

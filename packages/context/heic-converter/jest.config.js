@@ -1,6 +1,6 @@
 export default {
   displayName: 'heic-converter',
-  preset: '../../../infra/config/jest/jest.preset.cjs',
+  preset: '../../../tooling/jest/jest.preset.cjs',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   transform: {

@@ -1,6 +1,6 @@
 export default {
   displayName: 'api',
-  preset: '../../infra/config/jest/jest.preset.cjs',
+  preset: '../../tooling/jest/jest.preset.cjs',
   testEnvironment: 'node',
   /**
    * Unit tests only: no process boundaries (no real DB, HTTP to other services, etc.).

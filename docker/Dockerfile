@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.6
 # Unified monorepo image. Build context: repo root.
-#   Node apps:  docker build -f infra/docker/Dockerfile --target runtime-node --build-arg SERVICE_NAME=api .
-#   Web (SPA):  docker build -f infra/docker/Dockerfile --target runtime-web --build-arg SERVICE_NAME=web .
-#   Dev:        docker build -f infra/docker/Dockerfile --target dev --build-arg SERVICE_NAME=api .
+#   Node apps:  docker build -f docker/Dockerfile --target runtime-node --build-arg SERVICE_NAME=api .
+#   Web (SPA):  docker build -f docker/Dockerfile --target runtime-web --build-arg SERVICE_NAME=web .
+#   Dev:        docker build -f docker/Dockerfile --target dev --build-arg SERVICE_NAME=api .
 
 # === Workspace manifests stage ===
 # Extracts every package.json (and the lockfile) into a clean dir so npm ci
@@ -52,7 +52,7 @@ RUN npx ts-patch install
 # Now bring in the actual source. Changes here only invalidate from this
 # point forward — npm ci above stays cached.
 COPY nx.json tsconfig.base.json tsconfig.json ./
-COPY infra infra
+COPY tooling tooling
 COPY packages packages
 COPY apps apps
 
@@ -105,7 +105,7 @@ CMD ["sh", "-c", "exec sh apps/${SERVICE_NAME}/dist/scripts/serverStartUpProd.sh
 FROM nginx:alpine AS runtime-web
 ARG SERVICE_NAME=web
 COPY --from=builder /app/apps/${SERVICE_NAME}/dist /usr/share/nginx/html
-COPY infra/docker/nginx-web.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx-web.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
@@ -119,7 +119,7 @@ COPY --from=manifests /manifests/ ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci
 COPY nx.json tsconfig.base.json tsconfig.json ./
-COPY infra infra
+COPY tooling tooling
 COPY packages packages
 COPY apps apps
 EXPOSE 3000

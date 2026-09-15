@@ -256,7 +256,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: infra/docker/Dockerfile
+          file: docker/Dockerfile
           target: runtime-node
           build-args: |
             SERVICE_NAME=${{ matrix.service.name }}
