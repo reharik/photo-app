@@ -72,7 +72,16 @@ export const build__MediaItemReadRepository = ({
       .where('grantedToUser', viewerId)
       .first();
 
-    return hasGrant ? mediaItem : undefined;
+    if (hasGrant) return mediaItem;
+
+    const hasMembership = await uow
+      .db()('albumItem')
+      .join('albumMember', 'albumMember.albumId', 'albumItem.albumId')
+      .where('albumItem.mediaItemId', mediaItemId)
+      .where('albumMember.userId', viewerId)
+      .first<boolean>();
+
+    return hasMembership ? mediaItem : undefined;
   },
   getManyForViewer: async ({
     mediaItemIds,

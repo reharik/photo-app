@@ -6,6 +6,7 @@ import {
   ok,
   OperationResult,
 } from '@packages/contracts';
+import { tryAppendOneMediaToAlbum } from '../../../application';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -75,7 +76,7 @@ export const build__CreateMediaItemUpload = ({
       if (!album) {
         return fail(AppErrorCollection.album.AlbumNotFound);
       }
-      album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
+      tryAppendOneMediaToAlbum(album, mediaItem, viewerId);
       await albumRepository.save(album);
     }
     return ok({

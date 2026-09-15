@@ -1,4 +1,5 @@
 import { EntityId, Operation, OperationResult } from '@packages/contracts';
+import { MediaItem } from '../../domain';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
 import type { DBMediaItemRow } from '../../services/readServices/types';
@@ -10,11 +11,13 @@ import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from './med
  */
 export const tryAppendOneMediaToAlbum = (
   album: Album,
-  mediaItem: DBMediaItemRow,
-  mediaItemId: EntityId,
+  mediaItem: DBMediaItemRow | MediaItem,
   viewerId: EntityId,
 ): OperationResult<AlbumItem> => {
-  const r1 = ensureMediaItemOwnedByViewer(mediaItem.ownerId, viewerId);
+  const ownerId = mediaItem instanceof MediaItem ? mediaItem.ownerId() : mediaItem.ownerId;
+  const mediaItemId = mediaItem instanceof MediaItem ? mediaItem.id() : mediaItem.id;
+  const kind = mediaItem instanceof MediaItem ? mediaItem.kind() : mediaItem.kind;
+  const r1 = ensureMediaItemOwnedByViewer(ownerId, viewerId);
   if (!r1.success) {
     return r1;
   }
@@ -26,5 +29,5 @@ export const tryAppendOneMediaToAlbum = (
   if (!r3.success) {
     return r3;
   }
-  return album.addItem(mediaItemId, viewerId, mediaItem.kind);
+  return album.addItem(mediaItemId, viewerId, kind);
 };
