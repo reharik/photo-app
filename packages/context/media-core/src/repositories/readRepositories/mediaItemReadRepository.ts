@@ -67,10 +67,10 @@ export const build__MediaItemReadRepository = ({
     if (mediaItem.ownerId === viewerId) return mediaItem;
 
     const hasGrant = await uow
-      .db()<boolean>('grant')
+      .db()('grant')
       .where('mediaItemId', mediaItemId)
       .where('grantedToUser', viewerId)
-      .first();
+      .first<{ id: string }>('id');
 
     if (hasGrant) return mediaItem;
 
@@ -79,7 +79,7 @@ export const build__MediaItemReadRepository = ({
       .join('albumMember', 'albumMember.albumId', 'albumItem.albumId')
       .where('albumItem.mediaItemId', mediaItemId)
       .where('albumMember.userId', viewerId)
-      .first<boolean>();
+      .first<{ id: string }>('albumMember.id');
 
     return hasMembership ? mediaItem : undefined;
   },
