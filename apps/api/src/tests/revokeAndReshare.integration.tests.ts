@@ -50,6 +50,7 @@ import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import { resetIntegrationTestDb } from './resetDb';
+import { createTestLogContext } from './testScope';
 import { TEST_VIEWER_1_ID, TEST_VIEWER_A_ID } from './testViewerIds';
 
 const VIEWER_A_EMAIL = 'test-viewer-a@example.test';
@@ -250,7 +251,9 @@ describe('revoked authorizations and re-sharing (integration)', () => {
       state: {},
       cookies: { set: () => undefined },
     } as unknown as Context;
-    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')();
+    const { apiRequestContext, dispose } = container.resolve('openApiRequestContextScope')({
+      logContext: createTestLogContext(),
+    });
     try {
       await apiRequestContext.authController.setPassword(acceptCtx);
     } finally {

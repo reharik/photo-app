@@ -11,16 +11,13 @@ import {
 import type { AwilixContainer } from 'awilix';
 import type { Knex } from 'knex';
 
-import type {
-  AlbumItemCollectionInfo,
-  AlbumItemReadRepository,
-  AlbumReadRepository,
-} from '@packages/media-core';
+import type { AlbumItemCollectionInfo } from '@packages/media-core';
 import { CollectionInfo } from '@packages/media-core';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
+import { createTestScope } from './testScope';
 import { TEST_VIEWER_1_ID } from './testViewerIds';
 
 describe('AlbumReadRepository (Knex collection paging)', () => {
@@ -28,8 +25,6 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
 
   let container: AwilixContainer<AppCradle>;
   let database: Knex;
-  let albumReadRepository: AlbumReadRepository;
-  let albumItemReadRepository: AlbumItemReadRepository;
   let integrationTestMediaStorage: IntegrationTestMediaStorage;
 
   const insertAlbumWithMember = async (params: {
@@ -132,8 +127,6 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
     const setup = await setupGraphqlIntegrationTests();
     container = setup.container;
     database = container.resolve('database');
-    albumReadRepository = container.resolve('albumReadRepository');
-    albumItemReadRepository = container.resolve('albumItemReadRepository');
     integrationTestMediaStorage = setup.integrationTestMediaStorage;
   });
 
@@ -153,7 +146,18 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
    * a transaction, and in production the GraphQL envelop plugin opens one per
    * request; a test that resolves a repository directly has to stand in for it.
    */
-  const read = <T>(fn: () => Promise<T>): Promise<T> => container.resolve('uow').inTransaction(fn);
+  const read = async <T>(fn: (cradle: AppCradle) => Promise<T>): Promise<T> => {
+    // The repositories have to come out of the SCOPE, not the root container. Awilix
+    // PROXY mode binds a resolved instance's deps to the container it came from, and
+    // these repositories depend on `uow` -> `scopedLogger` -> the scope-provided
+    // `logContext`. A root-resolved repository therefore fails on first use.
+    const scope = createTestScope(container, { accessMode: 'authRead', viewerId });
+    try {
+      return await scope.resolve('uow').inTransaction(() => fn(scope.cradle));
+    } finally {
+      await scope.dispose();
+    }
+  };
 
   describe('When listByViewerId runs with title sort', () => {
     it('should apply limit+1 and stable title order from Knex', async () => {
@@ -174,7 +178,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await read(() =>
+      const page = await read(({ albumReadRepository }) =>
         albumReadRepository.listByViewerId({
           viewerId,
           collectionInfo: buildCollectionInfo({
@@ -208,7 +212,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await read(() =>
+      const page = await read(({ albumReadRepository }) =>
         albumReadRepository.listByViewerId({
           viewerId,
           collectionInfo: buildCollectionInfo({
@@ -240,7 +244,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         });
       }
 
-      const page = await read(() =>
+      const page = await read(({ albumReadRepository }) =>
         albumReadRepository.listByViewerId({
           viewerId,
           collectionInfo: buildCollectionInfo({
@@ -303,7 +307,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
         updatedAt: tLate,
       });
 
-      const firstWindow = await read(() =>
+      const firstWindow = await read(({ albumItemReadRepository }) =>
         albumItemReadRepository.getViewableAlbumItemsForViewer({
           albumId,
           viewerId,
@@ -317,7 +321,7 @@ describe('AlbumReadRepository (Knex collection paging)', () => {
 
       expect(firstWindow.nodes.map((r) => r.id)).toEqual([item1, item2]);
 
-      const secondWindow = await read(() =>
+      const secondWindow = await read(({ albumItemReadRepository }) =>
         albumItemReadRepository.getViewableAlbumItemsForViewer({
           albumId,
           viewerId,

@@ -2,9 +2,9 @@
 
 import type { VOCollection } from '@packages/contracts';
 import { serializeValue } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { AggregateRoot, DomainEntity } from '../../domain';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
 export interface Persist extends RequestScopeLifeCycle {
   <T extends AggregateRoot<Record<string, unknown>>>(aggregate: T): Promise<void>;

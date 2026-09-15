@@ -74,6 +74,12 @@ services:
     image: ${API_IMAGE:-homeroll-api:latest}
     platform: linux/arm64
     restart: unless-stopped
+    # Headroom for the graceful shutdown to finish on its own terms. The api
+    # drains in-flight requests, closes the pool and disposes the container,
+    # backstopped by its own 5s force-exit timer — so this only has to be
+    # comfortably longer than that. Docker's default is 10s; below the drain
+    # time it SIGKILLs mid-request, which is what we are fixing.
+    stop_grace_period: 30s
     env_file:
       - /opt/homeroll/env/prod.env
     environment:
@@ -119,6 +125,12 @@ services:
     image: homeroll-media-worker:${SHA}
     platform: linux/arm64
     restart: unless-stopped
+    # Longer than the api's: the worker drains a whole in-flight media job
+    # (HEIC decode + three derivative uploads to S3), not an http request.
+    # Docker's 10s default SIGKILLs mid-job and strands the row in PROCESSING,
+    # which is exactly the stall the sweep exists to clean up. 60s is a starting
+    # point, not a measurement — tune it once real drain times are visible.
+    stop_grace_period: 60s
     env_file:
       - /opt/homeroll/env/prod.env
     environment:

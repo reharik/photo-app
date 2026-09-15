@@ -32,6 +32,7 @@ import {
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
+import { createTestLogContext } from './testScope';
 import { TEST_VIEWER_1_ID } from './testViewerIds';
 
 const createMediaUploadMutation = `
@@ -109,6 +110,7 @@ describe('media processing job enqueue boundary (integration)', () => {
     const { authenticatedWriteGraphQlContext: writeScope, dispose } = container.resolve(
       'openAuthenticatedWriteGraphQlContextScope',
     )({
+      logContext: createTestLogContext({ accessMode: 'authWrite', viewerId: TEST_VIEWER_1_ID }),
       viewerId: TEST_VIEWER_1_ID,
     });
     let open = true;

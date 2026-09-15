@@ -2,7 +2,6 @@
   "directory": [
     "./src/application",
     "./src/repositories",
-    "./src/services",
     "./src/domain",
     "./src/infrastructure",
     "./src/repositories/queryHelpers"

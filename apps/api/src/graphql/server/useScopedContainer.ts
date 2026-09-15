@@ -5,6 +5,7 @@ import {
   OpenAuthenticatedWriteGraphQlContextScope,
   OpenPublicRequestContextScope,
 } from '../../di/generated/ioc-registry.types';
+import { LogContext } from '../../types/logContext';
 import {
   AuthenticatedReadGraphQLContext,
   AuthenticatedWriteGraphQLContext,
@@ -34,13 +35,21 @@ export const build__UseScopedContainer = ({
     if (ctx.kind !== 'authenticated' && ctx.kind !== 'public') {
       return;
     }
+    const op = getOperationType(args.document, args.operationName);
 
+    const logContext: LogContext = {
+      requestId: ctx.requestId,
+      operationName: args.operationName as string,
+      operationType: op,
+      service: 'api',
+    };
     if (ctx.kind === 'authenticated') {
-      const op = getOperationType(args.document, args.operationName);
-
+      logContext.viewerId = ctx.viewer.id;
       if (op === 'mutation') {
+        logContext.accessMode = 'authWrite';
         const { authenticatedWriteGraphQlContext, dispose } =
           openAuthenticatedWriteGraphQlContextScope({
+            logContext,
             viewerId: ctx.viewer.id,
           });
         await authenticatedWriteGraphQlContext.start();
@@ -62,10 +71,9 @@ export const build__UseScopedContainer = ({
           },
         };
       }
+      logContext.accessMode = 'authRead';
       const { authenticatedReadGraphQlContext, dispose } = openAuthenticatedReadGraphQlContextScope(
-        {
-          viewerId: ctx.viewer.id,
-        },
+        { logContext, viewerId: ctx.viewer.id },
       );
       await authenticatedReadGraphQlContext.start();
 
@@ -87,8 +95,10 @@ export const build__UseScopedContainer = ({
         },
       };
     }
-
+    logContext.accessMode = 'public';
+    logContext.publicLinkId = ctx.publicLinkId;
     const { publicRequestContext, dispose } = openPublicRequestContextScope({
+      logContext,
       publicLinkId: ctx.publicLinkId,
     });
     await publicRequestContext.start();

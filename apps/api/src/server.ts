@@ -1,4 +1,4 @@
-import type { Logger } from '@packages/infrastructure';
+import { Logger } from '@packages/infrastructure';
 import type { Config } from './config.js';
 import type { KoaServer } from './koaServer.js';
 

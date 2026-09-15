@@ -6,7 +6,7 @@ import {
   Operation,
   OperationResult,
 } from '@packages/contracts';
-import { dedupeIds, Logger } from '@packages/infrastructure';
+import { dedupeIds, ScopedLogger } from '@packages/infrastructure';
 import { ensureMediaItemInReadyState, ensureMediaItemOwnedByViewer } from '../../../application';
 import {
   loadRequiredAlbum,
@@ -45,7 +45,7 @@ type GrantUserAuthorizationDeps = {
   shareContactRepository: ShareContactRepository;
   writeServices: WriteServices;
 
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   viewerId: EntityId;
 };
 
@@ -118,7 +118,7 @@ export const build__GrantUserAuthorization = ({
   mediaItemRepository,
   shareContactRepository,
   writeServices,
-  logger,
+  scopedLogger,
   viewerId,
 }: GrantUserAuthorizationDeps): GrantUserAuthorization => {
   return async (
@@ -154,7 +154,7 @@ export const build__GrantUserAuthorization = ({
     // Once they activate the grants will be created.
     const inviteResult = inviteUsers(userResult.value, album, input, viewerId);
     if (inviteResult.failed.length > 0) {
-      logger.warn(formatFailures(inviteResult.failed, 'partial album grant', (x) => x.id()));
+      scopedLogger.warn(formatFailures(inviteResult.failed, 'partial album grant', (x) => x.id()));
     }
 
     // only persist contacts for people who actually got a grant

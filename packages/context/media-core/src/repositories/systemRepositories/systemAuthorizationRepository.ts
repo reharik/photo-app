@@ -1,7 +1,7 @@
 import { assertNever, AuthorizationKind, EntityId, Operation } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { withLiveAuthorizationFilter } from '../queryHelpers';
 
 export interface SystemAuthorizationRepository extends RequestScopeLifeCycle {

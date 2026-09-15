@@ -1,8 +1,7 @@
 import { ActorId, ok, OperationResult } from '@packages/contracts';
-import { Logger } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, ScopedLogger } from '@packages/infrastructure';
 import { PendingUser } from '../../../domain';
 import { AlbumRepository, UserRepository } from '../../../repositories';
-import { RequestScopeLifeCycle } from '../../readServices/readServiceBaseType';
 
 type ActivateProps = { firstName: string; lastName: string; phone?: string; passwordHash: string };
 
@@ -11,7 +10,7 @@ export interface ActivatePendingUserWriteService extends RequestScopeLifeCycle {
 }
 
 type ActivatePendingUserWriteServiceDeps = {
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   albumRepository: AlbumRepository;
   userRepository: UserRepository;
 };

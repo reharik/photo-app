@@ -1,3 +1,5 @@
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
+
 export interface ReadServiceBase extends RequestScopeLifeCycle {
   readonly __readServiceBrand?: true;
 }
@@ -8,8 +10,4 @@ export interface PublicReadServiceBase extends RequestScopeLifeCycle {
 
 export interface AgnosticReadServiceBase extends RequestScopeLifeCycle {
   readonly __agnosticReadServiceBrand?: true;
-}
-
-export interface RequestScopeLifeCycle {
-  readonly __requestScopeLifeCycleBrand?: true;
 }

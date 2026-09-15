@@ -1,4 +1,4 @@
-import { Logger } from '@packages/infrastructure';
+import { ScopedLogger } from '@packages/infrastructure';
 import { SystemAsyncNotificationRepository } from '../../repositories';
 import { NotificationWriter } from './inAppWriter';
 
@@ -7,7 +7,7 @@ export interface AsyncWriter extends NotificationWriter {
 }
 type Deps = {
   systemAsyncNotificationRepository: SystemAsyncNotificationRepository;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
 };
 
 // Dumb mapper: canonical -> async_notification (queue) row.
@@ -15,9 +15,9 @@ type Deps = {
 // - uses the renamed target* columns (was aggregate*) + new source* columns
 // - no data bag: token left it (-> source=authorization), commentId left it (-> source)
 export const build__AsyncWriter =
-  ({ systemAsyncNotificationRepository, logger }: Deps): AsyncWriter =>
+  ({ systemAsyncNotificationRepository, scopedLogger }: Deps): AsyncWriter =>
   async (n) => {
-    logger.info('[AsyncWriter] enqueueing async_notification row(s)', {
+    scopedLogger.info('[AsyncWriter] enqueueing async_notification row(s)', {
       kind: n.kind.value,
       recipientIds: n.recipients.map((x) => x.id),
       containerId: n.containerId,

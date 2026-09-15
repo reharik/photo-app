@@ -9,14 +9,14 @@ type MediaServeControllerDeps = {
   mediaStorage: MediaStorage;
 };
 
-export const build__MediaServeController = (
-  _deps: MediaServeControllerDeps,
-): MediaServeController => ({
+export const build__MediaServeController = ({
+  mediaStorage,
+}: MediaServeControllerDeps): MediaServeController => ({
   getMedia: async (ctx: Context): Promise<void> => {
     if (!ctx.state.authorizedMediaPath) {
       ctx.throw(500, 'Media authorization state missing');
     }
-    const url = await _deps.mediaStorage.getObjectAccessUrl({
+    const url = await mediaStorage.getObjectAccessUrl({
       storageKey: ctx.state.authorizedMediaPath,
     });
     ctx.redirect(url);

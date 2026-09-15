@@ -1,11 +1,11 @@
 import { ActivitySurface, NotificationKind } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { EnumSubset } from '@reharik/smart-enum';
 import {
   MediaItemOwner,
   SystemInAppNotificationRepository,
   SystemMediaItemRepository,
 } from '../../repositories';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 import { ResolvedNotification } from '../types';
 
 export interface InAppWriter extends NotificationWriter {

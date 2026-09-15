@@ -8,7 +8,7 @@ import {
   OperationResult,
   UserStatus,
 } from '@packages/contracts';
-import { indexBy, indexByUnique, Logger, RateLimiter } from '@packages/infrastructure';
+import { indexBy, indexByUnique, RateLimiter, ScopedLogger } from '@packages/infrastructure';
 import { StandardEnumItem } from '@reharik/smart-enum';
 import { AlbumItemReadRepository } from '../../../repositories/readRepositories/albumItemReadRepository';
 import {
@@ -63,7 +63,7 @@ type ViewerAlbumReadServiceDeps = {
   enrichMediaItems: EnrichMediaItems;
   userReadRepository: UserReadRepository;
   rateLimiter: RateLimiter;
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   viewerId: string;
 };
 
@@ -74,7 +74,7 @@ export const build__ViewerAlbumReadService = ({
   enrichMediaItems,
   userReadRepository,
   rateLimiter,
-  logger,
+  scopedLogger,
   viewerId,
 }: ViewerAlbumReadServiceDeps): ViewerAlbumReadService => {
   const buildCover = (album: AlbumWithCoverRow) => {
@@ -233,7 +233,7 @@ export const build__ViewerAlbumReadService = ({
         normalizedEmails.length,
       );
       if (!resolveShareCheck.allowed) {
-        logger.warn('Resolve share recipient limit exceeded!', {
+        scopedLogger.warn('Resolve share recipient limit exceeded!', {
           viewerId,
         });
         return fail(ContractError.TooManyAttempts);

@@ -6,9 +6,9 @@ import {
   NotificationKind,
   NotificationSubjectType,
 } from '@packages/contracts';
+import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { prepareForDatabase } from '@reharik/smart-enum';
 import { UnitOfWork } from '../../infrastructure';
-import { RequestScopeLifeCycle } from '../../services/readServices/readServiceBaseType';
 
 export interface SystemInAppNotificationRepository extends RequestScopeLifeCycle {
   upsertActivityRow: (upsert: InAppNotificationInput) => Promise<void>;

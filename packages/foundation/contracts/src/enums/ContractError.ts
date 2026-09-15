@@ -133,6 +133,13 @@ const contractErrorInput = {
     area: ErrorArea.album,
     retryable: false,
   },
+  MediaBytesEmpty: {
+    code: 'MEDIA_BYTES_EMPTY',
+    display: 'The uploaded file was empty',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: true,
+  },
   MediaBytesNotFound: {
     code: 'MEDIA_BYTES_NOT_FOUND',
     display: 'Media bytes not found',

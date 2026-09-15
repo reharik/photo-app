@@ -1,6 +1,5 @@
-import { Logger } from '@packages/infrastructure';
+import { RequestScopeLifeCycle, ScopedLogger } from '@packages/infrastructure';
 import { DomainEventHandlers } from '../generated/ioc-registry.types';
-import { RequestScopeLifeCycle } from '../services/readServices/readServiceBaseType';
 import { DomainEvent } from './domainEvent';
 
 export type DomainEventProcessor<K extends DomainEvent['kind'] = DomainEvent['kind']> = (
@@ -20,12 +19,12 @@ export interface EventPublisher extends RequestScopeLifeCycle {
 }
 
 interface EventPublisherDeps {
-  logger: Logger;
+  scopedLogger: ScopedLogger;
   domainEventHandlers: DomainEventHandlers;
 }
 
 export const build__DomainEventPublisher = ({
-  logger,
+  scopedLogger,
   domainEventHandlers,
 }: EventPublisherDeps): EventPublisher => {
   /**
@@ -60,11 +59,15 @@ export const build__DomainEventPublisher = ({
           try {
             await handler.processor(event);
           } catch (err) {
-            logger.error('event handler failed', { kind: event.kind, handler: handler.name, err });
+            scopedLogger.error('event handler failed', {
+              kind: event.kind,
+              handler: handler.name,
+              err,
+            });
             // swallow — post-commit, work is durable, one handler failing ≠ failure
           }
         }
-        logger.info(
+        scopedLogger.info(
           `[DomainEventPublisher] event: ${JSON.stringify(event, null, 4)} passed to [${handlerNameList.join(', ')}]`,
         );
       }

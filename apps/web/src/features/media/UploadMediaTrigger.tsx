@@ -28,15 +28,22 @@ export const UploadMediaTrigger = ({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = '';
+    const input = e.target;
+    const files = Array.from(input.files ?? []);
 
     if (files.length === 0) {
+      input.value = '';
       return;
     }
 
     setAppErrors?.([]);
     enqueueFiles(files, albumId);
+
+    // Reset AFTER handing the files off, never before. WebKit backs a File with a
+    // sandbox grant tied to the input element, so clearing `value` while we still
+    // need the bytes is a way to lose them. The reset itself has to stay: without
+    // it, picking the same file twice in a row fires no change event.
+    input.value = '';
   };
 
   return (
