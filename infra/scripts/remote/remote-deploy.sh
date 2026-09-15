@@ -11,6 +11,15 @@ DEPLOY_BACKEND="${DEPLOY_BACKEND:-true}"
 DEPLOY_FRONTEND="${DEPLOY_FRONTEND:-true}"
 CHANGED_SERVICE_NAMES="${CHANGED_SERVICE_NAMES:-}"
 
+# How many image tags to keep per service after a successful deploy: the one
+# just shipped plus one rollback. Raise it if you ever want to step further
+# back than one deploy by hand.
+IMAGE_RETENTION="${IMAGE_RETENTION:-2}"
+# Services whose images get pruned. Deliberately NOT CHANGED_SERVICE_NAMES:
+# a worker-only deploy would then never clean api images, and that side would
+# accumulate silently until the disk filled.
+PRUNABLE_SERVICES="${PRUNABLE_SERVICES:-api media-worker}"
+
 APP_ROOT="${APP_ROOT:-/opt/${APP_NAME}}"
 FRONTEND_DIR="${FRONTEND_DIR:-${APP_ROOT}/frontend}"
 COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-${APP_NAME}-${ENV}}"
@@ -132,6 +141,15 @@ COMPOSE_FILES=( -f "${COMPOSE_FILE}" )
 echo "Using compose file: ${COMPOSE_FILE}"
 
 if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
+  # Dangling images only: untagged layers orphaned by a superseded or failed
+  # build. Never a rollback candidate, since nothing can address them by tag.
+  # This runs BEFORE the load because it is the one cleanup that helps THIS
+  # deploy rather than the next one -- a deploy that died partway through
+  # leaves its half-built layers here, and they are exactly what fills the
+  # disk that the retry then needs.
+  echo "Removing dangling images before load"
+  sudo docker image prune -f || true
+
   for service in ${CHANGED_SERVICE_NAMES}; do
     TARBALL_NAME="${service}.tar.gz"
     TARBALL_PATH="${WORK_DIR}/${TARBALL_NAME}"
@@ -286,6 +304,43 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
         --force-recreate --no-deps "${RECREATE_SERVICES[@]}"
     fi
   fi
+
+  # ORDER IS LOAD-BEARING, same reason as the compose-file cleanup above: this
+  # sits AFTER the recreate, never before. The image a rollback needs is the
+  # previous deploy's, and until the new containers are actually up there is no
+  # way to know this deploy will succeed. Pruning first and failing second is
+  # how a box ends up with nothing to go back to.
+  #
+  # `|| true` throughout: this whole block is housekeeping. A deploy that has
+  # already recreated its services successfully must not go red because an
+  # image was in use or a tag vanished between the list and the rm.
+  #
+  # Retention is by tag age across BOTH services, api and media-worker, not just
+  # the ones this deploy changed -- see PRUNABLE_SERVICES at the top.
+  echo "Pruning old images (keeping ${IMAGE_RETENTION} per service)"
+  for svc in ${PRUNABLE_SERVICES}; do
+    OLD_TAGS="$(sudo docker image ls "${APP_NAME}-${svc}" \
+      --format '{{.Tag}}\t{{.CreatedAt}}' \
+      | sort -k2 -r \
+      | tail -n "+$((IMAGE_RETENTION + 1))" \
+      | cut -f1 || true)"
+
+    if [[ -z "${OLD_TAGS}" ]]; then
+      echo "  ${APP_NAME}-${svc}: nothing to prune"
+      continue
+    fi
+
+    echo "  ${APP_NAME}-${svc}: removing $(echo "${OLD_TAGS}" | wc -l) old tag(s)"
+    # An image still referenced by a running container fails to remove and is
+    # skipped -- that is the backstop if the age sort ever disagrees with what
+    # is actually live.
+    echo "${OLD_TAGS}" \
+      | sed "s|^|${APP_NAME}-${svc}:|" \
+      | xargs -r sudo docker image rm 2>/dev/null || true
+  done
+
+  echo "Disk after cleanup:"
+  df -h / | tail -n 1
 else
   echo "Skipping docker compose (DEPLOY_BACKEND=false): static/artifact deploy only; no container recreate."
 fi
