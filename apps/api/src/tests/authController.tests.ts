@@ -20,7 +20,7 @@
  */
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, ok } from '@packages/contracts';
-import type { Logger, RateLimiter, RateLimitResult } from '@packages/infrastructure';
+import type { RateLimiter, RateLimitResult } from '@packages/infrastructure';
 import type { UnitOfWork } from '@packages/media-core';
 import type { NotificationService } from '@packages/notifications';
 import jwt from 'jsonwebtoken';
@@ -30,15 +30,9 @@ import type { Config } from '../config.js';
 import { build__AuthController } from '../controllers/authController.js';
 import type { AuthQueryService } from '../services/authQueryService.js';
 import type { AuthService } from '../services/authService.js';
+import { createMockLogger } from './createMockLogger.js';
 
-const logger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  http: jest.fn(),
-  verbose: jest.fn(),
-} satisfies Logger;
+const logger = createMockLogger();
 
 const allowed: RateLimitResult = { allowed: true, remaining: 4, retryAfterMs: null };
 const denied: RateLimitResult = { allowed: false, remaining: 0, retryAfterMs: 60_000 };

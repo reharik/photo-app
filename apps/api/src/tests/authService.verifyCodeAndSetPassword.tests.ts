@@ -37,7 +37,6 @@ import assert from 'node:assert';
 
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ContractError, fail, type OperationResult } from '@packages/contracts';
-import type { Logger } from '@packages/infrastructure';
 import type {
   EmailVerificationRepository,
   PendingUser,
@@ -48,15 +47,9 @@ import type {
 import { createHash } from 'node:crypto';
 
 import { build__AuthService } from '../services/authService.js';
+import { createMockLogger } from './createMockLogger.js';
 
-const logger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  http: jest.fn(),
-  verbose: jest.fn(),
-} satisfies Logger;
+const logger = createMockLogger();
 
 const VALID_ID = 'verification-1';
 

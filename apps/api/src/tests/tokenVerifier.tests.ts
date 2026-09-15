@@ -4,22 +4,15 @@
  * crossed. Covers: valid token → user; expired / malformed / wrong-secret token →
  * undefined; valid token but user missing → undefined.
  */
-import { describe, expect, it, jest } from '@jest/globals';
-import type { Logger } from '@packages/infrastructure';
+import { describe, expect, it } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import type { Knex } from 'knex';
 
 import type { Config } from '../config.js';
 import { build__TokenVerifier } from '../services/tokenVerifier.js';
+import { createMockLogger } from './createMockLogger.js';
 
-const logger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  http: jest.fn(),
-  verbose: jest.fn(),
-} satisfies Logger;
+const logger = createMockLogger();
 
 const SECRET = 'unit-jwt-secret';
 const config = { jwtSecret: SECRET } as unknown as Config;
