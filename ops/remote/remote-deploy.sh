@@ -273,6 +273,16 @@ if [[ "${DEPLOY_BACKEND}" == "true" ]]; then
   # No --no-deps here: `run` honours db's service_healthy condition and will
   # not recreate an already-running db.
   echo "Pre-migration safety dump"
+  # EXTERNAL HOST DEPENDENCY — this script is NOT in this repo.
+  # It lives only on the EC2 box, installed by hand at this absolute path, so
+  # nothing here builds, ships, or version-controls it. Two consequences:
+  #   1. `set -euo pipefail` is in force, so if the file is missing or not
+  #      executable this line aborts the deploy before any migration runs.
+  #      That is the safe direction (no unbacked-up migration), but the failure
+  #      reads as a bare "No such file or directory" with no hint of why.
+  #   2. Because the path is absolute it cannot be redirected via PATH, which
+  #      is why ops/scratch-deploy/ ships a stub that must be installed here
+  #      before the harness can run. See ops/scratch-deploy/betaname-backup.sh.
   /usr/local/bin/betaname-backup.sh pre-migration
 
   echo "Running migrations (one-shot migrate service)"
