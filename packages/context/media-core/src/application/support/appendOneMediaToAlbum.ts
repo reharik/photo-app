@@ -1,4 +1,4 @@
-import { EntityId, Operation, OperationResult } from '@packages/contracts';
+import { all, EntityId, Operation, OperationResult } from '@packages/contracts';
 import { MediaItem } from '../../domain';
 import { Album } from '../../domain/Album/Album';
 import type { AlbumItem } from '../../domain/Album/AlbumItem';
@@ -17,17 +17,14 @@ export const tryAppendOneMediaToAlbum = (
   const ownerId = mediaItem instanceof MediaItem ? mediaItem.ownerId() : mediaItem.ownerId;
   const mediaItemId = mediaItem instanceof MediaItem ? mediaItem.id() : mediaItem.id;
   const kind = mediaItem instanceof MediaItem ? mediaItem.kind() : mediaItem.kind;
-  const r1 = ensureMediaItemOwnedByViewer(ownerId, viewerId);
-  if (!r1.success) {
-    return r1;
-  }
-  const r2 = ensureMemberCanEditAlbum(album, Operation.addItems, viewerId);
-  if (!r2.success) {
-    return r2;
-  }
-  const r3 = ensureMediaItemInReadyState(mediaItem);
-  if (!r3.success) {
-    return r3;
+
+  const checks = all(
+    () => ensureMediaItemOwnedByViewer(ownerId, viewerId),
+    () => ensureMemberCanEditAlbum(album, Operation.addItems, viewerId),
+    () => ensureMediaItemInReadyState(mediaItem),
+  );
+  if (!checks.success) {
+    return checks;
   }
   return album.addItem(mediaItemId, viewerId, kind);
 };

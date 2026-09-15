@@ -1,6 +1,9 @@
 import { EntityId, Operation, OperationCatalog } from '@packages/contracts';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
-import { AuthorizationReadRepository } from '../../repositories/readRepositories/types';
+import {
+  AlbumMemberReadRepository,
+  AuthorizationReadRepository,
+} from '../../repositories/readRepositories/types';
 import { DBMediaItemRow, DBPublicMediaItemRow } from './types';
 
 export interface MediaItemOperationsService extends RequestScopeLifeCycle {
@@ -16,10 +19,12 @@ export interface MediaItemOperationsService extends RequestScopeLifeCycle {
 
 type MediaItemOperationsServiceDeps = {
   authorizationReadRepository: AuthorizationReadRepository;
+  albumMemberReadRepository: AlbumMemberReadRepository;
 };
 
 export const build__MediaItemOperationsService = ({
   authorizationReadRepository,
+  albumMemberReadRepository,
 }: MediaItemOperationsServiceDeps): MediaItemOperationsService => {
   /**
    * Returns a decorated entry for every input item. Items the viewer has no
@@ -34,12 +39,11 @@ export const build__MediaItemOperationsService = ({
       return new Map();
     }
 
+    const operationsByItem = new Map<string, Operation[]>();
     const mediaItemOperations = await authorizationReadRepository.getMediaItemOperationsFromGrants(
       viewerId,
       items.map((i) => i.id),
     );
-
-    const operationsByItem = new Map<string, Operation[]>();
 
     for (const item of items) {
       const merged = new Map<string, Operation>();
@@ -60,6 +64,17 @@ export const build__MediaItemOperationsService = ({
 
       operationsByItem.set(item.id, Array.from(merged.values()));
     }
+
+    const membershipRoles = await albumMemberReadRepository.hasMembershipRoleForMediaItems(
+      items.map((x) => x.id),
+      viewerId,
+    );
+
+    membershipRoles.forEach((x) =>
+      operationsByItem.set(x.mediaItemId, [
+        ...new Set([...(operationsByItem.get(x.mediaItemId) ?? []), ...x.role.operations]),
+      ]),
+    );
 
     return operationsByItem;
   };

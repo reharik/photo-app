@@ -10,6 +10,7 @@ const ownerOperations: Operation[] = [
   Operation.editCover,
   Operation.addMembers,
   Operation.removeMembers,
+  Operation.comment,
 ] as const;
 const adminOperations: Operation[] = [
   Operation.addItems,
@@ -18,8 +19,9 @@ const adminOperations: Operation[] = [
   Operation.editCover,
   Operation.addMembers,
   Operation.removeMembers,
+  Operation.comment,
 ] as const;
-const contributorOperations: Operation[] = [Operation.addItems] as const;
+const contributorOperations: Operation[] = [Operation.addItems, Operation.comment] as const;
 
 const can = (role: Operation[]) => (operation: Operation) => {
   return role.includes(operation);
