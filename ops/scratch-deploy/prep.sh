@@ -99,13 +99,32 @@ transform_check() { # transform_check <label> <literal> <expected-count>
     exit 1
   fi
 }
+# Same contract, but the pattern is an ERE rather than a fixed string. Use this
+# ONLY where a literal would pin us to a formatting choice we do not own: the
+# fixed-string form above is the default precisely because most of these
+# literals contain regex metacharacters (`["sleep", "infinity"]`, `alpine:3.20`,
+# `127.0.0.1:`) that would silently change meaning under -E.
+transform_check_re() { # transform_check_re <label> <ere> <expected-count>
+  local n
+  n="$(grep -cE -- "$2" "${SCRATCH_COMPOSE}" || true)"
+  if [[ "$n" != "$3" ]]; then
+    echo "prep.sh: transform '$1' matched ${n}x, expected $3x." >&2
+    echo "  ${PROD_COMPOSE} formatting has drifted; update the sed above." >&2
+    exit 1
+  fi
+}
 transform_check "arm64 pins stripped"     "platform: linux/arm64"          0
 transform_check "prod env_file removed"   "/opt/homeroll/env/prod.env"     0
 transform_check "scratch env_file wired"  "${APP_ROOT}/env/scratch.env"    4
 transform_check "worker image stubbed"    "image: alpine:3.20"             1
 transform_check "worker sleeps"           'command: ["sleep", "infinity"]' 1
 # Guards that the REAL definitions survived the transform.
-transform_check "migrate one-shot intact" 'restart: "no"'                  1
+# Quote-agnostic ON PURPOSE: prettier owns docker-compose-prod.yml's quote style
+# and has already flipped this value from "no" to 'no' once. What must hold is
+# that the migrate one-shot still carries a disabled restart policy, not which
+# quotes YAML happens to be wearing this week. Still anchored start-to-end, so
+# `unless-stopped` (or any other value) fails exactly as before.
+transform_check_re "migrate one-shot intact" '^[[:space:]]*restart:[[:space:]]*["'"'"']?no["'"'"']?[[:space:]]*$' 1
 transform_check "api loopback bind intact" "127.0.0.1:"                    1
 
 # --- container env. NODE_ENV=production is deliberate: it also proves the ----

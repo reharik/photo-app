@@ -21,10 +21,7 @@ export const isSmartEnumItemType = (type, checker) => {
 };
 
 export const isEqualityOperator = (operator) =>
-  operator === '===' ||
-  operator === '!==' ||
-  operator === '==' ||
-  operator === '!=';
+  operator === '===' || operator === '!==' || operator === '==' || operator === '!=';
 
 /**
  * Allows `status != null` / `status == null` (and `undefined` literal) per monorepo null checks.
