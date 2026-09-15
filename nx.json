@@ -1,4 +1,4 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "extends": "./infra/config/nx/nx.json"
+  "extends": "./tooling/nx/nx.json"
 }

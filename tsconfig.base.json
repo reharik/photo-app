@@ -1,5 +1,5 @@
 {
-  "extends": "./infra/config/tsconfig/tsconfig.base.json",
+  "extends": "./tooling/tsconfig/tsconfig.base.json",
   "references": [
     { "path": "apps/api" },
     { "path": "apps/web" },

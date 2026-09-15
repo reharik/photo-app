@@ -12,7 +12,6 @@ package-lock.json
 # **/di/generated/ioc-manifest.ts
 # **/di/generated/ioc-registry.types.ts
 **/*.generated.ts
-/infra/**
 /ops/**
 
 # Barrelsby-generated barrels: their export order is owned by barrelsby (enforced by

@@ -1,6 +1,6 @@
 export default {
   displayName: 'media-core',
-  preset: '../../../infra/config/jest/jest.preset.cjs',
+  preset: '../../../tooling/jest/jest.preset.cjs',
   testEnvironment: 'node',
   maxWorkers: 1,
   forceExit: true,

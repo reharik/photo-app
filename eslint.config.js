@@ -5,7 +5,7 @@ export {
   commonPrettierRules,
   commonTypeScriptRules,
   createBaseTypeScriptConfig,
-} from './infra/config/eslint/eslint-shared.js';
+} from './tooling/eslint/eslint-shared.js';
 
 export {
   createRepoEslintConfig,
