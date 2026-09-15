@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Invokes the REAL infra/scripts/remote/remote-deploy.sh against the scratch
+# Invokes the REAL ops/remote/remote-deploy.sh against the scratch
 # stack. That script is not modified — only environment and PATH differ.
 #
 #   ./run-deploy.sh <sha-tag> [changed-service-names]
@@ -9,7 +9,7 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="${REPO:-$(cd "${HERE}/../../.." && pwd)}"
+REPO="${REPO:-$(git rev-parse --show-toplevel)}"
 # Deliberately NOT named WORK_DIR: remote-deploy.sh has its own WORK_DIR and
 # would inherit ours if the name collided. Not exported, either.
 SCRATCH_DIR="${SCRATCH_DIR:-/tmp/homeroll-scratch-deploy}"
@@ -44,7 +44,7 @@ echo "=============================================================="
 echo "remote-deploy.sh  SHA=${SHA}  CHANGED_SERVICE_NAMES=${CHANGED}"
 echo "=============================================================="
 
-bash "${REPO}/infra/scripts/remote/remote-deploy.sh"
+bash "${REPO}/ops/remote/remote-deploy.sh"
 rc=$?
 
 echo "--------------------------------------------------------------"

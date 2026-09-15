@@ -61,7 +61,7 @@ classify_path() {
         [[ -n "$svc" ]] && mark_service "$svc"
       done < <(all_backend_service_names)
       ;;
-    infra/scripts/deploy/* | infra/scripts/remote/*)
+    ops/deploy/* | ops/remote/*)
       # Deploy plumbing only; does not require rebuilding images.
       ;;
     *)

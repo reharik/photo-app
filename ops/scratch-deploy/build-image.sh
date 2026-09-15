@@ -8,7 +8,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="${REPO:-$(cd "${HERE}/../../.." && pwd)}"
+REPO="${REPO:-$(git rev-parse --show-toplevel)}"
 APP_NAME="${APP_NAME:-homeroll}"
 SHA="${1:?usage: build-image.sh <sha-tag>}"
 

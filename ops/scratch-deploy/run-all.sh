@@ -10,7 +10,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO="${REPO:-$(cd "${HERE}/../../.." && pwd)}"
+REPO="${REPO:-$(git rev-parse --show-toplevel)}"
 SCRATCH_DIR="${SCRATCH_DIR:-/tmp/homeroll-scratch-deploy}"
 PROJECT="${COMPOSE_PROJECT_NAME:-homeroll-scratch}"
 APP_ROOT="${SCRATCH_DIR}/opt/homeroll"

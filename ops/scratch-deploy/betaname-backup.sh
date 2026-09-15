@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # STUB for scratch deploy testing ONLY. Stands in for the real
 # /usr/local/bin/betaname-backup.sh, whose path is hardcoded at
-# remote-deploy.sh:198 and therefore cannot be redirected via PATH.
+# remote-deploy.sh and therefore cannot be redirected via PATH.
 #
 # Install:   sudo install -m 0755 betaname-backup.sh /usr/local/bin/betaname-backup.sh
 # Remove:    sudo rm -f /usr/local/bin/betaname-backup.sh

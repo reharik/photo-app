@@ -25,6 +25,11 @@ packages/e2e/playwright-report/
 output.json
 output-worker-graph.json
 
+# Deploy/runtime plumbing. The image build reads nothing from ops/ — only the
+# `manifests` stage's wholesale `COPY . .` would otherwise pull it in, and ops/
+# holds no package.json, so excluding it changes nothing the build consumes.
+ops/
+
 # Compose/Makefile are not part of the build context payload. The compose files
 # live at the repo root now (docker-compose-dev.yml / -ci.yml / -prod.yml), so
 # they sit directly in the build context — without this glob every compose edit

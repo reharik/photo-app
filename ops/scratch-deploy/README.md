@@ -58,7 +58,7 @@ every other sudo'd path in the script lives under `SCRATCH_DIR` in `/tmp`.
 ## One-time setup
 
 ```bash
-cd infra/scripts/scratch-deploy
+cd ops/scratch-deploy
 chmod +x *.sh          # exec bits are not set in the committed tree
 sudo install -m 0755 betaname-backup.sh /usr/local/bin/betaname-backup.sh
 ./prep.sh
@@ -96,7 +96,7 @@ recreate uses `--force-recreate --no-deps`.
 ./assert.sh tables                            # scratch_probe = f
 
 # 2. Add the probe migration and deploy a SECOND time.
-cp fixtures/0023_scratch_probe.ts ../../../apps/api/db/migrations/
+cp fixtures/0023_scratch_probe.ts ../../apps/api/db/migrations/
 ./build-image.sh sha002
 ./run-deploy.sh sha002 api                    # expect exit 0
 ./assert.sh tables                            # scratch_probe MUST be t
@@ -130,7 +130,7 @@ for `homeroll-api:sha003`.
 ## Case 2 — failed migration aborts the deploy
 
 ```bash
-cp fixtures/0024_scratch_broken.ts ../../../apps/api/db/migrations/
+cp fixtures/0024_scratch_broken.ts ../../apps/api/db/migrations/
 ./build-image.sh sha004
 API_BEFORE=$(./assert.sh api-container-id)
 ./run-deploy.sh sha004 api                    # expect NON-ZERO
@@ -144,8 +144,8 @@ printed, and the api container id unchanged.
 ## Cleanup
 
 ```bash
-rm -f ../../../apps/api/db/migrations/0023_scratch_probe.ts \
-      ../../../apps/api/db/migrations/0024_scratch_broken.ts
+rm -f ../../apps/api/db/migrations/0023_scratch_probe.ts \
+      ../../apps/api/db/migrations/0024_scratch_broken.ts
 docker compose -p homeroll-scratch down -v
 sudo rm -f /usr/local/bin/betaname-backup.sh
 docker image rm homeroll-api:sha001 homeroll-api:sha002 homeroll-api:sha004

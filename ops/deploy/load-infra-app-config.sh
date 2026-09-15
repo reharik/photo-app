@@ -4,10 +4,10 @@ set -euo pipefail
 log() { echo "$@" >&2; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INFRA_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-REPO_ROOT="$(cd "${INFRA_ROOT}/.." && pwd)"
+OPS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${OPS_ROOT}/.." && pwd)"
 
-DEFAULTS="${INFRA_ROOT}/config/infra.app.config.defaults.json"
+DEFAULTS="${OPS_ROOT}/infra.app.config.defaults.json"
 CONSUMER_DEFAULT="${REPO_ROOT}/infra.app.config.json"
 CONSUMER="${1:-$CONSUMER_DEFAULT}"
 
