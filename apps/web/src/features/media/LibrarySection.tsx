@@ -12,10 +12,6 @@ import {
 } from '../../graphql/generated/types';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
-import {
-  saveGalleryScrollPosition,
-  useGalleryScrollRestoration,
-} from '../../hooks/useGalleryScrollRestoration';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMultiSelectGallery } from '../../hooks/useMultiSelectGallery';
 import { AppModal } from '../../ui/AppModal';
@@ -104,20 +100,6 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
 
   const { items } = useUploadQueue();
 
-  useGalleryScrollRestoration({
-    storageKey: 'library',
-    scrollRootRef,
-    ready: nodes.length > 0,
-    nodeCount: nodes.length,
-    loadMore: paging.loadMore,
-    hasMore: paging.hasMore,
-    isLoadingMore: paging.isLoadingMore,
-  });
-
-  const handleTileNavigate = useCallback((mediaId: string): void => {
-    saveGalleryScrollPosition('library', scrollRootRef.current, mediaId);
-  }, []);
-
   useEffect(() => {
     const newlyReadyForThisAlbum = items.filter((item) =>
       item.status.equals(FrontendUploadStatus.ready),
@@ -204,6 +186,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
               nodes={nodes}
               paging={paging}
               scrollRootRef={scrollRootRef}
+              scrollRestorationKey="library"
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}
@@ -215,7 +198,6 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
                   mediaGalleryIds={ctx.mediaGalleryIds}
                   canReact
                   onReactionsRefetch={reloadData}
-                  onBeforeNavigate={handleTileNavigate}
                   hasUnseen={isTargetUnseen(EntityType.mediaItem, item.id)}
                 />
               )}

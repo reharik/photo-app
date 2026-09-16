@@ -250,6 +250,7 @@ export const AlbumSection = ({
               columnCounts={ALBUM_GRID_COLUMNS}
               groupedSections={groupedSections}
               scrollRootRef={albumScrollRef}
+              scrollRestorationKey={`album:${album.id}`}
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}

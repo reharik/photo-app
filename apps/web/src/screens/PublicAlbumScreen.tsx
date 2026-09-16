@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
+import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFirstPageLimit';
 import { Toast } from '../ui/Toast';
 import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 
@@ -14,21 +15,29 @@ export const PublicAlbumScreen = () => {
 
   const [showSaveToast, setShowSaveToast] = useState(false);
   const buildPageVariables = useCallback(
-    (offset: number) => ({
+    (offset: number, limit: number = DEFAULT_PAGE_SIZE) => ({
       collectionInfo: {
-        pageInfo: { limit: 20, offset },
+        pageInfo: { limit, offset },
         sortBy: AlbumItemSortBy.orderIndex,
         sortDir: SortDir.asc,
       },
     }),
     [],
   );
+  const firstPageLimit = useCachedFirstPageLimit({
+    query: PublicAlbumViewDocument,
+    firstPageVariables: buildPageVariables(0),
+    countCachedNodes: (data) => data.publicAccess?.album?.items?.nodes.length,
+    cacheKey: `public-album:${token}`,
+  });
   const query = useQuery(PublicAlbumViewDocument, {
     variables: {
-      ...buildPageVariables(0),
+      ...buildPageVariables(0, firstPageLimit),
     },
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
+    // MediaGrid scroll restoration's settle detection (paging.isSettled) depends on this.
+    notifyOnNetworkStatusChange: true,
     context: { accessMode: 'public' },
   });
 

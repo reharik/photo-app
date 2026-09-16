@@ -92,6 +92,7 @@ export const PublicAlbumSection = ({
               nodes={albumItems}
               paging={paging}
               scrollRootRef={albumScrollRef}
+              scrollRestorationKey={`public-album:${album.id}`}
               getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}

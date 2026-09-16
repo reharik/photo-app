@@ -21,6 +21,7 @@ import {
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
+import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFirstPageLimit';
 import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
@@ -42,11 +43,11 @@ export const AlbumScreen = () => {
   const sortParamsInitialized = useRef(false);
 
   const buildPageVariables = useCallback(
-    (offset: number) => {
+    (offset: number, limit: number = DEFAULT_PAGE_SIZE) => {
       return {
         albumId: albumId ?? '',
         collectionInfo: {
-          pageInfo: { limit: 20, offset },
+          pageInfo: { limit, offset },
           sortBy: groupBy === 'takenDate' ? AlbumItemSortBy.takenAt : AlbumItemSortBy.createdAt,
           sortDir,
         },
@@ -55,13 +56,23 @@ export const AlbumScreen = () => {
     [albumId, groupBy, sortDir],
   );
 
+  // Keyed like Album.items keyArgs (sort only), plus the album.
+  const firstPageLimit = useCachedFirstPageLimit({
+    query: ViewerAlbumDetailDocument,
+    firstPageVariables: buildPageVariables(0),
+    countCachedNodes: (data) => data.viewer?.album?.items?.nodes.length,
+    cacheKey: `${albumId}:${groupBy}:${sortDir.value}`,
+  });
+
   const query = useQuery(ViewerAlbumDetailDocument, {
     variables: {
-      ...buildPageVariables(0),
+      ...buildPageVariables(0, firstPageLimit),
     },
     skip: !albumId,
     fetchPolicy: 'cache-and-network',
     nextFetchPolicy: 'cache-and-network',
+    // MediaGrid scroll restoration's settle detection (paging.isSettled) depends on this.
+    notifyOnNetworkStatusChange: true,
   });
 
   const {
@@ -91,7 +102,7 @@ export const AlbumScreen = () => {
       sortParamsInitialized.current = true;
       return;
     }
-    void query.refetch(buildPageVariables(0));
+    void query.refetch(buildPageVariables(0, firstPageLimit));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, sortDir]); // ONLY sort inputs — not query, not buildPageVariables
 

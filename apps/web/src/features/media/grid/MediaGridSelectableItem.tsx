@@ -81,6 +81,8 @@ export const MediaGridSelectableItem = ({
   return (
     <Item
       data-testid={`media-tile-${itemId}`}
+      // Read by useMediaGridScrollRestoration (MEDIA_GRID_ITEM_ID_ATTR).
+      data-media-grid-item-id={itemId}
       ref={sentinelRef}
       $selectionControl={tileIsSelectionControl}
       {...(tileIsSelectionControl

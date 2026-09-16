@@ -10,6 +10,7 @@ import { MediaGridDateSection } from './MediaGridDateSection';
 import { MediaGridSelectableItem } from './MediaGridSelectableItem';
 import type { MultiSelectProps } from './types';
 import { GridMediaItem } from './types';
+import { useMediaGridScrollRestoration } from './useMediaGridScrollRestoration';
 
 export type MediaGridRenderContext = {
   mediaGalleryIds: string[];
@@ -34,6 +35,11 @@ type MediaGridProps<T extends ViewableItemVM> = {
   tileGap?: string;
   paging?: PagingState;
   scrollRootRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * Opt-in: when set, returning to this grid via history scrolls back to the tile that was
+   * opened. Must be unique per gallery (e.g. `album:${id}`); pickers leave it unset.
+   */
+  scrollRestorationKey?: string;
 };
 
 export const MediaGrid = <T extends ViewableItemVM>({
@@ -51,13 +57,22 @@ export const MediaGrid = <T extends ViewableItemVM>({
   showSelectionToggle = true,
   tileGap,
   scrollRootRef,
+  scrollRestorationKey,
 }: MediaGridProps<T>) => {
+  const { onGridClick } = useMediaGridScrollRestoration({
+    restorationKey: scrollRestorationKey,
+    scrollRootRef,
+    nodeCount: nodes.length,
+    paging,
+  });
   const orderedMediaIds = useMemo(
     () => nodes.map((node) => getMediaItem(node)?.id).filter((id): id is string => id != null),
     [nodes, getMediaItem],
   );
   const { sentinelRef } = useInfiniteScroll({
-    ...(paging ? paging : { hasMore: false, isLoadingMore: false, loadMore: () => {} }),
+    ...(paging
+      ? paging
+      : { hasMore: false, isLoadingMore: false, isSettled: true, loadMore: () => {} }),
     scrollRootRef,
   });
 
@@ -100,7 +115,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
 
   if (groupedSections) {
     return (
-      <GridRoot>
+      <GridRoot onClick={onGridClick}>
         {groupedSections.map((section) => (
           <MediaGridDateSection key={section.key} label={section.label} subtitle={section.subtitle}>
             {renderTiles(section.items)}
@@ -110,7 +125,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
     );
   }
 
-  return <GridRoot>{renderTiles(nodes)}</GridRoot>;
+  return <GridRoot onClick={onGridClick}>{renderTiles(nodes)}</GridRoot>;
 };
 
 const GridRoot = styled.div`
