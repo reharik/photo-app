@@ -1,11 +1,15 @@
 import {
+  all,
   AppErrorCollection,
   EntityId,
   fail,
   MediaAssetKind,
   ok,
+  Operation,
   OperationResult,
 } from '@packages/contracts';
+import { ScopedLogger } from '@packages/infrastructure';
+import { ensureMediaItemOwnedByViewer, ensureMemberCanEditAlbum } from '../../../application';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -37,6 +41,7 @@ type CreateMediaItemUploadDeps = {
   albumRepository: AlbumRepository;
   mediaStorage: MediaStorage;
   viewerId: EntityId;
+  scopedLogger: ScopedLogger;
 };
 
 export const build__CreateMediaItemUpload = ({
@@ -44,6 +49,7 @@ export const build__CreateMediaItemUpload = ({
   albumRepository,
   mediaStorage,
   viewerId,
+  scopedLogger,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (
     input: CreateMediaUploadCommand,
@@ -75,7 +81,15 @@ export const build__CreateMediaItemUpload = ({
       if (!album) {
         return fail(AppErrorCollection.album.AlbumNotFound);
       }
-      album.addItem(mediaItem.id(), viewerId, mediaItem.kind());
+      const checks = all(
+        () => ensureMediaItemOwnedByViewer(mediaItem.ownerId(), viewerId),
+        () => ensureMemberCanEditAlbum(album, Operation.addItems, viewerId),
+        () => album.addItem(mediaItem.id(), viewerId, mediaItem.kind()),
+      );
+      if (!checks.success) {
+        scopedLogger.error(checks.error.display);
+        // Error swallowed as the mediaItem has already been uploaded
+      }
       await albumRepository.save(album);
     }
     return ok({

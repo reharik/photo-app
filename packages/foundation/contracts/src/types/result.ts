@@ -90,7 +90,29 @@ export const WriteToBatch = <TIn, TOut, E = ContractError>(
  * a different log, a different status, compensation — keep the explicit `if`s. The
  * variation is the logic, and hiding it behind a chain buys nothing.
  */
-export const chain = async <T, U, E>(
+export function chain<T, U, E>(
+  result: OperationResult<T, E>,
+  fn: (value: T) => OperationResult<U, E>,
+): OperationResult<U, E>;
+
+export function chain<T, U, E>(
   result: OperationResult<T, E>,
   fn: (value: T) => Promise<OperationResult<U, E>>,
-): Promise<OperationResult<U, E>> => (result.success ? fn(result.value) : result);
+): Promise<OperationResult<U, E>>;
+
+export function chain<T, U, E>(
+  result: OperationResult<T, E>,
+  fn: (value: T) => OperationResult<U, E> | Promise<OperationResult<U, E>>,
+) {
+  return result.success ? fn(result.value) : result;
+}
+
+export const all = <E>(
+  ...checks: Array<() => OperationResult<unknown, E>>
+): OperationResult<void, E> => {
+  for (const check of checks) {
+    const result = check();
+    if (!result.success) return result;
+  }
+  return { success: true, value: undefined };
+};

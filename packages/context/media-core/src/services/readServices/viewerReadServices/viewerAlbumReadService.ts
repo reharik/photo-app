@@ -171,7 +171,6 @@ export const build__ViewerAlbumReadService = ({
       const enrichedMediaItems = indexByUnique(
         await enrichMediaItems.enrich(viewerId, dbMediaItems),
       );
-
       const nodes = albumItemsResult.nodes.map(
         (albumItem) =>
           ({

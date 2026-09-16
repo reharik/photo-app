@@ -70,7 +70,7 @@ export const build__AddMediaItemsToAlbum = ({
       return rMedias;
     }
     for (const rMedia of rMedias.value) {
-      const append = tryAppendOneMediaToAlbum(album, rMedia, rMedia.id, viewerId);
+      const append = tryAppendOneMediaToAlbum(album, rMedia, viewerId);
       if (!append.success) {
         return append;
       }

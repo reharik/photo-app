@@ -18,7 +18,6 @@ export type AuthorizeAlbumCommentInput = {
 
 export interface ValidateOperationService extends RequestScopeLifeCycle {
   authorizeMediaComment: (input: AuthorizeMediaCommentInput) => Promise<OperationResult<void>>;
-  authorizeAlbumComment: (input: AuthorizeAlbumCommentInput) => Promise<OperationResult<void>>;
 }
 
 type ValidateOperationServiceDeps = {
@@ -61,35 +60,15 @@ export const build__ValidateOperationService = ({
     if (granted) {
       return ok(undefined);
     }
-    return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
-  },
 
-  authorizeAlbumComment: async (
-    input: AuthorizeAlbumCommentInput,
-  ): Promise<OperationResult<void>> => {
-    const { albumId, viewerId } = input;
-    if (!viewerId) {
-      return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
-    }
-
-    const albumMember = await albumMemberReadRepository.getMemberByUserId({
-      albumId,
+    const membershipRole = await albumMemberReadRepository.hasMembershipRoleForMediaItem(
+      mediaItemId,
       viewerId,
-    });
-
-    if (albumMember && albumMember.role.can(Operation.comment)) {
+    );
+    if (membershipRole?.role.can(Operation.comment)) {
       return ok(undefined);
     }
 
-    const granted = await grantReadRepository.hasActiveAccessGrantPermission({
-      albumId,
-      viewerId,
-      operation: Operation.comment,
-    });
-
-    if (granted) {
-      return ok(undefined);
-    }
     return fail(AppErrorCollection.mediaItem.MediaItemNotAuthorized);
   },
 });

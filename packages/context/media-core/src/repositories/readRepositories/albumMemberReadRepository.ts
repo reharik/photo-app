@@ -1,4 +1,4 @@
-import { AlbumMemberRole } from '@packages/contracts';
+import { AlbumMemberRole, EntityId } from '@packages/contracts';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
 import { AlbumMemberCollectionInfo, PagedList } from '../../services';
 import { toPagedResult, withCollectionInfo } from '../queryHelpers';
@@ -64,5 +64,37 @@ export const build__AlbumMemberReadRepository = ({
       },
     );
     return toPagedResult(rows);
+  },
+  hasMembershipRoleForMediaItem: async (
+    mediaItemId: EntityId,
+    viewerId: EntityId,
+  ): Promise<{ role: AlbumMemberRole } | undefined> => {
+    return withEnumRevival(
+      uow
+        .db()('albumItem')
+        .join('albumMember', 'albumMember.albumId', 'albumItem.albumId')
+        .where('albumItem.mediaItemId', mediaItemId)
+        .where('albumMember.userId', viewerId)
+        .first<{ role: AlbumMemberRole }>('role'),
+      { role: AlbumMemberRole },
+    );
+  },
+
+  hasMembershipRoleForMediaItems: async (
+    mediaItemIds: EntityId[],
+    viewerId: EntityId,
+  ): Promise<{ mediaItemId: EntityId; role: AlbumMemberRole }[]> => {
+    return withEnumRevival(
+      uow
+        .db()('albumItem as ai')
+        .join('albumMember as am', 'am.albumId', 'ai.albumId')
+        .whereIn('ai.mediaItemId', mediaItemIds)
+        .where('am.userId', viewerId)
+        .select<{ mediaItemId: EntityId; role: AlbumMemberRole }[]>(
+          'ai.mediaItemId as mediaItemId',
+          'am.role as role',
+        ),
+      { role: AlbumMemberRole },
+    );
   },
 });

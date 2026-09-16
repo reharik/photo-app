@@ -196,6 +196,14 @@ export interface AlbumMemberReadRepository extends RequestScopeLifeCycle {
     viewerId: string;
     collectionInfo: AlbumMemberCollectionInfo;
   }) => Promise<PagedList<AlbumMemberRow>>;
+  hasMembershipRoleForMediaItem: (
+    mediaItemId: EntityId,
+    viewerId: EntityId,
+  ) => Promise<{ role: AlbumMemberRole } | undefined>;
+  hasMembershipRoleForMediaItems: (
+    mediaItemIds: EntityId[],
+    viewerId: EntityId,
+  ) => Promise<{ mediaItemId: EntityId; role: AlbumMemberRole }[]>;
 }
 
 export type ReactionRecord = {
