@@ -233,23 +233,26 @@ export const AlbumScreen = () => {
     nextFetchPolicy: 'cache-first',
   });
 
+  // select returns the UNFILTERED page: paging derives hasMore and the next offset from
+  // nodes.length, which must match what was fetched. Filtering out items already in the
+  // album here made hasMore stick true and loadMore re-request overlapping pages
+  // (duplicate tiles). The album filter is applied below, when building pickerMediaItems.
   const pickerState = usePaginatedQueryRenderState({
     query: mediaItemsForPickerQuery,
-    select: (data) => {
-      const mediaItems = data?.viewer?.mediaItems.nodes || [];
-      const existingAlbumItems = albumData?.nodes || [];
-
-      const items = mediaItems.filter(
-        (item) => !existingAlbumItems.some((albumItem) => albumItem.mediaItem.id === item.id),
-      );
-      return { nodes: items, totalCount: data.viewer?.mediaItems.totalCount ?? 0 };
-    },
+    select: (data) => ({
+      nodes: data?.viewer?.mediaItems.nodes ?? [],
+      totalCount: data.viewer?.mediaItems.totalCount ?? 0,
+    }),
     buildPageVariables: buildPickerVariables,
   });
 
   const album = albumData?.album;
   const albumItems = albumData?.nodes ?? [];
   const totalCount = albumData?.totalCount ?? 0;
+  const albumMediaItemIds = new Set(albumItems.map((albumItem) => albumItem.mediaItem.id));
+  const pickerMediaItems = (pickerState.data?.nodes ?? []).filter(
+    (item) => !albumMediaItemIds.has(item.id),
+  );
   if (!album || !album?.id) {
     return content;
   }
@@ -320,7 +323,7 @@ export const AlbumScreen = () => {
     addItemOpen: addAlbumItemModalOpen,
     setAddItemOpen: setAddAlbumItemModalOpen,
     submitAddToAlbum: submitAddToAlbum,
-    pickerMediaItems: pickerState.data?.nodes ?? [],
+    pickerMediaItems,
     pickerTotalCount: pickerState.data?.totalCount ?? 0,
     pickerPaging: pickerState.paging,
     pickerRefetch: pickerState.refetch,
