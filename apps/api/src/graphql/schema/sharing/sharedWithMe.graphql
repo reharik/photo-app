@@ -25,7 +25,7 @@ enum SharedWithMeAlbumSortBy {
       props: [
         { name: "column", value: "created_at" }
         { name: "table", value: "access_grant" }
-        { name: "nullsLast", value: "true" }
+        { name: "nulls", value: "last" }
       ]
     )
 }

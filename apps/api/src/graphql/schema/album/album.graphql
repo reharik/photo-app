@@ -120,7 +120,7 @@ enum AlbumMemberSortBy {
       props: [
         { name: "column", value: "role" }
         { name: "table", value: "album_member" }
-        { name: "nullsLast", value: "true" }
+        { name: "nulls", value: "last" }
       ]
     )
 }
@@ -140,7 +140,7 @@ enum AlbumItemSortBy {
       props: [
         { name: "column", value: "taken_at" }
         { name: "table", value: "media_item" }
-        { name: "nullsLast", value: "false" }
+        { name: "nulls", value: "first" }
       ]
     )
   CREATED_AT
@@ -148,7 +148,7 @@ enum AlbumItemSortBy {
       props: [
         { name: "column", value: "created_at" }
         { name: "table", value: "album_item" }
-        { name: "nullsLast", value: "false" }
+        { name: "nulls", value: "first" }
       ]
     )
   ORDER_INDEX
@@ -156,7 +156,7 @@ enum AlbumItemSortBy {
       props: [
         { name: "column", value: "order_index" }
         { name: "table", value: "album_item" }
-        { name: "nullsLast", value: "false" }
+        { name: "nulls", value: "first" }
       ]
     )
 }

@@ -119,13 +119,7 @@ export const build__MediaItemReadRepository = ({
         .orderBy(
           `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
           collectionInfo.sortDir.value,
-          collectionInfo.sortBy.nullsLast === 'true'
-            ? 'last'
-            : collectionInfo.sortBy.nullsLast === 'false'
-              ? 'first'
-              : (() => {
-                  throw new Error(`bad nullsLast`);
-                })(),
+          collectionInfo.sortBy.nulls,
         )
         .orderBy('mediaItem.id', 'asc') // tie-breaker
         .select<(DBMediaItemRow & { totalCount: number })[]>(...DBmediaItemRowFields)
