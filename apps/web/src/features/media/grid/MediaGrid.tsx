@@ -1,4 +1,4 @@
-import { RefObject, useMemo, type ReactNode } from 'react';
+import { RefObject, useMemo, useRef, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../../hooks/getPaginatedQueryRenderState';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
@@ -59,9 +59,11 @@ export const MediaGrid = <T extends ViewableItemVM>({
   scrollRootRef,
   scrollRestorationKey,
 }: MediaGridProps<T>) => {
+  const gridRootRef = useRef<HTMLDivElement>(null);
   const { onGridClick } = useMediaGridScrollRestoration({
     restorationKey: scrollRestorationKey,
     scrollRootRef,
+    gridRootRef,
     nodeCount: nodes.length,
     paging,
   });
@@ -74,20 +76,27 @@ export const MediaGrid = <T extends ViewableItemVM>({
       ? paging
       : { hasMore: false, isLoadingMore: false, isSettled: true, loadMore: () => {} }),
     scrollRootRef,
+    itemCount: nodes.length,
   });
 
   const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
   const TRIGGER_FROM_END = 8; // at 20/page; tune by feel
+  // Exactly one sentinel, picked in on-screen order: sections can be sorted differently
+  // from fetch order, so per-section or `nodes`-order triggers can land far above the bottom.
+  const triggerId = useMemo(() => {
+    const onScreenOrder = groupedSections?.flatMap((section) => section.items) ?? nodes;
+    return onScreenOrder[Math.max(0, onScreenOrder.length - TRIGGER_FROM_END)]?.id;
+  }, [groupedSections, nodes]);
   const renderTiles = (items: T[]) => (
     <TileGrid $columnCounts={columnCounts} $gap={tileGap}>
-      {items.map((item, i) => {
+      {items.map((item) => {
         const selectionId = item.id;
         const globalIndex = indexById.get(selectionId) ?? 0;
         const hasActions = selectableActions.some(
           (action) => action.operation == null || item.operations?.includes(action.operation),
         );
         const mediaItem = getMediaItem(item);
-        const isTrigger = i === items.length - TRIGGER_FROM_END;
+        const isTrigger = selectionId === triggerId;
         return (
           <MediaGridSelectableItem
             sentinelRef={isTrigger ? sentinelRef : undefined}
@@ -115,7 +124,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
 
   if (groupedSections) {
     return (
-      <GridRoot onClick={onGridClick}>
+      <GridRoot ref={gridRootRef} onClick={onGridClick}>
         {groupedSections.map((section) => (
           <MediaGridDateSection key={section.key} label={section.label} subtitle={section.subtitle}>
             {renderTiles(section.items)}
@@ -125,7 +134,11 @@ export const MediaGrid = <T extends ViewableItemVM>({
     );
   }
 
-  return <GridRoot onClick={onGridClick}>{renderTiles(nodes)}</GridRoot>;
+  return (
+    <GridRoot ref={gridRootRef} onClick={onGridClick}>
+      {renderTiles(nodes)}
+    </GridRoot>
+  );
 };
 
 const GridRoot = styled.div`

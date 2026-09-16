@@ -1,9 +1,10 @@
-import { useMutation } from '@apollo/client/react';
+import { useApolloClient, useMutation } from '@apollo/client/react';
 import { DateTime } from 'luxon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import styled, { createGlobalStyle, css } from 'styled-components';
+import { evictFieldOnCachedEntities } from '../../graphql/evictFieldOnCachedEntities';
 import { UpdateMediaItemDetailsDocument } from '../../graphql/generated/types';
 import type { MediaItemDetailVM } from '../../viewModels/';
 
@@ -19,6 +20,7 @@ export const MediaItemDetailForm = ({
   onSaved,
   onFinishEditing,
 }: MediaItemDetailFormProps) => {
+  const client = useApolloClient();
   const [updateMediaItemDetails, { loading: saveLoading }] = useMutation(
     UpdateMediaItemDetailsDocument,
   );
@@ -63,18 +65,28 @@ export const MediaItemDetailForm = ({
         setSaveError('Could not save changes.');
         return;
       }
+      if (draftTakenLocal?.toMillis() !== mediaItem.takenAt?.toMillis()) {
+        // takenAt drives list order (Library and album "taken date" sort). Cached lists would
+        // keep the item in its old position, and grids may serve those lists from cache on
+        // back navigation, so drop every cached list the item can appear in. The photo can be
+        // in several albums: enumerate every normalized Album (and Viewer) in the store.
+        evictFieldOnCachedEntities(client, 'Viewer', 'mediaItems');
+        evictFieldOnCachedEntities(client, 'Album', 'items');
+      }
       await onSaved();
       onFinishEditing();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Could not save changes.');
     }
   }, [
+    client,
     draftDescription,
     draftTakenLocal,
     draftTitle,
     onFinishEditing,
     onSaved,
     mediaItem.id,
+    mediaItem.takenAt,
     updateMediaItemDetails,
   ]);
 

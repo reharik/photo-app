@@ -1,8 +1,7 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { EntityType, FrontendUploadStatus, Operation } from '@packages/contracts';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EntityType, Operation } from '@packages/contracts';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import {
   AddMediaItemsToAlbumDocument,
   type AddMediaItemsToAlbumMutation,
@@ -27,6 +26,7 @@ import { NamedGroupStrategy } from './grid/groupBy/groupByStrategyTypes';
 import { makeDateStrategy } from './grid/groupBy/makeDateStrategy';
 import { MediaGrid } from './grid/MediaGrid';
 import { MediaGridTile } from './grid/MediaGridTile';
+import { mediaGridRestorationKeys } from './grid/useMediaGridScrollRestoration';
 import {
   LIBRARY_SELECTION_TOOLBAR_SLOT_HEIGHT,
   LibrarySelectionToolbar,
@@ -97,17 +97,6 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
       nodes,
       actions: selectableActions,
     });
-
-  const { items } = useUploadQueue();
-
-  useEffect(() => {
-    const newlyReadyForThisAlbum = items.filter((item) =>
-      item.status.equals(FrontendUploadStatus.ready),
-    );
-    if (newlyReadyForThisAlbum.length > 0) {
-      void reloadData();
-    }
-  }, [items, reloadData]);
 
   const submitDeleteMedia = async (): Promise<void> => {
     const result = await executeDelete(
@@ -186,7 +175,7 @@ export const LibrarySection = ({ nodes, paging, reloadData }: LibrarySectionProp
               nodes={nodes}
               paging={paging}
               scrollRootRef={scrollRootRef}
-              scrollRestorationKey="library"
+              scrollRestorationKey={mediaGridRestorationKeys.library}
               multiSelectProps={multiSelectProps}
               selectableActions={selectableActions}
               selectionActive={selectionCount > 0}

@@ -11,7 +11,7 @@ const activitySurfaceInput = ['albums', 'recent', 'sharedAlbums'] as const;
 const albumItemSortByInput = {
   createdAt: { column: 'created_at', table: 'album_item', nullsLast: 'false' },
   orderIndex: { column: 'order_index', table: 'album_item', nullsLast: 'false' },
-  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
+  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'false' },
 } as const;
 const albumMemberSortByInput = {
   role: { column: 'role', table: 'album_member', nullsLast: 'true' },
@@ -47,7 +47,7 @@ const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = {
   createdAt: { column: 'created_at', table: 'media_item', nullsLast: 'false' },
-  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
+  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'false' },
 } as const;
 const mediaKindInput = ['photo', 'video'] as const;
 const sharedWithMeAlbumSortByInput = {

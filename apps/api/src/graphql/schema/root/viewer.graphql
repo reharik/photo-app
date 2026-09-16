@@ -84,7 +84,7 @@ enum MediaItemSortBy {
       props: [
         { name: "column", value: "taken_at" }
         { name: "table", value: "media_item" }
-        { name: "nullsLast", value: "true" }
+        { name: "nullsLast", value: "false" }
       ]
     )
 }

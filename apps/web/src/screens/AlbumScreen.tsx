@@ -1,10 +1,14 @@
 import { useApolloClient, useQuery } from '@apollo/client/react';
 import { AlbumItemSortBy, EntityType, InAppNotificationType, SortDir } from '@packages/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { AlbumSection } from '../features/albums/AlbumSection';
 import type { AlbumGroupBy } from '../features/albums/AlbumSectionMetadata';
+import {
+  mediaGridRestorationKeys,
+  useRestoreAwareFetchPolicy,
+} from '../features/media/grid/useMediaGridScrollRestoration';
 import {
   AddMediaItemsToAlbumDocument,
   AddMediaItemsToAlbumMutation,
@@ -25,6 +29,10 @@ import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFi
 import { useInAppNotification } from '../hooks/useInAppNotification';
 import { Toast } from '../ui/Toast';
 
+/** URL search params for the album view; defaults (ungrouped, newest first) are omitted. */
+const GROUP_PARAM = 'group';
+const SORT_PARAM = 'sort';
+
 export const AlbumScreen = () => {
   const { albumId } = useParams<{ albumId: string }>();
   const [addAlbumItemModalOpen, setAddAlbumItemModalOpen] = useState(false);
@@ -38,9 +46,49 @@ export const AlbumScreen = () => {
   const apolloClient = useApolloClient();
   const { anyUnseenMatching } = useInAppNotification();
   const markedSeenAlbumIdRef = useRef<string | null>(null);
-  const [groupBy, setGroupBy] = useState<AlbumGroupBy>('ungrouped');
-  const [sortDir, setSortDir] = useState<SortDir>(SortDir.desc);
-  const sortParamsInitialized = useRef(false);
+  // The view (grouping + sort direction) lives in the URL and is the source of truth for the
+  // query variables, so back navigation remounts with the same view — and therefore reads the
+  // same cached list (Album.items is keyed by sort) and can take the serve-from-cache path.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const groupBy: AlbumGroupBy =
+    searchParams.get(GROUP_PARAM) === 'takenDate' ? 'takenDate' : 'ungrouped';
+  const sortDir: SortDir = searchParams.get(SORT_PARAM) === 'asc' ? SortDir.asc : SortDir.desc;
+
+  const handleGroupByChange = useCallback(
+    (next: AlbumGroupBy): void => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (next === 'ungrouped') {
+            params.delete(GROUP_PARAM);
+          } else {
+            params.set(GROUP_PARAM, next);
+          }
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const handleSortDirChange = useCallback(
+    (next: SortDir): void => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (next.equals(SortDir.desc)) {
+            params.delete(SORT_PARAM);
+          } else {
+            params.set(SORT_PARAM, 'asc');
+          }
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   const buildPageVariables = useCallback(
     (offset: number, limit: number = DEFAULT_PAGE_SIZE) => {
@@ -57,11 +105,18 @@ export const AlbumScreen = () => {
   );
 
   // Keyed like Album.items keyArgs (sort only), plus the album.
-  const firstPageLimit = useCachedFirstPageLimit({
+  const { limit: firstPageLimit, cachedCount } = useCachedFirstPageLimit({
     query: ViewerAlbumDetailDocument,
     firstPageVariables: buildPageVariables(0),
     countCachedNodes: (data) => data.viewer?.album?.items?.nodes.length,
     cacheKey: `${albumId}:${groupBy}:${sortDir.value}`,
+  });
+  // Decided once per mount. On a sort change Apollo's string nextFetchPolicy resets to the
+  // initial fetch policy ("variables-changed"); the sort-change effect's explicit refetch is
+  // what forces the network.
+  const { fetchPolicy, nextFetchPolicy } = useRestoreAwareFetchPolicy({
+    restorationKey: mediaGridRestorationKeys.album(albumId ?? ''),
+    cachedCount,
   });
 
   const query = useQuery(ViewerAlbumDetailDocument, {
@@ -69,8 +124,8 @@ export const AlbumScreen = () => {
       ...buildPageVariables(0, firstPageLimit),
     },
     skip: !albumId,
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-and-network',
+    fetchPolicy,
+    nextFetchPolicy,
     // MediaGrid scroll restoration's settle detection (paging.isSettled) depends on this.
     notifyOnNetworkStatusChange: true,
   });
@@ -97,11 +152,17 @@ export const AlbumScreen = () => {
     buildPageVariables,
   });
 
+  // Refetch only when the (URL-parsed) sort actually changes. Compared against the previous
+  // values rather than a first-run flag: StrictMode re-runs mount effects, and with a flag
+  // that second run forced a network refetch that replaced a cache-served list with one
+  // capped page.
+  const lastSortRef = useRef({ groupBy, sortDir });
   useEffect(() => {
-    if (!sortParamsInitialized.current) {
-      sortParamsInitialized.current = true;
+    const last = lastSortRef.current;
+    if (last.groupBy === groupBy && last.sortDir.equals(sortDir)) {
       return;
     }
+    lastSortRef.current = { groupBy, sortDir };
     void query.refetch(buildPageVariables(0, firstPageLimit));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupBy, sortDir]); // ONLY sort inputs — not query, not buildPageVariables
@@ -287,8 +348,8 @@ export const AlbumScreen = () => {
           totalCount={totalCount}
           groupBy={groupBy}
           sortDir={sortDir}
-          onGroupByChange={setGroupBy}
-          onSortDirChange={setSortDir}
+          onGroupByChange={handleGroupByChange}
+          onSortDirChange={handleSortDirChange}
           addAlbumItemState={addAlbumItemState}
           removeAlbumItemState={removeAlbumItemState}
           modalState={modalState}

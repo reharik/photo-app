@@ -3,6 +3,10 @@ import { AlbumItemSortBy, SortDir } from '@packages/contracts';
 import { useCallback, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import styled from 'styled-components';
+import {
+  mediaGridRestorationKeys,
+  useRestoreAwareFetchPolicy,
+} from '../features/media/grid/useMediaGridScrollRestoration';
 import { PublicAlbumSection } from '../features/public/PublicAlbumSection';
 import { PublicAlbumViewDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
@@ -24,18 +28,22 @@ export const PublicAlbumScreen = () => {
     }),
     [],
   );
-  const firstPageLimit = useCachedFirstPageLimit({
+  const { limit: firstPageLimit, cachedCount } = useCachedFirstPageLimit({
     query: PublicAlbumViewDocument,
     firstPageVariables: buildPageVariables(0),
     countCachedNodes: (data) => data.publicAccess?.album?.items?.nodes.length,
     cacheKey: `public-album:${token}`,
   });
+  const { fetchPolicy, nextFetchPolicy } = useRestoreAwareFetchPolicy({
+    restorationKey: mediaGridRestorationKeys.publicAlbum(token ?? ''),
+    cachedCount,
+  });
   const query = useQuery(PublicAlbumViewDocument, {
     variables: {
       ...buildPageVariables(0, firstPageLimit),
     },
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-and-network',
+    fetchPolicy,
+    nextFetchPolicy,
     // MediaGrid scroll restoration's settle detection (paging.isSettled) depends on this.
     notifyOnNetworkStatusChange: true,
     context: { accessMode: 'public' },
