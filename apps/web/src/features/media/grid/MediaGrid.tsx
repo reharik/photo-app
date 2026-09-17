@@ -1,4 +1,4 @@
-import { RefObject, useMemo, type ReactNode } from 'react';
+import { RefObject, useMemo, useRef, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { PagingState } from '../../../hooks/getPaginatedQueryRenderState';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
@@ -10,6 +10,7 @@ import { MediaGridDateSection } from './MediaGridDateSection';
 import { MediaGridSelectableItem } from './MediaGridSelectableItem';
 import type { MultiSelectProps } from './types';
 import { GridMediaItem } from './types';
+import { useMediaGridScrollRestoration } from './useMediaGridScrollRestoration';
 
 export type MediaGridRenderContext = {
   mediaGalleryIds: string[];
@@ -34,6 +35,11 @@ type MediaGridProps<T extends ViewableItemVM> = {
   tileGap?: string;
   paging?: PagingState;
   scrollRootRef?: RefObject<HTMLDivElement | null>;
+  /**
+   * Opt-in: when set, returning to this grid via history scrolls back to the tile that was
+   * opened. Must be unique per gallery (e.g. `album:${id}`); pickers leave it unset.
+   */
+  scrollRestorationKey?: string;
 };
 
 export const MediaGrid = <T extends ViewableItemVM>({
@@ -51,28 +57,46 @@ export const MediaGrid = <T extends ViewableItemVM>({
   showSelectionToggle = true,
   tileGap,
   scrollRootRef,
+  scrollRestorationKey,
 }: MediaGridProps<T>) => {
+  const gridRootRef = useRef<HTMLDivElement>(null);
+  const { onGridClick } = useMediaGridScrollRestoration({
+    restorationKey: scrollRestorationKey,
+    scrollRootRef,
+    gridRootRef,
+    nodeCount: nodes.length,
+    paging,
+  });
   const orderedMediaIds = useMemo(
     () => nodes.map((node) => getMediaItem(node)?.id).filter((id): id is string => id != null),
     [nodes, getMediaItem],
   );
   const { sentinelRef } = useInfiniteScroll({
-    ...(paging ? paging : { hasMore: false, isLoadingMore: false, loadMore: () => {} }),
+    ...(paging
+      ? paging
+      : { hasMore: false, isLoadingMore: false, isSettled: true, loadMore: () => {} }),
     scrollRootRef,
+    itemCount: nodes.length,
   });
 
   const indexById = useMemo(() => new Map(nodes.map((node, index) => [node.id, index])), [nodes]);
   const TRIGGER_FROM_END = 8; // at 20/page; tune by feel
+  // Exactly one sentinel, picked in on-screen order: sections can be sorted differently
+  // from fetch order, so per-section or `nodes`-order triggers can land far above the bottom.
+  const triggerId = useMemo(() => {
+    const onScreenOrder = groupedSections?.flatMap((section) => section.items) ?? nodes;
+    return onScreenOrder[Math.max(0, onScreenOrder.length - TRIGGER_FROM_END)]?.id;
+  }, [groupedSections, nodes]);
   const renderTiles = (items: T[]) => (
     <TileGrid $columnCounts={columnCounts} $gap={tileGap}>
-      {items.map((item, i) => {
+      {items.map((item) => {
         const selectionId = item.id;
         const globalIndex = indexById.get(selectionId) ?? 0;
         const hasActions = selectableActions.some(
           (action) => action.operation == null || item.operations?.includes(action.operation),
         );
         const mediaItem = getMediaItem(item);
-        const isTrigger = i === items.length - TRIGGER_FROM_END;
+        const isTrigger = selectionId === triggerId;
         return (
           <MediaGridSelectableItem
             sentinelRef={isTrigger ? sentinelRef : undefined}
@@ -100,7 +124,7 @@ export const MediaGrid = <T extends ViewableItemVM>({
 
   if (groupedSections) {
     return (
-      <GridRoot>
+      <GridRoot ref={gridRootRef} onClick={onGridClick}>
         {groupedSections.map((section) => (
           <MediaGridDateSection key={section.key} label={section.label} subtitle={section.subtitle}>
             {renderTiles(section.items)}
@@ -110,7 +134,11 @@ export const MediaGrid = <T extends ViewableItemVM>({
     );
   }
 
-  return <GridRoot>{renderTiles(nodes)}</GridRoot>;
+  return (
+    <GridRoot ref={gridRootRef} onClick={onGridClick}>
+      {renderTiles(nodes)}
+    </GridRoot>
+  );
 };
 
 const GridRoot = styled.div`

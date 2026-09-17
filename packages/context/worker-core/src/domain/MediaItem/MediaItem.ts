@@ -31,6 +31,7 @@ export type MediaItemProps = Omit<CreateMediaItemInput, 'status' | 'takenAt'> & 
   status: MediaItemStatus;
   takenAt?: Date | null;
   takenAtUtcOffsetMinutes?: number | null;
+  mimeType?: string;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -141,6 +142,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     this.props.width = w;
     this.props.height = h;
     this.props.status = MediaItemStatus.ready;
+    this.props.mimeType = original.mimeType();
     this.touch(actorId);
     return ok(undefined);
   }

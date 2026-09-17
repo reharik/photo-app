@@ -22,8 +22,12 @@ import {
 } from '../application/UploadMediaItemQueue/mediaUploadTypes';
 import { mediaUploadWorkflow } from '../application/UploadMediaItemQueue/mediaUploadWorkflow';
 import { workflowEventToQueueAction } from '../application/UploadMediaItemQueue/workflowEventToQueueAction';
+import { evictFieldOnCachedEntities } from '../graphql/evictFieldOnCachedEntities';
 
 const UploadQueueContext = createContext<UploadQueueContextValue | null>(null);
+
+/** Trailing debounce for coalescing cache evictions across a batch of uploads going ready. */
+const EVICTION_DEBOUNCE_MS = 1000;
 export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
   const client = useApolloClient();
 
@@ -94,6 +98,77 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
   // so we don't double-start polling for the same item across re-renders.
   const polledIdsRef = useRef<Set<string>>(new Set());
 
+  // Cache eviction when uploads become ready, coalesced. Library/album lists only contain
+  // server-ready items, so "ready" is when cached lists go stale. Evicting makes a mounted
+  // grid refetch on its own (Apollo cache miss → network, previous data kept while
+  // loading) and makes an unmounted one skip the serve-from-cache path on back navigation.
+  // Each eviction of a mounted list costs a refetch that trims it to the first-page limit,
+  // so a batch upload collects what to evict and flushes once: ~1s after the last item goes
+  // ready, or immediately when nothing else in the queue is still on its way to ready.
+  const itemsRef = useRef(state.items);
+  itemsRef.current = state.items;
+  const readyMediaItemIdsRef = useRef<Set<string>>(new Set());
+  const pendingEvictLibraryRef = useRef(false);
+  const pendingEvictAlbumIdsRef = useRef<Set<string>>(new Set());
+  const evictFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushEvictions = useCallback((): void => {
+    if (evictFlushTimerRef.current != null) {
+      clearTimeout(evictFlushTimerRef.current);
+      evictFlushTimerRef.current = null;
+    }
+    if (pendingEvictLibraryRef.current) {
+      pendingEvictLibraryRef.current = false;
+      // All sort variants on every cached Viewer.
+      evictFieldOnCachedEntities(client, 'Viewer', 'mediaItems');
+    }
+    for (const albumId of pendingEvictAlbumIdsRef.current) {
+      const albumCacheId = client.cache.identify({ __typename: 'Album', id: albumId });
+      if (albumCacheId != null) {
+        client.cache.evict({ id: albumCacheId, fieldName: 'items' });
+      }
+    }
+    pendingEvictAlbumIdsRef.current.clear();
+  }, [client]);
+
+  const scheduleEvictionsForReadyItem = useCallback(
+    (mediaItemId: string): void => {
+      readyMediaItemIdsRef.current.add(mediaItemId);
+      pendingEvictLibraryRef.current = true;
+      const albumId = itemsRef.current.find((item) => item.mediaItemId === mediaItemId)?.albumId;
+      if (albumId != null) {
+        pendingEvictAlbumIdsRef.current.add(albumId);
+      }
+
+      // "Still on its way to ready": uploading (in flight) or finalized and awaiting server
+      // processing (complete). Items already reported ready this session are excluded, since
+      // itemsRef may not reflect their markReady dispatch yet.
+      const anyStillPending = itemsRef.current.some(
+        (item) =>
+          (isInFlightStatus(item.status) || item.status.equals(FrontendUploadStatus.complete)) &&
+          !(item.mediaItemId != null && readyMediaItemIdsRef.current.has(item.mediaItemId)),
+      );
+      if (!anyStillPending) {
+        flushEvictions();
+        return;
+      }
+      if (evictFlushTimerRef.current != null) {
+        clearTimeout(evictFlushTimerRef.current);
+      }
+      evictFlushTimerRef.current = setTimeout(flushEvictions, EVICTION_DEBOUNCE_MS);
+    },
+    [flushEvictions],
+  );
+
+  useEffect(
+    () => () => {
+      if (evictFlushTimerRef.current != null) {
+        clearTimeout(evictFlushTimerRef.current);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     const newlyComplete = state.items.filter(
       (item) =>
@@ -110,12 +185,13 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
     void awaitMediaItemsReady(client, ids, {
       onItemReady: (mediaItemId) => {
         dispatch({ type: 'markReady', payload: { mediaItemId } });
+        scheduleEvictionsForReadyItem(mediaItemId);
       },
       onItemFailed: (mediaItemId) => {
         dispatch({ type: 'markFailed', payload: { mediaItemId } });
       },
     });
-  }, [state.items, client]);
+  }, [state.items, client, scheduleEvictionsForReadyItem]);
 
   const value = useMemo(
     () => ({

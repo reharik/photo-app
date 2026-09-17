@@ -9,16 +9,16 @@ import { enumeration, type Enumeration } from '@reharik/smart-enum';
 
 const activitySurfaceInput = ['albums', 'recent', 'sharedAlbums'] as const;
 const albumItemSortByInput = {
-  createdAt: { column: 'created_at', table: 'album_item', nullsLast: 'false' },
-  orderIndex: { column: 'order_index', table: 'album_item', nullsLast: 'false' },
-  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
+  createdAt: { column: 'created_at', table: 'album_item', nulls: 'first' },
+  orderIndex: { column: 'order_index', table: 'album_item', nulls: 'first' },
+  takenAt: { column: 'taken_at', table: 'media_item', nulls: 'first' },
 } as const;
 const albumMemberSortByInput = {
-  role: { column: 'role', table: 'album_member', nullsLast: 'true' },
+  role: { column: 'role', table: 'album_member', nulls: 'last' },
 } as const;
 const albumSortByInput = {
-  createdAt: { column: 'created_at', table: 'album', nullsLast: 'false' },
-  title: { column: 'title', table: 'album', nullsLast: 'true' },
+  createdAt: { column: 'created_at', table: 'album', nulls: 'first' },
+  title: { column: 'title', table: 'album', nulls: 'last' },
 } as const;
 const emailDeliveryStateInput = ['delivered', 'failed', 'pending'] as const;
 const entityTypeInput = [
@@ -46,12 +46,12 @@ const inAppNotificationTypeInput = [
 const mediaAssetKindInput = ['display', 'original', 'thumbnail'] as const;
 const mediaAssetStatusInput = ['failed', 'pending', 'processing', 'ready'] as const;
 const mediaItemSortByInput = {
-  createdAt: { column: 'created_at', table: 'media_item', nullsLast: 'false' },
-  takenAt: { column: 'taken_at', table: 'media_item', nullsLast: 'true' },
+  createdAt: { column: 'created_at', table: 'media_item', nulls: 'first' },
+  takenAt: { column: 'taken_at', table: 'media_item', nulls: 'first' },
 } as const;
 const mediaKindInput = ['photo', 'video'] as const;
 const sharedWithMeAlbumSortByInput = {
-  sharedAt: { column: 'created_at', table: 'access_grant', nullsLast: 'true' },
+  sharedAt: { column: 'created_at', table: 'access_grant', nulls: 'last' },
 } as const;
 const sortDirInput = ['asc', 'desc'] as const;
 

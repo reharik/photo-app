@@ -73,7 +73,14 @@ export const apolloClient = new ApolloClient({
             // exposed on these fields; without that, switching sort order will
             // append rather than replace.
             albums: nestedPagePagination(),
-            mediaItems: nestedPagePagination(),
+            // Keyed by sort: Library (takenAt) and the add-to-album picker (createdAt)
+            // query this field with different orders and must not share one list.
+            // JSON.stringify, not template interpolation: sort args may be smart-enum
+            // instances, which have toJSON but no toString ("[object Object]").
+            mediaItems: nestedPagePagination(
+              (args) =>
+                `s:${JSON.stringify(args?.input?.collectionInfo?.sortBy)}:${JSON.stringify(args?.input?.collectionInfo?.sortDir)}`,
+            ),
             sharedWithMeAlbums: nestedPagePagination(),
 
             // Viewer-level unseen-activity array — every dot/bold on every screen
@@ -104,9 +111,12 @@ export const apolloClient = new ApolloClient({
         Album: {
           keyFields: ['id'],
           fields: {
+            // JSON.stringify, not template interpolation: the sort args arrive as smart-enum
+            // instances (variables pass through to keyArgs untouched), which have toJSON but
+            // no toString — interpolation made every sort "[object Object]" and shared one list.
             items: nestedPagePagination(
               (args) =>
-                `s:${args?.input?.collectionInfo?.sortBy}:${args?.input?.collectionInfo?.sortDir}`,
+                `s:${JSON.stringify(args?.input?.collectionInfo?.sortBy)}:${JSON.stringify(args?.input?.collectionInfo?.sortDir)}`,
             ),
             // and comments if applicable
           },

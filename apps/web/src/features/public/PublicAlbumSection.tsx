@@ -10,6 +10,7 @@ import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
+import { mediaGridRestorationKeys } from '../media/grid/useMediaGridScrollRestoration';
 import { PublicAlbumHeader } from './PublicAlbumHeader';
 import { PUBLIC_OFFER_BAR_HEIGHT_PX, PublicAlbumOfferBar } from './PublicAlbumOfferBar';
 
@@ -92,6 +93,8 @@ export const PublicAlbumSection = ({
               nodes={albumItems}
               paging={paging}
               scrollRootRef={albumScrollRef}
+              // Keyed by share token: PublicAlbumScreen decides its fetch policy before the album id is known.
+              scrollRestorationKey={mediaGridRestorationKeys.publicAlbum(token ?? '')}
               getMediaItem={(item) => item.mediaItem}
               multiSelectProps={noopMultiSelect}
               selectableActions={[]}

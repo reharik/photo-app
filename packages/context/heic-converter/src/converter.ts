@@ -16,7 +16,7 @@ import pino, { type Logger } from 'pino';
 
 import { ConversionError } from './errors.js';
 
-const SUPPORTED_BRANDS = new Set(['heic', 'heix', 'mif1', 'msf1']);
+const SUPPORTED_BRANDS = new Set(['heic', 'heix', 'mif1', 'msf1', 'hevc', 'hevx']);
 
 const defaultLogger = pino({
   name: 'heic-converter',

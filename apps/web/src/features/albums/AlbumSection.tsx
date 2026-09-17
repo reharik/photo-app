@@ -1,8 +1,7 @@
-import { EntityType, FrontendUploadStatus, Operation, SortDir } from '@packages/contracts';
+import { EntityType, Operation, SortDir } from '@packages/contracts';
 import { ArrowUpRight } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { PagingState } from '../../hooks/getPaginatedQueryRenderState';
 import { UseAppMutationStateResult } from '../../hooks/useAppMutation';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
@@ -19,6 +18,7 @@ import { ALBUM_GRID_COLUMNS } from '../media/grid/gridColumns';
 import { groupByTakenDatePreservingOrder } from '../media/grid/groupBy/makeDateStrategy';
 import { MediaGrid } from '../media/grid/MediaGrid';
 import { MediaGridTile } from '../media/grid/MediaGridTile';
+import { mediaGridRestorationKeys } from '../media/grid/useMediaGridScrollRestoration';
 import { MediaSelectorSection } from '../media/MediaSelectorSection';
 import { ShareAlbumModal } from '../sharing/shareAlbum/ShareAlbumModal';
 import { ShellNavIconButton } from '../shell/ShellNavIconButton';
@@ -118,7 +118,16 @@ export const AlbumSection = ({
     }
   }, [isMobileAlbum]);
 
+  // Reset to top only when the sort actually changes — not on mount, where it would undo
+  // MediaGrid's pre-paint scroll restoration. Compared against previous values (not a
+  // first-run flag) so StrictMode's effect double-invoke doesn't count as a change.
+  const lastSortRef = useRef({ groupBy, sortDir });
   useEffect(() => {
+    const last = lastSortRef.current;
+    if (last.groupBy === groupBy && last.sortDir.equals(sortDir)) {
+      return;
+    }
+    lastSortRef.current = { groupBy, sortDir };
     const el = albumScrollRef.current;
     if (el == null) {
       return;
@@ -133,17 +142,6 @@ export const AlbumSection = ({
     () => (groupBy === 'takenDate' ? takenDateSections : undefined),
     [groupBy, takenDateSections],
   );
-
-  const { items } = useUploadQueue();
-
-  useEffect(() => {
-    if (
-      items.some(
-        (item) => item.status.equals(FrontendUploadStatus.ready) && item.albumId === album.id,
-      )
-    )
-      void reloadData();
-  }, [items, album.id, reloadData]);
 
   const albumHeaderActions = isMobileAlbum ? (
     <>
@@ -250,6 +248,7 @@ export const AlbumSection = ({
               columnCounts={ALBUM_GRID_COLUMNS}
               groupedSections={groupedSections}
               scrollRootRef={albumScrollRef}
+              scrollRestorationKey={mediaGridRestorationKeys.album(album.id)}
               renderItem={(item, ctx) => (
                 <MediaGridTile
                   item={item.mediaItem}

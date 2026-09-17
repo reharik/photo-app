@@ -13,6 +13,7 @@ import {
   type EditCommentMutation,
   MarkItemsSeenDocument,
   ViewerInAppNotificationDocument,
+  ViewerMediaItemDetailDocument,
 } from '../../graphql/generated/types';
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
@@ -115,6 +116,13 @@ export const CommentsForViewerMediaItemContainer = ({
     [addMutation.errors, editMutation.errors, deleteMutation.errors],
   );
 
+  // The comment count on grid tiles comes from MediaItem.reactionCounts, which the comments
+  // query doesn't select. Refetching the active detail query rewrites the shared
+  // MediaItem entity, so cached grid lists show the new count without their own refetch.
+  const refetchMediaItemDetail = useCallback(async (): Promise<void> => {
+    await apolloClient.refetchQueries({ include: [ViewerMediaItemDetailDocument] });
+  }, [apolloClient]);
+
   const handleAddComment = useCallback(
     async (body: string, parentCommentId?: string): Promise<void> => {
       const result = await addMutation.execute(
@@ -132,10 +140,10 @@ export const CommentsForViewerMediaItemContainer = ({
         (mutationData: AddCommentMutation) => mutationData.addComment,
       );
       if (result.success) {
-        await query.refetch();
+        await Promise.all([query.refetch(), refetchMediaItemDetail()]);
       }
     },
-    [addMutation, mediaItemId, query],
+    [addMutation, mediaItemId, query, refetchMediaItemDetail],
   );
 
   const handleEditComment = useCallback(
@@ -150,10 +158,10 @@ export const CommentsForViewerMediaItemContainer = ({
         (mutationData: EditCommentMutation) => mutationData.editComment,
       );
       if (result.success) {
-        await query.refetch();
+        await Promise.all([query.refetch(), refetchMediaItemDetail()]);
       }
     },
-    [editMutation, query],
+    [editMutation, query, refetchMediaItemDetail],
   );
 
   const handleDeleteComment = useCallback(
@@ -170,13 +178,13 @@ export const CommentsForViewerMediaItemContainer = ({
           (mutationData: DeleteCommentMutation) => mutationData.deleteComment,
         );
         if (result.success) {
-          await query.refetch();
+          await Promise.all([query.refetch(), refetchMediaItemDetail()]);
         }
       } finally {
         setDeletingCommentId(undefined);
       }
     },
-    [deleteMutation, query],
+    [deleteMutation, query, refetchMediaItemDetail],
   );
   if (!comments) {
     return <>{content}</>;

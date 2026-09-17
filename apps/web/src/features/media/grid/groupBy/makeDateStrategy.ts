@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { formatActivityDate, formatActivityMonthYear } from '../../../../ui/dateDisplay';
-import { groupNodes, groupNodesByEncounterOrder } from './groupByStrategy';
+import { groupNodesByEncounterOrder } from './groupByStrategy';
 import {
   GroupResult,
   MediaGridDateBucketKey,
@@ -131,11 +131,13 @@ export const makeDateStrategy = <T>(
   now: DateTime = DateTime.now(),
 ): NamedGroupStrategy<T> => ({
   key,
+  // Sections follow fetch (server sort) order so appended pages always land at the bottom.
+  // Orphans (no date) are still pinned to the top; the server sorts them NULLS FIRST.
   group: (nodes) =>
-    groupNodes<T, DateTime, MediaGridDateBucketKey>(
-      nodes,
-      buildTakenDateGroupStrategy(extract, now),
-    ),
+    groupNodesByEncounterOrder<T, DateTime, MediaGridDateBucketKey>(nodes, {
+      ...buildTakenDateGroupStrategy(extract, now),
+      orphanLabel: 'No date',
+    }),
 });
 
 /** Preserve server sort order; null takenAt → single "Unknown date" section pinned to top. */

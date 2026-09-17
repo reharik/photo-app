@@ -23,6 +23,6 @@ export const build__StalledMediaJobSweepTask = ({
 }: StalledMediaJobSweepTaskDeps): StalledMediaJobSweepTask => ({
   name: 'stalledMediaJobSweep',
   type: 'schedule',
-  cadence: SweepCadence.slow,
+  cadence: SweepCadence.fast,
   run: async () => stalledMediaJobSweep(),
 });

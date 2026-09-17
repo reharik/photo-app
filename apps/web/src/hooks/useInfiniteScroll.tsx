@@ -6,12 +6,15 @@ export const useInfiniteScroll = ({
   loadMore,
   rootMargin = '100px',
   scrollRootRef,
+  itemCount,
 }: {
   hasMore: boolean;
   isLoadingMore: boolean;
   loadMore: () => void;
   rootMargin?: string;
   scrollRootRef?: RefObject<HTMLDivElement | null>;
+  /** Changing this re-creates the observer, so every page gets a fresh initial intersection check. */
+  itemCount: number;
 }) => {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -19,8 +22,10 @@ export const useInfiniteScroll = ({
   stateRef.current = { hasMore, isLoadingMore, loadMore };
 
   // Callback ref: attaches to whichever item is currently Nth-from-end.
-  // Re-runs each time that node changes (i.e. every page), so the observer
-  // always watches the live trigger element, never a stale one.
+  // Re-runs when that node changes AND when itemCount changes (new callback identity →
+  // React detaches and re-attaches). A fresh observe() always delivers an initial
+  // entry, so a trigger that stayed in view across a page load still fires, and the
+  // root picks up scrollRootRef once it is set (it is null on first mount).
   const sentinelRef = useCallback(
     (node: HTMLElement | null) => {
       if (observerRef.current) {
@@ -40,7 +45,9 @@ export const useInfiniteScroll = ({
       );
       observerRef.current.observe(node);
     },
-    [rootMargin],
+    // itemCount is intentionally a dep only (not read): it forces re-observation per page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rootMargin, itemCount],
   );
 
   return { sentinelRef };

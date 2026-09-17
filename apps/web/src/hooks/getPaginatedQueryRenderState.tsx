@@ -6,6 +6,8 @@ export type PagingState = {
   loadMore: () => void;
   hasMore: boolean;
   isLoadingMore: boolean;
+  /** No request in flight for this query (initial load, refetch, or fetchMore). */
+  isSettled: boolean;
 };
 
 export type PagingStateResult<TData> = QueryStateResult<TData> & {
@@ -42,5 +44,7 @@ export const usePaginatedQueryRenderState = <
 
   const isLoadingMore = query.networkStatus === NetworkStatus.fetchMore;
 
-  return { ...base, paging: { loadMore, hasMore, isLoadingMore } };
+  const isSettled = !query.loading;
+
+  return { ...base, paging: { loadMore, hasMore, isLoadingMore, isSettled } };
 };

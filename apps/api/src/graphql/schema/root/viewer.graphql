@@ -76,7 +76,7 @@ enum MediaItemSortBy {
       props: [
         { name: "column", value: "created_at" }
         { name: "table", value: "media_item" }
-        { name: "nullsLast", value: "false" }
+        { name: "nulls", value: "first" }
       ]
     )
   TAKEN_AT
@@ -84,7 +84,7 @@ enum MediaItemSortBy {
       props: [
         { name: "column", value: "taken_at" }
         { name: "table", value: "media_item" }
-        { name: "nullsLast", value: "true" }
+        { name: "nulls", value: "first" }
       ]
     )
 }
@@ -101,7 +101,7 @@ enum AlbumSortBy {
       props: [
         { name: "column", value: "title" }
         { name: "table", value: "album" }
-        { name: "nullsLast", value: "true" }
+        { name: "nulls", value: "last" }
       ]
     )
   CREATED_AT
@@ -109,7 +109,7 @@ enum AlbumSortBy {
       props: [
         { name: "column", value: "created_at" }
         { name: "table", value: "album" }
-        { name: "nullsLast", value: "false" }
+        { name: "nulls", value: "first" }
       ]
     )
 }

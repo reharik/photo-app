@@ -106,6 +106,7 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 
       **Record the distinction, because the next reader will not re-derive it.** `Query`
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
       and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
       **nothing**. There is no text search, no date filter, no people filter, no
@@ -127,13 +128,42 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
                               invites a reader to picture a search box; today the honest answer is page N of a
                               paginated list sorted by title or creation date.
 >>>>>>> Stashed changes
+||||||| Stash base
+                  exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
+                  and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
+                  **nothing**. There is no text search, no date filter, no people filter, no
+                  free-text lookup of any kind. "Go looking for photos from a trip two years ago"
+                  invites a reader to picture a search box; today the honest answer is page N of a
+                  paginated list sorted by title or creation date.
+=======
+                              exposes exactly two fields, `publicAccess` and `viewer` (`schema.graphql:833-836`),
+                              and a grep of the whole generated schema for `search|filter|findBy|lookup` returns
+                              **nothing**. There is no text search, no date filter, no people filter, no
+                              free-text lookup of any kind. "Go looking for photos from a trip two years ago"
+                              invites a reader to picture a search box; today the honest answer is page N of a
+                              paginated list sorted by title or creation date.
+>>>>>>> Stashed changes
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       This is a **wording risk, not a false claim** — the sentence as written promises
       only findability, and that is true. Two things could break it: adding a search box
       to the page's implied contract by rewording the line, or letting album counts grow
       to where pagination stops being findability in practice. If search ever ships, this
       entry becomes moot. Until then, do not strengthen this sentence.
+||||||| Stash base
+                  This is a **wording risk, not a false claim** — the sentence as written promises
+                  only findability, and that is true. Two things could break it: adding a search box
+                  to the page's implied contract by rewording the line, or letting album counts grow
+                  to where pagination stops being findability in practice. If search ever ships, this
+                  entry becomes moot. Until then, do not strengthen this sentence.
+=======
+                              This is a **wording risk, not a false claim** — the sentence as written promises
+                              only findability, and that is true. Two things could break it: adding a search box
+                              to the page's implied contract by rewording the line, or letting album counts grow
+                              to where pagination stops being findability in practice. If search ever ships, this
+                              entry becomes moot. Until then, do not strengthen this sentence.
+>>>>>>> Stashed changes
 ||||||| Stash base
                   This is a **wording risk, not a false claim** — the sentence as written promises
                   only findability, and that is true. Two things could break it: adding a search box
@@ -251,6 +281,7 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
 
       **DECIDED (Phase 3): keep the sentence and build the feature.** This is now a
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
       committed deliverable, not an open question. The brief's gate — *only ship the
       last sentence if you mean it* — is answered "I mean it."
 ||||||| Stash base
@@ -260,7 +291,15 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       committed deliverable, not an open question. The brief's gate — *only ship the
       last sentence if you mean it* — is answered "I mean it."
 >>>>>>> Stashed changes
+||||||| Stash base
+                  committed deliverable, not an open question. The brief's gate — *only ship the
+                  last sentence if you mean it* — is answered "I mean it."
+=======
+                              committed deliverable, not an open question. The brief's gate — *only ship the
+                              last sentence if you mean it* — is answered "I mean it."
+>>>>>>> Stashed changes
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       **This box stays unchecked, and this claim blocks ship, until export exists.**
       Sketch of what that means: a bulk album (and whole-account) export. It fetches
@@ -269,6 +308,23 @@ Status as of Phase 2 (2026-09-03). Re-run this list before the Phase 5 flip.
       `QueueClaimable` patterns. Delivery is probably a signed URL to a generated
       archive, mailed via the existing notification path.
       **make-true**
+||||||| Stash base
+                  **This box stays unchecked, and this claim blocks ship, until export exists.**
+                  Sketch of what that means: a bulk album (and whole-account) export. It fetches
+                  originals from S3, so it belongs in `apps/media-worker` as a task rather than in a
+                  request — see the nested `apps/media-worker/CLAUDE.md` for the task-runner and
+                  `QueueClaimable` patterns. Delivery is probably a signed URL to a generated
+                  archive, mailed via the existing notification path.
+                  **make-true**
+=======
+                              **This box stays unchecked, and this claim blocks ship, until export exists.**
+                              Sketch of what that means: a bulk album (and whole-account) export. It fetches
+                              originals from S3, so it belongs in `apps/media-worker` as a task rather than in a
+                              request — see the nested `apps/media-worker/CLAUDE.md` for the task-runner and
+                              `QueueClaimable` patterns. Delivery is probably a signed URL to a generated
+                              archive, mailed via the existing notification path.
+                              **make-true**
+>>>>>>> Stashed changes
 ||||||| Stash base
                   **This box stays unchecked, and this claim blocks ship, until export exists.**
                   Sketch of what that means: a bulk album (and whole-account) export. It fetches

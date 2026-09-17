@@ -3,7 +3,7 @@ import { Knex } from 'knex';
 import { CollectionInfo } from '../../types';
 
 export const withCollectionInfo =
-  <T extends StandardEnumItem & { column: string; nullsLast: string; table: string }>(
+  <T extends StandardEnumItem & { column: string; nulls: string; table: string }>(
     db: Knex,
     collectionInfo: CollectionInfo<T>,
   ) =>
@@ -14,7 +14,7 @@ export const withCollectionInfo =
       .orderBy(
         `${collectionInfo.sortBy.table}.${collectionInfo.sortBy.column}`,
         collectionInfo.sortDir.value,
-        collectionInfo.sortBy.nullsLast === 'false' ? 'first' : 'last',
+        collectionInfo.sortBy.nulls,
       )
       .orderBy(`${collectionInfo.sortBy.table}.id`, 'asc');
   };
