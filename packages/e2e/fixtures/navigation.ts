@@ -73,6 +73,9 @@ export const expectAuthenticatedMediaDetailInaccessible = async (
 ): Promise<void> => {
   await page.goto(`/media/${mediaItemId}`);
   await expect(page).toHaveURL(new RegExp(`/media/${mediaItemId}(\\?.*)?$`));
+  // Assert the settled not-found state, not just absence — absence alone also passes on a
+  // spinner or a blank body.
+  await expect(page.getByText("This item isn't available")).toBeVisible();
   await expect(page.getByTestId(mediaItemId)).toHaveCount(0);
   await expect(page.getByLabel('Add a comment…')).toHaveCount(0);
 };

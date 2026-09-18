@@ -232,18 +232,6 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
       bankedEmail,
     );
 
-    // If the quiet pre-nav guard ever regresses into a swallowed AlbumScreen throw, the app logs
-    // "Album not found" from the error boundary. Capture it so we can prove the throw did NOT
-    // happen during the bounce.
-    const albumNotFoundLogs: string[] = [];
-    const record = (text: string) => {
-      if (text.includes('Album not found')) albumNotFoundLogs.push(text);
-    };
-    anonPage.on('console', (msg) => {
-      if (msg.type() === 'error') record(msg.text());
-    });
-    anonPage.on('pageerror', (err) => record(err.message));
-
     const wrongEmail = authTestEmail(prefixFor(uniqueSuffix), 'wrong');
 
     await test.step('open the public album and hand the offer a DIFFERENT email', async () => {
@@ -266,22 +254,20 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
     await test.step('she lands on "/" — quietly, via the guard, not a swallowed error', async () => {
       await expectLoggedIn(anonPage);
       await expect.poll(() => new URL(anonPage.url()).pathname).toBe('/');
-      // Not /albums/{id}, and no error-boundary fallback rendered during the bounce.
+      // Not /albums/{id}, and AlbumScreen's not-found state never rendered during the bounce —
+      // the bounce must be the pre-nav visibility guard, not AlbumScreen resolving a null album.
       await expect(anonPage).not.toHaveURL(new RegExp(`/albums/${albumId}`));
+      await expect(anonPage.getByText("This album isn't available")).toHaveCount(0);
       await expect(anonPage.getByText('Something went wrong')).toHaveCount(0);
-      expect(
-        albumNotFoundLogs,
-        'the bounce must be the pre-nav visibility guard, not a caught AlbumScreen throw',
-      ).toEqual([]);
     });
 
     await test.step('the album is GENUINELY inaccessible to this account (no grant, not a swallowed error)', async () => {
-      // Navigating directly bypasses the signup-screen guard and hits AlbumScreen, which throws
-      // "Album not found" when the viewer has no grant → error-boundary fallback + no items. This
-      // confirms the earlier bounce reflected real absence of a grant, not a silenced error on a
-      // grant that actually exists.
+      // Navigating directly bypasses the signup-screen guard and hits AlbumScreen, which renders
+      // its not-found state when the viewer has no grant (the API returns a null album) + no items.
+      // This confirms the earlier bounce reflected real absence of a grant, not a silenced error
+      // on a grant that actually exists.
       await anonPage.goto(`/albums/${albumId}`);
-      await expect(anonPage.getByText('Something went wrong')).toBeVisible();
+      await expect(anonPage.getByText("This album isn't available")).toBeVisible();
       await expect(anonPage.getByTestId(`media-tile-${a.id}`)).toHaveCount(0);
       await expect(anonPage.getByTestId(`media-tile-${b.id}`)).toHaveCount(0);
     });

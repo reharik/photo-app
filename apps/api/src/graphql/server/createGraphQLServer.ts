@@ -24,6 +24,7 @@ export interface GraphQLServer {
 
 interface GraphQLServerDeps {
   yogaApp: YogaApp;
+  config: Config;
 }
 
 type YogaAppDeps = {
@@ -42,11 +43,15 @@ export const build__YogaApp = ({
     schema,
     graphqlEndpoint: config.graphqlHttpPath,
     context: graphQlContextFactory,
+    landingPage: false,
   }) as YogaApp;
 };
 
-export const build__GraphQLServer = ({ yogaApp }: GraphQLServerDeps): GraphQLServer => {
-  return async (ctx: Koa.ParameterizedContext) => {
+export const build__GraphQLServer = ({ yogaApp, config }: GraphQLServerDeps): GraphQLServer => {
+  return async (ctx: Koa.ParameterizedContext, next: Koa.Next) => {
+    if (ctx.path !== config.graphqlHttpPath) {
+      return next();
+    }
     const response = await yogaApp.handleNodeRequestAndResponse(ctx.request, ctx.res, ctx);
     ctx.status = response.status;
 
