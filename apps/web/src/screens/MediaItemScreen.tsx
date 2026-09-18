@@ -19,6 +19,7 @@ import type {
 } from '../features/media/viewer/mediaViewerTypes';
 import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { NotFoundState } from '../ui/NotFoundState';
 import { Toast } from '../ui/Toast';
 
 /** Mobile stage chrome (close + action bar) is always visible — single-tap toggle is a no-op. */
@@ -162,10 +163,13 @@ export const MediaItemScreen = () => {
     ) : null;
 
   if (!mediaItem) {
+    // Settled with a null item = missing or not visible to this viewer (the API doesn't
+    // distinguish). getQueryRenderState yields no content for that case.
+    const isNotFound = query.data != null && query.data.viewer?.mediaItem == null;
     return (
       <>
         {neighborPrefetch}
-        {content}
+        {isNotFound ? <NotFoundState /> : content}
       </>
     );
   }

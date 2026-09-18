@@ -60,63 +60,8 @@ photos.backintouch.net {
 	}
 }
 
-# Live domain. Frontend still serves from /srv/homeroll (/opt/homeroll/frontend);
-# only the hostname stays betaname.app until homeroll.app DNS is acquired.
-betaname.app {
-	handle /api/* {
-		reverse_proxy localhost:3002 {
-			health_uri /health
-			health_interval 30s
-		}
-	}
-	handle /media/* {
-		header X-Robots-Tag "noindex, nofollow"
-		reverse_proxy localhost:3002 {
-			health_uri /health
-			health_interval 30s
-		}
-	}
-	# The marketing page now lives at /; keep its old URL from becoming a
-	# duplicate. Its own og:url already points at the root.
-	handle /landing.html {
-		redir / permanent
-	}
-	handle {
-		@shared path /shared/*
-		header @shared X-Robots-Tag "noindex, nofollow"
-		root * /srv/homeroll
-
-		# ROOT ONLY. Scoping this to `path /` is load-bearing: /shared/:token is
-		# public and unauthenticated, so those visitors carry no `token` cookie.
-		# A cookie matcher covering all paths would hand them the marketing page
-		# instead of the album they were sent -- silently. Every other path keeps
-		# falling through to try_files, so deep links and the SPA's own auth
-		# redirects are untouched.
-		#
-		# Cookie PRESENCE, not validity. An expired token reaches the app shell,
-		# which bounces to /login -- exactly what happens today, so no regression.
-		@landing {
-			path /
-			not header_regexp Cookie `(^|;\s*)token=`
-		}
-		rewrite @landing /landing.html
-
-		# Unchanged, and it is the safety net: if landing.html is ever missing
-		# (mid-deploy, say) this falls through to the app shell rather than 404ing.
-		try_files {path} /index.html
-		file_server
-	}
-}
-
 homeroll.app {
 	handle /api/* {
-		reverse_proxy localhost:3002 {
-			health_uri /health
-			health_interval 30s
-		}
-	}
-	handle /media/* {
-		header X-Robots-Tag "noindex, nofollow"
 		reverse_proxy localhost:3002 {
 			health_uri /health
 			health_interval 30s

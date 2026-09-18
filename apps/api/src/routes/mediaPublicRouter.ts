@@ -16,7 +16,7 @@ export const build__MediaPublicRouter = ({
 }: MediaPublicRouterDeps): MediaPublicRouter => {
   const router = new Router();
   router.get<{ mediaId: string; variant: string }>(
-    '/media/:mediaId/:variant',
+    '/api/media/:mediaId/:variant',
     mediaAuthMiddleware,
     mediaServeController.getMedia,
   );

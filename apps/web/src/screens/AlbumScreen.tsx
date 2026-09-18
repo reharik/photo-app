@@ -27,6 +27,7 @@ import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderSt
 import { useAppMutationState } from '../hooks/useAppMutation';
 import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFirstPageLimit';
 import { useInAppNotification } from '../hooks/useInAppNotification';
+import { NotFoundState } from '../ui/NotFoundState';
 import { Toast } from '../ui/Toast';
 
 /** URL search params for the album view; defaults (ungrouped, newest first) are omitted. */
@@ -139,7 +140,7 @@ export const AlbumScreen = () => {
     query,
     select: (data) => {
       if (!data.viewer?.album) {
-        throw new Error('Album not found');
+        return undefined;
       }
 
       const { items, ...album } = data.viewer.album;
@@ -254,7 +255,11 @@ export const AlbumScreen = () => {
     (item) => !albumMediaItemIds.has(item.id),
   );
   if (!album || !album?.id) {
-    return content;
+    // Settled with a null album = missing or not visible to this viewer (the API doesn't
+    // distinguish). Previously select threw here and the app error boundary rendered
+    // "Something went wrong".
+    const isNotFound = query.data != null && query.data.viewer?.album == null;
+    return isNotFound ? <NotFoundState title="This album isn't available" /> : content;
   }
 
   const submitAddToAlbum = async (newAlbumItemIds: string[]) => {

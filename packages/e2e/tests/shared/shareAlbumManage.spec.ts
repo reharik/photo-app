@@ -54,7 +54,7 @@ test.describe('Share album management', () => {
       // transaction as the authorization row — if it ever regresses to a
       // post-commit event, this step is what catches the fail-open.
       await userB.page.goto(`/albums/${albumId}`);
-      await expect(userB.page.getByText('Something went wrong')).toBeVisible();
+      await expect(userB.page.getByText("This album isn't available")).toBeVisible();
       await expect(userB.page.getByTestId(`media-tile-${a.id}`)).toHaveCount(0);
       await expectAuthenticatedMediaDetailInaccessible(userB.page, a.id);
     });
