@@ -21,7 +21,7 @@ export type ScheduledWorkerTask = WorkerTaskBase & { type: 'schedule'; cadence: 
   tasks without renumbering.
 - `WorkerTask` and `WorkerTaskBase` are a **type-only module — intentionally no
   `build__*` factory**, so they are never registered as contracts. `QueueClaimable`
-  in media-core (now `repositories/createJobQueueRepository.ts`) carries the same
+  in worker-core (`repositories/createJobQueueRepository.ts`) carries the same
   deliberate non-registration.
 
 ### Registration & discovery — one contract per task
@@ -56,7 +56,7 @@ schema from migration `0001`. Image is therefore the only queue task left, so th
 `order` numbering is latent rather than load-bearing.
 
 > `WorkerJobProcessorBase` still exists as a nominal brand on the per-job
-> processors, but the worker's `lifetimeMarkers` block is commented out — so it is
+> processors, but the worker's `ioc.config.ts` declares no `lifetimeMarkers` — so it is
 > now marker-only and confers **no lifetime**. See "Everything is a singleton" below.
 
 ## The run loop (`runMediaWorkerLoop.ts`) — two-phase pass
@@ -83,32 +83,35 @@ the per-job `*Context.ts` scope roots are **gone**; there is no `openXScope()` a
 no child scope anywhere in the worker. Every unit injects `uow` directly and brackets
 its own work:
 
-- `uow.join()` — attach to the open transaction, or lazily open one.
-- `uow.complete(ok)` — settle it; throws if none is open.
-- `uow.settle(ok)` — settle it if open, no-op otherwise. The forgiving verb, for
-  catch blocks and safety nets.
-- `uow.beginIsolatedOnly()` — demand a _fresh_ boundary, throw if one is already
-  open. Used only by the queue claim, which must commit independently.
+- `uow.inTransaction(fn)` — open a transaction, run `fn`, commit (or roll back if it
+  throws). The verb to reach for.
+- `uow.start()` / `uow.complete(ok)` — the primitives underneath, for boundaries
+  that can't be a single function. `start` throws if a transaction is already open
+  (no nesting); `complete` throws if none is.
+- `uow.isOpen()` — whether a transaction is currently open.
+- `uow.db()` — the open transaction; throws if there isn't one.
 
 After **every** task run — success or throw — `runWorkerTasksOnce` / `runAllTasks`
-call `uow.settle(false)`. That is load-bearing, not belt-and-braces: see below.
+check `uow.isOpen()` and, if a task left a transaction open, log it and
+`uow.complete(false)`. That is load-bearing, not belt-and-braces: see below.
 
 ### Everything here is a singleton, including the uow slot
 
-The worker's `ioc.config.ts` comments out `lifetimeMarkers`, so every worker-local
-unit is a **singleton**. `uow` comes from the composed media-core manifest, where it
-is `scoped` — but the worker creates exactly one container and never a child scope,
-so the scoped uow resolves once on the root and is, in practice, **one transaction
-slot for the whole process**.
+Every unit in the worker is a **singleton**: the worker's own tasks and services,
+and everything composed from `@packages/worker-core` — its repositories, services and
+the `uow` itself. worker-core's `UnitOfWork` doesn't extend `RequestScopeLifeCycle`,
+and the worker creates exactly one container and never a child scope, so `uow` is
+**one transaction slot for the whole process**.
 
 Consequences to keep in mind:
 
 - A task that leaves a transaction open would hand it to the _next_ task. The loop's
-  `settle(false)` after each run is what prevents that.
+  `isOpen()` → `complete(false)` check after each run is what prevents that.
 - Two tasks can never run concurrently — the loop is strictly sequential — so the
   single slot is safe. Do not add concurrency without giving each task its own scope.
 - In tests, a unit built by hand needs a fake uow, and an integration test that
-  resolves a repository straight off the container must settle it before `TRUNCATE`
+  resolves a repository straight off the container must close any transaction it
+  left open (`if (uow.isOpen()) await uow.complete(false)`) before `TRUNCATE`
   (`resetIntegrationTestDb` will otherwise block on the lock forever).
 
 ## The image pipeline — four units, three boundaries
@@ -150,9 +153,10 @@ enqueue. No worker-local copy.
 
 - **Job status is its own enum.** `MediaJobStatus` — separate from `MediaItemStatus`,
   which is the _item's_ lifecycle. Revived on the claim read via `withEnumRevival`.
-- **The claim** is `SELECT … FOR UPDATE SKIP LOCKED` under `beginIsolatedOnly()`,
-  then a conditional `pending → processing` flip with `attemptCount = attempt_count + 1`,
-  then `complete(true)`. It must commit independently so the PROCESSING flip is
+- **The claim** is `SELECT … FOR UPDATE SKIP LOCKED` then a conditional
+  `pending → processing` flip with `attemptCount = attempt_count + 1`, run as its own
+  `uow.inTransaction(claimNextAvailableJob)` (`processNextMediaImageJob.ts`). Because
+  `start` refuses to nest, that is always a fresh boundary. It must commit independently so the PROCESSING flip is
   visible to other workers before any downstream work runs — never a savepoint.
 - **Ownership is a WHERE clause.** `markSucceeded` / `markFailed` / `markPendingRetry`
   all carry `WHERE status = 'PROCESSING'` and **return a value**: `true`/`false` for
@@ -163,8 +167,8 @@ enqueue. No worker-local copy.
   queues: `MAX_ATTEMPTS = 3`, exponential backoff from 30s capped at 1h. Callers pass
   no `availableAt`. Exceeding the cap terminal-fails instead of requeueing forever.
 - **Enqueue** is targetless `ON CONFLICT DO NOTHING` — _not_ try/catch on 23505,
-  which would abort the caller's transaction. It `join()`s the caller's transaction
-  and settles nothing, so the job row commits with the item's status change.
+  which would abort the caller's transaction. It writes through the caller's
+  `uow.db()` and settles nothing, so the job row commits with the item's status change.
 - The `attemptCount` increment uses raw SQL, so it passes the **physical** column
   name `'attempt_count'` (bypasses the case-mapping layer).
 

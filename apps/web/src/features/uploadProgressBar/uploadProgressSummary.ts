@@ -69,6 +69,3 @@ export const getCollapsedSummary = (
 
 export const canCancelUpload = (status: FrontendUploadStatusType): boolean =>
   isInFlightStatus(status);
-
-export const canRetryUpload = (status: FrontendUploadStatusType): boolean =>
-  status.equals(FrontendUploadStatus.failed);

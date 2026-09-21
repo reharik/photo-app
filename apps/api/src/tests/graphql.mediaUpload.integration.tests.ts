@@ -7,6 +7,7 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -33,40 +34,19 @@ describe('GraphQL media upload integration', () => {
 
   describe('When createMediaUpload runs for an authenticated viewer', () => {
     it('should return pending status and upload instructions', async () => {
-      const { response, json } = await executeGraphQL<{
-        createMediaUpload: {
-          data?: {
-            mediaItemId: string;
-            status: string;
-            uploadInstructions: { method: string; url: string };
-          };
-          errors: { code: string }[];
-        };
-      }>({
-        query: `
-          mutation {
-            createMediaUpload(input: { kind: PHOTO, mimeType: "image/jpeg" }) {
-              data {
-                mediaItemId
-                status
-                uploadInstructions {
-                  method
-                  url
-                }
-              }
-              errors {
-                code
-              }
-            }
-          }
-        `,
-        context: { isLoggedIn: true },
-      });
+      const {
+        response,
+        json,
+        item: payload,
+      } = await presignMediaUpload(
+        executeGraphQL,
+        { isLoggedIn: true },
+        { mimeType: 'image/jpeg' },
+      );
 
       expect(response.status).toBe(200);
       expect(json.errors).toBeUndefined();
       expect(json.data?.createMediaUpload.errors).toEqual([]);
-      const payload = json.data?.createMediaUpload.data;
       expect(payload?.status).toBe(MediaItemStatus.pending.value);
       expect(payload?.uploadInstructions.method).toBe('PUT');
       expect(payload?.uploadInstructions.url).toMatch(/^https:\/\/integration-test\.invalid\//);
@@ -76,26 +56,14 @@ describe('GraphQL media upload integration', () => {
 
   describe('When finalizeMediaUpload runs before the object exists in storage', () => {
     it('should surface a client-safe failure without an unhandled exception', async () => {
-      const created = await executeGraphQL<{
-        createMediaUpload: { data?: { mediaItemId: string }; errors: { code: string }[] };
-      }>({
-        query: `
-          mutation {
-            createMediaUpload(input: { kind: PHOTO, mimeType: "image/jpeg" }) {
-              data {
-                mediaItemId
-              }
-              errors {
-                code
-              }
-            }
-          }
-        `,
-        context: { isLoggedIn: true },
-      });
+      const created = await presignMediaUpload(
+        executeGraphQL,
+        { isLoggedIn: true },
+        { mimeType: 'image/jpeg' },
+      );
       expect(created.json.errors).toBeUndefined();
       expect(created.json.data?.createMediaUpload.errors).toEqual([]);
-      const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+      const mediaItemId = created.item?.mediaItemId;
       expect(mediaItemId).toBeTruthy();
       if (!mediaItemId) {
         return;
@@ -136,26 +104,14 @@ describe('GraphQL media upload integration', () => {
 
   describe('When bytes exist in storage then finalizeMediaUpload runs', () => {
     it('should transition the media item to uploaded', async () => {
-      const created = await executeGraphQL<{
-        createMediaUpload: { data?: { mediaItemId: string }; errors: { code: string }[] };
-      }>({
-        query: `
-          mutation {
-            createMediaUpload(input: { kind: PHOTO, mimeType: "image/jpeg" }) {
-              data {
-                mediaItemId
-              }
-              errors {
-                code
-              }
-            }
-          }
-        `,
-        context: { isLoggedIn: true },
-      });
+      const created = await presignMediaUpload(
+        executeGraphQL,
+        { isLoggedIn: true },
+        { mimeType: 'image/jpeg' },
+      );
       expect(created.json.errors).toBeUndefined();
       expect(created.json.data?.createMediaUpload.errors).toEqual([]);
-      const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+      const mediaItemId = created.item?.mediaItemId;
       expect(mediaItemId).toBeTruthy();
       if (!mediaItemId) {
         return;
@@ -203,26 +159,14 @@ describe('GraphQL media upload integration', () => {
 
   describe('When finalizeMediaUpload is invoked by a different viewer than the owner', () => {
     it('should fail without transitioning the media item for the attacker', async () => {
-      const created = await executeGraphQL<{
-        createMediaUpload: { data?: { mediaItemId: string }; errors: { code: string }[] };
-      }>({
-        query: `
-          mutation {
-            createMediaUpload(input: { kind: PHOTO, mimeType: "image/jpeg" }) {
-              data {
-                mediaItemId
-              }
-              errors {
-                code
-              }
-            }
-          }
-        `,
-        context: { isLoggedIn: true },
-      });
+      const created = await presignMediaUpload(
+        executeGraphQL,
+        { isLoggedIn: true },
+        { mimeType: 'image/jpeg' },
+      );
       expect(created.json.errors).toBeUndefined();
       expect(created.json.data?.createMediaUpload.errors).toEqual([]);
-      const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+      const mediaItemId = created.item?.mediaItemId;
       if (!mediaItemId) {
         return;
       }

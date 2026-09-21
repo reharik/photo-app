@@ -13,16 +13,7 @@ import type {
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     createMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.createMediaUpload([
-        {
-          kind: args.input.kind,
-          mimeType: args.input.mimeType,
-          originalFileName: args.input.originalFileName ?? undefined,
-          albumId: args.input.albumId ?? undefined,
-          size: args.input.size,
-          clientId: args.input.clientId,
-        },
-      ]);
+      const result = await ctx.writeServices.createMediaUpload(args.input);
       if (!result.success) {
         return result;
       }

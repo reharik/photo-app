@@ -17,6 +17,7 @@ generates:
         Date: 'luxon#DateTime'
         UUID: string
         JSON: Record<string, unknown>
+        SafeInt: number
       maybeValue: 'T | undefined'
       avoidOptionals:
         field: false # nullable fields become optional `field?:`

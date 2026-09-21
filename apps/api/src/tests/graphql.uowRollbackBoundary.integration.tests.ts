@@ -31,6 +31,7 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -42,15 +43,6 @@ const VIEWER_1_EMAIL = 'test-viewer-1@example.test'; // the default logged-in vi
 const VIEWER_A_EMAIL = 'test-viewer-a@example.test'; // a valid recipient
 
 const loggedInViewer1 = { isLoggedIn: true as const };
-
-const createMediaUploadMutation = `
-  mutation {
-    createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
-      data { mediaItemId }
-      errors { code }
-    }
-  }
-`;
 
 const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
@@ -94,10 +86,8 @@ describe('write boundary: uow rollback on failed OperationResult (integration)',
 
   /** Create + finalize a media item owned by the default viewer; returns its id. */
   const createOwnedMediaItem = async (): Promise<string> => {
-    const created = await executeGraphQL<{
-      createMediaUpload: WriteMutationResponse<{ mediaItemId: string }>;
-    }>({ query: createMediaUploadMutation, context: loggedInViewer1 });
-    const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+    const { item } = await presignMediaUpload(executeGraphQL, loggedInViewer1);
+    const mediaItemId = item?.mediaItemId;
     expect(mediaItemId).toBeTruthy();
     if (!mediaItemId) throw new Error('expected mediaItemId');
 

@@ -22,6 +22,7 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -38,15 +39,6 @@ const loggedInViewerA = {
   isLoggedIn: true as const,
   user: { id: TEST_VIEWER_A_ID, firstName: 'Viewer', lastName: 'A', email: VIEWER_A_EMAIL },
 };
-
-const createMediaUploadMutation = `
-  mutation {
-    createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
-      data { mediaItemId }
-      errors { code }
-    }
-  }
-`;
 
 const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
@@ -90,10 +82,8 @@ describe('grantUserAuthorizationsForMediaItems (integration)', () => {
 
   /** Create + finalize a media item owned by the given viewer; returns its id. */
   const createOwnedMediaItem = async (context: Record<string, unknown>): Promise<string> => {
-    const created = await executeGraphQL<{
-      createMediaUpload: WriteMutationResponse<{ mediaItemId: string }>;
-    }>({ query: createMediaUploadMutation, context });
-    const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+    const { item } = await presignMediaUpload(executeGraphQL, context);
+    const mediaItemId = item?.mediaItemId;
     expect(mediaItemId).toBeTruthy();
     if (!mediaItemId) throw new Error('expected mediaItemId');
 

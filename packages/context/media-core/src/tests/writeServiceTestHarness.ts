@@ -1,3 +1,4 @@
+import type { ScopedLogger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
@@ -5,6 +6,7 @@ import type { Album } from '../domain/Album/Album.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
+import type { MediaAssetReadRepository } from '../repositories/readRepositories/mediaAssetReadRepository.js';
 import type { MediaItemReadRepository } from '../repositories/readRepositories/types.js';
 import { build__AddAlbumItem } from '../services/writeServices/album/addAlbumItem.js';
 import { build__AddMediaItemsToAlbum } from '../services/writeServices/album/addMediaItemsToAlbum.js';
@@ -46,6 +48,26 @@ export const createWriteTestHarness = (): WriteTestHarness => {
 
 export const albumActiveItems = (album: Album) => album.childEntities().items.upsert;
 
+const noop = () => {};
+const createSilentScopedLogger = (): ScopedLogger =>
+  ({
+    error: noop,
+    warn: noop,
+    info: noop,
+    http: noop,
+    verbose: noop,
+    debug: noop,
+  }) as unknown as ScopedLogger;
+
+// Storage quota is not what these specs exercise, so report effectively unlimited headroom.
+const createUnlimitedMediaAssetReadRepository = (): MediaAssetReadRepository => ({
+  getStorageUsage: async () => ({
+    storageCapBytes: Number.MAX_SAFE_INTEGER,
+    storageUsedBytes: 0,
+    storageRemainingBytes: Number.MAX_SAFE_INTEGER,
+  }),
+});
+
 const createEmptyAlbumRepository = (): AlbumRepository => ({
   getById: async () => undefined,
   save: async () => {},
@@ -71,13 +93,15 @@ export const createUploadService =
     mediaStorage: MediaStorage,
     albumRepository: AlbumRepository = createEmptyAlbumRepository(),
   ) =>
-  ({ viewerId, ...input }: WithViewer<CreateMediaUploadCommand>) =>
+  ({ viewerId, commands }: { viewerId: EntityId; commands: CreateMediaUploadCommand[] }) =>
     build__CreateMediaItemUpload({
       mediaItemRepository,
       albumRepository,
       mediaStorage,
       viewerId,
-    })(input);
+      scopedLogger: createSilentScopedLogger(),
+      mediaAssetReadRepository: createUnlimitedMediaAssetReadRepository(),
+    })(commands);
 
 export const createFinalizeService =
   (

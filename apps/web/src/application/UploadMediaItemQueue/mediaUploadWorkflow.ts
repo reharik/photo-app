@@ -1,14 +1,10 @@
 import type { ApolloClient } from '@apollo/client';
 
-import { FrontendError, FrontendUploadStatus as FUS, MediaKind } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus as FUS } from '@packages/contracts';
 import { AppResultFailure, fail, ok, type AppResult } from '../../domain/errors/errorTypes';
 import { executeMutation } from '../../domain/graphql/executeMutation';
-import {
-  CreateMediaUploadDocument,
-  FinalizeMediaUploadDocument,
-} from '../../graphql/generated/types';
-import type { UploadWorkflowEvent } from './mediaUploadTypes';
-import { resolveUploadFileClassification } from './resolveUploadFileClassification';
+import { FinalizeMediaUploadDocument } from '../../graphql/generated/types';
+import type { UploadInstructions, UploadWorkflowEvent } from './mediaUploadTypes';
 
 const buildUploadBody = (file: File, method: string): BodyInit => {
   if (method.toUpperCase() === 'PUT') return file;
@@ -18,66 +14,9 @@ const buildUploadBody = (file: File, method: string): BodyInit => {
   return formData;
 };
 
-const createMediaUpload = async (
-  client: ApolloClient,
-  file: File,
-  albumId?: string,
-): Promise<
-  AppResult<{
-    mediaItemId: string;
-    uploadInstructions: {
-      url: string;
-      method: string;
-      headers: Array<{ key: string; value: string }>;
-    };
-  }>
-> => {
-  const classified = resolveUploadFileClassification(file);
-  if (!classified) {
-    // TODO: add these to FrontendErrorEnum
-    return fail([FrontendError.unsupportedMediaType]);
-  }
-
-  const { kind, mimeType } = classified;
-
-  const result = await executeMutation(
-    client,
-    {
-      mutation: CreateMediaUploadDocument,
-      variables: {
-        input: {
-          kind,
-          mimeType,
-          originalFileName: file.name.trim() !== '' ? file.name : undefined,
-          albumId,
-        },
-      },
-    },
-    (data) => data.createMediaUpload,
-  );
-
-  if (!result.success) {
-    return result;
-  }
-
-  const payload = result.data;
-  if (!payload?.mediaItemId || !payload.uploadInstructions?.url) {
-    return fail([FrontendError.invalidCreateMediaUploadPayload]);
-  }
-
-  return ok({
-    mediaItemId: payload.mediaItemId,
-    uploadInstructions: payload.uploadInstructions,
-  });
-};
-
 const uploadBinary = async (
   file: File,
-  uploadInstructions: {
-    url: string;
-    method: string;
-    headers: Array<{ key: string; value: string }>;
-  },
+  uploadInstructions: UploadInstructions,
 ): Promise<AppResult<void>> => {
   const headers: Record<string, string> = {};
 
@@ -123,42 +62,20 @@ const finalizeMediaUpload = async (
   return ok({ mediaItemId: payload.mediaItemId });
 };
 
-export const mediaUploadWorkflow = async (
+/**
+ * PUT + finalize for one item already holding presigned upload instructions
+ * (see `presignUploadBatch`).
+ */
+export const uploadAndFinalize = async (
   client: ApolloClient,
   file: File,
+  mediaItemId: string,
+  uploadInstructions: UploadInstructions,
   onEvent: (event: UploadWorkflowEvent) => void,
-  albumId?: string,
 ): Promise<AppResult<{ mediaItemId: string }>> => {
   try {
-    onEvent({ type: FUS.creating });
-
-    const classified = resolveUploadFileClassification(file);
-    if (classified?.kind.equals(MediaKind.video)) {
-      const result = fail([FrontendError.videoNotSupported]);
-      if (!result.success) {
-        onEvent({
-          type: FUS.failed,
-          stage: FUS.creating,
-          errors: result.errors,
-        });
-      }
-      return result;
-    }
-
-    const created = await createMediaUpload(client, file, albumId);
-    if (!created.success) {
-      onEvent({
-        type: FUS.failed,
-        stage: FUS.creating,
-        errors: created.errors,
-      });
-      return created;
-    }
-
-    const mediaItemId = created.data.mediaItemId;
     onEvent({ type: FUS.uploading, mediaItemId });
-    const uploaded = await uploadBinary(file, created.data.uploadInstructions);
-
+    const uploaded = await uploadBinary(file, uploadInstructions);
     if (!uploaded.success) {
       onEvent({
         type: FUS.failed,
@@ -168,6 +85,7 @@ export const mediaUploadWorkflow = async (
       });
       return uploaded;
     }
+
     onEvent({ type: FUS.finalizing, mediaItemId });
     const finalized = await finalizeMediaUpload(client, mediaItemId);
     if (!finalized.success) {
@@ -185,8 +103,9 @@ export const mediaUploadWorkflow = async (
   } catch (error) {
     const result = fail([FrontendError.networkError]);
 
-    onEvent?.({
+    onEvent({
       type: FUS.failed,
+      mediaItemId,
       stage: FUS.uploading,
       errors: (result as AppResultFailure).errors,
     });

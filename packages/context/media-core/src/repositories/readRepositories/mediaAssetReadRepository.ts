@@ -23,7 +23,15 @@ export const build__MediaAssetReadRepository = ({
   config,
 }: MediaAssetReadRepositoryDeps): MediaAssetReadRepository => ({
   getStorageUsage: async (): Promise<StorageUsage | undefined> => {
-    const used = uow
+    const capRow = await uow
+      .db()('user')
+      .where('id', viewerId)
+      .select('storage_cap_bytes')
+      .forUpdate()
+      .first<{ storageCapBytes: number }>();
+    if (!capRow) return undefined;
+
+    const usedRow = await uow
       .db()('media_item')
       .where('owner_id', viewerId)
       .whereNotIn('status', [
@@ -38,19 +46,11 @@ export const build__MediaAssetReadRepository = ({
             config.s3UploadUrlTtlSeconds,
           ]),
       )
-      .select(uow.db().raw('COALESCE(SUM(size_bytes), 0)::bigint'));
+      .select(uow.db().raw('COALESCE(SUM(size_bytes), 0)::bigint AS used'))
+      .first<{ used: number }>();
 
-    const row = await uow
-      .db()('user as u')
-      .where('u.id', viewerId)
-      .select('u.storage_cap_bytes', used.as('storage_used_bytes'))
-      .forUpdate()
-      .first<{ storage_cap_bytes: number; storage_used_bytes: number }>();
-
-    if (!row) return undefined;
-
-    const storageCapBytes = row.storage_cap_bytes;
-    const storageUsedBytes = row.storage_used_bytes;
+    const storageCapBytes = capRow.storageCapBytes;
+    const storageUsedBytes = usedRow?.used ?? 0;
     return {
       storageCapBytes,
       storageUsedBytes,
