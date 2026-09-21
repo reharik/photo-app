@@ -62,6 +62,7 @@ photos.backintouch.net {
 
 homeroll.app {
 	handle /api/* {
+		header @media X-Robots-Tag "noindex, nofollow"
 		reverse_proxy localhost:3002 {
 			health_uri /health
 			health_interval 30s

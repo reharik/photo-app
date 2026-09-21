@@ -17,13 +17,7 @@ import type {
   UploadTarget,
   UploadTargetRequest,
 } from '../../application/media/MediaStorage';
-
-export interface S3MediaStorageInput {
-  bucket: string;
-  region: string;
-  uploadUrlTtlSeconds?: number;
-  downloadUrlTtlSeconds?: number;
-}
+import { MediaCoreConfig } from '../../MediaCoreConfig';
 
 const toReadable = (body: unknown): Readable | undefined => {
   if (!body) return undefined;
@@ -84,16 +78,8 @@ const isDerivativeObjectKey = (storageKey: string): boolean => {
   return storageKey.endsWith('/display') || storageKey.endsWith('/thumbnail');
 };
 
-export type MediaStorageConfig = {
-  s3Bucket: string;
-  awsRegion: string;
-  s3UploadUrlTtlSeconds: number;
-  s3DownloadUrlTtlSeconds: number;
-  s3DownloadUrlSigningBucketSeconds: number;
-};
-
 export type MediaStorageDeps = {
-  config: MediaStorageConfig;
+  config: MediaCoreConfig;
 };
 export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage => {
   const {
@@ -110,6 +96,11 @@ export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage 
       Bucket: s3Bucket,
       Key: input.storageKey,
       ContentType: input.mimeType,
+      // Signed as the content-length header (the presigner includes it in SignedHeaders by
+      // default), so S3 rejects a PUT whose body is any other size with 403
+      // SignatureDoesNotMatch. The browser sets Content-Length from the body itself — it's a
+      // forbidden request header — so it's deliberately not in the headers returned below.
+      ContentLength: input.contentLength,
     });
 
     const url = await getSignedUrl(client, command, {

@@ -19,6 +19,7 @@ generates:
         DateTime: Date
         Date: Date
         JSON: Record<string, unknown>
+        SafeInt: number
       contextType: ../context/types#GraphQLContext
       useIndexSignature: true
       maybeValue: 'T | undefined'

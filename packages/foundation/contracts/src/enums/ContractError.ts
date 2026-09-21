@@ -147,6 +147,20 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
+  InvalidUploadSize: {
+    code: 'MEDIA_ITEM_INVALID_UPLOAD_SIZE',
+    display: 'Upload size must be a positive whole number of bytes',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  UploadSizeMismatch: {
+    code: 'MEDIA_ITEM_UPLOAD_SIZE_MISMATCH',
+    display: 'The uploaded file size does not match the size declared for the upload',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
   MediaDimensionsNotAvailable: {
     code: 'MEDIA_DIMENSIONS_NOT_AVAILABLE',
     display: 'Could not read media width and height from the uploaded file',
@@ -636,6 +650,13 @@ const contractErrorInput = {
   MediaItemNotProcessing: {
     code: 'MEDIA_ITEM_NOT_PROCESSING',
     display: 'Media item not processing',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  InsufficientStorageSpace: {
+    code: 'INSUFFICIENT_STORAGE_SPACE',
+    display: 'Insufficient storage space',
     category: ErrorCategory.domain,
     area: ErrorArea.mediaItem,
     retryable: false,

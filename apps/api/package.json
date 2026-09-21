@@ -47,6 +47,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.6.1",
     "graphql": "^16.13.1",
+    "graphql-scalars": "^1.26.0",
     "graphql-type-json": "^0.3.2",
     "graphql-yoga": "^5.18.1",
     "ioc-manifest": "4.2.0",

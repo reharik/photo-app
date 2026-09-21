@@ -11,6 +11,7 @@ type NodeEnv = (typeof nodeEnvs)[number];
 const DEFAULT_UPLOAD_URL_TTL_SECONDS = 15 * 60;
 const DEFAULT_DOWNLOAD_URL_TTL_SECONDS = 15 * 60;
 const DEFAULT_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS = 5 * 60;
+const DEFAULT_ACCOUNT_CAP = 5368709120; // 5gig
 
 export type Config = {
   nodeEnv: NodeEnv;
@@ -52,6 +53,7 @@ export type Config = {
   appName: string;
   isProduction: boolean;
   isDevelopment: boolean;
+  accountCap: number;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -141,6 +143,7 @@ export const createConfigFromEnv = (): Config => {
     appName: process.env.APP_NAME || 'Homeroll',
     isProduction,
     isDevelopment,
+    accountCap: process.env.ACCOUNT_CAP ? Number(process.env.ACCOUNT_CAP) : DEFAULT_ACCOUNT_CAP,
   };
 };
 

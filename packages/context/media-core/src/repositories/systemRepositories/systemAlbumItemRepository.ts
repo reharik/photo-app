@@ -51,7 +51,7 @@ export const build__SystemAlbumItemRepository = ({
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where('album.id', albumId)
         .whereIn('albumItem.id', albumItemIds)
-        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns),
+        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns(uow.db())),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,

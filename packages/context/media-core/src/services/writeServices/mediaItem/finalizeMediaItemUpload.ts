@@ -67,6 +67,13 @@ export const build__FinalizeMediaItemUpload = ({
     if (objectMetadata.size === 0) {
       return fail(AppErrorCollection.mediaItem.MediaBytesEmpty);
     }
+    // Backstop for the presigned PUT, which already signs Content-Length so storage rejects a
+    // body of any other size. If a mismatched object lands anyway, refuse to finalize rather
+    // than overwrite the claimed size (the quota reservation) with a different one. No state
+    // change: the item stays PENDING and stops holding quota once the presign TTL lapses.
+    if (objectMetadata.size !== mediaItem.sizeBytes()) {
+      return fail(AppErrorCollection.mediaItem.UploadSizeMismatch);
+    }
 
     const finalized = mediaItem.completeUploadedWithMetadata(
       {

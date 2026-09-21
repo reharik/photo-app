@@ -34,6 +34,7 @@ export type UserRow = {
   state?: string;
   country?: string;
   userStatus: UserStatus;
+  storageCapBytes: number;
 };
 
 export type AlbumProjection = {

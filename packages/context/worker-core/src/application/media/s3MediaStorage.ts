@@ -10,6 +10,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'node:stream';
 
+import { WorkerCoreConfig } from '../../WorkerCoreConfig';
 import type {
   MediaStorage,
   MediaStorageObjectMetadata,
@@ -17,13 +18,6 @@ import type {
   UploadTarget,
   UploadTargetRequest,
 } from './MediaStorage';
-
-export interface S3MediaStorageInput {
-  bucket: string;
-  region: string;
-  uploadUrlTtlSeconds?: number;
-  downloadUrlTtlSeconds?: number;
-}
 
 const toReadable = (body: unknown): Readable | undefined => {
   if (!body) return undefined;
@@ -84,16 +78,8 @@ const isDerivativeObjectKey = (storageKey: string): boolean => {
   return storageKey.endsWith('/display') || storageKey.endsWith('/thumbnail');
 };
 
-export type MediaStorageConfig = {
-  s3Bucket: string;
-  awsRegion: string;
-  s3UploadUrlTtlSeconds: number;
-  s3DownloadUrlTtlSeconds: number;
-  s3DownloadUrlSigningBucketSeconds: number;
-};
-
 export type MediaStorageDeps = {
-  config: MediaStorageConfig;
+  config: WorkerCoreConfig;
 };
 export const build__MediaStorage = ({ config }: MediaStorageDeps): MediaStorage => {
   const {

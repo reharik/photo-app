@@ -13,28 +13,35 @@ import type {
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
     createMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
-      const result = await ctx.writeServices.createMediaUpload({
-        kind: args.input.kind,
-        mimeType: args.input.mimeType,
-        originalFileName: args.input.originalFileName ?? undefined,
-        albumId: args.input.albumId ?? undefined,
-      });
+      const result = await ctx.writeServices.createMediaUpload([
+        {
+          kind: args.input.kind,
+          mimeType: args.input.mimeType,
+          originalFileName: args.input.originalFileName ?? undefined,
+          albumId: args.input.albumId ?? undefined,
+          size: args.input.size,
+          clientId: args.input.clientId,
+        },
+      ]);
       if (!result.success) {
         return result;
       }
 
-      return ok({
-        mediaItemId: result.value.mediaItemId,
-        status: result.value.status,
+      const output = result.value.map((x) => ({
+        mediaItemId: x.mediaItemId,
+        status: x.status,
+        clientId: x.clientId,
         uploadInstructions: {
-          method: result.value.uploadTarget.method,
-          url: result.value.uploadTarget.url,
-          headers: (result.value.uploadTarget.headers ?? []).map((h) => ({
+          method: x.uploadTarget.method,
+          url: x.uploadTarget.url,
+          headers: (x.uploadTarget.headers ?? []).map((h) => ({
             key: h.name,
             value: h.value,
           })),
         },
-      });
+      }));
+
+      return ok(output);
     }),
 
     finalizeMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
