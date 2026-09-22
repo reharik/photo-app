@@ -6,6 +6,7 @@ set -euo pipefail
 
 SHARED_CADDY_S3_URI="s3://${S3_BUCKET}/deployments/shared/Caddyfile"
 TARGET_CADDYFILE="/opt/shared/Caddyfile"
+CADDY_IMAGE="caddy:2-alpine"
 
 file_changed=0
 
@@ -21,6 +22,12 @@ fi
 
 if [[ ! -s "$tmp" ]]; then
   echo "error: candidate Caddyfile is empty" >&2
+  exit 1
+fi
+
+if ! docker run --rm -v "$tmp":/etc/caddy/Caddyfile:ro "$CADDY_IMAGE" \
+     caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; then
+  echo "error: candidate Caddyfile failed validation; leaving current config in place" >&2
   exit 1
 fi
 
@@ -58,5 +65,5 @@ else
     -v /opt/homeroll/frontend:/srv/homeroll:ro \
     -v caddy_data_shared:/data \
     -v caddy_config_shared:/config \
-    caddy:2-alpine
+    "$CADDY_IMAGE"
 fi

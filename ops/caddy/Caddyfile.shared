@@ -36,33 +36,9 @@ chores.backintouch.net {
 	}
 }
 
-# App 3 - photo-app (API_HOST_PORT on EC2 should be 3002 so it does not clash with 3000 / 3001)
-photos.backintouch.net {
-	handle /api/* {
-		reverse_proxy localhost:3002 {
-			health_uri /health
-			health_interval 30s
-		}
-	}
-	handle /media/* {
-		header X-Robots-Tag "noindex, nofollow"
-		reverse_proxy localhost:3002 {
-			health_uri /health
-			health_interval 30s
-		}
-	}
-	handle {
-		@shared path /shared/*
-		header @shared X-Robots-Tag "noindex, nofollow"
-		root * /srv/photo-app
-		try_files {path} /index.html
-		file_server
-	}
-}
-
 homeroll.app {
 	handle /api/* {
-		header @media X-Robots-Tag "noindex, nofollow"
+		header X-Robots-Tag "noindex, nofollow"
 		reverse_proxy localhost:3002 {
 			health_uri /health
 			health_interval 30s
