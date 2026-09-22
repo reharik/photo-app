@@ -4,6 +4,7 @@ import type { AwilixContainer } from 'awilix';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
+import { presignMediaUpload } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
 import { TEST_VIEWER_1_ID } from './testViewerIds';
@@ -102,30 +103,11 @@ describe('GraphQL', () => {
         /** Yoga logs resolver throws to console.error; we expect auth failure — keep output readable. */
         const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
         try {
-          const { response, json } = await executeGraphQL({
-            query: `
-            mutation {
-              createMediaUpload(
-                input: { kind: PHOTO, mimeType: "image/jpeg" }
-              ) {
-                data {
-                  mediaItemId
-                  status
-                  uploadInstructions {
-                    method
-                    url
-                  }
-                }
-                errors {
-                  code
-                }
-              }
-            }
-          `,
-            context: {
-              isLoggedIn: false,
-            },
-          });
+          const { response, json } = await presignMediaUpload(
+            executeGraphQL,
+            { isLoggedIn: false },
+            { mimeType: 'image/jpeg' },
+          );
           expect(response.status).toBe(200);
           expectGraphQLMutationRejectedForAuth(json, 'createMediaUpload');
         } finally {

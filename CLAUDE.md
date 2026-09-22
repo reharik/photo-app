@@ -20,6 +20,7 @@ Nx monorepo, Knex/Postgres. Two-tier packages.
 | `apps/media-worker`                  | `@app/media-worker`        | generic background task-runner (see nested CLAUDE.md) |
 | `apps/web`                           | `@app/web`                 | React/Vite frontend                                   |
 | `packages/context/media-core`        | `@packages/media-core`     | core bounded context (domain, repos, UoW)             |
+| `packages/context/worker-core`       | `@packages/worker-core`    | worker's repos, UoW, job queue (all singletons)       |
 | `packages/context/notifications`     | `@packages/notifications`  | notifications context                                 |
 | `packages/context/heic-converter`    | `@packages/heic-converter` | HEIC conversion                                       |
 | `packages/foundation/contracts`      | `@packages/contracts`      | smart-enums, error types (codegen target)             |
@@ -31,8 +32,8 @@ in foundation** — foundation only has contracts/infrastructure/logger/utilitie
 
 Nx tags are two-axis: `layer:{app,context,foundation}` + `scope:{apps,packages,...}`.
 Batch targets use them: `build:apps` = `tag:scope:apps`, `build:packages` =
-`tag:scope:packages`. **Gotcha:** `media-core` carries `scope:media` but NOT
-`scope:packages`, so it is excluded from `tag:scope:packages` batch targets.
+`tag:scope:packages`. **Gotcha:** `media-core` and `worker-core` carry `scope:media`
+but NOT `scope:packages`, so they are excluded from `tag:scope:packages` batch targets.
 
 ---
 
@@ -78,11 +79,16 @@ Lifetime is baked into the generated manifest. Resolution precedence:
 
 Lifetime markers (nominal "brand" interfaces; extend one and you get its lifetime):
 
-- `RequestScopeLifeCycle` → `scoped` (defined in media-core's `readServiceBaseType.ts`).
-  Domain repos and request-scoped read/write services extend it.
-- `WorkerJobProcessorBase` → `scoped` (worker only; per-job processors).
+- `RequestScopeLifeCycle` → `scoped` (defined in `@packages/infrastructure`,
+  `requestScopeLifeCycle.ts`). In media-core the `UnitOfWork`, every domain, read and
+  system repo, and the request-scoped read/write services extend it.
+- `WorkerJobProcessorBase` is **not** a lifetime marker any more — the worker declares
+  no `lifetimeMarkers`, so it's a nominal brand only. Everything in the worker and
+  worker-core (repos, services, `uow`) is a singleton; see the nested CLAUDE.md.
 
-Explicit override example (media-core `ioc.config.ts`): `unitOfWork: { lifetime: 'transient' }`.
+No `ioc.config.ts` currently sets an explicit `lifetime`. media-core's config only
+renames the UoW's registration key (`unitOfWork: { name: 'uow' }`); its lifetime comes
+from the marker like everything else.
 
 ### The freeze bug (dominant bug class)
 
@@ -95,9 +101,10 @@ first-resolved instance and reuses it across all scopes forever.
 - singleton → transient: warning only.
 
 Escape hatch (not currently used in this repo): `allowLifetimeInversion: true` or
-an array of dep keys. The configs avoid inversions structurally instead — repos,
-config, knex are singletons; request-scoped services and `uow` are scoped/transient;
-nothing singleton consumes them. Keep it that way.
+an array of dep keys. The configs avoid inversions structurally instead — `uow` and
+every repo that queries through it are scoped, as are the services that use them;
+config, knex and the few raw-`database` repos are singletons. Nothing singleton
+consumes a scoped repo. Keep it that way.
 
 ### Groups
 
@@ -111,8 +118,9 @@ is not a lifetime mechanism). In media-core's `ioc.config.ts`:
 - `domainEventHandlers` (collection).
 - `workerTasks` (collection, worker only — see nested CLAUDE.md).
 
-`scopeProvided: ['viewerId', 'publicLinkId', 'uow']` — values injected per-scope at
-request time (treated as scoped by the inversion checker).
+`scopeProvided: ['viewerId', 'publicLinkId']` — values injected per-scope at
+request time (treated as scoped by the inversion checker). `uow` is no longer among
+them: it is an ordinary scoped registration, one per scope.
 
 **The `default` registration.** When a contract (interface) has more than one
 implementation, exactly one must be marked `default: true` so a plain injection of
@@ -131,16 +139,19 @@ which is why the image builds correctly from a bare checkout). They carry a DO
 NOT EDIT banner — change the `build__` factory or `ioc.config.ts` and
 regenerate; never hand-edit the output.
 
-- `npm run gen:ioc:api` / `:worker` / `:media-core` / `:infrastructure` / `:notifications`
+- `npm run gen:ioc:api` / `:worker` / `:worker-core` / `:media-core` / `:infrastructure` / `:notifications`
   → `nx gen-ioc <proj>` → `ioc generate`.
 - `npm run gen:ioc:all` → every project (after broad changes).
 - `npm run gen:api` → `nx gen-gql api && nx gen-ioc api` (GraphQL + IoC together).
 
 Diagnostics (read-only, never write):
 
-- `ioc:discovery:*` (`ioc inspect --discovery`) — re-runs discovery from **source**;
-  use to debug why a factory isn't picked up (prints skip reasons).
-- `ioc:inspect:*` (`ioc inspect`) — prints the **generated manifest** on disk (lifetimes, groups).
+Run these from **inside the project directory** (e.g. `packages/context/media-core`,
+`apps/api`), where `ioc` finds that project's `ioc.config.ts`:
+
+- `npx ioc inspect --discovery` — re-runs discovery from **source**; use to debug why
+  a factory isn't picked up (prints skip reasons).
+- `npx ioc inspect` — prints the **generated manifest** on disk (lifetimes, groups).
 
 **Gotcha: most projects emit to `src/generated/`, but the API is a deliberate
 exception** — it uses `apps/api/src/di/generated/` (its `ioc.config.ts` sets
@@ -196,33 +207,54 @@ Hand-authored enum: edit **both** the GraphQL SDL enum (keep wire values in sync
 
 ---
 
-## Repository taxonomy — pick by db handle, not folder
+## Repository taxonomy — classify by behaviour, not folder
 
-Four kinds. **Classify by how it gets its db handle and whether it's viewer-gated —
-the folder name can lie** (the worker's job-queue repos sit in `domainRepositories/`
-but are table gateways).
+**The default for every repo is: scoped, queries through `uow.db()`.** Domain, read,
+system and job-queue repos all extend `RequestScopeLifeCycle` and take `uow`, so they
+run inside the scope's transaction. What separates them is what they do and whether
+they're viewer-gated — not their db handle. Classify by behaviour; **the folder name
+can lie** (the job-queue repo lives in `mediaProcessingJob/`, not any of the three).
 
-| Kind                               | Folder                | Naming                  | Lifetime  | DB handle                                | Viewer-gated                        |
-| ---------------------------------- | --------------------- | ----------------------- | --------- | ---------------------------------------- | ----------------------------------- |
-| Domain/aggregate (write)           | `domainRepositories/` | `<Agg>Repository`       | scoped    | `uow.db()` (the trx)                     | No                                  |
-| Read                               | `readRepositories/`   | `<X>ReadRepository`     | singleton | raw `database` Knex                      | **Yes** (`viewerId` + queryHelpers) |
-| Table-gateway (queues/bookkeeping) | varies                | `<X>JobRepository` etc. | singleton | raw `database` (own short trx for claim) | No (`actorId` for audit only)       |
-| System (quarantined)               | `systemRepositories/` | `System<X>Repository`   | singleton | raw `database`                           | **No, by design**                   |
+| Kind                     | Folder                | Naming                | Lifetime | DB handle  | Viewer-gated                        |
+| ------------------------ | --------------------- | --------------------- | -------- | ---------- | ----------------------------------- |
+| Domain/aggregate (write) | `domainRepositories/` | `<Agg>Repository`     | scoped   | `uow.db()` | No                                  |
+| Read                     | `readRepositories/`   | `<X>ReadRepository`   | scoped   | `uow.db()` | **Yes** (`viewerId` + queryHelpers) |
+| Job queue                | `mediaProcessingJob/` | `<X>JobRepository`    | scoped   | `uow.db()` | No (`actorId` for audit only)       |
+| System (quarantined)     | `systemRepositories/` | `System<X>Repository` | scoped   | `uow.db()` | **No, by design**                   |
 
-- **Domain repos** are the write path: scoped (extend `RequestScopeLifeCycle`),
-  query through `uow.db()`, persist aggregates via `persist(aggregate, uow)` in
-  `AggregateRepo.ts` (which drains domain events into the UoW). Access control
-  happens in services _above_ them, not here.
-- **Read repos** are viewer-gated: every method takes `viewerId` and applies an
-  access filter via `.modify(withViewableByMemberOrAlbumGrant(db, viewerId))` etc.
-  Method names encode the gate (`getAlbumForViewer`, `...ForShareLink`).
-- **Table-gateway repos** (job queues, `pendingNotification`, `unseenActivity`):
-  direct autocommit on raw Knex, no UoW, no aggregate. Claims use a self-contained
-  short transaction with `FOR UPDATE SKIP LOCKED` (`queueClaimable.ts`).
+- **`uow.db()` needs an open transaction** — it throws `Transaction not started`
+  otherwise. In the API every GraphQL operation opens one (see UoW lifecycle below),
+  so read repos are safe there; code outside a GraphQL scope must open one itself
+  (`uow.inTransaction(fn)`) or use a raw-`database` repo.
+- **Domain repos** are the write path: persist aggregates via
+  `persist(aggregate, uow)` in `AggregateRepo.ts` (which drains domain events into the
+  UoW). Access control happens in services _above_ them, not here.
+- **Read repos** are viewer-gated: methods take `viewerId` (usually as an argument;
+  `MediaAssetReadRepository` injects it) and apply an access filter via
+  `.modify(withViewableByMemberOrAlbumGrant(uow.db(), viewerId))` etc. Method names
+  encode the gate (`getAlbumForViewer`, `...ForShareLink`). The public-link read repos
+  (`PublicAccessReadRepository`, `PublicMediaItemReadRepository`) gate on the link
+  instead of a viewer.
+- **Job-queue repos** (`MediaProcessingJobRepository`): no aggregate, no viewer. In
+  the worker, claims go through `createJobQueueRepository` (worker-core) — a plain,
+  non-`build__` factory that does `FOR UPDATE SKIP LOCKED` on `uow.db()`, so the
+  claim lives in whatever transaction the caller opened.
 - **System repos** (`System*` prefix = quarantine marker): un-gated, for processes
-  with **no current viewer** (worker sweeps). Same tables as read repos but no
-  access predicate — e.g. `SystemAlbumRepository.getAlbumTitlesById` vs the gated
+  with **no current viewer** (worker sweeps, post-commit handlers). Same tables as
+  read repos but no access predicate — e.g. worker-core's
+  `SystemAlbumRepository.getAlbumTitlesById` vs the gated
   `AlbumReadRepository.getAlbumForViewer`. Use these only from viewer-less paths.
+
+**Exceptions — singletons on raw `database` Knex** (autocommit, no UoW). These exist
+for consumers that run outside any request scope and are singletons themselves:
+`TokenAccessReadRepository` (used by the singleton `tokenAccessReadService`),
+`SystemMediaGrantRepository` (API `mediaGrantService`) and
+`SystemEmailVerificationRepository` (API `authService`). Don't add to this list for
+code that runs inside a GraphQL scope — use the scoped `uow` repos there.
+
+**The worker is different:** it builds one root container and never a child scope,
+so everything there — worker-core repos and its `uow` included — is a singleton. See
+[`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md).
 
 ---
 
@@ -234,10 +266,11 @@ Reusable Knex query-builder pieces in
 `.modify(...)`:
 
 ```ts
-database('album')
-  .modify(withAttachViewerMembership(database, viewerId))
+uow
+  .db()('album')
+  .modify(withAttachViewerMembership(uow.db(), viewerId))
   .modify(withAlbumCoverItem) // some are the modifier directly (no deps)
-  .modify(withCollectionInfo(database, collectionInfo)) // standard pagination fragment
+  .modify(withCollectionInfo(uow.db(), collectionInfo)) // standard pagination fragment
   .select(...albumFields);
 ```
 
@@ -249,8 +282,10 @@ Convention: **bundle join + select together** in one fragment (e.g.
 **Access-control fragments are the security-critical reusable ones** — change these
 with care:
 
-- `withActiveGrants` / `activeGrantChecks` — defines an "active grant": granted to
-  the viewer, `revokedAt` null, not expired. Composable with table aliases.
+- `withActiveGrants` / `withLiveAuthorizationFilter` (both in
+  `withLiveAuthorizationFilter.ts`) — the live filter is `revokedAt` null and not
+  expired; `withActiveGrants` adds "granted to the viewer". Composable with table
+  aliases.
 - `withViewableByMemberOrAlbumGrant` — the viewability gate: row is visible if the
   viewer is an album member OR an active album-scoped grant exists.
 - `withActivePublicLink` — the public/unauthenticated path (share-link token).
@@ -263,24 +298,35 @@ with care:
   `AggregateRoot extends Entity`. Domain methods call `recordEvent(...)`, buffering
   events on the entity. `flushEvents()` recursively pulls events from the root and
   child entities but **skips foreign aggregate roots** (not ours to drain).
-- **UoW** (`infrastructure/repositories/unitOfWork.ts`): manual Knex transaction.
-  `start()` opens the trx; `db()` returns it (all writes go through it);
-  `collectEvents()` buffers; `commit()` does **commit-THEN-publish**:
+- **UoW** (media-core `src/infrastructure/repositories/unitOfWork.ts`): manual Knex
+  transaction. `start()` opens the trx; `db()` returns it and **throws if none is
+  open** (all repo reads and writes go through it); `collectEvents()` buffers;
+  `inTransaction(fn)` is start + commit/rollback around `fn`; `complete(ok)` settles
+  (rolls back if `!ok` or `flagRollbackOnly()` was called) and on commit does
+  **commit-THEN-publish**:
   ```ts
-  await trx?.commit();
-  await eventPublisher.publish(events); // AFTER commit
+  await t.commit();
+  await publishPostCommit(); // handlers run AFTER commit, in a second transaction
   ```
-- **Event publishing is lossy / best-effort.** `eventPublisher.publish` runs handlers
-  post-commit in a try/catch that **swallows failures** — no outbox, no retry. If a
-  handler throws after commit, the event is lost. Intentional. Don't put
-  must-not-lose work in a domain event handler.
+- **Event publishing is lossy / best-effort.** Post-commit handlers run in a fresh
+  transaction on the same uow; if any handler throws, that transaction rolls back and
+  the error is **logged and swallowed** — no outbox, no retry, the events are lost.
+  Intentional. Don't put must-not-lose work in a domain event handler.
 - Events are drained at **persist time**: `persist(aggregate, uow)` writes the row
   tree then `uow.collectEvents(aggregate.flushEvents())`; they only fire on commit.
-- **UoW lifecycle** is request/job-scoped via `withUnitOfWork(container, fn)` /
-  `beginUnitOfWorkScope` (creates an Awilix child scope, registers `uow`). The API
-  drives it per GraphQL operation in `useScopedContainer.ts` (mutations get a UoW +
-  `writeServices`, committed iff no GraphQL errors; queries get a plain scope +
-  `viewerId` + `readServices`, no UoW).
+- **UoW lifecycle** is scope-scoped: `uow` is an ordinary scoped registration, one per
+  child scope. The API opens a scope per GraphQL operation in `useScopedContainer.ts`
+  through the generated `open*Scope` factories; the scope roots in
+  `apps/api/src/graphql/context/requestContextFactories.ts` wire `start`/`finalize` to
+  `uow.start`/`uow.complete`. **Every operation runs in a transaction:**
+  - mutations (`AuthenticatedWriteGraphQLContext`): `writeServices` + `readServices`,
+    committed iff no GraphQL errors and nothing called `flagFailure`;
+  - queries (`AuthenticatedReadGraphQLContext`) and public reads
+    (`PublicRequestContext`): `readServices` / `publicReadServices`, always
+    `finalize(false)` → **rolled back**, since reads have nothing to commit.
+
+  (`withUnitOfWork` / `beginUnitOfWorkScope` are gone; only a historical note in
+  media-core's `ioc.config.ts` still mentions them.)
 
 ### Column naming: snake_case DB ↔ camelCase code
 

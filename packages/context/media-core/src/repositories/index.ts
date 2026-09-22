@@ -29,6 +29,7 @@ export * from './readRepositories/authorizationReadRepository';
 export * from './readRepositories/commentReadRepository';
 export * from './readRepositories/grantReadRepository';
 export * from './readRepositories/inAppNotificationRepository';
+export * from './readRepositories/mediaAssetReadRepository';
 export * from './readRepositories/mediaItemReadRepository';
 export * from './readRepositories/publicAccessReadRepository';
 export * from './readRepositories/publicMediaItemReadRepository';

@@ -20,16 +20,19 @@ export type FinalizeMediaItemUploadResult = {
 };
 
 export type CreateMediaUploadCommand = {
+  clientId: string;
   kind: MediaKind;
   mimeType: string;
   originalFileName?: string;
   albumId?: EntityId;
+  size: number;
 };
 
 export type CreateMediaUploadResult = {
   mediaItemId: EntityId;
   status: MediaItemStatus;
   uploadTarget: UploadTarget;
+  clientId: string;
 };
 
 export type DeleteMediaItemCommand = {

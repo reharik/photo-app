@@ -1,10 +1,11 @@
-import { FrontendUploadStatus } from '@packages/contracts';
+import { FrontendUploadStatus, isInFlightStatus } from '@packages/contracts';
 import type { ReactElement } from 'react';
 import styled from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
+import { canRetryUploadItem } from '../../application/UploadMediaItemQueue/uploadRetryPolicy';
 import { Button } from '../../ui/Primitives';
-import { canCancelUpload, canRetryUpload } from './uploadProgressSummary';
+import { canCancelUpload } from './uploadProgressSummary';
 
 type UploadProgressRowProps = {
   item: UploadItem;
@@ -19,8 +20,10 @@ export const UploadProgressRow = ({
 }: UploadProgressRowProps): ReactElement => {
   const label = item.status.display;
   const errorMessage = item.errors?.[0]?.message;
-  const showRetry = canRetryUpload(item.status);
+  const showRetry = canRetryUploadItem(item);
   const showCancel = canCancelUpload(item.status);
+  // Client-side only: drops the row. Whatever the server holds is left as is.
+  const showDismiss = item.status.equals(FrontendUploadStatus.failed);
 
   return (
     <Row>
@@ -38,6 +41,11 @@ export const UploadProgressRow = ({
         {showRetry ? (
           <Button type="button" variant="ghost" size="small" onClick={onRetry}>
             Retry
+          </Button>
+        ) : null}
+        {showDismiss ? (
+          <Button type="button" variant="ghost" size="small" onClick={onRemove}>
+            Dismiss
           </Button>
         ) : null}
         {showCancel ? (
@@ -59,12 +67,7 @@ const statusTone = (status: UploadItem['status']): StatusTone => {
   if (status.equals(FrontendUploadStatus.ready)) {
     return 'success';
   }
-  if (
-    status.equals(FrontendUploadStatus.queued) ||
-    status.equals(FrontendUploadStatus.creating) ||
-    status.equals(FrontendUploadStatus.uploading) ||
-    status.equals(FrontendUploadStatus.finalizing)
-  ) {
+  if (isInFlightStatus(status)) {
     return 'active';
   }
   return 'muted';

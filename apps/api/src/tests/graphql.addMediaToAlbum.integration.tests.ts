@@ -9,6 +9,7 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -35,19 +36,6 @@ const createAlbumMutation = `
     createAlbum(input: { title: $title }) {
       data {
         albumId
-      }
-      errors {
-        code
-      }
-    }
-  }
-`;
-
-const createMediaUploadMutation = `
-  mutation {
-    createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
-      data {
-        mediaItemId
       }
       errors {
         code
@@ -155,14 +143,9 @@ const createUploadedMediaItemViaGraphQL = async (params: {
     context = loggedInViewer1,
   } = params;
 
-  const created = await executeGraphQL<{
-    createMediaUpload: WriteMutationResponse<{ mediaItemId: string }>;
-  }>({
-    query: createMediaUploadMutation,
-    context,
-  });
+  const created = await presignMediaUpload(executeGraphQL, context);
   expect(created.json.errors).toBeUndefined();
-  const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+  const mediaItemId = created.item?.mediaItemId;
   expect(created.json.data?.createMediaUpload.errors).toEqual([]);
   expect(mediaItemId).toBeTruthy();
   if (!mediaItemId) {
@@ -225,13 +208,8 @@ describe('addAlbumItem', () => {
         return;
       }
 
-      const created = await executeGraphQL<{
-        createMediaUpload: WriteMutationResponse<{ mediaItemId: string }>;
-      }>({
-        query: createMediaUploadMutation,
-        context: loggedInViewer1,
-      });
-      const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+      const { item } = await presignMediaUpload(executeGraphQL, loggedInViewer1);
+      const mediaItemId = item?.mediaItemId;
       expect(mediaItemId).toBeTruthy();
       if (!mediaItemId) {
         return;

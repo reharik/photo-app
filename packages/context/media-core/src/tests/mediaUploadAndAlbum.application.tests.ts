@@ -6,6 +6,7 @@ import {
   MediaKind,
 } from '@packages/contracts';
 import type { Knex } from 'knex';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import type { MediaStorage } from '../application/media/MediaStorage';
 import {
@@ -18,6 +19,7 @@ import type { AlbumRepository } from '../repositories/domainRepositories/albumRe
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 import type { DBMediaItemRow } from '../services/readServices/types';
+import type { CreateMediaUploadCommand } from '../services/writeServices/mediaItem/writeMediaItem.types';
 import { EntityId } from '../types/types';
 import { TEST_VIEWER_A_ID, TEST_VIEWER_B_ID, TEST_VIEWER_ONLY_ID } from './testViewerIds';
 import {
@@ -181,6 +183,33 @@ const readyProjection = (item: MediaItem): DBMediaItemRow => ({
   height: 1,
 });
 
+/**
+ * Presign a single item through the batch createMediaUpload service. `size` defaults to
+ * MINIMAL_PNG_1X1.length — the bytes these specs record in storage — so finalize's
+ * size check passes. The result is matched by clientId, never by index.
+ */
+const uploadOne = async (
+  createUpload: ReturnType<typeof createUploadService>,
+  { viewerId, ...overrides }: { viewerId: EntityId } & Partial<CreateMediaUploadCommand>,
+) => {
+  const command: CreateMediaUploadCommand = {
+    clientId: randomUUID(),
+    kind: MediaKind.photo,
+    mimeType: 'image/jpeg',
+    size: MINIMAL_PNG_1X1.length,
+    ...overrides,
+  };
+  const result = await createUpload({ viewerId, commands: [command] });
+  if (!result.success) {
+    return result;
+  }
+  const item = result.value.find((r) => r.clientId === command.clientId);
+  if (!item) {
+    throw new Error(`no createMediaUpload result for clientId ${command.clientId}`);
+  }
+  return { ...result, value: item };
+};
+
 describe('Media upload pipeline (application services)', () => {
   const harness = createWriteTestHarness();
   const viewerA = TEST_VIEWER_A_ID;
@@ -193,7 +222,7 @@ describe('Media upload pipeline (application services)', () => {
       const mediaStorage = createTrackingMediaStorage(serverUrl);
       const createUpload = createUploadService(harness, mediaItemRepository, mediaStorage);
 
-      const result = await createUpload({
+      const result = await uploadOne(createUpload, {
         viewerId: viewerA,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -234,7 +263,7 @@ describe('Media upload pipeline (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const created = await createUpload({
+      const created = await uploadOne(createUpload, {
         viewerId: viewerA,
         kind: MediaKind.photo,
         mimeType: 'image/png',
@@ -295,7 +324,7 @@ describe('Media upload pipeline (application services)', () => {
         jobRepository,
       );
 
-      const created = await createUpload({
+      const created = await uploadOne(createUpload, {
         viewerId: viewerA,
         kind: MediaKind.photo,
         mimeType: 'image/png',
@@ -344,7 +373,7 @@ describe('Media upload pipeline (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const created = await createUpload({
+      const created = await uploadOne(createUpload, {
         viewerId: viewerA,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -377,7 +406,7 @@ describe('Media upload pipeline (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const created = await createUpload({
+      const created = await uploadOne(createUpload, {
         viewerId: viewerA,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -452,7 +481,7 @@ describe('Album integration (application services)', () => {
         mediaItemRepository,
         createTrackingMediaStorage('http://localhost:0'),
       );
-      const mediaResult = await createUpload({
+      const mediaResult = await uploadOne(createUpload, {
         viewerId,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -518,7 +547,7 @@ describe('Album integration (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const mediaResult = await createUpload({
+      const mediaResult = await uploadOne(createUpload, {
         viewerId: viewerOnlyId,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -592,7 +621,7 @@ describe('Album integration (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const mediaResult = await createUpload({
+      const mediaResult = await uploadOne(createUpload, {
         viewerId,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -672,7 +701,7 @@ describe('Album integration (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const mediaResult = await createUpload({
+      const mediaResult = await uploadOne(createUpload, {
         viewerId,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',
@@ -817,7 +846,7 @@ describe('Album integration (application services)', () => {
 
       const ids: string[] = [];
       for (let i = 0; i < 2; i += 1) {
-        const mediaResult = await createUpload({
+        const mediaResult = await uploadOne(createUpload, {
           viewerId,
           kind: MediaKind.photo,
           mimeType: 'image/jpeg',
@@ -896,7 +925,7 @@ describe('Album integration (application services)', () => {
         createNoopMediaProcessingJobRepository(),
       );
 
-      const mediaResult = await createUpload({
+      const mediaResult = await uploadOne(createUpload, {
         viewerId,
         kind: MediaKind.photo,
         mimeType: 'image/jpeg',

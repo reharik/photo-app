@@ -1,8 +1,11 @@
+import { randomUUID } from 'node:crypto';
+
 import { MediaAssetKind } from '@packages/contracts';
 import type { Knex } from 'knex';
 
 import { buildMediaAssetStorageKey, buildMediaItemBaseStorageKey } from '@packages/media-core';
 
+import type { createExecuteGraphQL } from './executeGQL';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 
 /** 1×1 PNG for integration tests that simulate an uploaded object. */
@@ -48,4 +51,80 @@ export const seedIntegrationTestUploadedObject = async (
     mimeType,
     body: bytes,
   });
+};
+
+export const createMediaUploadMutation = `
+  mutation CreateMediaUpload($input: [CreateMediaUploadInput!]!) {
+    createMediaUpload(input: $input) {
+      data {
+        clientId
+        mediaItemId
+        status
+        uploadInstructions {
+          method
+          url
+        }
+      }
+      errors {
+        code
+      }
+    }
+  }
+`;
+
+export type CreateMediaUploadInputForTest = {
+  clientId: string;
+  kind: string;
+  mimeType: string;
+  size: number;
+  originalFileName?: string;
+  albumId?: string;
+};
+
+export type CreateMediaUploadResultItem = {
+  clientId: string;
+  mediaItemId: string;
+  status: string;
+  uploadInstructions: { method: string; url: string };
+};
+
+export type CreateMediaUploadMutationData = {
+  createMediaUpload: {
+    data?: CreateMediaUploadResultItem[] | null;
+    errors: { code: string }[] | null;
+  };
+};
+
+/**
+ * One presign input item. `size` defaults to MINIMAL_PNG_1X1.length because that is what the
+ * tests seed into fake storage — finalize rejects any other declared size with
+ * MEDIA_ITEM_UPLOAD_SIZE_MISMATCH.
+ */
+export const buildCreateMediaUploadInput = (
+  overrides: Partial<CreateMediaUploadInputForTest> = {},
+): CreateMediaUploadInputForTest => ({
+  clientId: randomUUID(),
+  kind: 'PHOTO',
+  mimeType: 'image/png',
+  size: MINIMAL_PNG_1X1.length,
+  ...overrides,
+});
+
+/**
+ * Runs createMediaUpload for a single item and returns the raw response plus the result item
+ * matched by clientId (never by index).
+ */
+export const presignMediaUpload = async (
+  executeGraphQL: ReturnType<typeof createExecuteGraphQL>,
+  context: Record<string, unknown>,
+  overrides: Partial<CreateMediaUploadInputForTest> = {},
+) => {
+  const input = buildCreateMediaUploadInput(overrides);
+  const result = await executeGraphQL<CreateMediaUploadMutationData>({
+    query: createMediaUploadMutation,
+    variables: { input: [input] },
+    context,
+  });
+  const item = result.json.data?.createMediaUpload.data?.find((d) => d.clientId === input.clientId);
+  return { ...result, input, item };
 };

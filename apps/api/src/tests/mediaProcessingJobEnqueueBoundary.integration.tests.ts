@@ -28,21 +28,13 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
 import { resetIntegrationTestDb } from './resetDb';
 import { createTestLogContext } from './testScope';
 import { TEST_VIEWER_1_ID } from './testViewerIds';
-
-const createMediaUploadMutation = `
-  mutation {
-    createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
-      data { mediaItemId }
-      errors { code }
-    }
-  }
-`;
 
 type JobRow = { id: string; mediaItemId: string; status: string };
 
@@ -66,12 +58,10 @@ describe('media processing job enqueue boundary (integration)', () => {
 
   /** Create a PENDING item owned by the default viewer and seed its uploaded bytes. */
   const createSeededPendingItem = async (): Promise<string> => {
-    const created = await executeGraphQL<{
-      createMediaUpload: { data?: { mediaItemId: string }; errors: { code: string }[] };
-    }>({ query: createMediaUploadMutation, context: { isLoggedIn: true } });
-    expect(created.json.errors).toBeUndefined();
-    expect(created.json.data?.createMediaUpload.errors).toEqual([]);
-    const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+    const { json, item } = await presignMediaUpload(executeGraphQL, { isLoggedIn: true });
+    expect(json.errors).toBeUndefined();
+    expect(json.data?.createMediaUpload.errors).toEqual([]);
+    const mediaItemId = item?.mediaItemId;
     if (!mediaItemId) throw new Error('expected mediaItemId');
 
     await seedIntegrationTestUploadedObject(

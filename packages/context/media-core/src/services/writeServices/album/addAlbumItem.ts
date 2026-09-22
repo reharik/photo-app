@@ -42,6 +42,7 @@ export const build__AddAlbumItem = ({
     const mediaItem = r2.value;
 
     const r3 = tryAppendOneMediaToAlbum(album, mediaItem, viewerId);
+
     if (!r3.success) {
       return r3;
     }

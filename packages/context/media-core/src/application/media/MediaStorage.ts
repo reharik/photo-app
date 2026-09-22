@@ -24,6 +24,8 @@ export const buildMediaAssetStorageKey = (baseStorageKey: string, kind: MediaAss
 export interface UploadTargetRequest {
   storageKey: string;
   mimeType?: string;
+  /** Exact byte length the upload must have; signed into the URL so storage rejects any other size. */
+  contentLength: number;
 }
 
 export interface UploadTarget {

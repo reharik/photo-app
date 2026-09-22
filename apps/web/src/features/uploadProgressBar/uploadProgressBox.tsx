@@ -6,6 +6,7 @@ import styled, { keyframes } from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
+import type { AppError } from '../../domain/errors/errorTypes';
 import { UploadProgressRow } from './uploadProgressRow';
 import { getCollapsedSummary, getUploadProgressCounts } from './uploadProgressSummary';
 
@@ -20,7 +21,7 @@ const PANEL_TOP_OFFSET_MOBILE = '60px';
 type PanelPhase = 'idle' | 'active' | 'success';
 
 export const UploadProgressBox = (): ReactElement | null => {
-  const { items, retryItem, removeItem } = useUploadQueue();
+  const { items, batchErrors, retryItem, removeItem } = useUploadQueue();
   const [expanded, setExpanded] = useState(false);
   const [panelPhase, setPanelPhase] = useState<PanelPhase>('idle');
   const [visible, setVisible] = useState(false);
@@ -113,6 +114,7 @@ export const UploadProgressBox = (): ReactElement | null => {
   return createPortal(
     <UploadProgressPanel
       items={items}
+      batchErrors={batchErrors}
       panelPhase={panelPhase}
       visible={visible}
       expanded={expanded}
@@ -127,6 +129,7 @@ export const UploadProgressBox = (): ReactElement | null => {
 
 type UploadProgressPanelProps = {
   items: UploadItem[];
+  batchErrors: AppError[];
   panelPhase: PanelPhase;
   visible: boolean;
   expanded: boolean;
@@ -138,6 +141,7 @@ type UploadProgressPanelProps = {
 
 const UploadProgressPanel = ({
   items,
+  batchErrors,
   panelPhase,
   visible,
   expanded,
@@ -163,6 +167,8 @@ const UploadProgressPanel = ({
             ? 'Finishing up'
             : undefined
       : undefined;
+  // One line per distinct failure; a batch error normally carries a single message.
+  const batchMessages = [...new Set(batchErrors.map((error) => error.message))];
 
   return (
     <Panel
@@ -194,6 +200,14 @@ const UploadProgressPanel = ({
           </Chevron>
         </HeaderButton>
       </Header>
+
+      {batchMessages.length > 0 ? (
+        <BatchBanner role="alert">
+          {batchMessages.map((message) => (
+            <div key={message}>{message}</div>
+          ))}
+        </BatchBanner>
+      ) : null}
 
       {panelPhase === 'active' && counts.total > 0 ? (
         <Track aria-hidden>
@@ -340,6 +354,16 @@ const SuccessMark = styled.span`
   color: ${({ theme }) => theme.color.alertSuccessText};
   background: ${({ theme }) => theme.color.bodyElevated};
   border-radius: 50%;
+`;
+
+const BatchBanner = styled.div`
+  margin-top: ${({ theme }) => theme.spacing(1.5)};
+  padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  background: ${({ theme }) => theme.color.alertError};
+  color: ${({ theme }) => theme.color.alertErrorText};
+  font-size: ${({ theme }) => theme.fontSize._12};
+  line-height: 1.35;
 `;
 
 const Track = styled.div`

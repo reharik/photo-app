@@ -2,6 +2,8 @@ import { enumeration, type Enumeration } from '@reharik/smart-enum';
 const input = {
   queued: { display: 'Waiting' },
   creating: { display: 'Preparing' },
+  /** Holds a presigned URL; waiting for its turn to PUT. */
+  presigned: { display: 'Waiting' },
   uploading: { display: 'Uploading' },
   finalizing: { display: 'Finishing' },
   complete: { display: 'Processing' },
@@ -17,6 +19,7 @@ export const FrontendUploadStatus = enumeration<typeof input>('FrontendUploadSta
 export const isInFlightStatus = (status: FrontendUploadStatus): boolean =>
   status.equals(FrontendUploadStatus.queued) ||
   status.equals(FrontendUploadStatus.creating) ||
+  status.equals(FrontendUploadStatus.presigned) ||
   status.equals(FrontendUploadStatus.uploading) ||
   status.equals(FrontendUploadStatus.finalizing);
 

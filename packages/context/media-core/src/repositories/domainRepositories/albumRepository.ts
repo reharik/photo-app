@@ -40,6 +40,18 @@ export const build__AlbumRepository = ({ uow, persist }: AlbumRepositoryDeps): A
 
     const itemRows = await uow
       .db()<AlbumItemRecord>('albumItem')
+      // order_index is bigint and can exceed 2^53, where the int8 -> number type parser
+      // throws; read it as text so AlbumItem.rehydrate gets the exact value for BigInt.
+      .select<AlbumItemRecord[]>(
+        'id',
+        'albumId',
+        'mediaItemId',
+        uow.db().raw('??::text as ??', ['orderIndex', 'orderIndex']),
+        'createdAt',
+        'updatedAt',
+        'createdBy',
+        'updatedBy',
+      )
       .where({ albumId: id })
       .orderBy('orderIndex', 'asc')
       .orderBy('id', 'asc');

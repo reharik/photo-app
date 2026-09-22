@@ -20,14 +20,15 @@ export default defineIocConfig({
   },
   registrations: {
     UnitOfWork: {
-      // `uow` is the key every consumer demands. It used to be an explicit transient
-      // hand-registered onto each child scope (beginUnitOfWorkScope's asValue), which is
-      // why the contract was exposed under a second name. Scope roots open the scope now,
-      // so the uow is an ordinary scoped sibling: one per scope, resolved like any other
-      // dep. Lifetime is left to the RequestScopeLifeCycle heritage marker → scoped.
-      // accessKey alone only buys a runtime `aliasTo`; the generated cradle would still
-      // expose `unitOfWork` and every consumer's `uow` would stay an unsatisfied external.
-      // `name` moves the registration key itself, so the two coincide.
+      // `uow` is the key every consumer demands. accessKey alone only buys a runtime
+      // `aliasTo`; the generated cradle would still expose `unitOfWork` and every
+      // consumer's `uow` would stay an unsatisfied external. `name` moves the
+      // registration key itself, so the two coincide.
+      //
+      // Lifetime: singleton, like every repository and service in worker-core. Nothing
+      // here extends RequestScopeLifeCycle, so the `lifetimeMarkers` entry below is
+      // inert — and the worker never opens a child scope, so the uow is one
+      // transaction slot for the whole process (see apps/media-worker/CLAUDE.md).
       $contract: { accessKey: 'uow' },
       unitOfWork: { name: 'uow' },
     },

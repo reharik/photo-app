@@ -1,6 +1,7 @@
 scalar DateTime
 scalar Date
 scalar JSON
+scalar SafeInt
 
 """
 Optional metadata on enum values for SmartEnum / codegen (e.g. DB column names).

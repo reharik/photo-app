@@ -1,6 +1,7 @@
 import { AlbumItemSortBy, MediaItemStatus, MediaKind } from '@packages/contracts';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
 import { withEnumRevival } from '@reharik/smart-enum-knex';
+import type { Knex } from 'knex';
 import { UnitOfWork } from '../../infrastructure';
 import { AlbumItemWithMediaRow, PagedList } from '../../services/readServices/types';
 import { CollectionInfo } from '../../types/types';
@@ -60,9 +61,11 @@ const mediaItemSelectColumns = [
   'mediaItem.reactionCounts as mediaItemReactionCounts',
 ];
 
-export const albumItemWithMediaSelectColumns = [
+// order_index is bigint and can exceed 2^53, where the int8 -> number type parser throws;
+// read it as text so it stays an exact string end to end.
+export const albumItemWithMediaSelectColumns = (db: Knex): (string | Knex.Raw)[] => [
   'albumItem.id',
-  'albumItem.orderIndex as albumItemOrderIndex',
+  db.raw('??::text as ??', ['albumItem.orderIndex', 'albumItemOrderIndex']),
   'albumItem.createdAt',
   'albumItem.updatedAt',
   ...mediaItemSelectColumns,
@@ -91,7 +94,7 @@ export const build__AlbumItemReadRepository = ({
         .where('album.id', albumId)
         .andWhere('mediaItem.status', MediaItemStatus.ready)
         .modify(withAlbumItemViewableByMemberOrGrant(uow.db(), viewerId))
-        .select(...albumItemWithMediaSelectColumns)
+        .select(...albumItemWithMediaSelectColumns(uow.db()))
         .modify(withCollectionInfo(uow.db(), collectionInfo)),
       {
         mediaItemKind: MediaKind,
@@ -118,7 +121,7 @@ export const build__AlbumItemReadRepository = ({
       .modify(withActivePublicLink(uow.db(), albumId, publicLinkId))
       .modify(withCollectionInfo(uow.db(), collectionInfo))
       .select<(AlbumItemWithMediaRow & { totalCount: number })[]>(
-        ...albumItemWithMediaSelectColumns,
+        ...albumItemWithMediaSelectColumns(uow.db()),
       );
 
     const rows = await withEnumRevival(query, {
@@ -143,7 +146,7 @@ export const build__AlbumItemReadRepository = ({
         .innerJoin('mediaItem', 'mediaItem.id', 'albumItem.mediaItemId')
         .where({ 'album.id': albumId, 'mediaItem.status': MediaItemStatus.ready })
         .whereIn('albumItem.id', albumItemIds)
-        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns),
+        .select<AlbumItemWithMediaRow[]>(...albumItemWithMediaSelectColumns(uow.db())),
       {
         mediaItemKind: MediaKind,
         mediaItemStatus: MediaItemStatus,

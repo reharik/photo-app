@@ -19,9 +19,9 @@ export const build__ReactionReadRepository = ({
         target_type: targetType,
         target_id: targetId,
       })
-      .count<{ count: string }>('* as count')
+      .count<{ count: number }>('* as count')
       .first();
-    return result ? parseInt(result.count, 10) : 0;
+    return result?.count ?? 0;
   },
 
   viewerReactionsForTargets: async ({

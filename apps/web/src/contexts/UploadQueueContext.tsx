@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { useApolloClient } from '@apollo/client/react';
-import { FrontendUploadStatus, isInFlightStatus } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus, isInFlightStatus } from '@packages/contracts';
 import { awaitMediaItemsReady } from '../application/UploadMediaItemQueue/awaitMediaItemsReady';
 import {
   initialUploadQueueState,
@@ -20,8 +20,13 @@ import {
   UploadQueueContextValue,
   UploadWorkflowEvent,
 } from '../application/UploadMediaItemQueue/mediaUploadTypes';
-import { mediaUploadWorkflow } from '../application/UploadMediaItemQueue/mediaUploadWorkflow';
+import { uploadAndFinalize } from '../application/UploadMediaItemQueue/mediaUploadWorkflow';
+import {
+  presignUploadBatch,
+  selectPresignBatch,
+} from '../application/UploadMediaItemQueue/presignUploadBatch';
 import { workflowEventToQueueAction } from '../application/UploadMediaItemQueue/workflowEventToQueueAction';
+import { mapFrontendError } from '../domain/errors/mapToError';
 import { evictFieldOnCachedEntities } from '../graphql/evictFieldOnCachedEntities';
 
 const UploadQueueContext = createContext<UploadQueueContextValue | null>(null);
@@ -32,7 +37,8 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
   const client = useApolloClient();
 
   const [state, dispatch] = useReducer(uploadQueueReducer, initialUploadQueueState);
-  const isProcessingRef = useRef<boolean>(false);
+  const isPresigningRef = useRef<boolean>(false);
+  const isUploadingRef = useRef<boolean>(false);
 
   const enqueueFiles = useCallback(
     (files: File[], albumId?: string) => {
@@ -67,32 +73,81 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
   );
 
   /**
-   * Process at most one queued item per effect run. The previous implementation walked the queue
-   * using a ref that was only synced in an effect after commit, so after `await mediaUploadWorkflow`
-   * the snapshot could still show items as `queued` and the inner `while` loop would call
-   * `createMediaUpload` again for the same files (runaway duplicate rows).
+   * Each effect below starts at most one async step per run and guards it with a ref. Walking
+   * the queue in a loop instead reads a stale snapshot after the first `await` and re-sends
+   * items still shown as queued (runaway duplicate rows). When a step finishes it clears its
+   * ref and bumps `driverTick`, so the next step is never left waiting for an unrelated render.
    */
+  const [driverTick, wakeDriver] = useReducer((n: number) => n + 1, 0);
+
+  // Presign: one chunk in flight at a time, requested lazily. The next chunk is fetched once
+  // no presigned item is left waiting, which overlaps it with the current item's PUT.
   useEffect(() => {
-    if (isProcessingRef.current) {
+    if (isPresigningRef.current) {
       return;
     }
 
-    const nextItem = state.items.find((item) => item.status.equals(FrontendUploadStatus.queued));
-    if (!nextItem) {
+    // Unreachable today: enqueue fails unclassified files outright. If one ever does end up
+    // queued, fail it so it can't sit queued forever.
+    const unclassified = state.items.find(
+      (item) => item.status.equals(FrontendUploadStatus.queued) && item.classification == null,
+    );
+    if (unclassified) {
+      dispatch({
+        type: 'updateStatus',
+        payload: {
+          localId: unclassified.localId,
+          status: FrontendUploadStatus.failed,
+          errors: [mapFrontendError({ code: FrontendError.unsupportedMediaType })],
+        },
+      });
       return;
     }
 
-    isProcessingRef.current = true;
+    if (state.items.some((item) => item.status.equals(FrontendUploadStatus.presigned))) {
+      return;
+    }
 
-    void mediaUploadWorkflow(
+    const batch = selectPresignBatch(state.items);
+    if (batch.length === 0) {
+      return;
+    }
+
+    isPresigningRef.current = true;
+    dispatch({ type: 'presignStarted', payload: { localIds: batch.map((item) => item.localId) } });
+
+    void presignUploadBatch(client, batch)
+      .then((result) => dispatch({ type: 'presignSettled', payload: result }))
+      .finally(() => {
+        isPresigningRef.current = false;
+        wakeDriver();
+      });
+  }, [state.items, client, driverTick]);
+
+  // Upload: one PUT + finalize at a time, in queue order.
+  useEffect(() => {
+    if (isUploadingRef.current) {
+      return;
+    }
+
+    const nextItem = state.items.find((item) => item.status.equals(FrontendUploadStatus.presigned));
+    if (!nextItem?.mediaItemId || !nextItem.uploadInstructions) {
+      return;
+    }
+
+    isUploadingRef.current = true;
+
+    void uploadAndFinalize(
       client,
       nextItem.file,
+      nextItem.mediaItemId,
+      nextItem.uploadInstructions,
       handleWorkflowEvent(nextItem.localId),
-      nextItem.albumId,
     ).finally(() => {
-      isProcessingRef.current = false;
+      isUploadingRef.current = false;
+      wakeDriver();
     });
-  }, [state.items, client, handleWorkflowEvent]);
+  }, [state.items, client, handleWorkflowEvent, driverTick]);
 
   // Track which items have already been handed off to readiness polling,
   // so we don't double-start polling for the same item across re-renders.
@@ -201,8 +256,17 @@ export const UploadQueueProvider = ({ children }: { children: ReactNode }) => {
       removeItem,
       clearCompleted,
       isUploading,
+      batchErrors: state.batchErrors,
     }),
-    [state.items, enqueueFiles, retryItem, removeItem, clearCompleted, isUploading],
+    [
+      state.items,
+      state.batchErrors,
+      enqueueFiles,
+      retryItem,
+      removeItem,
+      clearCompleted,
+      isUploading,
+    ],
   );
   return <UploadQueueContext.Provider value={value}>{children}</UploadQueueContext.Provider>;
 };

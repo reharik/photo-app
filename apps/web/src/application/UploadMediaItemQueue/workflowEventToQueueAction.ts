@@ -6,7 +6,6 @@ export const workflowEventToQueueAction = (
   event: UploadWorkflowEvent,
 ): UploadQueueAction => {
   switch (event.type) {
-    case FrontendUploadStatus.creating:
     case FrontendUploadStatus.uploading:
     case FrontendUploadStatus.finalizing:
     case FrontendUploadStatus.complete:

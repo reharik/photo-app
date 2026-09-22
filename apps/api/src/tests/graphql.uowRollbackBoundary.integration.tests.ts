@@ -31,6 +31,7 @@ import { createExecuteGraphQL } from './executeGQL';
 import { setupGraphqlIntegrationTests } from './graphqlIntegrationTestSetup';
 import {
   MINIMAL_PNG_1X1,
+  presignMediaUpload,
   seedIntegrationTestUploadedObject,
 } from './integrationMediaObjectTestHelper';
 import type { IntegrationTestMediaStorage } from './integrationTestMediaStorage';
@@ -42,15 +43,6 @@ const VIEWER_1_EMAIL = 'test-viewer-1@example.test'; // the default logged-in vi
 const VIEWER_A_EMAIL = 'test-viewer-a@example.test'; // a valid recipient
 
 const loggedInViewer1 = { isLoggedIn: true as const };
-
-const createMediaUploadMutation = `
-  mutation {
-    createMediaUpload(input: { kind: PHOTO, mimeType: "image/png" }) {
-      data { mediaItemId }
-      errors { code }
-    }
-  }
-`;
 
 const finalizeMediaUploadMutation = `
   mutation FinalizeMedia($id: ID!) {
@@ -94,10 +86,8 @@ describe('write boundary: uow rollback on failed OperationResult (integration)',
 
   /** Create + finalize a media item owned by the default viewer; returns its id. */
   const createOwnedMediaItem = async (): Promise<string> => {
-    const created = await executeGraphQL<{
-      createMediaUpload: WriteMutationResponse<{ mediaItemId: string }>;
-    }>({ query: createMediaUploadMutation, context: loggedInViewer1 });
-    const mediaItemId = created.json.data?.createMediaUpload.data?.mediaItemId;
+    const { item } = await presignMediaUpload(executeGraphQL, loggedInViewer1);
+    const mediaItemId = item?.mediaItemId;
     expect(mediaItemId).toBeTruthy();
     if (!mediaItemId) throw new Error('expected mediaItemId');
 
@@ -137,19 +127,19 @@ describe('write boundary: uow rollback on failed OperationResult (integration)',
   /** Total rows in each table this write path touches — the "nothing persisted" surface. */
   const persistedRowCounts = async () => {
     const [accessGrants, publicAlbums, shadowUsers, shareContacts] = await Promise.all([
-      database('accessGrant').count<{ count: string }[]>('* as count').first(),
+      database('accessGrant').count<{ count: number }[]>('* as count').first(),
       // Identified by the flag, not a fixed title: the generated shadow album's title is
       // derived from the sharer's first name ("Photos from {firstName}").
       database('album')
         .where({ isShadowAlbum: true })
-        .count<{ count: string }[]>('* as count')
+        .count<{ count: number }[]>('* as count')
         .first(),
       // Shadow (PENDING) users are the non-seeded users this op mints for a non-user handle.
       database('user')
         .whereRaw(`email LIKE 'shadow-%@example.test'`)
-        .count<{ count: string }[]>('* as count')
+        .count<{ count: number }[]>('* as count')
         .first(),
-      database('shareContact').count<{ count: string }[]>('* as count').first(),
+      database('shareContact').count<{ count: number }[]>('* as count').first(),
     ]);
     return {
       accessGrants: Number(accessGrants?.count ?? 0),
