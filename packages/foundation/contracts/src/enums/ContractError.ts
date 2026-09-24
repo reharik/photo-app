@@ -661,6 +661,20 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
+  VideoSizeTooLarge: {
+    code: 'VIDEO_SIZE_TOO_LARGE',
+    display: 'Video size too large',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  ImageSizeTooLarge: {
+    code: 'ImageSizeTooLarge',
+    display: 'ImageSizeTooLarge',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

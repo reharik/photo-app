@@ -11,5 +11,5 @@ export const operationResultToPayload = <T>(result: OperationResult<T>): Mutatio
   if (result.success) {
     return { data: result.value, errors: [] };
   }
-  return { data: undefined, errors: [toContractErrorPayload(result.error)] };
+  return { data: undefined, errors: [toContractErrorPayload(result)] };
 };

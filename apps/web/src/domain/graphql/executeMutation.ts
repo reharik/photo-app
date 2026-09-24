@@ -1,6 +1,7 @@
 import type { ApolloClient, OperationVariables } from '@apollo/client';
 import { AppResult, ExecuteMutationArgs, fail, MutationPayload, ok } from '../errors/errorTypes';
 import { mapContractError, mapSystemError, mapUnknownSystemError } from '../errors/mapToError';
+
 export const normalizeMutationPayload = <TData>(
   payload: MutationPayload<TData> | null | undefined,
 ): AppResult<TData> => {

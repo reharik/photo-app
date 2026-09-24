@@ -1,4 +1,4 @@
 fragment errorsFragment on ContractError {
   code
-  data
+  context
 }

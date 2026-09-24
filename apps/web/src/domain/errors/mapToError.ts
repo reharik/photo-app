@@ -12,6 +12,7 @@ export const mapToAppError = (
   def: ErrorDefinition,
   input: ErrorInput,
   source: Source,
+  context?: Record<string, unknown>,
 ): AppError => {
   return {
     code: def.value,
@@ -20,6 +21,7 @@ export const mapToAppError = (
     source,
     category: def.category.value,
     retryable: def.retryable ?? false,
+    context,
   };
 };
 

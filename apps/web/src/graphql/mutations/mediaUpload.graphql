@@ -1,16 +1,21 @@
-mutation CreateMediaUpload($input: [CreateMediaUploadInput!]!) {
+mutation CreateMediaUpload($input: CreateMediaUploadInput!) {
   createMediaUpload(input: $input) {
     data {
-      clientId
-      mediaItemId
-      status
-      uploadInstructions {
-        method
-        url
-        headers {
-          key
-          value
+      ... on CreateMediaUploadPayload {
+        clientId
+        mediaItemId
+        status
+        uploadInstructions {
+          method
+          url
+          headers {
+            key
+            value
+          }
         }
+      }
+      ... on ContractError {
+        ...errorsFragment
       }
     }
     errors {

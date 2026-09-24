@@ -94,8 +94,10 @@ type UpdateMediaItemTagsPayload {
   mediaItemId: ID!
 }
 
+union CreateMediaUploadItemResult = CreateMediaUploadPayload | ContractError
+
 type CreateMediaUploadResponse {
-  data: [CreateMediaUploadPayload!]
+  data: [CreateMediaUploadItemResult!]
   errors: [ContractError!]
 }
 

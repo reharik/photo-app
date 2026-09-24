@@ -45,8 +45,18 @@ import { ContractError } from '../enums/ContractError';
  * while avoiding excessive Result plumbing in non-domain layers.
  */
 
-export type OperationResult<T = void, E = ContractError> =
-  { success: true; value: T } | { success: false; error: E };
+export type Success<T> = {
+  success: true;
+  value: T;
+};
+
+export type Failure<E = ContractError> = {
+  success: false;
+  error: E;
+  context?: Record<string, unknown>;
+};
+
+export type OperationResult<T = void, E = ContractError> = Success<T> | Failure<E>;
 
 export const ok = <T, E extends ContractError = ContractError>(
   value: T,
@@ -57,9 +67,11 @@ export const ok = <T, E extends ContractError = ContractError>(
 
 export const fail = <T = void, E extends ContractError = ContractError>(
   error: E,
+  context?: Record<string, unknown>,
 ): OperationResult<T, E> => ({
   success: false,
   error,
+  context,
 });
 
 export type BatchResult<TIn, TOut, E = ContractError> = {

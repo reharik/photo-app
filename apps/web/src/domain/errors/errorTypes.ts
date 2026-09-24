@@ -30,6 +30,7 @@ export type AppError = {
   source: Source;
   category: Category;
   retryable: boolean;
+  context?: Record<string, unknown>;
 };
 
 export type ErrorDefinition = {
@@ -61,7 +62,10 @@ export const ok = <T>(data: T): AppResult<T> => ({
   data,
 });
 
-export const fail = (errors: (AppError | FrontendError)[]): AppResult<never> => ({
+export const fail = (
+  errors: (AppError | FrontendError)[],
+  context?: Record<string, unknown>,
+): AppResult<never> => ({
   success: false,
   errors: errors.map((error) =>
     isSmartEnumItem(error) ? mapFrontendError({ code: error }) : error,

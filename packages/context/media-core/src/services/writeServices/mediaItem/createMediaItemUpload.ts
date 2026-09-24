@@ -4,6 +4,7 @@ import {
   EntityId,
   fail,
   MediaAssetKind,
+  MediaKind,
   ok,
   Operation,
   OperationResult,
@@ -17,6 +18,7 @@ import {
 } from '../../../application/media/MediaStorage';
 import { Album } from '../../../domain';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
+import { MediaCoreConfig } from '../../../MediaCoreConfig';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaAssetReadRepository } from '../../../repositories/readRepositories/mediaAssetReadRepository';
@@ -24,7 +26,9 @@ import { WriteServiceBase } from '../writeServiceBaseType';
 import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
 
 export interface CreateMediaUpload extends WriteServiceBase {
-  (input: CreateMediaUploadCommand[]): Promise<OperationResult<CreateMediaUploadResult[]>>;
+  (
+    input: CreateMediaUploadCommand[],
+  ): Promise<OperationResult<OperationResult<CreateMediaUploadResult>[]>>;
 }
 
 const sanitizeOriginalFileName = (value: string | undefined): string | undefined => {
@@ -45,6 +49,7 @@ type CreateMediaItemUploadDeps = {
   viewerId: EntityId;
   scopedLogger: ScopedLogger;
   mediaAssetReadRepository: MediaAssetReadRepository;
+  config: MediaCoreConfig;
 };
 
 export const build__CreateMediaItemUpload = ({
@@ -54,10 +59,11 @@ export const build__CreateMediaItemUpload = ({
   viewerId,
   scopedLogger,
   mediaAssetReadRepository,
+  config,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (
     input: CreateMediaUploadCommand[],
-  ): Promise<OperationResult<CreateMediaUploadResult[]>> => {
+  ): Promise<OperationResult<OperationResult<CreateMediaUploadResult>[]>> => {
     // Don't trust the transport's SafeInt scalar: a zero, negative, or fractional claim
     // would shrink the quota check below and the reservation written to size_bytes.
     if (!input.every(({ size }) => Number.isSafeInteger(size) && size > 0)) {
@@ -81,11 +87,22 @@ export const build__CreateMediaItemUpload = ({
       }
     }
 
-    const result: CreateMediaUploadResult[] = [];
+    const result: OperationResult<CreateMediaUploadResult>[] = [];
     for (let i = 0; i < input.length; i++) {
       const item = input[i];
 
       const { kind, mimeType, originalFileName, clientId, size } = item;
+      if (MediaKind.photo.equals(kind) && size > config.imageMaxBytes) {
+        result.push(
+          fail(ContractError.ImageSizeTooLarge, { size, maxBytes: config.imageMaxBytes, clientId }),
+        );
+        continue;
+      } else if (MediaKind.video.equals(kind) && size > config.videoMaxBytes) {
+        result.push(
+          fail(ContractError.VideoSizeTooLarge, { size, maxBytes: config.videoMaxBytes, clientId }),
+        );
+        continue;
+      }
       const mediaItem = MediaItem.create(
         {
           kind,
@@ -118,12 +135,14 @@ export const build__CreateMediaItemUpload = ({
         }
       }
 
-      result.push({
-        mediaItemId: mediaItem.id(),
-        status: mediaItem.status(),
-        uploadTarget,
-        clientId,
-      });
+      result.push(
+        ok({
+          mediaItemId: mediaItem.id(),
+          status: mediaItem.status(),
+          uploadTarget,
+          clientId,
+        }),
+      );
     }
     if (album) {
       await albumRepository.save(album);

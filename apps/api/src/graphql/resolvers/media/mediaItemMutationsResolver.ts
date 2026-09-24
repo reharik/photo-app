@@ -9,6 +9,7 @@ import type {
   MutationUpdateMediaItemTagsArgs,
   Resolvers,
 } from '../../generated/types.generated';
+import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
 const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
   Mutation: {
@@ -18,19 +19,23 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         return result;
       }
 
-      const output = result.value.map((x) => ({
-        mediaItemId: x.mediaItemId,
-        status: x.status,
-        clientId: x.clientId,
-        uploadInstructions: {
-          method: x.uploadTarget.method,
-          url: x.uploadTarget.url,
-          headers: (x.uploadTarget.headers ?? []).map((h) => ({
-            key: h.name,
-            value: h.value,
-          })),
-        },
-      }));
+      const output = result.value.map((x) =>
+        x.success
+          ? {
+              mediaItemId: x.value.mediaItemId,
+              status: x.value.status,
+              clientId: x.value.clientId,
+              uploadInstructions: {
+                method: x.value.uploadTarget.method,
+                url: x.value.uploadTarget.url,
+                headers: (x.value.uploadTarget.headers ?? []).map((h) => ({
+                  key: h.name,
+                  value: h.value,
+                })),
+              },
+            }
+          : toContractErrorPayload(x),
+      );
 
       return ok(output);
     }),
