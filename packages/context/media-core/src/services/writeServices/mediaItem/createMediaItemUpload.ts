@@ -23,12 +23,14 @@ import { AlbumRepository } from '../../../repositories/domainRepositories/albumR
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaAssetReadRepository } from '../../../repositories/readRepositories/mediaAssetReadRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
+import {
+  CreateMediaUploadCommand,
+  CreateMediaUploadItemOutcome,
+  CreateMediaUploadResult,
+} from './writeMediaItem.types';
 
 export interface CreateMediaUpload extends WriteServiceBase {
-  (
-    input: CreateMediaUploadCommand[],
-  ): Promise<OperationResult<OperationResult<CreateMediaUploadResult>[]>>;
+  (input: CreateMediaUploadCommand[]): Promise<OperationResult<CreateMediaUploadItemOutcome[]>>;
 }
 
 const sanitizeOriginalFileName = (value: string | undefined): string | undefined => {
@@ -63,7 +65,7 @@ export const build__CreateMediaItemUpload = ({
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (
     input: CreateMediaUploadCommand[],
-  ): Promise<OperationResult<OperationResult<CreateMediaUploadResult>[]>> => {
+  ): Promise<OperationResult<CreateMediaUploadItemOutcome[]>> => {
     // Don't trust the transport's SafeInt scalar: a zero, negative, or fractional claim
     // would shrink the quota check below and the reservation written to size_bytes.
     if (!input.every(({ size }) => Number.isSafeInteger(size) && size > 0)) {
@@ -87,20 +89,24 @@ export const build__CreateMediaItemUpload = ({
       }
     }
 
-    const result: OperationResult<CreateMediaUploadResult>[] = [];
+    const result: CreateMediaUploadItemOutcome[] = [];
     for (let i = 0; i < input.length; i++) {
       const item = input[i];
 
       const { kind, mimeType, originalFileName, clientId, size } = item;
+      // `context` carries display data only — what the client needs to explain the refusal.
+      // The identity of the item is `clientId` on the outcome, never something in here.
       if (MediaKind.photo.equals(kind) && size > config.imageMaxBytes) {
-        result.push(
-          fail(ContractError.ImageSizeTooLarge, { size, maxBytes: config.imageMaxBytes, clientId }),
-        );
+        result.push({
+          clientId,
+          result: fail(ContractError.ImageSizeTooLarge, { size, maxBytes: config.imageMaxBytes }),
+        });
         continue;
       } else if (MediaKind.video.equals(kind) && size > config.videoMaxBytes) {
-        result.push(
-          fail(ContractError.VideoSizeTooLarge, { size, maxBytes: config.videoMaxBytes, clientId }),
-        );
+        result.push({
+          clientId,
+          result: fail(ContractError.VideoSizeTooLarge, { size, maxBytes: config.videoMaxBytes }),
+        });
         continue;
       }
       const mediaItem = MediaItem.create(
@@ -135,14 +141,14 @@ export const build__CreateMediaItemUpload = ({
         }
       }
 
-      result.push(
-        ok({
+      result.push({
+        clientId,
+        result: ok<CreateMediaUploadResult>({
           mediaItemId: mediaItem.id(),
           status: mediaItem.status(),
           uploadTarget,
-          clientId,
         }),
-      );
+      });
     }
     if (album) {
       await albumRepository.save(album);

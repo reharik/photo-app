@@ -2,15 +2,32 @@ import type { ApolloClient } from '@apollo/client';
 
 import { FrontendError, FrontendUploadStatus } from '@packages/contracts';
 import { type AppError } from '../../domain/errors/errorTypes';
-import { mapFrontendError, mapUnknownSystemError } from '../../domain/errors/mapToError';
+import {
+  mapContractError,
+  mapFrontendError,
+  mapUnknownSystemError,
+} from '../../domain/errors/mapToError';
 import { executeMutation } from '../../domain/graphql/executeMutation';
-import { CreateMediaUploadDocument } from '../../graphql/generated/types';
+import {
+  CreateMediaUploadDocument,
+  type CreateMediaUploadMutation,
+} from '../../graphql/generated/types';
 import type {
   PresignBatchResult,
   PresignCandidate,
   PresignOutcome,
   UploadItem,
 } from './mediaUploadTypes';
+
+/** One element of `createMediaUpload.data`: either a presigned item or one the server refused. */
+type CreateMediaUploadItem = NonNullable<
+  CreateMediaUploadMutation['createMediaUpload']['data']
+>[number];
+
+type CreateMediaUploadPayloadItem = Extract<
+  CreateMediaUploadItem,
+  { __typename: 'CreateMediaUploadPayload' }
+>;
 
 /**
  * Items per createMediaUpload call. Uploads run one at a time, so a chunk's last URL waits
@@ -41,15 +58,30 @@ export const selectPresignBatch = (items: UploadItem[]): PresignCandidate[] => {
     .slice(0, PRESIGN_BATCH_SIZE);
 };
 
+/**
+ * The whole call failed, so every item in it failed with the same error. `batchErrors` is set
+ * too: that is what the banner reads, and what {@link stopsUploadQueue} inspects to decide
+ * whether later chunks are doomed as well. A per-item refusal must never come through here.
+ */
 const failAll = (batch: PresignCandidate[], errors: AppError[]): PresignBatchResult => ({
   outcomes: batch.map(({ localId }) => ({ localId, success: false, errors })),
   batchErrors: errors,
 });
 
+/** The server said nothing usable about this item — a malformed or incomplete response. */
+const failUnmatched = (localId: string): PresignOutcome => ({
+  localId,
+  success: false,
+  errors: [mapFrontendError({ code: FrontendError.invalidCreateMediaUploadPayload })],
+});
+
 /**
- * Presigns a batch in one createMediaUpload call. The batch is all-or-nothing on the server;
- * results are matched back by clientId (our localId), never by array order, and an item
- * with no matching result fails on its own.
+ * Presigns a batch in one createMediaUpload call. Results are matched back by clientId (our
+ * localId), never by array order.
+ *
+ * The server settles each item on its own, so a chunk can come back mixed: an item over the
+ * per-kind size cap fails while its neighbours are presigned and must still upload. Only a
+ * batch-level failure (quota) fails everything — see {@link failAll}.
  */
 export const presignUploadBatch = async (
   client: ApolloClient,
@@ -84,23 +116,39 @@ export const presignUploadBatch = async (
       return failAll(batch, result.errors);
     }
 
-    const byClientId = new Map(result.data.map((payload) => [payload.clientId, payload]));
+    const presigned = new Map<string, CreateMediaUploadPayloadItem>();
+    const refused = new Map<string, AppError>();
+    for (const entry of result.data) {
+      if (entry.__typename === 'CreateMediaUploadPayload') {
+        presigned.set(entry.clientId, entry);
+      } else {
+        refused.set(entry.clientId, mapContractError(entry.error));
+      }
+    }
+
     const outcomes = batch.map(({ localId }): PresignOutcome => {
-      const payload = byClientId.get(localId);
-      if (!payload?.mediaItemId || !payload.uploadInstructions?.url) {
+      const payload = presigned.get(localId);
+      if (payload) {
+        // A payload missing the parts we actually need is as useless as no payload at all.
+        if (!payload.mediaItemId || !payload.uploadInstructions?.url) {
+          return failUnmatched(localId);
+        }
         return {
           localId,
-          success: false,
-          errors: [mapFrontendError({ code: FrontendError.invalidCreateMediaUploadPayload })],
+          success: true,
+          mediaItemId: payload.mediaItemId,
+          uploadInstructions: payload.uploadInstructions,
         };
       }
-      return {
-        localId,
-        success: true,
-        mediaItemId: payload.mediaItemId,
-        uploadInstructions: payload.uploadInstructions,
-      };
+      const error = refused.get(localId);
+      if (error) {
+        return { localId, success: false, errors: [error] };
+      }
+      // Neither presigned nor refused: the server never accounted for this clientId.
+      return failUnmatched(localId);
     });
+    // Deliberately empty: a refused item is that item's problem. Setting batchErrors here would
+    // raise the banner and, for a quota-shaped code, stop every chunk still queued behind it.
     return { outcomes, batchErrors: [] };
   } catch (error) {
     return failAll(batch, [mapUnknownSystemError(error)]);

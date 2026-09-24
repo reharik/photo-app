@@ -4,6 +4,7 @@ import styled from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
 import { canRetryUploadItem } from '../../application/UploadMediaItemQueue/uploadRetryPolicy';
+import { formatAppErrorMessage } from '../../domain/errors/formatAppErrorMessage';
 import { Button } from '../../ui/Primitives';
 import { canCancelUpload } from './uploadProgressSummary';
 
@@ -19,7 +20,8 @@ export const UploadProgressRow = ({
   onRemove,
 }: UploadProgressRowProps): ReactElement => {
   const label = item.status.display;
-  const errorMessage = item.errors?.[0]?.message;
+  const firstError = item.errors?.[0];
+  const errorMessage = firstError && formatAppErrorMessage(firstError);
   const showRetry = canRetryUploadItem(item);
   const showCancel = canCancelUpload(item.status);
   // Client-side only: drops the row. Whatever the server holds is left as is.

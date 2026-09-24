@@ -11,7 +11,16 @@ import type {
 } from '../../generated/types.generated';
 import { toContractErrorPayload } from '../../mappers/contractErrorMapper';
 
-const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
+const mediaUploadResolvers: Pick<Resolvers, 'Mutation' | 'CreateMediaUploadItemResult'> = {
+  /**
+   * The members carry no `__typename`, so the union needs an explicit discriminator. A refused
+   * item is the only member with an `error`, which is also the only field the success branch
+   * could never grow.
+   */
+  CreateMediaUploadItemResult: {
+    __resolveType: (obj) =>
+      'error' in obj ? 'CreateMediaUploadItemError' : 'CreateMediaUploadPayload',
+  },
   Mutation: {
     createMediaUpload: authenticatedWriteResolver(async (_parent, args, ctx) => {
       const result = await ctx.writeServices.createMediaUpload(args.input);
@@ -19,22 +28,24 @@ const mediaUploadResolvers: Pick<Resolvers, 'Mutation'> = {
         return result;
       }
 
-      const output = result.value.map((x) =>
-        x.success
+      // Per-item: a refusal fails only its own item and the rest of the batch is still
+      // presigned. Batch-level failures (quota) took the `!result.success` path above.
+      const output = result.value.map(({ clientId, result: item }) =>
+        item.success
           ? {
-              mediaItemId: x.value.mediaItemId,
-              status: x.value.status,
-              clientId: x.value.clientId,
+              mediaItemId: item.value.mediaItemId,
+              status: item.value.status,
+              clientId,
               uploadInstructions: {
-                method: x.value.uploadTarget.method,
-                url: x.value.uploadTarget.url,
-                headers: (x.value.uploadTarget.headers ?? []).map((h) => ({
+                method: item.value.uploadTarget.method,
+                url: item.value.uploadTarget.url,
+                headers: (item.value.uploadTarget.headers ?? []).map((h) => ({
                   key: h.name,
                   value: h.value,
                 })),
               },
             }
-          : toContractErrorPayload(x),
+          : { clientId, error: toContractErrorPayload(item) },
       );
 
       return ok(output);

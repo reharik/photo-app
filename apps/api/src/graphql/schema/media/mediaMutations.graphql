@@ -94,7 +94,22 @@ type UpdateMediaItemTagsPayload {
   mediaItemId: ID!
 }
 
-union CreateMediaUploadItemResult = CreateMediaUploadPayload | ContractError
+union CreateMediaUploadItemResult = CreateMediaUploadPayload | CreateMediaUploadItemError
+
+"""
+A single input item the server refused. `clientId` is a field, not something the client has to
+dig out of `error.context`, so a failure is always attributable to the file that caused it.
+"""
+type CreateMediaUploadItemError {
+  """
+  `String!`, not `ID!`, to match `CreateMediaUploadPayload.clientId`: a selection that spreads
+  both union members would otherwise be rejected outright for conflicting field types. It is a
+  client-generated correlation id rather than a server entity id, so `String!` is also the
+  truthful type for it.
+  """
+  clientId: String!
+  error: ContractError!
+}
 
 type CreateMediaUploadResponse {
   data: [CreateMediaUploadItemResult!]

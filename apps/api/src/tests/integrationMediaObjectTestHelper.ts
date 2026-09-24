@@ -57,12 +57,22 @@ export const createMediaUploadMutation = `
   mutation CreateMediaUpload($input: [CreateMediaUploadInput!]!) {
     createMediaUpload(input: $input) {
       data {
-        clientId
-        mediaItemId
-        status
-        uploadInstructions {
-          method
-          url
+        __typename
+        ... on CreateMediaUploadPayload {
+          clientId
+          mediaItemId
+          status
+          uploadInstructions {
+            method
+            url
+          }
+        }
+        ... on CreateMediaUploadItemError {
+          clientId
+          error {
+            code
+            context
+          }
         }
       }
       errors {
@@ -81,12 +91,30 @@ export type CreateMediaUploadInputForTest = {
   albumId?: string;
 };
 
-export type CreateMediaUploadResultItem = {
+export type CreateMediaUploadPayloadForTest = {
+  __typename: 'CreateMediaUploadPayload';
   clientId: string;
   mediaItemId: string;
   status: string;
   uploadInstructions: { method: string; url: string };
 };
+
+export type CreateMediaUploadItemErrorForTest = {
+  __typename: 'CreateMediaUploadItemError';
+  clientId: string;
+  error: { code: string; context?: Record<string, unknown> | null };
+};
+
+export type CreateMediaUploadResultItem =
+  CreateMediaUploadPayloadForTest | CreateMediaUploadItemErrorForTest;
+
+export const isCreateMediaUploadPayload = (
+  item: CreateMediaUploadResultItem,
+): item is CreateMediaUploadPayloadForTest => item.__typename === 'CreateMediaUploadPayload';
+
+export const isCreateMediaUploadItemError = (
+  item: CreateMediaUploadResultItem,
+): item is CreateMediaUploadItemErrorForTest => item.__typename === 'CreateMediaUploadItemError';
 
 export type CreateMediaUploadMutationData = {
   createMediaUpload: {
@@ -111,8 +139,29 @@ export const buildCreateMediaUploadInput = (
 });
 
 /**
- * Runs createMediaUpload for a single item and returns the raw response plus the result item
- * matched by clientId (never by index).
+ * Runs createMediaUpload for a batch and indexes the results by clientId (never by index), so a
+ * spec can assert on a single item of a mixed batch without caring where the server put it.
+ */
+export const presignMediaUploadBatch = async (
+  executeGraphQL: ReturnType<typeof createExecuteGraphQL>,
+  context: Record<string, unknown>,
+  inputs: CreateMediaUploadInputForTest[],
+) => {
+  const result = await executeGraphQL<CreateMediaUploadMutationData>({
+    query: createMediaUploadMutation,
+    variables: { input: inputs },
+    context,
+  });
+  const byClientId = new Map(
+    (result.json.data?.createMediaUpload.data ?? []).map((d) => [d.clientId, d]),
+  );
+  return { ...result, inputs, byClientId };
+};
+
+/**
+ * Runs createMediaUpload for a single item and returns the raw response plus that item's result,
+ * matched by clientId (never by index). `item` is only set when the server presigned it; a
+ * refused item lands in `itemError` instead, so a spec can't mistake one for the other.
  */
 export const presignMediaUpload = async (
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>,
@@ -120,11 +169,12 @@ export const presignMediaUpload = async (
   overrides: Partial<CreateMediaUploadInputForTest> = {},
 ) => {
   const input = buildCreateMediaUploadInput(overrides);
-  const result = await executeGraphQL<CreateMediaUploadMutationData>({
-    query: createMediaUploadMutation,
-    variables: { input: [input] },
-    context,
-  });
-  const item = result.json.data?.createMediaUpload.data?.find((d) => d.clientId === input.clientId);
-  return { ...result, input, item };
+  const result = await presignMediaUploadBatch(executeGraphQL, context, [input]);
+  const entry = result.byClientId.get(input.clientId);
+  return {
+    ...result,
+    input,
+    item: entry && isCreateMediaUploadPayload(entry) ? entry : undefined,
+    itemError: entry && isCreateMediaUploadItemError(entry) ? entry : undefined,
+  };
 };

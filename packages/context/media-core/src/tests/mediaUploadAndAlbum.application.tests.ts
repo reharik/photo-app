@@ -203,11 +203,12 @@ const uploadOne = async (
   if (!result.success) {
     return result;
   }
-  const item = result.value.find((r) => r.clientId === command.clientId);
-  if (!item) {
+  const outcome = result.value.find((o) => o.clientId === command.clientId);
+  if (!outcome) {
     throw new Error(`no createMediaUpload result for clientId ${command.clientId}`);
   }
-  return { ...result, value: item };
+  // Flatten the per-item outcome so specs read one result, not a result inside a result.
+  return outcome.result;
 };
 
 describe('Media upload pipeline (application services)', () => {

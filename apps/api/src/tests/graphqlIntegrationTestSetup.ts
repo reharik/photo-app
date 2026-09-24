@@ -5,6 +5,7 @@ import { asValue, createContainer } from 'awilix';
 import { registerIocFromManifest } from 'ioc-manifest';
 import type { Knex } from 'knex';
 
+import { build__Config, type Config } from '../config.js';
 import type { AppCradle } from '../di/generated/ioc-composed.js';
 import { build__GraphQLContextFactory } from '../graphql/context/createGraphQLContext.js';
 import type { GraphQLInitialContext } from '../graphql/context/types.js';
@@ -30,7 +31,9 @@ const noopNotificationService: NotificationService = {
  * Shared bootstrap for GraphQL integration tests that hit the real DB (FKs on user ids).
  * Uses in-memory MediaStorage so tests do not require S3 or a local media directory.
  */
-export const setupGraphqlIntegrationTests = async (): Promise<{
+export const setupGraphqlIntegrationTests = async (
+  configOverrides: Partial<Config> = {},
+): Promise<{
   container: AwilixContainer<AppCradle>;
   executeGraphQL: ReturnType<typeof createExecuteGraphQL>;
   integrationTestMediaStorage: ReturnType<typeof createIntegrationTestMediaStorage>;
@@ -41,7 +44,11 @@ export const setupGraphqlIntegrationTests = async (): Promise<{
   });
   registerIocFromManifest(container, composedManifests, composedRegistrationOverrides);
 
-  const config = container.resolve('config');
+  // Registered before anything resolves `config`: awilix caches a resolved singleton and
+  // `register` does not evict it, so overriding after a resolve would hand the override to
+  // nobody. Building it here instead of resolving-then-merging keeps that impossible.
+  const config: Config = { ...build__Config(), ...configOverrides };
+  container.register({ config: asValue(config) });
   const logger = container.resolve('logger');
   const baseGraphQLContextFactory = build__GraphQLContextFactory({
     notificationService: noopNotificationService,

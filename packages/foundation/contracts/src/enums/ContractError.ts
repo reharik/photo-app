@@ -669,8 +669,8 @@ const contractErrorInput = {
     retryable: false,
   },
   ImageSizeTooLarge: {
-    code: 'ImageSizeTooLarge',
-    display: 'ImageSizeTooLarge',
+    code: 'IMAGE_SIZE_TOO_LARGE',
+    display: 'Image size too large',
     category: ErrorCategory.domain,
     area: ErrorArea.mediaItem,
     retryable: false,

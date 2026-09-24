@@ -1,6 +1,9 @@
-mutation CreateMediaUpload($input: CreateMediaUploadInput!) {
+mutation CreateMediaUpload($input: [CreateMediaUploadInput!]!) {
   createMediaUpload(input: $input) {
     data {
+      # Selected explicitly: codegen runs with `skipTypename: true`, so without this the
+      # generated union has no discriminant and the two branches are indistinguishable.
+      __typename
       ... on CreateMediaUploadPayload {
         clientId
         mediaItemId
@@ -14,8 +17,11 @@ mutation CreateMediaUpload($input: CreateMediaUploadInput!) {
           }
         }
       }
-      ... on ContractError {
-        ...errorsFragment
+      ... on CreateMediaUploadItemError {
+        clientId
+        error {
+          ...errorsFragment
+        }
       }
     }
     errors {

@@ -7,6 +7,7 @@ import styled, { keyframes } from 'styled-components';
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import type { AppError } from '../../domain/errors/errorTypes';
+import { formatAppErrorMessage } from '../../domain/errors/formatAppErrorMessage';
 import { UploadProgressRow } from './uploadProgressRow';
 import { getCollapsedSummary, getUploadProgressCounts } from './uploadProgressSummary';
 
@@ -168,7 +169,7 @@ const UploadProgressPanel = ({
             : undefined
       : undefined;
   // One line per distinct failure; a batch error normally carries a single message.
-  const batchMessages = [...new Set(batchErrors.map((error) => error.message))];
+  const batchMessages = [...new Set(batchErrors.map(formatAppErrorMessage))];
 
   return (
     <Panel

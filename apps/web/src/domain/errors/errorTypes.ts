@@ -11,9 +11,14 @@ const category = ErrorCategory.values();
 type Category = (typeof category)[number];
 export type Source = 'backend' | 'frontend' | 'system';
 
+/**
+ * A `ContractError` off the wire. `context` is the server's structured display data for this
+ * failure (e.g. `{ size, maxBytes }` on a size refusal) — never an identifier, and never a
+ * message: the human wording comes from the local ContractError catalog.
+ */
 export type ContractErrorPayload = {
   code: string;
-  data?: Record<string, unknown>;
+  context?: Record<string, unknown> | null;
 };
 
 export type FrontendErrorInput = {
@@ -62,10 +67,7 @@ export const ok = <T>(data: T): AppResult<T> => ({
   data,
 });
 
-export const fail = (
-  errors: (AppError | FrontendError)[],
-  context?: Record<string, unknown>,
-): AppResult<never> => ({
+export const fail = (errors: (AppError | FrontendError)[]): AppResult<never> => ({
   success: false,
   errors: errors.map((error) =>
     isSmartEnumItem(error) ? mapFrontendError({ code: error }) : error,
