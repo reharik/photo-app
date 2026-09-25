@@ -28,7 +28,7 @@ import { Readable } from 'node:stream';
 
 import type { Config } from '../config.js';
 
-type GeneratedDerivative = {
+type GeneratedImageDerivative = {
   buffer: Buffer;
   mimeType: string;
   width: number;
@@ -51,7 +51,7 @@ const THUMBNAIL_KEY = `${BASE_KEY}/thumbnail`;
 const ORIGINAL_BYTES = Buffer.from('the-bytes-already-in-s3');
 const CONVERTED_JPEG = Buffer.from('converted-jpeg-bytes');
 
-const derivative = (over: Partial<GeneratedDerivative> = {}): GeneratedDerivative => ({
+const derivative = (over: Partial<GeneratedImageDerivative> = {}): GeneratedImageDerivative => ({
   buffer: Buffer.from('derivative'),
   mimeType: 'image/jpeg',
   width: 100,

@@ -31,7 +31,7 @@ export type MediaItemProps = Omit<CreateMediaItemInput, 'status' | 'takenAt'> & 
   status: MediaItemStatus;
   takenAt?: Date | null;
   takenAtUtcOffsetMinutes?: number | null;
-  mimeType?: string;
+  durationSeconds?: number;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -83,13 +83,14 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
   applyProcessingResults(
     result: {
       capture: { takenAtUtc?: Date; takenAtUtcOffsetMinutes?: number };
+      durationMs?: number;
       displayAsset: AssetMetadata;
       thumbnailAsset: AssetMetadata;
       originalAsset: AssetMetadata;
     },
     actorId: EntityId,
   ) {
-    const { capture, displayAsset, thumbnailAsset, originalAsset } = result;
+    const { capture, durationMs, displayAsset, thumbnailAsset, originalAsset } = result;
     if (!this.props.status.equals(MediaItemStatus.processing)) {
       return fail(AppErrorCollection.mediaItem.MediaItemNotProcessing);
     }
@@ -139,10 +140,10 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes;
     }
 
+    this.props.durationSeconds = (durationMs || 0) * 1000;
     this.props.width = w;
     this.props.height = h;
     this.props.status = MediaItemStatus.ready;
-    this.props.mimeType = original.mimeType();
     this.touch(actorId);
     return ok(undefined);
   }

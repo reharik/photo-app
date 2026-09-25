@@ -40,7 +40,7 @@ export const build__RunImageStoragePipeline =
       });
       return { status: 'stop', message: 'Original object not found in storage' };
     }
-
+    // **
     const originalBuffer = await readStreamToBuffer(streamResult.body);
     logger.info('Original object downloaded from S3', {
       jobId: job.id,
