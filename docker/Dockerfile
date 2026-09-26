@@ -93,6 +93,37 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
+
+# ffmpeg/ffprobe for the video pipeline. They are CLI programs, not npm
+# packages -- `npm ci` puts nothing on PATH, and videoDerivativeGenerator
+# spawns them by bare name via execFile.
+#
+# media-worker ONLY. Debian's ffmpeg package hard-depends on libavdevice59 and
+# libsdl2 (it ships ffplay too), which drag in the whole Mesa/LLVM software-GL
+# stack: 227 packages, ~440MB installed, libllvm15 alone being 106MB. The api
+# never transcodes, and `docker save` runs per service, so leaving this in the
+# service-agnostic part of the stage would add ~120MiB to every api tarball
+# for a binary it never calls.
+#
+# Placement is deliberate, and is the opposite call from the curl layer above.
+# BELOW `ARG SERVICE_NAME` so the condition can read it -- the ENV in scope
+# making this layer service-keyed is exactly what we want here, where curl
+# wanted the reverse. ABOVE the COPYs so a source change does not reinstall
+# 440MB: the cache key is (base + curl layer + SERVICE_NAME + this text), none
+# of which move when app code changes. Nothing in `manifests`, `builder` or
+# `deps-prod` is touched, so the npm ci and nx build caches survive.
+#
+# Not version-pinned, matching the curl line: Debian backports CVE fixes
+# within 5.1.x (hence the +deb12u1 suffix), which is what we want for a parser
+# fed untrusted uploads, and a hard pin would break the build the day deb12u2
+# ships. --no-install-recommends is load-bearing here in a way it is not for
+# curl; without it the 440MB grows.
+RUN if [ "${SERVICE_NAME}" = "media-worker" ]; then \
+      apt-get update && \
+      apt-get install -y --no-install-recommends ffmpeg && \
+      rm -rf /var/lib/apt/lists/*; \
+    fi
+
 COPY --from=builder /app/apps/${SERVICE_NAME}/dist ./apps/${SERVICE_NAME}/dist
 COPY --from=deps-prod /app/node_modules ./node_modules
 RUN test -f "apps/${SERVICE_NAME}/dist/scripts/serverStartUpProd.sh" || \
@@ -114,7 +145,13 @@ FROM node-slim-npm11 AS dev
 WORKDIR /app
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
-RUN apt-get update && apt-get install -y curl git && rm -rf /var/lib/apt/lists/*
+# ffmpeg unconditionally here, unlike runtime-node above. The dev stage is
+# built once per compose service and docker-compose-dev.yml's media-worker uses
+# it, so gating on SERVICE_NAME would only mean the worker silently cannot
+# transcode locally -- which is how this gap went unnoticed in the first place
+# (dev hosts tend to have ffmpeg on PATH, so `nx dev` works and the container
+# does not). Dev images are never shipped, so their size does not matter.
+RUN apt-get update && apt-get install -y curl git ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY --from=manifests /manifests/ ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci

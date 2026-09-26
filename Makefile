@@ -62,6 +62,11 @@ docker/dev/migrate:
 docker/dev/seed:
 	$(compose_dev) exec -T api npm run db:seed:local --workspace=@app/api
 
+# psql into the dev DB with the container's own credentials. Interactive by default;
+# `make db/psql SQL='\d album'` runs one statement non-interactively.
+db/psql:
+	$(compose_dev) exec $(if $(SQL),-T -e "SQL=$(SQL)") db sh -c 'if [ -n "$$SQL" ]; then exec psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -c "$$SQL"; else exec psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"; fi'
+
 # make dc CMD="exec localstack awslocal ses verify-email-identity --email-address invites@homeroll.app"
 dc:
 	$(compose_dev) $(CMD)

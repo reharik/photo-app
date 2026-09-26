@@ -3,6 +3,7 @@ import type { Logger } from '@packages/infrastructure';
 
 import { Knex } from 'knex';
 import type { Config } from '../../../config';
+import { verifyMediaToolchain } from './verifyMediaToolchain';
 
 export interface LogMediaWorkerStartup {
   (): Promise<void>;
@@ -28,6 +29,21 @@ export const build__LogMediaWorkerStartup =
       explicitCredentialsConfigured,
       pollIntervalMs: config.mediaWorkerPollIntervalMs,
     });
+
+    // Cheapest and most local of the three probes, so it runs first: a
+    // misbuilt image should announce itself without waiting on the network.
+    try {
+      const versions = await verifyMediaToolchain();
+      logger.info('Media toolchain check succeeded', versions);
+    } catch (e) {
+      logger.error(
+        'Media toolchain check failed: ffmpeg/ffprobe are not usable on PATH. ' +
+          'The video pipeline cannot run. Is this image built without the ' +
+          'media-worker ffmpeg layer?',
+        e,
+      );
+      throw e;
+    }
 
     try {
       await database.raw('select 1 as ok');

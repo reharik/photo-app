@@ -58,9 +58,9 @@ const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository 
 });
 
 const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobRepository & {
-  enqueued: { mediaItemId: string; actorId: string }[];
+  enqueued: { mediaItemId: string; mediaKind: MediaKind; actorId: string }[];
 } => {
-  const enqueued: { mediaItemId: string; actorId: string }[] = [];
+  const enqueued: { mediaItemId: string; mediaKind: MediaKind; actorId: string }[] = [];
   return {
     enqueued,
     enqueueIfNoneActive: async (input) => {
@@ -357,7 +357,7 @@ describe('Media upload pipeline (application services)', () => {
       });
       expect(finalized.success).toBe(true);
       expect(jobRepository.enqueued).toEqual([
-        { mediaItemId: created.value.mediaItemId, actorId: viewerA },
+        { mediaItemId: created.value.mediaItemId, mediaKind: MediaKind.photo, actorId: viewerA },
       ]);
     });
   });

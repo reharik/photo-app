@@ -1,11 +1,4 @@
-import {
-  AppErrorCollection,
-  fail,
-  MediaAssetKind,
-  MediaKind,
-  ok,
-  OperationResult,
-} from '@packages/contracts';
+import { AppErrorCollection, fail, MediaAssetKind, ok, OperationResult } from '@packages/contracts';
 import {
   buildMediaAssetStorageKey,
   buildMediaItemBaseStorageKey,
@@ -89,16 +82,15 @@ export const build__FinalizeMediaItemUpload = ({
 
     await mediaItemRepository.save(mediaItem);
 
-    if (mediaItem.kind().equals(MediaKind.photo)) {
-      // this should be moved to a domainevent once we have persisted events
+    // this should be moved to a domainevent once we have persisted events
 
-      // Same transaction as mediaItemRepository.save above: the job row must not be
-      // visible to the worker before the item's PROCESSING status commits.
-      await mediaProcessingJobRepository.enqueueIfNoneActive({
-        mediaItemId: mediaItem.id(),
-        actorId: viewerId,
-      });
-    }
+    // Same transaction as mediaItemRepository.save above: the job row must not be
+    // visible to the worker before the item's PROCESSING status commits.
+    await mediaProcessingJobRepository.enqueueIfNoneActive({
+      mediaItemId: mediaItem.id(),
+      mediaKind: mediaItem.kind(),
+      actorId: viewerId,
+    });
 
     return ok({
       mediaItemId: mediaItem.id(),

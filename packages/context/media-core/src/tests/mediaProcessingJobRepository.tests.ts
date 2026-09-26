@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaJobStatus } from '@packages/contracts';
+import { MediaJobStatus, MediaKind } from '@packages/contracts';
 import type { UnitOfWork } from '../infrastructure/repositories/unitOfWork';
 import { build__MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository';
 
@@ -60,12 +60,20 @@ describe('build__MediaProcessingJobRepository', () => {
         }));
 
         const repo = build__MediaProcessingJobRepository({ uow });
-        await repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID });
+        await repo.enqueueIfNoneActive({
+          mediaItemId: 'mid-1',
+          mediaKind: MediaKind.video,
+          actorId: ACTOR_ID,
+        });
 
         expect(inserts).toHaveLength(1);
         expect(inserts[0]).toEqual(
           expect.objectContaining({
             mediaItemId: 'mid-1',
+            // The wire string, not the smart-enum member. A member object would be
+            // handed to knex as-is and land as garbage; `video` rather than `photo`
+            // here so a hard-coded 'PHOTO' cannot pass this.
+            mediaKind: MediaKind.video.value,
             status: MediaJobStatus.pending.value,
             attemptCount: 0,
             createdBy: ACTOR_ID,
@@ -91,7 +99,11 @@ describe('build__MediaProcessingJobRepository', () => {
 
         const repo = build__MediaProcessingJobRepository({ uow });
         await expect(
-          repo.enqueueIfNoneActive({ mediaItemId: 'mid-1', actorId: ACTOR_ID }),
+          repo.enqueueIfNoneActive({
+            mediaItemId: 'mid-1',
+            mediaKind: MediaKind.photo,
+            actorId: ACTOR_ID,
+          }),
         ).rejects.toThrow('connection refused');
       });
     });
