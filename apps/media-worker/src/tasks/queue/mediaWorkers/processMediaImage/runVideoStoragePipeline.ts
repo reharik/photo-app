@@ -27,9 +27,10 @@ export const build__RunVideoStoragePipeline =
     const baseKey = buildMediaItemBaseStorageKey(ownerId, job.mediaItemId);
     const originalKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.original);
     const dir = await mkdtemp(join(tmpdir(), 'video-'));
-
+    const t0 = Date.now();
+    const since = () => Date.now() - t0;
     try {
-      logger.info('S3 GetObject (original)', {
+      logger.info(`S3 GetObject (original) ms: ${since()}`, {
         bucket: config.s3Bucket,
         key: originalKey,
         jobId: job.id,
@@ -47,7 +48,7 @@ export const build__RunVideoStoragePipeline =
         return { status: 'stop', message: 'Original object not found in storage' };
       }
 
-      logger.info('Original object downloaded from S3', {
+      logger.info(`Original object downloaded from S3 ms: ${since()}`, {
         jobId: job.id,
         mediaItemId: job.mediaItemId,
         mimeType: streamResult.mimeType,
@@ -58,7 +59,7 @@ export const build__RunVideoStoragePipeline =
         dir,
       );
 
-      logger.info('Video derivatives generated', {
+      logger.info(`Video derivatives generated ms: ${since()}`, {
         jobId: job.id,
         mediaItemId: job.mediaItemId,
         displayBytes: display.fileSizeBytes,
@@ -68,8 +69,13 @@ export const build__RunVideoStoragePipeline =
       const displayKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.display);
       const thumbnailKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.thumbnail);
 
-      const logDerivativeUpload = (storageKey: string, length: number, mimeType: string): void => {
-        logger.info('S3 PutObject (derivative)', {
+      const logDerivativeUpload = (
+        storageKey: string,
+        length: number,
+        mimeType: string,
+        time: number,
+      ): void => {
+        logger.info(`S3 PutObject (derivative) ms: ${time}`, {
           bucket: config.s3Bucket,
           key: storageKey,
           bodyType: 'Stream',
@@ -78,14 +84,14 @@ export const build__RunVideoStoragePipeline =
         });
       };
 
-      logDerivativeUpload(displayKey, display.fileSizeBytes, display.mimeType);
+      logDerivativeUpload(displayKey, display.fileSizeBytes, display.mimeType, since());
       await mediaStorage.writeObject({
         storageKey: displayKey,
         body: createReadStream(display.path),
         mimeType: display.mimeType,
         contentLength: display.fileSizeBytes,
       });
-      logDerivativeUpload(thumbnailKey, thumbnail.fileSizeBytes, thumbnail.mimeType);
+      logDerivativeUpload(thumbnailKey, thumbnail.fileSizeBytes, thumbnail.mimeType, since());
       await mediaStorage.writeObject({
         storageKey: thumbnailKey,
         body: createReadStream(thumbnail.path),

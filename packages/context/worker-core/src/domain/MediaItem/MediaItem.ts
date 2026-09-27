@@ -31,7 +31,7 @@ export type MediaItemProps = Omit<CreateMediaItemInput, 'status' | 'takenAt'> & 
   status: MediaItemStatus;
   takenAt?: Date | null;
   takenAtUtcOffsetMinutes?: number | null;
-  durationSeconds?: number;
+  durationMs?: number;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -140,7 +140,8 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
       this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes;
     }
 
-    this.props.durationSeconds = (durationMs || 0) * 1000;
+    this.props.durationMs = durationMs;
+
     this.props.width = w;
     this.props.height = h;
     this.props.status = MediaItemStatus.ready;

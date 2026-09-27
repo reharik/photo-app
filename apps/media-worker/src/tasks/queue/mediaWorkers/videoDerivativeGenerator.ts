@@ -96,10 +96,12 @@ const transformVideo = async (
   await exec(
     'ffmpeg',
     [
+      '-loglevel',
+      'error',
       '-i',
       originalPath,
       '-vf',
-      "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
+      "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps='min(60,source_fps)'",
       '-c:v',
       'libx264',
       '-preset',
@@ -117,7 +119,7 @@ const transformVideo = async (
       '-map_metadata',
       '-1',
       '-threads',
-      '1',
+      '0',
       '-y',
       displayPath,
     ],

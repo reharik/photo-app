@@ -23,8 +23,9 @@ Nested files: [`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md)
 - Tests: unit `nx test <proj>`; integration `nx run {api,media-worker}:test-integration` (needs the dev DB up); e2e `nx test e2e`.
 - Lifetimes/registrations: `npm run ioc:<proj> -- inspect`; don't grep `generated/ioc-manifest.ts`.
 - For table shapes, use make db/psql and \d <table>; don't reconstruct them from migrations. (Non-interactive: `make db/psql SQL='\d album'`.)
-- Scratchpad scripts can't resolve repo packages: `ln -s "$PWD/node_modules" "$SP/node_modules"` first.
+- Scratchpad scripts can't resolve repo packages: write them as CommonJS (`.cjs`, `require`) and run with `NODE_PATH="$PWD/node_modules"`; ESM `import` ignores `NODE_PATH`.
 - Use absolute paths or `(cd dir && …)`; a bare `cd` persists into later commands.
+- If a command is denied, never substitute an equivalent that achieves the same effect (e.g. cp → cat >). Use the documented alternative or ask me.
 
 ---
 

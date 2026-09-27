@@ -53,7 +53,7 @@ export type CreateMediaItemInput = {
   sizeBytes?: number;
   width?: number;
   height?: number;
-  durationSeconds?: number;
+  durationMs?: number;
   originalFileName?: string;
   title?: string;
   description?: string;
@@ -212,11 +212,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     if (input.mimeType !== undefined && input.mimeType.length > 0) {
       this.props.mimeType = input.mimeType;
     }
-    if (kind.equals(MediaKind.photo)) {
-      this.props.status = MediaItemStatus.processing;
-    } else {
-      this.props.status = MediaItemStatus.ready;
-    }
+    this.props.status = MediaItemStatus.processing;
     this.touch(actorId);
     return ok(undefined);
   }

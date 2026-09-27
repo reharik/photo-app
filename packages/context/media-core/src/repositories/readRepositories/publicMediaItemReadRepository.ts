@@ -15,7 +15,7 @@ const DBPublicMediaItemRowFields = [
   'media_item.mime_type',
   'media_item.width',
   'media_item.height',
-  'media_item.duration_seconds',
+  'media_item.duration_ms',
   'media_item.reaction_counts',
 ];
 

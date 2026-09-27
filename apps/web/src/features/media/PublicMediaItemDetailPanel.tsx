@@ -34,7 +34,7 @@ export type PublicMediaItemDetailPanelProps = {
 
 const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
 
-const formatDurationSeconds = (seconds: number): string => {
+const formatdurationMs = (seconds: number): string => {
   const s = Math.max(0, Math.floor(seconds));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
@@ -80,14 +80,14 @@ export const PublicMediaItemDetailPanel = forwardRef<
     mediaItem.height != null &&
     mediaItem.width > 0 &&
     mediaItem.height > 0;
-  const hasDuration = mediaItem.durationSeconds != null && mediaItem.durationSeconds > 0;
+  const hasDuration = mediaItem.durationMs != null && mediaItem.durationMs > 0;
 
   const photoDetailRows = [
     hasDimensions
       ? { label: 'Dimensions', value: `${mediaItem.width} × ${mediaItem.height}` }
       : undefined,
     hasDuration
-      ? { label: 'Duration', value: formatDurationSeconds(mediaItem.durationSeconds ?? 0) }
+      ? { label: 'Duration', value: formatdurationMs(mediaItem.durationMs ?? 0) }
       : undefined,
   ].filter((row) => row != null);
 

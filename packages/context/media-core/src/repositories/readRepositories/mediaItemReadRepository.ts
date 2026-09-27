@@ -18,7 +18,7 @@ const DBmediaItemRowFields = [
   'media_item.original_file_name',
   'media_item.width',
   'media_item.height',
-  'media_item.duration_seconds',
+  'media_item.duration_ms',
   'media_item.title',
   'media_item.description',
   'media_item.taken_at',

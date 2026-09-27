@@ -74,7 +74,7 @@ export const MediaGridTile = ({
   const testId = item.id;
   const PlaceholderIcon = item.kind.equals(MediaKind.photo) ? Image : Film;
   const placeholderIconSize = isContain ? 32 : 40;
-  const showThumbnailImage = item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
+  const showThumbnailImage = hasThumbnail && !thumbLoadFailed;
 
   useEffect(() => {
     setThumbLoadFailed(false);

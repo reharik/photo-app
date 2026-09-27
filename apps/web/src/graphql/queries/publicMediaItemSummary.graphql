@@ -5,7 +5,7 @@ fragment PublicMediaItemSummary on PublicMediaItem {
   mimeType
   width
   height
-  durationSeconds
+  durationMs
   reactionCounts {
     ...ReactionCounts
   }
