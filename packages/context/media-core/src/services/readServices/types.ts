@@ -85,7 +85,7 @@ export type NamespacedMediaItemRow = {
   mediaItemOriginalFileName?: string;
   mediaItemWidth?: number;
   mediaItemHeight?: number;
-  mediaItemdurationMs?: number;
+  mediaItemDurationMs?: number;
   mediaItemTitle?: string;
   mediaItemDescription?: string;
   mediaItemTakenAt?: Date;

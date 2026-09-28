@@ -19,6 +19,7 @@ import type {
 } from '../features/media/viewer/mediaViewerTypes';
 import { ViewerMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { usePollWhileProcessing } from '../hooks/usePollWhileProcessing';
 import { NotFoundState } from '../ui/NotFoundState';
 import { Toast } from '../ui/Toast';
 
@@ -46,6 +47,7 @@ export const MediaItemScreen = () => {
     query,
     select: (data) => data.viewer?.mediaItem,
   });
+  usePollWhileProcessing(query, mediaItem?.status);
   /** Mirrors {@link MediaItemDetailPanel} editing state so keyboard gallery navigation can respect it. */
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [activeMobileSheet, setActiveMobileSheet] = useState<MobileViewerSheet>('none');
@@ -128,6 +130,7 @@ export const MediaItemScreen = () => {
       return null;
     }
     const displayUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.display);
+    const posterUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
 
     const imageAlt =
       mediaItem.title?.trim() || mediaItem.originalFileName?.trim() || mediaItem.kind.display;
@@ -136,8 +139,12 @@ export const MediaItemScreen = () => {
       <MediaViewer
         key={mediaItem.id}
         kind={mediaItem.kind}
+        status={mediaItem.status}
         mimeType={mediaItem.mimeType}
         displayUrl={displayUrl}
+        posterUrl={posterUrl}
+        width={mediaItem.width}
+        height={mediaItem.height}
         imageAlt={imageAlt}
         mediaItemId={mediaItem.id}
         onClose={handleClose}
@@ -159,7 +166,11 @@ export const MediaItemScreen = () => {
 
   const neighborPrefetch =
     galleryNavigation.enabled && galleryIds != null ? (
-      <NeighborDisplayPrefetch galleryNavigation={galleryNavigation} galleryIds={galleryIds} />
+      <NeighborDisplayPrefetch
+        galleryNavigation={galleryNavigation}
+        galleryIds={galleryIds}
+        typename="MediaItem"
+      />
     ) : null;
 
   if (!mediaItem) {

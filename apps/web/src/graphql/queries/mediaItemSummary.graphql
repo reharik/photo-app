@@ -4,6 +4,9 @@ fragment MediaItemSummary on MediaItem {
   status
   title
   mimeType
+  width
+  height
+  durationMs
   originalFileName
   createdAt
   description

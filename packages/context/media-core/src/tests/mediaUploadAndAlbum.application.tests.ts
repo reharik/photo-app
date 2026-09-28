@@ -157,7 +157,7 @@ const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
     sizeBytes: p.sizeBytes ?? 0,
     width: p.width,
     height: p.height,
-    durationSeconds: p.durationSeconds,
+    durationMs: p.durationMs,
     title: p.title ?? '',
     originalFileName: p.originalFileName,
     description: p.description,

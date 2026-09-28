@@ -2,6 +2,7 @@ import { ReactionEmoji } from '@packages/contracts';
 import { X } from 'lucide-react';
 import { forwardRef, useCallback, useImperativeHandle } from 'react';
 import styled from 'styled-components';
+import { formatDuration } from '../../domain/formatters/formatDuration';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { BottomSheet } from '../../ui/BottomSheet';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
@@ -33,17 +34,6 @@ export type PublicMediaItemDetailPanelProps = {
 };
 
 const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
-
-const formatdurationMs = (seconds: number): string => {
-  const s = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-  }
-  return `${m}:${String(sec).padStart(2, '0')}`;
-};
 
 export const PublicMediaItemDetailPanel = forwardRef<
   PublicMediaItemDetailPanelHandle,
@@ -87,7 +77,7 @@ export const PublicMediaItemDetailPanel = forwardRef<
       ? { label: 'Dimensions', value: `${mediaItem.width} × ${mediaItem.height}` }
       : undefined,
     hasDuration
-      ? { label: 'Duration', value: formatdurationMs(mediaItem.durationMs ?? 0) }
+      ? { label: 'Duration', value: formatDuration(mediaItem.durationMs ?? 0) }
       : undefined,
   ].filter((row) => row != null);
 

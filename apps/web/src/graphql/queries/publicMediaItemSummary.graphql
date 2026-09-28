@@ -1,6 +1,7 @@
 fragment PublicMediaItemSummary on PublicMediaItem {
   id
   kind
+  status
   title
   mimeType
   width

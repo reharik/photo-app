@@ -2,8 +2,8 @@ import type { ScopedLogger } from '@packages/infrastructure';
 import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
-import type { MediaCoreConfig } from '../MediaCoreConfig.js';
 import type { Album } from '../domain/Album/Album.js';
+import type { MediaCoreConfig } from '../MediaCoreConfig.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
@@ -62,10 +62,11 @@ const createSilentScopedLogger = (): ScopedLogger =>
 
 // Storage quota is not what these specs exercise, so report effectively unlimited headroom.
 const createUnlimitedMediaAssetReadRepository = (): MediaAssetReadRepository => ({
-  getStorageUsage: async () => ({
+  getUploadLimits: async () => ({
     storageCapBytes: Number.MAX_SAFE_INTEGER,
     storageUsedBytes: 0,
     storageRemainingBytes: Number.MAX_SAFE_INTEGER,
+    videoEnabled: false,
   }),
 });
 

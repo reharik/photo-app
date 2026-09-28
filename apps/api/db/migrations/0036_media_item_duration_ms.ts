@@ -7,8 +7,9 @@ import type { Knex } from 'knex';
  * Why: the video pipeline measures duration with sub-second precision, and writing that
  * fractional value into an integer column fails (Postgres 22P02, pg_strtoint32_safe).
  * Storing whole milliseconds keeps the precision in an integral column. bigint rather
- * than integer because integer tops out at ~24.8 days of ms; the API exposes the value
- * as SafeInt, like size_bytes.
+ * than integer because integer tops out at ~24.8 days of ms. The API exposes the value
+ * as GraphQL Int (32-bit), which is ample for any clip we accept; widen it to SafeInt
+ * (like size_bytes) if that ever stops being true.
  *
  * Existing values are whole seconds, so they are multiplied by 1000 in this migration;
  * the column never holds mixed units. The multiply runs after the widen so it can't

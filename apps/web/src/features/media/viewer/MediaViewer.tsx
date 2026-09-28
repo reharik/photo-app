@@ -1,4 +1,4 @@
-import { MediaKind } from '@packages/contracts';
+import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
 import styled from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
@@ -15,8 +15,13 @@ export type { NavigateDirection } from './mediaViewerTypes';
 
 export type MediaViewerProps = {
   kind: MediaKind;
+  status: MediaItemStatus;
   mimeType: string;
   displayUrl: string;
+  /** THUMBNAIL asset URL; the poster frame for video. */
+  posterUrl: string;
+  width?: number | null;
+  height?: number | null;
   imageAlt: string;
   mediaItemId: string;
   /** When false, hides the stage close button on mobile. */
@@ -43,8 +48,12 @@ const isZoomableImage = (kind: MediaKind, mimeType: string): boolean => {
 
 export const MediaViewer = ({
   kind,
+  status,
   mimeType,
   displayUrl,
+  posterUrl,
+  width,
+  height,
   imageAlt,
   mediaItemId,
   onClose,
@@ -61,7 +70,8 @@ export const MediaViewer = ({
   const zoomActiveRef = useRef(false);
   const resetZoomRef = useRef<(() => void) | null>(null);
 
-  const zoomLayerEnabled = isZoomableImage(kind, mimeType);
+  // Not-ready items render a notice, not an image — nothing to zoom.
+  const zoomLayerEnabled = isZoomableImage(kind, mimeType) && status.equals(MediaItemStatus.ready);
   const mobileGesturesEnabled = isMobileLayout && mobileChrome != null;
 
   useLayoutEffect(() => {
@@ -114,8 +124,12 @@ export const MediaViewer = ({
         <MediaRenderer
           id={mediaItemId}
           kind={kind}
+          status={status}
           mimeType={mimeType}
           displayUrl={displayUrl}
+          posterUrl={posterUrl}
+          width={width}
+          height={height}
           imageAlt={imageAlt}
         />
       </ZoomableImageViewport>

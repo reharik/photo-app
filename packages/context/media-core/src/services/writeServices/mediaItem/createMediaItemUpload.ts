@@ -72,9 +72,9 @@ export const build__CreateMediaItemUpload = ({
       return fail(AppErrorCollection.mediaItem.InvalidUploadSize);
     }
 
-    const usage = await mediaAssetReadRepository.getStorageUsage();
+    const limits = await mediaAssetReadRepository.getUploadLimits();
     const uploadSize = input.reduce((acc, x) => (acc += x.size), 0);
-    if ((usage?.storageRemainingBytes || 0) < uploadSize) {
+    if ((limits?.storageRemainingBytes || 0) < uploadSize) {
       return fail(ContractError.InsufficientStorageSpace);
     }
 
@@ -100,6 +100,12 @@ export const build__CreateMediaItemUpload = ({
         result.push({
           clientId,
           result: fail(ContractError.ImageSizeTooLarge, { size, maxBytes: config.imageMaxBytes }),
+        });
+        continue;
+      } else if (MediaKind.video.equals(kind) && !limits?.videoEnabled) {
+        result.push({
+          clientId,
+          result: fail(ContractError.VideoNotEnabledForThisAccount),
         });
         continue;
       } else if (MediaKind.video.equals(kind) && size > config.videoMaxBytes) {

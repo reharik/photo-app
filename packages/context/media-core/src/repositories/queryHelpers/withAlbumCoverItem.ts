@@ -10,7 +10,7 @@ export const mediaItemSelectColumns = [
   'mediaItem.originalFileName as mediaItemOriginalFileName',
   'mediaItem.width as mediaItemWidth',
   'mediaItem.height as mediaItemHeight',
-  'mediaItem.durationMs as mediaItemdurationMs',
+  'mediaItem.durationMs as mediaItemDurationMs',
   'mediaItem.title as mediaItemTitle',
   'mediaItem.description as mediaItemDescription',
   'mediaItem.takenAt as mediaItemTakenAt',

@@ -675,6 +675,13 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
+  VideoNotEnabledForThisAccount: {
+    code: 'VIDEO_NOT_ENABLED_FOR_THIS_ACCOUNT',
+    display: 'Video not enabled for this account',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

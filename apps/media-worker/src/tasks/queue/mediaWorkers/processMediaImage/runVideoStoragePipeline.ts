@@ -96,7 +96,7 @@ export const build__RunVideoStoragePipeline =
         storageKey: thumbnailKey,
         body: createReadStream(thumbnail.path),
         mimeType: thumbnail.mimeType,
-        contentLength: display.fileSizeBytes,
+        contentLength: thumbnail.fileSizeBytes,
       });
 
       const displayAsset = {
