@@ -4,4 +4,5 @@ export type ViewerParent = {
   lastName?: string;
   isAuthenticated: boolean;
   displayName: string;
+  videoEnabled?: boolean;
 };

@@ -51,7 +51,7 @@ export const DEV_SEED_USERS: SeedUserRow[] = [
     firstName: 'Bubba',
     lastName: 'Jones',
     userStatus: 'ACTIVE',
-    videoEnabled: true,
+    videoEnabled: false,
   },
 ];
 

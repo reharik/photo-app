@@ -15,6 +15,11 @@ type Viewer {
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
   inAppNotification: [InAppNotification!]!
+  permissions: Permissions!
+}
+
+type Permissions {
+  videoEnabled: Boolean
 }
 
 type InAppNotification {

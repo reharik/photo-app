@@ -67,6 +67,11 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
     inAppNotification: authenticatedReadResolver(async (_parent, args, ctx) => {
       return ctx.readServices.viewerHasInAppNotificationService.getInAppNotification();
     }),
+    permissions: authenticatedReadResolver(async (parent) => {
+      return {
+        videoEnabled: parent.videoEnabled,
+      };
+    }),
   },
 };
 

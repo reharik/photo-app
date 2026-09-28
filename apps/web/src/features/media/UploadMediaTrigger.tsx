@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import { type AppError } from '../../domain/errors/errorTypes';
+import { useViewer } from '../../hooks/useViewer';
 
 type UploadMediaTriggerProps = {
   albumId?: string;
@@ -17,6 +18,7 @@ export const UploadMediaTrigger = ({
   disabled,
   children,
 }: UploadMediaTriggerProps) => {
+  const { viewer } = useViewer();
   const { enqueueFiles, isUploading } = useUploadQueue();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,14 +47,17 @@ export const UploadMediaTrigger = ({
     // it, picking the same file twice in a row fires no change event.
     input.value = '';
   };
-
   return (
     <>
       <input
         ref={fileInputRef}
         type="file"
         multiple={multiple}
-        accept="image/*,image/heic,image/heif,.heic,.heif,video/*,video/quicktime,.mov,.mp4,.m4v"
+        accept={
+          viewer && viewer.permissions?.videoEnabled
+            ? 'image/*,image/heic,image/heif,.heic,.heif,video/*,video/quicktime,.mov,.mp4,.m4v'
+            : 'image/*,image/heic,image/heif,.heic,.heif'
+        }
         data-testid="upload-media-input"
         style={{ display: 'none' }}
         onChange={handleFileChange}
