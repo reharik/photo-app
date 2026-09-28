@@ -58,9 +58,9 @@ const createNoopMediaProcessingJobRepository = (): MediaProcessingJobRepository 
 });
 
 const createTrackingMediaProcessingJobRepository = (): MediaProcessingJobRepository & {
-  enqueued: { mediaItemId: string; actorId: string }[];
+  enqueued: { mediaItemId: string; mediaKind: MediaKind; actorId: string }[];
 } => {
-  const enqueued: { mediaItemId: string; actorId: string }[] = [];
+  const enqueued: { mediaItemId: string; mediaKind: MediaKind; actorId: string }[] = [];
   return {
     enqueued,
     enqueueIfNoneActive: async (input) => {
@@ -157,7 +157,7 @@ const projectionFromAggregate = (item: MediaItem): DBMediaItemRow => {
     sizeBytes: p.sizeBytes ?? 0,
     width: p.width,
     height: p.height,
-    durationSeconds: p.durationSeconds,
+    durationMs: p.durationMs,
     title: p.title ?? '',
     originalFileName: p.originalFileName,
     description: p.description,
@@ -203,11 +203,12 @@ const uploadOne = async (
   if (!result.success) {
     return result;
   }
-  const item = result.value.find((r) => r.clientId === command.clientId);
-  if (!item) {
+  const outcome = result.value.find((o) => o.clientId === command.clientId);
+  if (!outcome) {
     throw new Error(`no createMediaUpload result for clientId ${command.clientId}`);
   }
-  return { ...result, value: item };
+  // Flatten the per-item outcome so specs read one result, not a result inside a result.
+  return outcome.result;
 };
 
 describe('Media upload pipeline (application services)', () => {
@@ -356,7 +357,7 @@ describe('Media upload pipeline (application services)', () => {
       });
       expect(finalized.success).toBe(true);
       expect(jobRepository.enqueued).toEqual([
-        { mediaItemId: created.value.mediaItemId, actorId: viewerA },
+        { mediaItemId: created.value.mediaItemId, mediaKind: MediaKind.photo, actorId: viewerA },
       ]);
     });
   });

@@ -1,8 +1,9 @@
-import { MediaAssetKind, MediaKind } from '@packages/contracts';
-import { Film, Image, Layers } from 'lucide-react';
+import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { Film, Image, Layers, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import styled, { css } from 'styled-components';
+import { formatDuration } from '../../../domain/formatters/formatDuration';
 import { buildMediaItemUrl } from '../../../domain/formatters/mediaItemUrlBuilder';
 import { printTileMatte, TILE_MATTE_VAR } from '../../../ui/Print';
 import { UnseenDot } from '../../../ui/UnseenDot';
@@ -16,6 +17,9 @@ const defaultBuildTileHref = (itemId: string): string => `/media/${itemId}`;
 export type MediaGridTileItem = {
   id: string;
   kind: MediaKind;
+  /** Derivatives (thumbnail included) exist only once the item is READY. */
+  status: MediaItemStatus;
+  durationMs?: number | null;
   title?: string;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
@@ -74,11 +78,17 @@ export const MediaGridTile = ({
   const testId = item.id;
   const PlaceholderIcon = item.kind.equals(MediaKind.photo) ? Image : Film;
   const placeholderIconSize = isContain ? 32 : 40;
-  const showThumbnailImage = item.kind.equals(MediaKind.photo) && hasThumbnail && !thumbLoadFailed;
+  // Before READY the thumbnail object doesn't exist yet, so requesting it only
+  // earns an S3 error; show the placeholder until the status flips.
+  const thumbnailReady = item.status.equals(MediaItemStatus.ready);
+  const showThumbnailImage = hasThumbnail && thumbnailReady && !thumbLoadFailed;
+  const isVideo = item.kind.equals(MediaKind.video);
+  const durationLabel =
+    item.durationMs != null && item.durationMs > 0 ? formatDuration(item.durationMs) : undefined;
 
   useEffect(() => {
     setThumbLoadFailed(false);
-  }, [item.id, hasThumbnail, thumbnailUrl]);
+  }, [item.id, hasThumbnail, thumbnailReady, thumbnailUrl]);
 
   const thumbContent = (
     <>
@@ -95,10 +105,16 @@ export const MediaGridTile = ({
           <PlaceholderIcon size={placeholderIconSize} strokeWidth={2} aria-hidden />
         </ThumbIcon>
       )}
+      {isVideo ? (
+        <VideoBadge aria-label={durationLabel != null ? `Video, ${durationLabel}` : 'Video'}>
+          <Play size={10} strokeWidth={2} fill="currentColor" aria-hidden />
+          {durationLabel != null ? <BadgeText>{durationLabel}</BadgeText> : null}
+        </VideoBadge>
+      ) : null}
       {showBurstBadge ? (
         <BurstBadge aria-hidden>
           <Layers size={10} strokeWidth={2} aria-hidden />
-          <BurstCount>{burstCount}</BurstCount>
+          <BadgeText>{burstCount}</BadgeText>
         </BurstBadge>
       ) : null}
       {showReactions ? (
@@ -253,6 +269,13 @@ const BurstBadge = styled(TileChromePill)`
   bottom: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
 `;
 
-const BurstCount = styled.span`
+// Top-left: the other corners are taken (reaction pill bottom-left, burst badge
+// bottom-right, unseen dot top-right). Same matte offset as the burst badge.
+const VideoBadge = styled(TileChromePill)`
+  left: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+  top: calc(${TILE_MATTE_VAR} + ${({ theme }) => theme.spacing(0.75)});
+`;
+
+const BadgeText = styled.span`
   font-variant-numeric: tabular-nums;
 `;

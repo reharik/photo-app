@@ -32,6 +32,7 @@ export type SeedUserRow = {
   firstName: string;
   lastName: string;
   userStatus: string;
+  videoEnabled: boolean;
 };
 
 /** Developer logins. Seeded on dev boot. */
@@ -42,6 +43,7 @@ export const DEV_SEED_USERS: SeedUserRow[] = [
     firstName: 'Raif',
     lastName: 'Harik',
     userStatus: 'ACTIVE',
+    videoEnabled: true,
   },
   {
     id: '11111111-1111-4111-8111-111111111002',
@@ -49,6 +51,7 @@ export const DEV_SEED_USERS: SeedUserRow[] = [
     firstName: 'Bubba',
     lastName: 'Jones',
     userStatus: 'ACTIVE',
+    videoEnabled: true,
   },
 ];
 
@@ -60,6 +63,7 @@ export const E2E_SEED_USERS: SeedUserRow[] = [
     firstName: 'E2e',
     lastName: 'Owner',
     userStatus: 'ACTIVE',
+    videoEnabled: true,
   },
   {
     id: '11111111-1111-4111-8111-111111111004',
@@ -67,6 +71,7 @@ export const E2E_SEED_USERS: SeedUserRow[] = [
     firstName: 'E2e',
     lastName: 'Recipient',
     userStatus: 'ACTIVE',
+    videoEnabled: false,
   },
 ];
 
@@ -118,6 +123,7 @@ const upsertSeedUsers = async (knex: Knex, rows: SeedUserRow[]): Promise<void> =
         createdBy: row.id,
         updatedBy: row.id,
         userStatus: row.userStatus,
+        videoEnabled: row.videoEnabled,
       })
       .onConflict('id')
       .merge({
@@ -127,6 +133,7 @@ const upsertSeedUsers = async (knex: Knex, rows: SeedUserRow[]): Promise<void> =
         passwordHash,
         emailVerified: true,
         userStatus: row.userStatus,
+        videoEnabled: row.videoEnabled,
         updatedBy: row.id,
       });
   }

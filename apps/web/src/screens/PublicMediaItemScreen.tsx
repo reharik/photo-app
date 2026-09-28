@@ -19,6 +19,7 @@ import type {
 } from '../features/media/viewer/mediaViewerTypes';
 import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
+import { usePollWhileProcessing } from '../hooks/usePollWhileProcessing';
 import { Toast } from '../ui/Toast';
 import { resolvePublicQueryView } from './public/resolvePublicQueryView';
 
@@ -45,6 +46,7 @@ export const PublicMediaItemScreen = () => {
     query,
     select: (data) => data.publicAccess?.mediaItem,
   });
+  usePollWhileProcessing(query, mediaItem?.status);
   const [isMobileChromeVisible, setIsMobileChromeVisible] = useState(false);
   const [activeMobileSheet, setActiveMobileSheet] = useState<MobileViewerSheet>('none');
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -111,14 +113,19 @@ export const PublicMediaItemScreen = () => {
       return null;
     }
     const displayUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.display);
+    const posterUrl = buildMediaItemUrl(mediaItem.id, MediaAssetKind.thumbnail);
 
     const imageAlt = mediaItem.title?.trim() || mediaItem.kind.display;
 
     return (
       <MediaViewer
         kind={mediaItem.kind}
+        status={mediaItem.status}
         mimeType={mediaItem.mimeType}
         displayUrl={displayUrl}
+        posterUrl={posterUrl}
+        width={mediaItem.width}
+        height={mediaItem.height}
         imageAlt={imageAlt}
         mediaItemId={mediaItem.id}
         onClose={handleDismissScreen}
@@ -141,7 +148,11 @@ export const PublicMediaItemScreen = () => {
 
   const neighborPrefetch =
     galleryNavigation.enabled && galleryIds != null ? (
-      <NeighborDisplayPrefetch galleryNavigation={galleryNavigation} galleryIds={galleryIds} />
+      <NeighborDisplayPrefetch
+        galleryNavigation={galleryNavigation}
+        galleryIds={galleryIds}
+        typename="PublicMediaItem"
+      />
     ) : null;
 
   if (!mediaItem) {

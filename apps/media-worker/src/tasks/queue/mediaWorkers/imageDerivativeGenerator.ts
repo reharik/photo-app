@@ -6,7 +6,7 @@ const THUMBNAIL_MAX_EDGE = 480;
 const DERIVATIVE_MIME = 'image/jpeg';
 const JPEG_QUALITY = 85;
 
-export type GeneratedDerivative = {
+export type GeneratedImageDerivative = {
   buffer: Buffer;
   mimeType: string;
   width: number;
@@ -15,9 +15,9 @@ export type GeneratedDerivative = {
 };
 
 export type ImageDerivatives = {
-  display: GeneratedDerivative;
-  thumbnail: GeneratedDerivative;
-  original: GeneratedDerivative;
+  display: GeneratedImageDerivative;
+  thumbnail: GeneratedImageDerivative;
+  original: GeneratedImageDerivative;
   originalWasReplaced: boolean;
 };
 
@@ -58,7 +58,7 @@ const loadHeicConverterModule = async (): Promise<HeicConverterModule> => {
 const resizeToDerivative = async (
   originalBuffer: Buffer,
   maxEdge: number,
-): Promise<GeneratedDerivative> => {
+): Promise<GeneratedImageDerivative> => {
   const { data, info } = await sharp(originalBuffer)
     .rotate()
     .resize(maxEdge, maxEdge, { fit: 'inside', withoutEnlargement: true })
@@ -78,7 +78,7 @@ const resizeToDerivative = async (
   };
 };
 
-const readOriginalAsDerivative = async (buffer: Buffer): Promise<GeneratedDerivative> => {
+const readOriginalAsDerivative = async (buffer: Buffer): Promise<GeneratedImageDerivative> => {
   const md = await sharp(buffer).metadata();
   if (md.width == null || md.height == null) {
     throw new Error('Original dimensions missing');
@@ -119,7 +119,7 @@ export const generateImageDerivatives = async (
   logger?: Logger,
 ): Promise<ImageDerivatives> => {
   let workingBuffer = originalBuffer;
-  let original: GeneratedDerivative;
+  let original: GeneratedImageDerivative;
   let originalWasReplaced = false;
 
   const heicConverter = await runStage('load_heic_module', () => loadHeicConverterModule(), logger);

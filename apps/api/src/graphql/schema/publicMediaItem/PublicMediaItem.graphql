@@ -6,7 +6,7 @@ type PublicMediaItem implements Node {
   mimeType: String!
   width: Int
   height: Int
-  durationSeconds: Int
+  durationMs: Int
   tags: [String!]!
   comments(input: CommentsInput!): CommentCollectionPayload!
   operations: [Operation!]!

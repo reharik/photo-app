@@ -23,9 +23,14 @@ const isTypingTarget = (target: EventTarget | null): boolean => {
   return target.isContentEditable;
 };
 
+/** A focused <video>/<audio> uses the arrow keys itself (seek); don't also navigate. */
+const isMediaElementTarget = (target: EventTarget | null): boolean =>
+  target instanceof HTMLMediaElement;
+
 /**
  * Window-level shortcuts for media viewer: Escape, ArrowLeft (previous), ArrowRight (next).
- * Arrow keys are ignored while focus is in a form field so cursor movement still works.
+ * Arrow keys are ignored while focus is in a form field so cursor movement still works,
+ * and while a video/audio element is focused so its native seek keys still work.
  */
 export const useMediaViewerKeyboard = ({
   enabled = true,
@@ -56,7 +61,7 @@ export const useMediaViewerKeyboard = ({
       }
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (isTypingTarget(e.target)) {
+        if (isTypingTarget(e.target) || isMediaElementTarget(e.target)) {
           return;
         }
         e.preventDefault();

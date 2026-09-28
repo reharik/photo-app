@@ -1,9 +1,11 @@
+import { MediaKind } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import { MediaProcessingJobRepository, UnitOfWork } from '@packages/worker-core';
 import { WorkerTaskOutcome } from '../../../../types';
 import { CompleteJobRow } from './completeJobRow';
 import { RecordJobFailure } from './recordJobFailure';
 import { RunImageStoragePipeline } from './runImageStoragePipeline';
+import { RunVideoStoragePipeline } from './runVideoStoragePipeline';
 import { TriageJob } from './triageJob';
 
 const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
@@ -19,6 +21,7 @@ export interface ProcessNextMediaImageJob {
 type ProcessNextMediaImageJobDeps = {
   logger: Logger;
   runImageStoragePipeline: RunImageStoragePipeline;
+  runVideoStoragePipeline: RunVideoStoragePipeline;
   completeJobRow: CompleteJobRow;
   recordJobFailure: RecordJobFailure;
   uow: UnitOfWork;
@@ -30,6 +33,7 @@ export const build__ProcessNextMediaImageJob =
   ({
     logger,
     runImageStoragePipeline,
+    runVideoStoragePipeline,
     completeJobRow,
     recordJobFailure,
     uow,
@@ -51,7 +55,9 @@ export const build__ProcessNextMediaImageJob =
 
     const actorId = job.createdBy;
     try {
-      const pipelineResult = await runImageStoragePipeline(job, actorId);
+      const pipelineResult = job.mediaKind.equals(MediaKind.video)
+        ? await runVideoStoragePipeline(job, actorId)
+        : await runImageStoragePipeline(job, actorId);
       if (pipelineResult.status === 'stop') {
         await uow.inTransaction(() =>
           recordJobFailure(job, actorId, pipelineResult.message, false),

@@ -1,4 +1,4 @@
-import { MediaJobStatus } from '@packages/contracts';
+import { MediaJobStatus, MediaKind } from '@packages/contracts';
 
 import type { EntityId } from '@packages/contracts';
 import { RequestScopeLifeCycle } from '@packages/infrastructure';
@@ -15,6 +15,7 @@ export const MAX_MEDIA_PROCESSING_JOB_ATTEMPTS = 3;
 export type MediaProcessingJobRow = {
   id: EntityId;
   mediaItemId: EntityId;
+  mediaKind: MediaKind;
   status: MediaJobStatus;
   attemptCount: number;
   availableAt: Date;
@@ -28,7 +29,11 @@ export type MediaProcessingJobRow = {
 };
 
 export interface MediaProcessingJobRepository extends RequestScopeLifeCycle {
-  enqueueIfNoneActive: (input: { mediaItemId: EntityId; actorId: EntityId }) => Promise<void>;
+  enqueueIfNoneActive: (input: {
+    mediaItemId: EntityId;
+    mediaKind: MediaKind;
+    actorId: EntityId;
+  }) => Promise<void>;
 }
 
 export type ReleaseStalledJobsResult = {
@@ -51,6 +56,7 @@ export const build__MediaProcessingJobRepository = ({
   // rejected terminally.
   const enqueueIfNoneActive = async (input: {
     mediaItemId: EntityId;
+    mediaKind: MediaKind;
     actorId: EntityId;
   }): Promise<void> => {
     await uow
@@ -58,6 +64,10 @@ export const build__MediaProcessingJobRepository = ({
       .insert({
         id: crypto.randomUUID(),
         mediaItemId: input.mediaItemId,
+        // the caller's item kind, so the row states which pipeline its work belongs
+        // to without the worker re-reading the item. `.value` — never the member
+        // object — at the knex boundary.
+        mediaKind: input.mediaKind.value,
         status: MediaJobStatus.pending.value,
         attemptCount: 0,
         availableAt: uow.db().fn.now(),

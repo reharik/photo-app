@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaAssetKind, MediaItemStatus, MediaKind } from '@packages/contracts';
+import { MediaAssetKind, MediaItemStatus, MediaJobStatus, MediaKind } from '@packages/contracts';
 import type { Logger } from '@packages/infrastructure';
 import type {
   MediaAssetRecord,
@@ -21,6 +21,7 @@ import { build__ProcessNextMediaImageJob } from '../tasks/queue/mediaWorkers/pro
 import type { RecordJobFailure } from '../tasks/queue/mediaWorkers/processMediaImage/recordJobFailure.js';
 import { build__RecordJobFailure } from '../tasks/queue/mediaWorkers/processMediaImage/recordJobFailure.js';
 import type { RunImageStoragePipeline } from '../tasks/queue/mediaWorkers/processMediaImage/runImageStoragePipeline.js';
+import type { RunVideoStoragePipeline } from '../tasks/queue/mediaWorkers/processMediaImage/runVideoStoragePipeline.js';
 import type { TriageJob } from '../tasks/queue/mediaWorkers/processMediaImage/triageJob.js';
 import { build__TriageJob } from '../tasks/queue/mediaWorkers/processMediaImage/triageJob.js';
 import type {
@@ -43,19 +44,33 @@ const createMockLogger = (): Logger =>
     debug: jest.fn(),
   }) as unknown as Logger;
 
-const jobRow = (attemptCount = 1): MediaProcessingJobRow =>
-  ({
-    id: JOB_ID,
-    mediaItemId: MEDIA_ITEM_ID,
-    status: MediaItemStatus.processing,
-    attemptCount,
-    availableAt: new Date(),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    createdBy: ACTOR_ID,
-    updatedBy: ACTOR_ID,
-    startedAt: new Date(),
-  }) as unknown as MediaProcessingJobRow;
+/**
+ * No `as unknown as` cast, deliberately: the cast this fixture used to carry is
+ * exactly what let `mediaKind` go missing after the column was added. The row is
+ * now structurally typed, so a future field lands as a compile error here rather
+ * than as `undefined` blowing up inside the runner.
+ *
+ * `status` is the JOB's status (MediaJobStatus), not the item's — the two enums
+ * both have a `processing` member, and the cast was papering over
+ * MediaItemStatus being passed for a MediaJobStatus field. Nothing in these units
+ * reads `job.status`; it is here because the row type requires it.
+ */
+const jobRow = (
+  mediaKind: MediaKind = MediaKind.photo,
+  attemptCount = 1,
+): MediaProcessingJobRow => ({
+  id: JOB_ID,
+  mediaItemId: MEDIA_ITEM_ID,
+  mediaKind,
+  status: MediaJobStatus.processing,
+  attemptCount,
+  availableAt: new Date(),
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  createdBy: ACTOR_ID,
+  updatedBy: ACTOR_ID,
+  startedAt: new Date(),
+});
 
 const createJobRepo = () => ({
   claimNextAvailableJob: jest
@@ -244,20 +259,23 @@ describe('build__TriageJob', () => {
     });
   });
 
-  describe('When a non-photo was enqueued for image processing', () => {
-    it('should fail the job terminally — no retry will make it a photo', async () => {
+  describe('When the claimed job is for a video', () => {
+    it('should pass triage like any other kind — the kind gate is gone', async () => {
+      // Triage used to terminal-fail a non-photo with 'not a photo', because the
+      // worker only had an image pipeline. It now has both, and the job row states
+      // its own kind, so triage is purely a verdict on the ITEM'S STATUS and must
+      // not reject a video. The runner picks the pipeline; see the selection cases
+      // at the end of this file.
       const { triageJob, mediaProcessingJobRepository } = build(
         itemProjection(MediaItemStatus.processing, MediaKind.video),
       );
 
-      await triageJob(jobRow());
+      const result = await triageJob(jobRow(MediaKind.video));
 
-      expect(mediaProcessingJobRepository.markFailed).toHaveBeenCalledWith(
-        JOB_ID,
-        ACTOR_ID,
-        'not a photo',
-      );
+      expect(result.status).toBe('continue');
+      expect(mediaProcessingJobRepository.markFailed).not.toHaveBeenCalled();
       expect(mediaProcessingJobRepository.markPendingRetry).not.toHaveBeenCalled();
+      expect(mediaProcessingJobRepository.markSucceeded).not.toHaveBeenCalled();
     });
   });
 
@@ -576,7 +594,13 @@ describe('build__ProcessNextMediaImageJob', () => {
       .fn<TriageJob>()
       .mockResolvedValue(overrides.triage ?? { status: 'continue', job: claimedJob ?? jobRow() });
 
+    // Both pipelines are stubbed with the SAME behaviour, so every case below that
+    // is not about selection behaves identically whichever one the runner picks —
+    // and the selection cases assert on which mock was called, not on its result.
+    // `trace` gets one undifferentiated 'pipeline' entry either way, which is what
+    // the boundary-ordering cases care about.
     const runImageStoragePipeline = jest.fn<RunImageStoragePipeline>();
+    const runVideoStoragePipeline = jest.fn<RunVideoStoragePipeline>();
     const pipelineImpl = async (): Promise<PipelineJobWorkflow> => {
       trace.push('pipeline');
       if (typeof overrides.pipeline === 'function') {
@@ -585,6 +609,7 @@ describe('build__ProcessNextMediaImageJob', () => {
       return overrides.pipeline ?? { status: 'continue', pipelineResult: pipelineResult() };
     };
     runImageStoragePipeline.mockImplementation(pipelineImpl);
+    runVideoStoragePipeline.mockImplementation(pipelineImpl);
 
     const completeJobRow = jest
       .fn<CompleteJobRow>()
@@ -595,6 +620,7 @@ describe('build__ProcessNextMediaImageJob', () => {
     const run = build__ProcessNextMediaImageJob({
       logger,
       runImageStoragePipeline,
+      runVideoStoragePipeline,
       completeJobRow,
       recordJobFailure,
       uow,
@@ -605,6 +631,7 @@ describe('build__ProcessNextMediaImageJob', () => {
       run,
       logger,
       runImageStoragePipeline,
+      runVideoStoragePipeline,
       completeJobRow,
       recordJobFailure,
       triageJob,
@@ -777,6 +804,86 @@ describe('build__ProcessNextMediaImageJob', () => {
       await run();
 
       expect(boundaries).toEqual([true, true, true]);
+    });
+  });
+
+  /**
+   * Pipeline selection — the reason `media_processing_job.media_kind` exists.
+   *
+   * The runner branches on the CLAIMED ROW'S `mediaKind`, not on the media item: it
+   * never re-reads the item to decide, which is the whole point of putting the kind
+   * on the job row (triage is stubbed in these cases, so there is no item here to
+   * read even if it wanted to). Picking wrong is silent and expensive — an mp4
+   * through the image pipeline fails per-attempt until the retry cap, and a photo
+   * through the video pipeline would hand ffmpeg a JPEG.
+   *
+   * Both pipeline stubs return the same success, so the ONLY thing separating these
+   * two cases is which mock the runner reached for.
+   */
+  describe('When the claimed job is a VIDEO', () => {
+    it('should run the video pipeline and not the image one', async () => {
+      const { run, runImageStoragePipeline, runVideoStoragePipeline } = build({
+        claimedJob: jobRow(MediaKind.video),
+      });
+
+      await expect(run()).resolves.toBe('processed');
+
+      expect(runVideoStoragePipeline).toHaveBeenCalledTimes(1);
+      expect(runImageStoragePipeline).not.toHaveBeenCalled();
+    });
+
+    it('should hand it the claimed row and the enqueuing actor as owner', async () => {
+      // The pipeline builds the S3 key from the owner, and the worker has no viewer
+      // — `job.createdBy` is the actor that enqueued the work. A wrong owner here
+      // produces a key that does not exist and a job that fails on GetObject.
+      const { run, runVideoStoragePipeline } = build({
+        claimedJob: jobRow(MediaKind.video),
+      });
+
+      await run();
+
+      expect(runVideoStoragePipeline).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID, mediaKind: MediaKind.video }),
+        ACTOR_ID,
+      );
+    });
+  });
+
+  describe('When the claimed job is a PHOTO', () => {
+    it('should run the image pipeline and not the video one', async () => {
+      // Explicit rather than incidental: every other case in this describe rides
+      // the PHOTO default, so without this the image branch is only ever asserted
+      // as a side effect of something else.
+      const { run, runImageStoragePipeline, runVideoStoragePipeline } = build({
+        claimedJob: jobRow(MediaKind.photo),
+      });
+
+      await expect(run()).resolves.toBe('processed');
+
+      expect(runImageStoragePipeline).toHaveBeenCalledTimes(1);
+      expect(runVideoStoragePipeline).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When a video pipeline stops', () => {
+    it('should record the terminal failure the same way the image path does', async () => {
+      // Selection must not create a second, weaker failure path: the stop/throw
+      // handling below the branch is shared, and this pins that it is reached from
+      // the video arm too.
+      const { run, recordJobFailure, completeJobRow } = build({
+        claimedJob: jobRow(MediaKind.video),
+        pipeline: { status: 'stop', message: 'no video stream' },
+      });
+
+      await expect(run()).resolves.toBe('processed');
+
+      expect(completeJobRow).not.toHaveBeenCalled();
+      expect(recordJobFailure).toHaveBeenCalledWith(
+        expect.objectContaining({ id: JOB_ID }),
+        ACTOR_ID,
+        'no video stream',
+        false,
+      );
     });
   });
 });

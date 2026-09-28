@@ -5,8 +5,27 @@ from reading one file. Read the code for the _what_; this file is the _why_ and
 the _don't-trip-over-this_.
 
 Nested files: [`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md)
-(task-runner / QueueClaimable / no-viewer tier),
+(task-runner / job queue / no-viewer tier),
 [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) (theme tokens / FE GraphQL).
+
+---
+
+## Agent workflow
+
+- Whenever calls don't depend on each other's results, issue them in parallel in one turn: reads, greps, globs, independent commands. Stay serial when a step needs the previous result or when commands contend for the same resource (e.g. two integration runs against the dev DB).
+- Use Grep/Glob/Read tools, not grep/cat/sed/find via Bash.
+- Edit files with the Edit tool, not python heredocs or `sed -i`; scripts only for mechanical multi-file rewrites.
+- Never pass `--skip-nx-cache`: the test cache is sound, and `test-integration`, `lint` and app `typecheck` aren't cached anyway.
+- Never build before `test`/`test-integration`: jest maps `@packages/*` to `src`. `build` already runs `typecheck`, which already runs `^build` + `gen-ioc`.
+- Run a heavy command once with output to a scratchpad file (`> $SP/run.txt 2>&1`), then grep the file; don't re-run it to see a different slice.
+- Iterate with `nx affected -t lint typecheck test`; run `*:all` / `npm run dance` once at the end.
+- After `run_in_background`, don't poll or spin (`sleep`, `while pgrep`); the completion notification wakes you.
+- Tests: unit `nx test <proj>`; integration `nx run {api,media-worker}:test-integration` (needs the dev DB up); e2e `nx test e2e`.
+- Lifetimes/registrations: `npm run ioc:<proj> -- inspect`; don't grep `generated/ioc-manifest.ts`.
+- For table shapes, use make db/psql and \d <table>; don't reconstruct them from migrations. (Non-interactive: `make db/psql SQL='\d album'`.)
+- Scratchpad scripts can't resolve repo packages: write them as CommonJS (`.cjs`, `require`) and run with `NODE_PATH="$PWD/node_modules"`; ESM `import` ignores `NODE_PATH`.
+- Use absolute paths or `(cd dir && …)`; a bare `cd` persists into later commands.
+- If a command is denied, never substitute an equivalent that achieves the same effect (e.g. cp → cat >). Use the documented alternative or ask me.
 
 ---
 
@@ -65,9 +84,8 @@ export const build__MediaProcessingJobRepository = (
   return anonymous object literals or unions.
 - **Deps** are the single destructured param object; keys = other registration keys.
 - **No `build__` prefix = invisible to the container.** This is used deliberately —
-  type-only modules and hand-composed helpers (e.g. `WorkerTask`, `QueueClaimable`)
-  carry a comment saying they're intentionally not `build__` so they're never
-  registered.
+  type-only modules and hand-composed helpers (e.g. `WorkerTask`) carry a comment
+  saying they're intentionally not `build__` so they're never registered.
 
 ### Lifetimes are set at REGISTRATION, not resolution
 
@@ -235,10 +253,11 @@ can lie** (the job-queue repo lives in `mediaProcessingJob/`, not any of the thr
   encode the gate (`getAlbumForViewer`, `...ForShareLink`). The public-link read repos
   (`PublicAccessReadRepository`, `PublicMediaItemReadRepository`) gate on the link
   instead of a viewer.
-- **Job-queue repos** (`MediaProcessingJobRepository`): no aggregate, no viewer. In
-  the worker, claims go through `createJobQueueRepository` (worker-core) — a plain,
-  non-`build__` factory that does `FOR UPDATE SKIP LOCKED` on `uow.db()`, so the
-  claim lives in whatever transaction the caller opened.
+- **Job-queue repos** (`MediaProcessingJobRepository`): no aggregate, no viewer. The
+  worker's copy owns the claim itself — `FOR UPDATE SKIP LOCKED` on `uow.db()`, so the
+  claim lives in whatever transaction the caller opened. (It used to compose a generic
+  `createJobQueueRepository`; that was collapsed into the repository once it was clear
+  `media_processing_job` was its only caller.)
 - **System repos** (`System*` prefix = quarantine marker): un-gated, for processes
   with **no current viewer** (worker sweeps, post-commit handlers). Same tables as
   read repos but no access predicate — e.g. worker-core's

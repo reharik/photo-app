@@ -4,4 +4,6 @@ export type MediaCoreConfig = {
   s3UploadUrlTtlSeconds: number;
   s3DownloadUrlTtlSeconds: number;
   s3DownloadUrlSigningBucketSeconds: number;
+  imageMaxBytes: number;
+  videoMaxBytes: number;
 };

@@ -20,9 +20,7 @@ export type ScheduledWorkerTask = WorkerTaskBase & { type: 'schedule'; cadence: 
 - `order` is queue-tasks-only, spaced 100/200 on purpose — leave gaps to insert
   tasks without renumbering.
 - `WorkerTask` and `WorkerTaskBase` are a **type-only module — intentionally no
-  `build__*` factory**, so they are never registered as contracts. `QueueClaimable`
-  in worker-core (`repositories/createJobQueueRepository.ts`) carries the same
-  deliberate non-registration.
+  `build__*` factory**, so they are never registered as contracts.
 
 ### Registration & discovery — one contract per task
 
@@ -142,14 +140,21 @@ Two things this buys, both previously bugs:
 become visible a beat before the item's PROCESSING status commits, and a claim that
 loses that race must come back, not go terminal.
 
-## Queue claim / retry policy (`createJobQueueRepository`)
+## Queue claim / retry policy (`MediaProcessingJobRepository`)
 
 The job repo and its queue mechanics live in **`@packages/worker-core`**
-(`repositories/mediaProcessingJob/` and the shared
-`repositories/createJobQueueRepository.ts` — renamed from `queueClaimable.ts`).
-`mediaProcessingJob` is the only queue table left; the deletion queue was removed.
-The API has its own `build__MediaProcessingJobRepository` in media-core for
-enqueue. No worker-local copy.
+(`repositories/mediaProcessingJob/mediaProcessingJobRepository.ts`) — claim, the three
+marks, the retry policy and the stalled sweep, all in the one file. The API has its own
+`build__MediaProcessingJobRepository` in media-core for enqueue. No worker-local copy.
+
+There used to be a generic `createJobQueueRepository` (before that, `queueClaimable.ts`)
+that this repo composed, parameterised by table name, attempt-count column and a map of
+row-specific enum columns, so a second queue could share it. The deletion queue it was
+meant to share with was removed, leaving `media_processing_job` as the only caller, and
+the seams were costing more than they bought — the attempt cap existed twice, and the
+attempt-count column travelled as a string in the wrong case (see the read-casing note
+below). It was collapsed into the repository. If a second queue appears, extract what it
+actually needs then, from two real callers.
 
 - **Job status is its own enum.** `MediaJobStatus` — separate from `MediaItemStatus`,
   which is the _item's_ lifecycle. Revived on the claim read via `withEnumRevival`.
@@ -163,14 +168,20 @@ enqueue. No worker-local copy.
   the first two, `'retrying' | 'exhausted' | 'notOwned'` for retry. A `false`/`notOwned`
   means the stalled sweep reclaimed the job — someone else owns the outcome, so do
   not touch the item.
-- **Retry policy lives in the repository, not at call sites**, and is shared by both
-  queues: `MAX_ATTEMPTS = 3`, exponential backoff from 30s capped at 1h. Callers pass
-  no `availableAt`. Exceeding the cap terminal-fails instead of requeueing forever.
+- **Retry policy lives in the repository, not at call sites**:
+  `MAX_MEDIA_PROCESSING_JOB_ATTEMPTS = 3` (one constant, also used by the sweep),
+  exponential backoff from 30s capped at 1h. Callers pass no `availableAt`. Exceeding
+  the cap terminal-fails instead of requeueing forever.
+- **Reads come back camelCase, so select camelCase.** `markPendingRetry` reads the
+  attempt count with `.first<{ attemptCount: number }>('attemptCount')`. It previously
+  selected the physical `'attempt_count'` and indexed the row with that same string,
+  typed `Record<string, number>` so tsc could not object — but knex-stringcase's
+  `postProcessResponse` camelCases every response key, so the lookup was always
+  `undefined`: the cap never tripped and the backoff computed `NaN`, which Postgres
+  rejects as an interval. Only the **raw** `?? + 1` increment takes the physical name.
 - **Enqueue** is targetless `ON CONFLICT DO NOTHING` — _not_ try/catch on 23505,
   which would abort the caller's transaction. It writes through the caller's
   `uow.db()` and settles nothing, so the job row commits with the item's status change.
-- The `attemptCount` increment uses raw SQL, so it passes the **physical** column
-  name `'attempt_count'` (bypasses the case-mapping layer).
 
 The **stalled-job sweep** splits on the same cap: under it, back to PENDING ("a
 worker died"); at/over it, FAILED _and_ the item moved off PROCESSING ("an item is

@@ -7,7 +7,7 @@ type MediaItem implements ViewableItem & Node {
   originalFileName: String!
   width: Int
   height: Int
-  durationSeconds: Int
+  durationMs: Int
   title: String
   description: String
   takenAt: DateTime

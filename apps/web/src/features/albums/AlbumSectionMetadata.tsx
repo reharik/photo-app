@@ -58,7 +58,8 @@ export type MinimalMediaItemSummaryVM = {
   title?: string;
   kind: MediaKind;
   createdAt?: DateTime;
-  status?: MediaItemStatus;
+  status: MediaItemStatus;
+  durationMs?: number | null;
   reactionCounts: ReactionCountsVM;
   viewerReactions?: ViewerReactionVM[];
   operations: Operation[];

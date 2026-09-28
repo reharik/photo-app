@@ -85,7 +85,7 @@ export type NamespacedMediaItemRow = {
   mediaItemOriginalFileName?: string;
   mediaItemWidth?: number;
   mediaItemHeight?: number;
-  mediaItemDurationSeconds?: number;
+  mediaItemDurationMs?: number;
   mediaItemTitle?: string;
   mediaItemDescription?: string;
   mediaItemTakenAt?: Date;
@@ -183,7 +183,7 @@ export interface DBMediaItemRow {
   originalFileName?: string;
   width?: number;
   height?: number;
-  durationSeconds?: number;
+  durationMs?: number;
   title?: string;
   description?: string;
   takenAt?: Date;
@@ -260,7 +260,7 @@ export interface DBPublicMediaItemRow {
   mimeType: string;
   width?: number;
   height?: number;
-  durationSeconds?: number;
+  durationMs?: number;
   reactionCounts: DBReactionCounts;
 }
 

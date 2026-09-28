@@ -1,4 +1,4 @@
-import { FrontendError, FrontendUploadStatus, MediaKind } from '@packages/contracts';
+import { FrontendError, FrontendUploadStatus } from '@packages/contracts';
 import { mapFrontendError } from '../../domain/errors/mapToError';
 import type { UploadItem, UploadQueueAction, UploadQueueState } from './mediaUploadTypes';
 import { resolveUploadFileClassification } from './resolveUploadFileClassification';
@@ -24,13 +24,7 @@ const buildEnqueuedItem = (file: File, albumId: string | undefined): UploadItem 
       errors: [mapFrontendError({ code: FrontendError.unsupportedMediaType })],
     };
   }
-  if (classification.kind.equals(MediaKind.video)) {
-    return {
-      ...base,
-      status: FrontendUploadStatus.failed,
-      errors: [mapFrontendError({ code: FrontendError.videoNotSupported })],
-    };
-  }
+
   return { ...base, status: FrontendUploadStatus.queued, classification };
 };
 

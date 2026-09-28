@@ -1,0 +1,12 @@
+# Kind-only slices for useFragment reads of already-cached items (neighbor prefetch
+# decides photo display bytes vs video poster). Complete whenever a list or detail
+# query has normalized the item.
+fragment MediaItemKind on MediaItem {
+  id
+  kind
+}
+
+fragment PublicMediaItemKind on PublicMediaItem {
+  id
+  kind
+}

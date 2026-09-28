@@ -12,6 +12,7 @@ export const mapToAppError = (
   def: ErrorDefinition,
   input: ErrorInput,
   source: Source,
+  context?: Record<string, unknown>,
 ): AppError => {
   return {
     code: def.value,
@@ -20,17 +21,22 @@ export const mapToAppError = (
     source,
     category: def.category.value,
     retryable: def.retryable ?? false,
+    context,
   };
 };
 
+/**
+ * The code resolves the wording, category and retryability against the local catalog; `context`
+ * is carried through untouched for surfaces that can say more with it (see
+ * `formatAppErrorMessage`). Nothing in `context` is allowed to override the message — it is
+ * data the server attached, not copy it wrote.
+ */
 export const mapContractError = (input: ContractErrorPayload): AppError => {
   return mapToAppError(
     ContractError.tryFromValue(input.code) ?? ContractError.unknown,
-    {
-      message: input.data?.message as string | undefined,
-      field: input.data?.field as string | undefined,
-    },
+    {},
     'backend',
+    input.context ?? undefined,
   );
 };
 

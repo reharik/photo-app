@@ -661,6 +661,27 @@ const contractErrorInput = {
     area: ErrorArea.mediaItem,
     retryable: false,
   },
+  VideoSizeTooLarge: {
+    code: 'VIDEO_SIZE_TOO_LARGE',
+    display: 'Video size too large',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  ImageSizeTooLarge: {
+    code: 'IMAGE_SIZE_TOO_LARGE',
+    display: 'Image size too large',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
+  VideoNotEnabledForThisAccount: {
+    code: 'VIDEO_NOT_ENABLED_FOR_THIS_ACCOUNT',
+    display: 'Video not enabled for this account',
+    category: ErrorCategory.domain,
+    area: ErrorArea.mediaItem,
+    retryable: false,
+  },
 } as const;
 export type ContractError = Enumeration<typeof ContractError>;
 export const ContractError = enumeration<typeof contractErrorInput>('ContractError', {

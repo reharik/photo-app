@@ -3,6 +3,7 @@ import {
   EntityType,
   MediaItemStatus,
   MediaKind,
+  OperationResult,
   ReactionEmoji,
 } from '@packages/contracts';
 import { UploadTarget } from '../../../application/media/MediaStorage';
@@ -32,7 +33,17 @@ export type CreateMediaUploadResult = {
   mediaItemId: EntityId;
   status: MediaItemStatus;
   uploadTarget: UploadTarget;
+};
+
+/**
+ * One entry per input command, in input order. `clientId` sits outside the result because a
+ * `Failure` has nowhere to put it: an item the server refused still has to be attributable to
+ * the file the client sent, and stuffing it into the failure's `context` would make the
+ * transport dig an identifier out of a bag meant for display data.
+ */
+export type CreateMediaUploadItemOutcome = {
   clientId: string;
+  result: OperationResult<CreateMediaUploadResult>;
 };
 
 export type DeleteMediaItemCommand = {

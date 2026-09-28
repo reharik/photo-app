@@ -46,7 +46,7 @@ describe('MediaItem (domain)', () => {
   });
 
   describe('When completeUploadedWithMetadata is called from pending for a video', () => {
-    it('should transition to ready without dimensions', () => {
+    it('should transition to processing without dimensions', () => {
       const ownerId = TEST_USER_A_ID;
       const item = MediaItem.create({ kind: MediaKind.video, mimeType: 'video/mp4' }, ownerId);
       const result = item.completeUploadedWithMetadata(
@@ -55,7 +55,7 @@ describe('MediaItem (domain)', () => {
         ownerId,
       );
       expect(result.success).toBe(true);
-      expect(item.status()).toBe(MediaItemStatus.ready);
+      expect(item.status()).toBe(MediaItemStatus.processing);
     });
   });
 

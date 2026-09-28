@@ -1,6 +1,10 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { MediaJobStatus } from '@packages/contracts';
-import { build__MediaProcessingJobRepository, type UnitOfWork } from '@packages/worker-core';
+import { MediaJobStatus, MediaKind } from '@packages/contracts';
+import {
+  build__MediaProcessingJobRepository,
+  MAX_MEDIA_PROCESSING_JOB_ATTEMPTS,
+  type UnitOfWork,
+} from '@packages/worker-core';
 
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -90,6 +94,88 @@ describe('build__MediaProcessingJobRepository', () => {
     });
   });
 
+  describe('markPendingRetry', () => {
+    /**
+     * The fake resolves the attempt-count read with a CAMELCASE key, because that is
+     * what production hands back: knex-stringcase's `postProcessResponse` camelCases
+     * every response key, so a row selected as `attempt_count` arrives as
+     * `attemptCount`. A fake that echoed the physical name would let the bug these
+     * two cases exist to catch pass straight through.
+     *
+     * The bug: the read was `.first<Record<string, number>>('attempt_count')` indexed
+     * by that same string. `Record<string, number>` types any key as a number, so
+     * tsc saw nothing, and the lookup was always `undefined` — `undefined >= 3` is
+     * false, so the cap never tripped and jobs requeued forever, while the backoff
+     * computed `NaN` and Postgres rejected `'NaN seconds'::interval`.
+     */
+    const buildRetry = (attemptCount: number) => {
+      const updates: Array<Record<string, unknown>> = [];
+      const { uow } = createFakeUow(() => ({
+        where: () => ({
+          first: () => Promise.resolve({ attemptCount }),
+          update: (data: Record<string, unknown>) => {
+            updates.push(data);
+            return Promise.resolve(1);
+          },
+        }),
+      }));
+      return { repo: build__MediaProcessingJobRepository({ uow }), updates };
+    };
+
+    describe('When attempts remain', () => {
+      it('should requeue with a finite backoff rather than NaN', async () => {
+        const { repo, updates } = buildRetry(1);
+
+        const outcome = await repo.markPendingRetry('job-1', ACTOR_ID, 'S3 timeout');
+
+        expect(outcome).toBe('retrying');
+        const requeue = updates[0];
+        expect(requeue.status).toBe(MediaJobStatus.pending.value);
+        // The interval binding is the thing that broke: `Math.max(0, NaN - 1)` fed
+        // `now() + ('NaN seconds')::interval`, which Postgres refuses. First retry
+        // after one attempt is the 30s base.
+        expect(requeue.availableAt).toEqual(expect.objectContaining({ bindings: [30] }));
+      });
+    });
+
+    describe('When the attempt cap is reached', () => {
+      it('should terminal-fail instead of requeueing forever', async () => {
+        const { repo, updates } = buildRetry(MAX_MEDIA_PROCESSING_JOB_ATTEMPTS);
+
+        const outcome = await repo.markPendingRetry('job-1', ACTOR_ID, 'S3 timeout');
+
+        expect(outcome).toBe('exhausted');
+        // One update, and it is the terminal fail — never a requeue.
+        expect(updates).toHaveLength(1);
+        expect(updates[0].status).toBe(MediaJobStatus.failed.value);
+        expect(updates[0].lastError).toBe(
+          `attempts exhausted (${MAX_MEDIA_PROCESSING_JOB_ATTEMPTS}): S3 timeout`,
+        );
+      });
+    });
+
+    describe('When the job is no longer PROCESSING', () => {
+      it('should report notOwned without writing', async () => {
+        const updates: Array<Record<string, unknown>> = [];
+        const { uow } = createFakeUow(() => ({
+          where: () => ({
+            first: () => Promise.resolve(undefined),
+            update: (data: Record<string, unknown>) => {
+              updates.push(data);
+              return Promise.resolve(1);
+            },
+          }),
+        }));
+
+        const repo = build__MediaProcessingJobRepository({ uow });
+        const outcome = await repo.markPendingRetry('job-1', ACTOR_ID, 'S3 timeout');
+
+        expect(outcome).toBe('notOwned');
+        expect(updates).toEqual([]);
+      });
+    });
+  });
+
   describe('claimNextAvailableJob', () => {
     describe('When no row is available', () => {
       it('should return undefined without issuing the claiming update', async () => {
@@ -141,6 +227,8 @@ describe('build__MediaProcessingJobRepository', () => {
         const updatedRow = {
           id: jobId,
           mediaItemId,
+          // wire value, as it comes back from returning('*') before revival
+          mediaKind: MediaKind.photo.value,
           status: MediaJobStatus.processing.value,
           attemptCount: 1,
           availableAt: new Date(),

@@ -7,9 +7,10 @@ type StorageUsage = {
   storageCapBytes: number;
   storageUsedBytes: number;
   storageRemainingBytes: number;
+  videoEnabled: boolean;
 };
 export interface MediaAssetReadRepository extends RequestScopeLifeCycle {
-  getStorageUsage: () => Promise<StorageUsage | undefined>;
+  getUploadLimits: () => Promise<StorageUsage | undefined>;
 }
 
 type MediaAssetReadRepositoryDeps = {
@@ -22,13 +23,13 @@ export const build__MediaAssetReadRepository = ({
   viewerId,
   config,
 }: MediaAssetReadRepositoryDeps): MediaAssetReadRepository => ({
-  getStorageUsage: async (): Promise<StorageUsage | undefined> => {
+  getUploadLimits: async (): Promise<StorageUsage | undefined> => {
     const capRow = await uow
       .db()('user')
       .where('id', viewerId)
-      .select('storage_cap_bytes')
+      .select('storage_cap_bytes', 'video_enabled')
       .forUpdate()
-      .first<{ storageCapBytes: number }>();
+      .first<{ storageCapBytes: number; videoEnabled: boolean }>();
     if (!capRow) return undefined;
 
     const usedRow = await uow
@@ -55,6 +56,7 @@ export const build__MediaAssetReadRepository = ({
       storageCapBytes,
       storageUsedBytes,
       storageRemainingBytes: Math.max(0, storageCapBytes - storageUsedBytes),
+      videoEnabled: capRow.videoEnabled,
     };
   },
 });

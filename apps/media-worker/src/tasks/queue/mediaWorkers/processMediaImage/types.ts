@@ -20,6 +20,7 @@ export type PipelineResult = {
   thumbnailAsset: PipelineAsset;
   originalAsset: PipelineAsset;
   capture: Capture;
+  durationMs?: number;
 };
 
 export type PipelineJobWorkflow =

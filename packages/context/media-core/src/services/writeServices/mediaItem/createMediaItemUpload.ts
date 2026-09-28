@@ -4,6 +4,7 @@ import {
   EntityId,
   fail,
   MediaAssetKind,
+  MediaKind,
   ok,
   Operation,
   OperationResult,
@@ -17,14 +18,19 @@ import {
 } from '../../../application/media/MediaStorage';
 import { Album } from '../../../domain';
 import { MediaItem } from '../../../domain/MediaItem/MediaItem';
+import { MediaCoreConfig } from '../../../MediaCoreConfig';
 import { AlbumRepository } from '../../../repositories/domainRepositories/albumRepository';
 import { MediaItemRepository } from '../../../repositories/domainRepositories/mediaItemRepository';
 import { MediaAssetReadRepository } from '../../../repositories/readRepositories/mediaAssetReadRepository';
 import { WriteServiceBase } from '../writeServiceBaseType';
-import { CreateMediaUploadCommand, CreateMediaUploadResult } from './writeMediaItem.types';
+import {
+  CreateMediaUploadCommand,
+  CreateMediaUploadItemOutcome,
+  CreateMediaUploadResult,
+} from './writeMediaItem.types';
 
 export interface CreateMediaUpload extends WriteServiceBase {
-  (input: CreateMediaUploadCommand[]): Promise<OperationResult<CreateMediaUploadResult[]>>;
+  (input: CreateMediaUploadCommand[]): Promise<OperationResult<CreateMediaUploadItemOutcome[]>>;
 }
 
 const sanitizeOriginalFileName = (value: string | undefined): string | undefined => {
@@ -45,6 +51,7 @@ type CreateMediaItemUploadDeps = {
   viewerId: EntityId;
   scopedLogger: ScopedLogger;
   mediaAssetReadRepository: MediaAssetReadRepository;
+  config: MediaCoreConfig;
 };
 
 export const build__CreateMediaItemUpload = ({
@@ -54,19 +61,20 @@ export const build__CreateMediaItemUpload = ({
   viewerId,
   scopedLogger,
   mediaAssetReadRepository,
+  config,
 }: CreateMediaItemUploadDeps): CreateMediaUpload => {
   return async (
     input: CreateMediaUploadCommand[],
-  ): Promise<OperationResult<CreateMediaUploadResult[]>> => {
+  ): Promise<OperationResult<CreateMediaUploadItemOutcome[]>> => {
     // Don't trust the transport's SafeInt scalar: a zero, negative, or fractional claim
     // would shrink the quota check below and the reservation written to size_bytes.
     if (!input.every(({ size }) => Number.isSafeInteger(size) && size > 0)) {
       return fail(AppErrorCollection.mediaItem.InvalidUploadSize);
     }
 
-    const usage = await mediaAssetReadRepository.getStorageUsage();
+    const limits = await mediaAssetReadRepository.getUploadLimits();
     const uploadSize = input.reduce((acc, x) => (acc += x.size), 0);
-    if ((usage?.storageRemainingBytes || 0) < uploadSize) {
+    if ((limits?.storageRemainingBytes || 0) < uploadSize) {
       return fail(ContractError.InsufficientStorageSpace);
     }
 
@@ -81,11 +89,32 @@ export const build__CreateMediaItemUpload = ({
       }
     }
 
-    const result: CreateMediaUploadResult[] = [];
+    const result: CreateMediaUploadItemOutcome[] = [];
     for (let i = 0; i < input.length; i++) {
       const item = input[i];
 
       const { kind, mimeType, originalFileName, clientId, size } = item;
+      // `context` carries display data only — what the client needs to explain the refusal.
+      // The identity of the item is `clientId` on the outcome, never something in here.
+      if (MediaKind.photo.equals(kind) && size > config.imageMaxBytes) {
+        result.push({
+          clientId,
+          result: fail(ContractError.ImageSizeTooLarge, { size, maxBytes: config.imageMaxBytes }),
+        });
+        continue;
+      } else if (MediaKind.video.equals(kind) && !limits?.videoEnabled) {
+        result.push({
+          clientId,
+          result: fail(ContractError.VideoNotEnabledForThisAccount),
+        });
+        continue;
+      } else if (MediaKind.video.equals(kind) && size > config.videoMaxBytes) {
+        result.push({
+          clientId,
+          result: fail(ContractError.VideoSizeTooLarge, { size, maxBytes: config.videoMaxBytes }),
+        });
+        continue;
+      }
       const mediaItem = MediaItem.create(
         {
           kind,
@@ -119,10 +148,12 @@ export const build__CreateMediaItemUpload = ({
       }
 
       result.push({
-        mediaItemId: mediaItem.id(),
-        status: mediaItem.status(),
-        uploadTarget,
         clientId,
+        result: ok<CreateMediaUploadResult>({
+          mediaItemId: mediaItem.id(),
+          status: mediaItem.status(),
+          uploadTarget,
+        }),
       });
     }
     if (album) {

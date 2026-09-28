@@ -1,4 +1,4 @@
-import { MediaKind, WorkVerdict } from '@packages/contracts';
+import { WorkVerdict } from '@packages/contracts';
 import { Logger } from '@packages/infrastructure';
 import {
   MediaProcessingJobRepository,
@@ -39,16 +39,6 @@ export const build__TriageJob =
         message: `Media item not found — job terminal. jobId: ${job.id}, mediaItemId: ${job.mediaItemId}`,
       };
     }
-    if (!mediaItem.kind.equals(MediaKind.photo)) {
-      await mediaProcessingJobRepository.markFailed(job.id, actorId, 'not a photo');
-      return {
-        status: 'stop',
-        level: 'error',
-        outcome: 'processed',
-        message: `Non-photo enqueued for image processing. jobId: ${job.id}`,
-      };
-    }
-
     if (mediaItem.status.work.equals(WorkVerdict.terminal)) {
       await mediaProcessingJobRepository.markFailed(
         job.id,

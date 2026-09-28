@@ -3,6 +3,7 @@ import type { Knex } from 'knex';
 
 import type { MediaStorage } from '../application/media/MediaStorage.js';
 import type { Album } from '../domain/Album/Album.js';
+import type { MediaCoreConfig } from '../MediaCoreConfig.js';
 import type { AlbumRepository } from '../repositories/domainRepositories/albumRepository.js';
 import type { MediaItemRepository } from '../repositories/domainRepositories/mediaItemRepository.js';
 import type { MediaProcessingJobRepository } from '../repositories/mediaProcessingJob/mediaProcessingJobRepository.js';
@@ -61,10 +62,11 @@ const createSilentScopedLogger = (): ScopedLogger =>
 
 // Storage quota is not what these specs exercise, so report effectively unlimited headroom.
 const createUnlimitedMediaAssetReadRepository = (): MediaAssetReadRepository => ({
-  getStorageUsage: async () => ({
+  getUploadLimits: async () => ({
     storageCapBytes: Number.MAX_SAFE_INTEGER,
     storageUsedBytes: 0,
     storageRemainingBytes: Number.MAX_SAFE_INTEGER,
+    videoEnabled: false,
   }),
 });
 
@@ -86,12 +88,31 @@ const createEmptyAlbumRepository = (): AlbumRepository => ({
 // is wired up, which is what lets one test drive two different viewers.
 type WithViewer<TCommand> = TCommand & { viewerId: EntityId };
 
+/**
+ * Only the two size caps are read by `createMediaUpload`; the rest of `MediaCoreConfig` belongs
+ * to storage and is never touched here. Caps default high enough that a spec opts in to the
+ * refusal path by overriding one, rather than tripping it by accident.
+ */
+export const createTestMediaCoreConfig = (
+  overrides: Partial<MediaCoreConfig> = {},
+): MediaCoreConfig => ({
+  s3Bucket: 'test-bucket',
+  awsRegion: 'us-east-1',
+  s3UploadUrlTtlSeconds: 900,
+  s3DownloadUrlTtlSeconds: 900,
+  s3DownloadUrlSigningBucketSeconds: 900,
+  imageMaxBytes: Number.MAX_SAFE_INTEGER,
+  videoMaxBytes: Number.MAX_SAFE_INTEGER,
+  ...overrides,
+});
+
 export const createUploadService =
   (
     _harness: WriteTestHarness,
     mediaItemRepository: MediaItemRepository,
     mediaStorage: MediaStorage,
     albumRepository: AlbumRepository = createEmptyAlbumRepository(),
+    config: MediaCoreConfig = createTestMediaCoreConfig(),
   ) =>
   ({ viewerId, commands }: { viewerId: EntityId; commands: CreateMediaUploadCommand[] }) =>
     build__CreateMediaItemUpload({
@@ -101,6 +122,7 @@ export const createUploadService =
       viewerId,
       scopedLogger: createSilentScopedLogger(),
       mediaAssetReadRepository: createUnlimitedMediaAssetReadRepository(),
+      config,
     })(commands);
 
 export const createFinalizeService =

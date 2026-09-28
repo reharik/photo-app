@@ -70,7 +70,7 @@ input PageInfoInput {
 
 type ContractError {
   code: String!
-  data: JSON
+  context: JSON
 }
 
 enum ErrorCategory {

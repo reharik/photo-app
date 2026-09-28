@@ -15,7 +15,7 @@ export const mapMediaItemRowToDBMediaItemRow = (
     originalFileName: mediaItem.mediaItemOriginalFileName ?? undefined,
     width: mediaItem.mediaItemWidth,
     height: mediaItem.mediaItemHeight,
-    durationSeconds: mediaItem.mediaItemDurationSeconds,
+    durationMs: mediaItem.mediaItemDurationMs,
     title: mediaItem.mediaItemTitle ?? '',
     description: mediaItem.mediaItemDescription,
     takenAt: mediaItem.mediaItemTakenAt,

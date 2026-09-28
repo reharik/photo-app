@@ -1,13 +1,20 @@
-import { MediaKind } from '@packages/contracts';
-import { FileText, Film } from 'lucide-react';
-import styled from 'styled-components';
+import { MediaItemStatus, MediaKind } from '@packages/contracts';
+import { FileText, Film, Image } from 'lucide-react';
 import { ImageRenderer } from './ImageRenderer';
+import { getMediaItemReadiness } from './mediaItemReadiness';
+import { MediaNotice } from './MediaNotice';
+import { VideoRenderer } from './VideoRenderer';
 
 export type MediaRendererProps = {
   id: string;
   kind: MediaKind;
+  status: MediaItemStatus;
   mimeType: string;
   displayUrl: string;
+  /** THUMBNAIL asset URL; the poster frame for video. */
+  posterUrl: string;
+  width?: number | null;
+  height?: number | null;
   imageAlt: string;
 };
 
@@ -25,61 +32,70 @@ const isVideoLike = (kind: MediaKind, mimeType: string): boolean => {
   return mimeType.startsWith('video/');
 };
 
-export const MediaRenderer = ({ id, kind, mimeType, displayUrl, imageAlt }: MediaRendererProps) => {
-  if (isPhotoLike(kind, mimeType)) {
+export const MediaRenderer = ({
+  id,
+  kind,
+  status,
+  mimeType,
+  displayUrl,
+  posterUrl,
+  width,
+  height,
+  imageAlt,
+}: MediaRendererProps) => {
+  const isPhoto = isPhotoLike(kind, mimeType);
+  const isVideo = !isPhoto && isVideoLike(kind, mimeType);
+  const noun = isVideo ? 'video' : isPhoto ? 'photo' : 'item';
+  const KindIcon = isVideo ? Film : isPhoto ? Image : FileText;
+
+  // Gate before touching any asset URL: the derivatives don't exist until READY.
+  switch (getMediaItemReadiness(status)) {
+    case 'processing':
+      return (
+        <MediaNotice
+          icon={KindIcon}
+          title={`This ${noun} is still processing`}
+          hint="It will appear here as soon as it’s ready."
+        />
+      );
+    case 'failed':
+      return (
+        <MediaNotice
+          icon={KindIcon}
+          title={`This ${noun} couldn’t be processed`}
+          hint="Try uploading it again."
+        />
+      );
+    case 'unavailable':
+      return <MediaNotice icon={KindIcon} title={`This ${noun} is no longer available`} />;
+    case 'ready':
+      break;
+  }
+
+  if (isPhoto) {
     return <ImageRenderer id={id} src={displayUrl} alt={imageAlt} />;
   }
 
-  if (isVideoLike(kind, mimeType)) {
+  if (isVideo) {
+    // Keyed by item so error/retry state never carries over between gallery items
+    // (the public screen doesn't key MediaViewer).
     return (
-      <UnsupportedBlock>
-        <UnsupportedIcon aria-hidden>
-          <Film size={48} strokeWidth={2} aria-hidden />
-        </UnsupportedIcon>
-        <UnsupportedTitle>Video playback isn’t available yet</UnsupportedTitle>
-        <UnsupportedHint>
-          This item opens here for details; a player will be added later.
-        </UnsupportedHint>
-      </UnsupportedBlock>
+      <VideoRenderer
+        key={id}
+        id={id}
+        src={displayUrl}
+        poster={posterUrl}
+        width={width}
+        height={height}
+      />
     );
   }
 
   return (
-    <UnsupportedBlock>
-      <UnsupportedIcon aria-hidden>
-        <FileText size={48} strokeWidth={2} aria-hidden />
-      </UnsupportedIcon>
-      <UnsupportedTitle>Preview not available</UnsupportedTitle>
-      <UnsupportedHint>This media type can’t be shown in the viewer yet.</UnsupportedHint>
-    </UnsupportedBlock>
+    <MediaNotice
+      icon={FileText}
+      title="Preview not available"
+      hint="This media type can’t be shown in the viewer yet."
+    />
   );
 };
-
-const UnsupportedBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(2)};
-  text-align: center;
-  max-width: 320px;
-`;
-
-const UnsupportedIcon = styled.div`
-  display: flex;
-  color: ${({ theme }) => theme.color.textAccent};
-  opacity: 0.35;
-`;
-
-const UnsupportedTitle = styled.p`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: ${({ theme }) => theme.color.bodyText};
-`;
-
-const UnsupportedHint = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-`;

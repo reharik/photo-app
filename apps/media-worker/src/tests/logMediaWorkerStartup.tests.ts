@@ -14,6 +14,12 @@
  * reaches out to AWS (and, with no usable credentials, throws a
  * CredentialsProviderError) — which would make this suite fail for a reason that
  * has nothing to do with the probe.
+ *
+ * `verifyMediaToolchain` is mocked for the same reason: unmocked it shells out
+ * to ffmpeg/ffprobe, so this suite would pass or fail on whether the HOST has
+ * them installed. Its own behaviour is covered in verifyMediaToolchain.tests.ts;
+ * what matters here is only that the probe runs, that its versions reach the
+ * log, and that a failure aborts the boot before the network probes.
  */
 import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import type { Knex } from 'knex';
@@ -21,6 +27,12 @@ import type { Knex } from 'knex';
 import type { Config } from '../config';
 
 const s3Send = jest.fn<() => Promise<unknown>>();
+const verifyMediaToolchain = jest.fn<() => Promise<Record<string, string>>>();
+
+const TOOLCHAIN_VERSIONS = {
+  ffprobe: 'ffprobe version 5.1.9-0+deb12u1',
+  ffmpeg: 'ffmpeg version 5.1.9-0+deb12u1',
+};
 
 /** Stands in for the injected Knex handle; only `raw` is ever reached. */
 const createFakeDatabase = (raw: () => Promise<unknown>) => {
@@ -66,6 +78,9 @@ describe('logMediaWorkerStartup', () => {
         constructor(public readonly input: unknown) {}
       },
     }));
+    jest.unstable_mockModule('../tasks/queue/mediaWorkers/verifyMediaToolchain.js', () => ({
+      verifyMediaToolchain,
+    }));
     ({ build__LogMediaWorkerStartup } =
       await import('../tasks/queue/mediaWorkers/logMediaWorkerStartup.js'));
   });
@@ -73,6 +88,8 @@ describe('logMediaWorkerStartup', () => {
   beforeEach(() => {
     s3Send.mockReset();
     s3Send.mockResolvedValue({});
+    verifyMediaToolchain.mockReset();
+    verifyMediaToolchain.mockResolvedValue(TOOLCHAIN_VERSIONS);
   });
 
   describe('When probes succeed', () => {
@@ -85,6 +102,10 @@ describe('logMediaWorkerStartup', () => {
       expect(logger.info).toHaveBeenCalledWith(
         'Media worker configuration',
         expect.objectContaining({ s3Bucket: 'my-bucket' }),
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'Media toolchain check succeeded',
+        TOOLCHAIN_VERSIONS,
       );
       expect(logger.info).toHaveBeenCalledWith(
         'Postgres connectivity check succeeded',
@@ -109,6 +130,27 @@ describe('logMediaWorkerStartup', () => {
     });
   });
 
+  describe('When the media toolchain is missing', () => {
+    it('should report the failure and abort the boot before touching the network', async () => {
+      const logger = createLogger();
+      const { database, rawCalls } = createFakeDatabase(async () => ({ rows: [{ ok: 1 }] }));
+      verifyMediaToolchain.mockRejectedValue(new Error('spawn ffprobe ENOENT'));
+
+      const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, database });
+
+      await expect(logMediaWorkerStartup()).rejects.toThrow('ENOENT');
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Media toolchain check failed'),
+        expect.any(Error),
+      );
+      // This probe is first precisely because it is local and cheap: a worker
+      // image built without the ffmpeg layer should say so without waiting on
+      // Postgres or S3 to answer.
+      expect(rawCalls).toEqual([]);
+      expect(s3Send).not.toHaveBeenCalled();
+    });
+  });
+
   describe('When the Postgres probe fails', () => {
     it('should report the failure and abort the boot', async () => {
       const logger = createLogger();
@@ -117,6 +159,8 @@ describe('logMediaWorkerStartup', () => {
       const logMediaWorkerStartup = build__LogMediaWorkerStartup({ config, logger, database });
 
       await expect(logMediaWorkerStartup()).rejects.toThrow('ECONNREFUSED');
+      // Ordering: the toolchain probe ran and passed, so Postgres is what failed.
+      expect(verifyMediaToolchain).toHaveBeenCalled();
       expect(logger.info).not.toHaveBeenCalledWith(
         'Postgres connectivity check succeeded',
         expect.any(Object),

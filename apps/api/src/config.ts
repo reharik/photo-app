@@ -12,6 +12,8 @@ const DEFAULT_UPLOAD_URL_TTL_SECONDS = 15 * 60;
 const DEFAULT_DOWNLOAD_URL_TTL_SECONDS = 15 * 60;
 const DEFAULT_DOWNLOAD_URL_SIGNING_BUCKET_SECONDS = 5 * 60;
 const DEFAULT_ACCOUNT_CAP = 5368709120; // 5gig
+const DEFAULT_IMAGE_MAX_BYTES = 52428800; // 50mb
+const DEFAULT_VIDEO_MAX_BYTES = 262144000; // 250mb
 
 export type Config = {
   nodeEnv: NodeEnv;
@@ -54,6 +56,8 @@ export type Config = {
   isProduction: boolean;
   isDevelopment: boolean;
   accountCap: number;
+  imageMaxBytes: number;
+  videoMaxBytes: number;
 };
 
 const getValidValue = <T extends string>(value: string, allowedValues: readonly T[]): T => {
@@ -144,6 +148,12 @@ export const createConfigFromEnv = (): Config => {
     isProduction,
     isDevelopment,
     accountCap: process.env.ACCOUNT_CAP ? Number(process.env.ACCOUNT_CAP) : DEFAULT_ACCOUNT_CAP,
+    imageMaxBytes: process.env.IMAGE_MAX_BYTES
+      ? Number(process.env.IMAGE_MAX_BYTES)
+      : DEFAULT_IMAGE_MAX_BYTES,
+    videoMaxBytes: process.env.VIDEO_MAX_BYTES
+      ? Number(process.env.VIDEO_MAX_BYTES)
+      : DEFAULT_VIDEO_MAX_BYTES,
   };
 };
 
