@@ -62,7 +62,6 @@ const generateMetadata = async (originalPath: string): Promise<VideoMetadata> =>
     originalPath,
   ]);
   const probe = JSON.parse(stdout) as Probe;
-
   const videoStream = probe.streams.find((s) => s.codec_type === 'video');
   if (!videoStream) throw new Error('no video stream');
 
@@ -80,7 +79,6 @@ const generateMetadata = async (originalPath: string): Promise<VideoMetadata> =>
   const created = probe.format.tags?.creation_time;
   const takenAtUtcOffsetMinutes = probe.format.tags?.['com.apple.quicktime.creationdate'];
   const capture = computeCaptureInstant(created, takenAtUtcOffsetMinutes);
-
   return {
     durationMs,
     height,
@@ -112,11 +110,11 @@ const transformVideo = async (
       '-i',
       originalPath,
       '-vf',
-      "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps='min(60,source_fps)'",
+      "scale='min(1280,iw)':'min(1280,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2,fps='min(30,source_fps)'",
       '-c:v',
       'libx264',
       '-preset',
-      'fast',
+      'veryfast',
       '-crf',
       '23',
       '-pix_fmt',
