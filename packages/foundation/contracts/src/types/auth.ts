@@ -14,6 +14,7 @@ export interface User {
   lastLoginAt?: string;
   displayName: string;
   isAuthenticated: boolean;
+  videoEnabled?: boolean;
 }
 
 export interface LoginInput {

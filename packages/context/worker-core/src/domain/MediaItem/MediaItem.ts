@@ -137,7 +137,7 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
 
     if (capture.takenAtUtc != null && this.props.takenAt == null) {
       this.props.takenAt = capture.takenAtUtc;
-      this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes;
+      this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes || 0;
     }
 
     this.props.durationMs = durationMs;

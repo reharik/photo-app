@@ -5,6 +5,7 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
+import { computeCaptureInstant } from '../../../infrastructure/exif/computeCaptureInstant';
 import { Capture } from './processMediaImage/types';
 
 export type GeneratedVideoDerivative = {
@@ -36,14 +37,19 @@ type Probe = {
   streams: ProbeStream[];
   format: {
     duration?: string; // seconds, as a string
-    tags?: { creation_time?: string };
+    tags?: { 'TAG:creation_time'?: string; 'com.apple.quicktime.creationdate'?: string };
   };
 };
 
-type VideoMetadata = { durationMs: number; height?: number; width?: number; capturedAt?: Date };
+type VideoMetadata = {
+  durationMs: number;
+  height?: number;
+  width?: number;
+  capture: Capture;
+};
 
 const exec = promisify(execFile);
-const execOpts = { timeout: 300_000, maxBuffer: 10 * 1024 * 1024 };
+const execOpts = { timeout: 900_000, maxBuffer: 10 * 1024 * 1024 };
 
 const generateMetadata = async (originalPath: string): Promise<VideoMetadata> => {
   const { stdout } = await exec('ffprobe', [
@@ -71,11 +77,16 @@ const generateMetadata = async (originalPath: string): Promise<VideoMetadata> =>
   const swapped = Math.abs(rotation) === 90 || Math.abs(rotation) === 270;
   const width = swapped ? videoStream.height : videoStream.width;
   const height = swapped ? videoStream.width : videoStream.height;
+  const created = probe.format.tags?.['TAG:creation_time'];
+  const takenAtUtcOffsetMinutes = probe.format.tags?.['com.apple.quicktime.creationdate'];
+  const capture = computeCaptureInstant(created, takenAtUtcOffsetMinutes);
 
-  const created = probe.format.tags?.creation_time;
-  const capturedAt = created ? new Date(created) : undefined;
-
-  return { durationMs, height, width, capturedAt };
+  return {
+    durationMs,
+    height,
+    width,
+    capture,
+  };
 };
 
 const probeDimensions = async (path: string): Promise<{ width: number; height: number }> => {
@@ -105,7 +116,7 @@ const transformVideo = async (
       '-c:v',
       'libx264',
       '-preset',
-      'medium',
+      'fast',
       '-crf',
       '23',
       '-pix_fmt',
@@ -203,6 +214,6 @@ export const generateVideoDerivatives = async (
     thumbnail,
     original,
     durationMs: metadata.durationMs,
-    capture: { takenAtUtc: metadata.capturedAt },
+    capture: metadata.capture,
   };
 };

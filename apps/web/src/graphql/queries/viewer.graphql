@@ -4,5 +4,8 @@ query Viewer {
     firstName
     lastName
     displayName
+    permissions {
+      videoEnabled
+    }
   }
 }
