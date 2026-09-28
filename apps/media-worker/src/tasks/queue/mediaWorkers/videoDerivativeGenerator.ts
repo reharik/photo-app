@@ -37,7 +37,7 @@ type Probe = {
   streams: ProbeStream[];
   format: {
     duration?: string; // seconds, as a string
-    tags?: { 'TAG:creation_time'?: string; 'com.apple.quicktime.creationdate'?: string };
+    tags?: { creation_time?: string; 'com.apple.quicktime.creationdate'?: string };
   };
 };
 
@@ -77,7 +77,7 @@ const generateMetadata = async (originalPath: string): Promise<VideoMetadata> =>
   const swapped = Math.abs(rotation) === 90 || Math.abs(rotation) === 270;
   const width = swapped ? videoStream.height : videoStream.width;
   const height = swapped ? videoStream.width : videoStream.height;
-  const created = probe.format.tags?.['TAG:creation_time'];
+  const created = probe.format.tags?.creation_time;
   const takenAtUtcOffsetMinutes = probe.format.tags?.['com.apple.quicktime.creationdate'];
   const capture = computeCaptureInstant(created, takenAtUtcOffsetMinutes);
 
