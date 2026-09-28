@@ -1,15 +1,31 @@
+import { DateTime } from 'luxon';
+
 export type CaptureInstant = {
   takenAtUtc?: Date;
   takenAtUtcOffsetMinutes?: number;
 };
 
-const EXIF_DATE_REGEX = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})$/;
-const EXIF_OFFSET_REGEX = /^([+-])(\d{2}):(\d{2})$/;
-
 const nullCaptureInstant = (): CaptureInstant => ({
   takenAtUtc: undefined,
   takenAtUtcOffsetMinutes: undefined,
 });
+
+/** EXIF writes "2026:09:28 14:30:00"; video tags are already ISO. */
+const toIso = (value: string): string => {
+  if (!value.includes(' ')) return value;
+  const [date, time] = value.split(' ');
+  return `${date.replaceAll(':', '-')}T${time}`;
+};
+
+/** "Z" says the value is UTC, not where it was shot — only a real offset does. */
+const hasOffset = (iso: string): boolean => {
+  const t = iso.indexOf('T');
+  if (t === -1) return false;
+  const time = iso.slice(t);
+  return time.includes('+') || time.includes('-');
+};
+
+const parse = (value: string): DateTime => DateTime.fromISO(value, { setZone: true, zone: 'utc' });
 
 export const computeCaptureInstant = (
   dateStr: string | undefined,
@@ -19,36 +35,22 @@ export const computeCaptureInstant = (
     return nullCaptureInstant();
   }
 
-  const dateMatch = EXIF_DATE_REGEX.exec(dateStr);
-  if (!dateMatch) {
+  const iso = toIso(dateStr.trim());
+  const suffix = offsetStr?.trim() ?? '';
+
+  // A malformed offset is dropped rather than invalidating the whole value —
+  // a bad offset shouldn't cost us a good capture time.
+  const withOffset = suffix ? parse(iso + suffix) : undefined;
+  const parsed = withOffset?.isValid ? withOffset : parse(iso);
+
+  if (!parsed.isValid) {
     return nullCaptureInstant();
   }
 
-  const [, year, month, day, hour, minute, second] = dateMatch;
-  const isoLocal = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+  const offsetKnown = withOffset?.isValid === true || hasOffset(iso);
 
-  let takenAtUtcOffsetMinutes: number | undefined = undefined;
-  let iso: string;
-
-  if (offsetStr !== undefined) {
-    const offsetMatch = EXIF_OFFSET_REGEX.exec(offsetStr);
-    if (offsetMatch) {
-      const sign = offsetMatch[1] === '+' ? 1 : -1;
-      const offsetHours = Number.parseInt(offsetMatch[2], 10);
-      const offsetMinutesPart = Number.parseInt(offsetMatch[3], 10);
-      takenAtUtcOffsetMinutes = sign * (offsetHours * 60 + offsetMinutesPart);
-      iso = `${isoLocal}${offsetStr}`;
-    } else {
-      iso = `${isoLocal}Z`;
-    }
-  } else {
-    iso = `${isoLocal}Z`;
-  }
-
-  const takenAtUtc = new Date(iso);
-  if (Number.isNaN(takenAtUtc.getTime())) {
-    return nullCaptureInstant();
-  }
-
-  return { takenAtUtc, takenAtUtcOffsetMinutes };
+  return {
+    takenAtUtc: parsed.toUTC().toJSDate(),
+    takenAtUtcOffsetMinutes: offsetKnown ? parsed.offset : undefined,
+  };
 };
