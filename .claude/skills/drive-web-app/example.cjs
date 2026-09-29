@@ -15,7 +15,10 @@ runSession(async ({ newPage, shot }) => {
   const input = page.locator('[data-testid="upload-media-input"]').first();
   await input.waitFor({ state: 'attached' });
   await input.setInputFiles([...testImages().slice(0, 4), notMedia]);
-  await page.getByText(/0 of 5 · 5 failed/).first().waitFor({ timeout: 90_000 });
+  await page
+    .getByText(/0 of 5 · 5 failed/)
+    .first()
+    .waitFor({ timeout: 90_000 });
   console.log('saved', await shot(page, 'upload-panel-320-failed'));
 }).catch((e) => {
   console.error(e);

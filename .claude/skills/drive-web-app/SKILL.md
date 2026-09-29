@@ -36,7 +36,10 @@ NODE_PATH="/home/reharik/Development/photoapp-cc/node_modules" node my-script.cj
 ```
 
 ```js
-const { runSession, testImages } = require('/home/reharik/Development/photoapp-cc/.claude/skills/drive-web-app/session.cjs');
+const {
+  runSession,
+  testImages,
+} = require('/home/reharik/Development/photoapp-cc/.claude/skills/drive-web-app/session.cjs');
 
 runSession(async ({ user, newPage, shot }) => {
   const page = await newPage({ viewport: { width: 375, height: 700 }, s3: 'hold' });
@@ -54,11 +57,11 @@ runSession(async ({ user, newPage, shot }) => {
 Media bytes go browser → **real AWS S3** by presigned PUT (localstack is SES only), and
 nothing ever deletes those objects. So by default no upload reaches S3:
 
-| `s3` | Effect | Use for |
-|---|---|---|
-| `'hold'` (default) | PUT never answers; rows stay **Uploading** (spinner) | in-flight widget states |
-| `'abort'` | PUT fails; rows end up **failed** | failure states |
-| `'pass'` | real upload to AWS | only when you need a processed/READY item; leaves S3 objects behind |
+| `s3`               | Effect                                               | Use for                                                             |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------------------- |
+| `'hold'` (default) | PUT never answers; rows stay **Uploading** (spinner) | in-flight widget states                                             |
+| `'abort'`          | PUT fails; rows end up **failed**                    | failure states                                                      |
+| `'pass'`           | real upload to AWS                                   | only when you need a processed/READY item; leaves S3 objects behind |
 
 `hold`/`abort` still create PENDING `media_item` rows (presign happens first); cleanup
 removes them with the user. Expect one `net::ERR_FAILED` console error per aborted PUT.
