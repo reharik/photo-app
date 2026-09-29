@@ -12,6 +12,8 @@ export type UploadProgressCounts = {
   inFlight: number;
   failed: number;
   processing: number;
+  /** Rows the widget stopped watching before the server finished ({@link FrontendUploadStatus.processingDelayed}). */
+  delayed: number;
 };
 
 export const getUploadProgressCounts = (items: UploadItem[]): UploadProgressCounts => {
@@ -19,16 +21,23 @@ export const getUploadProgressCounts = (items: UploadItem[]): UploadProgressCoun
   let inFlight = 0;
   let failed = 0;
   let processing = 0;
+  let delayed = 0;
 
   for (const item of items) {
+    // processingDelayed counts as finished but not processing: the widget has stopped
+    // watching it, so it must not keep the header spinner going.
     if (
       item.status.equals(FrontendUploadStatus.ready) ||
-      item.status.equals(FrontendUploadStatus.complete)
+      item.status.equals(FrontendUploadStatus.complete) ||
+      item.status.equals(FrontendUploadStatus.processingDelayed)
     ) {
       finished += 1;
     }
     if (item.status.equals(FrontendUploadStatus.complete)) {
       processing += 1;
+    }
+    if (item.status.equals(FrontendUploadStatus.processingDelayed)) {
+      delayed += 1;
     }
     if (isInFlightStatus(item.status)) {
       inFlight += 1;
@@ -38,7 +47,7 @@ export const getUploadProgressCounts = (items: UploadItem[]): UploadProgressCoun
     }
   }
 
-  return { total: items.length, finished, inFlight, failed, processing };
+  return { total: items.length, finished, inFlight, failed, processing, delayed };
 };
 
 export const getCollapsedSummary = (
@@ -66,6 +75,22 @@ export const getCollapsedSummary = (
 
   return `${finished} of ${total}`;
 };
+
+export type UploadPanelPhase = 'idle' | 'active' | 'success';
+
+/** The headline both the panel header and the header pill show. */
+export const getPanelSummary = (
+  counts: UploadProgressCounts,
+  phase: UploadPanelPhase,
+  sessionHadFailure: boolean,
+): string =>
+  phase === 'success'
+    ? getCollapsedSummary(counts, 'success', sessionHadFailure)
+    : getCollapsedSummary(counts, 'active');
+
+/** Uploading or awaiting server processing: the spinner case, as opposed to done or stuck. */
+export const isUploadWorkOngoing = (counts: UploadProgressCounts): boolean =>
+  counts.inFlight > 0 || counts.processing > 0;
 
 export const canCancelUpload = (status: FrontendUploadStatusType): boolean =>
   isInFlightStatus(status);

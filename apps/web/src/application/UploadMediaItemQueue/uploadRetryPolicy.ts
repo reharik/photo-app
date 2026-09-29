@@ -8,11 +8,13 @@ const QUOTA_ERROR_CODE = ContractError.InsufficientStorageSpace.value;
  * Failures a retry can't fix, matched on {@link AppError.code}. Items rejected by the
  * enqueue pre-check never reached the network, a quota failure won't clear until the
  * user frees space, and a file over the size cap is over it just as far on the next attempt —
- * offering Retry there only buys the same refusal a second time.
+ * offering Retry there only buys the same refusal a second time. A server-side processing
+ * failure already has a media item; retrying would upload a second one and orphan the first.
  */
 const NON_RETRYABLE_ERROR_CODES: ReadonlySet<string> = new Set([
   FrontendError.unsupportedMediaType.value,
   FrontendError.videoNotSupported.value,
+  FrontendError.mediaProcessingFailed.value,
   QUOTA_ERROR_CODE,
   ContractError.ImageSizeTooLarge.value,
   ContractError.VideoSizeTooLarge.value,

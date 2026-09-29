@@ -8,7 +8,12 @@ import {
 import { LibrarySection } from '../features/media/LibrarySection';
 import { ViewerLibraryDocument } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
-import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFirstPageLimit';
+import {
+  DEFAULT_PAGE_SIZE,
+  limitCoveringLoaded,
+  useCachedFirstPageLimit,
+} from '../hooks/useCachedFirstPageLimit';
+import { useProcessingMediaItems } from '../hooks/useProcessingMediaItems';
 
 export const HomeScreen = () => {
   const buildPageVariables = useCallback(
@@ -48,6 +53,14 @@ export const HomeScreen = () => {
     select: (data) => data?.viewer?.mediaItems ?? { nodes: [], totalCount: 0 },
     buildPageVariables,
   });
+
+  useProcessingMediaItems([
+    {
+      key: mediaGridRestorationKeys.library,
+      refresh: () =>
+        void query.refetch(buildPageVariables(0, limitCoveringLoaded(data?.nodes.length ?? 0))),
+    },
+  ]);
 
   if (!data) {
     return content;

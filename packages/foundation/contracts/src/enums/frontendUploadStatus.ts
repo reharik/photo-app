@@ -8,6 +8,11 @@ const input = {
   finalizing: { display: 'Finishing' },
   complete: { display: 'Processing' },
   ready: { display: 'Done' },
+  /**
+   * The widget stopped waiting before the server finished (budget ran out, status requests kept
+   * failing, or the item is gone). Not a failure: the item may still go ready server-side.
+   */
+  processingDelayed: { display: 'Still processing' },
   failed: { display: 'Failed' },
 } as const;
 
@@ -24,4 +29,6 @@ export const isInFlightStatus = (status: FrontendUploadStatus): boolean =>
   status.equals(FrontendUploadStatus.finalizing);
 
 export const isTerminalStatus = (status: FrontendUploadStatus): boolean =>
-  status.equals(FrontendUploadStatus.ready) || status.equals(FrontendUploadStatus.failed);
+  status.equals(FrontendUploadStatus.ready) ||
+  status.equals(FrontendUploadStatus.processingDelayed) ||
+  status.equals(FrontendUploadStatus.failed);

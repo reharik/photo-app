@@ -7,7 +7,8 @@ import { useInAppNotification } from '../../hooks/useInAppNotification';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { HeroIllustration } from '../../ui/HeroIllustration';
 import { UploadMediaIconButton } from '../media/UploadMediaIconButton';
-import { UploadProgressBox } from '../uploadProgressBar/uploadProgressBox';
+import { UploadProgressPill } from '../uploadProgressBar/UploadProgressPill';
+import { useUploadProgressPanel } from '../uploadProgressBar/useUploadProgressPanel';
 import { isNavigationParent, Navigation, type NavigationItem } from './Navigation';
 import { Profile } from './Profile';
 
@@ -108,17 +109,45 @@ export const AppShell = () => {
     };
   }, [openMenu]);
 
+  // The upload panel is fixed over the page at z 9990, above the nav's own menus. Opening a
+  // menu minimizes it and opening the panel closes the menus, so the two never overlap.
+  const uploadProgress = useUploadProgressPanel();
+  const { minimize: minimizeUploads, open: openUploads } = uploadProgress;
+
   const toggleNavMenu = (): void => {
+    if (openMenu !== 'nav') {
+      minimizeUploads();
+    }
     setOpenMenu((m) => (m === 'nav' ? null : 'nav'));
   };
 
   const toggleProfileMenu = (): void => {
+    if (openMenu !== 'profile') {
+      minimizeUploads();
+    }
     setOpenMenu((m) => (m === 'profile' ? null : 'profile'));
   };
 
+  const openUploadPanel = (): void => {
+    setOpenMenu(null);
+    openUploads();
+  };
+
+  // Pill and panel replace each other: the pill exists only while the panel is minimized.
+  const uploadPill =
+    uploadProgress.isActive && uploadProgress.minimized ? (
+      <UploadProgressPill
+        counts={uploadProgress.counts}
+        panelPhase={uploadProgress.panelPhase}
+        sessionHadFailure={uploadProgress.sessionHadFailure}
+        focusOnMount={uploadProgress.focusPillOnMount}
+        onOpen={openUploadPanel}
+      />
+    ) : null;
+
   return (
     <SCShellContainer>
-      <UploadProgressBox />
+      {uploadProgress.panel}
       <SCNavigation ref={navRef}>
         {isMobileShell ? (
           <>
@@ -136,10 +165,12 @@ export const AppShell = () => {
                 </MobileNavMenuButton>
                 <Wordmark aria-hidden>
                   <HeroIllustration size={60} />
-                  <span>Homeroll</span>
+                  {/* Makes room for the upload pill: at 320px there isn't space for both. */}
+                  {uploadPill == null ? <span>Homeroll</span> : null}
                 </Wordmark>
               </MobileNavLeading>
               <NavActions>
+                {uploadPill}
                 <UploadMediaIconButton />
                 <Profile
                   displayName={viewer.displayName}
@@ -176,6 +207,7 @@ export const AppShell = () => {
             </SCAppNavigation>
             <NavActions>
               {/* Search affordance deferred — see Zeta search PR */}
+              {uploadPill}
               <UploadMediaIconButton />
               <Profile
                 displayName={viewer.displayName}

@@ -24,8 +24,9 @@ export const UploadProgressRow = ({
   const errorMessage = firstError && formatAppErrorMessage(firstError);
   const showRetry = canRetryUploadItem(item);
   const showCancel = canCancelUpload(item.status);
+  const isProcessingDelayed = item.status.equals(FrontendUploadStatus.processingDelayed);
   // Client-side only: drops the row. Whatever the server holds is left as is.
-  const showDismiss = item.status.equals(FrontendUploadStatus.failed);
+  const showDismiss = item.status.equals(FrontendUploadStatus.failed) || isProcessingDelayed;
 
   return (
     <Row>
@@ -37,6 +38,9 @@ export const UploadProgressRow = ({
         </StatusLine>
         {errorMessage != null && item.status.equals(FrontendUploadStatus.failed) ? (
           <ErrorText>{errorMessage}</ErrorText>
+        ) : null}
+        {isProcessingDelayed ? (
+          <NoteText>It’ll appear in your library when it’s done.</NoteText>
         ) : null}
       </RowMain>
       <RowActions>
@@ -148,6 +152,13 @@ const ErrorText = styled.div`
   margin-top: 4px;
   font-size: ${({ theme }) => theme.fontSize._12};
   color: ${({ theme }) => theme.color.alertErrorText};
+  line-height: 1.35;
+`;
+
+const NoteText = styled.div`
+  margin-top: 4px;
+  font-size: ${({ theme }) => theme.fontSize._12};
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
   line-height: 1.35;
 `;
 

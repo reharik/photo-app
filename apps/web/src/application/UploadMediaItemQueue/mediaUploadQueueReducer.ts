@@ -74,11 +74,28 @@ export const uploadQueueReducer: React.Reducer<UploadQueueState, UploadQueueActi
     }
 
     case 'markFailed': {
+      // The error is what makes the row non-retryable: without one, Retry would re-upload
+      // the file as a new media item and orphan this one.
       return {
         ...state,
         items: state.items.map((item) =>
           item.mediaItemId === action.payload.mediaItemId
-            ? { ...item, status: FrontendUploadStatus.failed }
+            ? {
+                ...item,
+                status: FrontendUploadStatus.failed,
+                errors: [mapFrontendError({ code: FrontendError.mediaProcessingFailed })],
+              }
+            : item,
+        ),
+      };
+    }
+
+    case 'markProcessingDelayed': {
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.mediaItemId === action.payload.mediaItemId
+            ? { ...item, status: FrontendUploadStatus.processingDelayed }
             : item,
         ),
       };
@@ -148,14 +165,6 @@ export const uploadQueueReducer: React.Reducer<UploadQueueState, UploadQueueActi
       const items = state.items.filter((item) => item.localId !== action.payload.localId);
       // Nothing left for the banner to describe once the last row is gone.
       return { ...state, items, batchErrors: items.length === 0 ? [] : state.batchErrors };
-    }
-
-    case 'clearCompleted': {
-      return {
-        ...state,
-        items: state.items.filter((item) => !item.status.equals(FrontendUploadStatus.complete)),
-        batchErrors: [],
-      };
     }
 
     default:

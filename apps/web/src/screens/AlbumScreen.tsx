@@ -9,6 +9,7 @@ import {
   mediaGridRestorationKeys,
   useRestoreAwareFetchPolicy,
 } from '../features/media/grid/useMediaGridScrollRestoration';
+import { evictFieldOnCachedEntities } from '../graphql/evictFieldOnCachedEntities';
 import {
   AddMediaItemsToAlbumDocument,
   AddMediaItemsToAlbumMutation,
@@ -25,8 +26,13 @@ import {
 } from '../graphql/generated/types';
 import { usePaginatedQueryRenderState } from '../hooks/getPaginatedQueryRenderState';
 import { useAppMutationState } from '../hooks/useAppMutation';
-import { DEFAULT_PAGE_SIZE, useCachedFirstPageLimit } from '../hooks/useCachedFirstPageLimit';
+import {
+  DEFAULT_PAGE_SIZE,
+  limitCoveringLoaded,
+  useCachedFirstPageLimit,
+} from '../hooks/useCachedFirstPageLimit';
 import { useInAppNotification } from '../hooks/useInAppNotification';
+import { useProcessingMediaItems } from '../hooks/useProcessingMediaItems';
 import { NotFoundState } from '../ui/NotFoundState';
 import { Toast } from '../ui/Toast';
 
@@ -246,6 +252,28 @@ export const AlbumScreen = () => {
     }),
     buildPageVariables: buildPickerVariables,
   });
+
+  useProcessingMediaItems([
+    {
+      key: mediaGridRestorationKeys.album(albumId ?? ''),
+      refresh: () => {
+        if (albumId) {
+          void query.refetch(
+            buildPageVariables(0, limitCoveringLoaded(albumData?.nodes.length ?? 0)),
+          );
+        }
+      },
+    },
+    {
+      // The picker is cache-first and skipped while closed, so evicting just its sort
+      // variant is enough: it refetches on its next open (or now, if open).
+      key: 'albumPicker',
+      refresh: () =>
+        evictFieldOnCachedEntities(apolloClient, 'Viewer', 'mediaItems', {
+          input: { collectionInfo: buildPickerVariables(0).collectionInfo },
+        }),
+    },
+  ]);
 
   const album = albumData?.album;
   const albumItems = albumData?.nodes ?? [];

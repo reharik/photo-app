@@ -310,6 +310,7 @@ export interface MediaItemReadRepository extends RequestScopeLifeCycle {
     collectionInfo: MediaItemCollectionInfo;
   }): Promise<PagedList<DBMediaItemRow>>;
   listTagsForMediaItemIds: (args: { mediaItemIds: EntityId[] }) => Promise<MediaItemTagRow[]>;
+  getProcessingItemIdsForViewer: ({ viewerId }: { viewerId: EntityId }) => Promise<EntityId[]>;
 }
 
 export interface UserReadRepository extends RequestScopeLifeCycle {

@@ -11,6 +11,14 @@ export const DEFAULT_PAGE_SIZE = 20;
 const SERVER_MAX_PAGE_LIMIT = 100;
 
 /**
+ * `limit` for an offset-0 request that must not shrink a list already holding `loadedCount`
+ * nodes: `nestedPagePagination` replaces the list on offset 0, so a default-size page would
+ * collapse it. Clamped to the server cap; past that the grid's loadMore covers the rest.
+ */
+export const limitCoveringLoaded = (loadedCount: number): number =>
+  Math.min(Math.max(loadedCount, DEFAULT_PAGE_SIZE), SERVER_MAX_PAGE_LIMIT);
+
+/**
  * First-page `limit` (and the cached node count) for a paginated `cache-and-network` query.
  *
  * On remount the cache may already hold N merged pages. The automatic network refetch
@@ -51,7 +59,7 @@ export const useCachedFirstPageLimit = <TData, TVariables extends OperationVaria
     }
     frozenRef.current = {
       cacheKey,
-      limit: Math.min(Math.max(cachedCount, DEFAULT_PAGE_SIZE), SERVER_MAX_PAGE_LIMIT),
+      limit: limitCoveringLoaded(cachedCount),
       cachedCount,
     };
   }

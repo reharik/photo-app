@@ -2,13 +2,19 @@ import { ApolloClient } from '@apollo/client';
 
 import { MediaItemStatus } from '@packages/contracts';
 
-import {
-  type ViewerMediaItemStatusQuery,
-  ViewerMediaItemStatusDocument,
-} from '../../graphql/generated/types';
+import { ViewerMediaItemStatusDocument } from '../../graphql/generated/types';
+import { nextProcessingPollDelayMs } from '../processingPollSchedule';
+
+/**
+ * Covers a realistic worst case: a long 1080p clip took 275s to transcode in prod, and there
+ * is always a longer clip. Past this the item is reported timed out, not failed.
+ */
+const DEFAULT_MAX_DURATION_MS = 20 * 60_000;
+
+/** Consecutive failed status requests tolerated before giving up; one blip must not end the wait. */
+const MAX_CONSECUTIVE_ERRORS = 3;
 
 export type AwaitMediaItemsReadyOptions = {
-  pollIntervalMs?: number;
   maxDurationMs?: number;
   /**
    * Called the first time this item reaches {@link MediaItemStatus.ready} (not invoked on timeout
@@ -21,72 +27,97 @@ export type AwaitMediaItemsReadyOptions = {
    * and the poll spins until {@link AwaitMediaItemsReadyOptions.maxDurationMs} elapses.
    */
   onItemFailed?: (mediaItemId: string) => void;
+  /**
+   * Called when polling stops without a ready/failed status: the budget ran out,
+   * {@link MAX_CONSECUTIVE_ERRORS} status requests in a row failed, or the item no longer
+   * exists (deleted). None of these is a processing failure, so none is reported as one.
+   */
+  onItemTimedOut?: (mediaItemId: string) => void;
 };
 
-const waitUntilMediaItemReadyOrTimeout = (
+type ItemCallbacks = Pick<
+  AwaitMediaItemsReadyOptions,
+  'onItemReady' | 'onItemFailed' | 'onItemTimedOut'
+>;
+
+type StatusSnapshot = { kind: 'status'; status: MediaItemStatus } | { kind: 'gone' };
+
+/**
+ * The item's current status, or `gone` when it no longer exists. The owner's lookup has no
+ * status filter, so a null `mediaItem` means deleted, not "not ready yet".
+ */
+const fetchStatus = async (client: ApolloClient, mediaItemId: string): Promise<StatusSnapshot> => {
+  const result = await client.query({
+    query: ViewerMediaItemStatusDocument,
+    variables: { mediaItemId },
+    fetchPolicy: 'network-only',
+  });
+  const status = result.data?.viewer?.mediaItem?.status;
+  return status == null ? { kind: 'gone' } : { kind: 'status', status };
+};
+
+const waitUntilMediaItemSettles = (
   client: ApolloClient,
   mediaItemId: string,
-  pollIntervalMs: number,
   maxDurationMs: number,
-  onItemReady?: (mediaItemId: string) => void,
-  onItemFailed?: (mediaItemId: string) => void,
+  { onItemReady, onItemFailed, onItemTimedOut }: ItemCallbacks,
 ): Promise<void> =>
   new Promise<void>((resolve) => {
-    let settled = false;
-    let readyNotified = false;
-    let failedNotified = false;
-    const waitTimer: { id?: ReturnType<typeof setTimeout> } = {};
-    const observableQuery = client.watchQuery<ViewerMediaItemStatusQuery>({
-      query: ViewerMediaItemStatusDocument,
-      variables: { mediaItemId },
-      fetchPolicy: 'network-only',
-      pollInterval: pollIntervalMs,
-    });
+    const startedAt = Date.now();
+    let consecutiveErrors = 0;
 
-    const settle = (): void => {
-      if (settled) {
+    const poll = async (): Promise<void> => {
+      // undefined: this request failed.
+      let snapshot: StatusSnapshot | undefined;
+      try {
+        snapshot = await fetchStatus(client, mediaItemId);
+        consecutiveErrors = 0;
+      } catch {
+        consecutiveErrors += 1;
+        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+          onItemTimedOut?.(mediaItemId);
+          resolve();
+          return;
+        }
+      }
+
+      if (snapshot?.kind === 'gone') {
+        onItemTimedOut?.(mediaItemId);
+        resolve();
         return;
       }
-      settled = true;
-      if (waitTimer.id !== undefined) {
-        clearTimeout(waitTimer.id);
+      const status = snapshot?.status;
+      if (status != null && MediaItemStatus.ready.equals(status)) {
+        onItemReady?.(mediaItemId);
+        resolve();
+        return;
       }
-      void observableQuery.stopPolling();
-      subscription.unsubscribe();
-      resolve();
+      if (status != null && MediaItemStatus.failed.equals(status)) {
+        onItemFailed?.(mediaItemId);
+        resolve();
+        return;
+      }
+
+      const elapsedMs = Date.now() - startedAt;
+      if (elapsedMs >= maxDurationMs) {
+        onItemTimedOut?.(mediaItemId);
+        resolve();
+        return;
+      }
+      setTimeout(
+        () => void poll(),
+        Math.min(nextProcessingPollDelayMs(elapsedMs), maxDurationMs - elapsedMs),
+      );
     };
 
-    const subscription = observableQuery.subscribe({
-      next: (result) => {
-        const status = result.data?.viewer?.mediaItem?.status;
-        if (status == null) {
-          return;
-        }
-        if (MediaItemStatus.ready.equals(status as MediaItemStatus)) {
-          if (!readyNotified && onItemReady !== undefined) {
-            readyNotified = true;
-            onItemReady(mediaItemId);
-          }
-          settle();
-          return;
-        }
-        if (MediaItemStatus.failed.equals(status as MediaItemStatus)) {
-          if (!failedNotified && onItemFailed !== undefined) {
-            failedNotified = true;
-            onItemFailed(mediaItemId);
-          }
-          settle();
-        }
-      },
-      error: () => {
-        settle();
-      },
-    });
-
-    waitTimer.id = setTimeout(settle, maxDurationMs);
+    void poll();
   });
 
-/** Poll backend processing status via Apollo {@link ApolloClient.watchQuery} until each item is ready or timeouts elapse. */
+/**
+ * Poll backend processing status until each item is ready, failed, or times out. Each item
+ * reports exactly one of {@link AwaitMediaItemsReadyOptions.onItemReady}, `onItemFailed` or
+ * `onItemTimedOut`.
+ */
 export const awaitMediaItemsReady = async (
   client: ApolloClient,
   mediaItemIds: string[],
@@ -96,21 +127,16 @@ export const awaitMediaItemsReady = async (
     return;
   }
 
-  const pollIntervalMs = options?.pollIntervalMs ?? 1500;
-  const maxDurationMs = options?.maxDurationMs ?? 180_000;
-  const onItemReady = options?.onItemReady;
-  const onItemFailed = options?.onItemFailed;
+  const maxDurationMs = options?.maxDurationMs ?? DEFAULT_MAX_DURATION_MS;
+  const callbacks: ItemCallbacks = {
+    onItemReady: options?.onItemReady,
+    onItemFailed: options?.onItemFailed,
+    onItemTimedOut: options?.onItemTimedOut,
+  };
 
   await Promise.all(
     mediaItemIds.map((mediaItemId) =>
-      waitUntilMediaItemReadyOrTimeout(
-        client,
-        mediaItemId,
-        pollIntervalMs,
-        maxDurationMs,
-        onItemReady,
-        onItemFailed,
-      ),
+      waitUntilMediaItemSettles(client, mediaItemId, maxDurationMs, callbacks),
     ),
   );
 };

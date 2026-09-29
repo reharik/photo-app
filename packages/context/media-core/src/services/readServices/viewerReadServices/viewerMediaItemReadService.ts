@@ -11,6 +11,7 @@ export interface ViewerMediaItemReadService extends ReadServiceBase {
   getMediaItemForViewer: (args: {
     mediaItemId: EntityId;
   }) => Promise<MediaItemProjection | undefined>;
+  getProcessingMediaItemsIds: () => Promise<EntityId[]>;
 }
 
 type ViewerMediaItemReadServiceDeps = {
@@ -50,8 +51,12 @@ export const build__ViewerMediaItemReadService = ({
 
     return node[0];
   };
+  const getProcessingMediaItemsIds = async () => {
+    return mediaItemReadRepository.getProcessingItemIdsForViewer({ viewerId });
+  };
   return {
     listMediaItems,
     getMediaItemForViewer,
+    getProcessingMediaItemsIds,
   };
 };

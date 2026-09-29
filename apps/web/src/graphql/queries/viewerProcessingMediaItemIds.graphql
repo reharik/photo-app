@@ -1,0 +1,6 @@
+query ViewerProcessingMediaItemIds {
+  viewer {
+    id
+    processingMediaItemIds
+  }
+}
