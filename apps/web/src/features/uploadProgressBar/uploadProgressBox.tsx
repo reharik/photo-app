@@ -166,7 +166,9 @@ const UploadProgressPanel = ({
           ? 'Review failed uploads'
           : counts.processing > 0
             ? 'Finishing up'
-            : undefined
+            : counts.delayed > 0
+              ? 'Still processing'
+              : undefined
       : undefined;
   // One line per distinct failure; a batch error normally carries a single message.
   const batchMessages = [...new Set(batchErrors.map(formatAppErrorMessage))];

@@ -44,6 +44,24 @@ const frontendErrorInput = {
     retryable: false,
     source: 'frontend',
   },
+  /**
+   * The server gave up on the item's derivatives (status FAILED). Not retryable from the
+   * widget: Retry re-uploads as a new media item and orphans this one.
+   *
+   * WORKAROUND — sets `display`, not `message` like the entries above. `mapToAppError`
+   * (apps/web/src/domain/errors/mapToError.ts) builds the user-facing text from
+   * `def.display`, and smart-enum ignores `message` for that: `display` falls back to the
+   * title-cased key ("Video Not Supported"). So every sibling's `message` wording is never
+   * shown. When mapToAppError is fixed to read `message`, move this text to `message` to
+   * match the rest.
+   */
+  mediaProcessingFailed: {
+    code: 'MEDIA_PROCESSING_FAILED',
+    display: 'Uploaded, but we couldn’t process this file.',
+    category: ErrorCategory.system,
+    retryable: false,
+    source: 'frontend',
+  },
 } as const;
 export type FrontendError = Enumeration<typeof FrontendError>;
 export const FrontendError = enumeration<typeof frontendErrorInput>('FrontendError', {

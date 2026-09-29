@@ -68,6 +68,10 @@ export type MarkFailedPayload = {
   mediaItemId: string;
 };
 
+export type MarkProcessingDelayedPayload = {
+  mediaItemId: string;
+};
+
 type RemovePayload = {
   localId: string;
 };
@@ -82,9 +86,9 @@ export type UploadQueueAction =
   | { type: 'enqueue'; payload: EnqueuePayload }
   | { type: 'updateStatus'; payload: UpdateStatusPayload }
   | { type: 'remove'; payload: RemovePayload }
-  | { type: 'clearCompleted' }
   | { type: 'markReady'; payload: MarkReadyPayload }
   | { type: 'markFailed'; payload: MarkFailedPayload }
+  | { type: 'markProcessingDelayed'; payload: MarkProcessingDelayedPayload }
   | { type: 'retry'; payload: { localId: string } }
   | { type: 'presignStarted'; payload: { localIds: string[] } }
   | { type: 'presignSettled'; payload: PresignBatchResult };
@@ -94,7 +98,6 @@ export type UploadQueueContextValue = {
   enqueueFiles: (files: File[], albumId?: string) => void;
   retryItem: (localId: string) => void;
   removeItem: (localId: string) => void;
-  clearCompleted: () => void;
   isUploading: boolean;
   batchErrors: AppError[];
 };

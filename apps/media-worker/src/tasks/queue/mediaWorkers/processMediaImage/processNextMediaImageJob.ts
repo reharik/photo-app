@@ -10,9 +10,15 @@ import { TriageJob } from './triageJob';
 
 const errorMessage = (e: unknown): string => (e instanceof Error ? e.message : String(e));
 
+// execFile sets killed:true when it hits `timeout`. A transcode that
+// exceeded the limit will exceed it again on the same box — retrying
+// burns the attempt budget on identical doomed work.
+const isTimeout = (e: unknown): boolean =>
+  typeof e === 'object' && e !== null && (e as { killed?: boolean }).killed === true;
+
 // Programmer errors won't fix themselves on retry.
 const isRetryable = (e: unknown): boolean =>
-  !(e instanceof TypeError || e instanceof RangeError || e instanceof SyntaxError);
+  !isTimeout(e) && !(e instanceof TypeError || e instanceof RangeError || e instanceof SyntaxError);
 
 export interface ProcessNextMediaImageJob {
   (): Promise<WorkerTaskOutcome>;

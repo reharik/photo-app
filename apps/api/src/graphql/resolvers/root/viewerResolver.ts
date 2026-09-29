@@ -46,6 +46,9 @@ const viewerResolvers: Pick<Resolvers, 'Query' | 'Viewer'> = {
         pageInfo: collectionInfo.pageInfo,
       };
     }),
+    processingMediaItemIds: authenticatedReadResolver(async (_parent, _args, ctx) => {
+      return ctx.readServices.viewerMediaItemReadService.getProcessingMediaItemsIds();
+    }),
     shareContacts: authenticatedReadResolver(async (_parent, _args, ctx) => {
       return ctx.readServices.viewerSharedContactsReadService.getShareContacts();
     }),

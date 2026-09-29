@@ -151,4 +151,18 @@ export const build__MediaItemReadRepository = ({
       .orderBy('mediaItemTag.mediaItemId', 'asc')
       .orderBy('userTag.label', 'asc');
   },
+  getProcessingItemIdsForViewer: async ({
+    viewerId,
+  }: {
+    viewerId: EntityId;
+  }): Promise<EntityId[]> =>
+    uow
+      .db()('media_item')
+      .where({ ownerId: viewerId })
+      .whereIn('status', [MediaItemStatus.uploaded.value, MediaItemStatus.processing.value])
+      // Bound to an hour: an item abandoned in PROCESSING by a dead worker
+      // would otherwise keep the client polling forever. Our slowest real
+      // transcode is ~4.5 min, so an hour is generous.
+      .whereRaw(`created_at > (now() AT TIME ZONE 'UTC') - interval '1 hour'`)
+      .pluck<EntityId[]>('id'),
 });

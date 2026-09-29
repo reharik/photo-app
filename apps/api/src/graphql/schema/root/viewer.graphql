@@ -11,6 +11,7 @@ type Viewer {
   album(id: ID!): Album
   mediaItem(id: ID!): MediaItem
   mediaItems(input: ViewerMediaItemsInput!): MediaItemCollectionPayload!
+  processingMediaItemIds: [ID!]!
   deleteAlbum(input: DeleteAlbumInput!): DeleteAlbumResponse!
   sharedWithMeAlbums(input: ViewerSharedWithMeAlbumsInput!): SharedWithMeAlbumCollectionPayload!
   shareContacts: [ShareContactType!]!
