@@ -76,5 +76,21 @@ export const getCollapsedSummary = (
   return `${finished} of ${total}`;
 };
 
+export type UploadPanelPhase = 'idle' | 'active' | 'success';
+
+/** The headline both the panel header and the header pill show. */
+export const getPanelSummary = (
+  counts: UploadProgressCounts,
+  phase: UploadPanelPhase,
+  sessionHadFailure: boolean,
+): string =>
+  phase === 'success'
+    ? getCollapsedSummary(counts, 'success', sessionHadFailure)
+    : getCollapsedSummary(counts, 'active');
+
+/** Uploading or awaiting server processing: the spinner case, as opposed to done or stuck. */
+export const isUploadWorkOngoing = (counts: UploadProgressCounts): boolean =>
+  counts.inFlight > 0 || counts.processing > 0;
+
 export const canCancelUpload = (status: FrontendUploadStatusType): boolean =>
   isInFlightStatus(status);

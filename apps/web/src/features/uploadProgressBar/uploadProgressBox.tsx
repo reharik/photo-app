@@ -1,137 +1,31 @@
-import { FrontendUploadStatus } from '@packages/contracts';
 import { Check, ChevronDown } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
-import { createPortal } from 'react-dom';
+import { type ReactElement } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
-import { useUploadQueue } from '../../contexts/UploadQueueContext';
 import type { AppError } from '../../domain/errors/errorTypes';
 import { formatAppErrorMessage } from '../../domain/errors/formatAppErrorMessage';
 import { UploadProgressRow } from './uploadProgressRow';
-import { getCollapsedSummary, getUploadProgressCounts } from './uploadProgressSummary';
+import {
+  getPanelSummary,
+  getUploadProgressCounts,
+  isUploadWorkOngoing,
+  type UploadPanelPhase,
+} from './uploadProgressSummary';
 
-const READY_DISMISS_MS = 2200;
-const SUCCESS_DISMISS_MS = 2600;
 const ENTER_MS = 280;
 
 /** Clears fixed app nav (64px) + small gap when portaled to `document.body`. */
 const PANEL_TOP_OFFSET = '72px';
 const PANEL_TOP_OFFSET_MOBILE = '60px';
 
-type PanelPhase = 'idle' | 'active' | 'success';
-
-export const UploadProgressBox = (): ReactElement | null => {
-  const { items, batchErrors, retryItem, removeItem } = useUploadQueue();
-  const [expanded, setExpanded] = useState(false);
-  const [panelPhase, setPanelPhase] = useState<PanelPhase>('idle');
-  const [visible, setVisible] = useState(false);
-  const readyDismissTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const hadActiveUploadRef = useRef(false);
-  const sessionHadFailureRef = useRef(false);
-
-  const counts = getUploadProgressCounts(items);
-
-  useEffect(() => {
-    if (counts.failed > 0) {
-      sessionHadFailureRef.current = true;
-    }
-  }, [counts.failed]);
-
-  useEffect(() => {
-    if (items.length > 0) {
-      hadActiveUploadRef.current = true;
-      setPanelPhase('active');
-      return;
-    }
-
-    if (hadActiveUploadRef.current && items.length === 0) {
-      hadActiveUploadRef.current = false;
-      setExpanded(false);
-      setPanelPhase('success');
-      const timer = setTimeout(() => {
-        setPanelPhase('idle');
-        sessionHadFailureRef.current = false;
-      }, SUCCESS_DISMISS_MS);
-      return () => clearTimeout(timer);
-    }
-  }, [items.length]);
-
-  useEffect(() => {
-    const shouldShow = panelPhase !== 'idle' || items.length > 0;
-    if (!shouldShow) {
-      setVisible(false);
-      return;
-    }
-
-    setVisible(false);
-    const rafId = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(rafId);
-  }, [panelPhase, items.length]);
-
-  useEffect(() => {
-    for (const item of items) {
-      if (!item.status.equals(FrontendUploadStatus.ready)) {
-        continue;
-      }
-      if (readyDismissTimersRef.current.has(item.localId)) {
-        continue;
-      }
-      const timer = setTimeout(() => {
-        readyDismissTimersRef.current.delete(item.localId);
-        removeItem(item.localId);
-      }, READY_DISMISS_MS);
-      readyDismissTimersRef.current.set(item.localId, timer);
-    }
-
-    for (const [localId, timer] of readyDismissTimersRef.current) {
-      const stillReady = items.some(
-        (item) => item.localId === localId && item.status.equals(FrontendUploadStatus.ready),
-      );
-      if (!stillReady) {
-        clearTimeout(timer);
-        readyDismissTimersRef.current.delete(localId);
-      }
-    }
-  }, [items, removeItem]);
-
-  useEffect(() => {
-    return () => {
-      for (const timer of readyDismissTimersRef.current.values()) {
-        clearTimeout(timer);
-      }
-      readyDismissTimersRef.current.clear();
-    };
-  }, []);
-
-  const toggleExpanded = useCallback((): void => {
-    setExpanded((value) => !value);
-  }, []);
-
-  if (panelPhase === 'idle' && items.length === 0) {
-    return null;
-  }
-
-  return createPortal(
-    <UploadProgressPanel
-      items={items}
-      batchErrors={batchErrors}
-      panelPhase={panelPhase}
-      visible={visible}
-      expanded={expanded}
-      sessionHadFailure={sessionHadFailureRef.current}
-      onToggleExpanded={toggleExpanded}
-      onRetry={retryItem}
-      onRemove={removeItem}
-    />,
-    document.body,
-  );
-};
+/** The header pill points its `aria-controls` here. */
+export const UPLOAD_PROGRESS_PANEL_ID = 'upload-progress-panel';
 
 type UploadProgressPanelProps = {
   items: UploadItem[];
   batchErrors: AppError[];
-  panelPhase: PanelPhase;
+  panelPhase: UploadPanelPhase;
   visible: boolean;
   expanded: boolean;
   sessionHadFailure: boolean;
@@ -140,7 +34,8 @@ type UploadProgressPanelProps = {
   onRemove: (localId: string) => void;
 };
 
-const UploadProgressPanel = ({
+/** The upload panel's view; its lifecycle lives in `useUploadProgressPanel`. */
+export const UploadProgressPanel = ({
   items,
   batchErrors,
   panelPhase,
@@ -152,12 +47,9 @@ const UploadProgressPanel = ({
   onRemove,
 }: UploadProgressPanelProps): ReactElement => {
   const counts = getUploadProgressCounts(items);
-  const summary =
-    panelPhase === 'success'
-      ? getCollapsedSummary(counts, 'success', sessionHadFailure)
-      : getCollapsedSummary(counts, 'active');
+  const summary = getPanelSummary(counts, panelPhase, sessionHadFailure);
   const progressPercent = counts.total > 0 ? Math.round((counts.finished / counts.total) * 100) : 0;
-  const showSpinner = counts.inFlight > 0 || counts.processing > 0;
+  const showSpinner = isUploadWorkOngoing(counts);
   const subSummary =
     panelPhase === 'active' && counts.total > 0
       ? counts.inFlight > 0
@@ -175,6 +67,7 @@ const UploadProgressPanel = ({
 
   return (
     <Panel
+      id={UPLOAD_PROGRESS_PANEL_ID}
       role="region"
       aria-label="Upload progress"
       aria-live="polite"
@@ -184,13 +77,15 @@ const UploadProgressPanel = ({
       <Header>
         <HeaderButton type="button" onClick={onToggleExpanded} aria-expanded={expanded}>
           <HeaderLeading>
+            {/* Check only once everything is done: next to "N failed" or "Still processing"
+                a success mark says the opposite of the text. Same rule as the header pill. */}
             {showSpinner ? (
               <Spinner aria-hidden />
-            ) : (
+            ) : panelPhase === 'success' ? (
               <SuccessMark aria-hidden>
                 <Check size={12} strokeWidth={2.5} aria-hidden />
               </SuccessMark>
-            )}
+            ) : null}
             <HeaderText>
               <SummaryRow>
                 <Summary>{summary}</Summary>
@@ -324,6 +219,12 @@ const SubSummary = styled.div`
   font-size: ${({ theme }) => theme.fontSize._12};
   color: ${({ theme }) => theme.color.bodyTextSecondary};
   white-space: nowrap;
+
+  /* Below 360px the panel is ~270px wide and this collided with the summary. The summary
+     carries the counts; this only restates them, so it's the one to go. */
+  @media (max-width: 359px) {
+    display: none;
+  }
 `;
 
 const Chevron = styled.span<{ $expanded: boolean }>`
@@ -335,7 +236,8 @@ const Chevron = styled.span<{ $expanded: boolean }>`
   transition: transform 0.15s ease;
 `;
 
-const Spinner = styled.span`
+/** Shared with the header pill so both read as the same widget. */
+export const Spinner = styled.span`
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -345,7 +247,7 @@ const Spinner = styled.span`
   animation: ${spin} 0.75s linear infinite;
 `;
 
-const SuccessMark = styled.span`
+export const SuccessMark = styled.span`
   width: 18px;
   height: 18px;
   flex-shrink: 0;
