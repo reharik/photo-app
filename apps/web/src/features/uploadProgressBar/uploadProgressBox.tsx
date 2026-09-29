@@ -1,5 +1,5 @@
-import { Check, ChevronDown } from 'lucide-react';
-import { type ReactElement } from 'react';
+import { Check, ChevronUp } from 'lucide-react';
+import { useEffect, useId, useRef, type ReactElement } from 'react';
 import styled, { keyframes } from 'styled-components';
 
 import type { UploadItem } from '../../application/UploadMediaItemQueue/mediaUploadTypes';
@@ -19,7 +19,7 @@ const ENTER_MS = 280;
 const PANEL_TOP_OFFSET = '72px';
 const PANEL_TOP_OFFSET_MOBILE = '60px';
 
-/** The header pill points its `aria-controls` here. */
+/** Stable handle on the panel (the drive-web-app skill and tests select it by id). */
 export const UPLOAD_PROGRESS_PANEL_ID = 'upload-progress-panel';
 
 type UploadProgressPanelProps = {
@@ -27,9 +27,11 @@ type UploadProgressPanelProps = {
   batchErrors: AppError[];
   panelPhase: UploadPanelPhase;
   visible: boolean;
-  expanded: boolean;
   sessionHadFailure: boolean;
-  onToggleExpanded: () => void;
+  /** Hides the panel behind the header pill; the uploads carry on. */
+  onMinimize: () => void;
+  /** The pill that opened this just unmounted; take focus so it isn't dropped on the page. */
+  focusMinimizeOnMount: boolean;
   onRetry: (localId: string) => void;
   onRemove: (localId: string) => void;
 };
@@ -40,12 +42,22 @@ export const UploadProgressPanel = ({
   batchErrors,
   panelPhase,
   visible,
-  expanded,
   sessionHadFailure,
-  onToggleExpanded,
+  onMinimize,
+  focusMinimizeOnMount,
   onRetry,
   onRemove,
 }: UploadProgressPanelProps): ReactElement => {
+  const minimizeButtonRef = useRef<HTMLButtonElement>(null);
+  const summaryId = useId();
+  useEffect(() => {
+    if (focusMinimizeOnMount) {
+      minimizeButtonRef.current?.focus();
+    }
+    // Mount only: the panel mounts once per opening.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const counts = getUploadProgressCounts(items);
   const summary = getPanelSummary(counts, panelPhase, sessionHadFailure);
   const progressPercent = counts.total > 0 ? Math.round((counts.finished / counts.total) * 100) : 0;
@@ -72,31 +84,43 @@ export const UploadProgressPanel = ({
       aria-label="Upload progress"
       aria-live="polite"
       $visible={visible}
-      $expanded={expanded}
     >
-      <Header>
-        <HeaderButton type="button" onClick={onToggleExpanded} aria-expanded={expanded}>
-          <HeaderLeading>
-            {/* Check only once everything is done: next to "N failed" or "Still processing"
+      {/* The whole header is the minimize control: a far bigger tap target than an icon, and
+          nothing else lives here. Named for its action; the counts are its description. */}
+      <Header
+        ref={minimizeButtonRef}
+        type="button"
+        aria-label="Minimize uploads"
+        // Two ids, not the wrapper: separate ids are joined with a space ("0 of 3 3 in
+        // progress"), while the wrapper's text runs them together ("0 of 33 in progress").
+        aria-describedby={
+          subSummary != null ? `${summaryId}-summary ${summaryId}-sub` : `${summaryId}-summary`
+        }
+        onClick={onMinimize}
+      >
+        <HeaderLeading>
+          {/* Check only once everything is done: next to "N failed" or "Still processing"
                 a success mark says the opposite of the text. Same rule as the header pill. */}
-            {showSpinner ? (
-              <Spinner aria-hidden />
-            ) : panelPhase === 'success' ? (
-              <SuccessMark aria-hidden>
-                <Check size={12} strokeWidth={2.5} aria-hidden />
-              </SuccessMark>
-            ) : null}
-            <HeaderText>
-              <SummaryRow>
-                <Summary>{summary}</Summary>
-                {subSummary != null ? <SubSummary>{subSummary}</SubSummary> : null}
-              </SummaryRow>
-            </HeaderText>
-          </HeaderLeading>
-          <Chevron aria-hidden $expanded={expanded}>
-            <ChevronDown size={16} strokeWidth={2} aria-hidden />
-          </Chevron>
-        </HeaderButton>
+          {showSpinner ? (
+            <Spinner aria-hidden />
+          ) : panelPhase === 'success' ? (
+            <SuccessMark aria-hidden>
+              <Check size={12} strokeWidth={2.5} aria-hidden />
+            </SuccessMark>
+          ) : null}
+          <HeaderText>
+            <SummaryRow>
+              <Summary id={`${summaryId}-summary`}>{summary}</Summary>
+              {subSummary != null ? (
+                <SubSummary id={`${summaryId}-sub`}>{subSummary}</SubSummary>
+              ) : null}
+            </SummaryRow>
+          </HeaderText>
+        </HeaderLeading>
+        {/* Collapse chevron, never an X: an X reads as "cancel the uploads". */}
+        <MinimizeIcon aria-hidden>
+          <ChevronUp size={16} strokeWidth={2} aria-hidden />
+        </MinimizeIcon>
       </Header>
 
       {batchMessages.length > 0 ? (
@@ -113,7 +137,9 @@ export const UploadProgressPanel = ({
         </Track>
       ) : null}
 
-      {expanded && items.length > 0 ? (
+      {/* Always shown: the rows (and their Retry/Dismiss) are why the panel is open at all;
+          the summary alone is what the minimized pill already says. */}
+      {items.length > 0 ? (
         <ItemList>
           {items.map((item) => (
             <UploadProgressRow
@@ -135,7 +161,7 @@ const spin = keyframes`
   }
 `;
 
-const Panel = styled.div<{ $visible: boolean; $expanded: boolean }>`
+const Panel = styled.div<{ $visible: boolean }>`
   position: fixed;
   top: ${PANEL_TOP_OFFSET};
   right: ${({ theme }) => theme.spacing(3)};
@@ -158,30 +184,45 @@ const Panel = styled.div<{ $visible: boolean; $expanded: boolean }>`
   }
 `;
 
-const Header = styled.div`
+/* Bleeds into the panel's padding (negative margin = its own padding) so the hover/press
+   fill has room around the text while the text stays aligned with the rows below. */
+const Header = styled.button`
   display: flex;
   align-items: center;
-`;
-
-const HeaderButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing(2)};
-  width: 100%;
-  margin: 0;
-  padding: 0;
+  gap: ${({ theme }) => theme.spacing(1)};
+  width: calc(100% + ${({ theme }) => theme.spacing(2)});
+  min-height: 44px;
+  margin: -${({ theme }) => theme.spacing(1)};
+  padding: ${({ theme }) => theme.spacing(1)};
   border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   background: transparent;
   color: inherit;
-  cursor: pointer;
+  font: inherit;
   text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  /* One step down the neutral scale per state from the panel's bodyRaised (gray 15 → 20 → 30).
+     The ghost-button hover token is gray 15 itself, i.e. invisible on this panel. */
+  &:hover {
+    background: ${({ theme }) => theme.color.bodyElevated};
+  }
+
+  &:active {
+    background: ${({ theme }) => theme.color.border};
+  }
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
-    outline-offset: 2px;
-    border-radius: ${({ theme }) => theme.borderRadius.sm};
+    outline-offset: 0;
   }
+`;
+
+const MinimizeIcon = styled.span`
+  display: inline-flex;
+  flex-shrink: 0;
+  color: ${({ theme }) => theme.color.bodyTextSecondary};
 `;
 
 const HeaderLeading = styled.div`
@@ -225,15 +266,6 @@ const SubSummary = styled.div`
   @media (max-width: 359px) {
     display: none;
   }
-`;
-
-const Chevron = styled.span<{ $expanded: boolean }>`
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  color: ${({ theme }) => theme.color.bodyTextSecondary};
-  transform: rotate(${(p) => (p.$expanded ? '180deg' : '0')});
-  transition: transform 0.15s ease;
 `;
 
 /** Shared with the header pill so both read as the same widget. */

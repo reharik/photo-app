@@ -1,8 +1,8 @@
-import { Check, ChevronDown, ChevronUp } from 'lucide-react';
-import type { ReactElement } from 'react';
+import { Check, ChevronDown } from 'lucide-react';
+import { useEffect, useRef, type ReactElement } from 'react';
 import styled from 'styled-components';
 
-import { Spinner, SuccessMark, UPLOAD_PROGRESS_PANEL_ID } from './uploadProgressBox';
+import { Spinner, SuccessMark } from './uploadProgressBox';
 import {
   getPanelSummary,
   isUploadWorkOngoing,
@@ -14,35 +14,37 @@ type UploadProgressPillProps = {
   counts: UploadProgressCounts;
   panelPhase: UploadPanelPhase;
   sessionHadFailure: boolean;
-  minimized: boolean;
-  onToggle: () => void;
+  /** The panel's minimize button just unmounted; take focus so it isn't dropped on the page. */
+  focusOnMount: boolean;
+  onOpen: () => void;
 };
 
 /**
- * The upload widget's place in the header: it sits in the header's flow, so unlike the panel
- * it can't cover anything. Toggles the panel open and minimized. Chevrons only, never an X —
- * minimizing hides the panel; the uploads carry on.
+ * The minimized upload widget: shown only while the panel is hidden, never alongside it, so
+ * it does one thing — open the panel. It sits in the header's flow, so unlike the panel it
+ * can't cover anything.
  */
 export const UploadProgressPill = ({
   counts,
   panelPhase,
   sessionHadFailure,
-  minimized,
-  onToggle,
+  focusOnMount,
+  onOpen,
 }: UploadProgressPillProps): ReactElement => {
   const summary = getPanelSummary(counts, panelPhase, sessionHadFailure);
   const isSuccess = panelPhase === 'success';
-  const Chevron = minimized ? ChevronDown : ChevronUp;
+  const pillRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusOnMount) {
+      pillRef.current?.focus();
+    }
+    // Mount only: the pill mounts once per minimize.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
-      <Pill
-        type="button"
-        aria-expanded={!minimized}
-        aria-controls={UPLOAD_PROGRESS_PANEL_ID}
-        aria-label={`Uploads: ${summary}`}
-        onClick={onToggle}
-      >
+      <Pill ref={pillRef} type="button" aria-label={`Open uploads: ${summary}`} onClick={onOpen}>
         {isUploadWorkOngoing(counts) ? <PillSpinner aria-hidden /> : null}
         {isSuccess ? (
           <PillSuccessMark aria-hidden>
@@ -51,10 +53,11 @@ export const UploadProgressPill = ({
         ) : (
           <PillText aria-hidden>{summary}</PillText>
         )}
-        <Chevron size={14} strokeWidth={2} aria-hidden />
+        <ChevronDown size={14} strokeWidth={2} aria-hidden />
       </Pill>
-      {/* The panel is the live region while open; minimized, status changes are announced here. */}
-      {minimized ? <VisuallyHidden role="status">{summary}</VisuallyHidden> : null}
+      {/* The panel is the live region while open; minimized, the pill is what's on screen,
+          so status changes are announced here. */}
+      <VisuallyHidden role="status">{summary}</VisuallyHidden>
     </>
   );
 };

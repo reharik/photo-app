@@ -19,10 +19,16 @@ export type UploadProgressPanelState = {
   counts: UploadProgressCounts;
   panelPhase: UploadPanelPhase;
   sessionHadFailure: boolean;
-  /** Panel hidden behind the header pill. Separate from the panel's own row-list `expanded`. */
+  /** Panel hidden, header pill shown — one or the other, never both. */
   minimized: boolean;
-  toggleMinimized: () => void;
+  /** The pill's action. Moves focus to the panel's minimize button. */
+  open: () => void;
+  /** The panel's minimize button. Moves focus to the pill. */
+  minimizeFromPanel: () => void;
+  /** Minimize without moving focus — for a header menu opening, where focus is in the menu. */
   minimize: () => void;
+  /** Focus the pill when it mounts: its minimize button just unmounted under the user. */
+  focusPillOnMount: boolean;
   /** The portaled panel; null while minimized or idle. */
   panel: ReactElement | null;
 };
@@ -35,8 +41,10 @@ export type UploadProgressPanelState = {
  */
 export const useUploadProgressPanel = (): UploadProgressPanelState => {
   const { items, batchErrors, retryItem, removeItem } = useUploadQueue();
-  const [expanded, setExpanded] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  // Pill and panel replace each other, so whichever control was pressed unmounts; focus
+  // moves to the one that replaced it. Null when the switch wasn't the user's doing.
+  const [focusTarget, setFocusTarget] = useState<'pill' | 'panel' | null>(null);
   const [panelPhase, setPanelPhase] = useState<UploadPanelPhase>('idle');
   const [visible, setVisible] = useState(false);
   const readyDismissTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -57,6 +65,7 @@ export const useUploadProgressPanel = (): UploadProgressPanelState => {
   useEffect(() => {
     if (items.length > previousItemCountRef.current) {
       setMinimized(false);
+      setFocusTarget(null);
     }
     previousItemCountRef.current = items.length;
   }, [items.length]);
@@ -70,7 +79,6 @@ export const useUploadProgressPanel = (): UploadProgressPanelState => {
 
     if (hadActiveUploadRef.current && items.length === 0) {
       hadActiveUploadRef.current = false;
-      setExpanded(false);
       setPanelPhase('success');
       const timer = setTimeout(() => {
         setPanelPhase('idle');
@@ -126,16 +134,19 @@ export const useUploadProgressPanel = (): UploadProgressPanelState => {
     };
   }, []);
 
-  const toggleExpanded = useCallback((): void => {
-    setExpanded((value) => !value);
+  const open = useCallback((): void => {
+    setMinimized(false);
+    setFocusTarget('panel');
   }, []);
 
-  const toggleMinimized = useCallback((): void => {
-    setMinimized((value) => !value);
+  const minimizeFromPanel = useCallback((): void => {
+    setMinimized(true);
+    setFocusTarget('pill');
   }, []);
 
   const minimize = useCallback((): void => {
     setMinimized(true);
+    setFocusTarget(null);
   }, []);
 
   const panel =
@@ -146,9 +157,9 @@ export const useUploadProgressPanel = (): UploadProgressPanelState => {
             batchErrors={batchErrors}
             panelPhase={panelPhase}
             visible={visible}
-            expanded={expanded}
             sessionHadFailure={sessionHadFailureRef.current}
-            onToggleExpanded={toggleExpanded}
+            onMinimize={minimizeFromPanel}
+            focusMinimizeOnMount={focusTarget === 'panel'}
             onRetry={retryItem}
             onRemove={removeItem}
           />,
@@ -162,8 +173,10 @@ export const useUploadProgressPanel = (): UploadProgressPanelState => {
     panelPhase,
     sessionHadFailure: sessionHadFailureRef.current,
     minimized,
-    toggleMinimized,
+    open,
+    minimizeFromPanel,
     minimize,
+    focusPillOnMount: focusTarget === 'pill',
     panel,
   };
 };

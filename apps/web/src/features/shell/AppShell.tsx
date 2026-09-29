@@ -112,7 +112,7 @@ export const AppShell = () => {
   // The upload panel is fixed over the page at z 9990, above the nav's own menus. Opening a
   // menu minimizes it and opening the panel closes the menus, so the two never overlap.
   const uploadProgress = useUploadProgressPanel();
-  const { minimize: minimizeUploads, toggleMinimized: toggleUploads } = uploadProgress;
+  const { minimize: minimizeUploads, open: openUploads } = uploadProgress;
 
   const toggleNavMenu = (): void => {
     if (openMenu !== 'nav') {
@@ -128,22 +128,22 @@ export const AppShell = () => {
     setOpenMenu((m) => (m === 'profile' ? null : 'profile'));
   };
 
-  const toggleUploadPanel = (): void => {
-    if (uploadProgress.minimized) {
-      setOpenMenu(null);
-    }
-    toggleUploads();
+  const openUploadPanel = (): void => {
+    setOpenMenu(null);
+    openUploads();
   };
 
-  const uploadPill = uploadProgress.isActive ? (
-    <UploadProgressPill
-      counts={uploadProgress.counts}
-      panelPhase={uploadProgress.panelPhase}
-      sessionHadFailure={uploadProgress.sessionHadFailure}
-      minimized={uploadProgress.minimized}
-      onToggle={toggleUploadPanel}
-    />
-  ) : null;
+  // Pill and panel replace each other: the pill exists only while the panel is minimized.
+  const uploadPill =
+    uploadProgress.isActive && uploadProgress.minimized ? (
+      <UploadProgressPill
+        counts={uploadProgress.counts}
+        panelPhase={uploadProgress.panelPhase}
+        sessionHadFailure={uploadProgress.sessionHadFailure}
+        focusOnMount={uploadProgress.focusPillOnMount}
+        onOpen={openUploadPanel}
+      />
+    ) : null;
 
   return (
     <SCShellContainer>

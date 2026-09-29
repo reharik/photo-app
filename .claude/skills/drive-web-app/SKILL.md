@@ -71,8 +71,9 @@ removes them with the user. Expect one `net::ERR_FAILED` console error per abort
 - `testImages()` returns the e2e suite's JPEGs.
 - The upload summary adds "· N failed" **only once nothing is in flight**: with
   `s3: 'hold'` it stays "0 of 5" even with a failed row. For failed wording use `'abort'`.
-- The header pill's accessible name starts with `Uploads:`
-  (`page.getByRole('button', { name: /^Uploads:/ })`); the panel is `#upload-progress-panel`.
+- The widget is either the open panel (`#upload-progress-panel`, minimized via
+  `Minimize uploads`) or the header pill — never both. The pill exists only while minimized;
+  its name starts with `Open uploads:` (`page.getByRole('button', { name: /^Open uploads:/ })`).
 - Mobile shell kicks in at ≤768px: nav is behind `Open navigation menu`; the profile
   trigger's name is the user's display name (`Drive Web`).
 
