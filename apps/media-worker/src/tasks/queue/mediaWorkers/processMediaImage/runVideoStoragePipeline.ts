@@ -67,6 +67,7 @@ export const build__RunVideoStoragePipeline =
         durationMs,
         originalWidth: original.width,
         originalHeight: original.height,
+        originalFileSizeBytes: original.fileSizeBytes,
       });
 
       const displayKey = buildMediaAssetStorageKey(baseKey, MediaAssetKind.display);
