@@ -16,4 +16,4 @@ npx tsx src/scripts/runSeeds.ts
 
 # Start the server with nodemon
 echo "Starting server with nodemon..."
-npx nodemon --verbose
+exec /app/node_modules/.bin/nodemon --verbose

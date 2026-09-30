@@ -1,52 +1,33 @@
-import { Logger } from '@packages/infrastructure';
-import { writeSync } from 'node:fs';
-// attachGlobalHandlers.ts
-
-/** Grep handle for the whole shutdown sequence in CloudWatch. */
-export const TAG = '[shutdown:media-worker]';
-
-/**
- * Straight to fd 1, bypassing winston. The Console transport writes through
- * process.stdout, which is ASYNC whenever stdout is a pipe — i.e. in every
- * container. A line logged immediately before process.exit() can be truncated
- * away, and the BEGIN/COMPLETE markers are precisely the ones that must survive.
- */
-export const mark = (line: string): void => {
-  try {
-    writeSync(1, `${line}\n`);
-  } catch {
-    // stdout is gone; there is nothing left to report it with.
-  }
-};
+import { attachShutdown, Logger } from '@packages/infrastructure';
+import { AwilixContainer } from 'awilix';
+import { Knex } from 'knex';
+import { RunMediaWorkerLoop } from './runMediaWorkerLoop';
 
 export interface AttachGlobalHandlers {
-  (shutdown: () => Promise<void>): void;
+  (workerPromise: Promise<void>, container: AwilixContainer): void;
 }
-
-type AttachGlobalHandlersDeps = { logger: Logger };
+type AttachGlobalHandlersDeps = {
+  database: Knex;
+  logger: Logger;
+  runMediaWorkerLoop: RunMediaWorkerLoop;
+};
 
 export const build__AttachGlobalHandlers =
-  ({ logger }: AttachGlobalHandlersDeps): AttachGlobalHandlers =>
-  (shutdown) => {
-    const run = (signal: string) => () => {
-      const startedAt = Date.now();
-      mark(`${TAG} SIGNAL ${signal} received`);
-      void shutdown().then(
-        () => {
-          mark(`${TAG} COMPLETE in ${Date.now() - startedAt}ms, exiting 0`);
-          process.exit(0);
+  ({ logger, database, runMediaWorkerLoop }: AttachGlobalHandlersDeps): AttachGlobalHandlers =>
+  (workerPromise, container) => {
+    attachShutdown({
+      tag: 'media-worker',
+      logger,
+      steps: [
+        {
+          name: 'draining worker loop',
+          run: async () => {
+            runMediaWorkerLoop.stop();
+            await workerPromise;
+          },
         },
-        (e) => {
-          if (e instanceof Error) {
-            logger.error(`${TAG} shutdown failed`, e);
-          } else {
-            logger.error(`${TAG} shutdown failed`, { err: String(e) });
-          }
-          mark(`${TAG} FAILED after ${Date.now() - startedAt}ms, exiting 1`);
-          process.exit(1);
-        },
-      );
-    };
-    process.on('SIGINT', run('SIGINT'));
-    process.on('SIGTERM', run('SIGTERM'));
+        { name: 'closing pg pool', run: () => database.destroy() },
+        { name: 'disposing container', run: () => container.dispose() },
+      ],
+    });
   };

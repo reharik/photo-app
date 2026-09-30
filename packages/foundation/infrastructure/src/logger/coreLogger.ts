@@ -189,7 +189,7 @@ export const coreLogger = ({
   const loggerTransports: WinstonLogger['transports'] = [
     new transports.Console({
       stderrLevels: ['error'],
-      handleExceptions: true,
+      handleExceptions: false,
       format: logFormat === 'json' ? createJsonFormat() : createConsoleFormat(),
     }),
   ];
@@ -199,7 +199,7 @@ export const coreLogger = ({
       new transports.File({
         filename: logJsonFilePath,
         level: logLevel,
-        handleExceptions: true,
+        handleExceptions: false,
         format: createJsonFormat(),
       }),
     );
@@ -216,38 +216,6 @@ export const coreLogger = ({
       debug: 5,
     },
     transports: loggerTransports,
-    /**
-     * Winston's default, restated explicitly because the non-default was
-     * load-bearing in the worst way.
-     *
-     * This was `false` from commit 32854e37 (a broad IoC refactor) with no
-     * comment, test or commit-message rationale -- nothing recorded that it was
-     * ever a deliberate choice. What it did: `handleExceptions: true` above
-     * installs winston's uncaughtException handler, and Node routes an unhandled
-     * promise rejection through that same path. With `exitOnError: false`
-     * winston caught the exception, logged it, and declined to exit -- so a
-     * process that threw outside a try (the media-worker's fail-fast startup
-     * probe, for one) logged a fatal error and then exited ZERO, which reads as
-     * a clean shutdown to anything checking status.
-     *
-     * With `true`, winston exits 1 after giving the transports a chance to
-     * drain. That drain is NOT gated on a real flush -- it listens for `finish`,
-     * which the Console transport never emits -- so the exit actually comes from
-     * winston's own 3000ms backstop (exception-handler.js). Measured, that is
-     * ample: a 500KB line through a deliberately throttled pipe still arrives
-     * complete. So the truncated-async-stdout hazard documented on `mark()` in
-     * each app's attachGlobalHandlers does NOT apply here; the cost is that a
-     * fail-fast boot takes ~3s to die.
-     *
-     * This does NOT change the api's unhandled-REJECTION path: api's
-     * attachGlobalHandlers registers its own `unhandledRejection` listener,
-     * which suppresses Node's escalation to uncaughtException, so winston never
-     * sees those. It DOES change the api's genuine uncaughtException path from
-     * "log and keep serving" to "log and exit 1", skipping its graceful drain --
-     * correct for a process in unknown state, and `restart: unless-stopped`
-     * brings it back.
-     */
-    exitOnError: true,
   });
 
   return wrap(appLogger);

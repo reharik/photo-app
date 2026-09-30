@@ -7,8 +7,8 @@ setDefaultSerializationMode('value');
 
 const bootstrap = async () => {
   dotenv.config();
-  const container = createWorkerContainer(); // AwilixContainer<AppCradle>
-  await container.cradle.app();
+  const container = createWorkerContainer();
+  await container.cradle.app(container);
 };
 
 void bootstrap();
