@@ -85,6 +85,7 @@
     "test:web": "nx test web",
     "test:worker-core": "nx test worker-core",
     "test:worker": "nx test media-worker",
+    "test:infrastructure": "nx test infrastructure",
     "typecheck:all": "nx run-many --target=typecheck --all",
     "typecheck:api": "nx typecheck api",
     "typecheck:e2e": "nx typecheck e2e"

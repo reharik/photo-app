@@ -7,4 +7,4 @@ cd /app/apps/media-worker
 
 # Start the server with nodemon
 echo "Starting server with nodemon..."
-npx nodemon
+exec /app/node_modules/.bin/nodemon

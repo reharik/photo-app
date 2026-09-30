@@ -100,7 +100,7 @@ services:
       - ./apps/api:/app/apps/api
       - /app/apps/api/node_modules
       - ./packages:/app/packages
-    command: ['sh', '-c', 'sh apps/api/src/scripts/serverStartUpDev.sh']
+    command: ['sh', 'apps/api/src/scripts/serverStartUpDev.sh']
     depends_on:
       localstack:
         condition: service_healthy
@@ -138,7 +138,7 @@ services:
       - /app/apps/media-worker/node_modules
       - ./packages:/app/packages
       - ~/.aws:/root/.aws:ro
-    command: ['sh', '-c', 'sh apps/media-worker/src/scripts/serverStartUpDev.sh']
+    command: ['sh', 'apps/media-worker/src/scripts/serverStartUpDev.sh']
     depends_on:
       db:
         condition: service_healthy
