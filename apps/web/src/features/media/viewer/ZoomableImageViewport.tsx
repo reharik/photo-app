@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type MutableRefObject,
   type ReactNode,
 } from 'react';
@@ -12,7 +13,7 @@ import {
   TransformWrapper,
   type ReactZoomPanPinchRef,
 } from 'react-zoom-pan-pinch';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
@@ -23,9 +24,32 @@ const DOUBLE_TAP_MAX_INTERVAL_MS = 300;
 const DOUBLE_TAP_MAX_DISTANCE_PX = 30;
 const DOUBLE_TAP_ANIMATION_MS = 200;
 
+/** Clip box hugs the unzoomed image. */
+const HUG_WRAPPER_STYLE: CSSProperties = {
+  width: 'fit-content',
+  maxWidth: '100%',
+  overflow: 'hidden',
+  touchAction: 'none',
+};
+
+/** Clip box is the whole surface; stretched by the flex parent rather than percentage heights. */
+const FILL_WRAPPER_STYLE: CSSProperties = {
+  flex: '1 1 auto',
+  alignSelf: 'stretch',
+  width: '100%',
+  height: 'auto',
+  overflow: 'hidden',
+  touchAction: 'none',
+};
+
 export type ZoomableImageViewportProps = {
   /** When false, children are rendered without zoom behavior. */
   enabled: boolean;
+  /**
+   * When true (mobile stage), the zoom surface fills its parent and the image is centred in
+   * it, so a zoomed photo can use the whole stage. When false it hugs the unzoomed image.
+   */
+  fillStage?: boolean;
   /** True while scale is meaningfully above 1 (for disabling outer swipe / tap navigation). */
   onZoomActiveChange?: (zoomActive: boolean) => void;
   /** Set to a function that resets zoom to 1× (used with Escape from the parent screen). */
@@ -41,6 +65,7 @@ const isZoomedScale = (scale: number): boolean => {
 
 export const ZoomableImageViewport = ({
   enabled,
+  fillStage = false,
   onZoomActiveChange,
   resetZoomRef,
   onDoubleTapRecognized,
@@ -48,6 +73,7 @@ export const ZoomableImageViewport = ({
 }: ZoomableImageViewportProps): ReactNode => {
   const [zoomed, setZoomed] = useState(false);
   const controlsRef = useRef<ReactZoomPanPinchRef | null>(null);
+  const [viewportNode, setViewportNode] = useState<HTMLDivElement | null>(null);
   const [tapTargetNode, setTapTargetNode] = useState<HTMLDivElement | null>(null);
   const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
 
@@ -176,6 +202,30 @@ export const ZoomableImageViewport = ({
     };
   }, [enabled, tapTargetNode, tryRecognizeDoubleTap]);
 
+  // The library centres once, at the first non-zero content size — which is the empty matte
+  // box before the image loads — and then stops observing. With a surface larger than the
+  // image that leaves the loaded photo off-centre, so re-centre whenever either box resizes
+  // (image load, rotation, browser toolbars) while not zoomed.
+  useEffect(() => {
+    if (!enabled || !fillStage || viewportNode == null || tapTargetNode == null) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      const controls = controlsRef.current;
+      if (controls == null || isZoomedScale(controls.state.scale)) {
+        return;
+      }
+      controls.centerView(MIN_SCALE, 0);
+    });
+    observer.observe(viewportNode);
+    observer.observe(tapTargetNode);
+
+    return (): void => {
+      observer.disconnect();
+    };
+  }, [enabled, fillStage, tapTargetNode, viewportNode]);
+
   useLayoutEffect(() => {
     if (!enabled) {
       setZoomed(false);
@@ -200,7 +250,7 @@ export const ZoomableImageViewport = ({
   }
 
   return (
-    <Viewport $grab={zoomed}>
+    <Viewport ref={setViewportNode} $grab={zoomed} $fillStage={fillStage}>
       <TransformWrapper
         initialScale={MIN_SCALE}
         minScale={MIN_SCALE}
@@ -227,12 +277,7 @@ export const ZoomableImageViewport = ({
         onTransform={handleTransform}
       >
         <TransformComponent
-          wrapperStyle={{
-            width: 'fit-content',
-            maxWidth: '100%',
-            overflow: 'hidden',
-            touchAction: 'none',
-          }}
+          wrapperStyle={fillStage ? FILL_WRAPPER_STYLE : HUG_WRAPPER_STYLE}
           contentStyle={{
             display: 'flex',
             alignItems: 'center',
@@ -246,7 +291,7 @@ export const ZoomableImageViewport = ({
   );
 };
 
-const Viewport = styled.div<{ $grab: boolean }>`
+const Viewport = styled.div<{ $grab: boolean; $fillStage: boolean }>`
   position: relative;
   width: fit-content;
   max-width: 100%;
@@ -257,6 +302,17 @@ const Viewport = styled.div<{ $grab: boolean }>`
   align-items: center;
   justify-content: center;
   touch-action: none;
+
+  ${({ $fillStage }) =>
+    $fillStage
+      ? css`
+          flex: 1 1 auto;
+          align-self: stretch;
+          align-items: stretch;
+          width: 100%;
+        `
+      : undefined}
+
   cursor: ${({ $grab }) => ($grab ? 'grab' : 'default')};
 
   &:active {

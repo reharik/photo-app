@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import { AppError } from '../../domain/errors/errorTypes';
 
 type Props = {
-  error: AppError;
+  /** Omit for a failure with no user-facing wording of its own; shows the generic message. */
+  error?: AppError;
   onRetry?: () => void;
 };
 

@@ -17,6 +17,11 @@ import type {
   MobileViewerSheet,
   NavigateDirection,
 } from '../features/media/viewer/mediaViewerTypes';
+import {
+  PUBLIC_OFFER_BAR_HEIGHT_PX,
+  PublicAlbumOfferBar,
+} from '../features/public/PublicAlbumOfferBar';
+import { publicOwnerName } from '../features/public/publicOwnerName';
 import { PublicMediaItemDetailDocument } from '../graphql/generated/types';
 import { getQueryRenderState } from '../hooks/getQueryRenderState';
 import { usePollWhileProcessing } from '../hooks/usePollWhileProcessing';
@@ -28,6 +33,9 @@ export type MediaItemLocationState = {
 };
 
 const PUBLIC_DETAIL_QUERY_CONTEXT = { accessMode: 'public' as const };
+
+/** The viewer's mobile layout breakpoint (matches MediaViewer / the detail panel). */
+const VIEWER_MOBILE_MAX_WIDTH_PX = 968;
 
 export const PublicMediaItemScreen = () => {
   const { mediaId, token } = useParams<{ mediaId: string; token: string }>();
@@ -88,6 +96,15 @@ export const PublicMediaItemScreen = () => {
     queryContext: PUBLIC_DETAIL_QUERY_CONTEXT,
   });
 
+  // The signup offer shows only when the viewer is the front door: a link to a single photo
+  // (the album route redirects straight here) or a direct load of a photo URL. Arriving from
+  // the album grid she has already passed that page's offer, so the stage keeps its full height.
+  const album = query.data?.publicAccess?.album;
+  const offer =
+    album != null && !galleryNavigation.enabled
+      ? { albumId: album.id, ownerName: publicOwnerName(album.owner) }
+      : undefined;
+
   const handleMediaNavigate = useCallback(
     (direction: NavigateDirection) => {
       if (!galleryNavigation.enabled) {
@@ -137,10 +154,9 @@ export const PublicMediaItemScreen = () => {
           visible: isMobileChromeVisible,
           onToggleChrome: handleToggleMobileChrome,
           onOpenInfoSheet: () => setActiveMobileSheet('info'),
-          onOpenCommentSheet: () => undefined,
+          onOpenCommentSheet: () => setActiveMobileSheet('comment'),
           activeSheet: activeMobileSheet,
           sheetOpen: activeMobileSheet !== 'none',
-          interactionsLocked: true,
         }}
       />
     );
@@ -175,7 +191,7 @@ export const PublicMediaItemScreen = () => {
       {neighborPrefetch}
       {showSaveToast ? <Toast onDismiss={() => setShowSaveToast(false)} /> : null}
       <LayoutInner>
-        <ViewerColumn>{viewerPane}</ViewerColumn>
+        <ViewerColumn $offerBar={offer != null}>{viewerPane}</ViewerColumn>
 
         <PublicMediaItemDetailPanel
           ref={detailPanelRef}
@@ -183,8 +199,18 @@ export const PublicMediaItemScreen = () => {
           onDismissScreen={handleDismissScreen}
           activeMobileSheet={activeMobileSheet}
           onCloseMobileSheet={handleCloseMobileSheet}
+          offer={offer}
         />
       </LayoutInner>
+      {/* Mobile offer: pinned under the stage, which is shortened to end above it. The bar
+          hides itself above the viewer's mobile breakpoint, where the rail carries the offer. */}
+      {offer != null ? (
+        <PublicAlbumOfferBar
+          albumId={offer.albumId}
+          ownerName={offer.ownerName}
+          mobileMaxWidthPx={VIEWER_MOBILE_MAX_WIDTH_PX}
+        />
+      ) : null}
     </Container>
   );
 };
@@ -199,12 +225,6 @@ const Container = styled.div`
   /* Deepened to stageDeep so the photo's white print matte lifts off the stage. */
   background: ${({ theme }) => theme.color.stageDeep};
   z-index: 100;
-
-  @media (max-width: 968px) {
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
 `;
 
 /** Cream chrome (rail / metadata card) layers on top of {@link Container}'s stageDark backdrop. */
@@ -223,13 +243,11 @@ const LayoutInner = styled.div`
 
   @media (max-width: 968px) {
     flex-direction: column;
-    flex: 1 0 auto;
-    min-height: 100dvh;
   }
 `;
 
-/** Wraps the viewer so the media + metadata stack and scroll on narrow viewports. */
-const ViewerColumn = styled.div`
+/** Wraps the viewer so the media stage fills the viewport on narrow layouts. */
+const ViewerColumn = styled.div<{ $offerBar: boolean }>`
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -237,8 +255,15 @@ const ViewerColumn = styled.div`
   flex-direction: column;
   align-self: stretch;
 
-  @media (max-width: 968px) {
+  @media (max-width: ${VIEWER_MOBILE_MAX_WIDTH_PX}px) {
     flex: 0 0 auto;
+    /* Definite height so the stage's percentage/flex chain resolves and the action bar pins
+       to the bottom — of the screen, or of the pinned offer bar (its height + 1px border)
+       when that is showing. */
+    height: ${({ $offerBar }) =>
+      $offerBar
+        ? `calc(100dvh - ${PUBLIC_OFFER_BAR_HEIGHT_PX + 1}px - env(safe-area-inset-bottom, 0px))`
+        : '100dvh'};
     min-height: 0;
     overflow: visible;
     width: 100%;

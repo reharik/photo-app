@@ -1,6 +1,13 @@
 query PublicMediaItemDetail($mediaItemId: ID!) {
   publicAccess {
     id
+    album {
+      id
+      owner {
+        firstName
+        lastName
+      }
+    }
     mediaItem(id: $mediaItemId) {
       ...PublicMediaItemSummary
     }

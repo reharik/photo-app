@@ -27,7 +27,7 @@ import { setup } from '../../routines/setup';
 
 /**
  * Cluster B — guest conversion. A guest opens a shared album via a public link, the "living
- * album" offer in the header takes her email inline, and completing signup with the BANKED
+ * album" offer on the page takes her email inline, and completing signup with the BANKED
  * email lands her inside her account on /albums/{id} because her pending grant materializes
  * on activation.
  *
@@ -96,8 +96,8 @@ const shareAlbumWithGuest = async (
 
 /**
  * Drive the public-album offer: reveal the inline field, type an address, submit. Scoped to
- * the offer's own testid because the mobile bar carries the same "A living album" / "Join in"
- * copy and is present in the DOM (CSS-hidden) at desktop widths.
+ * the offer's own testid because the mobile bar carries the same "A living album — join in!" /
+ * "Sign up" copy and is present in the DOM (CSS-hidden) at desktop widths.
  */
 const submitOffer = async (page: Page, email: string): Promise<void> => {
   await page.getByTestId('public-offer-join').click();
@@ -154,15 +154,16 @@ test.describe('Guest conversion (public album → offer → signup → album)', 
       const offer = anonPage.getByTestId('public-offer');
       await expect(offer.getByText('A living album')).toBeVisible();
       await expect(offer.getByText(`shared with you by ${ownerName}`)).toBeVisible();
-      await expect(anonPage.getByTestId('public-offer-join')).toBeVisible();
+      await expect(offer.getByText('Join in!')).toBeVisible();
+      await expect(anonPage.getByTestId('public-offer-join')).toHaveText('Sign up');
     });
 
-    await test.step('revealing swaps ONLY the button for the field — the offer copy stays', async () => {
+    await test.step('revealing replaces the header teaser with the band — copy above the field', async () => {
       await anonPage.getByTestId('public-offer-join').click();
       const offer = anonPage.getByTestId('public-offer');
       await expect(anonPage.getByTestId('public-offer-email')).toBeVisible();
       await expect(anonPage.getByTestId('public-offer-join')).toHaveCount(0);
-      // The field must not appear as an unlabeled box: both lines above it survive the swap.
+      // The field must not appear as an unlabeled box: the band carries both lines above it.
       await expect(offer.getByText('A living album')).toBeVisible();
       await expect(offer.getByText(`shared with you by ${ownerName}`)).toBeVisible();
     });

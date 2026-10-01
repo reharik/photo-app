@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { StageImageCloseButton, ViewerCard } from './MediaViewerStyles';
 import { MobileViewerActionBar } from './MobileViewerActionBar';
 import type { MobileViewerSheet } from './mediaViewerTypes';
-import { viewerChromeVisibility } from './viewerChromeVisibility';
+import { MOBILE_ACTION_BAR_HEIGHT, viewerChromeVisibility } from './viewerChromeVisibility';
 
 type MediaViewerMobileProps = {
   media: ReactNode;
@@ -15,7 +15,6 @@ type MediaViewerMobileProps = {
   activeSheet: MobileViewerSheet;
   onOpenInfoSheet: () => void;
   onOpenCommentSheet: () => void;
-  interactionsLocked?: boolean;
 };
 
 export const MediaViewerMobile = ({
@@ -27,7 +26,6 @@ export const MediaViewerMobile = ({
   activeSheet,
   onOpenInfoSheet,
   onOpenCommentSheet,
-  interactionsLocked = false,
 }: MediaViewerMobileProps): JSX.Element => {
   return (
     <MobileLayout>
@@ -49,7 +47,6 @@ export const MediaViewerMobile = ({
           onReact={onOpenCommentSheet}
           onComment={onOpenCommentSheet}
           onInfo={onOpenInfoSheet}
-          interactionsLocked={interactionsLocked}
         />
       </MobileMediaStage>
     </MobileLayout>
@@ -92,7 +89,9 @@ const ViewerCardMobile = styled(ViewerCard)`
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  /* Centre media in the area above the action bar rather than under it. */
+  padding-bottom: ${MOBILE_ACTION_BAR_HEIGHT};
   background: transparent;
   border: none;
   border-radius: 0;

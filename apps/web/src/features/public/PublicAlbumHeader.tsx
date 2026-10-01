@@ -7,7 +7,7 @@ import { buildMediaItemUrl } from '../../domain/formatters/mediaItemUrlBuilder';
 import { truncate } from '../../domain/formatters/truncate';
 import { HeroIllustration } from '../../ui/HeroIllustration';
 import { PublicAlbumSummaryVM } from '../../viewModels/';
-import { PublicAlbumOffer } from './PublicAlbumOffer';
+import { PublicOfferHeaderBlock, PublicOfferTeaser } from './PublicAlbumOffer';
 
 /**
  * Generous on desktop, tight on mobile. Both are well inside what the row can hold at its
@@ -25,16 +25,19 @@ type PublicAlbumHeaderProps = {
   /** Scroll-collapsed. Ignored on mobile, which has no compact state (see below). */
   compact: boolean;
   isMobile: boolean;
+  /** True once the desktop offer has been opened into the band below the header. */
+  offerRevealed: boolean;
+  onOfferSignUp: () => void;
 };
 
 /**
  * The public album header, in one block.
  *
  * This view owns its own header rather than driving the shared `AlbumSectionMetadata`: the
- * composition here is a split row with an offer on the trailing edge, and the collapsed
- * state is a bespoke single row — neither of which the authed component models. Routing it
- * through there would mean public-only branches inside a component the authed album view
- * depends on.
+ * composition here is a split row with the signup teaser on the trailing edge, and the
+ * collapsed state is a bespoke single row — neither of which the authed component models.
+ * Routing it through there would mean public-only branches inside a component the authed
+ * album view depends on.
  *
  * Three states, not four. Mobile deliberately has NO compact variant (matching the previous
  * behavior): the brand row hides on scroll and the metadata row stays put, because the
@@ -50,6 +53,8 @@ export const PublicAlbumHeader = ({
   ownerName,
   compact,
   isMobile,
+  offerRevealed,
+  onOfferSignUp,
 }: PublicAlbumHeaderProps) => {
   const isCompactRow = compact && !isMobile;
   const coverUrl = album.coverMedia
@@ -72,6 +77,21 @@ export const PublicAlbumHeader = ({
     </Cover>
   );
 
+  // Desktop only, and only while collapsed: once she presses Sign up the offer continues in
+  // the band below the header (see PublicAlbumSection), and phones use the pinned bar.
+  // The resting header has room for the stacked block; the scroll-collapsed row gets the
+  // one-line teaser.
+  const collapsedOffer = (variant: 'block' | 'line') =>
+    !isMobile && !offerRevealed ? (
+      <Trailing data-testid="public-offer">
+        {variant === 'block' ? (
+          <PublicOfferHeaderBlock ownerName={ownerName} onSignUp={onOfferSignUp} />
+        ) : (
+          <PublicOfferTeaser ownerName={ownerName} onSignUp={onOfferSignUp} />
+        )}
+      </Trailing>
+    ) : null;
+
   // `title` attribute carries the untruncated title for anyone who needs the whole thing.
   const titleText = truncate(album.title, isMobile ? TITLE_MAX_MOBILE : TITLE_MAX_DESKTOP);
 
@@ -91,9 +111,7 @@ export const PublicAlbumHeader = ({
               </CompactSubline>
             </LeadingText>
           </Leading>
-          <Trailing>
-            <PublicAlbumOffer albumId={album.id} ownerName={ownerName} variant="compact" />
-          </Trailing>
+          {collapsedOffer('line')}
         </Row>
       </HeaderShell>
     );
@@ -115,18 +133,14 @@ export const PublicAlbumHeader = ({
               {titleText}
             </Title>
             <Count>{contentCount(count)}</Count>
-            {/* Desktop puts the attribution in the offer block on the trailing edge; on
-                mobile there is no header offer, so it belongs here instead. */}
+            {/* Desktop names the owner in the offer (teaser on the trailing edge, then the
+                band); the mobile bar does not, so on mobile the attribution belongs here. */}
             {isMobile && ownerName !== '' ? (
               <MobileAttribution>shared with you by {ownerName}</MobileAttribution>
             ) : null}
           </LeadingText>
         </Leading>
-        {!isMobile ? (
-          <Trailing>
-            <PublicAlbumOffer albumId={album.id} ownerName={ownerName} variant="full" />
-          </Trailing>
-        ) : null}
+        {collapsedOffer('block')}
       </Row>
     </HeaderShell>
   );
@@ -235,18 +249,18 @@ const Leading = styled.div<{ $topAlign?: boolean }>`
   min-width: 0;
 `;
 
+const Trailing = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  min-width: 0;
+`;
+
 const LeadingText = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing(0.5)};
   min-width: 0;
   justify-content: center;
-`;
-
-const Trailing = styled.div`
-  display: flex;
-  flex-shrink: 0;
-  min-width: 0;
 `;
 
 // Print treatment: warm matte + warm drop shadow + inner-edge inset ring so the header cover

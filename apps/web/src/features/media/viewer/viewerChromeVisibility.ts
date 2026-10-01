@@ -1,5 +1,12 @@
 import { css } from 'styled-components';
 
+/**
+ * Rendered height of {@link MobileViewerActionBar}: 16px top padding + ~54px buttons + 1px
+ * border, plus its bottom padding. The bar is content-sized, so keep this in step with it.
+ * The mobile stage reserves this much at the bottom so media never sits under the bar.
+ */
+export const MOBILE_ACTION_BAR_HEIGHT = 'calc(71px + max(16px, env(safe-area-inset-bottom, 0px)))';
+
 /** Fades stage overlay chrome (close button, action bar) without affecting sheets. */
 export const viewerChromeVisibility = css<{ $visible: boolean }>`
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};

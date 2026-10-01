@@ -18,8 +18,10 @@ import {
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
 import { useAppMutationState } from '../../hooks/useAppMutation';
 import { useInAppNotification } from '../../hooks/useInAppNotification';
+import { useViewer } from '../../hooks/useViewer';
 import { AppErrorPanel } from '../../ui/AppErrorPanel';
 import { CommentsPanel, type CommentsPanelLayout } from '../comments/CommentsPanel';
+import { CommentsViewerContext } from '../comments/commentsViewerContext';
 
 const PAGE_SIZE = 50;
 
@@ -48,9 +50,22 @@ export const CommentsForViewerMediaItemContainer = ({
   //   - desktop: the always-visible rail unmounts (or mediaItemId changes) when you leave
   //     the photo → cleanup runs. Either way weight stays visible the whole time it's open.
   const apolloClient = useApolloClient();
-  const { rows: unseenRows } = useInAppNotification();
+  const { rows: unseenRows, isSourceUnseen } = useInAppNotification();
   const unseenRowsRef = useRef(unseenRows);
   unseenRowsRef.current = unseenRows;
+
+  // Comment rows read "who is viewing" from context rather than fetching it: this container
+  // knows it is on a signed-in page. Unseen is matched on the comment SOURCE id — the same
+  // membership check used at every level.
+  const { viewer } = useViewer();
+  const viewerId = viewer?.id;
+  const commentsViewer = useMemo(
+    () => ({
+      viewerId,
+      isCommentUnseen: (commentId: string) => isSourceUnseen(EntityType.comment, commentId),
+    }),
+    [viewerId, isSourceUnseen],
+  );
 
   useEffect(() => {
     // --- React.StrictMode workaround (dev only; harmless in prod) ---
@@ -192,23 +207,25 @@ export const CommentsForViewerMediaItemContainer = ({
   return (
     <Root>
       {layout === 'default' ? <AppErrorPanel errors={mutationErrors} /> : null}
-      <CommentsPanel
-        comments={comments}
-        loading={query.loading}
-        error={mutationErrors}
-        canComment={canComment}
-        layout={layout}
-        onRetry={() => void query.refetch()}
-        onAddComment={canComment ? handleAddComment : undefined}
-        onEditComment={canComment ? handleEditComment : undefined}
-        onDeleteComment={canComment ? handleDeleteComment : undefined}
-        onRefetchComments={async () => {
-          await query.refetch();
-        }}
-        addCommentLoading={addMutation.isLoading}
-        editCommentLoading={editMutation.isLoading}
-        deletingCommentId={deletingCommentId}
-      />
+      <CommentsViewerContext value={commentsViewer}>
+        <CommentsPanel
+          comments={comments}
+          loading={query.loading}
+          error={mutationErrors}
+          canComment={canComment}
+          layout={layout}
+          onRetry={() => void query.refetch()}
+          onAddComment={canComment ? handleAddComment : undefined}
+          onEditComment={canComment ? handleEditComment : undefined}
+          onDeleteComment={canComment ? handleDeleteComment : undefined}
+          onRefetchComments={async () => {
+            await query.refetch();
+          }}
+          addCommentLoading={addMutation.isLoading}
+          editCommentLoading={editMutation.isLoading}
+          deletingCommentId={deletingCommentId}
+        />
+      </CommentsViewerContext>
     </Root>
   );
 };
