@@ -6,6 +6,7 @@ import { formatDuration } from '../../domain/formatters/formatDuration';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { BottomSheet } from '../../ui/BottomSheet';
 import type { PublicMediaItemSummaryVM } from '../../viewModels/';
+import { PublicOfferRailCard } from '../public/PublicAlbumOffer';
 import { hasRailSubstantiveContent } from './detail/hasRailSubstantiveContent';
 import { MediaKindRailLabel } from './detail/MediaKindRailLabel';
 import {
@@ -31,6 +32,11 @@ export type PublicMediaItemDetailPanelProps = {
   onDismissScreen: () => void;
   activeMobileSheet?: MobileViewerSheet;
   onCloseMobileSheet?: () => void;
+  /**
+   * Desktop only: show the signup offer card at the top of the rail. Mobile hosts its own
+   * pinned offer bar on the screen instead.
+   */
+  offer?: { albumId: string; ownerName: string };
 };
 
 const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
@@ -38,7 +44,7 @@ const MOBILE_LAYOUT_MEDIA = '(max-width: 968px)';
 export const PublicMediaItemDetailPanel = forwardRef<
   PublicMediaItemDetailPanelHandle,
   PublicMediaItemDetailPanelProps
->(({ mediaItem, onDismissScreen, activeMobileSheet = 'none', onCloseMobileSheet }, ref) => {
+>(({ mediaItem, onDismissScreen, activeMobileSheet = 'none', onCloseMobileSheet, offer }, ref) => {
   const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_MEDIA);
 
   const handleMobileSheetClose = useCallback((): void => {
@@ -103,17 +109,9 @@ export const PublicMediaItemDetailPanel = forwardRef<
       <MediaKindRailLabel kind={mediaItem.kind} />
     );
 
-  const conversationZone = (
-    <ConversationMetadataZone>
-      {showPublicReactions ? (
-        <PublicMediaItemDetailRailReactions reactionCounts={mediaItem.reactionCounts} />
-      ) : null}
-
-      <CommentsSection $showTopRule={showPublicReactions}>
-        <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} layout="rail" />
-      </CommentsSection>
-    </ConversationMetadataZone>
-  );
+  const reactions = showPublicReactions ? (
+    <PublicMediaItemDetailRailReactions reactionCounts={mediaItem.reactionCounts} />
+  ) : null;
 
   if (isMobileLayout) {
     return (
@@ -129,10 +127,32 @@ export const PublicMediaItemDetailPanel = forwardRef<
           </SheetContentZone>
         </BottomSheet>
 
-        <MetadataPanelStack>{conversationZone}</MetadataPanelStack>
+        <BottomSheet
+          open={activeMobileSheet === 'comment'}
+          onClose={handleMobileSheetClose}
+          ariaLabel="Comments"
+        >
+          <SheetContentZone>
+            {reactions}
+            {/* `default` layout, not `rail`: read-only with no comments shows "No comments yet." */}
+            <CommentsSection $showTopRule={showPublicReactions}>
+              <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} layout="default" />
+            </CommentsSection>
+          </SheetContentZone>
+        </BottomSheet>
       </>
     );
   }
+
+  const conversationZone = (
+    <ConversationMetadataZone>
+      {reactions}
+
+      <CommentsSection $showTopRule={showPublicReactions}>
+        <PublicCommentsForMediaItemContainer mediaItemId={mediaItem.id} layout="rail" />
+      </CommentsSection>
+    </ConversationMetadataZone>
+  );
 
   return (
     <MetadataPanelStack>
@@ -142,6 +162,10 @@ export const PublicMediaItemDetailPanel = forwardRef<
             <X size={20} strokeWidth={2} aria-hidden />
           </DetailsPanelCloseButton>
         </RailHeader>
+
+        {offer != null ? (
+          <PublicOfferRailCard albumId={offer.albumId} ownerName={offer.ownerName} />
+        ) : null}
 
         {titleOrKind}
 

@@ -1,6 +1,6 @@
 import { MediaItemStatus, MediaKind } from '@packages/contracts';
 import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useMediaViewerKeyboard } from '../../../hooks/useMediaViewerKeyboard';
 import { useMobileViewerGestures } from '../../../hooks/useMobileViewerGestures';
@@ -113,10 +113,11 @@ export const MediaViewer = ({
   });
 
   const media = (
-    <MediaChrome>
+    <MediaChrome $fillStage={mobileGesturesEnabled && zoomLayerEnabled}>
       <ZoomableImageViewport
         key={displayUrl}
         enabled={zoomLayerEnabled}
+        fillStage={mobileGesturesEnabled}
         onZoomActiveChange={setZoomActive}
         onDoubleTapRecognized={cancelPendingTap}
         resetZoomRef={resetZoomRef}
@@ -151,7 +152,6 @@ export const MediaViewer = ({
             activeSheet={mobileChrome.activeSheet ?? 'none'}
             onOpenInfoSheet={mobileChrome.onOpenInfoSheet ?? ((): void => undefined)}
             onOpenCommentSheet={mobileChrome.onOpenCommentSheet ?? ((): void => undefined)}
-            interactionsLocked={mobileChrome.interactionsLocked ?? false}
           />
         ) : !canNavigate ? (
           <MediaViewerSingle media={media} />
@@ -201,8 +201,11 @@ const ViewerShell = styled.div`
   }
 `;
 
-/** Sizes to the rendered media so zoom cursor / gestures apply only over the image. */
-const MediaChrome = styled.div`
+/**
+ * Desktop: sizes to the rendered media so zoom cursor / gestures apply only over the image.
+ * Mobile zoomable photo ($fillStage): fills the stage so a zoomed photo can use all of it.
+ */
+const MediaChrome = styled.div<{ $fillStage: boolean }>`
   position: relative;
   display: flex;
   align-items: center;
@@ -211,4 +214,14 @@ const MediaChrome = styled.div`
   max-width: 100%;
   min-height: 0;
   min-width: 0;
+
+  ${({ $fillStage }) =>
+    $fillStage
+      ? css`
+          flex: 1 1 auto;
+          align-self: stretch;
+          align-items: stretch;
+          width: 100%;
+        `
+      : undefined}
 `;

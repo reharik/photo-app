@@ -12,7 +12,9 @@ import { MediaGridTile } from '../media/grid/MediaGridTile';
 import type { MultiSelectProps } from '../media/grid/types';
 import { mediaGridRestorationKeys } from '../media/grid/useMediaGridScrollRestoration';
 import { PublicAlbumHeader } from './PublicAlbumHeader';
+import { PublicOfferBand } from './PublicAlbumOffer';
 import { PUBLIC_OFFER_BAR_HEIGHT_PX, PublicAlbumOfferBar } from './PublicAlbumOfferBar';
+import { publicOwnerName } from './publicOwnerName';
 
 const META_COMPACT_AFTER_SCROLL_PX = 32;
 
@@ -43,6 +45,7 @@ export const PublicAlbumSection = ({
   const { token } = useParams<{ token: string }>();
   const albumScrollRef = useRef<HTMLDivElement>(null);
   const [metaCompact, setMetaCompact] = useState(false);
+  const [offerRevealed, setOfferRevealed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_MEDIA);
 
   const buildTileHref = useMemo(
@@ -58,13 +61,9 @@ export const PublicAlbumSection = ({
     setMetaCompact(el.scrollTop > META_COMPACT_AFTER_SCROLL_PX);
   }, []);
 
-  // The owner is always an active user with an enforced non-empty name, but the payload
-  // types it nullable (owner is left-joined and both name parts are nullable String), so an
-  // empty result stays possible. When it happens, every "shared with you by" line is omitted
-  // rather than rendered with a trailing blank — the offer still reads on its own.
-  const ownerName = [album.owner?.firstName, album.owner?.lastName]
-    .filter((part) => part != null && part.trim() !== '')
-    .join(' ');
+  // '' when unresolvable: every "shared with you by" line is then omitted rather than
+  // rendered with a trailing blank — the offer still reads on its own.
+  const ownerName = publicOwnerName(album.owner);
 
   return (
     <Container>
@@ -74,7 +73,14 @@ export const PublicAlbumSection = ({
         ownerName={ownerName}
         compact={metaCompact}
         isMobile={isMobile}
+        offerRevealed={offerRevealed}
+        onOfferSignUp={() => setOfferRevealed(true)}
       />
+      {/* The reveal state lives here, not in the header, so it survives the header switching
+          between its resting and scroll-collapsed rows. */}
+      {!isMobile && offerRevealed ? (
+        <PublicOfferBand albumId={album.id} ownerName={ownerName} />
+      ) : null}
       <AlbumBodyScroll
         ref={(el) => {
           albumScrollRef.current = el;

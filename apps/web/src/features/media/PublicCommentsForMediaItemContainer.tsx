@@ -3,7 +3,9 @@ import { JSX } from 'react';
 import styled from 'styled-components';
 import { CommentsForPublicMediaItemDocument } from '../../graphql/generated/types';
 import { getQueryRenderState } from '../../hooks/getQueryRenderState';
+import { CommentsErrorState } from '../comments/CommentsErrorState';
 import { CommentsPanel, type CommentsPanelLayout } from '../comments/CommentsPanel';
+import { CommentsViewerContext, PUBLIC_COMMENTS_VIEWER } from '../comments/commentsViewerContext';
 
 const PAGE_SIZE = 50;
 
@@ -30,7 +32,11 @@ export const PublicCommentsForMediaItemContainer = ({
   const comments = data?.nodes ?? [];
 
   if (query.error != null) {
-    return null;
+    return (
+      <Root>
+        <CommentsErrorState onRetry={() => void query.refetch()} />
+      </Root>
+    );
   }
 
   if (!comments) {
@@ -38,14 +44,16 @@ export const PublicCommentsForMediaItemContainer = ({
   }
   return (
     <Root>
-      <CommentsPanel
-        comments={comments}
-        loading={query.loading}
-        error={[]}
-        canComment={false}
-        layout={layout}
-        onRetry={() => void query.refetch()}
-      />
+      <CommentsViewerContext value={PUBLIC_COMMENTS_VIEWER}>
+        <CommentsPanel
+          comments={comments}
+          loading={query.loading}
+          error={[]}
+          canComment={false}
+          layout={layout}
+          onRetry={() => void query.refetch()}
+        />
+      </CommentsViewerContext>
     </Root>
   );
 };

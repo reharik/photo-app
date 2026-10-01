@@ -1,8 +1,6 @@
 import { EntityType } from '@packages/contracts';
 import { JSX, useState } from 'react';
 import styled from 'styled-components';
-import { useInAppNotification } from '../../hooks/useInAppNotification';
-import { useViewer } from '../../hooks/useViewer';
 import { UnseenDot } from '../../ui/UnseenDot';
 import { CommentReplyVM, CommentRootVM } from '../../viewModels/';
 import { PublicReactionsContainer } from '../reactions/PublicReactionsContainer';
@@ -11,6 +9,7 @@ import { CommentActions, CommentActionsRevealWrapper } from './CommentActions';
 import { CommentAvatar } from './CommentAvatar';
 import { CommentBody } from './CommentBody';
 import { CommentHeader } from './CommentHeader';
+import { useCommentsViewer } from './commentsViewerContext';
 import { DeletedCommentPlaceholder } from './DeletedCommentPlaceholder';
 
 type Props = {
@@ -38,16 +37,14 @@ export const CommentRow = ({
   editCommentLoading = false,
   deleteCommentPending = false,
 }: Props): JSX.Element => {
-  const { viewer } = useViewer();
-  const { isSourceUnseen } = useInAppNotification();
-  const authorId = viewer?.id;
+  // Supplied by the container (signed-in or public) — the row never fetches the viewer itself.
+  const { viewerId, isCommentUnseen } = useCommentsViewer();
   const [isEditing, setIsEditing] = useState(false);
   // Per-comment read-state: unseen rows get an UnseenDot badged on the avatar corner.
-  // Same membership check used at every level — here matched on the comment SOURCE id.
-  const isUnseen = isSourceUnseen(EntityType.comment, comment.id);
+  const isUnseen = isCommentUnseen(comment.id);
   const avatarSize = depth > 0 ? 28 : 32;
 
-  const isMine = authorId !== null && comment.authorId === authorId;
+  const isMine = viewerId != null && comment.authorId === viewerId;
   const isTopLevel = comment.parentCommentId == null;
   const canReply = canComment && isTopLevel && !!onReply;
   const canEdit = isMine && !!onEditComment;

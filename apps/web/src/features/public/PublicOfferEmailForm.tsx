@@ -1,4 +1,3 @@
-import { ArrowRight } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -11,13 +10,21 @@ type PublicOfferEmailFormProps = {
   inputId: string;
   /** Sheet + reveal both want the caret waiting; see the focus effect below. */
   autoFocus?: boolean;
-  /** Mobile sheet stretches to the panel width; the desktop reveal sits inline. */
+  /**
+   * Mobile sheet: the field takes the panel width and the Join button sits full-width below
+   * it. Otherwise (desktop band) the button sits inline to the field's right.
+   */
   fullWidth?: boolean;
 };
 
 /**
- * Email field + clay arrow submit, shared by the desktop reveal and the mobile sheet so the
- * courier semantics exist in exactly one place.
+ * Labelled email field + clay "Join" submit, shared by the desktop reveal and the mobile sheet
+ * so the courier semantics exist in exactly one place.
+ *
+ * The label says "Email this was sent to" because an emailed invite only activates the album
+ * for the address it was sent to: signing up with a different one yields an account and no
+ * album. It is a real <label>, not a placeholder — a placeholder vanishes the moment she
+ * starts typing, which is exactly when the instruction matters.
  *
  * NOTE the input is `type="text"`, not `type="email"`. That is load-bearing, not an
  * oversight: `type="email"` makes the browser refuse to submit a malformed value and show a
@@ -55,41 +62,61 @@ export const PublicOfferEmailForm = ({
 
   return (
     <Form onSubmit={handleSubmit} noValidate $fullWidth={fullWidth}>
-      <EmailInput
-        ref={inputRef}
-        $fullWidth={fullWidth}
-        id={inputId}
-        data-testid="public-offer-email"
-        name="email"
-        type="text"
-        inputMode="email"
-        autoComplete="email"
-        autoCapitalize="none"
-        autoCorrect="off"
-        spellCheck={false}
-        placeholder="Enter your email"
-        aria-label="Enter your email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
-      <SubmitArrow type="submit" data-testid="public-offer-submit" aria-label="Continue">
-        <ArrowRight size={18} strokeWidth={2} aria-hidden />
-      </SubmitArrow>
+      <Label htmlFor={inputId}>Email this was sent to</Label>
+      <Controls $fullWidth={fullWidth}>
+        <EmailInput
+          ref={inputRef}
+          $fullWidth={fullWidth}
+          id={inputId}
+          data-testid="public-offer-email"
+          name="email"
+          type="text"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <SubmitButton type="submit" data-testid="public-offer-submit">
+          Join
+        </SubmitButton>
+      </Controls>
     </Form>
   );
 };
 
 const Form = styled.form<{ $fullWidth: boolean }>`
   display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing(1)};
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing(0.75)};
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
   min-width: 0;
 `;
 
-const EmailInput = styled.input<{ $fullWidth: boolean }>`
-  flex: ${({ $fullWidth }) => ($fullWidth ? '1 1 auto' : '0 1 240px')};
+const Label = styled.label`
+  font-family: ${({ theme }) => theme.font.body};
+  font-size: ${({ theme }) => theme.fontSize._14};
+  font-weight: ${({ theme }) => theme.weight.medium};
+  color: ${({ theme }) => theme.color.bodyText};
+  line-height: 1.4;
+  text-align: left;
+`;
+
+const Controls = styled.div<{ $fullWidth: boolean }>`
+  display: flex;
+  flex-direction: ${({ $fullWidth }) => ($fullWidth ? 'column' : 'row')};
+  align-items: ${({ $fullWidth }) => ($fullWidth ? 'stretch' : 'center')};
+  gap: ${({ theme, $fullWidth }) => theme.spacing($fullWidth ? 1.5 : 1)};
   min-width: 0;
+`;
+
+const EmailInput = styled.input<{ $fullWidth: boolean }>`
+  flex: 0 1 auto;
+  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : '300px')};
+  min-width: 0;
+  min-height: 40px;
   box-sizing: border-box;
   padding: ${({ theme }) => theme.spacing(1)} ${({ theme }) => theme.spacing(1.5)};
   background: ${({ theme }) => theme.color.inputBg};
@@ -104,10 +131,6 @@ const EmailInput = styled.input<{ $fullWidth: boolean }>`
     border-color 120ms ease,
     box-shadow 120ms ease;
 
-  &::placeholder {
-    color: ${({ theme }) => theme.color.inputPlaceholder};
-  }
-
   &:focus {
     border-color: ${({ theme }) => theme.color.inputBorderFocus};
     box-shadow: 0 0 0 3px ${({ theme }) => `${theme.color.inputBorderFocus}26`};
@@ -116,26 +139,26 @@ const EmailInput = styled.input<{ $fullWidth: boolean }>`
   /* 44px tap target, and 16px text — anything smaller makes iOS Safari zoom the
      viewport on focus, which would jerk the sheet out from under her. */
   @media (max-width: 768px) {
-    flex: 1 1 auto;
     min-height: 44px;
     font-size: ${({ theme }) => theme.fontSize._16};
   }
 `;
 
-// Clay filled arrow — the one place the offer raises its voice, and only once she has
-// already opted in by revealing the field.
-const SubmitArrow = styled.button`
+// Clay filled, with a word on it — a bare arrow did not say what pressing it would do.
+const SubmitButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  padding: 0;
+  min-height: 40px;
+  padding: 0 ${({ theme }) => theme.spacing(3)};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.md};
   background: ${({ theme }) => theme.color.primaryButtonBg};
-  color: ${({ theme }) => theme.color.body};
+  color: ${({ theme }) => theme.color.primaryButtonText};
+  font-family: ${({ theme }) => theme.font.body};
+  font-size: ${({ theme }) => theme.fontSize._16};
+  font-weight: ${({ theme }) => theme.weight.medium};
   cursor: pointer;
   transition: background 0.2s ease;
 
@@ -149,7 +172,6 @@ const SubmitArrow = styled.button`
   }
 
   @media (max-width: 768px) {
-    width: 44px;
-    height: 44px;
+    min-height: 48px;
   }
 `;

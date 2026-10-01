@@ -9,7 +9,12 @@ export interface UseViewerResult {
   error?: Error;
 }
 
-/** Anonymous callers get `viewer: null` from the API; authenticated callers get the session viewer. */
+/**
+ * Authenticated callers get the session viewer. Anonymous callers do NOT get `viewer: null`:
+ * the API rejects the request ("Invalid access mode", HTTP 500), which surfaces here as
+ * `error`. `RequireViewer` relies on that to redirect to /login — so only call this from
+ * signed-in screens, never from anything rendered on a public share page.
+ */
 // This looks like it's making a query every time you need the viewer but it's really
 // just pulling it from cache.
 export const useViewer = (): UseViewerResult => {
