@@ -222,8 +222,10 @@ jobs:
     # both projects (via `nx run <proj>:test-integration`). The api suite guards the
     # write-boundary uow-rollback property (graphql.uowRollbackBoundary.integration.tests.ts)
     # among the rest; the worker suite covers its DB-backed sweeps. The worker's config
-    # reads the same POSTGRES_* job env (its .env is git-ignored, absent here), and the
-    # api's migrations create the schema for both.
+    # reads the same POSTGRES_* job env (its .env is git-ignored, absent here). Each
+    # suite's jest globalSetup creates its own database on this server
+    # (homeroll_api_test / homeroll_worker_test) and migrates it with the api's
+    # migrations.
     services:
       postgres:
         image: postgres:16-alpine
@@ -241,7 +243,9 @@ jobs:
     env:
       # createConfigFromEnv() (apps/api/src/config.ts) reads these directly; the knexfile and
       # the integration test harness both use it. No apps/api/.env exists in CI (git-ignored),
-      # so setup.ts's dotenv load is a no-op and these job env vars are what's used.
+      # so setup.ts's dotenv load is a no-op and these job env vars are what's used —
+      # except POSTGRES_DB, which each suite's integrationSetup.ts overrides with its own
+      # test database.
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
       POSTGRES_USER: postgres
@@ -280,8 +284,6 @@ jobs:
         run: npm run gen:ioc:all
       - name: Generate GraphQL types & smart-enums
         run: npm run gen:gql:all
-      - name: DB migrate
-        run: npm run db:migrate
       - name: API integration tests (real Postgres)
         run: npm run test:integration:api
       - name: Worker integration tests (real Postgres)

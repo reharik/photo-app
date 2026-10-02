@@ -2,7 +2,8 @@ import apiJestConfig from './jest.config.js';
 
 /**
  * Integration tests cross process boundaries (e.g. real Postgres, GraphQL over HTTP).
- * Requires local env (see src/tests/setup.ts and graphqlIntegrationTestSetup).
+ * Requires local env (see src/tests/setup.ts and graphqlIntegrationTestSetup) and a
+ * reachable Postgres server; the database itself is created by the globalSetup.
  */
 export default {
   ...apiJestConfig,
@@ -22,6 +23,13 @@ export default {
     '^@react-email/tailwind$': '<rootDir>/src/tests/__mocks__/reactEmailTailwind.js',
     '^koa$': '<rootDir>/src/tests/__mocks__/koa.js',
   },
+  /**
+   * The suite runs against its own database (src/tests/integrationTestDatabase.ts), never
+   * the dev one: integrationSetup.ts forces POSTGRES_DB before any config is read, and
+   * the globalSetup creates + migrates that database.
+   */
+  setupFiles: [...apiJestConfig.setupFiles, '<rootDir>/src/tests/integrationSetup.ts'],
+  globalSetup: '<rootDir>/src/tests/jestIntegrationGlobalSetup.ts',
   /**
    * One worker only: integration tests share a real Postgres DB and a singleton IoC container.
    * Parallel test files will race on TRUNCATE/inserts and produce flaky (3–6 random) failures.

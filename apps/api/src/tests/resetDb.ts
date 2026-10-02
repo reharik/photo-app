@@ -31,8 +31,26 @@ export const cleanMediaStorageRoot = async (mediaStorageRoot: string): Promise<v
 };
 
 /**
+ * Asks the live connection which database it is on — not the env, which is exactly
+ * what went wrong when this used to wipe the dev database. Duplicated in
+ * apps/media-worker/src/tests/resetDb.ts along with the TRUNCATE below.
+ */
+const assertTestDatabase = async (db: Knex): Promise<void> => {
+  const result = await db.raw<{ rows: { name?: string }[] }>('select current_database() as name');
+  const name = result.rows[0]?.name;
+  if (typeof name !== 'string' || !name.endsWith('_test')) {
+    throw new Error(
+      `Refusing to TRUNCATE: connected to database "${String(name)}", whose name does not end ` +
+        `in "_test". Integration tests must run through jest.integration.config.js, which ` +
+        `forces POSTGRES_DB to the test database (see src/tests/integrationSetup.ts).`,
+    );
+  }
+};
+
+/**
  * Clears app-owned rows for integration tests. Uses physical PostgreSQL table names
- * (Knex models use camelCase; raw SQL does not).
+ * (Knex models use camelCase; raw SQL does not). Refuses to run against any database
+ * whose name does not end in `_test`.
  *
  * ⚠️ The TRUNCATE table list below is DUPLICATED in apps/media-worker/src/tests/resetDb.ts
  * (deliberately — no shared test-support package). When a migration adds a table,
@@ -42,6 +60,7 @@ export const cleanMediaStorageRoot = async (mediaStorageRoot: string): Promise<v
  * `afterEach` must restore `user` rows tests rely on for FKs and auth.
  */
 export const resetDb = async (db: Knex): Promise<void> => {
+  await assertTestDatabase(db);
   await db.raw(`
     TRUNCATE TABLE
       share_contact,
