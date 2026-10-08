@@ -20,7 +20,7 @@ Nested files: [`apps/media-worker/CLAUDE.md`](apps/media-worker/CLAUDE.md)
 - Run a heavy command once with output to a scratchpad file (`> $SP/run.txt 2>&1`), then grep the file; don't re-run it to see a different slice.
 - Iterate with `nx affected -t lint typecheck test`; run `*:all` / `npm run dance` once at the end.
 - After `run_in_background`, don't poll or spin (`sleep`, `while pgrep`); the completion notification wakes you.
-- Tests: unit `nx test <proj>`; integration `nx run {api,media-worker}:test-integration` (needs the dev DB up); e2e `nx test e2e`.
+- Tests: unit `nx test <proj>`; integration `nx run {api,media-worker}:test-integration` (needs the dev Postgres container up, but runs in its own `homeroll_api_test` / `homeroll_worker_test` database, created and migrated by jest globalSetup; `resetDb` refuses any database not ending in `_test`); e2e `nx test e2e`.
 - Lifetimes/registrations: `npm run ioc:<proj> -- inspect`; don't grep `generated/ioc-manifest.ts`.
 - For table shapes, use make db/psql and \d <table>; don't reconstruct them from migrations. (Non-interactive: `make db/psql SQL='\d album'`.)
 - Scratchpad scripts can't resolve repo packages: write them as CommonJS (`.cjs`, `require`) and run with `NODE_PATH="$PWD/node_modules"`; ESM `import` ignores `NODE_PATH`.

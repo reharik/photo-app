@@ -1,7 +1,9 @@
 // Test environment setup (env vars, global mocks).
 //
 // RAI-76: load apps/api/.env into process.env so integration tests reach the
-// same Postgres the running api uses. `createConfigFromEnv()` reads process.env
+// same Postgres SERVER the running api uses (not the same database — the
+// integration config's integrationSetup.ts forces POSTGRES_DB to the test
+// database after this). `createConfigFromEnv()` reads process.env
 // directly and does NOT load a .env file itself (its `ensureEnvLoaded` helper is
 // unused — see REVIEW.md "Possible source bugs"); in the app that's fine because
 // docker-compose injects POSTGRES_* into the container, but host-run Jest gets

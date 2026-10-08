@@ -293,12 +293,12 @@ export const ShareAlbumModal = ({
         return;
       }
       setLocalRows((prev) => [
-        ...prev,
         ...fresh.map((email): LocalShareRow => ({
           email,
           resolution: 'pending',
           sendState: 'sending',
         })),
+        ...prev,
       ]);
       void resolveLocalRows(fresh);
       void shareEmails(fresh);

@@ -3,8 +3,10 @@ import workerJestConfig from './jest.config.js';
 /**
  * Integration tests cross process boundaries (real Postgres). Requires local env
  * (the worker's config self-loads apps/media-worker/.env; in CI the Integration
- * job's POSTGRES_* env vars are used instead) and a migrated schema
- * (`npm run db:migrate` — the api owns the migrations).
+ * job's POSTGRES_* env vars are used instead) and a reachable Postgres server. The
+ * suite runs against its own database (src/tests/integrationTestDatabase.ts), never the
+ * dev one: integrationSetup.ts forces POSTGRES_DB before any config is read, and the
+ * globalSetup creates that database and migrates it with the api's migrations.
  */
 export default {
   ...workerJestConfig,
@@ -22,6 +24,8 @@ export default {
     '^@packages/worker-core/iocTypes$':
       '<rootDir>/../../packages/context/worker-core/src/generated/ioc-registry.types.ts',
   },
+  setupFiles: [...workerJestConfig.setupFiles, '<rootDir>/src/tests/integrationSetup.ts'],
+  globalSetup: '<rootDir>/src/tests/jestIntegrationGlobalSetup.ts',
   /**
    * One worker only (already in the base config, restated for clarity): integration
    * tests share a real Postgres DB and a per-file singleton container; parallel test
