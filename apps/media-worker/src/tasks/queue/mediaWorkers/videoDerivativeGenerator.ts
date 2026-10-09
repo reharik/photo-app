@@ -1,4 +1,4 @@
-import { MediaStorageStreamResult } from '@packages/worker-core';
+import { Capture, MediaStorageStreamResult } from '@packages/worker-core';
 import { execFile } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { computeCaptureInstant } from '../../../infrastructure/exif/computeCaptureInstant';
-import { Capture } from './processMediaImage/types';
 
 export type GeneratedVideoDerivative = {
   path: string;

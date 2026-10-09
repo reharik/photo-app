@@ -4,6 +4,7 @@ import {
   MediaProcessingJobRepository,
   MediaProcessingJobRow,
 } from '@packages/worker-core';
+import { captureFromFilename } from '../../../../infrastructure/exif/extractCaptureTime';
 import { PipelineResult } from './types';
 
 export type CompletionResult =
@@ -48,6 +49,11 @@ export const build__CompleteJobRow =
         outcome: 'itemGone',
         message: `Item deleted mid-pipeline — rolling back. jobId: ${job.id}`,
       };
+    }
+
+    const filename = item.originalFileName();
+    if (!pipelineResult.capture.takenAtUtc && filename) {
+      pipelineResult.capture = captureFromFilename(filename);
     }
 
     const applied = item.applyProcessingResults(pipelineResult, actorId);
