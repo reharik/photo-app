@@ -8,15 +8,17 @@ const VERTICAL_BIAS = 1.15;
 const SINGLE_TAP_DELAY_MS = 280;
 const TAP_STALL_PX = 12;
 
-// `video` included because its native controls live in a shadow root: a tap on play
-// or a drag on the scrubber reports the <video> host as its target. Without it, a
-// scrub reads as a swipe (navigates away) and a play tap also toggles the chrome.
-// Swiping still works on the stage around the video.
+// `[data-video-controls]` is the video player's control bar (set in the vendored skin,
+// src/vendor/videojs): a drag that starts there is a scrub, not a swipe. The rest of the
+// video surface swipes like a photo.
 const isInteractiveTarget = (target: EventTarget | null): boolean => {
   if (!(target instanceof Element)) {
     return false;
   }
-  return target.closest('button, a, [role="button"], input, textarea, select, video') != null;
+  return (
+    target.closest('button, a, [role="button"], input, textarea, select, [data-video-controls]') !=
+    null
+  );
 };
 
 export type UseMobileViewerGesturesOptions = {

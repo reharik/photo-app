@@ -164,6 +164,9 @@ declare module 'styled-components' {
       scrollThumb: string;
       scrollThumbHover: string;
 
+      /* Video player */
+      videoProgress: string;
+
       /* Data Visualization */
       graphPrimary: string;
       graphSecondary: string;

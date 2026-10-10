@@ -204,6 +204,9 @@ export const theme: DefaultTheme = {
     scrollThumb: colors.gray_30,
     scrollThumbHover: colors.gray_50,
 
+    /* ── Video player ─────────────────────────────────────── */
+    videoProgress: colors.clay,
+
     /* ── Data Visualization ───────────────────────────────── */
     graphPrimary: colors.clay,
     graphSecondary: colors.teal,

@@ -46,6 +46,10 @@ const isZoomableImage = (kind: MediaKind, mimeType: string): boolean => {
   return mt.startsWith('image/');
 };
 
+const isVideo = (kind: MediaKind, mimeType: string): boolean =>
+  !isZoomableImage(kind, mimeType) &&
+  (kind.equals(MediaKind.video) || mimeType.trim().toLowerCase().startsWith('video/'));
+
 export const MediaViewer = ({
   kind,
   status,
@@ -113,7 +117,10 @@ export const MediaViewer = ({
   });
 
   const media = (
-    <MediaChrome $fillStage={mobileGesturesEnabled && zoomLayerEnabled}>
+    <MediaChrome
+      $fillStage={mobileGesturesEnabled && zoomLayerEnabled}
+      $fullWidth={isVideo(kind, mimeType) && status.equals(MediaItemStatus.ready)}
+    >
       <ZoomableImageViewport
         key={displayUrl}
         enabled={zoomLayerEnabled}
@@ -204,13 +211,14 @@ const ViewerShell = styled.div`
 /**
  * Desktop: sizes to the rendered media so zoom cursor / gestures apply only over the image.
  * Mobile zoomable photo ($fillStage): fills the stage so a zoomed photo can use all of it.
+ * Video ($fullWidth): the player sizes itself as a share of this box, so it needs a real width.
  */
-const MediaChrome = styled.div<{ $fillStage: boolean }>`
+const MediaChrome = styled.div<{ $fillStage: boolean; $fullWidth: boolean }>`
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'fit-content')};
   max-width: 100%;
   min-height: 0;
   min-width: 0;
