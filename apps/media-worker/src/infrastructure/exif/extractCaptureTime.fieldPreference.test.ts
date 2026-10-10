@@ -1,7 +1,6 @@
+import { Capture } from '@packages/worker-core';
 import assert from 'node:assert/strict';
 import { before, describe, it, mock } from 'node:test';
-
-import type { CaptureInstant } from './computeCaptureInstant.js';
 
 type ExifParseResult = {
   DateTimeOriginal?: string;
@@ -13,7 +12,7 @@ type ExifParseResult = {
 const parseMock = mock.fn<() => Promise<ExifParseResult | null>>();
 
 describe('extractCaptureTime field preference', () => {
-  let extractCaptureTime: (buffer: Buffer) => Promise<CaptureInstant>;
+  let extractCaptureTime: (buffer: Buffer) => Promise<Capture>;
 
   before(async () => {
     mock.module('exifr', {

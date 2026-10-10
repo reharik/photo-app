@@ -1,11 +1,7 @@
+import { Capture } from '@packages/worker-core';
 import { DateTime } from 'luxon';
 
-export type CaptureInstant = {
-  takenAtUtc?: Date;
-  takenAtUtcOffsetMinutes?: number;
-};
-
-const nullCaptureInstant = (): CaptureInstant => ({
+export const nullCapture = (): Capture => ({
   takenAtUtc: undefined,
   takenAtUtcOffsetMinutes: undefined,
 });
@@ -30,9 +26,9 @@ const parse = (value: string): DateTime => DateTime.fromISO(value, { setZone: tr
 export const computeCaptureInstant = (
   dateStr: string | undefined,
   offsetStr: string | undefined,
-): CaptureInstant => {
+): Capture => {
   if (dateStr === undefined) {
-    return nullCaptureInstant();
+    return nullCapture();
   }
 
   const iso = toIso(dateStr.trim());
@@ -44,7 +40,7 @@ export const computeCaptureInstant = (
   const parsed = withOffset?.isValid ? withOffset : parse(iso);
 
   if (!parsed.isValid) {
-    return nullCaptureInstant();
+    return nullCapture();
   }
 
   const offsetKnown = withOffset?.isValid === true || hasOffset(iso);

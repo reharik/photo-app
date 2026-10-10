@@ -18,6 +18,12 @@ import type { ActorId, AuditRecord, ChildEntities, EntityId } from '@packages/co
 import { AggregateRoot } from '../AggregateRoot';
 import { MediaAsset, MediaAssetRecord } from './MediaAsset';
 
+export type Capture = {
+  takenAtUtc?: Date;
+  takenAtUtcOffsetMinutes?: number;
+  takenAtSource?: 'exif' | 'filename' | 'userInput';
+};
+
 interface AssetMetadata {
   kind: MediaAssetKind;
   mimeType: string;
@@ -31,7 +37,9 @@ export type MediaItemProps = Omit<CreateMediaItemInput, 'status' | 'takenAt'> & 
   status: MediaItemStatus;
   takenAt?: Date | null;
   takenAtUtcOffsetMinutes?: number | null;
+  takenAtSource?: 'exif' | 'filename' | 'userInput';
   durationMs?: number;
+  originalFileName?: string;
 };
 
 export type MediaItemRecord = MediaItemProps & {
@@ -80,9 +88,13 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     return mediaItem;
   }
 
+  originalFileName() {
+    return this.props.originalFileName;
+  }
+
   applyProcessingResults(
     result: {
-      capture: { takenAtUtc?: Date; takenAtUtcOffsetMinutes?: number };
+      capture: Capture;
       durationMs?: number;
       displayAsset: AssetMetadata;
       thumbnailAsset: AssetMetadata;
@@ -135,9 +147,10 @@ export class MediaItem extends AggregateRoot<MediaItemRecord> {
     original.applyUploadedObjectMetadata(originalAsset, actorId);
     this.#assets.push(thumb, display, original);
 
-    if (capture.takenAtUtc != null && this.props.takenAt == null) {
+    if (capture.takenAtUtc != null && this.props.takenAtSource == null) {
       this.props.takenAt = capture.takenAtUtc;
       this.props.takenAtUtcOffsetMinutes = capture.takenAtUtcOffsetMinutes || 0;
+      this.props.takenAtSource = capture.takenAtSource;
     }
 
     this.props.durationMs = durationMs;

@@ -1,5 +1,5 @@
 import { MediaAssetKind } from '@packages/contracts';
-import { MediaProcessingJobRow } from '@packages/worker-core';
+import { Capture, MediaProcessingJobRow } from '@packages/worker-core';
 import { WorkerTaskOutcome } from '../../../../types';
 
 export type PipelineAsset = {
@@ -8,11 +8,6 @@ export type PipelineAsset = {
   width: number;
   height: number;
   kind: MediaAssetKind;
-};
-
-export type Capture = {
-  takenAtUtc?: Date;
-  takenAtUtcOffsetMinutes?: number;
 };
 
 export type PipelineResult = {
