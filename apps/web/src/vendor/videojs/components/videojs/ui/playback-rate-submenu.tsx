@@ -10,8 +10,8 @@ import '../styles/menus.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { MenuChevron } from '@videojs-skin/components/videojs/ui/menu-chevron';
-import { RadioItem } from '@videojs-skin/components/videojs/ui/radio-item';
+import { MenuChevron } from './menu-chevron';
+import { RadioItem } from './radio-item';
 
 export type PlaybackRateSubmenuProps = Omit<Menu.RootProps, 'children'>;
 

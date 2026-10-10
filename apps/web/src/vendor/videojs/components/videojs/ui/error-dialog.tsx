@@ -7,7 +7,7 @@ import '../styles/dialog.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { Button } from '@videojs-skin/components/videojs/ui/button';
+import { Button } from './button';
 
 export function ErrorDialog() {
   return (

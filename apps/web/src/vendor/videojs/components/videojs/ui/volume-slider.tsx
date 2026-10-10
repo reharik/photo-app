@@ -7,9 +7,9 @@ import '../styles/sliders.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { SliderFill, SliderThumb, SliderTrack } from '@videojs-skin/components/videojs/ui/slider';
-import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
-import { cn } from '@videojs-skin/lib/utils';
+import { resolveClassName } from '../../../lib/resolve-class-name';
+import { cn } from '../../../lib/utils';
+import { SliderFill, SliderThumb, SliderTrack } from './slider';
 
 export type VolumeSliderProps = Omit<VolumeSliderPrimitive.RootProps, 'children'>;
 

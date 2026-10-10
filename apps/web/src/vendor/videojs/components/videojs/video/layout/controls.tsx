@@ -3,14 +3,14 @@ import { Controls, Time, Tooltip } from '@videojs/react';
 import { usePlayer } from '@videojs/react/video';
 import type { ComponentProps } from 'react';
 
-import { AirPlayButton } from '@videojs-skin/components/videojs/ui/airplay-button';
-import { ButtonTooltip } from '@videojs-skin/components/videojs/ui/button-tooltip';
-import { CaptionsButton } from '@videojs-skin/components/videojs/ui/captions-button';
-import { FullscreenButton } from '@videojs-skin/components/videojs/ui/fullscreen-button';
-import { PlayButton } from '@videojs-skin/components/videojs/ui/play-button';
-import { TimeSlider } from '@videojs-skin/components/videojs/ui/time-slider';
-import { VolumePopover } from '@videojs-skin/components/videojs/ui/volume-popover';
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../../lib/utils';
+import { AirPlayButton } from '../../ui/airplay-button';
+import { ButtonTooltip } from '../../ui/button-tooltip';
+import { CaptionsButton } from '../../ui/captions-button';
+import { FullscreenButton } from '../../ui/fullscreen-button';
+import { PlayButton } from '../../ui/play-button';
+import { TimeSlider } from '../../ui/time-slider';
+import { VolumePopover } from '../../ui/volume-popover';
 
 // homeroll: CastButton, PiPButton and VideoSettingsMenu imports removed with their controls (see below).
 

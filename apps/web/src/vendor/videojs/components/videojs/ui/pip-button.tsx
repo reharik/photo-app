@@ -11,9 +11,9 @@ import '../styles/buttons.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { Button } from '@videojs-skin/components/videojs/ui/button';
-import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
-import { cn } from '@videojs-skin/lib/utils';
+import { resolveClassName } from '../../../lib/resolve-class-name';
+import { cn } from '../../../lib/utils';
+import { Button } from './button';
 
 export type PiPButtonProps = Omit<PiPButtonPrimitive.Props, 'children'>;
 

@@ -3,7 +3,7 @@ import type { ClassValue } from 'cn';
 import '../styles/base.css';
 import '../styles/menus.css';
 
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
 
 export interface MenuChevronProps {
   back?: boolean;

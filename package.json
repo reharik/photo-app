@@ -34,7 +34,7 @@
     "check:policy": "tsx scripts/validate-policy.ts",
     "clean:all": "nx run-many --target=clean --all",
     "clean:dist": "nx reset && nx run-many --target=clean --all",
-    "dance": "npm run format:ok && npm run lint:all && npm run build:all && npm run test:ci && npm run test:integration:api",
+    "dance": "npm run format:ok && npm run check:policy && npm run lint:all && npm run build:all && npm run test:ci && npm run test:integration:api",
     "db:make": "nx run api:db:make",
     "db:migrate": "nx run api:db:migrate",
     "db:seed": "nx run api:db:seed",

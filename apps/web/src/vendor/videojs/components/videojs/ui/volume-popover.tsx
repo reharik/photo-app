@@ -9,10 +9,10 @@ import '../styles/popups.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { ButtonTooltip } from '@videojs-skin/components/videojs/ui/button-tooltip';
-import { MuteButton } from '@videojs-skin/components/videojs/ui/mute-button';
-import { VolumeSlider } from '@videojs-skin/components/videojs/ui/volume-slider';
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
+import { ButtonTooltip } from './button-tooltip';
+import { MuteButton } from './mute-button';
+import { VolumeSlider } from './volume-slider';
 
 export interface VolumePopoverProps extends Omit<VolumePopoverPrimitive.RootProps, 'children'> {
   className?: ClassValue;

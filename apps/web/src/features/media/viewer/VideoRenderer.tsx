@@ -1,4 +1,3 @@
-import { VideoSkin } from '@videojs-skin/components/videojs/video/skin';
 import { Hotkey, MuteButton } from '@videojs/react';
 import { usePlayer, Video, VideoPlayer } from '@videojs/react/video';
 import { Film, VolumeX } from 'lucide-react';
@@ -7,6 +6,7 @@ import styled from 'styled-components';
 import { isTypingTarget } from '../../../hooks/useMediaViewerKeyboard';
 import { Button } from '../../../ui/Button';
 import { printLightboxMatte } from '../../../ui/Print';
+import { VideoSkin } from '../../../vendor/videojs/components/videojs/video/skin';
 import { MediaNotice } from './MediaNotice';
 
 export type VideoRendererProps = {

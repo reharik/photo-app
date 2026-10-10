@@ -12,10 +12,10 @@ import '../styles/popups.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { Button } from '@videojs-skin/components/videojs/ui/button';
-import { ButtonTooltip } from '@videojs-skin/components/videojs/ui/button-tooltip';
-import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
-import { cn } from '@videojs-skin/lib/utils';
+import { resolveClassName } from '../../../lib/resolve-class-name';
+import { cn } from '../../../lib/utils';
+import { Button } from './button';
+import { ButtonTooltip } from './button-tooltip';
 
 export interface SettingsMenuProps extends Omit<Menu.RootProps, 'children'> {
   className?: ClassValue;

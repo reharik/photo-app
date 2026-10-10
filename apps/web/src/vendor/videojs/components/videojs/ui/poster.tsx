@@ -7,8 +7,8 @@ import '../styles/poster.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
-import { cn } from '@videojs-skin/lib/utils';
+import { resolveClassName } from '../../../lib/resolve-class-name';
+import { cn } from '../../../lib/utils';
 
 export interface PosterProps extends Omit<PosterPrimitive.ImageProps, 'children' | 'render'> {
   /** Draws the poster image in place of the one the skin renders. */

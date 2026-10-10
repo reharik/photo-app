@@ -7,7 +7,7 @@ import '../styles/container.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
 
 export interface ContainerProps extends Omit<ContainerPrimitive.Props, 'children'> {
   children?: ContainerPrimitive.Props['children'];

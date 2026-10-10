@@ -7,7 +7,7 @@ import '../styles/sliders.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
 
 /** Shared slider track. */
 export type SliderTrackProps = ComponentProps<'div'>;

@@ -4,12 +4,12 @@ import type { ComponentProps, ReactNode } from 'react';
 import '../styles/video/base.css';
 import './skin.css';
 
-import { BufferingIndicator } from '@videojs-skin/components/videojs/ui/buffering-indicator';
-import { Container } from '@videojs-skin/components/videojs/ui/container';
-import { ErrorDialog } from '@videojs-skin/components/videojs/ui/error-dialog';
-import { Poster } from '@videojs-skin/components/videojs/ui/poster';
-import { Title } from '@videojs-skin/components/videojs/ui/title';
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
+import { BufferingIndicator } from '../ui/buffering-indicator';
+import { Container } from '../ui/container';
+import { ErrorDialog } from '../ui/error-dialog';
+import { Poster } from '../ui/poster';
+import { Title } from '../ui/title';
 
 import { VideoGestures } from './behaviors/gestures';
 import { VideoHotkeys } from './behaviors/hotkeys';

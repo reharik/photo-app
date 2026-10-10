@@ -61,13 +61,6 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
-    resolve: {
-      alias: {
-        // Vendored Video.js skin source imports itself through this alias; see
-        // src/vendor/videojs/README.md.
-        '@videojs-skin': path.resolve(__dirname, 'src/vendor/videojs'),
-      },
-    },
     server: {
       port: devPort,
       host: true,

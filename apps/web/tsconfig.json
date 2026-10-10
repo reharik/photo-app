@@ -5,9 +5,7 @@
     "outDir": "./dist",
     "noEmit": true,
     "baseUrl": ".",
-    "paths": {
-      "@videojs-skin/*": ["./src/vendor/videojs/*"]
-    },
+    "paths": {},
     "types": ["vite/client", "jest", "node", "typia"],
     "plugins": [
       {

@@ -7,7 +7,7 @@ import '../styles/buttons.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
 
 /** Shared button carrying the base interactive styles used by media controls. */
 export type ButtonProps = ComponentProps<'button'>;

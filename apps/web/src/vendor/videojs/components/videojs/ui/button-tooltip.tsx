@@ -8,7 +8,7 @@ import '../styles/popups.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
 
-import { cn } from '@videojs-skin/lib/utils';
+import { cn } from '../../../lib/utils';
 
 export interface ButtonTooltipProps extends Omit<Tooltip.RootProps, 'children'> {
   children: ReactElement;

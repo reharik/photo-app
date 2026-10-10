@@ -20,9 +20,14 @@ for marking its control bar.
 - `components.json` — the Shadcn config used for the pull (kept for re-pulling;
   nothing in the app reads it).
 
-The files import each other through the `@videojs-skin/*` alias, which maps to
-this folder in `apps/web/tsconfig.json` (`paths`) and `apps/web/vite.config.js`
-(`resolve.alias`). The folder is excluded from ESLint.
+- `rewrite-imports.mjs` — turns the registry's `@videojs-skin/*` alias imports
+  into relative paths (see Re-pulling).
+
+The files import each other by relative path. The Shadcn CLI can only emit alias
+imports, and apps in this repo may not define tsconfig `paths`
+(`scripts/validate-policy.ts`, rule 19), so `rewrite-imports.mjs` resolves the
+alias once after each pull; the alias exists only in the throwaway pull project.
+The folder is excluded from ESLint.
 
 ## Our edits
 
@@ -63,7 +68,14 @@ echo '{ "compilerOptions": { "jsx": "react-jsx", "baseUrl": ".", "paths": { "@vi
 cp <repo>/apps/web/src/vendor/videojs/components.json .
 npx shadcn@latest add @videojs/video --overwrite --yes
 cp -r src/components src/lib <repo>/apps/web/src/vendor/videojs/
+node <repo>/apps/web/src/vendor/videojs/rewrite-imports.mjs
+npx prettier --write <repo>/apps/web/src/vendor/videojs
 ```
+
+The rewrite step is required: it turns the freshly pulled `@videojs-skin/*`
+imports into relative paths, and the web typecheck fails without it. Prettier
+runs last because the repo's format check covers this folder, and formatting
+after the rewrite keeps the re-pull diff down to real changes.
 
 Then review `git diff`: anything that removes a `homeroll:` line is one of the
 edits above being overwritten — re-apply it. Delete files the new catalog no
