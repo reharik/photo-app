@@ -44,7 +44,10 @@ Every local change carries a `homeroll:` comment — `grep -rn "homeroll:" .`
 4. `components/videojs/video/skin.css` — removed the container rule that hid
    the time values when the time group was under 16rem, so they always show
    (portrait videos make the player narrow at any screen width).
-5. `components/videojs/styles/sliders.css` — the time slider's fill reads
+5. `components/videojs/styles/video/theme.css` — the controls scrim
+   (`--media-controls-gradient`) is two soft bands behind the top and bottom
+   control rows instead of a dim over the whole frame.
+6. `components/videojs/styles/sliders.css` — the time slider's fill reads
    `--homeroll-video-progress`, which `VideoRenderer` sets from
    `theme.color.videoProgress`.
 

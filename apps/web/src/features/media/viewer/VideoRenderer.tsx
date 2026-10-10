@@ -25,18 +25,31 @@ const FALLBACK_ASPECT = 16 / 9;
 const aspectOf = (width?: number | null, height?: number | null): number | null =>
   width != null && height != null && width > 0 && height > 0 ? width / height : null;
 
-/** Shown only while muted: autoplay has to start silent, so make the way out obvious. */
+const UNMUTE_LABEL_MS = 3000;
+
+/**
+ * Shown only while muted: autoplay has to start silent, so make the way out obvious. The label
+ * is spelled out for the first few seconds, then collapses to the icon so it stops covering the
+ * video. VideoRenderer is keyed per item, so each new video starts with the label again.
+ */
 const UnmuteControl = () => {
   const muted = usePlayer((state) => state.muted);
+  const [labelled, setLabelled] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLabelled(false), UNMUTE_LABEL_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
   if (!muted) {
     return null;
   }
   return (
     <MuteButton
       render={(props) => (
-        <UnmutePill {...props}>
+        <UnmutePill {...props} $labelled={labelled}>
           <VolumeX size={16} strokeWidth={2} aria-hidden />
-          Tap to unmute
+          <UnmuteLabel $labelled={labelled}>Tap to unmute</UnmuteLabel>
         </UnmutePill>
       )}
     />
@@ -203,9 +216,11 @@ const VideoFrame = styled.div<{ $aspect: number }>`
 
 /* White on image overlay — not theme page chrome (as the stage buttons in MediaViewerStyles).
    The &&& raises these above VideoFrame's revert-layer rule, which would otherwise strip them. */
-const UnmutePill = styled.button`
+const UnmutePill = styled.button<{ $labelled: boolean }>`
   &&& {
-    padding: 8px 14px;
+    /* Collapsed, the padding squares up around the icon: a 40px round target. The left
+       padding never changes, so the icon stays put while the label folds away. */
+    padding: ${({ $labelled }) => ($labelled ? '11px 14px 11px 11px' : '11px')};
     font: inherit;
     font-size: 14px;
     line-height: 1;
@@ -219,13 +234,36 @@ const UnmutePill = styled.button`
   z-index: 30;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   background: rgba(0, 0, 0, 0.55);
   border-radius: 9999px;
   backdrop-filter: blur(8px);
+  transition: padding 0.3s ease;
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.textAccent};
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+const UnmuteLabel = styled.span<{ $labelled: boolean }>`
+  &&& {
+    margin-left: ${({ $labelled }) => ($labelled ? '6px' : '0')};
+  }
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: ${({ $labelled }) => ($labelled ? '8em' : '0')};
+  opacity: ${({ $labelled }) => ($labelled ? 1 : 0)};
+  transition:
+    max-width 0.3s ease,
+    margin-left 0.3s ease,
+    opacity 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;

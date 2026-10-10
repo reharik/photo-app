@@ -479,24 +479,14 @@ export const ShareAlbumModal = ({
       serverShares.map((share) => [normalizeEmail(share.email), share]),
     );
 
-    const rows: SharedWithRowVM[] = serverShares
-      .filter((share) => !localEmails.has(normalizeEmail(share.email)))
-      .filter((share) => share.userId == null || !memberUserIds.has(share.userId))
-      .map((share) => ({
-        email: normalizeEmail(share.email),
-        displayName: share.hasAccount ? share.displayName : undefined,
-        hasAccount: share.hasAccount,
-        userId: share.userId,
-        state: 'persisted' as const,
-        delivery: share.delivery,
-      }));
-
+    // This session's adds, newest first (handleAddEmails prepends).
+    const localVMs: SharedWithRowVM[] = [];
     for (const row of localRows) {
       const server = serverByEmail.get(row.email);
       if (server?.userId != null && memberUserIds.has(server.userId)) {
         continue;
       }
-      rows.push({
+      localVMs.push({
         email: row.email,
         // Delivery is only ever known for a row the server has seen; a just-added
         // row shows nothing until the refetch, which is right — PENDING renders
@@ -517,7 +507,21 @@ export const ShareAlbumModal = ({
         error: row.error,
       });
     }
-    return rows;
+
+    const serverRows: SharedWithRowVM[] = serverShares
+      .filter((share) => !localEmails.has(normalizeEmail(share.email)))
+      .filter((share) => share.userId == null || !memberUserIds.has(share.userId))
+      .map((share) => ({
+        email: normalizeEmail(share.email),
+        displayName: share.hasAccount ? share.displayName : undefined,
+        hasAccount: share.hasAccount,
+        userId: share.userId,
+        state: 'persisted' as const,
+        delivery: share.delivery,
+      }));
+
+    // Newest adds on top, then everything shared before this session.
+    return [...localVMs, ...serverRows];
   }, [members, serverShares, localRows]);
 
   // Failed rows are visible (they need their error + retry) but are NOT access —

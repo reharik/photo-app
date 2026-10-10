@@ -5,11 +5,14 @@
     /* Light border for browsers without `light-dark()`; see the `@supports` block below. */
     --media-frame-border: var(--media-border-color, rgb(0 0 0 / 0.1));
     /* Scrims for browsers without relative colors or gradient interpolation; the `@supports` blocks below refine them. */
+    /* homeroll: the scrim no longer dims the whole frame (was 40% / 20% / 50% bottom to top).
+       It is two soft bands, behind the bottom and top control rows, clear in between. */
     --media-controls-gradient: linear-gradient(
       to top,
-      color-mix(in oklab, var(--media-backdrop) 40%, transparent),
-      color-mix(in oklab, var(--media-backdrop) 20%, transparent),
-      color-mix(in oklab, var(--media-backdrop) 50%, transparent)
+      color-mix(in oklab, var(--media-backdrop) 45%, transparent),
+      transparent min(6rem, 40%),
+      transparent calc(100% - min(5rem, 30%)),
+      color-mix(in oklab, var(--media-backdrop) 30%, transparent)
     );
     --media-caption-controls-y: calc(var(--media-spacing) * -16);
     --media-slider-preview-offset: calc(var(--media-spacing) * 9);
@@ -23,11 +26,13 @@
 
   @supports (color: oklch(from red l c h)) and (background-image: linear-gradient(in oklab, red, red)) {
     .media-skin:is([data-preset="video"], [data-preset="live-video"]) {
+      /* homeroll: same two-band scrim as the fallback above (was 0.4 / 0.2 / 0.5). */
       --media-controls-gradient: linear-gradient(
         to top in oklab,
-        oklch(from var(--media-backdrop) l c h / 0.4),
-        oklch(from var(--media-backdrop) l c h / 0.2),
-        oklch(from var(--media-backdrop) l c h / 0.5)
+        oklch(from var(--media-backdrop) l c h / 0.45),
+        oklch(from var(--media-backdrop) l c h / 0) min(6rem, 40%),
+        oklch(from var(--media-backdrop) l c h / 0) calc(100% - min(5rem, 30%)),
+        oklch(from var(--media-backdrop) l c h / 0.3)
       );
     }
   }
