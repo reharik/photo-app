@@ -1,6 +1,10 @@
-import { Film } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { VideoSkin } from '@videojs-skin/components/videojs/video/skin';
+import { Hotkey, MuteButton } from '@videojs/react';
+import { usePlayer, Video, VideoPlayer } from '@videojs/react/video';
+import { Film, VolumeX } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { isTypingTarget } from '../../../hooks/useMediaViewerKeyboard';
 import { Button } from '../../../ui/Button';
 import { printLightboxMatte } from '../../../ui/Print';
 import { MediaNotice } from './MediaNotice';
@@ -11,27 +15,95 @@ export type VideoRendererProps = {
   src: string;
   /** THUMBNAIL asset, shown until playback starts. */
   poster: string;
-  /** Display dimensions; reserve the aspect ratio before metadata/poster arrive. */
+  /** Display dimensions; reserve the aspect ratio before metadata arrives. */
   width?: number | null;
   height?: number | null;
 };
 
+const FALLBACK_ASPECT = 16 / 9;
+
+const aspectOf = (width?: number | null, height?: number | null): number | null =>
+  width != null && height != null && width > 0 && height > 0 ? width / height : null;
+
+/** Shown only while muted: autoplay has to start silent, so make the way out obvious. */
+const UnmuteControl = () => {
+  const muted = usePlayer((state) => state.muted);
+  if (!muted) {
+    return null;
+  }
+  return (
+    <MuteButton
+      render={(props) => (
+        <UnmutePill {...props}>
+          <VolumeX size={16} strokeWidth={2} aria-hidden />
+          Tap to unmute
+        </UnmutePill>
+      )}
+    />
+  );
+};
+
 /**
- * Native player for a READY video.
+ * Document-level shortcuts, so they work wherever focus is in the viewer (the skin's own only
+ * apply while focus is inside the player). Switched off while a text field has focus, the same
+ * rule useMediaViewerKeyboard applies: the library already leaves a plain Space to the field,
+ * but a modified key such as Shift+arrow would otherwise seek instead of extending a selection.
+ */
+const ViewerHotkeys = () => {
+  const [typing, setTyping] = useState(() => isTypingTarget(document.activeElement));
+
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent): void => setTyping(isTypingTarget(e.target));
+    const onFocusOut = (e: FocusEvent): void => setTyping(isTypingTarget(e.relatedTarget));
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
+  return (
+    <>
+      <Hotkey keys="Space" action="togglePaused" target="document" disabled={typing} />
+      <Hotkey
+        keys="Shift+ArrowRight"
+        action="seekStep"
+        value={5}
+        target="document"
+        disabled={typing}
+      />
+      <Hotkey
+        keys="Shift+ArrowLeft"
+        action="seekStep"
+        value={-5}
+        target="document"
+        disabled={typing}
+      />
+    </>
+  );
+};
+
+/**
+ * Video.js player (vendored default skin, see src/vendor/videojs/README.md) for a READY video.
  *
- * - `playsInline`: without it iOS Safari forces fullscreen on play.
- * - `preload="metadata"`: opening the viewer fetches duration/dimensions, not the file.
+ * - Autoplays when it becomes the current item. `muted` because browsers block unmuted
+ *   autoplay outside a user gesture; `playsInline` because iOS Safari otherwise forces
+ *   fullscreen on play.
+ * - MediaRenderer keys this by item, so navigating away unmounts it — that is the pause.
+ * - Plain arrows are left to viewer navigation; see ViewerHotkeys for Space and Shift+arrow.
  *
  * `src` is /api/media/…, which redirects to a presigned S3 URL; the browser's Range
  * requests (seeking) go straight to S3. That URL expires (15 min by default), so a
  * video left paused past it errors on its next Range request. "Try again" remounts
- * the element — a fresh redirect, a fresh URL — and resumes where it stopped.
+ * the player — a fresh redirect, a fresh URL — and resumes where it stopped.
  */
 export const VideoRenderer = ({ id, src, poster, width, height }: VideoRendererProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const resumeAtRef = useRef(0);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [measuredAspect, setMeasuredAspect] = useState<number | null>(null);
 
   if (failed) {
     return (
@@ -56,48 +128,104 @@ export const VideoRenderer = ({ id, src, poster, width, height }: VideoRendererP
     );
   }
 
+  const aspect = aspectOf(width, height) ?? measuredAspect ?? FALLBACK_ASPECT;
+
   return (
-    <StyledVideo
-      key={attempt}
-      ref={videoRef}
-      data-testid={id}
-      src={src}
-      poster={poster}
-      width={width ?? undefined}
-      height={height ?? undefined}
-      controls
-      playsInline
-      preload="metadata"
-      onLoadedMetadata={() => {
-        const video = videoRef.current;
-        if (video != null && resumeAtRef.current > 0) {
-          video.currentTime = resumeAtRef.current;
-        }
-      }}
-      onError={() => {
-        resumeAtRef.current = videoRef.current?.currentTime ?? 0;
-        setFailed(true);
-      }}
-    />
+    <VideoFrame key={attempt} $aspect={aspect}>
+      <VideoPlayer poster={poster}>
+        <VideoSkin>
+          <Video
+            ref={videoRef}
+            data-testid={id}
+            src={src}
+            autoPlay
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={() => {
+              const video = videoRef.current;
+              if (video == null) {
+                return;
+              }
+              setMeasuredAspect(aspectOf(video.videoWidth, video.videoHeight));
+              if (resumeAtRef.current > 0) {
+                video.currentTime = resumeAtRef.current;
+              }
+            }}
+            onError={() => {
+              resumeAtRef.current = videoRef.current?.currentTime ?? 0;
+              setFailed(true);
+            }}
+          />
+          <UnmuteControl />
+          <ViewerHotkeys />
+        </VideoSkin>
+      </VideoPlayer>
+    </VideoFrame>
   );
 };
 
-// Same stage sizing as ImageRenderer's <img> (the box tracks the media's aspect, so
-// the print matte hugs it), minus `pointer-events: none` — the native controls need
-// pointer input.
-const StyledVideo = styled.video`
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
+// Same stage sizing and print matte as ImageRenderer's <img>. The skin's container uses
+// size containment (it can't size from the <video> inside it), so the frame carries the
+// width — as wide as fits while the height stays under the stage cap — and the skin fills
+// it at the media's aspect.
+const VideoFrame = styled.div<{ $aspect: number }>`
+  --viewer-video-max-height: min(calc(100dvh - 96px), 85dvh);
+  /* Read by the vendored skin's time slider (sliders.css). */
+  --homeroll-video-progress: ${({ theme }) => theme.color.videoProgress};
+  box-sizing: border-box;
+  width: min(100%, calc(var(--viewer-video-max-height) * ${({ $aspect }) => $aspect}));
   ${printLightboxMatte}
 
-  @media (min-width: 969px) {
-    max-height: min(calc(100dvh - 96px), 85dvh);
+  @media (max-width: 968px) {
+    --viewer-video-max-height: min(82dvh, calc(100dvh - 72px));
   }
 
-  @media (max-width: 968px) {
-    max-height: min(82dvh, calc(100dvh - 72px));
+  .video-skin {
+    aspect-ratio: ${({ $aspect }) => $aspect};
+    height: auto;
+  }
+
+  /* The skin's stylesheets are in cascade layers; the app's global reset (globalStyle.ts) is
+     not, so it outranks them whatever the specificity — zeroing the skin's padding and
+     recolouring its buttons. Hand the properties the reset sets back to the skin's layers. */
+  .video-skin,
+  .video-skin * {
+    margin: revert-layer;
+    padding: revert-layer;
+    border: revert-layer;
+    font: revert-layer;
+    vertical-align: revert-layer;
+    color: revert-layer;
+    cursor: revert-layer;
+  }
+`;
+
+/* White on image overlay — not theme page chrome (as the stage buttons in MediaViewerStyles).
+   The &&& raises these above VideoFrame's revert-layer rule, which would otherwise strip them. */
+const UnmutePill = styled.button`
+  &&& {
+    padding: 8px 14px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+  }
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.textAccent};
+    outline-offset: 2px;
   }
 `;
