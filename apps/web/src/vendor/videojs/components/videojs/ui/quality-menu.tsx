@@ -1,15 +1,14 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/menus.css';
 import { qualityText } from '@videojs/core/i18n/text/menu';
-import { Menu } from '@videojs/react';
-import { Text as TextPrimitive } from '@videojs/react';
+import { Menu, Text as TextPrimitive } from '@videojs/react';
 import { SwitchesIcon as SwitchesIconPrimitive } from '@videojs/react/icons';
 import { QualityRadioGroup } from '@videojs/react/ui/quality-radio-group';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/menus.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { MenuChevron } from '@videojs-skin/components/videojs/ui/menu-chevron';
 import { RadioItem } from '@videojs-skin/components/videojs/ui/radio-item';

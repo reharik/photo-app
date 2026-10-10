@@ -28,7 +28,7 @@
     }
 
     @media (hover: hover) {
-      .media-button:not([aria-disabled="true"]):hover {
+      .media-button:not([aria-disabled='true']):hover {
         background-color: var(--media-accent);
         color: var(--media-accent-foreground);
       }
@@ -39,11 +39,11 @@
       outline-color: var(--media-ring);
     }
 
-    .media-button:not([aria-disabled="true"]):active {
+    .media-button:not([aria-disabled='true']):active {
       scale: 0.97;
     }
 
-    .media-button[aria-disabled="true"] {
+    .media-button[aria-disabled='true'] {
       cursor: not-allowed;
       opacity: 0.5;
     }
@@ -56,8 +56,8 @@
       }
     }
 
-    .media-button:where(:focus-visible, [aria-expanded="true"], [data-highlighted]):where(
-        :not([aria-disabled="true"])
+    .media-button:where(:focus-visible, [aria-expanded='true'], [data-highlighted]):where(
+        :not([aria-disabled='true'])
       ) {
       background-color: var(--media-accent);
       color: var(--media-accent-foreground);
@@ -102,7 +102,7 @@
   }
 
   @scope (.media-skin[data-theme="default"]) {
-    .media-airplay-button:not([data-airplay-state="connected"]) {
+    .media-airplay-button:not([data-airplay-state='connected']) {
       --media-icon-airplay-fill-animation: none;
       --media-icon-airplay-triangle-animation: none;
     }
@@ -112,7 +112,7 @@
     }
 
     @scope (.media-airplay-button) {
-      &:not([data-airplay-state="connected"]) .media-airplay-button-enter-icon {
+      &:not([data-airplay-state='connected']) .media-airplay-button-enter-icon {
         opacity: 1;
         scale: 1;
       }
@@ -123,7 +123,7 @@
     }
 
     @scope (.media-airplay-button) {
-      &[data-airplay-state="connected"] .media-airplay-button-exit-icon {
+      &[data-airplay-state='connected'] .media-airplay-button-exit-icon {
         opacity: 1;
         scale: 1;
       }
@@ -190,7 +190,7 @@
       transition-property: background-color;
       transition-duration: 0.15s;
       transition-duration: var(--media-duration);
-      content: "";
+      content: '';
       background-color: currentColor;
       border-radius: 9999px;
       flex-shrink: 0;
@@ -205,7 +205,7 @@
     }
 
     .media-live-button[data-live-edge]:before {
-      content: "";
+      content: '';
       background-color: var(--media-live-color);
     }
   }
@@ -251,7 +251,7 @@
     }
 
     @scope (.media-cast-button) {
-      &:not([data-cast-state="connected"]) .media-cast-button-enter-icon {
+      &:not([data-cast-state='connected']) .media-cast-button-enter-icon {
         opacity: 1;
         scale: 1;
       }
@@ -262,7 +262,7 @@
     }
 
     @scope (.media-cast-button) {
-      &[data-cast-state="connected"] .media-cast-button-exit-icon {
+      &[data-cast-state='connected'] .media-cast-button-exit-icon {
         opacity: 1;
         scale: 1;
       }
@@ -327,7 +327,7 @@
     }
 
     @scope (.media-mute-button) {
-      &:not([data-muted]):not([data-volume-level="low"]) .media-mute-button-high-icon {
+      &:not([data-muted]):not([data-volume-level='low']) .media-mute-button-high-icon {
         opacity: 1;
         scale: 1;
       }
@@ -338,7 +338,7 @@
     }
 
     @scope (.media-mute-button) {
-      &:not([data-muted])[data-volume-level="low"] .media-mute-button-low-icon {
+      &:not([data-muted])[data-volume-level='low'] .media-mute-button-low-icon {
         opacity: 1;
         scale: 1;
       }
@@ -362,7 +362,7 @@
     }
 
     .media-playback-rate-button:after {
-      content: attr(data-rate) "×";
+      content: attr(data-rate) '×';
       width: 4ch;
     }
   }

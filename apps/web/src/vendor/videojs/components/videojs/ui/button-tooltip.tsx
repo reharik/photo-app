@@ -1,12 +1,12 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/popups.css';
 import { Tooltip } from '@videojs/react';
 import type { ReactElement, ReactNode } from 'react';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/popups.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { cn } from '@videojs-skin/lib/utils';
 
@@ -25,7 +25,7 @@ export function ButtonTooltip({ children, label, ...props }: ButtonTooltipProps)
           'media-popup-safe-area',
           'media-popup-transition',
           'media-popup-surface',
-          'media-tooltip'
+          'media-tooltip',
         )}
       >
         {label ?? <Tooltip.Label />}

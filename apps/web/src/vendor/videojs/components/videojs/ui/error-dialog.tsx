@@ -1,11 +1,11 @@
 'use client';
 
-import '../styles/base.css';
+import { ErrorDialog as ErrorDialogPrimitive } from '@videojs/react';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/dialog.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/dialog.css';
-import { ErrorDialog as ErrorDialogPrimitive } from '@videojs/react';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 

@@ -32,7 +32,7 @@
     }
   }
 
-  :where(.media-skin[data-theme="default"]) .media-poster {
+  :where(.media-skin[data-theme='default']) .media-poster {
     pointer-events: none;
     border-radius: inherit;
     width: 100%;
@@ -45,11 +45,11 @@
     inset: 0;
   }
 
-  :where(.media-skin[data-theme="default"]) .media-poster:not([data-visible]) {
+  :where(.media-skin[data-theme='default']) .media-poster:not([data-visible]) {
     opacity: 0;
   }
 
-  :where(.media-skin[data-theme="default"]) .media-poster-image {
+  :where(.media-skin[data-theme='default']) .media-poster-image {
     border-radius: inherit;
     object-fit: var(--media-object-fit, contain);
     object-position: var(--media-object-position, center);
@@ -59,7 +59,7 @@
     inset: 0;
   }
 
-  :where(.media-skin[data-theme="default"]) .media-poster-image:not([src]):not([srcset]) {
+  :where(.media-skin[data-theme='default']) .media-poster-image:not([src]):not([srcset]) {
     visibility: hidden;
   }
 }

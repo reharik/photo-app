@@ -1,7 +1,7 @@
-import '../styles/base.css';
-import '../styles/menus.css';
 import { ChevronIcon as ChevronIconPrimitive } from '@videojs/react/icons';
 import type { ClassValue } from 'cn';
+import '../styles/base.css';
+import '../styles/menus.css';
 
 import { cn } from '@videojs-skin/lib/utils';
 
@@ -12,6 +12,8 @@ export interface MenuChevronProps {
 
 export function MenuChevron({ back = false, className }: MenuChevronProps = {}) {
   return (
-    <ChevronIconPrimitive className={cn(back ? 'media-menu-back-chevron' : 'media-menu-forward-chevron', className)} />
+    <ChevronIconPrimitive
+      className={cn(back ? 'media-menu-back-chevron' : 'media-menu-forward-chevron', className)}
+    />
   );
 }

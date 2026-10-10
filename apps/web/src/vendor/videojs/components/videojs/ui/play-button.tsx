@@ -1,16 +1,16 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/buttons.css';
 import { PlayButton as PlayButtonPrimitive } from '@videojs/react';
 import {
-  RestartIcon as RestartIconPrimitive,
-  PlayIcon as PlayIconPrimitive,
   PauseIcon as PauseIconPrimitive,
+  PlayIcon as PlayIconPrimitive,
+  RestartIcon as RestartIconPrimitive,
 } from '@videojs/react/icons';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/buttons.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';

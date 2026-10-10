@@ -1,16 +1,16 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/indicators.css';
 import { VolumeIndicator as VolumeIndicatorPrimitive } from '@videojs/react';
 import {
   VolumeHighIcon as VolumeHighIconPrimitive,
   VolumeLowIcon as VolumeLowIconPrimitive,
   VolumeOffIcon as VolumeOffIconPrimitive,
 } from '@videojs/react/icons';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/indicators.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
 import { cn } from '@videojs-skin/lib/utils';
@@ -20,10 +20,14 @@ export type VolumeIndicatorProps = Omit<VolumeIndicatorPrimitive.RootProps, 'chi
 export function VolumeIndicator({ className, ...props }: VolumeIndicatorProps = {}) {
   return (
     <VolumeIndicatorPrimitive.Root
-      className={(state) => cn('media-indicator', 'media-volume-indicator', resolveClassName(className, state))}
+      className={(state) =>
+        cn('media-indicator', 'media-volume-indicator', resolveClassName(className, state))
+      }
       {...props}
     >
-      <VolumeIndicatorPrimitive.Fill className={cn('media-indicator-content', 'media-volume-indicator-fill')}>
+      <VolumeIndicatorPrimitive.Fill
+        className={cn('media-indicator-content', 'media-volume-indicator-fill')}
+      >
         <VolumeHighIconPrimitive className={'media-volume-indicator-high-icon'} />
         <VolumeLowIconPrimitive className={'media-volume-indicator-low-icon'} />
         <VolumeOffIconPrimitive className={'media-volume-indicator-off-icon'} />

@@ -27,7 +27,10 @@ export function DefaultVideoControls({ renderThumbnail }: DefaultVideoControlsPr
     <Controls.Root>
       <Controls.Backdrop className={'video-controls-backdrop'} />
       {/* homeroll: data-video-controls marks the control bar for useMobileViewerGestures (no swipe-nav from here). */}
-      <Controls.Content className={cn('video-controls', 'video-controls-content')} data-video-controls="">
+      <Controls.Content
+        className={cn('video-controls', 'video-controls-content')}
+        data-video-controls=""
+      >
         <Tooltip.Provider>
           <Controls.Group className={'video-controls-primary'}>
             <ButtonTooltip side="top">
@@ -39,7 +42,11 @@ export function DefaultVideoControls({ renderThumbnail }: DefaultVideoControlsPr
             <Controls.Group className={'video-time-slider-group'}>
               <Time.Value className={cn('media-time-value', 'video-time-value')} type="current" />
               <TimeSlider renderThumbnail={renderThumbnail} />
-              <Time.Value className={cn('media-time-toggle', 'video-time-value')} type="remaining" toggle />
+              <Time.Value
+                className={cn('media-time-toggle', 'video-time-value')}
+                type="remaining"
+                toggle
+              />
             </Controls.Group>
 
             <ButtonTooltip side="top">

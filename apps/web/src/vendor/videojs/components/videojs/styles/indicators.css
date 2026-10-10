@@ -10,12 +10,12 @@
       display: grid;
     }
 
-    .media-seek-indicator[data-direction="backward"] {
+    .media-seek-indicator[data-direction='backward'] {
       grid-column-start: 1;
       justify-self: flex-start;
     }
 
-    .media-seek-indicator[data-direction="forward"] {
+    .media-seek-indicator[data-direction='forward'] {
       grid-column-start: 3;
       justify-self: flex-end;
     }
@@ -43,19 +43,19 @@
     }
 
     @scope (.media-seek-indicator) {
-      &[data-direction="backward"] .media-seek-indicator-icon {
+      &[data-direction='backward'] .media-seek-indicator-icon {
         scale: -1 1;
       }
     }
 
     @scope (.media-seek-indicator) {
-      &[data-direction="backward"][data-starting-style] .media-seek-indicator-icon {
+      &[data-direction='backward'][data-starting-style] .media-seek-indicator-icon {
         translate: var(--media-hidden-seek-offset) 0;
       }
     }
 
     @scope (.media-seek-indicator) {
-      &[data-direction="forward"][data-starting-style] .media-seek-indicator-icon {
+      &[data-direction='forward'][data-starting-style] .media-seek-indicator-icon {
         translate: calc(var(--media-hidden-seek-offset) * -1) 0;
       }
     }
@@ -87,7 +87,7 @@
 
     .media-buffering-indicator:before {
       background-color: var(--media-backdrop);
-      content: "";
+      content: '';
       backdrop-filter: var(--media-backdrop-filter-indicator);
       position: absolute;
       inset: 0;
@@ -151,7 +151,7 @@
     }
 
     .media-indicator:after {
-      content: "";
+      content: '';
       z-index: 10;
       pointer-events: none;
       border-radius: inherit;
@@ -211,7 +211,10 @@
     }
 
     @media (prefers-reduced-motion: no-preference) {
-      .media-volume-indicator:is([data-min], [data-max]):not([data-starting-style], [data-ending-style]) {
+      .media-volume-indicator:is([data-min], [data-max]):not(
+          [data-starting-style],
+          [data-ending-style]
+        ) {
         transition: transform 0.3s linear(0, -24 20%, 16 40%, -8 60%, 4 80%, 1);
         transform: translateX(0.25px);
       }
@@ -238,7 +241,7 @@
     }
 
     @scope (.media-volume-indicator) {
-      &[data-level="high"] .media-volume-indicator-high-icon {
+      &[data-level='high'] .media-volume-indicator-high-icon {
         display: block;
       }
     }
@@ -250,7 +253,7 @@
     }
 
     @scope (.media-volume-indicator) {
-      &[data-level="low"] .media-volume-indicator-low-icon {
+      &[data-level='low'] .media-volume-indicator-low-icon {
         display: block;
       }
     }
@@ -262,7 +265,7 @@
     }
 
     @scope (.media-volume-indicator) {
-      &[data-level="off"] .media-volume-indicator-off-icon {
+      &[data-level='off'] .media-volume-indicator-off-icon {
         display: block;
       }
     }
@@ -335,7 +338,7 @@
     }
 
     @scope (.media-playback-status-indicator) {
-      &[data-status="pause"] .media-playback-status-indicator-pause-icon {
+      &[data-status='pause'] .media-playback-status-indicator-pause-icon {
         opacity: 1;
         scale: 1;
       }
@@ -355,7 +358,7 @@
     }
 
     @scope (.media-playback-status-indicator) {
-      &[data-status="play"] .media-playback-status-indicator-play-icon {
+      &[data-status='play'] .media-playback-status-indicator-play-icon {
         opacity: 1;
         translate: 1px;
         scale: 1;
@@ -369,7 +372,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="captions-off"] .media-status-indicator-captions-off-icon {
+      &[data-status='captions-off'] .media-status-indicator-captions-off-icon {
         display: block;
       }
     }
@@ -381,7 +384,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="captions-on"] .media-status-indicator-captions-on-icon {
+      &[data-status='captions-on'] .media-status-indicator-captions-on-icon {
         display: block;
       }
     }
@@ -398,7 +401,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="fullscreen"] .media-status-indicator-fullscreen-enter-icon {
+      &[data-status='fullscreen'] .media-status-indicator-fullscreen-enter-icon {
         display: block;
       }
     }
@@ -410,7 +413,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="exit-fullscreen"] .media-status-indicator-fullscreen-exit-icon {
+      &[data-status='exit-fullscreen'] .media-status-indicator-fullscreen-exit-icon {
         display: block;
       }
     }
@@ -422,7 +425,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="pip"] .media-status-indicator-pip-enter-icon {
+      &[data-status='pip'] .media-status-indicator-pip-enter-icon {
         display: block;
       }
     }
@@ -434,7 +437,7 @@
     }
 
     @scope (.media-status-indicator) {
-      &[data-status="exit-pip"] .media-status-indicator-pip-exit-icon {
+      &[data-status='exit-pip'] .media-status-indicator-pip-exit-icon {
         display: block;
       }
     }

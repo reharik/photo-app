@@ -1,12 +1,15 @@
 'use client';
 
-import '../styles/base.css';
+import { PiPButton as PiPButtonPrimitive } from '@videojs/react';
+import {
+  PipEnterIcon as PipEnterIconPrimitive,
+  PipExitIcon as PipExitIconPrimitive,
+} from '@videojs/react/icons';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/buttons.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/buttons.css';
-import { PiPButton as PiPButtonPrimitive } from '@videojs/react';
-import { PipEnterIcon as PipEnterIconPrimitive, PipExitIcon as PipExitIconPrimitive } from '@videojs/react/icons';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';

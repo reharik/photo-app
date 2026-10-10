@@ -3,7 +3,13 @@
   "style": "new-york",
   "rsc": false,
   "tsx": true,
-  "tailwind": { "config": "", "css": "", "baseColor": "neutral", "cssVariables": true, "prefix": "" },
+  "tailwind": {
+    "config": "",
+    "css": "",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
   "aliases": {
     "components": "@videojs-skin/components",
     "utils": "@videojs-skin/lib/utils",

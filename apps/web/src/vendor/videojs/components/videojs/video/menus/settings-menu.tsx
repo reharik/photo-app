@@ -6,7 +6,10 @@ import { PlaybackRateSubmenu } from '@videojs-skin/components/videojs/ui/playbac
 import { QualityMenu } from '@videojs-skin/components/videojs/ui/quality-menu';
 import { SettingsMenu } from '@videojs-skin/components/videojs/ui/settings-menu';
 
-export type VideoSettingsMenuProps = Omit<NonNullable<ComponentProps<typeof SettingsMenu>>, 'children'>;
+export type VideoSettingsMenuProps = Omit<
+  NonNullable<ComponentProps<typeof SettingsMenu>>,
+  'children'
+>;
 
 export function VideoSettingsMenu(props: VideoSettingsMenuProps = {}) {
   return (

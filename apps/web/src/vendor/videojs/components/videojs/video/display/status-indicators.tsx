@@ -2,7 +2,10 @@ import type { ComponentProps } from 'react';
 
 import { SeekIndicator } from '@videojs-skin/components/videojs/ui/seek-indicator';
 import { StatusAnnouncer } from '@videojs-skin/components/videojs/ui/status-announcer';
-import { PlaybackStatusIndicator, StatusIndicator } from '@videojs-skin/components/videojs/ui/status-indicator';
+import {
+  PlaybackStatusIndicator,
+  StatusIndicator,
+} from '@videojs-skin/components/videojs/ui/status-indicator';
 import { VolumeIndicator } from '@videojs-skin/components/videojs/ui/volume-indicator';
 import { cn } from '@videojs-skin/lib/utils';
 

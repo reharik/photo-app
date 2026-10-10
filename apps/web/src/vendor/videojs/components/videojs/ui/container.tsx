@@ -1,11 +1,11 @@
 'use client';
 
-import '../styles/base.css';
+import { Container as ContainerPrimitive } from '@videojs/react';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/container.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/container.css';
-import { Container as ContainerPrimitive } from '@videojs/react';
 
 import { cn } from '@videojs-skin/lib/utils';
 

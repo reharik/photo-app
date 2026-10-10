@@ -73,7 +73,7 @@
       }
 
       .video-controls-content:after {
-        content: "";
+        content: '';
         z-index: 10;
         pointer-events: none;
         border-radius: inherit;
@@ -82,7 +82,7 @@
         inset: 0;
       }
 
-      .video-controls-content:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+      .video-controls-content:where(:dir(rtl), [dir='rtl'], [dir='rtl'] *) {
         flex-direction: row-reverse;
       }
 
@@ -116,7 +116,7 @@
       position: absolute;
     }
 
-    .video-controls-primary:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    .video-controls-primary:where(:dir(rtl), [dir='rtl'], [dir='rtl'] *) {
       flex-direction: row-reverse;
     }
 
@@ -147,7 +147,7 @@
       }
 
       .video-controls-primary:after {
-        content: "";
+        content: '';
         z-index: 10;
         pointer-events: none;
         border-radius: inherit;
@@ -182,7 +182,7 @@
       position: absolute;
     }
 
-    .video-controls-secondary:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    .video-controls-secondary:where(:dir(rtl), [dir='rtl'], [dir='rtl'] *) {
       flex-direction: row-reverse;
     }
 
@@ -214,7 +214,7 @@
       }
 
       .video-controls-secondary:after {
-        content: "";
+        content: '';
         z-index: 10;
         pointer-events: none;
         border-radius: inherit;
@@ -251,7 +251,7 @@
       container: media-time / inline-size;
     }
 
-    .video-time-slider-group:where(:dir(rtl), [dir="rtl"], [dir="rtl"] *) {
+    .video-time-slider-group:where(:dir(rtl), [dir='rtl'], [dir='rtl'] *) {
       flex-direction: row-reverse;
     }
 
@@ -266,7 +266,7 @@
        narrow at every screen width, and the times must always show. In its place the slider
        gives up its minimum width, so on a very narrow player it shrinks instead of pushing the
        times out of the bar. */
-    .video-time-slider-group .media-time-slider[data-orientation="horizontal"] {
+    .video-time-slider-group .media-time-slider[data-orientation='horizontal'] {
       min-width: 0;
     }
   }
@@ -289,7 +289,7 @@
       outline-color: var(--media-ring);
     }
 
-    .media-time-toggle[aria-disabled="true"] {
+    .media-time-toggle[aria-disabled='true'] {
       cursor: not-allowed;
       opacity: 0.5;
     }

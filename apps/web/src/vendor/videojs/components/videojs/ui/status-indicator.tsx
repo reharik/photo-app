@@ -1,26 +1,30 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/indicators.css';
 import { StatusIndicator as StatusIndicatorPrimitive } from '@videojs/react';
 import {
-  CaptionsOnIcon as CaptionsOnIconPrimitive,
   CaptionsOffIcon as CaptionsOffIconPrimitive,
+  CaptionsOnIcon as CaptionsOnIconPrimitive,
   FullscreenEnterIcon as FullscreenEnterIconPrimitive,
   FullscreenExitIcon as FullscreenExitIconPrimitive,
+  PauseIcon as PauseIconPrimitive,
   PipEnterIcon as PipEnterIconPrimitive,
   PipExitIcon as PipExitIconPrimitive,
   PlayIcon as PlayIconPrimitive,
-  PauseIcon as PauseIconPrimitive,
 } from '@videojs/react/icons';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/indicators.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
 import { cn } from '@videojs-skin/lib/utils';
 
-const TOP_STATUS_ACTIONS = ['toggleSubtitles', 'toggleFullscreen', 'togglePictureInPicture'] as const;
+const TOP_STATUS_ACTIONS = [
+  'toggleSubtitles',
+  'toggleFullscreen',
+  'togglePictureInPicture',
+] as const;
 
 const PLAYBACK_STATUS_ACTIONS = ['togglePaused'] as const;
 
@@ -30,7 +34,9 @@ export function StatusIndicator({ className, ...props }: StatusIndicatorProps = 
   return (
     <StatusIndicatorPrimitive.Root
       actions={TOP_STATUS_ACTIONS}
-      className={(state) => cn('media-indicator', 'media-status-indicator', resolveClassName(className, state))}
+      className={(state) =>
+        cn('media-indicator', 'media-status-indicator', resolveClassName(className, state))
+      }
       {...props}
     >
       <div className={cn('media-indicator-content', 'media-status-indicator-content')}>
@@ -48,11 +54,16 @@ export function StatusIndicator({ className, ...props }: StatusIndicatorProps = 
 
 export type PlaybackStatusIndicatorProps = Omit<StatusIndicatorPrimitive.RootProps, 'children'>;
 
-export function PlaybackStatusIndicator({ className, ...props }: PlaybackStatusIndicatorProps = {}) {
+export function PlaybackStatusIndicator({
+  className,
+  ...props
+}: PlaybackStatusIndicatorProps = {}) {
   return (
     <StatusIndicatorPrimitive.Root
       actions={PLAYBACK_STATUS_ACTIONS}
-      className={(state) => cn('media-playback-status-indicator', resolveClassName(className, state))}
+      className={(state) =>
+        cn('media-playback-status-indicator', resolveClassName(className, state))
+      }
       {...props}
     >
       <PlayIconPrimitive className={'media-playback-status-indicator-play-icon'} />

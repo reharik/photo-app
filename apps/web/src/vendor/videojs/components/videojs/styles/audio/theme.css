@@ -2,7 +2,7 @@
 
 @layer base.preset {
   /* Light colors for browsers without `light-dark()`; the `@supports` block below adds the dark ones. */
-  .media-skin:is([data-preset="audio"], [data-preset="live-audio"]) {
+  .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
     --media-background: oklch(1 0 0);
     --media-foreground: oklch(0 0 0);
     --media-controls: oklch(1 0 0 / 0.5);
@@ -26,7 +26,7 @@
    * alone here but elsewhere rewrites it into variables that only the app's own `color-scheme` rules define.
    */
   @supports (color: light-dark(red, red)) {
-    .media-skin:is([data-preset="audio"], [data-preset="live-audio"]) {
+    .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
       --media-background: light-dark(oklch(1 0 0), oklch(0 0 0));
       --media-foreground: light-dark(oklch(0 0 0), oklch(1 0 0));
       --media-controls: light-dark(oklch(1 0 0 / 0.5), oklch(0 0 0 / 0.4));
@@ -37,7 +37,7 @@
     }
   }
 
-  .media-skin:is([data-preset="audio"], [data-preset="live-audio"])[data-theme="neutral"] {
+  .media-skin:is([data-preset='audio'], [data-preset='live-audio'])[data-theme='neutral'] {
     --media-controls: var(--media-background);
     --media-popover: var(--media-background);
     --media-controls-radius: calc(var(--media-spacing) * 3.5);
@@ -45,13 +45,13 @@
   }
 
   @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-    .media-skin:is([data-preset="audio"], [data-preset="live-audio"]) {
+    .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
       --media-controls: var(--media-background);
       --media-surface-border: oklch(0 0 0 / 0.05);
     }
 
     @supports (color: light-dark(red, red)) {
-      .media-skin:is([data-preset="audio"], [data-preset="live-audio"]) {
+      .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
         --media-surface-border: light-dark(oklch(0 0 0 / 0.05), transparent);
       }
     }

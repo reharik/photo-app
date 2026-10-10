@@ -1,11 +1,11 @@
 'use client';
 
-import '../styles/base.css';
+import { StatusAnnouncer as StatusAnnouncerPrimitive } from '@videojs/react';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/indicators.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/indicators.css';
-import { StatusAnnouncer as StatusAnnouncerPrimitive } from '@videojs/react';
 
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
 import { cn } from '@videojs-skin/lib/utils';

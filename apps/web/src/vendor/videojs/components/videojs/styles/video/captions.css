@@ -20,7 +20,7 @@
     }
 
     /* Compat combines the offset and scale into one transform for browsers without individual transform properties. */
-    :scope[data-theme="compat"] video::-webkit-media-text-track-container {
+    :scope[data-theme='compat'] video::-webkit-media-text-track-container {
       scale: none;
       translate: none;
       transform: translateY(var(--media-caption-track-y, 0px)) scale(0.98);
@@ -29,11 +29,11 @@
 
     /* Matches the `--container-media-2xl` control layout breakpoint. */
     @container media-root (width < 42rem) {
-      :scope[data-theme="default"][data-controls-visible] video {
+      :scope[data-theme='default'][data-controls-visible] video {
         --media-caption-track-y: calc(var(--media-spacing) * -14);
       }
 
-      :scope[data-theme="neutral"][data-controls-visible] video {
+      :scope[data-theme='neutral'][data-controls-visible] video {
         --media-caption-track-y: calc(var(--media-spacing) * -17);
       }
     }

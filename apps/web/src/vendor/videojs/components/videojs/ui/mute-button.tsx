@@ -1,16 +1,16 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/buttons.css';
 import { MuteButton as MuteButtonPrimitive } from '@videojs/react';
 import {
-  VolumeOffIcon as VolumeOffIconPrimitive,
-  VolumeLowIcon as VolumeLowIconPrimitive,
   VolumeHighIcon as VolumeHighIconPrimitive,
+  VolumeLowIcon as VolumeLowIconPrimitive,
+  VolumeOffIcon as VolumeOffIconPrimitive,
 } from '@videojs/react/icons';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/buttons.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';

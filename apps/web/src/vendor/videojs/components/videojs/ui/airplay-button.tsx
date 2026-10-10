@@ -1,15 +1,15 @@
 'use client';
 
-import '../styles/base.css';
-import '../styles/audio/theme.css';
-import '../styles/video/captions.css';
-import '../styles/video/theme.css';
-import '../styles/buttons.css';
 import { AirPlayButton as AirPlayButtonPrimitive } from '@videojs/react';
 import {
   AirPlayEnterIcon as AirPlayEnterIconPrimitive,
   AirPlayExitIcon as AirPlayExitIconPrimitive,
 } from '@videojs/react/icons';
+import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/buttons.css';
+import '../styles/video/captions.css';
+import '../styles/video/theme.css';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
@@ -24,8 +24,12 @@ export function AirPlayButton({ className, ...props }: AirPlayButtonProps = {}) 
       className={(state) => cn('media-airplay-button', resolveClassName(className, state))}
       {...props}
     >
-      <AirPlayEnterIconPrimitive className={cn('media-button-icon', 'media-airplay-button-enter-icon')} />
-      <AirPlayExitIconPrimitive className={cn('media-button-icon', 'media-airplay-button-exit-icon')} />
+      <AirPlayEnterIconPrimitive
+        className={cn('media-button-icon', 'media-airplay-button-enter-icon')}
+      />
+      <AirPlayExitIconPrimitive
+        className={cn('media-button-icon', 'media-airplay-button-exit-icon')}
+      />
     </AirPlayButtonPrimitive>
   );
 }

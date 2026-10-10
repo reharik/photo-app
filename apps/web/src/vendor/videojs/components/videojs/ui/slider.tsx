@@ -1,11 +1,11 @@
 'use client';
 
-import '../styles/base.css';
+import type { ComponentProps } from 'react';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/sliders.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/sliders.css';
-import type { ComponentProps } from 'react';
 
 import { cn } from '@videojs-skin/lib/utils';
 

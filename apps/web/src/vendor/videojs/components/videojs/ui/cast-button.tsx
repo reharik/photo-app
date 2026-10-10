@@ -1,12 +1,15 @@
 'use client';
 
-import '../styles/base.css';
+import { CastButton as CastButtonPrimitive } from '@videojs/react';
+import {
+  CastEnterIcon as CastEnterIconPrimitive,
+  CastExitIcon as CastExitIconPrimitive,
+} from '@videojs/react/icons';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/buttons.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/buttons.css';
-import { CastButton as CastButtonPrimitive } from '@videojs/react';
-import { CastEnterIcon as CastEnterIconPrimitive, CastExitIcon as CastExitIconPrimitive } from '@videojs/react/icons';
 
 import { Button } from '@videojs-skin/components/videojs/ui/button';
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';

@@ -2,18 +2,18 @@
 /* Preset adaptations and preference overrides win over theme tokens regardless of import order. */
 @layer base.theme, base.preset, base.preferences;
 
-@import "./themes/theme.css";
-@import "./themes/preferences.css";
+@import './themes/theme.css';
+@import './themes/preferences.css';
 
 /* Interpolate progress before chapter bounds are applied. */
 @property --media-slider-fill {
-  syntax: "<percentage>";
+  syntax: '<percentage>';
   inherits: true;
   initial-value: 0%;
 }
 
 @property --media-slider-buffer {
-  syntax: "<percentage>";
+  syntax: '<percentage>';
   inherits: true;
   initial-value: 0%;
 }
@@ -54,15 +54,15 @@
       max-width: 100%;
     }
 
-    svg[fill="currentColor"] {
+    svg[fill='currentColor'] {
       fill: currentColor;
     }
 
-    svg[fill="none"] {
+    svg[fill='none'] {
       fill: none;
     }
 
-    svg[stroke="currentColor"] {
+    svg[stroke='currentColor'] {
       stroke: currentColor;
     }
 
@@ -108,7 +108,7 @@
     }
 
     /* Popups stay inside the player without the top layer, so let them extend past the short audio bar. */
-    .media-skin:is([data-preset="audio"], [data-preset="live-audio"]) {
+    .media-skin:is([data-preset='audio'], [data-preset='live-audio']) {
       overflow: visible !important;
     }
   }

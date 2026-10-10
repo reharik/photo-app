@@ -1,11 +1,11 @@
 'use client';
 
-import '../styles/base.css';
+import { Poster as PosterPrimitive } from '@videojs/react';
 import '../styles/audio/theme.css';
+import '../styles/base.css';
+import '../styles/poster.css';
 import '../styles/video/captions.css';
 import '../styles/video/theme.css';
-import '../styles/poster.css';
-import { Poster as PosterPrimitive } from '@videojs/react';
 
 import { resolveClassName } from '@videojs-skin/lib/resolve-class-name';
 import { cn } from '@videojs-skin/lib/utils';
@@ -19,7 +19,9 @@ export interface PosterProps extends Omit<PosterPrimitive.ImageProps, 'children'
 
 export function Poster({ children, className, renderImage, ...props }: PosterProps = {}) {
   return (
-    <PosterPrimitive.Root className={(state) => cn('media-poster', resolveClassName(className, state))}>
+    <PosterPrimitive.Root
+      className={(state) => cn('media-poster', resolveClassName(className, state))}
+    >
       <PosterPrimitive.Image render={renderImage} className={'media-poster-image'} {...props} />
 
       {children}
